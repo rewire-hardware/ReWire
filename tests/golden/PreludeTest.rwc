@@ -1,42 +1,32 @@
-$Pure.dispatch : ([2], [1]) -> [3]
-$Pure.dispatch disc i =
-      if eq disc[1 +: 1] 1'h0 then (let e = disc[0 +: 1] in
-            $L.b4 e i)
-            else $L.b2 i
+main.$dispatch : ([2], [1]) -> [3]
+main.$dispatch disc i =
+      if eq disc[1 +: 1] 1'h0 then main.$L.b4$265 disc[0 +: 1] i
+            else main.$L.b2$263 i
 
-$LL.L.b42 : ([1]) -> [1]
-$LL.L.b42 s =
-      if eq s 1'h1 then 1'h1
-            else 1'h0
+main.$L.b4$265 : ([1], [1]) -> [3]
+main.$L.b4$265 a b =
+      let $a = (if eq a 1'h1 then 1'h1
+            else 1'h0) in
+      main.$L.Main.loop3$264 $a
 
-$L.b2 : ([1]) -> [3]
-$L.b2 b =
+main.$L.Main.loop3$264 : ([1]) -> [3]
+main.$L.Main.loop3$264 a =
+      let $a = Main.zookus a in
+      let $a1 = Main.zookus $a in
+      $a1 # 1'h0 # a
+
+main.$L.b2$263 : ([1]) -> [3]
+main.$L.b2$263 b =
       3'h0
-
-$LL.L.Main.loop31 : ([1], [1]) -> [3]
-$LL.L.Main.loop31 a $a =
-      $a # 1'h0 # a
-
-$L.Main.loop3 : ([1]) -> [3]
-$L.Main.loop3 a =
-      $LL.L.Main.loop3 a (Main.zookus a)
-
-$L.b4 : ([1], [1]) -> [3]
-$L.b4 a b =
-      $L.Main.loop3 ($LL.L.b42 a)
 
 Main.zookus : ([1]) -> [1]
 Main.zookus x =
       x
 
-$LL.L.Main.loop3 : ([1], [1]) -> [3]
-$LL.L.Main.loop3 a $a =
-      $LL.L.Main.loop31 a (Main.zookus $a)
-
 device top_level
       input __in0 : [1]
       output __out0 : [1]
       register __resumption_tag : [2] init 2'h2
-      let $res = $Pure.dispatch __resumption_tag __in0
+      let $res = main.$dispatch __resumption_tag __in0
       __out0 := $res[2 +: 1]
       next __resumption_tag := $res[0 +: 2]

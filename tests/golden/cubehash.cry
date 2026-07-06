@@ -16,20 +16,40 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// $Pure.dispatch
-rw__Pure_dispatch : [1024] -> [1] -> [2048]
-rw__Pure_dispatch x0 x1 = rw__L__x7 x1 x0
+// main.$dispatch
+rw_main__dispatch : [1024] -> [1] -> [2048]
+rw_main__dispatch x0 x1 = rw_main__L__x7_841 x1 x0
 
-// $LL.Main.swapix210
-rw__LL_Main_swapix210 : [1] -> [1] -> [1]
-rw__LL_Main_swapix210 x0 x1 = if x1 == 0b1 then (rw__LL_Main_swapix19 x0) else 0b0
+// main.$L.$x7$841
+rw_main__L__x7_841 : [1] -> [1024] -> [2048]
+rw_main__L__x7_841 x0 x1 = rw_main__L_Main_nopipeline4_837 x0 x1
 
-// $LL.Main.swapix29
-rw__LL_Main_swapix29 : [1] -> [1024] -> [5] -> [5] -> [1] -> [1] -> [1] -> [32]
-rw__LL_Main_swapix29 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_swapix22 x0 x1 x3 x4 x5 x6 s0
+// main.$L.x6$839
+rw_main__L_x6_839 : [1024] -> [1024] -> [2048]
+rw_main__L_x6_839 x0 x1 = x0 # x1
+
+// main.$L._unused5$838
+rw_main__L__unused5_838 : [1024] -> [2048]
+rw_main__L__unused5_838 x0 = rw_main__L_x6_839 x0 x0
+
+// main.$L.x8$843
+rw_main__L_x8_843 : [1024] -> [1024] -> [2048]
+rw_main__L_x8_843 x0 x1 = rw_main__L__unused5_838 s0
   where
-    s0 : [1]
-    s0 = take`{1} x2
+    s0 : [1024]
+    s0 = rw_Main_round x0
+
+// main.$L.arm9$845
+rw_main__L_arm9_845 : [1024] -> [2048]
+rw_main__L_arm9_845 x0 = rw_main__L_x8_843 x0 x0
+
+// main.$L.Main.nopipeline4$837
+rw_main__L_Main_nopipeline4_837 : [1] -> [1024] -> [2048]
+rw_main__L_Main_nopipeline4_837 x0 x1 = if x0 == 0b0 then (rw_main__L_arm9_845 x1) else (rw_main__L__unused5_838 x1)
+
+// Main.explode5
+rw_Main_explode5 : [5] -> [5]
+rw_Main_explode5 x0 = (rw'resize`{1} (x0 >> 0x00000000000000000000000000000004)) # ((rw'resize`{1} (x0 >> 0x00000000000000000000000000000003)) # ((rw'resize`{1} (x0 >> 0x00000000000000000000000000000002)) # ((rw'resize`{1} (x0 >> 0x00000000000000000000000000000001)) # (rw'resize`{1} (x0 >> 0x00000000000000000000000000000000)))))
 
 // Main.rotaccess
 rw_Main_rotaccess : [1024] -> [5] -> [33]
@@ -40,153 +60,175 @@ rw_Main_rotaccess x0 x1 = s1 # (rw'resize`{32} (x0 >> (((0x000000000000000000000
     s1 : [1]
     s1 = take`{1} s0
 
-// $LL.Main.swapix28
-rw__LL_Main_swapix28 : [1024] -> [5] -> [5] -> [1] -> [1] -> [32]
-rw__LL_Main_swapix28 x0 x1 x2 x3 x4 = rw__LL_Main_swapix23 x0 x1 x2 x4 x3 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{2} x1)
-
-// $LL.Main.rot2
-rw__LL_Main_rot2 : [33] -> [32] -> [32] -> [32]
-rw__LL_Main_rot2 x0 x1 x2 = rw__LL_Main_rot x2 x1 s0
-  where
-    s0 : [1]
-    s0 = take`{1} x0
-
-// Main.rotate$s1
-rw_Main_rotate_s1 : [1024] -> [1024]
-rw_Main_rotate_s1 x0 = (rw_Main_rot 0x0000000b x0 0b00000) # ((rw_Main_rot 0x0000000b x0 0b00001) # ((rw_Main_rot 0x0000000b x0 0b00010) # ((rw_Main_rot 0x0000000b x0 0b00011) # ((rw_Main_rot 0x0000000b x0 0b00100) # ((rw_Main_rot 0x0000000b x0 0b00101) # ((rw_Main_rot 0x0000000b x0 0b00110) # ((rw_Main_rot 0x0000000b x0 0b00111) # ((rw_Main_rot 0x0000000b x0 0b01000) # ((rw_Main_rot 0x0000000b x0 0b01001) # ((rw_Main_rot 0x0000000b x0 0b01010) # ((rw_Main_rot 0x0000000b x0 0b01011) # ((rw_Main_rot 0x0000000b x0 0b01100) # ((rw_Main_rot 0x0000000b x0 0b01101) # ((rw_Main_rot 0x0000000b x0 0b01110) # ((rw_Main_rot 0x0000000b x0 0b01111) # ((rw_Main_rot 0x0000000b x0 0b10000) # ((rw_Main_rot 0x0000000b x0 0b10001) # ((rw_Main_rot 0x0000000b x0 0b10010) # ((rw_Main_rot 0x0000000b x0 0b10011) # ((rw_Main_rot 0x0000000b x0 0b10100) # ((rw_Main_rot 0x0000000b x0 0b10101) # ((rw_Main_rot 0x0000000b x0 0b10110) # ((rw_Main_rot 0x0000000b x0 0b10111) # ((rw_Main_rot 0x0000000b x0 0b11000) # ((rw_Main_rot 0x0000000b x0 0b11001) # ((rw_Main_rot 0x0000000b x0 0b11010) # ((rw_Main_rot 0x0000000b x0 0b11011) # ((rw_Main_rot 0x0000000b x0 0b11100) # ((rw_Main_rot 0x0000000b x0 0b11101) # ((rw_Main_rot 0x0000000b x0 0b11110) # (rw_Main_rot 0x0000000b x0 0b11111)))))))))))))))))))))))))))))))
-
-// $L.Main.nopipeline4
-rw__L_Main_nopipeline4 : [1] -> [1024] -> [2048]
-rw__L_Main_nopipeline4 x0 x1 = if x0 == 0b0 then (rw__L_arm9 x1) else (rw__L__unused5 x1)
-
 // Main.rot
 rw_Main_rot : [32] -> [1024] -> [5] -> [32]
-rw_Main_rot x0 x1 x2 = rw__LL_Main_rot1 x0 (rw_Main_rotaccess x1 x2)
-
-// $LL.Main.swapix112
-rw__LL_Main_swapix112 : [5] -> [1024] -> [5] -> [1] -> [32]
-rw__LL_Main_swapix112 x0 x1 x2 x3 = rw__LL_Main_swapix14 x3 x0 x1 x2 s0
+rw_Main_rot x0 x1 x2 = if s4 == 0b0 then ((s2 << x0) || (s2 >> (0x00000020 - x0))) else s2
   where
-    s0 : [1]
-    s0 = take`{1} (drop`{3} x0)
+    s0 : [33]
+    s0 = rw_Main_rotaccess x1 x2
+    s1 : [32]
+    s1 = drop`{1} s0
+    s2 : [32]
+    s2 = s1
+    s3 : [1]
+    s3 = take`{1} s0
+    s4 : [1]
+    s4 = s3
 
-// Main.swap2
-rw_Main_swap2 : [1024] -> [1024]
-rw_Main_swap2 x0 = (rw_Main_swapix2 x0 0b00000) # ((rw_Main_swapix2 x0 0b00001) # ((rw_Main_swapix2 x0 0b00010) # ((rw_Main_swapix2 x0 0b00011) # ((rw_Main_swapix2 x0 0b00100) # ((rw_Main_swapix2 x0 0b00101) # ((rw_Main_swapix2 x0 0b00110) # ((rw_Main_swapix2 x0 0b00111) # ((rw_Main_swapix2 x0 0b01000) # ((rw_Main_swapix2 x0 0b01001) # ((rw_Main_swapix2 x0 0b01010) # ((rw_Main_swapix2 x0 0b01011) # ((rw_Main_swapix2 x0 0b01100) # ((rw_Main_swapix2 x0 0b01101) # ((rw_Main_swapix2 x0 0b01110) # ((rw_Main_swapix2 x0 0b01111) # ((rw_Main_swapix2 x0 0b10000) # ((rw_Main_swapix2 x0 0b10001) # ((rw_Main_swapix2 x0 0b10010) # ((rw_Main_swapix2 x0 0b10011) # ((rw_Main_swapix2 x0 0b10100) # ((rw_Main_swapix2 x0 0b10101) # ((rw_Main_swapix2 x0 0b10110) # ((rw_Main_swapix2 x0 0b10111) # ((rw_Main_swapix2 x0 0b11000) # ((rw_Main_swapix2 x0 0b11001) # ((rw_Main_swapix2 x0 0b11010) # ((rw_Main_swapix2 x0 0b11011) # ((rw_Main_swapix2 x0 0b11100) # ((rw_Main_swapix2 x0 0b11101) # ((rw_Main_swapix2 x0 0b11110) # (rw_Main_swapix2 x0 0b11111)))))))))))))))))))))))))))))))
-
-// $LL.Main.xorix7
-rw__LL_Main_xorix7 : [1] -> [1024] -> [5] -> [1] -> [1] -> [32]
-rw__LL_Main_xorix7 x0 x1 x2 x3 x4 = rw__LL_Main_xorix4 x4 x0 x1 x2 x3 s0
+// Main.accesses
+rw_Main_accesses : [1024] -> [5] -> [65]
+rw_Main_accesses x0 x1 = s9 # ((rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b0 # (s2 # (s4 # (s6 # s8)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) # (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b1 # (s2 # (s4 # (s6 # s8)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))))
   where
-    s0 : [1]
-    s0 = take`{1} (drop`{1} x2)
+    s0 : [5]
+    s0 = rw_Main_explode5 x1
+    s1 : [1]
+    s1 = take`{1} (drop`{1} s0)
+    s2 : [1]
+    s2 = s1
+    s3 : [1]
+    s3 = take`{1} (drop`{2} s0)
+    s4 : [1]
+    s4 = s3
+    s5 : [1]
+    s5 = take`{1} (drop`{3} s0)
+    s6 : [1]
+    s6 = s5
+    s7 : [1]
+    s7 = drop`{4} s0
+    s8 : [1]
+    s8 = s7
+    s9 : [1]
+    s9 = take`{1} s0
 
-// $LL.Main.swapix111
-rw__LL_Main_swapix111 : [1] -> [1] -> [1]
-rw__LL_Main_swapix111 x0 x1 = if x1 == 0b1 then x0 else 0b0
-
-// $L._unused5
-rw__L__unused5 : [1024] -> [2048]
-rw__L__unused5 x0 = rw__L_x6 x0 x0
-
-// $LL.Main.swapix27
-rw__LL_Main_swapix27 : [1024] -> [5] -> [5] -> [32]
-rw__LL_Main_swapix27 x0 x1 x2 = rw__LL_Main_swapix21 x0 x2 x1 s0
+// Main.addix
+rw_Main_addix : [1024] -> [5] -> [32]
+rw_Main_addix x0 x1 = if s4 == 0b0 then s2 else (s2 + s5)
   where
-    s0 : [1]
-    s0 = drop`{4} x2
-
-// $LL.Main.swapix410
-rw__LL_Main_swapix410 : [5] -> [1] -> [5] -> [1024] -> [1] -> [32]
-rw__LL_Main_swapix410 x0 x1 x2 x3 x4 = rw__LL_Main_swapix43 x0 x1 x4 x2 x3 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{2} x2)
-
-// $LL.Main.addix2
-rw__LL_Main_addix2 : [32] -> [65] -> [1] -> [32]
-rw__LL_Main_addix2 x0 x1 x2 = if x2 == 0b0 then x0 else (x0 + s0)
-  where
-    s0 : [32]
-    s0 = drop`{33} x1
-
-// $LL.Main.swapix19
-rw__LL_Main_swapix19 : [1] -> [1]
-rw__LL_Main_swapix19 x0 = if x0 == 0b1 then 0b0 else 0b1
-
-// $LL.Main.swapix18
-rw__LL_Main_swapix18 : [1] -> [1] -> [1] -> [1] -> [1] -> [1024] -> [5] -> [1] -> [32]
-rw__LL_Main_swapix18 x0 x1 x2 x3 x4 x5 x6 x7 = if x7 == 0b0 then (rw__LL_Main_swapix12 x1 x3 x4 x5 x6 (rw__LL_Main_swapix210 x2 (rw__LL_Main_swapix19 x0))) else (rw'resize`{32} (x5 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b00 # (x4 # (x3 # x1))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))
-
-// Main.round
-rw_Main_round : [1024] -> [1024]
-rw_Main_round x0 = rw_Main_swap4 (rw_Main_xor (rw_Main_swap3 (rw_Main_rotate_s1 (rw_Main_add (rw_Main_swap2 (rw_Main_xor (rw_Main_swap1 (rw_Main_rotate_s2 (rw_Main_add x0)))))))))
-
-// $LL.Main.swapix312
-rw__LL_Main_swapix312 : [5] -> [1] -> [1] -> [1024] -> [5] -> [1] -> [32]
-rw__LL_Main_swapix312 x0 x1 x2 x3 x4 x5 = rw__LL_Main_swapix33 x0 x1 x2 x3 x5 x4 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{1} x4)
-
-// $LL.Main.swapix26
-rw__LL_Main_swapix26 : [1] -> [1024] -> [5] -> [1] -> [1] -> [1] -> [32]
-rw__LL_Main_swapix26 x0 x1 x2 x3 x4 x5 = if x5 == 0b0 then (rw'resize`{32} (x1 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x2)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) else (rw'resize`{32} (x1 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b1 # (x4 # (x0 # (0b0 # x3)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))
-
-// Main.swap1
-rw_Main_swap1 : [1024] -> [1024]
-rw_Main_swap1 x0 = (rw_Main_swapix1 x0 0b00000) # ((rw_Main_swapix1 x0 0b00001) # ((rw_Main_swapix1 x0 0b00010) # ((rw_Main_swapix1 x0 0b00011) # ((rw_Main_swapix1 x0 0b00100) # ((rw_Main_swapix1 x0 0b00101) # ((rw_Main_swapix1 x0 0b00110) # ((rw_Main_swapix1 x0 0b00111) # ((rw_Main_swapix1 x0 0b01000) # ((rw_Main_swapix1 x0 0b01001) # ((rw_Main_swapix1 x0 0b01010) # ((rw_Main_swapix1 x0 0b01011) # ((rw_Main_swapix1 x0 0b01100) # ((rw_Main_swapix1 x0 0b01101) # ((rw_Main_swapix1 x0 0b01110) # ((rw_Main_swapix1 x0 0b01111) # ((rw_Main_swapix1 x0 0b10000) # ((rw_Main_swapix1 x0 0b10001) # ((rw_Main_swapix1 x0 0b10010) # ((rw_Main_swapix1 x0 0b10011) # ((rw_Main_swapix1 x0 0b10100) # ((rw_Main_swapix1 x0 0b10101) # ((rw_Main_swapix1 x0 0b10110) # ((rw_Main_swapix1 x0 0b10111) # ((rw_Main_swapix1 x0 0b11000) # ((rw_Main_swapix1 x0 0b11001) # ((rw_Main_swapix1 x0 0b11010) # ((rw_Main_swapix1 x0 0b11011) # ((rw_Main_swapix1 x0 0b11100) # ((rw_Main_swapix1 x0 0b11101) # ((rw_Main_swapix1 x0 0b11110) # (rw_Main_swapix1 x0 0b11111)))))))))))))))))))))))))))))))
-
-// $LL.Main.addix1
-rw__LL_Main_addix1 : [65] -> [32] -> [32]
-rw__LL_Main_addix1 x0 x1 = rw__LL_Main_addix2 x1 x0 s0
-  where
-    s0 : [1]
-    s0 = take`{1} x0
-
-// $LL.Main.swapix49
-rw__LL_Main_swapix49 : [5] -> [1] -> [1] -> [1] -> [1024] -> [1] -> [1] -> [32]
-rw__LL_Main_swapix49 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_swapix41 x0 x1 x2 x3 x6 x4 x5 (rw__LL_Main_swapix210 x1 x6)
-
-// $LL.Main.xorix6
-rw__LL_Main_xorix6 : [1] -> [1024] -> [5] -> [1] -> [32]
-rw__LL_Main_xorix6 x0 x1 x2 x3 = rw__LL_Main_xorix7 x0 x1 x2 x3 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{2} x2)
-
-// $LL.Main.xorix5
-rw__LL_Main_xorix5 : [1] -> [1] -> [1024] -> [1] -> [5] -> [1] -> [5] -> [32]
-rw__LL_Main_xorix5 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_xorix x0 x1 x2 x6 x3 x5 (rw__LL_Main_swapix19 s0)
-  where
-    s0 : [1]
-    s0 = take`{1} x4
-
-// $L.$x7
-rw__L__x7 : [1] -> [1024] -> [2048]
-rw__L__x7 x0 x1 = rw__L_Main_nopipeline4 x0 x1
-
-// $LL.Main.swapix15
-rw__LL_Main_swapix15 : [1] -> [1] -> [1] -> [1] -> [1024] -> [5] -> [1] -> [32]
-rw__LL_Main_swapix15 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_swapix18 x6 x0 x1 x2 x3 x4 x5 (rw__LL_Main_swapix111 x1 (rw__LL_Main_swapix19 x6))
+    s0 : [65]
+    s0 = rw_Main_accesses x0 x1
+    s1 : [32]
+    s1 = take`{32} (drop`{1} s0)
+    s2 : [32]
+    s2 = s1
+    s3 : [1]
+    s3 = take`{1} s0
+    s4 : [1]
+    s4 = s3
+    s5 : [32]
+    s5 = drop`{33} s0
 
 // Main.add
 rw_Main_add : [1024] -> [1024]
 rw_Main_add x0 = (rw_Main_addix x0 0b00000) # ((rw_Main_addix x0 0b00001) # ((rw_Main_addix x0 0b00010) # ((rw_Main_addix x0 0b00011) # ((rw_Main_addix x0 0b00100) # ((rw_Main_addix x0 0b00101) # ((rw_Main_addix x0 0b00110) # ((rw_Main_addix x0 0b00111) # ((rw_Main_addix x0 0b01000) # ((rw_Main_addix x0 0b01001) # ((rw_Main_addix x0 0b01010) # ((rw_Main_addix x0 0b01011) # ((rw_Main_addix x0 0b01100) # ((rw_Main_addix x0 0b01101) # ((rw_Main_addix x0 0b01110) # ((rw_Main_addix x0 0b01111) # ((rw_Main_addix x0 0b10000) # ((rw_Main_addix x0 0b10001) # ((rw_Main_addix x0 0b10010) # ((rw_Main_addix x0 0b10011) # ((rw_Main_addix x0 0b10100) # ((rw_Main_addix x0 0b10101) # ((rw_Main_addix x0 0b10110) # ((rw_Main_addix x0 0b10111) # ((rw_Main_addix x0 0b11000) # ((rw_Main_addix x0 0b11001) # ((rw_Main_addix x0 0b11010) # ((rw_Main_addix x0 0b11011) # ((rw_Main_addix x0 0b11100) # ((rw_Main_addix x0 0b11101) # ((rw_Main_addix x0 0b11110) # (rw_Main_addix x0 0b11111)))))))))))))))))))))))))))))))
 
-// $LL.Main.rot1
-rw__LL_Main_rot1 : [32] -> [33] -> [32]
-rw__LL_Main_rot1 x0 x1 = rw__LL_Main_rot2 x1 x0 s0
+// Main.swapix1
+rw_Main_swapix1 : [1024] -> [5] -> [32]
+rw_Main_swapix1 x0 x1 = if s12 == 0b0 then (if s14 == 0b0 then (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x1)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) else (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b01 # (s6 # (s8 # s10))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))) else (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b00 # (s6 # (s8 # s10))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))
   where
-    s0 : [32]
-    s0 = drop`{1} x1
+    s0 : [5]
+    s0 = rw_Main_explode5 x1
+    s1 : [1]
+    s1 = take`{1} s0
+    s2 : [1]
+    s2 = s1
+    s3 : [1]
+    s3 = take`{1} (drop`{1} s0)
+    s4 : [1]
+    s4 = s3
+    s5 : [1]
+    s5 = take`{1} (drop`{2} s0)
+    s6 : [1]
+    s6 = s5
+    s7 : [1]
+    s7 = take`{1} (drop`{3} s0)
+    s8 : [1]
+    s8 = s7
+    s9 : [1]
+    s9 = drop`{4} s0
+    s10 : [1]
+    s10 = s9
+    s11 : [1]
+    s11 = if s2 == 0b1 then 0b0 else 0b1
+    s12 : [1]
+    s12 = if s11 == 0b1 then s4 else 0b0
+    s13 : [1]
+    s13 = if s2 == 0b1 then 0b0 else 0b1
+    s14 : [1]
+    s14 = if s13 == 0b1 then (if s4 == 0b1 then 0b0 else 0b1) else 0b0
 
-// $LL.Main.xorix4
-rw__LL_Main_xorix4 : [1] -> [1] -> [1024] -> [5] -> [1] -> [1] -> [32]
-rw__LL_Main_xorix4 x0 x1 x2 x3 x4 x5 = rw__LL_Main_xorix5 x0 x1 x2 x5 x3 x4 (0b1 # (x5 # (x0 # (x4 # x1))))
+// Main.swap1
+rw_Main_swap1 : [1024] -> [1024]
+rw_Main_swap1 x0 = (rw_Main_swapix1 x0 0b00000) # ((rw_Main_swapix1 x0 0b00001) # ((rw_Main_swapix1 x0 0b00010) # ((rw_Main_swapix1 x0 0b00011) # ((rw_Main_swapix1 x0 0b00100) # ((rw_Main_swapix1 x0 0b00101) # ((rw_Main_swapix1 x0 0b00110) # ((rw_Main_swapix1 x0 0b00111) # ((rw_Main_swapix1 x0 0b01000) # ((rw_Main_swapix1 x0 0b01001) # ((rw_Main_swapix1 x0 0b01010) # ((rw_Main_swapix1 x0 0b01011) # ((rw_Main_swapix1 x0 0b01100) # ((rw_Main_swapix1 x0 0b01101) # ((rw_Main_swapix1 x0 0b01110) # ((rw_Main_swapix1 x0 0b01111) # ((rw_Main_swapix1 x0 0b10000) # ((rw_Main_swapix1 x0 0b10001) # ((rw_Main_swapix1 x0 0b10010) # ((rw_Main_swapix1 x0 0b10011) # ((rw_Main_swapix1 x0 0b10100) # ((rw_Main_swapix1 x0 0b10101) # ((rw_Main_swapix1 x0 0b10110) # ((rw_Main_swapix1 x0 0b10111) # ((rw_Main_swapix1 x0 0b11000) # ((rw_Main_swapix1 x0 0b11001) # ((rw_Main_swapix1 x0 0b11010) # ((rw_Main_swapix1 x0 0b11011) # ((rw_Main_swapix1 x0 0b11100) # ((rw_Main_swapix1 x0 0b11101) # ((rw_Main_swapix1 x0 0b11110) # (rw_Main_swapix1 x0 0b11111)))))))))))))))))))))))))))))))
+
+// Main.swapix2
+rw_Main_swapix2 : [1024] -> [5] -> [32]
+rw_Main_swapix2 x0 x1 = if s11 == 0b0 then (if s12 == 0b0 then (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x1)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) else (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b1 # (s4 # (s6 # (0b0 # s10)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))) else (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b1 # (s4 # (s6 # (0b1 # s10)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))
+  where
+    s0 : [5]
+    s0 = rw_Main_explode5 x1
+    s1 : [1]
+    s1 = take`{1} s0
+    s2 : [1]
+    s2 = s1
+    s3 : [1]
+    s3 = take`{1} (drop`{1} s0)
+    s4 : [1]
+    s4 = s3
+    s5 : [1]
+    s5 = take`{1} (drop`{2} s0)
+    s6 : [1]
+    s6 = s5
+    s7 : [1]
+    s7 = take`{1} (drop`{3} s0)
+    s8 : [1]
+    s8 = s7
+    s9 : [1]
+    s9 = drop`{4} s0
+    s10 : [1]
+    s10 = s9
+    s11 : [1]
+    s11 = if s2 == 0b1 then (if s8 == 0b1 then 0b0 else 0b1) else 0b0
+    s12 : [1]
+    s12 = if s2 == 0b1 then s8 else 0b0
+
+// Main.swap2
+rw_Main_swap2 : [1024] -> [1024]
+rw_Main_swap2 x0 = (rw_Main_swapix2 x0 0b00000) # ((rw_Main_swapix2 x0 0b00001) # ((rw_Main_swapix2 x0 0b00010) # ((rw_Main_swapix2 x0 0b00011) # ((rw_Main_swapix2 x0 0b00100) # ((rw_Main_swapix2 x0 0b00101) # ((rw_Main_swapix2 x0 0b00110) # ((rw_Main_swapix2 x0 0b00111) # ((rw_Main_swapix2 x0 0b01000) # ((rw_Main_swapix2 x0 0b01001) # ((rw_Main_swapix2 x0 0b01010) # ((rw_Main_swapix2 x0 0b01011) # ((rw_Main_swapix2 x0 0b01100) # ((rw_Main_swapix2 x0 0b01101) # ((rw_Main_swapix2 x0 0b01110) # ((rw_Main_swapix2 x0 0b01111) # ((rw_Main_swapix2 x0 0b10000) # ((rw_Main_swapix2 x0 0b10001) # ((rw_Main_swapix2 x0 0b10010) # ((rw_Main_swapix2 x0 0b10011) # ((rw_Main_swapix2 x0 0b10100) # ((rw_Main_swapix2 x0 0b10101) # ((rw_Main_swapix2 x0 0b10110) # ((rw_Main_swapix2 x0 0b10111) # ((rw_Main_swapix2 x0 0b11000) # ((rw_Main_swapix2 x0 0b11001) # ((rw_Main_swapix2 x0 0b11010) # ((rw_Main_swapix2 x0 0b11011) # ((rw_Main_swapix2 x0 0b11100) # ((rw_Main_swapix2 x0 0b11101) # ((rw_Main_swapix2 x0 0b11110) # (rw_Main_swapix2 x0 0b11111)))))))))))))))))))))))))))))))
+
+// Main.swapix3
+rw_Main_swapix3 : [1024] -> [5] -> [32]
+rw_Main_swapix3 x0 x1 = if s12 == 0b0 then (if s14 == 0b0 then (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x1)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) else (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b0 # (s4 # (0b0 # (s8 # s10)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))) else (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b0 # (s4 # (0b1 # (s8 # s10)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))
+  where
+    s0 : [5]
+    s0 = rw_Main_explode5 x1
+    s1 : [1]
+    s1 = take`{1} s0
+    s2 : [1]
+    s2 = s1
+    s3 : [1]
+    s3 = take`{1} (drop`{1} s0)
+    s4 : [1]
+    s4 = s3
+    s5 : [1]
+    s5 = take`{1} (drop`{2} s0)
+    s6 : [1]
+    s6 = s5
+    s7 : [1]
+    s7 = take`{1} (drop`{3} s0)
+    s8 : [1]
+    s8 = s7
+    s9 : [1]
+    s9 = drop`{4} s0
+    s10 : [1]
+    s10 = s9
+    s11 : [1]
+    s11 = if s2 == 0b1 then 0b0 else 0b1
+    s12 : [1]
+    s12 = if s11 == 0b1 then (if s6 == 0b1 then 0b0 else 0b1) else 0b0
+    s13 : [1]
+    s13 = if s2 == 0b1 then 0b0 else 0b1
+    s14 : [1]
+    s14 = if s13 == 0b1 then s6 else 0b0
 
 // Main.swap3
 rw_Main_swap3 : [1024] -> [1024]
@@ -194,253 +236,85 @@ rw_Main_swap3 x0 = (rw_Main_swapix3 x0 0b00000) # ((rw_Main_swapix3 x0 0b00001) 
 
 // Main.swapix4
 rw_Main_swapix4 : [1024] -> [5] -> [32]
-rw_Main_swapix4 x0 x1 = rw__LL_Main_swapix42 x1 x0 (rw_Main_explode5 x1)
-
-// $LL.Main.swapix14
-rw__LL_Main_swapix14 : [1] -> [5] -> [1024] -> [5] -> [1] -> [32]
-rw__LL_Main_swapix14 x0 x1 x2 x3 x4 = rw__LL_Main_swapix1 x0 x4 x1 x2 x3 s0
+rw_Main_swapix4 x0 x1 = if s11 == 0b0 then (if s12 == 0b0 then (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x1)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) else (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b1 # (s4 # (s6 # (s8 # 0b0)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))) else (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b1 # (s4 # (s6 # (s8 # 0b1)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))
   where
-    s0 : [1]
-    s0 = take`{1} (drop`{2} x1)
-
-// $LL.Main.swapix310
-rw__LL_Main_swapix310 : [5] -> [1024] -> [5] -> [32]
-rw__LL_Main_swapix310 x0 x1 x2 = rw__LL_Main_swapix32 x0 x1 x2 s0
-  where
-    s0 : [1]
-    s0 = drop`{4} x2
-
-// $LL.Main.swapix23
-rw__LL_Main_swapix23 : [1024] -> [5] -> [5] -> [1] -> [1] -> [1] -> [32]
-rw__LL_Main_swapix23 x0 x1 x2 x3 x4 x5 = rw__LL_Main_swapix29 x5 x0 x1 x2 x3 x4 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{1} x1)
-
-// $LL.Main.swapix45
-rw__LL_Main_swapix45 : [5] -> [5] -> [1024] -> [1] -> [32]
-rw__LL_Main_swapix45 x0 x1 x2 x3 = rw__LL_Main_swapix410 x0 x3 x1 x2 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{3} x1)
-
-// $LL.Main.swapix44
-rw__LL_Main_swapix44 : [5] -> [1] -> [1] -> [1] -> [5] -> [1024] -> [1] -> [32]
-rw__LL_Main_swapix44 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_swapix49 x0 x1 x2 x3 x5 x6 s0
-  where
-    s0 : [1]
-    s0 = take`{1} x4
-
-// $LL.Main.swapix43
-rw__LL_Main_swapix43 : [5] -> [1] -> [1] -> [5] -> [1024] -> [1] -> [32]
-rw__LL_Main_swapix43 x0 x1 x2 x3 x4 x5 = rw__LL_Main_swapix44 x0 x1 x2 x5 x3 x4 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{1} x3)
-
-// $LL.Main.xorix3
-rw__LL_Main_xorix3 : [1024] -> [5] -> [1] -> [32]
-rw__LL_Main_xorix3 x0 x1 x2 = rw__LL_Main_xorix6 x2 x0 x1 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{3} x1)
-
-// $LL.Main.swapix13
-rw__LL_Main_swapix13 : [1] -> [1] -> [1] -> [5] -> [1024] -> [5] -> [1] -> [32]
-rw__LL_Main_swapix13 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_swapix15 x0 x6 x1 x2 x4 x5 s0
-  where
-    s0 : [1]
-    s0 = take`{1} x3
-
-// $LL.Main.xorix2
-rw__LL_Main_xorix2 : [1024] -> [5] -> [32]
-rw__LL_Main_xorix2 x0 x1 = rw__LL_Main_xorix3 x0 x1 s0
-  where
-    s0 : [1]
-    s0 = drop`{4} x1
-
-// Main.swapix2
-rw_Main_swapix2 : [1024] -> [5] -> [32]
-rw_Main_swapix2 x0 x1 = rw__LL_Main_swapix27 x0 x1 (rw_Main_explode5 x1)
-
-// $LL.Main.swapix22
-rw__LL_Main_swapix22 : [1] -> [1024] -> [5] -> [1] -> [1] -> [1] -> [1] -> [32]
-rw__LL_Main_swapix22 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_swapix2 x0 x1 x2 x3 x4 x5 x6 (rw__LL_Main_swapix210 x3 x6)
-
-// $LL.Main.swapix21
-rw__LL_Main_swapix21 : [1024] -> [5] -> [5] -> [1] -> [32]
-rw__LL_Main_swapix21 x0 x1 x2 x3 = rw__LL_Main_swapix28 x0 x1 x2 x3 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{3} x1)
-
-// Main.xor
-rw_Main_xor : [1024] -> [1024]
-rw_Main_xor x0 = (rw_Main_xorix x0 0b00000) # ((rw_Main_xorix x0 0b00001) # ((rw_Main_xorix x0 0b00010) # ((rw_Main_xorix x0 0b00011) # ((rw_Main_xorix x0 0b00100) # ((rw_Main_xorix x0 0b00101) # ((rw_Main_xorix x0 0b00110) # ((rw_Main_xorix x0 0b00111) # ((rw_Main_xorix x0 0b01000) # ((rw_Main_xorix x0 0b01001) # ((rw_Main_xorix x0 0b01010) # ((rw_Main_xorix x0 0b01011) # ((rw_Main_xorix x0 0b01100) # ((rw_Main_xorix x0 0b01101) # ((rw_Main_xorix x0 0b01110) # ((rw_Main_xorix x0 0b01111) # ((rw_Main_xorix x0 0b10000) # ((rw_Main_xorix x0 0b10001) # ((rw_Main_xorix x0 0b10010) # ((rw_Main_xorix x0 0b10011) # ((rw_Main_xorix x0 0b10100) # ((rw_Main_xorix x0 0b10101) # ((rw_Main_xorix x0 0b10110) # ((rw_Main_xorix x0 0b10111) # ((rw_Main_xorix x0 0b11000) # ((rw_Main_xorix x0 0b11001) # ((rw_Main_xorix x0 0b11010) # ((rw_Main_xorix x0 0b11011) # ((rw_Main_xorix x0 0b11100) # ((rw_Main_xorix x0 0b11101) # ((rw_Main_xorix x0 0b11110) # (rw_Main_xorix x0 0b11111)))))))))))))))))))))))))))))))
-
-// $LL.Main.swapix37
-rw__LL_Main_swapix37 : [5] -> [1] -> [1] -> [1] -> [1024] -> [1] -> [1] -> [32]
-rw__LL_Main_swapix37 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_swapix31 x0 x1 x6 x2 x3 x4 x5 (rw__LL_Main_swapix210 x5 (rw__LL_Main_swapix19 x6))
-
-// Main.xorix
-rw_Main_xorix : [1024] -> [5] -> [32]
-rw_Main_xorix x0 x1 = rw__LL_Main_xorix2 x0 (rw_Main_explode5 x1)
-
-// $LL.Main.swapix12
-rw__LL_Main_swapix12 : [1] -> [1] -> [1] -> [1024] -> [5] -> [1] -> [32]
-rw__LL_Main_swapix12 x0 x1 x2 x3 x4 x5 = if x5 == 0b0 then (rw'resize`{32} (x3 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x4)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) else (rw'resize`{32} (x3 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b01 # (x2 # (x1 # x0))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))
-
-// $LL.Main.swapix36
-rw__LL_Main_swapix36 : [5] -> [1] -> [1] -> [1] -> [1024] -> [1] -> [32]
-rw__LL_Main_swapix36 x0 x1 x2 x3 x4 x5 = if x5 == 0b0 then (rw'resize`{32} (x4 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x0)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) else (rw'resize`{32} (x4 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b0 # (x1 # (0b0 # (x3 # x2)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))
-
-// $LL.Main.swapix42
-rw__LL_Main_swapix42 : [5] -> [1024] -> [5] -> [32]
-rw__LL_Main_swapix42 x0 x1 x2 = rw__LL_Main_swapix45 x0 x2 x1 s0
-  where
-    s0 : [1]
-    s0 = drop`{4} x2
-
-// Main.swapix3
-rw_Main_swapix3 : [1024] -> [5] -> [32]
-rw_Main_swapix3 x0 x1 = rw__LL_Main_swapix310 x1 x0 (rw_Main_explode5 x1)
-
-// $LL.Main.swapix2
-rw__LL_Main_swapix2 : [1] -> [1024] -> [5] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
-rw__LL_Main_swapix2 x0 x1 x2 x3 x4 x5 x6 x7 = if x7 == 0b0 then (rw__LL_Main_swapix26 x0 x1 x2 x4 x5 (rw__LL_Main_swapix111 x3 x6)) else (rw'resize`{32} (x1 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b1 # (x5 # (x0 # (0b1 # x4)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))
+    s0 : [5]
+    s0 = rw_Main_explode5 x1
+    s1 : [1]
+    s1 = take`{1} s0
+    s2 : [1]
+    s2 = s1
+    s3 : [1]
+    s3 = take`{1} (drop`{1} s0)
+    s4 : [1]
+    s4 = s3
+    s5 : [1]
+    s5 = take`{1} (drop`{2} s0)
+    s6 : [1]
+    s6 = s5
+    s7 : [1]
+    s7 = take`{1} (drop`{3} s0)
+    s8 : [1]
+    s8 = s7
+    s9 : [1]
+    s9 = drop`{4} s0
+    s10 : [1]
+    s10 = s9
+    s11 : [1]
+    s11 = if s2 == 0b1 then (if s10 == 0b1 then 0b0 else 0b1) else 0b0
+    s12 : [1]
+    s12 = if s2 == 0b1 then s10 else 0b0
 
 // Main.swap4
 rw_Main_swap4 : [1024] -> [1024]
 rw_Main_swap4 x0 = (rw_Main_swapix4 x0 0b00000) # ((rw_Main_swapix4 x0 0b00001) # ((rw_Main_swapix4 x0 0b00010) # ((rw_Main_swapix4 x0 0b00011) # ((rw_Main_swapix4 x0 0b00100) # ((rw_Main_swapix4 x0 0b00101) # ((rw_Main_swapix4 x0 0b00110) # ((rw_Main_swapix4 x0 0b00111) # ((rw_Main_swapix4 x0 0b01000) # ((rw_Main_swapix4 x0 0b01001) # ((rw_Main_swapix4 x0 0b01010) # ((rw_Main_swapix4 x0 0b01011) # ((rw_Main_swapix4 x0 0b01100) # ((rw_Main_swapix4 x0 0b01101) # ((rw_Main_swapix4 x0 0b01110) # ((rw_Main_swapix4 x0 0b01111) # ((rw_Main_swapix4 x0 0b10000) # ((rw_Main_swapix4 x0 0b10001) # ((rw_Main_swapix4 x0 0b10010) # ((rw_Main_swapix4 x0 0b10011) # ((rw_Main_swapix4 x0 0b10100) # ((rw_Main_swapix4 x0 0b10101) # ((rw_Main_swapix4 x0 0b10110) # ((rw_Main_swapix4 x0 0b10111) # ((rw_Main_swapix4 x0 0b11000) # ((rw_Main_swapix4 x0 0b11001) # ((rw_Main_swapix4 x0 0b11010) # ((rw_Main_swapix4 x0 0b11011) # ((rw_Main_swapix4 x0 0b11100) # ((rw_Main_swapix4 x0 0b11101) # ((rw_Main_swapix4 x0 0b11110) # (rw_Main_swapix4 x0 0b11111)))))))))))))))))))))))))))))))
 
-// $LL.Main.accesses4
-rw__LL_Main_accesses4 : [1024] -> [5] -> [65]
-rw__LL_Main_accesses4 x0 x1 = rw__LL_Main_accesses1 x0 x1 s0
+// Main.xorix
+rw_Main_xorix : [1024] -> [5] -> [32]
+rw_Main_xorix x0 x1 = if s12 == 0b0 then (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} s9)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) else ((rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b0 # (s2 # (s4 # (s6 # s8)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) ^ (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} s9)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))))
   where
-    s0 : [1]
-    s0 = drop`{4} x1
+    s0 : [5]
+    s0 = rw_Main_explode5 x1
+    s1 : [1]
+    s1 = take`{1} (drop`{1} s0)
+    s2 : [1]
+    s2 = s1
+    s3 : [1]
+    s3 = take`{1} (drop`{2} s0)
+    s4 : [1]
+    s4 = s3
+    s5 : [1]
+    s5 = take`{1} (drop`{3} s0)
+    s6 : [1]
+    s6 = s5
+    s7 : [1]
+    s7 = drop`{4} s0
+    s8 : [1]
+    s8 = s7
+    s9 : [5]
+    s9 = 0b1 # (s2 # (s4 # (s6 # s8)))
+    s10 : [1]
+    s10 = take`{1} s0
+    s11 : [1]
+    s11 = s10
+    s12 : [1]
+    s12 = if s11 == 0b1 then 0b0 else 0b1
 
-// $LL.Main.swapix11
-rw__LL_Main_swapix11 : [1024] -> [5] -> [5] -> [32]
-rw__LL_Main_swapix11 x0 x1 x2 = rw__LL_Main_swapix112 x2 x0 x1 s0
-  where
-    s0 : [1]
-    s0 = drop`{4} x2
+// Main.xor
+rw_Main_xor : [1024] -> [1024]
+rw_Main_xor x0 = (rw_Main_xorix x0 0b00000) # ((rw_Main_xorix x0 0b00001) # ((rw_Main_xorix x0 0b00010) # ((rw_Main_xorix x0 0b00011) # ((rw_Main_xorix x0 0b00100) # ((rw_Main_xorix x0 0b00101) # ((rw_Main_xorix x0 0b00110) # ((rw_Main_xorix x0 0b00111) # ((rw_Main_xorix x0 0b01000) # ((rw_Main_xorix x0 0b01001) # ((rw_Main_xorix x0 0b01010) # ((rw_Main_xorix x0 0b01011) # ((rw_Main_xorix x0 0b01100) # ((rw_Main_xorix x0 0b01101) # ((rw_Main_xorix x0 0b01110) # ((rw_Main_xorix x0 0b01111) # ((rw_Main_xorix x0 0b10000) # ((rw_Main_xorix x0 0b10001) # ((rw_Main_xorix x0 0b10010) # ((rw_Main_xorix x0 0b10011) # ((rw_Main_xorix x0 0b10100) # ((rw_Main_xorix x0 0b10101) # ((rw_Main_xorix x0 0b10110) # ((rw_Main_xorix x0 0b10111) # ((rw_Main_xorix x0 0b11000) # ((rw_Main_xorix x0 0b11001) # ((rw_Main_xorix x0 0b11010) # ((rw_Main_xorix x0 0b11011) # ((rw_Main_xorix x0 0b11100) # ((rw_Main_xorix x0 0b11101) # ((rw_Main_xorix x0 0b11110) # (rw_Main_xorix x0 0b11111)))))))))))))))))))))))))))))))
+
+// Main.round
+rw_Main_round : [1024] -> [1024]
+rw_Main_round x0 = rw_Main_swap4 (rw_Main_xor (rw_Main_swap3 (rw_Main_rotate_s1 (rw_Main_add (rw_Main_swap2 (rw_Main_xor (rw_Main_swap1 (rw_Main_rotate_s2 (rw_Main_add x0)))))))))
+
+// Main.rotate$s1
+rw_Main_rotate_s1 : [1024] -> [1024]
+rw_Main_rotate_s1 x0 = (rw_Main_rot 0x0000000b x0 0b00000) # ((rw_Main_rot 0x0000000b x0 0b00001) # ((rw_Main_rot 0x0000000b x0 0b00010) # ((rw_Main_rot 0x0000000b x0 0b00011) # ((rw_Main_rot 0x0000000b x0 0b00100) # ((rw_Main_rot 0x0000000b x0 0b00101) # ((rw_Main_rot 0x0000000b x0 0b00110) # ((rw_Main_rot 0x0000000b x0 0b00111) # ((rw_Main_rot 0x0000000b x0 0b01000) # ((rw_Main_rot 0x0000000b x0 0b01001) # ((rw_Main_rot 0x0000000b x0 0b01010) # ((rw_Main_rot 0x0000000b x0 0b01011) # ((rw_Main_rot 0x0000000b x0 0b01100) # ((rw_Main_rot 0x0000000b x0 0b01101) # ((rw_Main_rot 0x0000000b x0 0b01110) # ((rw_Main_rot 0x0000000b x0 0b01111) # ((rw_Main_rot 0x0000000b x0 0b10000) # ((rw_Main_rot 0x0000000b x0 0b10001) # ((rw_Main_rot 0x0000000b x0 0b10010) # ((rw_Main_rot 0x0000000b x0 0b10011) # ((rw_Main_rot 0x0000000b x0 0b10100) # ((rw_Main_rot 0x0000000b x0 0b10101) # ((rw_Main_rot 0x0000000b x0 0b10110) # ((rw_Main_rot 0x0000000b x0 0b10111) # ((rw_Main_rot 0x0000000b x0 0b11000) # ((rw_Main_rot 0x0000000b x0 0b11001) # ((rw_Main_rot 0x0000000b x0 0b11010) # ((rw_Main_rot 0x0000000b x0 0b11011) # ((rw_Main_rot 0x0000000b x0 0b11100) # ((rw_Main_rot 0x0000000b x0 0b11101) # ((rw_Main_rot 0x0000000b x0 0b11110) # (rw_Main_rot 0x0000000b x0 0b11111)))))))))))))))))))))))))))))))
 
 // Main.rotate$s2
 rw_Main_rotate_s2 : [1024] -> [1024]
 rw_Main_rotate_s2 x0 = (rw_Main_rot 0x00000007 x0 0b00000) # ((rw_Main_rot 0x00000007 x0 0b00001) # ((rw_Main_rot 0x00000007 x0 0b00010) # ((rw_Main_rot 0x00000007 x0 0b00011) # ((rw_Main_rot 0x00000007 x0 0b00100) # ((rw_Main_rot 0x00000007 x0 0b00101) # ((rw_Main_rot 0x00000007 x0 0b00110) # ((rw_Main_rot 0x00000007 x0 0b00111) # ((rw_Main_rot 0x00000007 x0 0b01000) # ((rw_Main_rot 0x00000007 x0 0b01001) # ((rw_Main_rot 0x00000007 x0 0b01010) # ((rw_Main_rot 0x00000007 x0 0b01011) # ((rw_Main_rot 0x00000007 x0 0b01100) # ((rw_Main_rot 0x00000007 x0 0b01101) # ((rw_Main_rot 0x00000007 x0 0b01110) # ((rw_Main_rot 0x00000007 x0 0b01111) # ((rw_Main_rot 0x00000007 x0 0b10000) # ((rw_Main_rot 0x00000007 x0 0b10001) # ((rw_Main_rot 0x00000007 x0 0b10010) # ((rw_Main_rot 0x00000007 x0 0b10011) # ((rw_Main_rot 0x00000007 x0 0b10100) # ((rw_Main_rot 0x00000007 x0 0b10101) # ((rw_Main_rot 0x00000007 x0 0b10110) # ((rw_Main_rot 0x00000007 x0 0b10111) # ((rw_Main_rot 0x00000007 x0 0b11000) # ((rw_Main_rot 0x00000007 x0 0b11001) # ((rw_Main_rot 0x00000007 x0 0b11010) # ((rw_Main_rot 0x00000007 x0 0b11011) # ((rw_Main_rot 0x00000007 x0 0b11100) # ((rw_Main_rot 0x00000007 x0 0b11101) # ((rw_Main_rot 0x00000007 x0 0b11110) # (rw_Main_rot 0x00000007 x0 0b11111)))))))))))))))))))))))))))))))
-
-// $LL.Main.accesses3
-rw__LL_Main_accesses3 : [1024] -> [1] -> [1] -> [5] -> [1] -> [1] -> [65]
-rw__LL_Main_accesses3 x0 x1 x2 x3 x4 x5 = s0 # ((rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b0 # (x5 # (x2 # (x1 # x4)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) # (rw'resize`{32} (x0 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b1 # (x5 # (x2 # (x1 # x4)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))))
-  where
-    s0 : [1]
-    s0 = take`{1} x3
-
-// Main.swapix1
-rw_Main_swapix1 : [1024] -> [5] -> [32]
-rw_Main_swapix1 x0 x1 = rw__LL_Main_swapix11 x0 x1 (rw_Main_explode5 x1)
-
-// $LL.Main.swapix41
-rw__LL_Main_swapix41 : [5] -> [1] -> [1] -> [1] -> [1] -> [1024] -> [1] -> [1] -> [32]
-rw__LL_Main_swapix41 x0 x1 x2 x3 x4 x5 x6 x7 = if x7 == 0b0 then (rw__LL_Main_swapix4 x0 x2 x3 x5 x6 (rw__LL_Main_swapix111 x1 x4)) else (rw'resize`{32} (x5 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b1 # (x6 # (x3 # (x2 # 0b1)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))
-
-// $LL.Main.addix
-rw__LL_Main_addix : [65] -> [32]
-rw__LL_Main_addix x0 = rw__LL_Main_addix1 x0 s0
-  where
-    s0 : [32]
-    s0 = take`{32} (drop`{1} x0)
-
-// $LL.Main.swapix34
-rw__LL_Main_swapix34 : [5] -> [1] -> [1024] -> [5] -> [1] -> [32]
-rw__LL_Main_swapix34 x0 x1 x2 x3 x4 = rw__LL_Main_swapix312 x0 x1 x4 x2 x3 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{2} x3)
-
-// $L.x8
-rw__L_x8 : [1024] -> [1024] -> [2048]
-rw__L_x8 x0 x1 = rw__L__unused5 (rw_Main_round x0)
-
-// $LL.Main.accesses2
-rw__LL_Main_accesses2 : [1024] -> [1] -> [5] -> [1] -> [1] -> [65]
-rw__LL_Main_accesses2 x0 x1 x2 x3 x4 = rw__LL_Main_accesses3 x0 x1 x4 x2 x3 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{1} x2)
-
-// $LL.Main.swapix4
-rw__LL_Main_swapix4 : [5] -> [1] -> [1] -> [1024] -> [1] -> [1] -> [32]
-rw__LL_Main_swapix4 x0 x1 x2 x3 x4 x5 = if x5 == 0b0 then (rw'resize`{32} (x3 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x0)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) else (rw'resize`{32} (x3 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b1 # (x4 # (x2 # (x1 # 0b0)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))
-
-// Main.accesses
-rw_Main_accesses : [1024] -> [5] -> [65]
-rw_Main_accesses x0 x1 = rw__LL_Main_accesses4 x0 (rw_Main_explode5 x1)
-
-// $LL.Main.accesses1
-rw__LL_Main_accesses1 : [1024] -> [5] -> [1] -> [65]
-rw__LL_Main_accesses1 x0 x1 x2 = rw__LL_Main_accesses x0 x1 x2 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{3} x1)
-
-// $L.arm9
-rw__L_arm9 : [1024] -> [2048]
-rw__L_arm9 x0 = rw__L_x8 x0 x0
-
-// $LL.Main.rot
-rw__LL_Main_rot : [32] -> [32] -> [1] -> [32]
-rw__LL_Main_rot x0 x1 x2 = if x2 == 0b0 then ((x0 << x1) || (x0 >> (0x00000020 - x1))) else x0
-
-// $LL.Main.accesses
-rw__LL_Main_accesses : [1024] -> [5] -> [1] -> [1] -> [65]
-rw__LL_Main_accesses x0 x1 x2 x3 = rw__LL_Main_accesses2 x0 x3 x1 x2 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{2} x1)
-
-// $LL.Main.swapix33
-rw__LL_Main_swapix33 : [5] -> [1] -> [1] -> [1024] -> [1] -> [5] -> [1] -> [32]
-rw__LL_Main_swapix33 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_swapix37 x0 x6 x1 x2 x3 x4 s0
-  where
-    s0 : [1]
-    s0 = take`{1} x5
-
-// Main.explode5
-rw_Main_explode5 : [5] -> [5]
-rw_Main_explode5 x0 = (rw'resize`{1} (x0 >> 0x00000000000000000000000000000004)) # ((rw'resize`{1} (x0 >> 0x00000000000000000000000000000003)) # ((rw'resize`{1} (x0 >> 0x00000000000000000000000000000002)) # ((rw'resize`{1} (x0 >> 0x00000000000000000000000000000001)) # (rw'resize`{1} (x0 >> 0x00000000000000000000000000000000)))))
-
-// $LL.Main.swapix32
-rw__LL_Main_swapix32 : [5] -> [1024] -> [5] -> [1] -> [32]
-rw__LL_Main_swapix32 x0 x1 x2 x3 = rw__LL_Main_swapix34 x0 x3 x1 x2 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{3} x2)
-
-// $LL.Main.xorix
-rw__LL_Main_xorix : [1] -> [1] -> [1024] -> [5] -> [1] -> [1] -> [1] -> [32]
-rw__LL_Main_xorix x0 x1 x2 x3 x4 x5 x6 = if x6 == 0b0 then (rw'resize`{32} (x2 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x3)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) else ((rw'resize`{32} (x2 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b0 # (x4 # (x0 # (x5 # x1)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) ^ (rw'resize`{32} (x2 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x3)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))))
-
-// Main.addix
-rw_Main_addix : [1024] -> [5] -> [32]
-rw_Main_addix x0 x1 = rw__LL_Main_addix (rw_Main_accesses x0 x1)
-
-// $L.x6
-rw__L_x6 : [1024] -> [1024] -> [2048]
-rw__L_x6 x0 x1 = x0 # x1
-
-// $LL.Main.swapix31
-rw__LL_Main_swapix31 : [5] -> [1] -> [1] -> [1] -> [1] -> [1024] -> [1] -> [1] -> [32]
-rw__LL_Main_swapix31 x0 x1 x2 x3 x4 x5 x6 x7 = if x7 == 0b0 then (rw__LL_Main_swapix36 x0 x1 x3 x4 x5 (rw__LL_Main_swapix111 x6 (rw__LL_Main_swapix19 x2))) else (rw'resize`{32} (x5 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} (0b0 # (x1 # (0b1 # (x4 # x3)))))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))
-
-// $LL.Main.swapix1
-rw__LL_Main_swapix1 : [1] -> [1] -> [5] -> [1024] -> [5] -> [1] -> [32]
-rw__LL_Main_swapix1 x0 x1 x2 x3 x4 x5 = rw__LL_Main_swapix13 x0 x1 x5 x2 x3 x4 s0
-  where
-    s0 : [1]
-    s0 = take`{1} (drop`{1} x2)
 
 // Per-cycle step: outputs # next register values.
 rw_step : [1024] -> [1] -> [2048]
@@ -451,7 +325,7 @@ rw_step st i = (take`{1024} s2) # (drop`{1024} s2)
     s1 : [1]
     s1 = i
     s2 : [2048]
-    s2 = rw__Pure_dispatch s0 s1
+    s2 = rw_main__dispatch s0 s1
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1]

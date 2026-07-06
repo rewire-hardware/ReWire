@@ -208,21 +208,21 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZL_arm8\ is
+component \main_$L_arm8$274\ is
       port (arg0 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (1 downto 0));
       end component;
       signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal zl_arm8_out : std_logic_vector (1 downto 0);
-      signal conn : std_logic_vector (0 downto 0);
-      signal \zl_arm8_outR1\ : std_logic_vector (1 downto 0);
+      signal \main_$l_arm8$274_out\ : std_logic_vector (1 downto 0);
+      signal zi0 : std_logic_vector (0 downto 0);
+      signal \main_$l_arm8$274_outR1\ : std_logic_vector (1 downto 0);
       signal zres : std_logic_vector (1 downto 0);
 begin
-inst : \ZL_arm8\ port map (\__st0\, zl_arm8_out);
-      conn <= rw_cond(rw_eq(\__st0\, std_logic_vector'(B"0")), std_logic_vector'(B"1"), std_logic_vector'(B"0"));
-      \instR1\ : \ZL_arm8\ port map (conn, \zl_arm8_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), zl_arm8_out, \zl_arm8_outR1\);
+inst : \main_$L_arm8$274\ port map (\__st0\, \main_$l_arm8$274_out\);
+      zi0 <= rw_cond(rw_eq(\__st0\, std_logic_vector'(B"0")), std_logic_vector'(B"1"), std_logic_vector'(B"0"));
+      \instR1\ : \main_$L_arm8$274\ port map (zi0, \main_$l_arm8$274_outR1\);
+      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), \main_$l_arm8$274_out\, \main_$l_arm8$274_outR1\);
       \__st0_next\ <= zres(0 downto 0);
       \__out0\ <= zres(1 downto 1);
       process (clk, rst)
@@ -239,12 +239,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZL_arm8\ is
+entity \main_$L_arm8$274\ is
 port (arg0 : in std_logic_vector (0 downto 0);
       res : out std_logic_vector (1 downto 0));
 end entity;
 
-architecture rtl of \ZL_arm8\ is
+architecture rtl of \main_$L_arm8$274\ is
 
 begin
 res <= (arg0 & arg0);

@@ -16,26 +16,21 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// $Pure.dispatch
-rw__Pure_dispatch : [16] -> [8] -> [24]
-rw__Pure_dispatch x0 x1 = rw__L_i4 s0 x1 s1
-  where
-    s0 : [8]
-    s0 = take`{8} x0
-    s1 : [8]
-    s1 = drop`{8} x0
+// main.$dispatch
+rw_main__dispatch : [16] -> [8] -> [24]
+rw_main__dispatch x0 x1 = rw_main__L_i4_260 (take`{8} x0) x1 (drop`{8} x0)
 
-// $L.i4
-rw__L_i4 : [8] -> [8] -> [8] -> [24]
-rw__L_i4 x0 x1 x2 = rw__L_Main_dev2 x0 x1
+// main.$L.i4$260
+rw_main__L_i4_260 : [8] -> [8] -> [8] -> [24]
+rw_main__L_i4_260 x0 x1 x2 = rw_main__L_Main_dev2_258 x0 x1
 
-// $L.Main.dev2
-rw__L_Main_dev2 : [8] -> [8] -> [24]
-rw__L_Main_dev2 x0 x1 = rw__L_s3 x0 x1 x1
+// main.$L.s3$259
+rw_main__L_s3_259 : [8] -> [8] -> [8] -> [24]
+rw_main__L_s3_259 x0 x1 x2 = (x1 + x0) # (x0 # x2)
 
-// $L.s3
-rw__L_s3 : [8] -> [8] -> [8] -> [24]
-rw__L_s3 x0 x1 x2 = (x1 + x0) # (x0 # x2)
+// main.$L.Main.dev2$258
+rw_main__L_Main_dev2_258 : [8] -> [8] -> [24]
+rw_main__L_Main_dev2_258 x0 x1 = rw_main__L_s3_259 x0 x1 x1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [16] -> [8] -> [24]
@@ -48,7 +43,7 @@ rw_step st i = (take`{8} s3) # ((take`{8} (drop`{8} s3)) # (drop`{16} s3))
     s2 : [8]
     s2 = i
     s3 : [24]
-    s3 = rw__Pure_dispatch (s0 # s1) s2
+    s3 = rw_main__dispatch (s0 # s1) s2
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [8]

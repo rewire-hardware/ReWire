@@ -33,7 +33,6 @@ library
       ReWire.Builtins
       ReWire.Crust.PrimBasis
       ReWire.Crust.Syntax
-      ReWire.Crust.ToHyle
       ReWire.Crust.Transform
       ReWire.Crust.TypeCheck
       ReWire.Crust.Types
@@ -52,8 +51,6 @@ library
       ReWire.Eidos.Spec
       ReWire.Eidos.Subst
       ReWire.Eidos.Syntax
-      ReWire.Eidos.ToCrust
-      ReWire.Eidos.ToCrustM
       ReWire.Eidos.ToHyle
       ReWire.Eidos.Types
       ReWire.FrontEnd

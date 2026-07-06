@@ -28,8 +28,8 @@ and static rules are in force:
 
   *Status:* the M level is normative for the `procify` pass and is the
   compiler's sole purification route (the predecessor's monad-transformer
-  elimination is deleted); the remaining migration stages replace the
-  retained Crust tail with a direct M → Hyle fold.
+  elimination is deleted); the translation to Hyle is a direct fold over
+  M (`ReWire.Eidos.ToHyle`).
 
 ## 1. Design goals
 
@@ -590,7 +590,7 @@ one removable lint rule instead of an axiom of the unifier.
 | extern neutering | `ReWire.Eidos.Externs` |
 | minted-name conventions | `ReWire.Eidos.Naming` |
 | the bridge (GHC Core → P) | `ReWire.GHC.ToEidos` |
-| the retained-tail lowering (P/M → Crust; dies with the T stages) | `ReWire.Eidos.ToCrust` (expressions/types), `ReWire.Eidos.ToCrustM` (the machine-step contract, §7.3) |
+| §7.3 (the machine fold, M → Hyle) | `ReWire.Eidos.ToHyle` |
 | §9 (`.eir`, both levels) | `ReWire.Eidos.Pretty`, `ReWire.Eidos.Parse` |
 | §7.1 (proc syntax) | `ReWire.Eidos.Syntax` |
 | §7.4 (machine rules, lint machine mode) | `ReWire.Eidos.Lint` |

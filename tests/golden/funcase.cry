@@ -16,29 +16,24 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// $Pure.dispatch
-rw__Pure_dispatch : [2] -> [1]
-rw__Pure_dispatch x0 = rw__L__x5 x0
+// main.$dispatch
+rw_main__dispatch : [2] -> [1]
+rw_main__dispatch x0 = rw_main__L__x5_234 x0
 
-// $LL.L.Main.startp$s12
-rw__LL_L_Main_startp_s12 : [1] -> [1]
-rw__LL_L_Main_startp_s12 x0 = x0
+// main.$L.$x5$234
+rw_main__L__x5_234 : [2] -> [1]
+rw_main__L__x5_234 x0 = rw_main__L_Main_startp4_232 x0
 
-// $LL.Main.proc
-rw__LL_Main_proc : [2] -> [1]
-rw__LL_Main_proc x0 = if x0 == 0b00 then 0b0 else (if x0 == 0b01 then 0b0 else (if x0 == 0b10 then 0b0 else 0b1))
-
-// $L.$x5
-rw__L__x5 : [2] -> [1]
-rw__L__x5 x0 = rw__L_Main_startp4 x0
-
-// $L.Main.startp4
-rw__L_Main_startp4 : [2] -> [1]
-rw__L_Main_startp4 x0 = rw__LL_L_Main_startp_s12 (rw_Main_proc x0)
+// main.$L.Main.startp4$232
+rw_main__L_Main_startp4_232 : [2] -> [1]
+rw_main__L_Main_startp4_232 x0 = s0
+  where
+    s0 : [1]
+    s0 = rw_Main_proc x0
 
 // Main.proc
 rw_Main_proc : [2] -> [1]
-rw_Main_proc x0 = rw__LL_Main_proc x0
+rw_Main_proc x0 = if x0 == 0b00 then 0b0 else (if x0 == 0b01 then 0b0 else (if x0 == 0b10 then 0b0 else 0b1))
 
 // Per-cycle step: outputs # next register values.
 rw_step : [2] -> [1]
@@ -47,7 +42,7 @@ rw_step i = s1
     s0 : [2]
     s0 = i
     s1 : [1]
-    s1 = rw__Pure_dispatch s0
+    s1 = rw_main__dispatch s0
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [2]

@@ -21,25 +21,25 @@ module top_level (input logic [31:0] __in0,
   assign __out0 = zres;
 endmodule
 
-module Main_xorModel (input logic [31:0] arg0,
-  input logic [31:0] arg1,
-  output logic [31:0] res);
-  assign res = arg0 ^ arg1;
-endmodule
-
-module Main_plusModel (input logic [31:0] arg0,
-  input logic [31:0] arg1,
-  output logic [31:0] res);
-  assign res = arg0 + arg1;
-endmodule
-
 module Main_andModel (input logic [31:0] arg0,
   input logic [31:0] arg1,
   output logic [31:0] res);
   assign res = arg0 & arg1;
 endmodule
 
+module Main_xorModel (input logic [31:0] arg0,
+  input logic [31:0] arg1,
+  output logic [31:0] res);
+  assign res = arg0 ^ arg1;
+endmodule
+
 module Main_notModel (input logic [31:0] arg0,
   output logic [31:0] res);
   assign res = ~arg0;
+endmodule
+
+module Main_plusModel (input logic [31:0] arg0,
+  input logic [31:0] arg1,
+  output logic [31:0] res);
+  assign res = arg0 + arg1;
 endmodule

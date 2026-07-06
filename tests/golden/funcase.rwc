@@ -1,30 +1,23 @@
-$Pure.dispatch : ([2]) -> [1]
-$Pure.dispatch i =
-      $L.$x5 i
+main.$dispatch : ([2]) -> [1]
+main.$dispatch i =
+      main.$L.$x5$234 i
 
-$LL.L.Main.startp$s12 : ([1]) -> [1]
-$LL.L.Main.startp$s12 $a =
+main.$L.$x5$234 : ([2]) -> [1]
+main.$L.$x5$234 $x =
+      main.$L.Main.startp4$232 $x
+
+main.$L.Main.startp4$232 : ([2]) -> [1]
+main.$L.Main.startp4$232 i =
+      let $a = Main.proc i in
       $a
 
-$LL.Main.proc : ([2]) -> [1]
-$LL.Main.proc wild =
-      if eq wild 2'h0 then 1'h0
-            else if eq wild 2'h1 then 1'h0 else if eq wild 2'h2 then 1'h0 else 1'h1
-
-$L.$x5 : ([2]) -> [1]
-$L.$x5 $x =
-      $L.Main.startp4 $x
-
-$L.Main.startp4 : ([2]) -> [1]
-$L.Main.startp4 i =
-      $LL.L.Main.startp$s12 (Main.proc i)
-
 Main.proc : ([2]) -> [1]
-Main.proc $x =
-      $LL.Main.proc $x
+Main.proc i =
+      if eq i 2'h0 then 1'h0
+            else if eq i 2'h1 then 1'h0 else if eq i 2'h2 then 1'h0 else 1'h1
 
 device top_level
       input __in0 : [2]
       output __out0 : [1]
-      let $res = $Pure.dispatch __in0
+      let $res = main.$dispatch __in0
       __out0 := $res

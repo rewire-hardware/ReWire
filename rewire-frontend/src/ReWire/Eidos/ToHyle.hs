@@ -28,7 +28,8 @@ import ReWire.Config (Config, inputSigs, outputSigs, stateSigs, top)
 import ReWire.Error (failAt, failAtWith, failInternal, warnAt, AstError, MonadError, Warning (..), relocatingTo)
 import ReWire.Eidos.Pretty ()
 import ReWire.Eidos.Syntax
-import ReWire.Eidos.ToCrust (liftJoins)
+import ReWire.Eidos.Naming (liftedJoinName)
+import ReWire.Eidos.Subst (nextUniq, freeUniqs, occIds)
 import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, flattenTyApp, evalNat, substTv, higherOrder, fundamental, reacOrStateT)
 import ReWire.Hyle.Interp (evalExp, IEnv (..))
 import ReWire.Hyle.Transform (hoistInstances)
@@ -38,18 +39,19 @@ import Control.Lens ((^.))
 import Control.Monad (unless, foldM)
 import Control.Monad.Except (catchError)
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.State.Strict (StateT (..), MonadState, gets, modify)
+import Control.Monad.State.Strict (StateT (..), MonadState, State, runState, get, put, gets, modify)
 import Data.Containers.ListUtils (nubOrd)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
 import Data.List (findIndex, genericLength, sortOn)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import Numeric.Natural (Natural)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
 import qualified Data.IntMap.Strict  as IM
+import qualified Data.IntSet         as IS
 import qualified Data.Text           as T
 import qualified ReWire.BitVector    as BV
 import qualified ReWire.Hyle.Syntax  as A
@@ -121,6 +123,103 @@ scopeName sc base = (sc { scUsed = Set.insert nm $ scUsed sc }, nm)
             pick used b i | cand `Set.member` used = pick used b (i + 1)
                           | otherwise              = cand
                   where cand = if i == 0 then b else b <> showt i
+
+---
+--- Lifting join points to occurrence-stably named definitions.
+---
+
+data LSt = LSt { lsSup :: !Uniq, lsOrd :: !Int, lsNew :: ![Defn] }
+
+liftJoins :: Program -> Program
+liftJoins p@(Program datas defns procs top) = Program datas defns' procs top
+      where tops :: IS.IntSet
+            tops = IS.fromList $ map (idUniq . defnId) defns
+
+            -- Uniques at or above the initial supply are lifted
+            -- definitions, not capturable locals.
+            sup0 :: Uniq
+            sup0 = nextUniq p
+
+            defns' :: [Defn]
+            defns' = fst $ foldl step ([], sup0) defns
+
+            step :: ([Defn], Uniq) -> Defn -> ([Defn], Uniq)
+            step (acc, sup) d =
+                  let (b', st) = runState (lj (idOcc $ defnId d) (defnBody d)) $ LSt sup 1 []
+                  in (acc <> (d { defnBody = b' } : reverse (lsNew st)), lsSup st)
+
+            lj :: Text -> Exp -> State LSt Exp
+            lj focc = go
+                  where go :: Exp -> State LSt Exp
+                        go e = case e of
+                              Let an (Join j ps b) body -> do
+                                    b' <- go b
+                                    let capUs = IS.filter (< sup0) (freeUniqs b' IS.\\ tops)
+                                                      IS.\\ IS.fromList (map idUniq ps)
+                                        caps  = mapMaybe (`IM.lookup` occIds b') $ IS.toList capUs
+                                        t     = foldr (Arrow an . sigTy . idSig) (typeOf b') $ caps <> ps
+                                    st <- get
+                                    let u  = lsSup st
+                                        i  = lsOrd st
+                                        x  = Id { idOcc  = liftedJoinName focc (idOcc $ jpId j) i
+                                                , idUniq = u
+                                                , idSig  = Sig [] t
+                                                }
+                                    put st { lsSup = u + 1, lsOrd = i + 1
+                                           , lsNew = Defn an x (caps <> ps) b' Nothing Nothing : lsNew st }
+                                    go $ rejump (idUniq $ jpId j) x caps body
+                              App an f a       -> App an <$> go f <*> goArg a
+                              Lam an x b       -> Lam an x <$> go b
+                              Let an b body    -> Let an <$> goBind b <*> go body
+                              Jump an j es     -> Jump an j <$> mapM go es
+                              Case an t s cb alts -> do
+                                    s'    <- go s
+                                    alts' <- mapM (\ (Alt aan c xs b) -> Alt aan c xs <$> go b) alts
+                                    pure $ Case an t s' cb alts'
+                              LitList an t es  -> LitList an t <$> mapM go es
+                              LitVec an t es   -> LitVec an t <$> mapM go es
+                              _                -> pure e
+
+                        goArg :: Arg -> State LSt Arg
+                        goArg = \ case
+                              EArg e -> EArg <$> go e
+                              t      -> pure t
+
+                        goBind :: Bind -> State LSt Bind
+                        goBind = \ case
+                              NonRec x rhs -> NonRec x <$> go rhs
+                              Rec bs       -> Rec <$> mapM (\ (x, rhs) -> (x, ) <$> go rhs) bs
+                              Join j ps b  -> Join j ps <$> go b
+
+            -- Rewrite every jump to the lifted join into a call, deeply
+            -- (jumps to an outer join from a transitively-tail position
+            -- sit inside nested join bindings' bodies too).
+            rejump :: Uniq -> Id -> [Id] -> Exp -> Exp
+            rejump ju x caps = go
+                  where go :: Exp -> Exp
+                        go e = case e of
+                              Jump an j es
+                                    | idUniq (jpId j) == ju ->
+                                          foldl (App an) (Var an x) $ map (EArg . Var an) caps <> map (EArg . go) es
+                                    | otherwise             -> Jump an j $ map go es
+                              App an f a       -> App an (go f) $ goArg a
+                              Lam an y b       -> Lam an y $ go b
+                              Let an b body    -> Let an (goBind b) $ go body
+                              Case an t s cb alts -> Case an t (go s) cb [ Alt aan c xs (go b) | Alt aan c xs b <- alts ]
+                              LitList an t es  -> LitList an t $ map go es
+                              LitVec an t es   -> LitVec an t $ map go es
+                              _                -> e
+
+                        goArg :: Arg -> Arg
+                        goArg = \ case
+                              EArg e -> EArg $ go e
+                              t      -> t
+
+                        goBind :: Bind -> Bind
+                        goBind = \ case
+                              NonRec y rhs -> NonRec y $ go rhs
+                              Rec bs       -> Rec [ (y, go rhs) | (y, rhs) <- bs ]
+                              Join j ps b  -> Join j ps $ go b
 
 ---
 --- Entry point.

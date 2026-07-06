@@ -21,60 +21,57 @@ extern xorW32
       output p2 : [32]
       model Main.xorModel
 
-$Pure.dispatch : ([32]) -> [32]
-$Pure.dispatch i =
-      $L.$x4 i
+main.$dispatch : ([32]) -> [32]
+main.$dispatch i =
+      main.$L.$x4$299 i
 
-$LL.L.ReWire.Monad.iter$1$s23 : ([32]) -> [32]
-$LL.L.ReWire.Monad.iter$1$s23 $a =
+main.$L.$x4$299 : ([32]) -> [32]
+main.$L.$x4$299 $x =
+      main.$L.ReWire.Monad.iter$1$s23$297 $x
+
+main.$L.ReWire.Monad.iter$1$s23$297 : ([32]) -> [32]
+main.$L.ReWire.Monad.iter$1$s23$297 i =
+      let $a = Main.f i in
       $a
 
-Main.xorModel : ([32], [32]) -> [32]
-Main.xorModel $x $x1 =
-      xor $x $x1
-
-Main.notW32 : ([32]) -> [32]
-Main.notW32 $x =
-      notW32 $x
-
-Main.plusW32 : ([32], [32]) -> [32]
-Main.plusW32 $x $x1 =
-      plusW32 $x $x1
-
-Main.plusModel : ([32], [32]) -> [32]
-Main.plusModel $x $x1 =
-      add $x $x1
-
-$L.ReWire.Monad.iter$1$s23 : ([32]) -> [32]
-$L.ReWire.Monad.iter$1$s23 i =
-      $LL.L.ReWire.Monad.iter$1$s23 (Main.f i)
-
 Main.andModel : ([32], [32]) -> [32]
-Main.andModel $x $x1 =
-      and $x $x1
+Main.andModel a b =
+      and a b
+
+Main.andW32 : ([32], [32]) -> [32]
+Main.andW32 $eta0 $eta1 =
+      andW32 $eta0 $eta1
+
+Main.xorModel : ([32], [32]) -> [32]
+Main.xorModel a b =
+      xor a b
 
 Main.xorW32 : ([32], [32]) -> [32]
-Main.xorW32 $x $x1 =
-      xorW32 $x $x1
+Main.xorW32 $eta0 $eta1 =
+      xorW32 $eta0 $eta1
+
+Main.notModel : ([32]) -> [32]
+Main.notModel $eta0 =
+      not $eta0
+
+Main.notW32 : ([32]) -> [32]
+Main.notW32 $eta0 =
+      notW32 $eta0
+
+Main.plusModel : ([32], [32]) -> [32]
+Main.plusModel a b =
+      add a b
+
+Main.plusW32 : ([32], [32]) -> [32]
+Main.plusW32 $eta0 $eta1 =
+      plusW32 $eta0 $eta1
 
 Main.f : ([32]) -> [32]
 Main.f x =
       Main.plusW32 (Main.andW32 x 32'hf0f0f0f0) (Main.xorW32 (Main.notW32 x) 32'h12345678)
 
-Main.andW32 : ([32], [32]) -> [32]
-Main.andW32 $x $x1 =
-      andW32 $x $x1
-
-Main.notModel : ([32]) -> [32]
-Main.notModel $x =
-      not $x
-
-$L.$x4 : ([32]) -> [32]
-$L.$x4 $x =
-      $L.ReWire.Monad.iter$1$s23 $x
-
 device top_level
       input __in0 : [32]
       output __out0 : [32]
-      let $res = $Pure.dispatch __in0
+      let $res = main.$dispatch __in0
       __out0 := $res

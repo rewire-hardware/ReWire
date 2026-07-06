@@ -4,12 +4,12 @@ module top_level (input logic [0:0] clk,
   output logic [0:0] __out0);
   logic [0:0] __st0;
   logic [0:0] __st0_next;
-  logic [1:0] zl__unused2_out;
-  logic [1:0] zl__unused2_outR1;
+  logic [1:0] main_$l__unused2$249_out;
+  logic [1:0] main_$l__unused2$249_outR1;
   logic [1:0] zres;
-  ZL___unused2  inst (__st0, zl__unused2_out);
-  ZL___unused2  instR1 (__st0, zl__unused2_outR1);
-  assign zres = (__st0 == 1'h0) ? zl__unused2_out : zl__unused2_outR1;
+  main_$L___unused2$249  inst (__st0, main_$l__unused2$249_out);
+  main_$L___unused2$249  instR1 (__st0, main_$l__unused2$249_outR1);
+  assign zres = (__st0 == 1'h0) ? main_$l__unused2$249_out : main_$l__unused2$249_outR1;
   assign __st0_next = zres[0];
   assign __out0 = zres[1];
   initial __st0 = 1'h1;
@@ -22,7 +22,7 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module ZL___unused2 (input logic [0:0] arg0,
+module main_$L___unused2$249 (input logic [0:0] arg0,
   output logic [1:0] res);
   assign res = {1'h0, arg0};
 endmodule

@@ -1,29 +1,26 @@
-$Pure.dispatch : ([3], [1]) -> [4]
-$Pure.dispatch disc i =
-      if eq disc[2 +: 1] 1'h0 then (let e = disc[1 +: 1] in
-            let s = disc[0 +: 1] in
-            $L._unused5 e i s)
-            else let s = disc[0 +: 1] in
-            $L._unused2 i s
+main.$dispatch : ([3], [1]) -> [4]
+main.$dispatch disc i =
+      if eq disc[2 +: 1] 1'h0 then main.$L._unused5$247 disc[1 +: 1] i disc[0 +: 1]
+            else main.$L._unused2$244 i disc[0 +: 1]
 
-$L._unused5 : ([1], [1], [1]) -> [4]
-$L._unused5 b _unused s0 =
-      $L.Main.convtest4 b b
+main.$L._unused5$247 : ([1], [1], [1]) -> [4]
+main.$L._unused5$247 b _unused s0 =
+      main.$L.Main.convtest4$246 b b
 
-$L._unused2 : ([1], [1]) -> [4]
-$L._unused2 _unused s0 =
-      4'h0
-
-$L.Main.convtest4 : ([1], [1]) -> [4]
-$L.Main.convtest4 b s0 =
+main.$L.Main.convtest4$246 : ([1], [1]) -> [4]
+main.$L.Main.convtest4$246 b s0 =
       b # 1'h0 # b # s0
+
+main.$L._unused2$244 : ([1], [1]) -> [4]
+main.$L._unused2$244 _unused s0 =
+      4'h0
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
       register __resumption_tag : [2] init 2'h2
       register __st0 : [1] init 1'h0
-      let $res = $Pure.dispatch (__resumption_tag # __st0) __in0
+      let $res = main.$dispatch (__resumption_tag # __st0) __in0
       __out0 := $res[3 +: 1]
       next __resumption_tag := $res[1 +: 2]
       next __st0 := $res[0 +: 1]

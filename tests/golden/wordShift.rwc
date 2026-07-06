@@ -1,41 +1,31 @@
-$Pure.dispatch : ([8]) -> [8]
-$Pure.dispatch i =
-      $L.$x4 i
+main.$dispatch : ([8]) -> [8]
+main.$dispatch i =
+      main.$L.$x4$282 i
 
-$LL.Main.myArithRotr$s1 : ([8], [8]) -> [8]
-$LL.Main.myArithRotr$s1 w n' =
-      or (shl w (sub 8'h8 n')) (ashr w n')
+main.$L.$x4$282 : ([8]) -> [8]
+main.$L.$x4$282 $x =
+      main.$L.Main.loop3$280 $x
 
-$L.Main.loop3 : ([8]) -> [8]
-$L.Main.loop3 i =
-      $LL.L.Main.loop3 (Main.myRotr$s1 i)
-
-$LL.Main.myRotr$s1 : ([8], [8]) -> [8]
-$LL.Main.myRotr$s1 w n' =
-      or (shl w (sub 8'h8 n')) (lshr w n')
-
-$L.$x5 : ([8]) -> [8]
-$L.$x5 $x =
+main.$L.$x5$284 : ([8]) -> [8]
+main.$L.$x5$284 $x =
       $x
 
-$LL.L.Main.loop3 : ([8]) -> [8]
-$LL.L.Main.loop3 $a =
-      $L.$x5 (Main.myArithRotr$s1 $a)
+main.$L.Main.loop3$280 : ([8]) -> [8]
+main.$L.Main.loop3$280 i =
+      let $a = Main.myRotr$s1 i in
+      let $a1 = Main.myArithRotr$s1 $a in
+      main.$L.$x5$284 $a1
 
 Main.myRotr$s1 : ([8]) -> [8]
 Main.myRotr$s1 w =
-      $LL.Main.myRotr$s1 w 8'h3
+      or (shl w 8'h5) (lshr w 8'h3)
 
 Main.myArithRotr$s1 : ([8]) -> [8]
 Main.myArithRotr$s1 w =
-      $LL.Main.myArithRotr$s1 w 8'h5
-
-$L.$x4 : ([8]) -> [8]
-$L.$x4 $x =
-      $L.Main.loop3 $x
+      or (shl w 8'h3) (ashr w 8'h5)
 
 device top_level
       input __in0 : [8]
       output __out0 : [8]
-      let $res = $Pure.dispatch __in0
+      let $res = main.$dispatch __in0
       __out0 := $res

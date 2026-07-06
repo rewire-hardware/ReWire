@@ -207,47 +207,10 @@ port (\__in0\ : in std_logic_vector (1023 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZLL_Main_compute\ is
-      port (arg0 : in std_logic_vector (31 downto 0);
-            arg1 : in std_logic_vector (63 downto 0);
-            res : out std_logic_vector (7 downto 0));
-      end component;
-      signal zll_main_compute_out : std_logic_vector (7 downto 0);
-      signal \zll_main_compute_outR1\ : std_logic_vector (7 downto 0);
-      signal \zll_main_compute_outR2\ : std_logic_vector (7 downto 0);
-      signal \zll_main_compute_outR3\ : std_logic_vector (7 downto 0);
-      signal \zll_main_compute_outR4\ : std_logic_vector (7 downto 0);
-      signal \zll_main_compute_outR5\ : std_logic_vector (7 downto 0);
-      signal \zll_main_compute_outR6\ : std_logic_vector (7 downto 0);
-      signal \zll_main_compute_outR7\ : std_logic_vector (7 downto 0);
-      signal zi2 : std_logic_vector (63 downto 0);
+signal zi2 : std_logic_vector (63 downto 0);
       signal zres : std_logic_vector (63 downto 0);
 begin
-inst : \ZLL_Main_compute\ port map (\__in1\, \__in0\(1023 downto 960), zll_main_compute_out);
-      \instR1\ : \ZLL_Main_compute\ port map (\__in1\, \__in0\(959 downto 896), \zll_main_compute_outR1\);
-      \instR2\ : \ZLL_Main_compute\ port map (\__in1\, \__in0\(895 downto 832), \zll_main_compute_outR2\);
-      \instR3\ : \ZLL_Main_compute\ port map (\__in1\, \__in0\(831 downto 768), \zll_main_compute_outR3\);
-      \instR4\ : \ZLL_Main_compute\ port map (\__in1\, \__in0\(767 downto 704), \zll_main_compute_outR4\);
-      \instR5\ : \ZLL_Main_compute\ port map (\__in1\, \__in0\(703 downto 640), \zll_main_compute_outR5\);
-      \instR6\ : \ZLL_Main_compute\ port map (\__in1\, \__in0\(639 downto 576), \zll_main_compute_outR6\);
-      \instR7\ : \ZLL_Main_compute\ port map (\__in1\, \__in0\(575 downto 512), \zll_main_compute_outR7\);
-      zi2 <= (zll_main_compute_out & \zll_main_compute_outR1\ & \zll_main_compute_outR2\ & \zll_main_compute_outR3\ & \zll_main_compute_outR4\ & \zll_main_compute_outR5\ & \zll_main_compute_outR6\ & \zll_main_compute_outR7\);
+zi2 <= (rw_add(\__in1\(7 downto 0), \__in0\(999 downto 992)) & rw_add(\__in1\(7 downto 0), \__in0\(935 downto 928)) & rw_add(\__in1\(7 downto 0), \__in0\(871 downto 864)) & rw_add(\__in1\(7 downto 0), \__in0\(807 downto 800)) & rw_add(\__in1\(7 downto 0), \__in0\(743 downto 736)) & rw_add(\__in1\(7 downto 0), \__in0\(679 downto 672)) & rw_add(\__in1\(7 downto 0), \__in0\(615 downto 608)) & rw_add(\__in1\(7 downto 0), \__in0\(551 downto 544)));
       zres <= zi2;
       \__out0\ <= zres;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_compute\ is
-port (arg0 : in std_logic_vector (31 downto 0);
-      arg1 : in std_logic_vector (63 downto 0);
-      res : out std_logic_vector (7 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_compute\ is
-
-begin
-res <= rw_add(arg0(7 downto 0), arg1(39 downto 32));
 end architecture;

@@ -1,25 +1,26 @@
-$Pure.dispatch : ([8]) -> [8]
-$Pure.dispatch i =
-      $L.$x4 i
+main.$dispatch : ([8]) -> [8]
+main.$dispatch i =
+      main.$L.$x4$259 i
+
+main.$L.$x4$259 : ([8]) -> [8]
+main.$L.$x4$259 $x =
+      main.$L.Main.loop3$257 $x
+
+main.$L.$x5$261 : ([8]) -> [8]
+main.$L.$x5$261 $x =
+      $x
+
+main.$L.Main.loop3$257 : ([8]) -> [8]
+main.$L.Main.loop3$257 i =
+      let $a = Main.compute i in
+      main.$L.$x5$261 $a
 
 Main.compute : ([8]) -> [8]
 Main.compute w =
       umod (udiv (mul (pow (add w 8'h1) 8'h2) (sub w 8'h2)) 8'h3) (add w 8'h1)
 
-$L.Main.loop3 : ([8]) -> [8]
-$L.Main.loop3 i =
-      $L.$x5 (Main.compute i)
-
-$L.$x5 : ([8]) -> [8]
-$L.$x5 $x =
-      $x
-
-$L.$x4 : ([8]) -> [8]
-$L.$x4 $x =
-      $L.Main.loop3 $x
-
 device top_level
       input __in0 : [8]
       output __out0 : [8]
-      let $res = $Pure.dispatch __in0
+      let $res = main.$dispatch __in0
       __out0 := $res

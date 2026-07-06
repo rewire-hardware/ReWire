@@ -16,46 +16,40 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// $Pure.dispatch
-rw__Pure_dispatch : [16] -> [1] -> [24]
-rw__Pure_dispatch x0 x1 = rw__L_i6 x1 s0 s1
+// main.$dispatch
+rw_main__dispatch : [16] -> [1] -> [24]
+rw_main__dispatch x0 x1 = rw_main__L_i6_261 x1 (take`{8} x0) (drop`{8} x0)
+
+// main.$L._unused10$265
+rw_main__L__unused10_265 : [8] -> [8] -> [8] -> [8] -> [24]
+rw_main__L__unused10_265 x0 x1 x2 x3 = rw_main__L_Main_sig4_259 x2 s0
   where
     s0 : [8]
-    s0 = take`{8} x0
-    s1 : [8]
-    s1 = drop`{8} x0
+    s0 = x0 + x1
 
-// $L.Main.sig4
-rw__L_Main_sig4 : [8] -> [8] -> [24]
-rw__L_Main_sig4 x0 x1 = rw__L_r05 x0 x0 x1
+// main.$L.r19$264
+rw_main__L_r19_264 : [8] -> [8] -> [8] -> [8] -> [24]
+rw_main__L_r19_264 x0 x1 x2 x3 = rw_main__L__unused10_265 x0 x1 x1 x3
 
-// $LL.L.r19
-rw__LL_L_r19 : [8] -> [8] -> [8] -> [8] -> [24]
-rw__LL_L_r19 x0 x1 x2 x3 = rw__L__unused10 x1 x0 x3 x2
+// main.$L.r08$263
+rw_main__L_r08_263 : [8] -> [8] -> [8] -> [24]
+rw_main__L_r08_263 x0 x1 x2 = rw_main__L_r19_264 x0 x2 x1 x2
 
-// $L.r08
-rw__L_r08 : [8] -> [8] -> [8] -> [24]
-rw__L_r08 x0 x1 x2 = rw__L_r19 x0 x2 x1 x2
+// main.$L.Main.incr7$262
+rw_main__L_Main_incr7_262 : [8] -> [8] -> [24]
+rw_main__L_Main_incr7_262 x0 x1 = rw_main__L_r08_263 x0 x0 x1
 
-// $L.Main.incr7
-rw__L_Main_incr7 : [8] -> [8] -> [24]
-rw__L_Main_incr7 x0 x1 = rw__L_r08 x0 x0 x1
+// main.$L.i6$261
+rw_main__L_i6_261 : [1] -> [8] -> [8] -> [24]
+rw_main__L_i6_261 x0 x1 x2 = if x0 == 0b0 then (rw_main__L_Main_sig4_259 x1 x2) else (rw_main__L_Main_incr7_262 x1 x2)
 
-// $L._unused10
-rw__L__unused10 : [8] -> [8] -> [8] -> [8] -> [24]
-rw__L__unused10 x0 x1 x2 x3 = rw__L_Main_sig4 x2 (x0 + x1)
+// main.$L.r05$260
+rw_main__L_r05_260 : [8] -> [8] -> [8] -> [24]
+rw_main__L_r05_260 x0 x1 x2 = x0 # (x1 # x2)
 
-// $L.r05
-rw__L_r05 : [8] -> [8] -> [8] -> [24]
-rw__L_r05 x0 x1 x2 = x0 # (x1 # x2)
-
-// $L.i6
-rw__L_i6 : [1] -> [8] -> [8] -> [24]
-rw__L_i6 x0 x1 x2 = if x0 == 0b0 then (rw__L_Main_sig4 x1 x2) else (rw__L_Main_incr7 x1 x2)
-
-// $L.r19
-rw__L_r19 : [8] -> [8] -> [8] -> [8] -> [24]
-rw__L_r19 x0 x1 x2 x3 = rw__LL_L_r19 x1 x0 x3 x1
+// main.$L.Main.sig4$259
+rw_main__L_Main_sig4_259 : [8] -> [8] -> [24]
+rw_main__L_Main_sig4_259 x0 x1 = rw_main__L_r05_260 x0 x0 x1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [16] -> [1] -> [24]
@@ -68,7 +62,7 @@ rw_step st i = (take`{8} s3) # ((take`{8} (drop`{8} s3)) # (drop`{16} s3))
     s2 : [1]
     s2 = i
     s3 : [24]
-    s3 = rw__Pure_dispatch (s0 # s1) s2
+    s3 = rw_main__dispatch (s0 # s1) s2
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1]

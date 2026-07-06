@@ -1,29 +1,23 @@
-$Pure.dispatch : ([8]) -> [16]
-$Pure.dispatch i =
-      $L.$x4 i
+main.$dispatch : ([8]) -> [16]
+main.$dispatch i =
+      main.$L.$x4$272 i
 
-$LL.L.ReWire.Monad.iter$1$s23 : ([16]) -> [16]
-$LL.L.ReWire.Monad.iter$1$s23 $a =
+main.$L.$x4$272 : ([8]) -> [16]
+main.$L.$x4$272 $x =
+      main.$L.ReWire.Monad.iter$1$s23$270 $x
+
+main.$L.ReWire.Monad.iter$1$s23$270 : ([8]) -> [16]
+main.$L.ReWire.Monad.iter$1$s23$270 i =
+      let $a = Main.f i in
       $a
-
-$L.ReWire.Monad.iter$1$s23 : ([8]) -> [16]
-$L.ReWire.Monad.iter$1$s23 i =
-      $LL.L.ReWire.Monad.iter$1$s23 (Main.f i)
 
 Main.f : ([8]) -> [16]
 Main.f a =
-      $LL.Main.f a (and a 8'h3)
-
-$LL.Main.f : ([8], [8]) -> [16]
-$LL.Main.f a b =
+      let b = and a 8'h3 in
       udiv a b # xor (umod a b) 8'hff
-
-$L.$x4 : ([8]) -> [16]
-$L.$x4 $x =
-      $L.ReWire.Monad.iter$1$s23 $x
 
 device top_level
       input __in0 : [8]
       output __out0 : [16]
-      let $res = $Pure.dispatch __in0
+      let $res = main.$dispatch __in0
       __out0 := $res

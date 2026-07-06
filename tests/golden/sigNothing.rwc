@@ -1,13 +1,13 @@
-$Pure.dispatch : ([8], [8]) -> [17]
-$Pure.dispatch disc i =
-      $L.ds2 i disc
+main.$dispatch : ([8], [8]) -> [17]
+main.$dispatch disc i =
+      main.$L.ds2$228 i disc
 
-$L.ds2 : ([8], [8]) -> [17]
-$L.ds2 ds $x =
-      $L.Main.start'1 $x
+main.$L.ds2$228 : ([8], [8]) -> [17]
+main.$L.ds2$228 ds s0 =
+      main.$L.Main.start'1$227 s0
 
-$L.Main.start'1 : ([8]) -> [17]
-$L.Main.start'1 s0 =
+main.$L.Main.start'1$227 : ([8]) -> [17]
+main.$L.Main.start'1$227 s0 =
       9'h0 # s0
 
 device top_level
@@ -15,7 +15,7 @@ device top_level
       output __out0 : [1]
       output __out1 : [8]
       register __st0 : [8] init 8'h0
-      let $res = $Pure.dispatch __st0 __in0
+      let $res = main.$dispatch __st0 __in0
       __out0 := $res[16 +: 1]
       __out1 := $res[8 +: 8]
       next __st0 := $res[0 +: 8]

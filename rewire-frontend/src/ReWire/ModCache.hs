@@ -9,34 +9,25 @@ module ReWire.ModCache
       ) where
 
 import ReWire.Annotation (noAnn, unAnn)
-import ReWire.Config (Config, typecheck)
+import ReWire.Config (Config)
 import ReWire.Eidos.Pretty (prettyProgram)
-import ReWire.Eidos.ToCrustM (eidosToCrustM)
 import ReWire.Eidos.ToHyle (eidosToHyle)
 import ReWire.GHC.Session (loadCore)
 import ReWire.GHC.ToEidos (toEidos)
-import ReWire.Crust.Syntax (FreeProgram, Defn (..), Exp, Ty, Kind, DataConId, TyConId, Program (Program), prettyFP)
-import ReWire.Crust.ToHyle (toHyle)
-import ReWire.Crust.Transform (liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, purgeAll, reduce)
-import ReWire.Crust.TypeCheck (typeCheck, untype)
 import ReWire.Error (AstError, MonadError, Warning (..), failAt, warnAt)
-import ReWire.Pass (runPasses, printHeader, verb')
-import ReWire.Pretty (prettyPrint, prettyPrint', showt)
-import ReWire.Unbound (fv, trec, runFreshMT, FreshMT, Name, Fresh, s2n)
+import ReWire.Pass (printHeader, verb')
+import ReWire.Pretty (prettyPrint, showt)
+import ReWire.Unbound (runFreshMT, FreshMT)
 
-import Control.DeepSeq (deepseq)
 import Control.Lens ((^.))
-import Control.Monad ((>=>), when)
+import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State.Strict (MonadState)
-import Data.Containers.ListUtils (nubOrd)
-import Data.List (genericLength)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text, pack)
 import Numeric.Natural (Natural)
 import System.FilePath ((-<.>))
 
-import qualified Data.Text                    as T
 import qualified Data.Text.IO                 as T
 import qualified ReWire.Eidos.ANF             as Eidos
 import qualified ReWire.Eidos.Externs         as Eidos
@@ -56,11 +47,8 @@ runCache :: (MonadIO m, MonadError AstError m) => FreshMT m a -> m a
 runCache = runFreshMT
 
 -- Pass 1 is the front end: GHC (parse/typecheck/desugar over the whole
--- home module graph) followed by the Core-to-Crust bridge. Whole-program
--- passes are numbered from 2 (see getDevice; run rwc -v for the full
--- list).
-
--- Pre-hyle transformations.
+-- home module graph) followed by the Core-to-Eidos bridge; pass 2 is the
+-- Eidos-to-Hyle fold (-d 2 dumps the Hyle IR; --eidos dumps the Eidos IR).
 getDevice :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> FreshMT m Hyle.Program
 getDevice conf fp = do
       gutss          <- loadCore conf fp
@@ -69,10 +57,8 @@ getDevice conf fp = do
       -- inline INLINE-annotated definitions, lint again (mono mode),
       -- neuter externs (before the partial evaluator, always), partially
       -- evaluate to the synthable/dictionary-free fixpoint, lint once
-      -- more, dump the .eir beside the output under --eidos, and lower
-      -- onto the retained Crust pipeline through the shim
-      -- (ReWire.Eidos.ToCrust). --debug-lint adds a lint after the
-      -- remaining passes.
+      -- more, and dump the .eir beside the output under --eidos.
+      -- --debug-lint adds a lint after the remaining Eidos passes.
       eir <- toEidos conf gutss
       Eidos.lint Eidos.LintPoly eir
       eirSpec <- verb "Specializing polymorphic definitions (eidos)." eir
@@ -105,21 +91,10 @@ getDevice conf fp = do
       -- (the mono lint's device rule), hence a process.
       when (null $ Eidos.progProcs eirPE') $ failAt noAnn
             "no process was constructed for the device root (rwc bug)."
-      p <- if conf^.C.hyleM
-            then do
-                  verb "Translating Eidos directly to Hyle (--hyle-m)." ()
-                  eidosToHyle conf eirPE'
-            else do
-                  prog0 <- eidosToCrustM (conf^.C.start) eirPE'
-                  (ts, syns, ds) <- passCrust conf 1 "Translating GHC Core to Crust IR." prog0
-                  pure
-                   >=> runPasses pass forceProg            nFront frontPasses
-                   >=> runPasses pass (extraTC >=> forceProg) nMid   midPasses
-                   >=> runPasses pass forceProg            nBack  backPasses
-                   >=> pass nCore "Translating to hyle & HDL."
-                   >=> toHyle conf start
-                   >=> verb ("[" <> showt nFinal <> "] Hyle.")
-                   $ (ts, syns, ds)
+      -- The fold owns the lowering: Eidos straight to Hyle
+      -- (ReWire.Eidos.ToHyle).
+      p <- verb ("[" <> showt nFinal <> "] Translating to Hyle.") ()
+            >> eidosToHyle conf eirPE'
 
       when ((conf^.C.dump) nFinal) $ liftIO $ do
             printHeader $ "[" <> showt nFinal <> "] Hyle"
@@ -130,86 +105,14 @@ getDevice conf fp = do
 
       pure p
 
-      where -- The Eidos front half has replaced the retired Crust front
-            -- passes: prims come from the shim, Main.main never survives
-            -- the bridge's reachability pruning, INLINE inlining and
-            -- specialization (in place of typechecking) ran on Eidos,
-            -- synonyms were expanded by the bridge, and the shim's
-            -- annotations are all concrete. The Crust-side extern pass
-            -- remains: the shim reintroduces beta redexes around extern
-            -- applications (its let encoding), and this pass's targeted
-            -- reduction restores the extern spine shape the back end
-            -- expects (neutering itself already happened on Eidos, so it
-            -- warns nothing).
-            frontPasses =
-                  [ ("Extracting extern models; removing other Haskell definitions for externs.", neuterExterns')
-                  ]
-
-            -- Transformations on the retained Crust pipeline: each one is
-            -- followed by re-typechecking when --debug-typecheck is on.
-            -- The Eidos side has already purged, lambda-lifted (the
-            -- LiftNonRep policy inside its partial evaluator), and
-            -- partially evaluated to the synthable/dictionary-free
-            -- fixpoint. The one lift decodes the shim's beta-redex
-            -- let/case encoding the way the retained pipeline always has:
-            -- redex lambdas become $LL definitions, so sharing becomes a
-            -- call boundary — never substitution, whose duplication is
-            -- exponential in let nesting (reduce-as-decoder OOMs on
-            -- gfmult).
-            -- The machine adapter's output is post-purify-shaped: only
-            -- the shim-encoding decoder (the lift) and the purifier's
-            -- fused reduce remain before the back passes.
-            midPasses =
-                  [ ("Lifting lambdas.",                                 liftLambdas)
-                  , ("Reducing.",                                        reduce)
-                  ]
-
-            -- Final cleanup before translation to hyle: no --debug-typecheck
-            -- re-typechecking here (the IR is post-purify).
-            backPasses =
-                  [ ("Final lifting of lambdas.",                        liftLambdas)
-                  , ("Final shifting of lambdas.",                       shiftLambdas)
-                  , ("Final eta-abstraction of definitions.",            etaAbsDefs)
-                  , ("Final purging of unused definitions.",             purgeAll start)
-                  ]
-
-            nFront, nMid, nBack, nCore, nFinal :: Natural
-            nFront = 2 -- Pass 1 is the GHC front end + Core-to-Crust bridge.
-            nMid   = nFront + genericLength frontPasses
-            nBack  = nMid   + genericLength midPasses
-            nCore  = nBack  + genericLength backPasses
-            nFinal = nCore  + 1
-
-            start :: Name Exp
-            start = s2n $ conf^.C.start
-
-            -- Force the IR to normal form after each pass. The IR is threaded
-            -- lazily through the pipeline; without this, the lazy
-            -- unbound-generics bind/unbind thunks produced by each pass chain
-            -- through every later pass and are only forced (catastrophically,
-            -- to many GB on large programs) when something finally demands
-            -- them. Forcing here keeps the working set to one pass's output.
-            forceProg :: Monad m => FreeProgram -> m FreeProgram
-            forceProg p = p `deepseq` pure p
-
-            extraTC :: (Fresh m, MonadIO m, MonadError AstError m) => FreeProgram -> m FreeProgram
-            extraTC | conf^.typecheck = verb "Type-checking again (--debug-typecheck)." >=> typeCheck specDepth start
-                    | otherwise       = pure
+      where nFinal :: Natural
+            nFinal = 2 -- Pass 1 is the GHC front end + Core-to-Eidos bridge.
 
             -- The bound on the type-specialization fixpoint: at least the
             -- historical bound of 10; --depth raises it (e.g. for deep
             -- dictionary chains).
             specDepth :: Natural
             specDepth = max 10 $ conf^.C.depth
-
-            neuterExterns' :: (Fresh m, MonadIO m, MonadError AstError m) => FreeProgram -> m FreeProgram
-            neuterExterns' fp = do
-                  (fp', ws) <- neuterExterns fp
-                  mapM_ (\ (Warning a m') -> warnAt conf a m') ws
-                  pure fp'
-
-            pass :: MonadIO m => Natural -> Text -> FreeProgram -> m FreeProgram
-            pass = passCrust conf
 
             -- The standing lints (post-bridge, post-inline, post-PE) run
             -- always; --debug-lint re-lints after the remaining Eidos
@@ -220,44 +123,3 @@ getDevice conf fp = do
 
             verb :: MonadIO m => Text -> a -> m a
             verb = verb' conf
-
-passCrust :: MonadIO m => Config -> Natural -> Text -> FreeProgram -> m FreeProgram
-passCrust conf n m = verb' conf msg
-            >=> if (conf^.C.dump) n then printInfo conf msg else pure
-      where msg = "[" <> showt n <> "] " <> m
-
-printInfo :: MonadIO m => Config -> Text -> FreeProgram -> m FreeProgram
-printInfo conf hd fp = do
-      let p = Program $ trec fp
-      printHeader hd
-      when verbose $ liftIO $ T.putStrLn "-- ## Free kind vars:\n"
-      when verbose $ liftIO $ T.putStrLn $ T.concat $ map comVar (nubOrd $ map prettyPrint (fv p :: [Name Kind]))
-      when verbose $ liftIO $ T.putStrLn "-- ## Free type vars:\n"
-      when verbose $ liftIO $ T.putStrLn $ T.concat $ map comVar (nubOrd $ map prettyPrint (fv p :: [Name Ty]))
-      when verbose $ liftIO $ T.putStrLn "-- ## Free tycon vars:\n"
-      when verbose $ liftIO $ T.putStrLn $ T.concat $ map comVar (nubOrd $ map prettyPrint (fv p :: [Name TyConId]))
-      liftIO $ T.putStrLn "-- ## Free con vars:\n"
-      liftIO $ T.putStrLn $ T.concat $ map comVar (nubOrd $ map prettyPrint (fv p :: [Name DataConId]))
-      liftIO $ T.putStrLn "-- ## Free exp vars:\n"
-      liftIO $ T.putStrLn $ T.concat $ map comVar (nubOrd $ map prettyPrint (fv p :: [Name Exp]))
-      liftIO $ T.putStrLn "-- ## Program:\n"
-      fp' <- purgeAll start fp
-      liftIO . T.putStrLn $ prettyPrint' $ prettyFP $ if verbose then fp' else untype' fp'
-      when verbose $ liftIO $ T.putStrLn "\n-- ## Program (show):\n"
-      when verbose $ liftIO $ T.putStrLn $ showt $ unAnn fp
-      pure fp
-
-      where untype' :: FreeProgram -> FreeProgram
-            untype' (ts, syns, vs) = (ts, syns, map untype'' vs)
-
-            untype'' :: Defn -> Defn
-            untype'' d = d { defnBody = untype $ defnBody d }
-
-            comVar :: Text -> Text
-            comVar = (<> "\n") . ("-- " <>)
-
-            verbose :: Bool
-            verbose = conf^.C.verbose
-
-            start :: Name Exp
-            start = s2n $ conf^.C.start

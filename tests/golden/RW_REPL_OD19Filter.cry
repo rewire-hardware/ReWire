@@ -22,165 +22,177 @@ parameter
   ext_test3 : [32] -> [32] -> [1]
   ext_test4 : [32] -> [32] -> [1]
 
-// $Pure.dispatch
-rw__Pure_dispatch : [39] -> [33] -> [41]
-rw__Pure_dispatch x0 x1 = rw__L__x6 x1 x0
+// main.$dispatch
+rw_main__dispatch : [39] -> [33] -> [41]
+rw_main__dispatch x0 x1 = rw_main__L__x6_356 x1 x0
 
-// $LL.OD19.ProgramCounter.incPC
-rw__LL_OD19_ProgramCounter_incPC : [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC x0 = if x0 == 0b0000000 then 0b0000001 else (if x0 == 0b0000001 then 0b0000010 else (if x0 == 0b0000010 then 0b0000011 else (if x0 == 0b0000011 then 0b0000100 else (if x0 == 0b0000100 then 0b0000101 else (if x0 == 0b0000101 then 0b0000110 else (if x0 == 0b0000110 then 0b0000111 else (if x0 == 0b0000111 then 0b0001000 else (if x0 == 0b0001000 then 0b0001001 else (if x0 == 0b0001001 then 0b0001010 else (if x0 == 0b0001010 then 0b0001011 else (if x0 == 0b0001011 then 0b0001100 else (if x0 == 0b0001100 then 0b0001101 else (if x0 == 0b0001101 then 0b0001110 else (if x0 == 0b0001110 then 0b0001111 else (if x0 == 0b0001111 then 0b0010000 else (if x0 == 0b0010000 then 0b0010001 else (if x0 == 0b0010001 then 0b0010010 else (if x0 == 0b0010010 then 0b0010011 else (if x0 == 0b0010011 then 0b0010100 else (if x0 == 0b0010100 then 0b0010101 else (if x0 == 0b0010101 then 0b0010110 else (if x0 == 0b0010110 then 0b0010111 else (if x0 == 0b0010111 then 0b0011000 else (if x0 == 0b0011000 then 0b0011001 else (if x0 == 0b0011001 then 0b0011010 else (if x0 == 0b0011010 then 0b0011011 else (if x0 == 0b0011011 then 0b0011100 else (if x0 == 0b0011100 then 0b0011101 else (if x0 == 0b0011101 then 0b0011110 else (if x0 == 0b0011110 then 0b0011111 else (if x0 == 0b0011111 then 0b0100000 else (if x0 == 0b0100000 then 0b0100001 else (if x0 == 0b0100001 then 0b0100010 else (if x0 == 0b0100010 then 0b0100011 else (if x0 == 0b0100011 then 0b0100100 else (if x0 == 0b0100100 then 0b0100101 else (if x0 == 0b0100101 then 0b0100110 else (if x0 == 0b0100110 then 0b0100111 else (if x0 == 0b0100111 then 0b0101000 else (if x0 == 0b0101000 then 0b0101001 else (if x0 == 0b0101001 then 0b0101010 else (if x0 == 0b0101010 then 0b0101011 else (if x0 == 0b0101011 then 0b0101100 else (if x0 == 0b0101100 then 0b0101101 else (if x0 == 0b0101101 then 0b0101110 else (if x0 == 0b0101110 then 0b0101111 else (if x0 == 0b0101111 then 0b0110000 else (if x0 == 0b0110000 then 0b0110001 else (if x0 == 0b0110001 then 0b0110010 else (if x0 == 0b0110010 then 0b0110011 else (if x0 == 0b0110011 then 0b0110100 else (if x0 == 0b0110100 then 0b0110101 else (if x0 == 0b0110101 then 0b0110110 else (if x0 == 0b0110110 then 0b0110111 else (if x0 == 0b0110111 then 0b0111000 else (if x0 == 0b0111000 then 0b0111001 else (if x0 == 0b0111001 then 0b0111010 else (if x0 == 0b0111010 then 0b0111011 else (if x0 == 0b0111011 then 0b0111100 else (if x0 == 0b0111100 then 0b0111101 else (if x0 == 0b0111101 then 0b0111110 else (if x0 == 0b0111110 then 0b0111111 else (if x0 == 0b0111111 then 0b1000000 else (if x0 == 0b1000000 then 0b1000001 else (if x0 == 0b1000001 then 0b1000010 else (if x0 == 0b1000010 then 0b1000011 else (if x0 == 0b1000011 then 0b1000100 else (if x0 == 0b1000100 then 0b1000101 else (if x0 == 0b1000101 then 0b1000110 else (if x0 == 0b1000110 then 0b1000111 else (if x0 == 0b1000111 then 0b1001000 else (if x0 == 0b1001000 then 0b1001001 else (if x0 == 0b1001001 then 0b1001010 else (if x0 == 0b1001010 then 0b1001011 else (if x0 == 0b1001011 then 0b1001100 else (if x0 == 0b1001100 then 0b1001101 else (if x0 == 0b1001101 then 0b1001110 else (if x0 == 0b1001110 then 0b1001111 else (if x0 == 0b1001111 then 0b1010000 else (if x0 == 0b1010000 then 0b1010001 else (if x0 == 0b1010001 then 0b1010010 else (if x0 == 0b1010010 then 0b1010011 else (if x0 == 0b1010011 then 0b1010100 else (if x0 == 0b1010100 then 0b1010101 else (if x0 == 0b1010101 then 0b1010110 else (if x0 == 0b1010110 then 0b1010111 else (if x0 == 0b1010111 then 0b1011000 else (if x0 == 0b1011000 then 0b1011001 else (if x0 == 0b1011001 then 0b1011010 else (if x0 == 0b1011010 then 0b1011011 else (if x0 == 0b1011011 then 0b1011100 else (if x0 == 0b1011100 then 0b1011101 else (if x0 == 0b1011101 then 0b1011110 else (if x0 == 0b1011110 then 0b1011111 else (if x0 == 0b1011111 then 0b1100000 else (if x0 == 0b1100000 then 0b1100001 else (if x0 == 0b1100001 then 0b1100010 else (if x0 == 0b1100010 then 0b1100011 else (if x0 == 0b1100011 then 0b1100100 else (if x0 == 0b1100100 then 0b1100101 else (if x0 == 0b1100101 then 0b1100110 else (if x0 == 0b1100110 then 0b1100111 else (if x0 == 0b1100111 then 0b1101000 else (if x0 == 0b1101000 then 0b1101001 else (if x0 == 0b1101001 then 0b1101010 else (if x0 == 0b1101010 then 0b1101011 else (if x0 == 0b1101011 then 0b1101100 else (if x0 == 0b1101100 then 0b1101101 else (if x0 == 0b1101101 then 0b1101110 else (if x0 == 0b1101110 then 0b1101111 else (if x0 == 0b1101111 then 0b1110000 else (if x0 == 0b1110000 then 0b1110001 else (if x0 == 0b1110001 then 0b1110010 else (if x0 == 0b1110010 then 0b1110011 else (if x0 == 0b1110011 then 0b1110100 else (if x0 == 0b1110100 then 0b1110101 else (if x0 == 0b1110101 then 0b1110110 else (if x0 == 0b1110110 then 0b1110111 else (if x0 == 0b1110111 then 0b1111000 else (if x0 == 0b1111000 then 0b1111001 else (if x0 == 0b1111001 then 0b1111010 else (if x0 == 0b1111010 then 0b1111011 else (if x0 == 0b1111011 then 0b1111100 else (if x0 == 0b1111100 then 0b1111101 else (if x0 == 0b1111101 then 0b1111110 else 0b0000000)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+// main.$L.$x6$356
+rw_main__L__x6_356 : [33] -> [39] -> [41]
+rw_main__L__x6_356 x0 x1 = rw_main__L_Main_repl4_353 x0 x1
 
-// $L.Main.repl4
-rw__L_Main_repl4 : [33] -> [39] -> [41]
-rw__L_Main_repl4 x0 x1 = if (take`{1} x0) == 0b0 then (rw__L_arm52 s0 x1) else (0b10 # x1)
-  where
-    s0 : [32]
-    s0 = drop`{1} x0
+// main.$L._unused8$358
+rw_main__L__unused8_358 : [39] -> [41]
+rw_main__L__unused8_358 x0 = 0b10 # x0
 
-// $L.r45
-rw__L_r45 : [32] -> [32] -> [39] -> [41]
-rw__L_r45 x0 x1 x2 = rw__LL_L_r45 x2 (rw_Main_test3 x0 x1)
-
-// $L.ds5
-rw__L_ds5 : [32] -> [39] -> [39] -> [41]
-rw__L_ds5 x0 x1 x2 = if s0 == 0b0000000 then (rw__L_Main_putReg19 x0 x2) else (if s0 == 0b0000001 then (rw__L_Main_getReg24 x0 x2) else (if s0 == 0b0000010 then (rw__L_Main_putReg19 x0 x2) else (if s0 == 0b0000011 then (rw__L_Main_getReg24 x0 x2) else (if s0 == 0b0000100 then (rw__L_Main_getReg42 x0 x2) else (if s0 == 0b0000101 then (rw__L_Main_getReg46 x0 x2) else (if s0 == 0b0000110 then (rw__L_Main_getReg50 x0 x2) else (rw__L_Main_nextPC9 x2)))))))
+// main.$L.arm11$361
+rw_main__L_arm11_361 : [32] -> [7] -> [39] -> [41]
+rw_main__L_arm11_361 x0 x1 x2 = rw_main__L__unused8_358 s1
   where
     s0 : [7]
-    s0 = drop`{32} x1
+    s0 = rw_OD19_ProgramCounter_incPC x1
+    s1 : [39]
+    s1 = x0 # s0
 
-// $L.r23
-rw__L_r23 : [32] -> [32] -> [39] -> [41]
-rw__L_r23 x0 x1 x2 = rw__LL_L_r45 x2 (rw_Main_test1 x0 x1)
-
-// OD19.ProgramCounter.incPC
-rw_OD19_ProgramCounter_incPC : [7] -> [7]
-rw_OD19_ProgramCounter_incPC x0 = rw__LL_OD19_ProgramCounter_incPC x0
-
-// $LL.L.r411
-rw__LL_L_r411 : [39] -> [2] -> [41]
-rw__LL_L_r411 x0 x1 = x1 # x0
-
-// Main.test2
-rw_Main_test2 : [32] -> [32] -> [1]
-rw_Main_test2 x0 x1 = ext_test2 x0 x1
-
-// Main.test1
-rw_Main_test1 : [32] -> [32] -> [1]
-rw_Main_test1 x0 x1 = ext_test1 x0 x1
-
-// $L.ds10
-rw__L_ds10 : [39] -> [39] -> [41]
-rw__L_ds10 x0 x1 = rw__L_arm11 s0 s1 x1
+// main.$L.ds10$360
+rw_main__L_ds10_360 : [39] -> [39] -> [41]
+rw_main__L_ds10_360 x0 x1 = rw_main__L_arm11_361 s0 s1 x1
   where
     s0 : [32]
     s0 = take`{32} x0
     s1 : [7]
     s1 = drop`{32} x0
 
-// $L.ds43
-rw__L_ds43 : [32] -> [39] -> [39] -> [41]
-rw__L_ds43 x0 x1 x2 = rw__L_r41 x0 s0 x2
+// main.$L.Main.nextPC9$359
+rw_main__L_Main_nextPC9_359 : [39] -> [41]
+rw_main__L_Main_nextPC9_359 x0 = rw_main__L_ds10_360 x0 x0
+
+// main.$L.arm21$374
+rw_main__L_arm21_374 : [32] -> [32] -> [7] -> [39] -> [41]
+rw_main__L_arm21_374 x0 x1 x2 x3 = rw_main__L_Main_nextPC9_359 s0
   where
-    s0 : [32]
-    s0 = take`{32} x1
+    s0 : [39]
+    s0 = x0 # x2
 
-// $L.Main.getReg50
-rw__L_Main_getReg50 : [32] -> [39] -> [41]
-rw__L_Main_getReg50 x0 x1 = rw__L_ds51 x0 x1 x1
-
-// $LL.L.arm11
-rw__LL_L_arm11 : [32] -> [7] -> [41]
-rw__LL_L_arm11 x0 x1 = rw__L_Main_repl_s12 (x0 # x1)
-
-// $LL.L.r45
-rw__LL_L_r45 : [39] -> [1] -> [41]
-rw__LL_L_r45 x0 x1 = rw__LL_L_r411 x0 (0b0 # x1)
-
-// $L.r41
-rw__L_r41 : [32] -> [32] -> [39] -> [41]
-rw__L_r41 x0 x1 x2 = rw__LL_L_r45 x2 (rw_Main_test2 x0 x1)
-
-// $L.ds47
-rw__L_ds47 : [32] -> [39] -> [39] -> [41]
-rw__L_ds47 x0 x1 x2 = rw__L_r45 x0 s0 x2
-  where
-    s0 : [32]
-    s0 = take`{32} x1
-
-// $L.arm52
-rw__L_arm52 : [32] -> [39] -> [41]
-rw__L_arm52 x0 x1 = rw__L_ds5 x0 x1 x1
-
-// $L.Main.repl$s12
-rw__L_Main_repl_s12 : [39] -> [41]
-rw__L_Main_repl_s12 x0 = 0b10 # x0
-
-// $L.arm21
-rw__L_arm21 : [32] -> [32] -> [7] -> [39] -> [41]
-rw__L_arm21 x0 x1 x2 x3 = rw__L_Main_nextPC9 (x0 # x2)
-
-// $L.Main.getReg24
-rw__L_Main_getReg24 : [32] -> [39] -> [41]
-rw__L_Main_getReg24 x0 x1 = rw__L_ds25 x0 x1 x1
-
-// $L.ds51
-rw__L_ds51 : [32] -> [39] -> [39] -> [41]
-rw__L_ds51 x0 x1 x2 = rw__L_r49 x0 s0 x2
-  where
-    s0 : [32]
-    s0 = take`{32} x1
-
-// $L.Main.putReg19
-rw__L_Main_putReg19 : [32] -> [39] -> [41]
-rw__L_Main_putReg19 x0 x1 = rw__L_ds20 x0 x1 x1
-
-// Main.test3
-rw_Main_test3 : [32] -> [32] -> [1]
-rw_Main_test3 x0 x1 = ext_test3 x0 x1
-
-// $L.Main.getReg46
-rw__L_Main_getReg46 : [32] -> [39] -> [41]
-rw__L_Main_getReg46 x0 x1 = rw__L_ds47 x0 x1 x1
-
-// $L.ds20
-rw__L_ds20 : [32] -> [39] -> [39] -> [41]
-rw__L_ds20 x0 x1 x2 = rw__L_arm21 x0 s0 s1 x2
+// main.$L.ds20$373
+rw_main__L_ds20_373 : [32] -> [39] -> [39] -> [41]
+rw_main__L_ds20_373 x0 x1 x2 = rw_main__L_arm21_374 x0 s0 s1 x2
   where
     s0 : [32]
     s0 = take`{32} x1
     s1 : [7]
     s1 = drop`{32} x1
 
-// $L.Main.getReg42
-rw__L_Main_getReg42 : [32] -> [39] -> [41]
-rw__L_Main_getReg42 x0 x1 = rw__L_ds43 x0 x1 x1
+// main.$L.Main.putReg19$372
+rw_main__L_Main_putReg19_372 : [32] -> [39] -> [41]
+rw_main__L_Main_putReg19_372 x0 x1 = rw_main__L_ds20_373 x0 x1 x1
 
-// $L.r49
-rw__L_r49 : [32] -> [32] -> [39] -> [41]
-rw__L_r49 x0 x1 x2 = rw__LL_L_r45 x2 (rw_Main_test4 x0 x1)
+// main.$L.r23$378
+rw_main__L_r23_378 : [32] -> [32] -> [39] -> [41]
+rw_main__L_r23_378 x0 x1 x2 = s1 # x2
+  where
+    s0 : [1]
+    s0 = rw_Main_test1 x0 x1
+    s1 : [2]
+    s1 = 0b0 # s0
+
+// main.$L.ds25$380
+rw_main__L_ds25_380 : [32] -> [39] -> [39] -> [41]
+rw_main__L_ds25_380 x0 x1 x2 = rw_main__L_r23_378 x0 s0 x2
+  where
+    s0 : [32]
+    s0 = take`{32} x1
+
+// main.$L.Main.getReg24$379
+rw_main__L_Main_getReg24_379 : [32] -> [39] -> [41]
+rw_main__L_Main_getReg24_379 x0 x1 = rw_main__L_ds25_380 x0 x1 x1
+
+// main.$L.r41$403
+rw_main__L_r41_403 : [32] -> [32] -> [39] -> [41]
+rw_main__L_r41_403 x0 x1 x2 = s1 # x2
+  where
+    s0 : [1]
+    s0 = rw_Main_test2 x0 x1
+    s1 : [2]
+    s1 = 0b0 # s0
+
+// main.$L.ds43$405
+rw_main__L_ds43_405 : [32] -> [39] -> [39] -> [41]
+rw_main__L_ds43_405 x0 x1 x2 = rw_main__L_r41_403 x0 s0 x2
+  where
+    s0 : [32]
+    s0 = take`{32} x1
+
+// main.$L.Main.getReg42$404
+rw_main__L_Main_getReg42_404 : [32] -> [39] -> [41]
+rw_main__L_Main_getReg42_404 x0 x1 = rw_main__L_ds43_405 x0 x1 x1
+
+// main.$L.r45$409
+rw_main__L_r45_409 : [32] -> [32] -> [39] -> [41]
+rw_main__L_r45_409 x0 x1 x2 = s1 # x2
+  where
+    s0 : [1]
+    s0 = rw_Main_test3 x0 x1
+    s1 : [2]
+    s1 = 0b0 # s0
+
+// main.$L.ds47$411
+rw_main__L_ds47_411 : [32] -> [39] -> [39] -> [41]
+rw_main__L_ds47_411 x0 x1 x2 = rw_main__L_r45_409 x0 s0 x2
+  where
+    s0 : [32]
+    s0 = take`{32} x1
+
+// main.$L.Main.getReg46$410
+rw_main__L_Main_getReg46_410 : [32] -> [39] -> [41]
+rw_main__L_Main_getReg46_410 x0 x1 = rw_main__L_ds47_411 x0 x1 x1
+
+// main.$L.r49$415
+rw_main__L_r49_415 : [32] -> [32] -> [39] -> [41]
+rw_main__L_r49_415 x0 x1 x2 = s1 # x2
+  where
+    s0 : [1]
+    s0 = rw_Main_test4 x0 x1
+    s1 : [2]
+    s1 = 0b0 # s0
+
+// main.$L.ds51$417
+rw_main__L_ds51_417 : [32] -> [39] -> [39] -> [41]
+rw_main__L_ds51_417 x0 x1 x2 = rw_main__L_r49_415 x0 s0 x2
+  where
+    s0 : [32]
+    s0 = take`{32} x1
+
+// main.$L.Main.getReg50$416
+rw_main__L_Main_getReg50_416 : [32] -> [39] -> [41]
+rw_main__L_Main_getReg50_416 x0 x1 = rw_main__L_ds51_417 x0 x1 x1
+
+// main.$L.ds5$354
+rw_main__L_ds5_354 : [32] -> [39] -> [39] -> [41]
+rw_main__L_ds5_354 x0 x1 x2 = if s0 == 0b0000000 then (rw_main__L_Main_putReg19_372 x0 x2) else (if s0 == 0b0000001 then (rw_main__L_Main_getReg24_379 x0 x2) else (if s0 == 0b0000010 then (rw_main__L_Main_putReg19_372 x0 x2) else (if s0 == 0b0000011 then (rw_main__L_Main_getReg24_379 x0 x2) else (if s0 == 0b0000100 then (rw_main__L_Main_getReg42_404 x0 x2) else (if s0 == 0b0000101 then (rw_main__L_Main_getReg46_410 x0 x2) else (if s0 == 0b0000110 then (rw_main__L_Main_getReg50_416 x0 x2) else (rw_main__L_Main_nextPC9_359 x2)))))))
+  where
+    s0 : [7]
+    s0 = drop`{32} x1
+
+// main.$L.arm52$420
+rw_main__L_arm52_420 : [32] -> [39] -> [41]
+rw_main__L_arm52_420 x0 x1 = rw_main__L_ds5_354 x0 x1 x1
+
+// main.$L.Main.repl4$353
+rw_main__L_Main_repl4_353 : [33] -> [39] -> [41]
+rw_main__L_Main_repl4_353 x0 x1 = if (take`{1} x0) == 0b0 then (rw_main__L_arm52_420 s0 x1) else (0b10 # x1)
+  where
+    s0 : [32]
+    s0 = drop`{1} x0
+
+// Main.test1
+rw_Main_test1 : [32] -> [32] -> [1]
+rw_Main_test1 x0 x1 = ext_test1 x0 x1
+
+// Main.test2
+rw_Main_test2 : [32] -> [32] -> [1]
+rw_Main_test2 x0 x1 = ext_test2 x0 x1
+
+// Main.test3
+rw_Main_test3 : [32] -> [32] -> [1]
+rw_Main_test3 x0 x1 = ext_test3 x0 x1
 
 // Main.test4
 rw_Main_test4 : [32] -> [32] -> [1]
 rw_Main_test4 x0 x1 = ext_test4 x0 x1
 
-// $L.$x6
-rw__L__x6 : [33] -> [39] -> [41]
-rw__L__x6 x0 x1 = rw__L_Main_repl4 x0 x1
-
-// $L.arm11
-rw__L_arm11 : [32] -> [7] -> [39] -> [41]
-rw__L_arm11 x0 x1 x2 = rw__LL_L_arm11 x0 (rw_OD19_ProgramCounter_incPC x1)
-
-// $L.ds25
-rw__L_ds25 : [32] -> [39] -> [39] -> [41]
-rw__L_ds25 x0 x1 x2 = rw__L_r23 x0 s0 x2
-  where
-    s0 : [32]
-    s0 = take`{32} x1
-
-// $L.Main.nextPC9
-rw__L_Main_nextPC9 : [39] -> [41]
-rw__L_Main_nextPC9 x0 = rw__L_ds10 x0 x0
+// OD19.ProgramCounter.incPC
+rw_OD19_ProgramCounter_incPC : [7] -> [7]
+rw_OD19_ProgramCounter_incPC x0 = if x0 == 0b0000000 then 0b0000001 else (if x0 == 0b0000001 then 0b0000010 else (if x0 == 0b0000010 then 0b0000011 else (if x0 == 0b0000011 then 0b0000100 else (if x0 == 0b0000100 then 0b0000101 else (if x0 == 0b0000101 then 0b0000110 else (if x0 == 0b0000110 then 0b0000111 else (if x0 == 0b0000111 then 0b0001000 else (if x0 == 0b0001000 then 0b0001001 else (if x0 == 0b0001001 then 0b0001010 else (if x0 == 0b0001010 then 0b0001011 else (if x0 == 0b0001011 then 0b0001100 else (if x0 == 0b0001100 then 0b0001101 else (if x0 == 0b0001101 then 0b0001110 else (if x0 == 0b0001110 then 0b0001111 else (if x0 == 0b0001111 then 0b0010000 else (if x0 == 0b0010000 then 0b0010001 else (if x0 == 0b0010001 then 0b0010010 else (if x0 == 0b0010010 then 0b0010011 else (if x0 == 0b0010011 then 0b0010100 else (if x0 == 0b0010100 then 0b0010101 else (if x0 == 0b0010101 then 0b0010110 else (if x0 == 0b0010110 then 0b0010111 else (if x0 == 0b0010111 then 0b0011000 else (if x0 == 0b0011000 then 0b0011001 else (if x0 == 0b0011001 then 0b0011010 else (if x0 == 0b0011010 then 0b0011011 else (if x0 == 0b0011011 then 0b0011100 else (if x0 == 0b0011100 then 0b0011101 else (if x0 == 0b0011101 then 0b0011110 else (if x0 == 0b0011110 then 0b0011111 else (if x0 == 0b0011111 then 0b0100000 else (if x0 == 0b0100000 then 0b0100001 else (if x0 == 0b0100001 then 0b0100010 else (if x0 == 0b0100010 then 0b0100011 else (if x0 == 0b0100011 then 0b0100100 else (if x0 == 0b0100100 then 0b0100101 else (if x0 == 0b0100101 then 0b0100110 else (if x0 == 0b0100110 then 0b0100111 else (if x0 == 0b0100111 then 0b0101000 else (if x0 == 0b0101000 then 0b0101001 else (if x0 == 0b0101001 then 0b0101010 else (if x0 == 0b0101010 then 0b0101011 else (if x0 == 0b0101011 then 0b0101100 else (if x0 == 0b0101100 then 0b0101101 else (if x0 == 0b0101101 then 0b0101110 else (if x0 == 0b0101110 then 0b0101111 else (if x0 == 0b0101111 then 0b0110000 else (if x0 == 0b0110000 then 0b0110001 else (if x0 == 0b0110001 then 0b0110010 else (if x0 == 0b0110010 then 0b0110011 else (if x0 == 0b0110011 then 0b0110100 else (if x0 == 0b0110100 then 0b0110101 else (if x0 == 0b0110101 then 0b0110110 else (if x0 == 0b0110110 then 0b0110111 else (if x0 == 0b0110111 then 0b0111000 else (if x0 == 0b0111000 then 0b0111001 else (if x0 == 0b0111001 then 0b0111010 else (if x0 == 0b0111010 then 0b0111011 else (if x0 == 0b0111011 then 0b0111100 else (if x0 == 0b0111100 then 0b0111101 else (if x0 == 0b0111101 then 0b0111110 else (if x0 == 0b0111110 then 0b0111111 else (if x0 == 0b0111111 then 0b1000000 else (if x0 == 0b1000000 then 0b1000001 else (if x0 == 0b1000001 then 0b1000010 else (if x0 == 0b1000010 then 0b1000011 else (if x0 == 0b1000011 then 0b1000100 else (if x0 == 0b1000100 then 0b1000101 else (if x0 == 0b1000101 then 0b1000110 else (if x0 == 0b1000110 then 0b1000111 else (if x0 == 0b1000111 then 0b1001000 else (if x0 == 0b1001000 then 0b1001001 else (if x0 == 0b1001001 then 0b1001010 else (if x0 == 0b1001010 then 0b1001011 else (if x0 == 0b1001011 then 0b1001100 else (if x0 == 0b1001100 then 0b1001101 else (if x0 == 0b1001101 then 0b1001110 else (if x0 == 0b1001110 then 0b1001111 else (if x0 == 0b1001111 then 0b1010000 else (if x0 == 0b1010000 then 0b1010001 else (if x0 == 0b1010001 then 0b1010010 else (if x0 == 0b1010010 then 0b1010011 else (if x0 == 0b1010011 then 0b1010100 else (if x0 == 0b1010100 then 0b1010101 else (if x0 == 0b1010101 then 0b1010110 else (if x0 == 0b1010110 then 0b1010111 else (if x0 == 0b1010111 then 0b1011000 else (if x0 == 0b1011000 then 0b1011001 else (if x0 == 0b1011001 then 0b1011010 else (if x0 == 0b1011010 then 0b1011011 else (if x0 == 0b1011011 then 0b1011100 else (if x0 == 0b1011100 then 0b1011101 else (if x0 == 0b1011101 then 0b1011110 else (if x0 == 0b1011110 then 0b1011111 else (if x0 == 0b1011111 then 0b1100000 else (if x0 == 0b1100000 then 0b1100001 else (if x0 == 0b1100001 then 0b1100010 else (if x0 == 0b1100010 then 0b1100011 else (if x0 == 0b1100011 then 0b1100100 else (if x0 == 0b1100100 then 0b1100101 else (if x0 == 0b1100101 then 0b1100110 else (if x0 == 0b1100110 then 0b1100111 else (if x0 == 0b1100111 then 0b1101000 else (if x0 == 0b1101000 then 0b1101001 else (if x0 == 0b1101001 then 0b1101010 else (if x0 == 0b1101010 then 0b1101011 else (if x0 == 0b1101011 then 0b1101100 else (if x0 == 0b1101100 then 0b1101101 else (if x0 == 0b1101101 then 0b1101110 else (if x0 == 0b1101110 then 0b1101111 else (if x0 == 0b1101111 then 0b1110000 else (if x0 == 0b1110000 then 0b1110001 else (if x0 == 0b1110001 then 0b1110010 else (if x0 == 0b1110010 then 0b1110011 else (if x0 == 0b1110011 then 0b1110100 else (if x0 == 0b1110100 then 0b1110101 else (if x0 == 0b1110101 then 0b1110110 else (if x0 == 0b1110110 then 0b1110111 else (if x0 == 0b1110111 then 0b1111000 else (if x0 == 0b1111000 then 0b1111001 else (if x0 == 0b1111001 then 0b1111010 else (if x0 == 0b1111010 then 0b1111011 else (if x0 == 0b1111011 then 0b1111100 else (if x0 == 0b1111100 then 0b1111101 else (if x0 == 0b1111101 then 0b1111110 else 0b0000000)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 
 // Per-cycle step: outputs # next register values.
 rw_step : [39] -> [33] -> [41]
@@ -195,7 +207,7 @@ rw_step st i = (take`{1} s4) # ((take`{1} (drop`{1} s4)) # ((take`{32} (drop`{2}
     s3 : [32]
     s3 = drop`{1} i
     s4 : [41]
-    s4 = rw__Pure_dispatch (s0 # s1) (s2 # s3)
+    s4 = rw_main__dispatch (s0 # s1) (s2 # s3)
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1], __in1 : [32]

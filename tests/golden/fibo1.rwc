@@ -1,48 +1,43 @@
-$Pure.dispatch : ([16], [1]) -> [24]
-$Pure.dispatch disc i =
-      let s = disc[8 +: 8] in
-      let s1 = disc[0 +: 8] in
-      $L.i8 i s s1
+main.$dispatch : ([16], [1]) -> [24]
+main.$dispatch disc i =
+      main.$L.i8$258 i disc[8 +: 8] disc[0 +: 8]
 
-$L.i8 : ([1], [8], [8]) -> [24]
-$L.i8 i s0 s1 =
-      if eq i 1'h0 then $L.Main.incr9 s0 s1
-            else $L.Main.sig6 s0 s1
+main.$L._unused12$262 : ([8], [8], [8], [8]) -> [24]
+main.$L._unused12$262 r0 r1 s0 s1 =
+      let s11 = add r0 r1 in
+      main.$L.Main.sig6$256 s0 s11
 
-$L.Main.incr9 : ([8], [8]) -> [24]
-$L.Main.incr9 s0 $x =
-      $L.r010 s0 s0 $x
+main.$L.r111$261 : ([8], [8], [8], [8]) -> [24]
+main.$L.r111$261 r0 r1 s0 s1 =
+      main.$L._unused12$262 r0 r1 r1 s1
 
-$L.r07 : ([8], [8], [8]) -> [24]
-$L.r07 r0 s0 s1 =
+main.$L.r010$260 : ([8], [8], [8]) -> [24]
+main.$L.r010$260 r0 s0 s1 =
+      main.$L.r111$261 r0 s1 s0 s1
+
+main.$L.Main.incr9$259 : ([8], [8]) -> [24]
+main.$L.Main.incr9$259 s0 s1 =
+      main.$L.r010$260 s0 s0 s1
+
+main.$L.i8$258 : ([1], [8], [8]) -> [24]
+main.$L.i8$258 i s0 s1 =
+      if eq i 1'h0 then main.$L.Main.incr9$259 s0 s1
+            else main.$L.Main.sig6$256 s0 s1
+
+main.$L.r07$257 : ([8], [8], [8]) -> [24]
+main.$L.r07$257 r0 s0 s1 =
       r0 # s0 # s1
 
-$L.Main.sig6 : ([8], [8]) -> [24]
-$L.Main.sig6 s0 $x =
-      $L.r07 s0 s0 $x
-
-$L._unused12 : ([8], [8], [8], [8]) -> [24]
-$L._unused12 r0 r1 s0 s1 =
-      $L.Main.sig6 s0 (add r0 r1)
-
-$L.r010 : ([8], [8], [8]) -> [24]
-$L.r010 r0 s0 s1 =
-      $L.r111 r0 s1 s0 s1
-
-$L.r111 : ([8], [8], [8], [8]) -> [24]
-$L.r111 r0 r1 s0 s1 =
-      $LL.L.r111 r0 s1 r1 r1
-
-$LL.L.r111 : ([8], [8], [8], [8]) -> [24]
-$LL.L.r111 r0 s1 r1 s' =
-      $L._unused12 r0 r1 s' s1
+main.$L.Main.sig6$256 : ([8], [8]) -> [24]
+main.$L.Main.sig6$256 s0 s1 =
+      main.$L.r07$257 s0 s0 s1
 
 device top_level
       input __in0 : [1]
       output __out0 : [8]
       register __st0 : [8] init 8'h0
       register __st1 : [8] init 8'h1
-      let $res = $Pure.dispatch (__st0 # __st1) __in0
+      let $res = main.$dispatch (__st0 # __st1) __in0
       __out0 := $res[16 +: 8]
       next __st0 := $res[8 +: 8]
       next __st1 := $res[0 +: 8]

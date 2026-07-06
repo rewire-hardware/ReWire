@@ -1,26 +1,23 @@
-$Pure.dispatch : ([1]) -> [1]
-$Pure.dispatch i =
-      $L.$x3 i
+main.$dispatch : ([1]) -> [1]
+main.$dispatch i =
+      main.$L.$x3$228 i
 
-$L.$x3 : ([1]) -> [1]
-$L.$x3 $x =
-      $L.Main.loop2 $x
+main.$L.$x3$228 : ([1]) -> [1]
+main.$L.$x3$228 $x =
+      main.$L.Main.loop2$226 $x
 
-$L.Main.loop2 : ([1]) -> [1]
-$L.Main.loop2 i =
-      $L.$x4 ($LL.L.Main.loop2 i)
-
-$LL.L.Main.loop2 : ([1]) -> [1]
-$LL.L.Main.loop2 s =
-      if eq s 1'h1 then 1'h0
-            else 1'h1
-
-$L.$x4 : ([1]) -> [1]
-$L.$x4 $x =
+main.$L.$x4$230 : ([1]) -> [1]
+main.$L.$x4$230 $x =
       $x
+
+main.$L.Main.loop2$226 : ([1]) -> [1]
+main.$L.Main.loop2$226 i =
+      let $a = (if eq i 1'h1 then 1'h0
+            else 1'h1) in
+      main.$L.$x4$230 $a
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
-      let $res = $Pure.dispatch __in0
+      let $res = main.$dispatch __in0
       __out0 := $res

@@ -1,33 +1,30 @@
-$Pure.dispatch : ([17], [8]) -> [25]
-$Pure.dispatch disc i =
-      if eq disc[16 +: 1] 1'h0 then (let e = disc[8 +: 8] in
-            let s = disc[0 +: 8] in
-            $L.i4 e i s)
-            else let s = disc[0 +: 8] in
-            $L.i1 i s
+main.$dispatch : ([17], [8]) -> [25]
+main.$dispatch disc i =
+      if eq disc[16 +: 1] 1'h0 then main.$L.i4$246 disc[8 +: 8] i disc[0 +: 8]
+            else main.$L.i1$243 i disc[0 +: 8]
 
-$L.i4 : ([8], [8], [8]) -> [25]
-$L.i4 k i s0 =
-      $L.Main.dev2 k i
+main.$L.i4$246 : ([8], [8], [8]) -> [25]
+main.$L.i4$246 k i s0 =
+      main.$L.Main.dev2$244 k i
 
-$L.Main.dev2 : ([8], [8]) -> [25]
-$L.Main.dev2 k s0 =
-      $L.s3 k s0 s0
-
-$L.i1 : ([8], [8]) -> [25]
-$L.i1 i s0 =
-      $L.Main.dev2 i 8'h0
-
-$L.s3 : ([8], [8], [8]) -> [25]
-$L.s3 k s s0 =
+main.$L.s3$245 : ([8], [8], [8]) -> [25]
+main.$L.s3$245 k s s0 =
       add s k # 1'h0 # k # s0
+
+main.$L.Main.dev2$244 : ([8], [8]) -> [25]
+main.$L.Main.dev2$244 k s0 =
+      main.$L.s3$245 k s0 s0
+
+main.$L.i1$243 : ([8], [8]) -> [25]
+main.$L.i1$243 i s0 =
+      main.$L.Main.dev2$244 i 8'h0
 
 device top_level
       input __in0 : [8]
       output __out0 : [8]
       register __resumption_tag : [9] init 9'h100
       register __st0 : [8] init 8'h0
-      let $res = $Pure.dispatch (__resumption_tag # __st0) __in0
+      let $res = main.$dispatch (__resumption_tag # __st0) __in0
       __out0 := $res[17 +: 8]
       next __resumption_tag := $res[8 +: 9]
       next __st0 := $res[0 +: 8]

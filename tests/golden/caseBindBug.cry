@@ -16,45 +16,44 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// $Pure.dispatch
-rw__Pure_dispatch : [1] -> [1] -> [2]
-rw__Pure_dispatch x0 x1 = rw__L__x4 x1 x0
+// main.$dispatch
+rw_main__dispatch : [1] -> [1] -> [2]
+rw_main__dispatch x0 x1 = rw_main__L__x4_268 x1 x0
 
-// $L.x14
-rw__L_x14 : [1] -> [1] -> [2]
-rw__L_x14 x0 x1 = rw__L_arm8 (rw_Main_notb x0)
+// main.$L.$x4$268
+rw_main__L__x4_268 : [1] -> [1] -> [2]
+rw_main__L__x4_268 x0 x1 = rw_main__L_Main_go3_266 x0 x1
 
-// $LL.Main.notb
-rw__LL_Main_notb : [1] -> [1]
-rw__LL_Main_notb x0 = if x0 == 0b0 then 0b1 else 0b0
+// main.$L._unused7$272
+rw_main__L__unused7_272 : [1] -> [1] -> [2]
+rw_main__L__unused7_272 x0 x1 = x0 # x1
 
-// $L.arm8
-rw__L_arm8 : [1] -> [2]
-rw__L_arm8 x0 = rw__L_Main_emit6 x0 x0
+// main.$L.Main.emit6$271
+rw_main__L_Main_emit6_271 : [1] -> [1] -> [2]
+rw_main__L_Main_emit6_271 x0 x1 = rw_main__L__unused7_272 x0 x0
 
-// $L.Main.go3
-rw__L_Main_go3 : [1] -> [1] -> [2]
-rw__L_Main_go3 x0 x1 = if x0 == 0b0 then (rw__L_arm8 x1) else (rw__L_arm15 x1)
+// main.$L.arm8$274
+rw_main__L_arm8_274 : [1] -> [2]
+rw_main__L_arm8_274 x0 = rw_main__L_Main_emit6_271 x0 x0
 
-// $L.Main.emit6
-rw__L_Main_emit6 : [1] -> [1] -> [2]
-rw__L_Main_emit6 x0 x1 = rw__L__unused7 x0 x0
+// main.$L.x14$283
+rw_main__L_x14_283 : [1] -> [1] -> [2]
+rw_main__L_x14_283 x0 x1 = rw_main__L_arm8_274 s0
+  where
+    s0 : [1]
+    s0 = rw_Main_notb x0
+
+// main.$L.arm15$285
+rw_main__L_arm15_285 : [1] -> [2]
+rw_main__L_arm15_285 x0 = rw_main__L_x14_283 x0 x0
+
+// main.$L.Main.go3$266
+rw_main__L_Main_go3_266 : [1] -> [1] -> [2]
+rw_main__L_Main_go3_266 x0 x1 = if x0 == 0b0 then (rw_main__L_arm8_274 x1) else (rw_main__L_arm15_285 x1)
 
 // Main.notb
 rw_Main_notb : [1] -> [1]
-rw_Main_notb x0 = rw__LL_Main_notb x0
-
-// $L.arm15
-rw__L_arm15 : [1] -> [2]
-rw__L_arm15 x0 = rw__L_x14 x0 x0
-
-// $L._unused7
-rw__L__unused7 : [1] -> [1] -> [2]
-rw__L__unused7 x0 x1 = x0 # x1
-
-// $L.$x4
-rw__L__x4 : [1] -> [1] -> [2]
-rw__L__x4 x0 x1 = rw__L_Main_go3 x0 x1
+rw_Main_notb x0 = if x0 == 0b0 then 0b1 else 0b0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [1] -> [1] -> [2]
@@ -65,7 +64,7 @@ rw_step st i = (take`{1} s2) # (drop`{1} s2)
     s1 : [1]
     s1 = i
     s2 : [2]
-    s2 = rw__Pure_dispatch s0 s1
+    s2 = rw_main__dispatch s0 s1
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1]

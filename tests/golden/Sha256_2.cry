@@ -22,581 +22,21 @@ parameter
   ext_plusW32 : [32] -> [32] -> [32]
   ext_xorW32 : [32] -> [32] -> [32]
 
-// $Pure.dispatch
-rw__Pure_dispatch : [1038] -> [68] -> [1103]
-rw__Pure_dispatch x0 x1 = if (take`{2} x0) == 0b00 then (rw__L__x5 x1 s0 s1 s2 s3) else (if (take`{2} x0) == 0b01 then (rw__L_i41 s4 x1 s5 s6 s7 s8) else (rw__L__unused38 x1 s9 s10 s11 s12))
-  where
-    s0 : [256]
-    s0 = take`{256} (drop`{8} x0)
-    s1 : [512]
-    s1 = take`{512} (drop`{264} x0)
-    s2 : [256]
-    s2 = take`{256} (drop`{776} x0)
-    s3 : [6]
-    s3 = drop`{1032} x0
-    s4 : [6]
-    s4 = take`{6} (drop`{2} x0)
-    s5 : [256]
-    s5 = take`{256} (drop`{8} x0)
-    s6 : [512]
-    s6 = take`{512} (drop`{264} x0)
-    s7 : [256]
-    s7 = take`{256} (drop`{776} x0)
-    s8 : [6]
-    s8 = drop`{1032} x0
-    s9 : [256]
-    s9 = take`{256} (drop`{8} x0)
-    s10 : [512]
-    s10 = take`{512} (drop`{264} x0)
-    s11 : [256]
-    s11 = take`{256} (drop`{776} x0)
-    s12 : [6]
-    s12 = drop`{1032} x0
+// main.$dispatch
+rw_main__dispatch : [1038] -> [68] -> [1103]
+rw_main__dispatch x0 x1 = if (take`{2} x0) == 0b00 then (rw_main__L__x5_1606 x1 (take`{256} (drop`{8} x0)) (take`{512} (drop`{264} x0)) (take`{256} (drop`{776} x0)) (drop`{1032} x0)) else (if (take`{2} x0) == 0b01 then (rw_main__L_i41_1657 (take`{6} (drop`{2} x0)) x1 (take`{256} (drop`{8} x0)) (take`{512} (drop`{264} x0)) (take`{256} (drop`{776} x0)) (drop`{1032} x0)) else (rw_main__L__unused38_1654 x1 (take`{256} (drop`{8} x0)) (take`{512} (drop`{264} x0)) (take`{256} (drop`{776} x0)) (drop`{1032} x0)))
 
-// Main.maj
-rw_Main_maj : [32] -> [32] -> [32] -> [32]
-rw_Main_maj x0 x1 x2 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_andW32 x0 x1) (rw_Main_andW32 x0 x2)) (rw_Main_andW32 x1 x2)
+// main.$L.$x5$1606
+rw_main__L__x5_1606 : [68] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L__x5_1606 x0 x1 x2 x3 x4 = rw_main__L_Main_dev3_1603 x0 x1 x2 x3 x4
 
-// $L._unused37
-rw__L__unused37 : [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L__unused37 x0 x1 x2 x3 = 0b1000000000000000000000000000000000000000000000000000000000000000010000000 # (x0 # (x1 # (x2 # x3)))
+// main.$L._unused4$1604
+rw_main__L__unused4_1604 : [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L__unused4_1604 x0 x1 x2 x3 = 0b1000000000000000000000000000000000000000000000000000000000000000000000000 # (x0 # (x1 # (x2 # x3)))
 
-// Main.incCtr
-rw_Main_incCtr : [6] -> [6]
-rw_Main_incCtr x0 = rw__LL_Main_incCtr x0
-
-// $LL.L.hw151
-rw__LL_L_hw151 : [512] -> [512]
-rw__LL_L_hw151 x0 = x0
-
-// $LL.L.hw271
-rw__LL_L_hw271 : [6] -> [256] -> [256] -> [512] -> [1103]
-rw__LL_L_hw271 x0 x1 x2 x3 = rw__L__unused4 x1 x3 x2 x0
-
-// $L._unused59
-rw__L__unused59 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L__unused59 x0 x1 x2 x3 x4 x5 = rw__L_hw60 x0 x1 x3 x2 x3 x4 x5
-
-// Main.shiftR10
-rw_Main_shiftR10 : [32] -> [32]
-rw_Main_shiftR10 x0 = 0b0000000000 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # s21)))))))))))))))))))))
-  where
-    s0 : [1]
-    s0 = take`{1} x0
-    s1 : [1]
-    s1 = take`{1} (drop`{1} x0)
-    s2 : [1]
-    s2 = take`{1} (drop`{2} x0)
-    s3 : [1]
-    s3 = take`{1} (drop`{3} x0)
-    s4 : [1]
-    s4 = take`{1} (drop`{4} x0)
-    s5 : [1]
-    s5 = take`{1} (drop`{5} x0)
-    s6 : [1]
-    s6 = take`{1} (drop`{6} x0)
-    s7 : [1]
-    s7 = take`{1} (drop`{7} x0)
-    s8 : [1]
-    s8 = take`{1} (drop`{8} x0)
-    s9 : [1]
-    s9 = take`{1} (drop`{9} x0)
-    s10 : [1]
-    s10 = take`{1} (drop`{10} x0)
-    s11 : [1]
-    s11 = take`{1} (drop`{11} x0)
-    s12 : [1]
-    s12 = take`{1} (drop`{12} x0)
-    s13 : [1]
-    s13 = take`{1} (drop`{13} x0)
-    s14 : [1]
-    s14 = take`{1} (drop`{14} x0)
-    s15 : [1]
-    s15 = take`{1} (drop`{15} x0)
-    s16 : [1]
-    s16 = take`{1} (drop`{16} x0)
-    s17 : [1]
-    s17 = take`{1} (drop`{17} x0)
-    s18 : [1]
-    s18 = take`{1} (drop`{18} x0)
-    s19 : [1]
-    s19 = take`{1} (drop`{19} x0)
-    s20 : [1]
-    s20 = take`{1} (drop`{20} x0)
-    s21 : [1]
-    s21 = take`{1} (drop`{21} x0)
-
-// $L.ctr40
-rw__L_ctr40 : [6] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_ctr40 x0 x1 x2 x3 x4 = 0b1000000000000000000000000000000000000000000000000000000000000000001 # (x0 # (x1 # (x2 # (x3 # x4))))
-
-// $L.arm70
-rw__L_arm70 : [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm70 x0 x1 x2 x3 = rw__L_h_n68 x2 x0 x1 x2 x3
-
-// Main.rotateR22
-rw_Main_rotateR22 : [32] -> [32]
-rw_Main_rotateR22 x0 = s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # s9))))))))))))))))))))))))))))))
-  where
-    s0 : [1]
-    s0 = take`{1} x0
-    s1 : [1]
-    s1 = take`{1} (drop`{1} x0)
-    s2 : [1]
-    s2 = take`{1} (drop`{2} x0)
-    s3 : [1]
-    s3 = take`{1} (drop`{3} x0)
-    s4 : [1]
-    s4 = take`{1} (drop`{4} x0)
-    s5 : [1]
-    s5 = take`{1} (drop`{5} x0)
-    s6 : [1]
-    s6 = take`{1} (drop`{6} x0)
-    s7 : [1]
-    s7 = take`{1} (drop`{7} x0)
-    s8 : [1]
-    s8 = take`{1} (drop`{8} x0)
-    s9 : [1]
-    s9 = take`{1} (drop`{9} x0)
-    s10 : [1]
-    s10 = take`{1} (drop`{10} x0)
-    s11 : [1]
-    s11 = take`{1} (drop`{11} x0)
-    s12 : [1]
-    s12 = take`{1} (drop`{12} x0)
-    s13 : [1]
-    s13 = take`{1} (drop`{13} x0)
-    s14 : [1]
-    s14 = take`{1} (drop`{14} x0)
-    s15 : [1]
-    s15 = take`{1} (drop`{15} x0)
-    s16 : [1]
-    s16 = take`{1} (drop`{16} x0)
-    s17 : [1]
-    s17 = take`{1} (drop`{17} x0)
-    s18 : [1]
-    s18 = take`{1} (drop`{18} x0)
-    s19 : [1]
-    s19 = take`{1} (drop`{19} x0)
-    s20 : [1]
-    s20 = take`{1} (drop`{20} x0)
-    s21 : [1]
-    s21 = take`{1} (drop`{21} x0)
-    s22 : [1]
-    s22 = take`{1} (drop`{22} x0)
-    s23 : [1]
-    s23 = take`{1} (drop`{23} x0)
-    s24 : [1]
-    s24 = take`{1} (drop`{24} x0)
-    s25 : [1]
-    s25 = take`{1} (drop`{25} x0)
-    s26 : [1]
-    s26 = take`{1} (drop`{26} x0)
-    s27 : [1]
-    s27 = take`{1} (drop`{27} x0)
-    s28 : [1]
-    s28 = take`{1} (drop`{28} x0)
-    s29 : [1]
-    s29 = take`{1} (drop`{29} x0)
-    s30 : [1]
-    s30 = take`{1} (drop`{30} x0)
-    s31 : [1]
-    s31 = drop`{31} x0
-
-// $L.arm73
-rw__L_arm73 : [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm73 x0 x1 x2 x3 = rw__L_h_n71 x2 x0 x1 x2 x3
-
-// $L.arm46
-rw__L_arm46 : [68] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm46 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 = rw__L_ds44 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x9 x10 x11 x12
-
-// $L.i41
-rw__L_i41 : [6] -> [68] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_i41 x0 x1 x2 x3 x4 x5 = if x0 == 0b111111 then (rw__L_arm47 x1 x2 x3 x4 x5) else (rw__L_Main_genhash_48 x2 x3 x4 x5)
-
-// $LL.L.hw191
-rw__LL_L_hw191 : [256] -> [6] -> [256] -> [512] -> [1103]
-rw__LL_L_hw191 x0 x1 x2 x3 = rw__L__unused4 x0 x3 x2 x1
-
-// $LL.L.hw311
-rw__LL_L_hw311 : [256] -> [6] -> [256] -> [512] -> [1103]
-rw__LL_L_hw311 x0 x1 x2 x3 = rw__L__unused4 x2 x3 x0 x1
-
-// $L.arm24
-rw__L_arm24 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm24 x0 x1 x2 x3 x4 x5 = rw__L_hw23 x0 x1 x3 x2 x3 x4 x5
-
-// Main.digest1
-rw_Main_digest1 : [256] -> [65]
-rw_Main_digest1 x0 = 0b0 # (s0 # s1)
-  where
-    s0 : [32]
-    s0 = take`{32} (drop`{64} x0)
-    s1 : [32]
-    s1 = take`{32} (drop`{96} x0)
-
-// $L.arm20
-rw__L_arm20 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm20 x0 x1 x2 x3 x4 x5 = rw__L_hw19 x0 x1 x3 x2 x3 x4 x5
-
-// Main.notW32
-rw_Main_notW32 : [32] -> [32]
-rw_Main_notW32 x0 = ext_notW32 x0
-
-// Main.plusW32
-rw_Main_plusW32 : [32] -> [32] -> [32]
-rw_Main_plusW32 x0 x1 = ext_plusW32 x0 x1
-
-// Main.rotateR11
-rw_Main_rotateR11 : [32] -> [32]
-rw_Main_rotateR11 x0 = s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # s20))))))))))))))))))))))))))))))
-  where
-    s0 : [1]
-    s0 = take`{1} x0
-    s1 : [1]
-    s1 = take`{1} (drop`{1} x0)
-    s2 : [1]
-    s2 = take`{1} (drop`{2} x0)
-    s3 : [1]
-    s3 = take`{1} (drop`{3} x0)
-    s4 : [1]
-    s4 = take`{1} (drop`{4} x0)
-    s5 : [1]
-    s5 = take`{1} (drop`{5} x0)
-    s6 : [1]
-    s6 = take`{1} (drop`{6} x0)
-    s7 : [1]
-    s7 = take`{1} (drop`{7} x0)
-    s8 : [1]
-    s8 = take`{1} (drop`{8} x0)
-    s9 : [1]
-    s9 = take`{1} (drop`{9} x0)
-    s10 : [1]
-    s10 = take`{1} (drop`{10} x0)
-    s11 : [1]
-    s11 = take`{1} (drop`{11} x0)
-    s12 : [1]
-    s12 = take`{1} (drop`{12} x0)
-    s13 : [1]
-    s13 = take`{1} (drop`{13} x0)
-    s14 : [1]
-    s14 = take`{1} (drop`{14} x0)
-    s15 : [1]
-    s15 = take`{1} (drop`{15} x0)
-    s16 : [1]
-    s16 = take`{1} (drop`{16} x0)
-    s17 : [1]
-    s17 = take`{1} (drop`{17} x0)
-    s18 : [1]
-    s18 = take`{1} (drop`{18} x0)
-    s19 : [1]
-    s19 = take`{1} (drop`{19} x0)
-    s20 : [1]
-    s20 = take`{1} (drop`{20} x0)
-    s21 : [1]
-    s21 = take`{1} (drop`{21} x0)
-    s22 : [1]
-    s22 = take`{1} (drop`{22} x0)
-    s23 : [1]
-    s23 = take`{1} (drop`{23} x0)
-    s24 : [1]
-    s24 = take`{1} (drop`{24} x0)
-    s25 : [1]
-    s25 = take`{1} (drop`{25} x0)
-    s26 : [1]
-    s26 = take`{1} (drop`{26} x0)
-    s27 : [1]
-    s27 = take`{1} (drop`{27} x0)
-    s28 : [1]
-    s28 = take`{1} (drop`{28} x0)
-    s29 : [1]
-    s29 = take`{1} (drop`{29} x0)
-    s30 : [1]
-    s30 = take`{1} (drop`{30} x0)
-    s31 : [1]
-    s31 = drop`{31} x0
-
-// $LL.L.s531
-rw__LL_L_s531 : [256] -> [6] -> [6] -> [512] -> [256] -> [1103]
-rw__LL_L_s531 x0 x1 x2 x3 x4 = rw__L__unused50 x2 x4 x3 x0 x1
-
-// $L.arm8
-rw__L_arm8 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm8 x0 x1 x2 x3 x4 x5 = rw__LL_L_arm8 x3 x5 x2 x1 x0 0x6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19
-
-// $LL.Main.seed
-rw__LL_Main_seed : [6] -> [32]
-rw__LL_Main_seed x0 = if x0 == 0b000000 then 0x428a2f98 else (if x0 == 0b000001 then 0x71374491 else (if x0 == 0b000010 then 0xb5c0fbcf else (if x0 == 0b000011 then 0xe9b5dba5 else (if x0 == 0b000100 then 0x3956c25b else (if x0 == 0b000101 then 0x59f111f1 else (if x0 == 0b000110 then 0x923f82a4 else (if x0 == 0b000111 then 0xab1c5ed5 else (if x0 == 0b001000 then 0xd807aa98 else (if x0 == 0b001001 then 0x12835b01 else (if x0 == 0b001010 then 0x243185be else (if x0 == 0b001011 then 0x550c7dc3 else (if x0 == 0b001100 then 0x72be5d74 else (if x0 == 0b001101 then 0x80deb1fe else (if x0 == 0b001110 then 0x9bdc06a7 else (if x0 == 0b001111 then 0xc19bf174 else (if x0 == 0b010000 then 0xe49b69c1 else (if x0 == 0b010001 then 0xefbe4786 else (if x0 == 0b010010 then 0x0fc19dc6 else (if x0 == 0b010011 then 0x240ca1cc else (if x0 == 0b010100 then 0x2de92c6f else (if x0 == 0b010101 then 0x4a7484aa else (if x0 == 0b010110 then 0x5cb0a9dc else (if x0 == 0b010111 then 0x76f988da else (if x0 == 0b011000 then 0x983e5152 else (if x0 == 0b011001 then 0xa831c66d else (if x0 == 0b011010 then 0xb00327c8 else (if x0 == 0b011011 then 0xbf597fc7 else (if x0 == 0b011100 then 0xc6e00bf3 else (if x0 == 0b011101 then 0xd5a79147 else (if x0 == 0b011110 then 0x06ca6351 else (if x0 == 0b011111 then 0x14292967 else (if x0 == 0b100000 then 0x27b70a85 else (if x0 == 0b100001 then 0x2e1b2138 else (if x0 == 0b100010 then 0x4d2c6dfc else (if x0 == 0b100011 then 0x53380d13 else (if x0 == 0b100100 then 0x650a7354 else (if x0 == 0b100101 then 0x766a0abb else (if x0 == 0b100110 then 0x81c2c92e else (if x0 == 0b100111 then 0x92722c85 else (if x0 == 0b101000 then 0xa2bfe8a1 else (if x0 == 0b101001 then 0xa81a664b else (if x0 == 0b101010 then 0xc24b8b70 else (if x0 == 0b101011 then 0xc76c51a3 else (if x0 == 0b101100 then 0xd192e819 else (if x0 == 0b101101 then 0xd6990624 else (if x0 == 0b101110 then 0xf40e3585 else (if x0 == 0b101111 then 0x106aa070 else (if x0 == 0b110000 then 0x19a4c116 else (if x0 == 0b110001 then 0x1e376c08 else (if x0 == 0b110010 then 0x2748774c else (if x0 == 0b110011 then 0x34b0bcb5 else (if x0 == 0b110100 then 0x391c0cb3 else (if x0 == 0b110101 then 0x4ed8aa4a else (if x0 == 0b110110 then 0x5b9cca4f else (if x0 == 0b110111 then 0x682e6ff3 else (if x0 == 0b111000 then 0x748f82ee else (if x0 == 0b111001 then 0x78a5636f else (if x0 == 0b111010 then 0x84c87814 else (if x0 == 0b111011 then 0x8cc70208 else (if x0 == 0b111100 then 0x90befffa else (if x0 == 0b111101 then 0xa4506ceb else (if x0 == 0b111110 then 0xbef9a3f7 else 0xc67178f2))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
-
-// $LL.L.h_n65
-rw__LL_L_h_n65 : [256] -> [256] -> [512] -> [6] -> [65] -> [1103]
-rw__LL_L_h_n65 x0 x1 x2 x3 x4 = x4 # (0x00 # (x1 # (x2 # (x0 # x3))))
-
-// $L.arm47
-rw__L_arm47 : [68] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm47 x0 x1 x2 x3 x4 = rw__L_ds43 x0 x3 x1 x2 x3 x4
-
-// $L.arm67
-rw__L_arm67 : [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm67 x0 x1 x2 x3 = rw__L_h_n65 x2 x0 x1 x2 x3
-
-// Main.digest2
-rw_Main_digest2 : [256] -> [65]
-rw_Main_digest2 x0 = 0b0 # (s0 # s1)
-  where
-    s0 : [32]
-    s0 = take`{32} (drop`{128} x0)
-    s1 : [32]
-    s1 = take`{32} (drop`{160} x0)
-
-// Main.rotateR19
-rw_Main_rotateR19 : [32] -> [32]
-rw_Main_rotateR19 x0 = s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # s12))))))))))))))))))))))))))))))
-  where
-    s0 : [1]
-    s0 = take`{1} x0
-    s1 : [1]
-    s1 = take`{1} (drop`{1} x0)
-    s2 : [1]
-    s2 = take`{1} (drop`{2} x0)
-    s3 : [1]
-    s3 = take`{1} (drop`{3} x0)
-    s4 : [1]
-    s4 = take`{1} (drop`{4} x0)
-    s5 : [1]
-    s5 = take`{1} (drop`{5} x0)
-    s6 : [1]
-    s6 = take`{1} (drop`{6} x0)
-    s7 : [1]
-    s7 = take`{1} (drop`{7} x0)
-    s8 : [1]
-    s8 = take`{1} (drop`{8} x0)
-    s9 : [1]
-    s9 = take`{1} (drop`{9} x0)
-    s10 : [1]
-    s10 = take`{1} (drop`{10} x0)
-    s11 : [1]
-    s11 = take`{1} (drop`{11} x0)
-    s12 : [1]
-    s12 = take`{1} (drop`{12} x0)
-    s13 : [1]
-    s13 = take`{1} (drop`{13} x0)
-    s14 : [1]
-    s14 = take`{1} (drop`{14} x0)
-    s15 : [1]
-    s15 = take`{1} (drop`{15} x0)
-    s16 : [1]
-    s16 = take`{1} (drop`{16} x0)
-    s17 : [1]
-    s17 = take`{1} (drop`{17} x0)
-    s18 : [1]
-    s18 = take`{1} (drop`{18} x0)
-    s19 : [1]
-    s19 = take`{1} (drop`{19} x0)
-    s20 : [1]
-    s20 = take`{1} (drop`{20} x0)
-    s21 : [1]
-    s21 = take`{1} (drop`{21} x0)
-    s22 : [1]
-    s22 = take`{1} (drop`{22} x0)
-    s23 : [1]
-    s23 = take`{1} (drop`{23} x0)
-    s24 : [1]
-    s24 = take`{1} (drop`{24} x0)
-    s25 : [1]
-    s25 = take`{1} (drop`{25} x0)
-    s26 : [1]
-    s26 = take`{1} (drop`{26} x0)
-    s27 : [1]
-    s27 = take`{1} (drop`{27} x0)
-    s28 : [1]
-    s28 = take`{1} (drop`{28} x0)
-    s29 : [1]
-    s29 = take`{1} (drop`{29} x0)
-    s30 : [1]
-    s30 = take`{1} (drop`{30} x0)
-    s31 : [1]
-    s31 = drop`{31} x0
-
-// $LL.L.h_n71
-rw__LL_L_h_n71 : [6] -> [512] -> [256] -> [256] -> [65] -> [1103]
-rw__LL_L_h_n71 x0 x1 x2 x3 x4 = x4 # (0x00 # (x2 # (x1 # (x3 # x0))))
-
-// $L.hw60
-rw__L_hw60 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_hw60 x0 x1 x2 x3 x4 x5 x6 = rw__LL_L_hw60 x5 x6 x3 (rw__LL_L_hw151 (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (x0 # x1))))))))))))))))
-  where
-    s0 : [32]
-    s0 = take`{32} x2
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x2)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x2)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x2)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x2)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x2)
-    s6 : [32]
-    s6 = take`{32} (drop`{192} x2)
-    s7 : [32]
-    s7 = take`{32} (drop`{224} x2)
-    s8 : [32]
-    s8 = take`{32} (drop`{256} x2)
-    s9 : [32]
-    s9 = take`{32} (drop`{288} x2)
-    s10 : [32]
-    s10 = take`{32} (drop`{320} x2)
-    s11 : [32]
-    s11 = take`{32} (drop`{352} x2)
-    s12 : [32]
-    s12 = take`{32} (drop`{384} x2)
-    s13 : [32]
-    s13 = take`{32} (drop`{416} x2)
-
-// $L.w52
-rw__L_w52 : [6] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_w52 x0 x1 x2 x3 x4 x5 = rw__L_s53 x0 x1 x2 x2 x3 x4 x5
-
-// $L.arm16
-rw__L_arm16 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm16 x0 x1 x2 x3 x4 x5 = rw__L_hw15 x0 x1 x3 x2 x3 x4 x5
-
-// $L.ds43
-rw__L_ds43 : [68] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_ds43 x0 x1 x2 x3 x4 x5 = rw__L_arm46 x0 s0 s1 s2 s3 s4 s5 s6 s7 x2 x3 x4 x5
-  where
-    s0 : [32]
-    s0 = take`{32} x1
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x1)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x1)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x1)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x1)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x1)
-    s6 : [32]
-    s6 = take`{32} (drop`{192} x1)
-    s7 : [32]
-    s7 = drop`{224} x1
-
-// $L._unused6
-rw__L__unused6 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L__unused6 x0 x1 x2 x3 x4 x5 = rw__L_hw7 x0 x1 x3 x2 x3 x4 x5
-
-// $L.h_n65
-rw__L_h_n65 : [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_h_n65 x0 x1 x2 x3 x4 = rw__LL_L_h_n65 x3 x1 x2 x4 (rw_Main_digest1 x0)
-
-// $L.ctr49
-rw__L_ctr49 : [6] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_ctr49 x0 x1 x2 x3 x4 = rw__L_s54 x0 x2 x1 x2 x3 x4
-
-// $LL.L.arm458
-rw__LL_L_arm458 : [32] -> [32] -> [68] -> [32] -> [256] -> [6] -> [32] -> [32] -> [32] -> [32] -> [512] -> [32] -> [1103]
-rw__LL_L_arm458 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 = rw__LL_L_arm45 x2 x4 x5 x10 (x9 # (x6 # (x3 # (x8 # (x1 # (x0 # (x7 # x11)))))))
-
-// $LL.L.arm457
-rw__LL_L_arm457 : [32] -> [32] -> [32] -> [32] -> [32] -> [68] -> [256] -> [6] -> [32] -> [32] -> [32] -> [512] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [1103]
-rw__LL_L_arm457 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 = rw__LL_L_arm456 x0 x1 x2 x3 x4 x5 x6 x7 x17 x9 x10 x11 x13 x14 x15 x16 (rw_Main_plusW32 x8 x12)
-
-// Main.sigma0
-rw_Main_sigma0 : [32] -> [32]
-rw_Main_sigma0 x0 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_rotateR7 x0) (rw_Main_rotateR18 x0)) (rw_Main_shiftR3 x0)
-
-// $L._unused57
-rw__L__unused57 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L__unused57 x0 x1 x2 x3 x4 x5 = rw__L_hi_158 x0 x1 x4 x2 x3 x4 x5
-
-// Main.seed
-rw_Main_seed : [6] -> [32]
-rw_Main_seed x0 = rw__LL_Main_seed x0
-
-// Main.rotateR18
-rw_Main_rotateR18 : [32] -> [32]
-rw_Main_rotateR18 x0 = s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))))))))))))))))))
-  where
-    s0 : [1]
-    s0 = take`{1} x0
-    s1 : [1]
-    s1 = take`{1} (drop`{1} x0)
-    s2 : [1]
-    s2 = take`{1} (drop`{2} x0)
-    s3 : [1]
-    s3 = take`{1} (drop`{3} x0)
-    s4 : [1]
-    s4 = take`{1} (drop`{4} x0)
-    s5 : [1]
-    s5 = take`{1} (drop`{5} x0)
-    s6 : [1]
-    s6 = take`{1} (drop`{6} x0)
-    s7 : [1]
-    s7 = take`{1} (drop`{7} x0)
-    s8 : [1]
-    s8 = take`{1} (drop`{8} x0)
-    s9 : [1]
-    s9 = take`{1} (drop`{9} x0)
-    s10 : [1]
-    s10 = take`{1} (drop`{10} x0)
-    s11 : [1]
-    s11 = take`{1} (drop`{11} x0)
-    s12 : [1]
-    s12 = take`{1} (drop`{12} x0)
-    s13 : [1]
-    s13 = take`{1} (drop`{13} x0)
-    s14 : [1]
-    s14 = take`{1} (drop`{14} x0)
-    s15 : [1]
-    s15 = take`{1} (drop`{15} x0)
-    s16 : [1]
-    s16 = take`{1} (drop`{16} x0)
-    s17 : [1]
-    s17 = take`{1} (drop`{17} x0)
-    s18 : [1]
-    s18 = take`{1} (drop`{18} x0)
-    s19 : [1]
-    s19 = take`{1} (drop`{19} x0)
-    s20 : [1]
-    s20 = take`{1} (drop`{20} x0)
-    s21 : [1]
-    s21 = take`{1} (drop`{21} x0)
-    s22 : [1]
-    s22 = take`{1} (drop`{22} x0)
-    s23 : [1]
-    s23 = take`{1} (drop`{23} x0)
-    s24 : [1]
-    s24 = take`{1} (drop`{24} x0)
-    s25 : [1]
-    s25 = take`{1} (drop`{25} x0)
-    s26 : [1]
-    s26 = take`{1} (drop`{26} x0)
-    s27 : [1]
-    s27 = take`{1} (drop`{27} x0)
-    s28 : [1]
-    s28 = take`{1} (drop`{28} x0)
-    s29 : [1]
-    s29 = take`{1} (drop`{29} x0)
-    s30 : [1]
-    s30 = take`{1} (drop`{30} x0)
-    s31 : [1]
-    s31 = drop`{31} x0
-
-// $L.h_n68
-rw__L_h_n68 : [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_h_n68 x0 x1 x2 x3 x4 = rw__LL_L_h_n68 x1 x3 x4 x2 (rw_Main_digest2 x0)
-
-// $LL.L.arm456
-rw__LL_L_arm456 : [32] -> [32] -> [32] -> [32] -> [32] -> [68] -> [256] -> [6] -> [32] -> [32] -> [32] -> [512] -> [32] -> [32] -> [32] -> [32] -> [32] -> [1103]
-rw__LL_L_arm456 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 = rw__LL_L_arm455 x0 x1 x2 x3 x4 x5 x16 x6 x7 x8 x10 x11 x12 x13 x15 (rw_Main_plusW32 x14 x9)
-
-// $L.hw7
-rw__L_hw7 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_hw7 x0 x1 x2 x3 x4 x5 x6 = rw__LL_L_hw271 x6 x3 x5 (rw__LL_L_hw151 (x0 # (x1 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))))
+// main.$L.hw7$1608
+rw_main__L_hw7_1608 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_hw7_1608 x0 x1 x2 x3 x4 x5 x6 = rw_main__L__unused4_1604 x3 s15 x5 x6
   where
     s0 : [32]
     s0 = take`{32} (drop`{64} x2)
@@ -626,10 +66,376 @@ rw__L_hw7 x0 x1 x2 x3 x4 x5 x6 = rw__LL_L_hw271 x6 x3 x5 (rw__LL_L_hw151 (x0 # (
     s12 = take`{32} (drop`{448} x2)
     s13 : [32]
     s13 = drop`{480} x2
+    s14 : [512]
+    s14 = x0 # (x1 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))
+    s15 : [512]
+    s15 = s14
 
-// $L.s54
-rw__L_s54 : [6] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_s54 x0 x1 x2 x3 x4 x5 = rw__L_arm56 x0 x1 s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 x2 x3 x4 x5
+// main.$L._unused6$1607
+rw_main__L__unused6_1607 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L__unused6_1607 x0 x1 x2 x3 x4 x5 = rw_main__L_hw7_1608 x0 x1 x3 x2 x3 x4 x5
+
+// main.$L.arm8$1610
+rw_main__L_arm8_1610 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm8_1610 x0 x1 x2 x3 x4 x5 = rw_main__L__unused6_1607 x0 x1 x2 x3 0x6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 x5
+
+// main.$L.hw15$1620
+rw_main__L_hw15_1620 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_hw15_1620 x0 x1 x2 x3 x4 x5 x6 = rw_main__L__unused4_1604 x3 s15 x5 x6
+  where
+    s0 : [32]
+    s0 = take`{32} x2
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x2)
+    s2 : [32]
+    s2 = take`{32} (drop`{128} x2)
+    s3 : [32]
+    s3 = take`{32} (drop`{160} x2)
+    s4 : [32]
+    s4 = take`{32} (drop`{192} x2)
+    s5 : [32]
+    s5 = take`{32} (drop`{224} x2)
+    s6 : [32]
+    s6 = take`{32} (drop`{256} x2)
+    s7 : [32]
+    s7 = take`{32} (drop`{288} x2)
+    s8 : [32]
+    s8 = take`{32} (drop`{320} x2)
+    s9 : [32]
+    s9 = take`{32} (drop`{352} x2)
+    s10 : [32]
+    s10 = take`{32} (drop`{384} x2)
+    s11 : [32]
+    s11 = take`{32} (drop`{416} x2)
+    s12 : [32]
+    s12 = take`{32} (drop`{448} x2)
+    s13 : [32]
+    s13 = drop`{480} x2
+    s14 : [512]
+    s14 = s0 # (s1 # (x0 # (x1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))
+    s15 : [512]
+    s15 = s14
+
+// main.$L.arm16$1622
+rw_main__L_arm16_1622 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm16_1622 x0 x1 x2 x3 x4 x5 = rw_main__L_hw15_1620 x0 x1 x3 x2 x3 x4 x5
+
+// main.$L.hw19$1626
+rw_main__L_hw19_1626 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_hw19_1626 x0 x1 x2 x3 x4 x5 x6 = rw_main__L__unused4_1604 x3 s15 x5 x6
+  where
+    s0 : [32]
+    s0 = take`{32} x2
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x2)
+    s2 : [32]
+    s2 = take`{32} (drop`{64} x2)
+    s3 : [32]
+    s3 = take`{32} (drop`{96} x2)
+    s4 : [32]
+    s4 = take`{32} (drop`{192} x2)
+    s5 : [32]
+    s5 = take`{32} (drop`{224} x2)
+    s6 : [32]
+    s6 = take`{32} (drop`{256} x2)
+    s7 : [32]
+    s7 = take`{32} (drop`{288} x2)
+    s8 : [32]
+    s8 = take`{32} (drop`{320} x2)
+    s9 : [32]
+    s9 = take`{32} (drop`{352} x2)
+    s10 : [32]
+    s10 = take`{32} (drop`{384} x2)
+    s11 : [32]
+    s11 = take`{32} (drop`{416} x2)
+    s12 : [32]
+    s12 = take`{32} (drop`{448} x2)
+    s13 : [32]
+    s13 = drop`{480} x2
+    s14 : [512]
+    s14 = s0 # (s1 # (s2 # (s3 # (x0 # (x1 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))
+    s15 : [512]
+    s15 = s14
+
+// main.$L.arm20$1628
+rw_main__L_arm20_1628 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm20_1628 x0 x1 x2 x3 x4 x5 = rw_main__L_hw19_1626 x0 x1 x3 x2 x3 x4 x5
+
+// main.$L.hw23$1632
+rw_main__L_hw23_1632 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_hw23_1632 x0 x1 x2 x3 x4 x5 x6 = rw_main__L__unused4_1604 x3 s15 x5 x6
+  where
+    s0 : [32]
+    s0 = take`{32} x2
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x2)
+    s2 : [32]
+    s2 = take`{32} (drop`{64} x2)
+    s3 : [32]
+    s3 = take`{32} (drop`{96} x2)
+    s4 : [32]
+    s4 = take`{32} (drop`{128} x2)
+    s5 : [32]
+    s5 = take`{32} (drop`{160} x2)
+    s6 : [32]
+    s6 = take`{32} (drop`{256} x2)
+    s7 : [32]
+    s7 = take`{32} (drop`{288} x2)
+    s8 : [32]
+    s8 = take`{32} (drop`{320} x2)
+    s9 : [32]
+    s9 = take`{32} (drop`{352} x2)
+    s10 : [32]
+    s10 = take`{32} (drop`{384} x2)
+    s11 : [32]
+    s11 = take`{32} (drop`{416} x2)
+    s12 : [32]
+    s12 = take`{32} (drop`{448} x2)
+    s13 : [32]
+    s13 = drop`{480} x2
+    s14 : [512]
+    s14 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (x0 # (x1 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))
+    s15 : [512]
+    s15 = s14
+
+// main.$L.arm24$1634
+rw_main__L_arm24_1634 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm24_1634 x0 x1 x2 x3 x4 x5 = rw_main__L_hw23_1632 x0 x1 x3 x2 x3 x4 x5
+
+// main.$L.hw27$1638
+rw_main__L_hw27_1638 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_hw27_1638 x0 x1 x2 x3 x4 x5 x6 = rw_main__L__unused4_1604 x3 s15 x5 x6
+  where
+    s0 : [32]
+    s0 = take`{32} x2
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x2)
+    s2 : [32]
+    s2 = take`{32} (drop`{64} x2)
+    s3 : [32]
+    s3 = take`{32} (drop`{96} x2)
+    s4 : [32]
+    s4 = take`{32} (drop`{128} x2)
+    s5 : [32]
+    s5 = take`{32} (drop`{160} x2)
+    s6 : [32]
+    s6 = take`{32} (drop`{192} x2)
+    s7 : [32]
+    s7 = take`{32} (drop`{224} x2)
+    s8 : [32]
+    s8 = take`{32} (drop`{320} x2)
+    s9 : [32]
+    s9 = take`{32} (drop`{352} x2)
+    s10 : [32]
+    s10 = take`{32} (drop`{384} x2)
+    s11 : [32]
+    s11 = take`{32} (drop`{416} x2)
+    s12 : [32]
+    s12 = take`{32} (drop`{448} x2)
+    s13 : [32]
+    s13 = drop`{480} x2
+    s14 : [512]
+    s14 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (x0 # (x1 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))
+    s15 : [512]
+    s15 = s14
+
+// main.$L.arm28$1640
+rw_main__L_arm28_1640 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm28_1640 x0 x1 x2 x3 x4 x5 = rw_main__L_hw27_1638 x0 x1 x3 x2 x3 x4 x5
+
+// main.$L.hw31$1644
+rw_main__L_hw31_1644 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_hw31_1644 x0 x1 x2 x3 x4 x5 x6 = rw_main__L__unused4_1604 x3 s15 x5 x6
+  where
+    s0 : [32]
+    s0 = take`{32} x2
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x2)
+    s2 : [32]
+    s2 = take`{32} (drop`{64} x2)
+    s3 : [32]
+    s3 = take`{32} (drop`{96} x2)
+    s4 : [32]
+    s4 = take`{32} (drop`{128} x2)
+    s5 : [32]
+    s5 = take`{32} (drop`{160} x2)
+    s6 : [32]
+    s6 = take`{32} (drop`{192} x2)
+    s7 : [32]
+    s7 = take`{32} (drop`{224} x2)
+    s8 : [32]
+    s8 = take`{32} (drop`{256} x2)
+    s9 : [32]
+    s9 = take`{32} (drop`{288} x2)
+    s10 : [32]
+    s10 = take`{32} (drop`{384} x2)
+    s11 : [32]
+    s11 = take`{32} (drop`{416} x2)
+    s12 : [32]
+    s12 = take`{32} (drop`{448} x2)
+    s13 : [32]
+    s13 = drop`{480} x2
+    s14 : [512]
+    s14 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (x0 # (x1 # (s10 # (s11 # (s12 # s13))))))))))))))
+    s15 : [512]
+    s15 = s14
+
+// main.$L.arm32$1646
+rw_main__L_arm32_1646 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm32_1646 x0 x1 x2 x3 x4 x5 = rw_main__L_hw31_1644 x0 x1 x3 x2 x3 x4 x5
+
+// main.$L.hw35$1650
+rw_main__L_hw35_1650 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_hw35_1650 x0 x1 x2 x3 x4 x5 x6 = rw_main__L__unused4_1604 x3 s15 x5 x6
+  where
+    s0 : [32]
+    s0 = take`{32} x2
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x2)
+    s2 : [32]
+    s2 = take`{32} (drop`{64} x2)
+    s3 : [32]
+    s3 = take`{32} (drop`{96} x2)
+    s4 : [32]
+    s4 = take`{32} (drop`{128} x2)
+    s5 : [32]
+    s5 = take`{32} (drop`{160} x2)
+    s6 : [32]
+    s6 = take`{32} (drop`{192} x2)
+    s7 : [32]
+    s7 = take`{32} (drop`{224} x2)
+    s8 : [32]
+    s8 = take`{32} (drop`{256} x2)
+    s9 : [32]
+    s9 = take`{32} (drop`{288} x2)
+    s10 : [32]
+    s10 = take`{32} (drop`{320} x2)
+    s11 : [32]
+    s11 = take`{32} (drop`{352} x2)
+    s12 : [32]
+    s12 = take`{32} (drop`{448} x2)
+    s13 : [32]
+    s13 = drop`{480} x2
+    s14 : [512]
+    s14 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (x0 # (x1 # (s12 # s13))))))))))))))
+    s15 : [512]
+    s15 = s14
+
+// main.$L.arm36$1652
+rw_main__L_arm36_1652 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm36_1652 x0 x1 x2 x3 x4 x5 = rw_main__L_hw35_1650 x0 x1 x3 x2 x3 x4 x5
+
+// main.$L.arm45$1661
+rw_main__L_arm45_1661 : [68] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm45_1661 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 = rw_main__L_Main_dev3_1603 x0 x17 x18 s8 x20
+  where
+    s0 : [32]
+    s0 = rw_Main_plusW32 x9 x1
+    s1 : [32]
+    s1 = rw_Main_plusW32 x10 x2
+    s2 : [32]
+    s2 = rw_Main_plusW32 x11 x3
+    s3 : [32]
+    s3 = rw_Main_plusW32 x12 x4
+    s4 : [32]
+    s4 = rw_Main_plusW32 x13 x5
+    s5 : [32]
+    s5 = rw_Main_plusW32 x14 x6
+    s6 : [32]
+    s6 = rw_Main_plusW32 x15 x7
+    s7 : [32]
+    s7 = rw_Main_plusW32 x16 x8
+    s8 : [256]
+    s8 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # s7))))))
+
+// main.$L.ds44$1660
+rw_main__L_ds44_1660 : [68] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_ds44_1660 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 = rw_main__L_arm45_1661 x0 x1 x2 x3 x4 x5 x6 x7 x8 s0 s1 s2 s3 s4 s5 s6 s7 x10 x11 x12 x13
+  where
+    s0 : [32]
+    s0 = take`{32} x9
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x9)
+    s2 : [32]
+    s2 = take`{32} (drop`{64} x9)
+    s3 : [32]
+    s3 = take`{32} (drop`{96} x9)
+    s4 : [32]
+    s4 = take`{32} (drop`{128} x9)
+    s5 : [32]
+    s5 = take`{32} (drop`{160} x9)
+    s6 : [32]
+    s6 = take`{32} (drop`{192} x9)
+    s7 : [32]
+    s7 = drop`{224} x9
+
+// main.$L.arm46$1663
+rw_main__L_arm46_1663 : [68] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm46_1663 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 = rw_main__L_ds44_1660 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x9 x10 x11 x12
+
+// main.$L.ds43$1659
+rw_main__L_ds43_1659 : [68] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_ds43_1659 x0 x1 x2 x3 x4 x5 = rw_main__L_arm46_1663 x0 s0 s1 s2 s3 s4 s5 s6 s7 x2 x3 x4 x5
+  where
+    s0 : [32]
+    s0 = take`{32} x1
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x1)
+    s2 : [32]
+    s2 = take`{32} (drop`{64} x1)
+    s3 : [32]
+    s3 = take`{32} (drop`{96} x1)
+    s4 : [32]
+    s4 = take`{32} (drop`{128} x1)
+    s5 : [32]
+    s5 = take`{32} (drop`{160} x1)
+    s6 : [32]
+    s6 = take`{32} (drop`{192} x1)
+    s7 : [32]
+    s7 = drop`{224} x1
+
+// main.$L.arm47$1665
+rw_main__L_arm47_1665 : [68] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm47_1665 x0 x1 x2 x3 x4 = rw_main__L_ds43_1659 x0 x3 x1 x2 x3 x4
+
+// main.$L.i41$1657
+rw_main__L_i41_1657 : [6] -> [68] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_i41_1657 x0 x1 x2 x3 x4 x5 = if x0 == 0b111111 then (rw_main__L_arm47_1665 x1 x2 x3 x4 x5) else (rw_main__L_Main_genhash_48_1666 x2 x3 x4 x5)
+
+// main.$L.ctr40$1656
+rw_main__L_ctr40_1656 : [6] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_ctr40_1656 x0 x1 x2 x3 x4 = 0b1000000000000000000000000000000000000000000000000000000000000000001 # (x0 # (x1 # (x2 # (x3 # x4))))
+
+// main.$L._unused50$1668
+rw_main__L__unused50_1668 : [6] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L__unused50_1668 x0 x1 x2 x3 x4 = rw_main__L_ctr40_1656 x0 x1 x2 x3 s0
+  where
+    s0 : [6]
+    s0 = rw_Main_incCtr x0
+
+// main.$L.s53$1671
+rw_main__L_s53_1671 : [6] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_s53_1671 x0 x1 x2 x3 x4 x5 x6 = rw_main__L__unused50_1668 x0 s1 x4 x5 x6
+  where
+    s0 : [32]
+    s0 = rw_Main_seed x0
+    s1 : [256]
+    s1 = rw_Main_step256 s0 x1 x2
+
+// main.$L.w52$1670
+rw_main__L_w52_1670 : [6] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_w52_1670 x0 x1 x2 x3 x4 x5 = rw_main__L_s53_1671 x0 x1 x2 x2 x3 x4 x5
+
+// main.$L.arm56$1675
+rw_main__L_arm56_1675 : [6] -> [512] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm56_1675 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 = rw_main__L_w52_1670 x0 x2 x18 s0 x20 x21
+  where
+    s0 : [512]
+    s0 = rw_Main_updateSched x1
+
+// main.$L.s54$1673
+rw_main__L_s54_1673 : [6] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_s54_1673 x0 x1 x2 x3 x4 x5 = rw_main__L_arm56_1675 x0 x1 s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 x2 x3 x4 x5
   where
     s0 : [32]
     s0 = take`{32} x1
@@ -664,78 +470,25 @@ rw__L_s54 x0 x1 x2 x3 x4 x5 = rw__L_arm56 x0 x1 s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s1
     s15 : [32]
     s15 = drop`{480} x1
 
-// Main.rotateR6
-rw_Main_rotateR6 : [32] -> [32]
-rw_Main_rotateR6 x0 = s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # (s24 # s25))))))))))))))))))))))))))))))
-  where
-    s0 : [1]
-    s0 = take`{1} x0
-    s1 : [1]
-    s1 = take`{1} (drop`{1} x0)
-    s2 : [1]
-    s2 = take`{1} (drop`{2} x0)
-    s3 : [1]
-    s3 = take`{1} (drop`{3} x0)
-    s4 : [1]
-    s4 = take`{1} (drop`{4} x0)
-    s5 : [1]
-    s5 = take`{1} (drop`{5} x0)
-    s6 : [1]
-    s6 = take`{1} (drop`{6} x0)
-    s7 : [1]
-    s7 = take`{1} (drop`{7} x0)
-    s8 : [1]
-    s8 = take`{1} (drop`{8} x0)
-    s9 : [1]
-    s9 = take`{1} (drop`{9} x0)
-    s10 : [1]
-    s10 = take`{1} (drop`{10} x0)
-    s11 : [1]
-    s11 = take`{1} (drop`{11} x0)
-    s12 : [1]
-    s12 = take`{1} (drop`{12} x0)
-    s13 : [1]
-    s13 = take`{1} (drop`{13} x0)
-    s14 : [1]
-    s14 = take`{1} (drop`{14} x0)
-    s15 : [1]
-    s15 = take`{1} (drop`{15} x0)
-    s16 : [1]
-    s16 = take`{1} (drop`{16} x0)
-    s17 : [1]
-    s17 = take`{1} (drop`{17} x0)
-    s18 : [1]
-    s18 = take`{1} (drop`{18} x0)
-    s19 : [1]
-    s19 = take`{1} (drop`{19} x0)
-    s20 : [1]
-    s20 = take`{1} (drop`{20} x0)
-    s21 : [1]
-    s21 = take`{1} (drop`{21} x0)
-    s22 : [1]
-    s22 = take`{1} (drop`{22} x0)
-    s23 : [1]
-    s23 = take`{1} (drop`{23} x0)
-    s24 : [1]
-    s24 = take`{1} (drop`{24} x0)
-    s25 : [1]
-    s25 = take`{1} (drop`{25} x0)
-    s26 : [1]
-    s26 = take`{1} (drop`{26} x0)
-    s27 : [1]
-    s27 = take`{1} (drop`{27} x0)
-    s28 : [1]
-    s28 = take`{1} (drop`{28} x0)
-    s29 : [1]
-    s29 = take`{1} (drop`{29} x0)
-    s30 : [1]
-    s30 = take`{1} (drop`{30} x0)
-    s31 : [1]
-    s31 = drop`{31} x0
+// main.$L.ctr49$1667
+rw_main__L_ctr49_1667 : [6] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_ctr49_1667 x0 x1 x2 x3 x4 = rw_main__L_s54_1673 x0 x2 x1 x2 x3 x4
 
-// $L.hw35
-rw__L_hw35 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_hw35 x0 x1 x2 x3 x4 x5 x6 = rw__LL_L_hw191 x3 x6 x5 (rw__LL_L_hw151 (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (x0 # (x1 # (s12 # s13))))))))))))))))
+// main.$L.Main.genhash'48$1666
+rw_main__L_Main_genhash_48_1666 : [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_Main_genhash_48_1666 x0 x1 x2 x3 = rw_main__L_ctr49_1667 x3 x0 x1 x2 x3
+
+// main.$L._unused38$1654
+rw_main__L__unused38_1654 : [68] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L__unused38_1654 x0 x1 x2 x3 x4 = rw_main__L_Main_genhash_48_1666 x1 x2 x3 x4
+
+// main.$L._unused37$1653
+rw_main__L__unused37_1653 : [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L__unused37_1653 x0 x1 x2 x3 = 0b1000000000000000000000000000000000000000000000000000000000000000010000000 # (x0 # (x1 # (x2 # x3)))
+
+// main.$L.hw60$1681
+rw_main__L_hw60_1681 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_hw60_1681 x0 x1 x2 x3 x4 x5 x6 = rw_main__L__unused37_1653 x3 s15 x5 x6
   where
     s0 : [32]
     s0 = take`{32} x2
@@ -762,294 +515,165 @@ rw__L_hw35 x0 x1 x2 x3 x4 x5 x6 = rw__LL_L_hw191 x3 x6 x5 (rw__LL_L_hw151 (s0 # 
     s11 : [32]
     s11 = take`{32} (drop`{352} x2)
     s12 : [32]
-    s12 = take`{32} (drop`{448} x2)
+    s12 = take`{32} (drop`{384} x2)
     s13 : [32]
-    s13 = drop`{480} x2
+    s13 = take`{32} (drop`{416} x2)
+    s14 : [512]
+    s14 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (x0 # x1))))))))))))))
+    s15 : [512]
+    s15 = s14
 
-// Main.rotateR25
-rw_Main_rotateR25 : [32] -> [32]
-rw_Main_rotateR25 x0 = s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # s6))))))))))))))))))))))))))))))
+// main.$L._unused59$1680
+rw_main__L__unused59_1680 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L__unused59_1680 x0 x1 x2 x3 x4 x5 = rw_main__L_hw60_1681 x0 x1 x3 x2 x3 x4 x5
+
+// main.$L.hi_158$1679
+rw_main__L_hi_158_1679 : [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_hi_158_1679 x0 x1 x2 x3 x4 x5 x6 = rw_main__L__unused59_1680 x0 x1 x2 x4 x5 x6
+
+// main.$L._unused57$1678
+rw_main__L__unused57_1678 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L__unused57_1678 x0 x1 x2 x3 x4 x5 = rw_main__L_hi_158_1679 x0 x1 x4 x2 x3 x4 x5
+
+// main.$L.arm61$1684
+rw_main__L_arm61_1684 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm61_1684 x0 x1 x2 x3 x4 x5 = rw_main__L__unused57_1678 x0 x1 x2 x3 x4 0b000000
+
+// main.$L.h_n62$1685
+rw_main__L_h_n62_1685 : [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_h_n62_1685 x0 x1 x2 x3 x4 = s0 # (0x00 # (x1 # (x2 # (x3 # x4))))
   where
-    s0 : [1]
-    s0 = take`{1} x0
-    s1 : [1]
-    s1 = take`{1} (drop`{1} x0)
-    s2 : [1]
-    s2 = take`{1} (drop`{2} x0)
-    s3 : [1]
-    s3 = take`{1} (drop`{3} x0)
-    s4 : [1]
-    s4 = take`{1} (drop`{4} x0)
-    s5 : [1]
-    s5 = take`{1} (drop`{5} x0)
-    s6 : [1]
-    s6 = take`{1} (drop`{6} x0)
-    s7 : [1]
-    s7 = take`{1} (drop`{7} x0)
-    s8 : [1]
-    s8 = take`{1} (drop`{8} x0)
-    s9 : [1]
-    s9 = take`{1} (drop`{9} x0)
-    s10 : [1]
-    s10 = take`{1} (drop`{10} x0)
-    s11 : [1]
-    s11 = take`{1} (drop`{11} x0)
-    s12 : [1]
-    s12 = take`{1} (drop`{12} x0)
-    s13 : [1]
-    s13 = take`{1} (drop`{13} x0)
-    s14 : [1]
-    s14 = take`{1} (drop`{14} x0)
-    s15 : [1]
-    s15 = take`{1} (drop`{15} x0)
-    s16 : [1]
-    s16 = take`{1} (drop`{16} x0)
-    s17 : [1]
-    s17 = take`{1} (drop`{17} x0)
-    s18 : [1]
-    s18 = take`{1} (drop`{18} x0)
-    s19 : [1]
-    s19 = take`{1} (drop`{19} x0)
-    s20 : [1]
-    s20 = take`{1} (drop`{20} x0)
-    s21 : [1]
-    s21 = take`{1} (drop`{21} x0)
-    s22 : [1]
-    s22 = take`{1} (drop`{22} x0)
-    s23 : [1]
-    s23 = take`{1} (drop`{23} x0)
-    s24 : [1]
-    s24 = take`{1} (drop`{24} x0)
-    s25 : [1]
-    s25 = take`{1} (drop`{25} x0)
-    s26 : [1]
-    s26 = take`{1} (drop`{26} x0)
-    s27 : [1]
-    s27 = take`{1} (drop`{27} x0)
-    s28 : [1]
-    s28 = take`{1} (drop`{28} x0)
-    s29 : [1]
-    s29 = take`{1} (drop`{29} x0)
-    s30 : [1]
-    s30 = take`{1} (drop`{30} x0)
-    s31 : [1]
-    s31 = drop`{31} x0
+    s0 : [65]
+    s0 = rw_Main_digest0 x0
 
-// $LL.L.arm455
-rw__LL_L_arm455 : [32] -> [32] -> [32] -> [32] -> [32] -> [68] -> [32] -> [256] -> [6] -> [32] -> [32] -> [512] -> [32] -> [32] -> [32] -> [32] -> [1103]
-rw__LL_L_arm455 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 = rw__LL_L_arm451 x1 x2 x3 x5 x6 x7 x8 x9 x15 x10 x11 x12 x13 x14 (rw_Main_plusW32 x0 x4)
+// main.$L.arm64$1689
+rw_main__L_arm64_1689 : [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm64_1689 x0 x1 x2 x3 = rw_main__L_h_n62_1685 x2 x0 x1 x2 x3
 
-// Main.rotateR13
-rw_Main_rotateR13 : [32] -> [32]
-rw_Main_rotateR13 x0 = s19 # (s20 # (s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # s18))))))))))))))))))))))))))))))
+// main.$L.h_n65$1690
+rw_main__L_h_n65_1690 : [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_h_n65_1690 x0 x1 x2 x3 x4 = s0 # (0x00 # (x1 # (x2 # (x3 # x4))))
   where
-    s0 : [1]
-    s0 = take`{1} x0
-    s1 : [1]
-    s1 = take`{1} (drop`{1} x0)
-    s2 : [1]
-    s2 = take`{1} (drop`{2} x0)
-    s3 : [1]
-    s3 = take`{1} (drop`{3} x0)
-    s4 : [1]
-    s4 = take`{1} (drop`{4} x0)
-    s5 : [1]
-    s5 = take`{1} (drop`{5} x0)
-    s6 : [1]
-    s6 = take`{1} (drop`{6} x0)
-    s7 : [1]
-    s7 = take`{1} (drop`{7} x0)
-    s8 : [1]
-    s8 = take`{1} (drop`{8} x0)
-    s9 : [1]
-    s9 = take`{1} (drop`{9} x0)
-    s10 : [1]
-    s10 = take`{1} (drop`{10} x0)
-    s11 : [1]
-    s11 = take`{1} (drop`{11} x0)
-    s12 : [1]
-    s12 = take`{1} (drop`{12} x0)
-    s13 : [1]
-    s13 = take`{1} (drop`{13} x0)
-    s14 : [1]
-    s14 = take`{1} (drop`{14} x0)
-    s15 : [1]
-    s15 = take`{1} (drop`{15} x0)
-    s16 : [1]
-    s16 = take`{1} (drop`{16} x0)
-    s17 : [1]
-    s17 = take`{1} (drop`{17} x0)
-    s18 : [1]
-    s18 = take`{1} (drop`{18} x0)
-    s19 : [1]
-    s19 = take`{1} (drop`{19} x0)
-    s20 : [1]
-    s20 = take`{1} (drop`{20} x0)
-    s21 : [1]
-    s21 = take`{1} (drop`{21} x0)
-    s22 : [1]
-    s22 = take`{1} (drop`{22} x0)
-    s23 : [1]
-    s23 = take`{1} (drop`{23} x0)
-    s24 : [1]
-    s24 = take`{1} (drop`{24} x0)
-    s25 : [1]
-    s25 = take`{1} (drop`{25} x0)
-    s26 : [1]
-    s26 = take`{1} (drop`{26} x0)
-    s27 : [1]
-    s27 = take`{1} (drop`{27} x0)
-    s28 : [1]
-    s28 = take`{1} (drop`{28} x0)
-    s29 : [1]
-    s29 = take`{1} (drop`{29} x0)
-    s30 : [1]
-    s30 = take`{1} (drop`{30} x0)
-    s31 : [1]
-    s31 = drop`{31} x0
+    s0 : [65]
+    s0 = rw_Main_digest1 x0
 
-// Main.bigsigma1
-rw_Main_bigsigma1 : [32] -> [32]
-rw_Main_bigsigma1 x0 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_rotateR6 x0) (rw_Main_rotateR11 x0)) (rw_Main_rotateR25 x0)
+// main.$L.arm67$1694
+rw_main__L_arm67_1694 : [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm67_1694 x0 x1 x2 x3 = rw_main__L_h_n65_1690 x2 x0 x1 x2 x3
 
-// $L.hw27
-rw__L_hw27 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_hw27 x0 x1 x2 x3 x4 x5 x6 = rw__LL_L_hw271 x6 x3 x5 (rw__LL_L_hw151 (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (x0 # (x1 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))))
+// main.$L.h_n68$1695
+rw_main__L_h_n68_1695 : [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_h_n68_1695 x0 x1 x2 x3 x4 = s0 # (0x00 # (x1 # (x2 # (x3 # x4))))
+  where
+    s0 : [65]
+    s0 = rw_Main_digest2 x0
+
+// main.$L.arm70$1699
+rw_main__L_arm70_1699 : [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm70_1699 x0 x1 x2 x3 = rw_main__L_h_n68_1695 x2 x0 x1 x2 x3
+
+// main.$L.h_n71$1700
+rw_main__L_h_n71_1700 : [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_h_n71_1700 x0 x1 x2 x3 x4 = s0 # (0x00 # (x1 # (x2 # (x3 # x4))))
+  where
+    s0 : [65]
+    s0 = rw_Main_digest3 x0
+
+// main.$L.arm73$1704
+rw_main__L_arm73_1704 : [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_arm73_1704 x0 x1 x2 x3 = rw_main__L_h_n71_1700 x2 x0 x1 x2 x3
+
+// main.$L.Main.dev3$1603
+rw_main__L_Main_dev3_1603 : [68] -> [256] -> [512] -> [256] -> [6] -> [1103]
+rw_main__L_Main_dev3_1603 x0 x1 x2 x3 x4 = if (take`{4} x0) == 0x0 then (rw_main__L_arm8_1610 s0 s1 x1 x2 x3 x4) else (if (take`{4} x0) == 0x1 then (rw_main__L__unused6_1607 s2 s3 x1 x2 x3 x4) else (if (take`{4} x0) == 0x2 then (rw_main__L_arm16_1622 s4 s5 x1 x2 x3 x4) else (if (take`{4} x0) == 0x3 then (rw_main__L_arm20_1628 s6 s7 x1 x2 x3 x4) else (if (take`{4} x0) == 0x4 then (rw_main__L_arm24_1634 s8 s9 x1 x2 x3 x4) else (if (take`{4} x0) == 0x5 then (rw_main__L_arm28_1640 s10 s11 x1 x2 x3 x4) else (if (take`{4} x0) == 0x6 then (rw_main__L_arm32_1646 s12 s13 x1 x2 x3 x4) else (if (take`{4} x0) == 0x7 then (rw_main__L_arm36_1652 s14 s15 x1 x2 x3 x4) else (if (take`{4} x0) == 0x8 then (rw_main__L_arm61_1684 s16 s17 x1 x2 x3 x4) else (if (take`{4} x0) == 0x9 then (rw_main__L_arm64_1689 x1 x2 x3 x4) else (if (take`{4} x0) == 0xa then (rw_main__L_arm67_1694 x1 x2 x3 x4) else (if (take`{4} x0) == 0xb then (rw_main__L_arm70_1699 x1 x2 x3 x4) else (rw_main__L_arm73_1704 x1 x2 x3 x4))))))))))))
   where
     s0 : [32]
-    s0 = take`{32} x2
+    s0 = take`{32} (drop`{4} x0)
     s1 : [32]
-    s1 = take`{32} (drop`{32} x2)
+    s1 = drop`{36} x0
     s2 : [32]
-    s2 = take`{32} (drop`{64} x2)
+    s2 = take`{32} (drop`{4} x0)
     s3 : [32]
-    s3 = take`{32} (drop`{96} x2)
+    s3 = drop`{36} x0
     s4 : [32]
-    s4 = take`{32} (drop`{128} x2)
+    s4 = take`{32} (drop`{4} x0)
     s5 : [32]
-    s5 = take`{32} (drop`{160} x2)
+    s5 = drop`{36} x0
     s6 : [32]
-    s6 = take`{32} (drop`{192} x2)
+    s6 = take`{32} (drop`{4} x0)
     s7 : [32]
-    s7 = take`{32} (drop`{224} x2)
+    s7 = drop`{36} x0
     s8 : [32]
-    s8 = take`{32} (drop`{320} x2)
+    s8 = take`{32} (drop`{4} x0)
     s9 : [32]
-    s9 = take`{32} (drop`{352} x2)
+    s9 = drop`{36} x0
     s10 : [32]
-    s10 = take`{32} (drop`{384} x2)
+    s10 = take`{32} (drop`{4} x0)
     s11 : [32]
-    s11 = take`{32} (drop`{416} x2)
+    s11 = drop`{36} x0
     s12 : [32]
-    s12 = take`{32} (drop`{448} x2)
+    s12 = take`{32} (drop`{4} x0)
     s13 : [32]
-    s13 = drop`{480} x2
-
-// $L.s53
-rw__L_s53 : [6] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_s53 x0 x1 x2 x3 x4 x5 x6 = rw__LL_L_s53 x5 x1 x6 x0 x2 x4 (rw_Main_seed x0)
-
-// $L._unused50
-rw__L__unused50 : [6] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L__unused50 x0 x1 x2 x3 x4 = rw__L_ctr40 x0 x1 x2 x3 (rw_Main_incCtr x0)
-
-// Main.updateSched
-rw_Main_updateSched : [512] -> [512]
-rw_Main_updateSched x0 = s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (rw_Main_plusW32 (rw_Main_plusW32 (rw_Main_sigma1 s14) s9) (rw_Main_plusW32 (rw_Main_sigma0 s1) s0))))))))))))))))
-  where
-    s0 : [32]
-    s0 = take`{32} x0
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x0)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x0)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x0)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x0)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x0)
-    s6 : [32]
-    s6 = take`{32} (drop`{192} x0)
-    s7 : [32]
-    s7 = take`{32} (drop`{224} x0)
-    s8 : [32]
-    s8 = take`{32} (drop`{256} x0)
-    s9 : [32]
-    s9 = take`{32} (drop`{288} x0)
-    s10 : [32]
-    s10 = take`{32} (drop`{320} x0)
-    s11 : [32]
-    s11 = take`{32} (drop`{352} x0)
-    s12 : [32]
-    s12 = take`{32} (drop`{384} x0)
-    s13 : [32]
-    s13 = take`{32} (drop`{416} x0)
+    s13 = drop`{36} x0
     s14 : [32]
-    s14 = take`{32} (drop`{448} x0)
+    s14 = take`{32} (drop`{4} x0)
     s15 : [32]
-    s15 = drop`{480} x0
+    s15 = drop`{36} x0
+    s16 : [32]
+    s16 = take`{32} (drop`{4} x0)
+    s17 : [32]
+    s17 = drop`{36} x0
 
-// $L.hi_158
-rw__L_hi_158 : [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_hi_158 x0 x1 x2 x3 x4 x5 x6 = rw__LL_L_hi_158 x1 x0 x6 x5 x4 x2
+// Main.plusW32
+rw_Main_plusW32 : [32] -> [32] -> [32]
+rw_Main_plusW32 x0 x1 = ext_plusW32 x0 x1
 
-// $L.$x5
-rw__L__x5 : [68] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L__x5 x0 x1 x2 x3 x4 = rw__L_Main_dev3 x0 x1 x2 x3 x4
-
-// $L.hw15
-rw__L_hw15 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_hw15 x0 x1 x2 x3 x4 x5 x6 = rw__LL_L_hw311 x5 x6 x3 (rw__LL_L_hw151 (s0 # (s1 # (x0 # (x1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))))
-  where
-    s0 : [32]
-    s0 = take`{32} x2
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x2)
-    s2 : [32]
-    s2 = take`{32} (drop`{128} x2)
-    s3 : [32]
-    s3 = take`{32} (drop`{160} x2)
-    s4 : [32]
-    s4 = take`{32} (drop`{192} x2)
-    s5 : [32]
-    s5 = take`{32} (drop`{224} x2)
-    s6 : [32]
-    s6 = take`{32} (drop`{256} x2)
-    s7 : [32]
-    s7 = take`{32} (drop`{288} x2)
-    s8 : [32]
-    s8 = take`{32} (drop`{320} x2)
-    s9 : [32]
-    s9 = take`{32} (drop`{352} x2)
-    s10 : [32]
-    s10 = take`{32} (drop`{384} x2)
-    s11 : [32]
-    s11 = take`{32} (drop`{416} x2)
-    s12 : [32]
-    s12 = take`{32} (drop`{448} x2)
-    s13 : [32]
-    s13 = drop`{480} x2
+// Main.andW32
+rw_Main_andW32 : [32] -> [32] -> [32]
+rw_Main_andW32 x0 x1 = ext_andW32 x0 x1
 
 // Main.xorW32
 rw_Main_xorW32 : [32] -> [32] -> [32]
 rw_Main_xorW32 x0 x1 = ext_xorW32 x0 x1
 
-// $L.arm32
-rw__L_arm32 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm32 x0 x1 x2 x3 x4 x5 = rw__L_hw31 x0 x1 x3 x2 x3 x4 x5
+// Main.maj
+rw_Main_maj : [32] -> [32] -> [32] -> [32]
+rw_Main_maj x0 x1 x2 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_andW32 x0 x1) (rw_Main_andW32 x0 x2)) (rw_Main_andW32 x1 x2)
 
-// $L.arm64
-rw__L_arm64 : [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm64 x0 x1 x2 x3 = rw__L_h_n62 x2 x0 x1 x2 x3
+// Main.notW32
+rw_Main_notW32 : [32] -> [32]
+rw_Main_notW32 x0 = ext_notW32 x0
 
-// $LL.L.hi_158
-rw__LL_L_hi_158 : [32] -> [32] -> [6] -> [256] -> [512] -> [256] -> [1103]
-rw__LL_L_hi_158 x0 x1 x2 x3 x4 x5 = rw__L__unused59 x1 x0 x5 x4 x3 x2
+// Main.ch
+rw_Main_ch : [32] -> [32] -> [32] -> [32]
+rw_Main_ch x0 x1 x2 = rw_Main_xorW32 (rw_Main_andW32 x0 x1) (rw_Main_andW32 (rw_Main_notW32 x0) x2)
 
-// Main.bigsigma0
-rw_Main_bigsigma0 : [32] -> [32]
-rw_Main_bigsigma0 x0 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_rotateR2 x0) (rw_Main_rotateR13 x0)) (rw_Main_rotateR22 x0)
+// Main.digest0
+rw_Main_digest0 : [256] -> [65]
+rw_Main_digest0 x0 = 0b0 # (s0 # s1)
+  where
+    s0 : [32]
+    s0 = take`{32} x0
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x0)
+
+// Main.digest1
+rw_Main_digest1 : [256] -> [65]
+rw_Main_digest1 x0 = 0b0 # (s0 # s1)
+  where
+    s0 : [32]
+    s0 = take`{32} (drop`{64} x0)
+    s1 : [32]
+    s1 = take`{32} (drop`{96} x0)
+
+// Main.digest2
+rw_Main_digest2 : [256] -> [65]
+rw_Main_digest2 x0 = 0b0 # (s0 # s1)
+  where
+    s0 : [32]
+    s0 = take`{32} (drop`{128} x0)
+    s1 : [32]
+    s1 = take`{32} (drop`{160} x0)
 
 // Main.digest3
 rw_Main_digest3 : [256] -> [65]
@@ -1060,286 +684,9 @@ rw_Main_digest3 x0 = 0b0 # (s0 # s1)
     s1 : [32]
     s1 = drop`{224} x0
 
-// $L.hw23
-rw__L_hw23 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_hw23 x0 x1 x2 x3 x4 x5 x6 = rw__LL_L_hw311 x5 x6 x3 (rw__LL_L_hw151 (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (x0 # (x1 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))))
-  where
-    s0 : [32]
-    s0 = take`{32} x2
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x2)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x2)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x2)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x2)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x2)
-    s6 : [32]
-    s6 = take`{32} (drop`{256} x2)
-    s7 : [32]
-    s7 = take`{32} (drop`{288} x2)
-    s8 : [32]
-    s8 = take`{32} (drop`{320} x2)
-    s9 : [32]
-    s9 = take`{32} (drop`{352} x2)
-    s10 : [32]
-    s10 = take`{32} (drop`{384} x2)
-    s11 : [32]
-    s11 = take`{32} (drop`{416} x2)
-    s12 : [32]
-    s12 = take`{32} (drop`{448} x2)
-    s13 : [32]
-    s13 = drop`{480} x2
-
-// Main.step256
-rw_Main_step256 : [32] -> [32] -> [256] -> [256]
-rw_Main_step256 x0 x1 x2 = rw__LL_Main_step256 s1 s6 s5 s2 s0 s4 s3 (rw_Main_plusW32 s7 (rw_Main_plusW32 (rw_Main_plusW32 (rw_Main_bigsigma1 s4) (rw_Main_ch s4 s5 s6)) (rw_Main_plusW32 x0 x1)))
-  where
-    s0 : [32]
-    s0 = take`{32} x2
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x2)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x2)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x2)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x2)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x2)
-    s6 : [32]
-    s6 = take`{32} (drop`{192} x2)
-    s7 : [32]
-    s7 = drop`{224} x2
-
-// $L.Main.genhash'48
-rw__L_Main_genhash_48 : [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_Main_genhash_48 x0 x1 x2 x3 = rw__L_ctr49 x3 x0 x1 x2 x3
-
-// $LL.L.arm454
-rw__LL_L_arm454 : [32] -> [32] -> [32] -> [68] -> [32] -> [256] -> [6] -> [32] -> [32] -> [32] -> [512] -> [32] -> [32] -> [32] -> [1103]
-rw__LL_L_arm454 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 = rw__LL_L_arm452 x0 x13 x2 x3 x4 x5 x6 x7 x8 x9 x10 x12 (rw_Main_plusW32 x1 x11)
-
-// $L.arm36
-rw__L_arm36 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm36 x0 x1 x2 x3 x4 x5 = rw__L_hw35 x0 x1 x3 x2 x3 x4 x5
-
-// $LL.L.h_n68
-rw__LL_L_h_n68 : [256] -> [256] -> [6] -> [512] -> [65] -> [1103]
-rw__LL_L_h_n68 x0 x1 x2 x3 x4 = x4 # (0x00 # (x0 # (x3 # (x1 # x2))))
-
-// $LL.L.h_n62
-rw__LL_L_h_n62 : [6] -> [256] -> [512] -> [256] -> [65] -> [1103]
-rw__LL_L_h_n62 x0 x1 x2 x3 x4 = x4 # (0x00 # (x3 # (x2 # (x1 # x0))))
-
-// Main.andW32
-rw_Main_andW32 : [32] -> [32] -> [32]
-rw_Main_andW32 x0 x1 = ext_andW32 x0 x1
-
-// $L.ds44
-rw__L_ds44 : [68] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_ds44 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 = rw__L_arm45 x0 x1 x2 x3 x4 x5 x6 x7 x8 s0 s1 s2 s3 s4 s5 s6 s7 x10 x11 x12 x13
-  where
-    s0 : [32]
-    s0 = take`{32} x9
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x9)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x9)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x9)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x9)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x9)
-    s6 : [32]
-    s6 = take`{32} (drop`{192} x9)
-    s7 : [32]
-    s7 = drop`{224} x9
-
-// $LL.L.arm56
-rw__LL_L_arm56 : [256] -> [6] -> [32] -> [6] -> [256] -> [512] -> [1103]
-rw__LL_L_arm56 x0 x1 x2 x3 x4 x5 = rw__L_w52 x1 x2 x0 x5 x4 x3
-
-// $LL.Main.step256
-rw__LL_Main_step256 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256]
-rw__LL_Main_step256 x0 x1 x2 x3 x4 x5 x6 x7 = (rw_Main_plusW32 x7 (rw_Main_plusW32 (rw_Main_bigsigma0 x4) (rw_Main_maj x4 x0 x3))) # (x4 # (x0 # (x3 # ((rw_Main_plusW32 x6 x7) # (x5 # (x2 # x1))))))
-
-// $LL.L.arm453
-rw__LL_L_arm453 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [68] -> [256] -> [6] -> [32] -> [32] -> [512] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [1103]
-rw__LL_L_arm453 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 = rw__LL_L_arm457 x0 x1 x3 x4 x6 x7 x8 x9 x10 x11 x18 x12 x13 x14 x15 x16 x17 (rw_Main_plusW32 x2 x5)
-
-// $L.h_n71
-rw__L_h_n71 : [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_h_n71 x0 x1 x2 x3 x4 = rw__LL_L_h_n71 x4 x2 x1 x3 (rw_Main_digest3 x0)
-
-// $L.h_n62
-rw__L_h_n62 : [256] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_h_n62 x0 x1 x2 x3 x4 = rw__LL_L_h_n62 x4 x3 x2 x1 (rw_Main_digest0 x0)
-
-// $L._unused4
-rw__L__unused4 : [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L__unused4 x0 x1 x2 x3 = 0b1000000000000000000000000000000000000000000000000000000000000000000000000 # (x0 # (x1 # (x2 # x3)))
-
-// $LL.L.arm452
-rw__LL_L_arm452 : [32] -> [32] -> [32] -> [68] -> [32] -> [256] -> [6] -> [32] -> [32] -> [32] -> [512] -> [32] -> [32] -> [1103]
-rw__LL_L_arm452 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 = rw__LL_L_arm458 x1 x2 x3 x4 x5 x6 x7 x12 x8 x9 x10 (rw_Main_plusW32 x11 x0)
-
-// Main.rotateR17
-rw_Main_rotateR17 : [32] -> [32]
-rw_Main_rotateR17 x0 = s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # s14))))))))))))))))))))))))))))))
-  where
-    s0 : [1]
-    s0 = take`{1} x0
-    s1 : [1]
-    s1 = take`{1} (drop`{1} x0)
-    s2 : [1]
-    s2 = take`{1} (drop`{2} x0)
-    s3 : [1]
-    s3 = take`{1} (drop`{3} x0)
-    s4 : [1]
-    s4 = take`{1} (drop`{4} x0)
-    s5 : [1]
-    s5 = take`{1} (drop`{5} x0)
-    s6 : [1]
-    s6 = take`{1} (drop`{6} x0)
-    s7 : [1]
-    s7 = take`{1} (drop`{7} x0)
-    s8 : [1]
-    s8 = take`{1} (drop`{8} x0)
-    s9 : [1]
-    s9 = take`{1} (drop`{9} x0)
-    s10 : [1]
-    s10 = take`{1} (drop`{10} x0)
-    s11 : [1]
-    s11 = take`{1} (drop`{11} x0)
-    s12 : [1]
-    s12 = take`{1} (drop`{12} x0)
-    s13 : [1]
-    s13 = take`{1} (drop`{13} x0)
-    s14 : [1]
-    s14 = take`{1} (drop`{14} x0)
-    s15 : [1]
-    s15 = take`{1} (drop`{15} x0)
-    s16 : [1]
-    s16 = take`{1} (drop`{16} x0)
-    s17 : [1]
-    s17 = take`{1} (drop`{17} x0)
-    s18 : [1]
-    s18 = take`{1} (drop`{18} x0)
-    s19 : [1]
-    s19 = take`{1} (drop`{19} x0)
-    s20 : [1]
-    s20 = take`{1} (drop`{20} x0)
-    s21 : [1]
-    s21 = take`{1} (drop`{21} x0)
-    s22 : [1]
-    s22 = take`{1} (drop`{22} x0)
-    s23 : [1]
-    s23 = take`{1} (drop`{23} x0)
-    s24 : [1]
-    s24 = take`{1} (drop`{24} x0)
-    s25 : [1]
-    s25 = take`{1} (drop`{25} x0)
-    s26 : [1]
-    s26 = take`{1} (drop`{26} x0)
-    s27 : [1]
-    s27 = take`{1} (drop`{27} x0)
-    s28 : [1]
-    s28 = take`{1} (drop`{28} x0)
-    s29 : [1]
-    s29 = take`{1} (drop`{29} x0)
-    s30 : [1]
-    s30 = take`{1} (drop`{30} x0)
-    s31 : [1]
-    s31 = drop`{31} x0
-
-// $L.arm61
-rw__L_arm61 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm61 x0 x1 x2 x3 x4 x5 = rw__L__unused57 x0 x1 x2 x3 x4 0b000000
-
-// Main.rotateR7
-rw_Main_rotateR7 : [32] -> [32]
-rw_Main_rotateR7 x0 = s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # s24))))))))))))))))))))))))))))))
-  where
-    s0 : [1]
-    s0 = take`{1} x0
-    s1 : [1]
-    s1 = take`{1} (drop`{1} x0)
-    s2 : [1]
-    s2 = take`{1} (drop`{2} x0)
-    s3 : [1]
-    s3 = take`{1} (drop`{3} x0)
-    s4 : [1]
-    s4 = take`{1} (drop`{4} x0)
-    s5 : [1]
-    s5 = take`{1} (drop`{5} x0)
-    s6 : [1]
-    s6 = take`{1} (drop`{6} x0)
-    s7 : [1]
-    s7 = take`{1} (drop`{7} x0)
-    s8 : [1]
-    s8 = take`{1} (drop`{8} x0)
-    s9 : [1]
-    s9 = take`{1} (drop`{9} x0)
-    s10 : [1]
-    s10 = take`{1} (drop`{10} x0)
-    s11 : [1]
-    s11 = take`{1} (drop`{11} x0)
-    s12 : [1]
-    s12 = take`{1} (drop`{12} x0)
-    s13 : [1]
-    s13 = take`{1} (drop`{13} x0)
-    s14 : [1]
-    s14 = take`{1} (drop`{14} x0)
-    s15 : [1]
-    s15 = take`{1} (drop`{15} x0)
-    s16 : [1]
-    s16 = take`{1} (drop`{16} x0)
-    s17 : [1]
-    s17 = take`{1} (drop`{17} x0)
-    s18 : [1]
-    s18 = take`{1} (drop`{18} x0)
-    s19 : [1]
-    s19 = take`{1} (drop`{19} x0)
-    s20 : [1]
-    s20 = take`{1} (drop`{20} x0)
-    s21 : [1]
-    s21 = take`{1} (drop`{21} x0)
-    s22 : [1]
-    s22 = take`{1} (drop`{22} x0)
-    s23 : [1]
-    s23 = take`{1} (drop`{23} x0)
-    s24 : [1]
-    s24 = take`{1} (drop`{24} x0)
-    s25 : [1]
-    s25 = take`{1} (drop`{25} x0)
-    s26 : [1]
-    s26 = take`{1} (drop`{26} x0)
-    s27 : [1]
-    s27 = take`{1} (drop`{27} x0)
-    s28 : [1]
-    s28 = take`{1} (drop`{28} x0)
-    s29 : [1]
-    s29 = take`{1} (drop`{29} x0)
-    s30 : [1]
-    s30 = take`{1} (drop`{30} x0)
-    s31 : [1]
-    s31 = drop`{31} x0
-
-// Main.sigma1
-rw_Main_sigma1 : [32] -> [32]
-rw_Main_sigma1 x0 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_rotateR17 x0) (rw_Main_rotateR19 x0)) (rw_Main_shiftR10 x0)
-
-// $LL.L.arm451
-rw__LL_L_arm451 : [32] -> [32] -> [32] -> [68] -> [32] -> [256] -> [6] -> [32] -> [32] -> [32] -> [512] -> [32] -> [32] -> [32] -> [32] -> [1103]
-rw__LL_L_arm451 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 = rw__LL_L_arm454 x0 x1 x14 x3 x4 x5 x6 x7 x8 x9 x10 x12 x13 (rw_Main_plusW32 x2 x11)
-
-// $LL.L.arm8
-rw__LL_L_arm8 : [512] -> [6] -> [256] -> [32] -> [32] -> [256] -> [1103]
-rw__LL_L_arm8 x0 x1 x2 x3 x4 x5 = rw__L__unused6 x4 x3 x2 x0 x5 x1
+// Main.incCtr
+rw_Main_incCtr : [6] -> [6]
+rw_Main_incCtr x0 = if x0 == 0b000000 then 0b000001 else (if x0 == 0b000001 then 0b000010 else (if x0 == 0b000010 then 0b000011 else (if x0 == 0b000011 then 0b000100 else (if x0 == 0b000100 then 0b000101 else (if x0 == 0b000101 then 0b000110 else (if x0 == 0b000110 then 0b000111 else (if x0 == 0b000111 then 0b001000 else (if x0 == 0b001000 then 0b001001 else (if x0 == 0b001001 then 0b001010 else (if x0 == 0b001010 then 0b001011 else (if x0 == 0b001011 then 0b001100 else (if x0 == 0b001100 then 0b001101 else (if x0 == 0b001101 then 0b001110 else (if x0 == 0b001110 then 0b001111 else (if x0 == 0b001111 then 0b010000 else (if x0 == 0b010000 then 0b010001 else (if x0 == 0b010001 then 0b010010 else (if x0 == 0b010010 then 0b010011 else (if x0 == 0b010011 then 0b010100 else (if x0 == 0b010100 then 0b010101 else (if x0 == 0b010101 then 0b010110 else (if x0 == 0b010110 then 0b010111 else (if x0 == 0b010111 then 0b011000 else (if x0 == 0b011000 then 0b011001 else (if x0 == 0b011001 then 0b011010 else (if x0 == 0b011010 then 0b011011 else (if x0 == 0b011011 then 0b011100 else (if x0 == 0b011100 then 0b011101 else (if x0 == 0b011101 then 0b011110 else (if x0 == 0b011110 then 0b011111 else (if x0 == 0b011111 then 0b100000 else (if x0 == 0b100000 then 0b100001 else (if x0 == 0b100001 then 0b100010 else (if x0 == 0b100010 then 0b100011 else (if x0 == 0b100011 then 0b100100 else (if x0 == 0b100100 then 0b100101 else (if x0 == 0b100101 then 0b100110 else (if x0 == 0b100110 then 0b100111 else (if x0 == 0b100111 then 0b101000 else (if x0 == 0b101000 then 0b101001 else (if x0 == 0b101001 then 0b101010 else (if x0 == 0b101010 then 0b101011 else (if x0 == 0b101011 then 0b101100 else (if x0 == 0b101100 then 0b101101 else (if x0 == 0b101101 then 0b101110 else (if x0 == 0b101110 then 0b101111 else (if x0 == 0b101111 then 0b110000 else (if x0 == 0b110000 then 0b110001 else (if x0 == 0b110001 then 0b110010 else (if x0 == 0b110010 then 0b110011 else (if x0 == 0b110011 then 0b110100 else (if x0 == 0b110100 then 0b110101 else (if x0 == 0b110101 then 0b110110 else (if x0 == 0b110110 then 0b110111 else (if x0 == 0b110111 then 0b111000 else (if x0 == 0b111000 then 0b111001 else (if x0 == 0b111001 then 0b111010 else (if x0 == 0b111010 then 0b111011 else (if x0 == 0b111011 then 0b111100 else (if x0 == 0b111100 then 0b111101 else (if x0 == 0b111101 then 0b111110 else (if x0 == 0b111110 then 0b111111 else 0b000000))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 
 // Main.rotateR2
 rw_Main_rotateR2 : [32] -> [32]
@@ -1410,74 +757,638 @@ rw_Main_rotateR2 x0 = s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7
     s31 : [1]
     s31 = drop`{31} x0
 
-// $LL.Main.incCtr
-rw__LL_Main_incCtr : [6] -> [6]
-rw__LL_Main_incCtr x0 = if x0 == 0b000000 then 0b000001 else (if x0 == 0b000001 then 0b000010 else (if x0 == 0b000010 then 0b000011 else (if x0 == 0b000011 then 0b000100 else (if x0 == 0b000100 then 0b000101 else (if x0 == 0b000101 then 0b000110 else (if x0 == 0b000110 then 0b000111 else (if x0 == 0b000111 then 0b001000 else (if x0 == 0b001000 then 0b001001 else (if x0 == 0b001001 then 0b001010 else (if x0 == 0b001010 then 0b001011 else (if x0 == 0b001011 then 0b001100 else (if x0 == 0b001100 then 0b001101 else (if x0 == 0b001101 then 0b001110 else (if x0 == 0b001110 then 0b001111 else (if x0 == 0b001111 then 0b010000 else (if x0 == 0b010000 then 0b010001 else (if x0 == 0b010001 then 0b010010 else (if x0 == 0b010010 then 0b010011 else (if x0 == 0b010011 then 0b010100 else (if x0 == 0b010100 then 0b010101 else (if x0 == 0b010101 then 0b010110 else (if x0 == 0b010110 then 0b010111 else (if x0 == 0b010111 then 0b011000 else (if x0 == 0b011000 then 0b011001 else (if x0 == 0b011001 then 0b011010 else (if x0 == 0b011010 then 0b011011 else (if x0 == 0b011011 then 0b011100 else (if x0 == 0b011100 then 0b011101 else (if x0 == 0b011101 then 0b011110 else (if x0 == 0b011110 then 0b011111 else (if x0 == 0b011111 then 0b100000 else (if x0 == 0b100000 then 0b100001 else (if x0 == 0b100001 then 0b100010 else (if x0 == 0b100010 then 0b100011 else (if x0 == 0b100011 then 0b100100 else (if x0 == 0b100100 then 0b100101 else (if x0 == 0b100101 then 0b100110 else (if x0 == 0b100110 then 0b100111 else (if x0 == 0b100111 then 0b101000 else (if x0 == 0b101000 then 0b101001 else (if x0 == 0b101001 then 0b101010 else (if x0 == 0b101010 then 0b101011 else (if x0 == 0b101011 then 0b101100 else (if x0 == 0b101100 then 0b101101 else (if x0 == 0b101101 then 0b101110 else (if x0 == 0b101110 then 0b101111 else (if x0 == 0b101111 then 0b110000 else (if x0 == 0b110000 then 0b110001 else (if x0 == 0b110001 then 0b110010 else (if x0 == 0b110010 then 0b110011 else (if x0 == 0b110011 then 0b110100 else (if x0 == 0b110100 then 0b110101 else (if x0 == 0b110101 then 0b110110 else (if x0 == 0b110110 then 0b110111 else (if x0 == 0b110111 then 0b111000 else (if x0 == 0b111000 then 0b111001 else (if x0 == 0b111001 then 0b111010 else (if x0 == 0b111010 then 0b111011 else (if x0 == 0b111011 then 0b111100 else (if x0 == 0b111100 then 0b111101 else (if x0 == 0b111101 then 0b111110 else (if x0 == 0b111110 then 0b111111 else 0b000000))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
-
-// $L.arm45
-rw__L_arm45 : [68] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm45 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 = rw__LL_L_arm453 x13 x8 x10 x15 x14 x2 x5 x0 x17 x20 x11 x4 x18 x3 x6 x7 x12 x16 (rw_Main_plusW32 x9 x1)
-
-// $L.arm56
-rw__L_arm56 : [6] -> [512] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm56 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 = rw__LL_L_arm56 x18 x0 x2 x21 x20 (rw_Main_updateSched x1)
-
-// $LL.L.hw60
-rw__LL_L_hw60 : [256] -> [6] -> [256] -> [512] -> [1103]
-rw__LL_L_hw60 x0 x1 x2 x3 = rw__L__unused37 x2 x3 x0 x1
-
-// $L.Main.dev3
-rw__L_Main_dev3 : [68] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_Main_dev3 x0 x1 x2 x3 x4 = if (take`{4} x0) == 0x0 then (rw__L_arm8 s0 s1 x1 x2 x3 x4) else (if (take`{4} x0) == 0x1 then (rw__L__unused6 s2 s3 x1 x2 x3 x4) else (if (take`{4} x0) == 0x2 then (rw__L_arm16 s4 s5 x1 x2 x3 x4) else (if (take`{4} x0) == 0x3 then (rw__L_arm20 s6 s7 x1 x2 x3 x4) else (if (take`{4} x0) == 0x4 then (rw__L_arm24 s8 s9 x1 x2 x3 x4) else (if (take`{4} x0) == 0x5 then (rw__L_arm28 s10 s11 x1 x2 x3 x4) else (if (take`{4} x0) == 0x6 then (rw__L_arm32 s12 s13 x1 x2 x3 x4) else (if (take`{4} x0) == 0x7 then (rw__L_arm36 s14 s15 x1 x2 x3 x4) else (if (take`{4} x0) == 0x8 then (rw__L_arm61 s16 s17 x1 x2 x3 x4) else (if (take`{4} x0) == 0x9 then (rw__L_arm64 x1 x2 x3 x4) else (if (take`{4} x0) == 0xa then (rw__L_arm67 x1 x2 x3 x4) else (if (take`{4} x0) == 0xb then (rw__L_arm70 x1 x2 x3 x4) else (rw__L_arm73 x1 x2 x3 x4))))))))))))
+// Main.rotateR6
+rw_Main_rotateR6 : [32] -> [32]
+rw_Main_rotateR6 x0 = s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # (s24 # s25))))))))))))))))))))))))))))))
   where
-    s0 : [32]
-    s0 = take`{32} (drop`{4} x0)
-    s1 : [32]
-    s1 = drop`{36} x0
-    s2 : [32]
-    s2 = take`{32} (drop`{4} x0)
-    s3 : [32]
-    s3 = drop`{36} x0
-    s4 : [32]
-    s4 = take`{32} (drop`{4} x0)
-    s5 : [32]
-    s5 = drop`{36} x0
-    s6 : [32]
-    s6 = take`{32} (drop`{4} x0)
-    s7 : [32]
-    s7 = drop`{36} x0
-    s8 : [32]
-    s8 = take`{32} (drop`{4} x0)
-    s9 : [32]
-    s9 = drop`{36} x0
-    s10 : [32]
-    s10 = take`{32} (drop`{4} x0)
-    s11 : [32]
-    s11 = drop`{36} x0
-    s12 : [32]
-    s12 = take`{32} (drop`{4} x0)
-    s13 : [32]
-    s13 = drop`{36} x0
-    s14 : [32]
-    s14 = take`{32} (drop`{4} x0)
-    s15 : [32]
-    s15 = drop`{36} x0
-    s16 : [32]
-    s16 = take`{32} (drop`{4} x0)
-    s17 : [32]
-    s17 = drop`{36} x0
+    s0 : [1]
+    s0 = take`{1} x0
+    s1 : [1]
+    s1 = take`{1} (drop`{1} x0)
+    s2 : [1]
+    s2 = take`{1} (drop`{2} x0)
+    s3 : [1]
+    s3 = take`{1} (drop`{3} x0)
+    s4 : [1]
+    s4 = take`{1} (drop`{4} x0)
+    s5 : [1]
+    s5 = take`{1} (drop`{5} x0)
+    s6 : [1]
+    s6 = take`{1} (drop`{6} x0)
+    s7 : [1]
+    s7 = take`{1} (drop`{7} x0)
+    s8 : [1]
+    s8 = take`{1} (drop`{8} x0)
+    s9 : [1]
+    s9 = take`{1} (drop`{9} x0)
+    s10 : [1]
+    s10 = take`{1} (drop`{10} x0)
+    s11 : [1]
+    s11 = take`{1} (drop`{11} x0)
+    s12 : [1]
+    s12 = take`{1} (drop`{12} x0)
+    s13 : [1]
+    s13 = take`{1} (drop`{13} x0)
+    s14 : [1]
+    s14 = take`{1} (drop`{14} x0)
+    s15 : [1]
+    s15 = take`{1} (drop`{15} x0)
+    s16 : [1]
+    s16 = take`{1} (drop`{16} x0)
+    s17 : [1]
+    s17 = take`{1} (drop`{17} x0)
+    s18 : [1]
+    s18 = take`{1} (drop`{18} x0)
+    s19 : [1]
+    s19 = take`{1} (drop`{19} x0)
+    s20 : [1]
+    s20 = take`{1} (drop`{20} x0)
+    s21 : [1]
+    s21 = take`{1} (drop`{21} x0)
+    s22 : [1]
+    s22 = take`{1} (drop`{22} x0)
+    s23 : [1]
+    s23 = take`{1} (drop`{23} x0)
+    s24 : [1]
+    s24 = take`{1} (drop`{24} x0)
+    s25 : [1]
+    s25 = take`{1} (drop`{25} x0)
+    s26 : [1]
+    s26 = take`{1} (drop`{26} x0)
+    s27 : [1]
+    s27 = take`{1} (drop`{27} x0)
+    s28 : [1]
+    s28 = take`{1} (drop`{28} x0)
+    s29 : [1]
+    s29 = take`{1} (drop`{29} x0)
+    s30 : [1]
+    s30 = take`{1} (drop`{30} x0)
+    s31 : [1]
+    s31 = drop`{31} x0
 
-// Main.ch
-rw_Main_ch : [32] -> [32] -> [32] -> [32]
-rw_Main_ch x0 x1 x2 = rw_Main_xorW32 (rw_Main_andW32 x0 x1) (rw_Main_andW32 (rw_Main_notW32 x0) x2)
+// Main.rotateR7
+rw_Main_rotateR7 : [32] -> [32]
+rw_Main_rotateR7 x0 = s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # s24))))))))))))))))))))))))))))))
+  where
+    s0 : [1]
+    s0 = take`{1} x0
+    s1 : [1]
+    s1 = take`{1} (drop`{1} x0)
+    s2 : [1]
+    s2 = take`{1} (drop`{2} x0)
+    s3 : [1]
+    s3 = take`{1} (drop`{3} x0)
+    s4 : [1]
+    s4 = take`{1} (drop`{4} x0)
+    s5 : [1]
+    s5 = take`{1} (drop`{5} x0)
+    s6 : [1]
+    s6 = take`{1} (drop`{6} x0)
+    s7 : [1]
+    s7 = take`{1} (drop`{7} x0)
+    s8 : [1]
+    s8 = take`{1} (drop`{8} x0)
+    s9 : [1]
+    s9 = take`{1} (drop`{9} x0)
+    s10 : [1]
+    s10 = take`{1} (drop`{10} x0)
+    s11 : [1]
+    s11 = take`{1} (drop`{11} x0)
+    s12 : [1]
+    s12 = take`{1} (drop`{12} x0)
+    s13 : [1]
+    s13 = take`{1} (drop`{13} x0)
+    s14 : [1]
+    s14 = take`{1} (drop`{14} x0)
+    s15 : [1]
+    s15 = take`{1} (drop`{15} x0)
+    s16 : [1]
+    s16 = take`{1} (drop`{16} x0)
+    s17 : [1]
+    s17 = take`{1} (drop`{17} x0)
+    s18 : [1]
+    s18 = take`{1} (drop`{18} x0)
+    s19 : [1]
+    s19 = take`{1} (drop`{19} x0)
+    s20 : [1]
+    s20 = take`{1} (drop`{20} x0)
+    s21 : [1]
+    s21 = take`{1} (drop`{21} x0)
+    s22 : [1]
+    s22 = take`{1} (drop`{22} x0)
+    s23 : [1]
+    s23 = take`{1} (drop`{23} x0)
+    s24 : [1]
+    s24 = take`{1} (drop`{24} x0)
+    s25 : [1]
+    s25 = take`{1} (drop`{25} x0)
+    s26 : [1]
+    s26 = take`{1} (drop`{26} x0)
+    s27 : [1]
+    s27 = take`{1} (drop`{27} x0)
+    s28 : [1]
+    s28 = take`{1} (drop`{28} x0)
+    s29 : [1]
+    s29 = take`{1} (drop`{29} x0)
+    s30 : [1]
+    s30 = take`{1} (drop`{30} x0)
+    s31 : [1]
+    s31 = drop`{31} x0
 
-// $L.arm28
-rw__L_arm28 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_arm28 x0 x1 x2 x3 x4 x5 = rw__L_hw27 x0 x1 x3 x2 x3 x4 x5
+// Main.rotateR11
+rw_Main_rotateR11 : [32] -> [32]
+rw_Main_rotateR11 x0 = s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # s20))))))))))))))))))))))))))))))
+  where
+    s0 : [1]
+    s0 = take`{1} x0
+    s1 : [1]
+    s1 = take`{1} (drop`{1} x0)
+    s2 : [1]
+    s2 = take`{1} (drop`{2} x0)
+    s3 : [1]
+    s3 = take`{1} (drop`{3} x0)
+    s4 : [1]
+    s4 = take`{1} (drop`{4} x0)
+    s5 : [1]
+    s5 = take`{1} (drop`{5} x0)
+    s6 : [1]
+    s6 = take`{1} (drop`{6} x0)
+    s7 : [1]
+    s7 = take`{1} (drop`{7} x0)
+    s8 : [1]
+    s8 = take`{1} (drop`{8} x0)
+    s9 : [1]
+    s9 = take`{1} (drop`{9} x0)
+    s10 : [1]
+    s10 = take`{1} (drop`{10} x0)
+    s11 : [1]
+    s11 = take`{1} (drop`{11} x0)
+    s12 : [1]
+    s12 = take`{1} (drop`{12} x0)
+    s13 : [1]
+    s13 = take`{1} (drop`{13} x0)
+    s14 : [1]
+    s14 = take`{1} (drop`{14} x0)
+    s15 : [1]
+    s15 = take`{1} (drop`{15} x0)
+    s16 : [1]
+    s16 = take`{1} (drop`{16} x0)
+    s17 : [1]
+    s17 = take`{1} (drop`{17} x0)
+    s18 : [1]
+    s18 = take`{1} (drop`{18} x0)
+    s19 : [1]
+    s19 = take`{1} (drop`{19} x0)
+    s20 : [1]
+    s20 = take`{1} (drop`{20} x0)
+    s21 : [1]
+    s21 = take`{1} (drop`{21} x0)
+    s22 : [1]
+    s22 = take`{1} (drop`{22} x0)
+    s23 : [1]
+    s23 = take`{1} (drop`{23} x0)
+    s24 : [1]
+    s24 = take`{1} (drop`{24} x0)
+    s25 : [1]
+    s25 = take`{1} (drop`{25} x0)
+    s26 : [1]
+    s26 = take`{1} (drop`{26} x0)
+    s27 : [1]
+    s27 = take`{1} (drop`{27} x0)
+    s28 : [1]
+    s28 = take`{1} (drop`{28} x0)
+    s29 : [1]
+    s29 = take`{1} (drop`{29} x0)
+    s30 : [1]
+    s30 = take`{1} (drop`{30} x0)
+    s31 : [1]
+    s31 = drop`{31} x0
 
-// $L.hw31
-rw__L_hw31 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_hw31 x0 x1 x2 x3 x4 x5 x6 = rw__LL_L_hw311 x5 x6 x3 (rw__LL_L_hw151 (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (x0 # (x1 # (s10 # (s11 # (s12 # s13))))))))))))))))
+// Main.rotateR13
+rw_Main_rotateR13 : [32] -> [32]
+rw_Main_rotateR13 x0 = s19 # (s20 # (s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # s18))))))))))))))))))))))))))))))
+  where
+    s0 : [1]
+    s0 = take`{1} x0
+    s1 : [1]
+    s1 = take`{1} (drop`{1} x0)
+    s2 : [1]
+    s2 = take`{1} (drop`{2} x0)
+    s3 : [1]
+    s3 = take`{1} (drop`{3} x0)
+    s4 : [1]
+    s4 = take`{1} (drop`{4} x0)
+    s5 : [1]
+    s5 = take`{1} (drop`{5} x0)
+    s6 : [1]
+    s6 = take`{1} (drop`{6} x0)
+    s7 : [1]
+    s7 = take`{1} (drop`{7} x0)
+    s8 : [1]
+    s8 = take`{1} (drop`{8} x0)
+    s9 : [1]
+    s9 = take`{1} (drop`{9} x0)
+    s10 : [1]
+    s10 = take`{1} (drop`{10} x0)
+    s11 : [1]
+    s11 = take`{1} (drop`{11} x0)
+    s12 : [1]
+    s12 = take`{1} (drop`{12} x0)
+    s13 : [1]
+    s13 = take`{1} (drop`{13} x0)
+    s14 : [1]
+    s14 = take`{1} (drop`{14} x0)
+    s15 : [1]
+    s15 = take`{1} (drop`{15} x0)
+    s16 : [1]
+    s16 = take`{1} (drop`{16} x0)
+    s17 : [1]
+    s17 = take`{1} (drop`{17} x0)
+    s18 : [1]
+    s18 = take`{1} (drop`{18} x0)
+    s19 : [1]
+    s19 = take`{1} (drop`{19} x0)
+    s20 : [1]
+    s20 = take`{1} (drop`{20} x0)
+    s21 : [1]
+    s21 = take`{1} (drop`{21} x0)
+    s22 : [1]
+    s22 = take`{1} (drop`{22} x0)
+    s23 : [1]
+    s23 = take`{1} (drop`{23} x0)
+    s24 : [1]
+    s24 = take`{1} (drop`{24} x0)
+    s25 : [1]
+    s25 = take`{1} (drop`{25} x0)
+    s26 : [1]
+    s26 = take`{1} (drop`{26} x0)
+    s27 : [1]
+    s27 = take`{1} (drop`{27} x0)
+    s28 : [1]
+    s28 = take`{1} (drop`{28} x0)
+    s29 : [1]
+    s29 = take`{1} (drop`{29} x0)
+    s30 : [1]
+    s30 = take`{1} (drop`{30} x0)
+    s31 : [1]
+    s31 = drop`{31} x0
+
+// Main.rotateR17
+rw_Main_rotateR17 : [32] -> [32]
+rw_Main_rotateR17 x0 = s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # s14))))))))))))))))))))))))))))))
+  where
+    s0 : [1]
+    s0 = take`{1} x0
+    s1 : [1]
+    s1 = take`{1} (drop`{1} x0)
+    s2 : [1]
+    s2 = take`{1} (drop`{2} x0)
+    s3 : [1]
+    s3 = take`{1} (drop`{3} x0)
+    s4 : [1]
+    s4 = take`{1} (drop`{4} x0)
+    s5 : [1]
+    s5 = take`{1} (drop`{5} x0)
+    s6 : [1]
+    s6 = take`{1} (drop`{6} x0)
+    s7 : [1]
+    s7 = take`{1} (drop`{7} x0)
+    s8 : [1]
+    s8 = take`{1} (drop`{8} x0)
+    s9 : [1]
+    s9 = take`{1} (drop`{9} x0)
+    s10 : [1]
+    s10 = take`{1} (drop`{10} x0)
+    s11 : [1]
+    s11 = take`{1} (drop`{11} x0)
+    s12 : [1]
+    s12 = take`{1} (drop`{12} x0)
+    s13 : [1]
+    s13 = take`{1} (drop`{13} x0)
+    s14 : [1]
+    s14 = take`{1} (drop`{14} x0)
+    s15 : [1]
+    s15 = take`{1} (drop`{15} x0)
+    s16 : [1]
+    s16 = take`{1} (drop`{16} x0)
+    s17 : [1]
+    s17 = take`{1} (drop`{17} x0)
+    s18 : [1]
+    s18 = take`{1} (drop`{18} x0)
+    s19 : [1]
+    s19 = take`{1} (drop`{19} x0)
+    s20 : [1]
+    s20 = take`{1} (drop`{20} x0)
+    s21 : [1]
+    s21 = take`{1} (drop`{21} x0)
+    s22 : [1]
+    s22 = take`{1} (drop`{22} x0)
+    s23 : [1]
+    s23 = take`{1} (drop`{23} x0)
+    s24 : [1]
+    s24 = take`{1} (drop`{24} x0)
+    s25 : [1]
+    s25 = take`{1} (drop`{25} x0)
+    s26 : [1]
+    s26 = take`{1} (drop`{26} x0)
+    s27 : [1]
+    s27 = take`{1} (drop`{27} x0)
+    s28 : [1]
+    s28 = take`{1} (drop`{28} x0)
+    s29 : [1]
+    s29 = take`{1} (drop`{29} x0)
+    s30 : [1]
+    s30 = take`{1} (drop`{30} x0)
+    s31 : [1]
+    s31 = drop`{31} x0
+
+// Main.rotateR18
+rw_Main_rotateR18 : [32] -> [32]
+rw_Main_rotateR18 x0 = s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))))))))))))))))))
+  where
+    s0 : [1]
+    s0 = take`{1} x0
+    s1 : [1]
+    s1 = take`{1} (drop`{1} x0)
+    s2 : [1]
+    s2 = take`{1} (drop`{2} x0)
+    s3 : [1]
+    s3 = take`{1} (drop`{3} x0)
+    s4 : [1]
+    s4 = take`{1} (drop`{4} x0)
+    s5 : [1]
+    s5 = take`{1} (drop`{5} x0)
+    s6 : [1]
+    s6 = take`{1} (drop`{6} x0)
+    s7 : [1]
+    s7 = take`{1} (drop`{7} x0)
+    s8 : [1]
+    s8 = take`{1} (drop`{8} x0)
+    s9 : [1]
+    s9 = take`{1} (drop`{9} x0)
+    s10 : [1]
+    s10 = take`{1} (drop`{10} x0)
+    s11 : [1]
+    s11 = take`{1} (drop`{11} x0)
+    s12 : [1]
+    s12 = take`{1} (drop`{12} x0)
+    s13 : [1]
+    s13 = take`{1} (drop`{13} x0)
+    s14 : [1]
+    s14 = take`{1} (drop`{14} x0)
+    s15 : [1]
+    s15 = take`{1} (drop`{15} x0)
+    s16 : [1]
+    s16 = take`{1} (drop`{16} x0)
+    s17 : [1]
+    s17 = take`{1} (drop`{17} x0)
+    s18 : [1]
+    s18 = take`{1} (drop`{18} x0)
+    s19 : [1]
+    s19 = take`{1} (drop`{19} x0)
+    s20 : [1]
+    s20 = take`{1} (drop`{20} x0)
+    s21 : [1]
+    s21 = take`{1} (drop`{21} x0)
+    s22 : [1]
+    s22 = take`{1} (drop`{22} x0)
+    s23 : [1]
+    s23 = take`{1} (drop`{23} x0)
+    s24 : [1]
+    s24 = take`{1} (drop`{24} x0)
+    s25 : [1]
+    s25 = take`{1} (drop`{25} x0)
+    s26 : [1]
+    s26 = take`{1} (drop`{26} x0)
+    s27 : [1]
+    s27 = take`{1} (drop`{27} x0)
+    s28 : [1]
+    s28 = take`{1} (drop`{28} x0)
+    s29 : [1]
+    s29 = take`{1} (drop`{29} x0)
+    s30 : [1]
+    s30 = take`{1} (drop`{30} x0)
+    s31 : [1]
+    s31 = drop`{31} x0
+
+// Main.rotateR19
+rw_Main_rotateR19 : [32] -> [32]
+rw_Main_rotateR19 x0 = s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # s12))))))))))))))))))))))))))))))
+  where
+    s0 : [1]
+    s0 = take`{1} x0
+    s1 : [1]
+    s1 = take`{1} (drop`{1} x0)
+    s2 : [1]
+    s2 = take`{1} (drop`{2} x0)
+    s3 : [1]
+    s3 = take`{1} (drop`{3} x0)
+    s4 : [1]
+    s4 = take`{1} (drop`{4} x0)
+    s5 : [1]
+    s5 = take`{1} (drop`{5} x0)
+    s6 : [1]
+    s6 = take`{1} (drop`{6} x0)
+    s7 : [1]
+    s7 = take`{1} (drop`{7} x0)
+    s8 : [1]
+    s8 = take`{1} (drop`{8} x0)
+    s9 : [1]
+    s9 = take`{1} (drop`{9} x0)
+    s10 : [1]
+    s10 = take`{1} (drop`{10} x0)
+    s11 : [1]
+    s11 = take`{1} (drop`{11} x0)
+    s12 : [1]
+    s12 = take`{1} (drop`{12} x0)
+    s13 : [1]
+    s13 = take`{1} (drop`{13} x0)
+    s14 : [1]
+    s14 = take`{1} (drop`{14} x0)
+    s15 : [1]
+    s15 = take`{1} (drop`{15} x0)
+    s16 : [1]
+    s16 = take`{1} (drop`{16} x0)
+    s17 : [1]
+    s17 = take`{1} (drop`{17} x0)
+    s18 : [1]
+    s18 = take`{1} (drop`{18} x0)
+    s19 : [1]
+    s19 = take`{1} (drop`{19} x0)
+    s20 : [1]
+    s20 = take`{1} (drop`{20} x0)
+    s21 : [1]
+    s21 = take`{1} (drop`{21} x0)
+    s22 : [1]
+    s22 = take`{1} (drop`{22} x0)
+    s23 : [1]
+    s23 = take`{1} (drop`{23} x0)
+    s24 : [1]
+    s24 = take`{1} (drop`{24} x0)
+    s25 : [1]
+    s25 = take`{1} (drop`{25} x0)
+    s26 : [1]
+    s26 = take`{1} (drop`{26} x0)
+    s27 : [1]
+    s27 = take`{1} (drop`{27} x0)
+    s28 : [1]
+    s28 = take`{1} (drop`{28} x0)
+    s29 : [1]
+    s29 = take`{1} (drop`{29} x0)
+    s30 : [1]
+    s30 = take`{1} (drop`{30} x0)
+    s31 : [1]
+    s31 = drop`{31} x0
+
+// Main.rotateR22
+rw_Main_rotateR22 : [32] -> [32]
+rw_Main_rotateR22 x0 = s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # s9))))))))))))))))))))))))))))))
+  where
+    s0 : [1]
+    s0 = take`{1} x0
+    s1 : [1]
+    s1 = take`{1} (drop`{1} x0)
+    s2 : [1]
+    s2 = take`{1} (drop`{2} x0)
+    s3 : [1]
+    s3 = take`{1} (drop`{3} x0)
+    s4 : [1]
+    s4 = take`{1} (drop`{4} x0)
+    s5 : [1]
+    s5 = take`{1} (drop`{5} x0)
+    s6 : [1]
+    s6 = take`{1} (drop`{6} x0)
+    s7 : [1]
+    s7 = take`{1} (drop`{7} x0)
+    s8 : [1]
+    s8 = take`{1} (drop`{8} x0)
+    s9 : [1]
+    s9 = take`{1} (drop`{9} x0)
+    s10 : [1]
+    s10 = take`{1} (drop`{10} x0)
+    s11 : [1]
+    s11 = take`{1} (drop`{11} x0)
+    s12 : [1]
+    s12 = take`{1} (drop`{12} x0)
+    s13 : [1]
+    s13 = take`{1} (drop`{13} x0)
+    s14 : [1]
+    s14 = take`{1} (drop`{14} x0)
+    s15 : [1]
+    s15 = take`{1} (drop`{15} x0)
+    s16 : [1]
+    s16 = take`{1} (drop`{16} x0)
+    s17 : [1]
+    s17 = take`{1} (drop`{17} x0)
+    s18 : [1]
+    s18 = take`{1} (drop`{18} x0)
+    s19 : [1]
+    s19 = take`{1} (drop`{19} x0)
+    s20 : [1]
+    s20 = take`{1} (drop`{20} x0)
+    s21 : [1]
+    s21 = take`{1} (drop`{21} x0)
+    s22 : [1]
+    s22 = take`{1} (drop`{22} x0)
+    s23 : [1]
+    s23 = take`{1} (drop`{23} x0)
+    s24 : [1]
+    s24 = take`{1} (drop`{24} x0)
+    s25 : [1]
+    s25 = take`{1} (drop`{25} x0)
+    s26 : [1]
+    s26 = take`{1} (drop`{26} x0)
+    s27 : [1]
+    s27 = take`{1} (drop`{27} x0)
+    s28 : [1]
+    s28 = take`{1} (drop`{28} x0)
+    s29 : [1]
+    s29 = take`{1} (drop`{29} x0)
+    s30 : [1]
+    s30 = take`{1} (drop`{30} x0)
+    s31 : [1]
+    s31 = drop`{31} x0
+
+// Main.bigsigma0
+rw_Main_bigsigma0 : [32] -> [32]
+rw_Main_bigsigma0 x0 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_rotateR2 x0) (rw_Main_rotateR13 x0)) (rw_Main_rotateR22 x0)
+
+// Main.rotateR25
+rw_Main_rotateR25 : [32] -> [32]
+rw_Main_rotateR25 x0 = s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # s6))))))))))))))))))))))))))))))
+  where
+    s0 : [1]
+    s0 = take`{1} x0
+    s1 : [1]
+    s1 = take`{1} (drop`{1} x0)
+    s2 : [1]
+    s2 = take`{1} (drop`{2} x0)
+    s3 : [1]
+    s3 = take`{1} (drop`{3} x0)
+    s4 : [1]
+    s4 = take`{1} (drop`{4} x0)
+    s5 : [1]
+    s5 = take`{1} (drop`{5} x0)
+    s6 : [1]
+    s6 = take`{1} (drop`{6} x0)
+    s7 : [1]
+    s7 = take`{1} (drop`{7} x0)
+    s8 : [1]
+    s8 = take`{1} (drop`{8} x0)
+    s9 : [1]
+    s9 = take`{1} (drop`{9} x0)
+    s10 : [1]
+    s10 = take`{1} (drop`{10} x0)
+    s11 : [1]
+    s11 = take`{1} (drop`{11} x0)
+    s12 : [1]
+    s12 = take`{1} (drop`{12} x0)
+    s13 : [1]
+    s13 = take`{1} (drop`{13} x0)
+    s14 : [1]
+    s14 = take`{1} (drop`{14} x0)
+    s15 : [1]
+    s15 = take`{1} (drop`{15} x0)
+    s16 : [1]
+    s16 = take`{1} (drop`{16} x0)
+    s17 : [1]
+    s17 = take`{1} (drop`{17} x0)
+    s18 : [1]
+    s18 = take`{1} (drop`{18} x0)
+    s19 : [1]
+    s19 = take`{1} (drop`{19} x0)
+    s20 : [1]
+    s20 = take`{1} (drop`{20} x0)
+    s21 : [1]
+    s21 = take`{1} (drop`{21} x0)
+    s22 : [1]
+    s22 = take`{1} (drop`{22} x0)
+    s23 : [1]
+    s23 = take`{1} (drop`{23} x0)
+    s24 : [1]
+    s24 = take`{1} (drop`{24} x0)
+    s25 : [1]
+    s25 = take`{1} (drop`{25} x0)
+    s26 : [1]
+    s26 = take`{1} (drop`{26} x0)
+    s27 : [1]
+    s27 = take`{1} (drop`{27} x0)
+    s28 : [1]
+    s28 = take`{1} (drop`{28} x0)
+    s29 : [1]
+    s29 = take`{1} (drop`{29} x0)
+    s30 : [1]
+    s30 = take`{1} (drop`{30} x0)
+    s31 : [1]
+    s31 = drop`{31} x0
+
+// Main.bigsigma1
+rw_Main_bigsigma1 : [32] -> [32]
+rw_Main_bigsigma1 x0 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_rotateR6 x0) (rw_Main_rotateR11 x0)) (rw_Main_rotateR25 x0)
+
+// Main.step256
+rw_Main_step256 : [32] -> [32] -> [256] -> [256]
+rw_Main_step256 x0 x1 x2 = (rw_Main_plusW32 s8 (rw_Main_plusW32 (rw_Main_bigsigma0 s0) (rw_Main_maj s0 s1 s2))) # (s0 # (s1 # (s2 # ((rw_Main_plusW32 s3 s8) # (s4 # (s5 # s6))))))
   where
     s0 : [32]
     s0 = take`{32} x2
@@ -1494,73 +1405,9 @@ rw__L_hw31 x0 x1 x2 x3 x4 x5 x6 = rw__LL_L_hw311 x5 x6 x3 (rw__LL_L_hw151 (s0 # 
     s6 : [32]
     s6 = take`{32} (drop`{192} x2)
     s7 : [32]
-    s7 = take`{32} (drop`{224} x2)
+    s7 = drop`{224} x2
     s8 : [32]
-    s8 = take`{32} (drop`{256} x2)
-    s9 : [32]
-    s9 = take`{32} (drop`{288} x2)
-    s10 : [32]
-    s10 = take`{32} (drop`{384} x2)
-    s11 : [32]
-    s11 = take`{32} (drop`{416} x2)
-    s12 : [32]
-    s12 = take`{32} (drop`{448} x2)
-    s13 : [32]
-    s13 = drop`{480} x2
-
-// $L._unused38
-rw__L__unused38 : [68] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L__unused38 x0 x1 x2 x3 x4 = rw__L_Main_genhash_48 x1 x2 x3 x4
-
-// Main.digest0
-rw_Main_digest0 : [256] -> [65]
-rw_Main_digest0 x0 = 0b0 # (s0 # s1)
-  where
-    s0 : [32]
-    s0 = take`{32} x0
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x0)
-
-// $LL.L.s53
-rw__LL_L_s53 : [256] -> [32] -> [6] -> [6] -> [256] -> [512] -> [32] -> [1103]
-rw__LL_L_s53 x0 x1 x2 x3 x4 x5 x6 = rw__LL_L_s531 x0 x2 x3 x5 (rw_Main_step256 x6 x1 x4)
-
-// $L.hw19
-rw__L_hw19 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1103]
-rw__L_hw19 x0 x1 x2 x3 x4 x5 x6 = rw__LL_L_hw191 x3 x6 x5 (rw__LL_L_hw151 (s0 # (s1 # (s2 # (s3 # (x0 # (x1 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))))
-  where
-    s0 : [32]
-    s0 = take`{32} x2
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x2)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x2)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x2)
-    s4 : [32]
-    s4 = take`{32} (drop`{192} x2)
-    s5 : [32]
-    s5 = take`{32} (drop`{224} x2)
-    s6 : [32]
-    s6 = take`{32} (drop`{256} x2)
-    s7 : [32]
-    s7 = take`{32} (drop`{288} x2)
-    s8 : [32]
-    s8 = take`{32} (drop`{320} x2)
-    s9 : [32]
-    s9 = take`{32} (drop`{352} x2)
-    s10 : [32]
-    s10 = take`{32} (drop`{384} x2)
-    s11 : [32]
-    s11 = take`{32} (drop`{416} x2)
-    s12 : [32]
-    s12 = take`{32} (drop`{448} x2)
-    s13 : [32]
-    s13 = drop`{480} x2
-
-// $LL.L.arm45
-rw__LL_L_arm45 : [68] -> [256] -> [6] -> [512] -> [256] -> [1103]
-rw__LL_L_arm45 x0 x1 x2 x3 x4 = rw__L_Main_dev3 x0 x1 x3 x4 x2
+    s8 = rw_Main_plusW32 s7 (rw_Main_plusW32 (rw_Main_plusW32 (rw_Main_bigsigma1 s4) (rw_Main_ch s4 s5 s6)) (rw_Main_plusW32 x0 x1))
 
 // Main.shiftR3
 rw_Main_shiftR3 : [32] -> [32]
@@ -1625,9 +1472,107 @@ rw_Main_shiftR3 x0 = 0b000 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8
     s28 : [1]
     s28 = take`{1} (drop`{28} x0)
 
+// Main.sigma0
+rw_Main_sigma0 : [32] -> [32]
+rw_Main_sigma0 x0 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_rotateR7 x0) (rw_Main_rotateR18 x0)) (rw_Main_shiftR3 x0)
+
+// Main.shiftR10
+rw_Main_shiftR10 : [32] -> [32]
+rw_Main_shiftR10 x0 = 0b0000000000 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # s21)))))))))))))))))))))
+  where
+    s0 : [1]
+    s0 = take`{1} x0
+    s1 : [1]
+    s1 = take`{1} (drop`{1} x0)
+    s2 : [1]
+    s2 = take`{1} (drop`{2} x0)
+    s3 : [1]
+    s3 = take`{1} (drop`{3} x0)
+    s4 : [1]
+    s4 = take`{1} (drop`{4} x0)
+    s5 : [1]
+    s5 = take`{1} (drop`{5} x0)
+    s6 : [1]
+    s6 = take`{1} (drop`{6} x0)
+    s7 : [1]
+    s7 = take`{1} (drop`{7} x0)
+    s8 : [1]
+    s8 = take`{1} (drop`{8} x0)
+    s9 : [1]
+    s9 = take`{1} (drop`{9} x0)
+    s10 : [1]
+    s10 = take`{1} (drop`{10} x0)
+    s11 : [1]
+    s11 = take`{1} (drop`{11} x0)
+    s12 : [1]
+    s12 = take`{1} (drop`{12} x0)
+    s13 : [1]
+    s13 = take`{1} (drop`{13} x0)
+    s14 : [1]
+    s14 = take`{1} (drop`{14} x0)
+    s15 : [1]
+    s15 = take`{1} (drop`{15} x0)
+    s16 : [1]
+    s16 = take`{1} (drop`{16} x0)
+    s17 : [1]
+    s17 = take`{1} (drop`{17} x0)
+    s18 : [1]
+    s18 = take`{1} (drop`{18} x0)
+    s19 : [1]
+    s19 = take`{1} (drop`{19} x0)
+    s20 : [1]
+    s20 = take`{1} (drop`{20} x0)
+    s21 : [1]
+    s21 = take`{1} (drop`{21} x0)
+
+// Main.sigma1
+rw_Main_sigma1 : [32] -> [32]
+rw_Main_sigma1 x0 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_rotateR17 x0) (rw_Main_rotateR19 x0)) (rw_Main_shiftR10 x0)
+
+// Main.updateSched
+rw_Main_updateSched : [512] -> [512]
+rw_Main_updateSched x0 = s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (rw_Main_plusW32 (rw_Main_plusW32 (rw_Main_sigma1 s14) s9) (rw_Main_plusW32 (rw_Main_sigma0 s1) s0))))))))))))))))
+  where
+    s0 : [32]
+    s0 = take`{32} x0
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x0)
+    s2 : [32]
+    s2 = take`{32} (drop`{64} x0)
+    s3 : [32]
+    s3 = take`{32} (drop`{96} x0)
+    s4 : [32]
+    s4 = take`{32} (drop`{128} x0)
+    s5 : [32]
+    s5 = take`{32} (drop`{160} x0)
+    s6 : [32]
+    s6 = take`{32} (drop`{192} x0)
+    s7 : [32]
+    s7 = take`{32} (drop`{224} x0)
+    s8 : [32]
+    s8 = take`{32} (drop`{256} x0)
+    s9 : [32]
+    s9 = take`{32} (drop`{288} x0)
+    s10 : [32]
+    s10 = take`{32} (drop`{320} x0)
+    s11 : [32]
+    s11 = take`{32} (drop`{352} x0)
+    s12 : [32]
+    s12 = take`{32} (drop`{384} x0)
+    s13 : [32]
+    s13 = take`{32} (drop`{416} x0)
+    s14 : [32]
+    s14 = take`{32} (drop`{448} x0)
+    s15 : [32]
+    s15 = drop`{480} x0
+
+// Main.seed
+rw_Main_seed : [6] -> [32]
+rw_Main_seed x0 = if x0 == 0b000000 then 0x428a2f98 else (if x0 == 0b000001 then 0x71374491 else (if x0 == 0b000010 then 0xb5c0fbcf else (if x0 == 0b000011 then 0xe9b5dba5 else (if x0 == 0b000100 then 0x3956c25b else (if x0 == 0b000101 then 0x59f111f1 else (if x0 == 0b000110 then 0x923f82a4 else (if x0 == 0b000111 then 0xab1c5ed5 else (if x0 == 0b001000 then 0xd807aa98 else (if x0 == 0b001001 then 0x12835b01 else (if x0 == 0b001010 then 0x243185be else (if x0 == 0b001011 then 0x550c7dc3 else (if x0 == 0b001100 then 0x72be5d74 else (if x0 == 0b001101 then 0x80deb1fe else (if x0 == 0b001110 then 0x9bdc06a7 else (if x0 == 0b001111 then 0xc19bf174 else (if x0 == 0b010000 then 0xe49b69c1 else (if x0 == 0b010001 then 0xefbe4786 else (if x0 == 0b010010 then 0x0fc19dc6 else (if x0 == 0b010011 then 0x240ca1cc else (if x0 == 0b010100 then 0x2de92c6f else (if x0 == 0b010101 then 0x4a7484aa else (if x0 == 0b010110 then 0x5cb0a9dc else (if x0 == 0b010111 then 0x76f988da else (if x0 == 0b011000 then 0x983e5152 else (if x0 == 0b011001 then 0xa831c66d else (if x0 == 0b011010 then 0xb00327c8 else (if x0 == 0b011011 then 0xbf597fc7 else (if x0 == 0b011100 then 0xc6e00bf3 else (if x0 == 0b011101 then 0xd5a79147 else (if x0 == 0b011110 then 0x06ca6351 else (if x0 == 0b011111 then 0x14292967 else (if x0 == 0b100000 then 0x27b70a85 else (if x0 == 0b100001 then 0x2e1b2138 else (if x0 == 0b100010 then 0x4d2c6dfc else (if x0 == 0b100011 then 0x53380d13 else (if x0 == 0b100100 then 0x650a7354 else (if x0 == 0b100101 then 0x766a0abb else (if x0 == 0b100110 then 0x81c2c92e else (if x0 == 0b100111 then 0x92722c85 else (if x0 == 0b101000 then 0xa2bfe8a1 else (if x0 == 0b101001 then 0xa81a664b else (if x0 == 0b101010 then 0xc24b8b70 else (if x0 == 0b101011 then 0xc76c51a3 else (if x0 == 0b101100 then 0xd192e819 else (if x0 == 0b101101 then 0xd6990624 else (if x0 == 0b101110 then 0xf40e3585 else (if x0 == 0b101111 then 0x106aa070 else (if x0 == 0b110000 then 0x19a4c116 else (if x0 == 0b110001 then 0x1e376c08 else (if x0 == 0b110010 then 0x2748774c else (if x0 == 0b110011 then 0x34b0bcb5 else (if x0 == 0b110100 then 0x391c0cb3 else (if x0 == 0b110101 then 0x4ed8aa4a else (if x0 == 0b110110 then 0x5b9cca4f else (if x0 == 0b110111 then 0x682e6ff3 else (if x0 == 0b111000 then 0x748f82ee else (if x0 == 0b111001 then 0x78a5636f else (if x0 == 0b111010 then 0x84c87814 else (if x0 == 0b111011 then 0x8cc70208 else (if x0 == 0b111100 then 0x90befffa else (if x0 == 0b111101 then 0xa4506ceb else (if x0 == 0b111110 then 0xbef9a3f7 else 0xc67178f2))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+
 // Per-cycle step: outputs # next register values.
 rw_step : [1038] -> [68] -> [1103]
-rw_step st i = (take`{65} s6) # ((take`{8} (drop`{65} s6)) # ((take`{224} (drop`{73} s6)) # ((take`{32} (drop`{297} s6)) # ((take`{512} (drop`{329} s6)) # (drop`{841} s6)))))
+rw_step st i = (take`{65} s9) # ((take`{8} (drop`{65} s9)) # ((take`{224} (drop`{73} s9)) # ((take`{32} (drop`{297} s9)) # ((take`{480} (drop`{329} s9)) # ((take`{32} (drop`{809} s9)) # ((take`{224} (drop`{841} s9)) # ((take`{32} (drop`{1065} s9)) # (drop`{1097} s9))))))))
   where
     s0 : [8]
     s0 = take`{8} st
@@ -1635,14 +1580,20 @@ rw_step st i = (take`{65} s6) # ((take`{8} (drop`{65} s6)) # ((take`{224} (drop`
     s1 = take`{224} (drop`{8} st)
     s2 : [32]
     s2 = take`{32} (drop`{232} st)
-    s3 : [512]
-    s3 = take`{512} (drop`{264} st)
-    s4 : [262]
-    s4 = drop`{776} st
-    s5 : [68]
-    s5 = i
-    s6 : [1103]
-    s6 = rw__Pure_dispatch (s0 # (s1 # (s2 # (s3 # s4)))) s5
+    s3 : [480]
+    s3 = take`{480} (drop`{264} st)
+    s4 : [32]
+    s4 = take`{32} (drop`{744} st)
+    s5 : [224]
+    s5 = take`{224} (drop`{776} st)
+    s6 : [32]
+    s6 = take`{32} (drop`{1000} st)
+    s7 : [6]
+    s7 = drop`{1032} st
+    s8 : [68]
+    s8 = i
+    s9 : [1103]
+    s9 = rw_main__dispatch (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # s7))))))) s8
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [68]

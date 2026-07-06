@@ -208,7 +208,7 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZL_Main_sig1\ is
+component \main_$L_Main_sig1$250\ is
       port (arg0 : in std_logic_vector (7 downto 0);
             arg1 : in std_logic_vector (7 downto 0);
             res : out std_logic_vector (23 downto 0));
@@ -217,15 +217,15 @@ component \ZL_Main_sig1\ is
       signal \__st0_next\ : std_logic_vector (7 downto 0);
       signal \__st1\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000001");
       signal \__st1_next\ : std_logic_vector (7 downto 0);
-      signal zl_main_sig1_out : std_logic_vector (23 downto 0);
-      signal conn : std_logic_vector (7 downto 0);
-      signal \zl_main_sig1_outR1\ : std_logic_vector (23 downto 0);
+      signal \main_$l_main_sig1$250_out\ : std_logic_vector (23 downto 0);
+      signal zi3 : std_logic_vector (7 downto 0);
+      signal \main_$l_main_sig1$250_outR1\ : std_logic_vector (23 downto 0);
       signal zres : std_logic_vector (23 downto 0);
 begin
-inst : \ZL_Main_sig1\ port map (\__st0\, \__st1\, zl_main_sig1_out);
-      conn <= rw_add(\__st0\, \__st1\);
-      \instR1\ : \ZL_Main_sig1\ port map (\__st1\, conn, \zl_main_sig1_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), zl_main_sig1_out, \zl_main_sig1_outR1\);
+inst : \main_$L_Main_sig1$250\ port map (\__st0\, \__st1\, \main_$l_main_sig1$250_out\);
+      zi3 <= rw_add(\__st0\, \__st1\);
+      \instR1\ : \main_$L_Main_sig1$250\ port map (\__st1\, zi3, \main_$l_main_sig1$250_outR1\);
+      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), \main_$l_main_sig1$250_out\, \main_$l_main_sig1$250_outR1\);
       \__st0_next\ <= zres(15 downto 8);
       \__st1_next\ <= zres(7 downto 0);
       \__out0\ <= zres(23 downto 16);
@@ -245,13 +245,13 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZL_Main_sig1\ is
+entity \main_$L_Main_sig1$250\ is
 port (arg0 : in std_logic_vector (7 downto 0);
       arg1 : in std_logic_vector (7 downto 0);
       res : out std_logic_vector (23 downto 0));
 end entity;
 
-architecture rtl of \ZL_Main_sig1\ is
+architecture rtl of \main_$L_Main_sig1$250\ is
 
 begin
 res <= (arg0 & arg0 & arg1);

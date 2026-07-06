@@ -1,40 +1,38 @@
-$Pure.dispatch : ([16], [1]) -> [24]
-$Pure.dispatch disc i =
-      $L.i5 i disc
+main.$dispatch : ([16], [1]) -> [24]
+main.$dispatch disc i =
+      main.$L.i5$281 i disc
 
-$L.r18 : ([8], [8], [16]) -> [24]
-$L.r18 r0 r1 s0 =
-      $LL.L.r18 r1 (add r0 r1)
+main.$L.r18$284 : ([8], [8], [16]) -> [24]
+main.$L.r18$284 r0 r1 s0 =
+      let $a = add r0 r1 in
+      let s01 = r1 # $a in
+      main.$L.Main.first14$292 s01
 
-$L.Main.first14 : ([16]) -> [24]
-$L.Main.first14 s0 =
-      $L.r04 s0[8 +: 8] s0
+main.$L.Main.second10$286 : ([8], [16]) -> [24]
+main.$L.Main.second10$286 r0 s0 =
+      main.$L.r18$284 r0 (trunc 8 (lshr s0 128'h0)) s0
 
-$LL.L.r18 : ([8], [8]) -> [24]
-$LL.L.r18 r1 $a =
-      $L.Main.first14 (r1 # $a)
+main.$L.Main.first12$289 : ([16]) -> [24]
+main.$L.Main.first12$289 s0 =
+      main.$L.Main.second10$286 s0[8 +: 8] s0
 
-$L.Main.first12 : ([16]) -> [24]
-$L.Main.first12 s0 =
-      $L.Main.second10 s0[8 +: 8] s0
+main.$L.i5$281 : ([1], [16]) -> [24]
+main.$L.i5$281 i s0 =
+      if eq i 1'h0 then main.$L.Main.first12$289 s0
+            else main.$L.Main.first14$292 s0
 
-$L.i5 : ([1], [16]) -> [24]
-$L.i5 i s0 =
-      if eq i 1'h0 then $L.Main.first12 s0
-            else $L.Main.first14 s0
-
-$L.r04 : ([8], [16]) -> [24]
-$L.r04 r0 s0 =
+main.$L.r04$280 : ([8], [16]) -> [24]
+main.$L.r04$280 r0 s0 =
       r0 # s0
 
-$L.Main.second10 : ([8], [16]) -> [24]
-$L.Main.second10 r0 s0 =
-      $L.r18 r0 (trunc 8 (lshr s0 128'h0)) s0
+main.$L.Main.first14$292 : ([16]) -> [24]
+main.$L.Main.first14$292 s0 =
+      main.$L.r04$280 s0[8 +: 8] s0
 
 device top_level
       input __in0 : [1]
       output __out0 : [8]
       register __st0 : [16] init 16'h1
-      let $res = $Pure.dispatch __st0 __in0
+      let $res = main.$dispatch __st0 __in0
       __out0 := $res[16 +: 8]
       next __st0 := $res[0 +: 16]
