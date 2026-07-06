@@ -82,6 +82,10 @@ getDevice conf fp = do
       let eirPE' = pr0 { Eidos.progProcs = map Eidos.optimizeProc $ Eidos.progProcs pr0 }
       mapM_ (Eidos.lintProc eirPE') $ Eidos.progProcs eirPE'
       mapM_ (flip verb () . Eidos.machineSummary) $ Eidos.progProcs eirPE'
+      -- The strict reachable-halt check (--no-halt): every block is
+      -- reachable after the block-graph cleanup, so any halt terminator
+      -- is a state the device can actually freeze in.
+      when (conf^.C.noHalt) $ mapM_ noHaltCheck $ Eidos.progProcs eirPE'
       when (conf^.C.eidos) $ do
             let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
             verb ("Writing Eidos IR to file: " <> pack eirFile) ()
@@ -113,6 +117,16 @@ getDevice conf fp = do
             -- dictionary chains).
             specDepth :: Natural
             specDepth = max 10 $ conf^.C.depth
+
+            noHaltCheck :: MonadError AstError m => Eidos.Proc -> m ()
+            noHaltCheck pr = case concatMap (halts . Eidos.blkTerm) $ Eidos.procEntry pr : map snd (Eidos.procBlocks pr) of
+                  an : _ -> failAt an $ "process " <> Eidos.procName pr
+                        <> " can halt, and post-halt outputs are unspecified (rejected by --no-halt)."
+                  []     -> pure ()
+                  where halts = \ case
+                              Eidos.Halt an _      -> [an]
+                              Eidos.TCase _ _ alts -> concat [ halts t | Eidos.TAlt _ _ _ t <- alts ]
+                              _                    -> []
 
             -- The standing lints (post-bridge, post-inline, post-PE) run
             -- always; --debug-lint re-lints after the remaining Eidos

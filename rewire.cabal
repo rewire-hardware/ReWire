@@ -57,6 +57,7 @@ data-files:
     tests/negative/negative-vec-size.hs
     tests/negative/never-pauses-error.hs
     tests/negative/never-pauses-return.hs
+    tests/negative/no-halt.hs
     tests/negative/no-start.hs
     tests/negative/parse-error.hs
     tests/negative/partial-eval-nonterminating-higher-order.hs
@@ -582,6 +583,7 @@ data-files:
     tests/integration/MiniISA.input.yaml
     tests/integration/MiniISA.yaml
     tests/eidos/machine-degen.eir
+    tests/eidos/machine-dup-cycle.eir
     tests/eidos/machine-toggle.eir
     tests/eidos/mono.eir
     tests/eidos/poly.eir
