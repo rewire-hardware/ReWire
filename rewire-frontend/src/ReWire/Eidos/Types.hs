@@ -54,8 +54,7 @@ hasArrow = \ case
       TyApp _ t1 t2 -> hasArrow t1 || hasArrow t2
       _             -> False
 
--- | A function type with a function-typed parameter or result
---   (the retained pipeline's notion, 'ReWire.Crust.Types.higherOrder').
+-- | A function type with a function-typed parameter or result.
 higherOrder :: Ty -> Bool
 higherOrder (flattenArrow -> (doms, res)) = any hasArrow $ res : doms
 
@@ -82,7 +81,7 @@ reacOrStateT = \ case
 
 -- | Representable in hardware: first-order, fundamental, and no reactive
 --   types in parameter position (the partial evaluator's per-definition
---   goal; matches 'ReWire.Crust.Types.synthable').
+--   goal).
 synthable :: Ty -> Bool
 synthable t = not (higherOrder t)
            && fundamental t

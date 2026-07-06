@@ -11,7 +11,7 @@ module ReWire.Config
       , inputSigs, stateSigs, outputSigs
       , vhdlPackages, inputsFile, defaultInputsFile, outFile
       , noWarn, wError
-      , start, top, loadPath, cycles, depth, dump, source, typecheck, rtlOpt, eidos, debugLint
+      , start, top, loadPath, cycles, depth, dump, source, rtlOpt, eidos, debugLint
       , testbench
       , pDebug
       ) where
@@ -62,7 +62,6 @@ data Config = Config
       , _cycles       :: Maybe Natural -- ^ --cycles: Nothing means derive a default from the inputs (see effectiveCycles).
       , _depth        :: Natural
       , _dump         :: Natural -> Bool
-      , _typecheck    :: Bool
       , _eidos        :: Bool
       , _debugLint    :: Bool
       , _rtlOpt       :: Natural
@@ -93,7 +92,6 @@ defaultConfig = Config
       , _cycles       = Nothing
       , _depth        = 8
       , _dump         = const False
-      , _typecheck    = False
       , _eidos        = False
       , _debugLint    = False
       , _rtlOpt       = 8
@@ -172,7 +170,6 @@ interpret = foldM interp defaultConfig
                   FlagTop (pack -> n)             -> pure $ top .~ n $ c
                   FlagCycles n                    -> readNat "--cycles" n  >>= \ v -> pure $ cycles .~ Just v $ c
                   FlagEvalDepth n                 -> readNat "--depth" n   >>= \ v -> pure $ depth .~ v $ c
-                  FlagDebugTypeCheck              -> pure $ typecheck .~ True $ c
                   FlagEidos                       -> pure $ eidos .~ True $ c
                   FlagDebugLint                   -> pure $ debugLint .~ True $ c
                   FlagRtlOpt n                    -> readNat "--rtl-opt" n >>= \ v -> pure $ rtlOpt .~ v $ c
