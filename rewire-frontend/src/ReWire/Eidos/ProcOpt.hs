@@ -17,7 +17,7 @@
 --     each round of merging can unify the targets of further blocks.
 --     This is what restores state-count parity — an INLINE-duplicated
 --     continuation mints many identical pause targets.
-module ReWire.Eidos.ProcOpt (optimizeProc) where
+module ReWire.Eidos.ProcOpt (optimizeProc, machineSummary) where
 
 import ReWire.Eidos.Pretty ()
 import ReWire.Eidos.Subst (substVars)
@@ -30,6 +30,7 @@ import Data.Text (Text)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.IntMap.Strict  as IM
+import qualified Data.Text           as T
 
 optimizeProc :: Proc -> Proc
 optimizeProc = fixpoint (mergeBlocks . inlineEpsilon)
@@ -38,6 +39,31 @@ optimizeProc = fixpoint (mergeBlocks . inlineEpsilon)
 
             sameShape :: Proc -> Proc -> Bool
             sameShape a b = map (idUniq . fst) (procBlocks a) == map (idUniq . fst) (procBlocks b)
+
+-- | The machine accounting (doc/eidos.md §7.3): states are the pause
+--   targets plus the entry (reset) state; the tag is their count's bit
+--   width. This is the M-level side of the tag-parity gate.
+machineSummary :: Proc -> Text
+machineSummary pr = "proc " <> procName pr
+      <> ": blocks=" <> tshow (length $ procBlocks pr)
+      <> ", states=" <> tshow nStates <> " (+entry)"
+      <> ", tag=" <> tshow (nbits $ nStates + 1) <> " bits"
+      <> ", cells=" <> tshow (length $ procCells pr)
+      where nStates :: Int
+            nStates = IM.size $ IM.fromList
+                  [ (u, ()) | b <- procEntry pr : map snd (procBlocks pr), u <- pt (blkTerm b) ]
+
+            pt :: Term -> [Uniq]
+            pt = \ case
+                  Pause _ _ l _  -> [idUniq l]
+                  TCase _ _ alts -> concat [ pt t | TAlt _ _ _ t <- alts ]
+                  _              -> []
+
+            nbits :: Int -> Int
+            nbits n = length $ takeWhile (< n) $ iterate (* 2) 1
+
+            tshow :: Int -> Text
+            tshow = T.pack . show
 
 ---
 --- Epsilon-block inlining.
