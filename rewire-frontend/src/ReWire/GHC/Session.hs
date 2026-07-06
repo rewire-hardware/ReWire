@@ -37,11 +37,13 @@ import Control.Lens ((^.))
 import Control.Monad (forM, unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import System.Environment (lookupEnv, setEnv)
-import System.Process (readProcess)
+import System.Process (readCreateProcess, proc, CreateProcess (cwd))
 import Data.Containers.ListUtils (nubOrdOn)
 import Data.IORef (IORef, newIORef, readIORef, modifyIORef')
+import Data.List (partition, isSuffixOf)
 import Data.Text (Text)
-import System.FilePath (takeDirectory)
+import System.Directory (doesDirectoryExist)
+import System.FilePath (takeDirectory, isAbsolute, (</>))
 
 import qualified Data.Text    as T
 import qualified Data.Text.IO as T
@@ -158,10 +160,12 @@ loadCore conf fp = do
 --   Under `stack run`/`stack exec` (the documented invocation), stack sets
 --   GHC_PACKAGE_PATH and there is nothing to do. For an installed rwc:
 --   honor an explicit RWC_PACKAGE_PATH, or fall back to asking `stack
---   path --ghc-package-path` (correct when run inside the ReWire
---   checkout; a different or global stack project would yield databases
---   without rewire-user's dependencies, and module resolution will fail
---   with a hint).
+--   path --ghc-package-path` — run from inside the ReWire checkout rwc
+--   was built from, not the caller's directory: the system loadpath entry
+--   (the data directory's rewire-user/src) lives in that checkout, and
+--   anchoring there keeps stack from resolving the caller's enclosing (or
+--   the global) stack project, whose databases lack rewire-user's
+--   dependencies and the typechecker plugins.
 discoverPackageDBs :: MonadIO m => Config -> m ()
 discoverPackageDBs conf = liftIO (lookupEnv "GHC_PACKAGE_PATH") >>= \ case
       Just _  -> pure ()
@@ -170,7 +174,11 @@ discoverPackageDBs conf = liftIO (lookupEnv "GHC_PACKAGE_PATH") >>= \ case
                   pDebug conf $ "GHC session: using RWC_PACKAGE_PATH: " <> T.pack p
                   liftIO $ setEnv "GHC_PACKAGE_PATH" p
             Nothing -> do
-                  r <- liftIO $ try $ readProcess "stack" ["path", "--ghc-package-path"] ""
+                  anchor <- liftIO $ firstExisting $ uncurry (<>)
+                        $ partition (("rewire-user" </> "src") `isSuffixOf`)
+                        $ filter isAbsolute $ conf^.loadPath
+                  pDebug conf $ "GHC session: `stack path` anchor: " <> T.pack (show anchor)
+                  r <- liftIO $ try $ readCreateProcess ((proc "stack" ["path", "--ghc-package-path"]) { cwd = anchor }) ""
                   case r of
                         Right (strip -> p) | not (null p) -> do
                               pDebug conf $ "GHC session: package path from `stack path`: " <> T.pack p
@@ -179,6 +187,15 @@ discoverPackageDBs conf = liftIO (lookupEnv "GHC_PACKAGE_PATH") >>= \ case
                         Left (_ :: SomeException) -> hint
       where hint :: MonadIO m => m ()
             hint = pDebug conf "GHC session: no package databases found (GHC_PACKAGE_PATH and RWC_PACKAGE_PATH unset, `stack path` unavailable); module resolution will likely fail. Run rwc under `stack exec`, or set RWC_PACKAGE_PATH to the ghc package path rwc was built with."
+
+            -- The first extant candidate (the loadpath's system entry may
+            -- not exist for an unusual installation; fall back to the
+            -- caller's directory).
+            firstExisting :: [FilePath] -> IO (Maybe FilePath)
+            firstExisting = \ case
+                  []       -> pure Nothing
+                  d : rest -> doesDirectoryExist d >>= \ ok ->
+                        if ok then pure (Just d) else firstExisting rest
 
             strip :: String -> String
             strip = T.unpack . T.strip . T.pack
