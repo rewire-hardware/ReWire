@@ -204,7 +204,15 @@ procify p@(Program datas defns procs top)
                         let t' = Arrow an (TyCon an "String") $ sigTy $ idSig x
                         pure ([CmdBind an x $ App an (Prim an t' Error) $ EArg msg], Halt an $ Var an x)
                   (Var an f, args) -> call cx an f [ a | EArg a <- args ] k
-                  _ -> failAt (ann e) "procify: unsupported reactive computation."
+                  -- A residual reactive beta redex (the simplifier's single
+                  -- round can leave one): lower to a let.
+                  (Lam lan x b, EArg a : rest) ->
+                        compile cx (Let lan (NonRec x a) $ foldl (App lan) b rest) k
+                  -- A let-headed application: hoist the application inside
+                  -- (the arguments predate the binder, so this is scope-safe).
+                  (Let lan bnd body, args) ->
+                        compile cx (Let lan bnd $ foldl (App lan) body args) k
+                  (h, _) -> failAt (ann e) $ "procify: unsupported reactive computation (head: " <> headKind h <> ")."
 
             -- Apply the continuation to a value: goto (or halt at the root).
             applyK :: Annote -> Cx -> K -> Exp -> PM m ([Cmd], Term)
@@ -270,6 +278,21 @@ procify p@(Program datas defns procs top)
                           , idx <- length (cxCells cx) - length st
                           , idx >= 0, idx < length (cxCells cx) -> pure $ fst $ cxCells cx !! idx
                   _ -> failAt an "procify: cannot resolve the state cell for this operation (rwc bug)."
+
+headKind :: Exp -> Text
+headKind = \ case
+      Var {}     -> "variable"
+      Con {}     -> "constructor"
+      Prim _ _ b -> "primitive " <> showt b
+      Lam {}     -> "lambda"
+      Let {}     -> "let"
+      Case {}    -> "case"
+      Jump {}    -> "jump"
+      LitInt {}  -> "integer literal"
+      LitStr {}  -> "string literal"
+      LitList {} -> "list literal"
+      LitVec {}  -> "vector literal"
+      App {}     -> "application"
 
 data Cx = Cx
       { cxIn    :: !Ty

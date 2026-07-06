@@ -98,6 +98,11 @@ getDevice conf fp = do
                   -- compiled output still lowers through the P-level shim
                   -- until the machine-step fold and its adapter land.
                   pr <- verb "Procifying (eidos)." a >>= Eidos.procify
+                  -- TODO(eidos, M3b): wire ReWire.Eidos.ProcOpt (epsilon
+                  -- inlining + alpha-equal block merge) here once its
+                  -- unbound-capture bug is fixed (it currently breaks
+                  -- fibo3/TinyISA/wordLit); the MiniISA tag-parity gate
+                  -- depends on it.
                   mapM_ (Eidos.lintProc pr) $ Eidos.progProcs pr
                   pure pr
             else pure eirPE

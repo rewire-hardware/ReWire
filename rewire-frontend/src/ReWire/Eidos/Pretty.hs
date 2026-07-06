@@ -401,5 +401,8 @@ instance Pretty DataCon where
 instance Pretty DataDefn where
       pretty = ppDataDefn
 
+instance Pretty Block where
+      pretty b = vsep $ parens (hsep $ punctuate comma $ map ppBinder $ blkParams b) : ppBlockBody b
+
 instance Pretty Program where
       pretty = ppProgram
