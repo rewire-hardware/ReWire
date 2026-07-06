@@ -93,6 +93,70 @@ isAtom = \ case
 reactive :: Exp -> Bool
 reactive = reacOrStateT . typeOf
 
+-- | Commute an application over a case or let head: a function-typed
+--   case (or a let/join wrapping one — GHC's pattern-match-failure join
+--   shape) applied to arguments pushes the arguments inside — into every
+--   non-jump alternative, through let bodies, and into join bodies (the
+--   join's signature and its jumps' carried ids are rebuilt to the
+--   applied type). Scope-safe under the uniqueness discipline: the
+--   arguments predate the binders. The retained pipeline's reactive
+--   passes used to perform this; the machine path normalizes it here.
+commuteCaseApp :: Exp -> Maybe Exp
+commuteCaseApp e = case flattenApp e of
+      (h@Case {}, args@(_ : _)) -> Just $ pushE h args
+      (h@Let {},  args@(_ : _)) -> Just $ pushE h args
+      _                         -> Nothing
+      where pushE :: Exp -> [Arg] -> Exp
+            pushE h args = case h of
+                  Let an (Join j ps b) body ->
+                        let b'  = pushE b args
+                            tvs = map (sigTy . idSig) ps
+                            j'  = j { jpId = (jpId j) { idSig = monoSig $ foldr (Arrow an) (typeOf b') tvs } }
+                        in Let an (Join j' ps b') $ rejump j j' $ pushE body args
+                  Let an bnd body -> Let an bnd $ pushE body args
+                  Case an t s cb alts ->
+                        Case an (peelArrows (length [ () | EArg _ <- args ]) t) s cb
+                              [ Alt aan c xs (if isJumpTail b then b else pushE b args) | Alt aan c xs b <- alts ]
+                  _ -> foldl (App $ ann' h) h args
+
+            isJumpTail :: Exp -> Bool
+            isJumpTail = \ case
+                  Jump {}      -> True
+                  Let _ _ body -> isJumpTail body
+                  _            -> False
+
+            peelArrows :: Int -> Ty -> Ty
+            peelArrows 0 t             = t
+            peelArrows n (Arrow _ _ u) = peelArrows (n - 1) u
+            peelArrows _ t             = t
+
+            -- Rewrite jump occurrences of the old join id to the rebuilt one.
+            rejump :: JoinId -> JoinId -> Exp -> Exp
+            rejump j j' = go
+                  where go :: Exp -> Exp
+                        go ex = case ex of
+                              Jump an jj es
+                                    | idUniq (jpId jj) == idUniq (jpId j) -> Jump an j' $ map go es
+                                    | otherwise                           -> Jump an jj $ map go es
+                              App an f a       -> App an (go f) $ goA a
+                              Lam an x b       -> Lam an x $ go b
+                              Let an bnd body  -> Let an (goB bnd) $ go body
+                              Case an t sc cb alts -> Case an t (go sc) cb [ Alt aan c xs (go b) | Alt aan c xs b <- alts ]
+                              LitList an t es  -> LitList an t $ map go es
+                              LitVec an t es   -> LitVec an t $ map go es
+                              _                -> ex
+
+                        goA :: Arg -> Arg
+                        goA = \ case
+                              EArg x -> EArg $ go x
+                              t      -> t
+
+                        goB :: Bind -> Bind
+                        goB = \ case
+                              NonRec x rhs -> NonRec x $ go rhs
+                              Rec bs       -> Rec [ (x, go rhs) | (x, rhs) <- bs ]
+                              Join jj ps b -> Join jj ps $ go b
+
 -- | Does the expression contain a jump (anywhere)? Jumps are tail-only
 --   on lint-clean input, so a jump-containing case is a join point's
 --   scope and must stay in tail position.
@@ -148,6 +212,7 @@ normTail e = case e of
                   pure $ wrapLets bs $ Case an t sa cb alts'
             | otherwise -> named
       App {}
+            | Just e' <- commuteCaseApp e       -> normTail e'
             | reactive e || hasArrow (typeOf e) -> do
                   (bs, e') <- normSpine e
                   pure $ wrapLets bs e'
@@ -177,7 +242,9 @@ normR e = case e of
             (bs, sa) <- atomize s
             alts'    <- mapM (\ (Alt aan c xs b) -> Alt aan c xs <$> normTail b) alts
             pure (bs, Case an t sa cb alts')
-      App {}       -> normSpine e
+      App {}
+            | Just e' <- commuteCaseApp e -> normR e'
+            | otherwise                   -> normSpine e
       LitList {}   -> atomize e
       LitVec {}    -> atomize e
       _            -> pure ([], e)
@@ -203,6 +270,8 @@ normSpine e = do
 
             one :: Exp -> NM m (Hoist, Exp)
             one a | isAtom a               = atomize a
+                  | App {} <- a
+                  , Just a' <- commuteCaseApp a = one a'
                   | Lam {} <- a            = ([], ) <$> normTail a
                   -- Primitive applications are naming-transparent: the
                   -- backends pattern-match primitive idioms (bit slices,

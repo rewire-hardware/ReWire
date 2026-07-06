@@ -12,6 +12,7 @@ import ReWire.Annotation (unAnn)
 import ReWire.Config (Config, typecheck)
 import ReWire.Eidos.Pretty (prettyProgram)
 import ReWire.Eidos.ToCrust (eidosToCrust)
+import ReWire.Eidos.ToCrustM (eidosToCrustM)
 import ReWire.GHC.Session (loadCore)
 import ReWire.GHC.ToEidos (toEidos)
 import ReWire.Crust.Purify (purify)
@@ -108,12 +109,19 @@ getDevice conf fp = do
             let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
             verb ("Writing Eidos IR to file: " <> pack eirFile) ()
             liftIO $ T.writeFile eirFile $ prettyProgram eirPE'
-      prog0 <- eidosToCrust eirPE'
+      -- With a process constructed, the machine adapter owns the
+      -- lowering (the retired purifier's output shape), and the reactive
+      -- Crust passes are skipped; otherwise the ordinary shim lowers the
+      -- P-level program onto the full retained pipeline.
+      let machineMode = conf^.C.procify && not (null $ Eidos.progProcs eirPE')
+      prog0 <- if machineMode
+            then eidosToCrustM (conf^.C.start) eirPE'
+            else eidosToCrust eirPE'
       (ts, syns, ds) <- passCrust conf 1 "Translating GHC Core to Crust IR." prog0
 
       p <- pure
        >=> runPasses pass forceProg            nFront frontPasses
-       >=> runPasses pass (extraTC >=> forceProg) nMid   midPasses
+       >=> runPasses pass (extraTC >=> forceProg) nMid   (if machineMode then machineMids else midPasses)
        >=> runPasses pass forceProg            nBack  backPasses
        >=> pass nCore "Translating to hyle & HDL."
        >=> toHyle conf start
@@ -155,6 +163,14 @@ getDevice conf fp = do
             -- call boundary — never substitution, whose duplication is
             -- exponential in let nesting (reduce-as-decoder OOMs on
             -- gfmult).
+            -- The machine adapter's output is post-purify-shaped: only
+            -- the shim-encoding decoder (the lift) and the purifier's
+            -- fused reduce remain before the back passes.
+            machineMids =
+                  [ ("Lifting lambdas.",                                 liftLambdas)
+                  , ("Reducing.",                                        reduce)
+                  ]
+
             midPasses =
                   [ ("Lifting lambdas.",                                 liftLambdas)
                   , ("Normalizing bind.",                                normalizeBind)
