@@ -34,7 +34,7 @@
 --   * The output enters the retained pipeline at the extern-neutering
 --     pass, with the Crust primitive basis applied here (a retained-tail
 --     requirement: the R_/A_/PuRe placeholders and friends).
-module ReWire.Eidos.ToCrust (eidosToCrust) where
+module ReWire.Eidos.ToCrust (eidosToCrust, lowerExp, lowerTy, Locals, bindLocals) where
 
 import ReWire.Annotation (Annote)
 import ReWire.Builtins (Builtin (VecFromList))
@@ -179,7 +179,21 @@ liftJoins p@(Program datas defns procs top) = Program datas defns' procs top
 topName :: Id -> Name M.Exp
 topName = s2n . idOcc
 
+-- | Local bindings in scope during expression lowering: Eidos unique to
+--   the (freshened) Crust expression that replaces occurrences. Exported
+--   for the machine-level adapter, which lowers block bodies with its own
+--   parameter and store bindings.
 type Locals = IM.IntMap M.Exp
+
+-- | Bind locals for lowering: fresh Crust names, occurrences mapped.
+bindLocals :: Fresh m => Annote -> Locals -> [Id] -> m ([Name M.Exp], Locals)
+bindLocals an = go []
+      where go :: Fresh m => [Name M.Exp] -> Locals -> [Id] -> m ([Name M.Exp], Locals)
+            go acc lcl []       = pure (reverse acc, lcl)
+            go acc lcl (x : xs) = do
+                  n <- fresh $ s2n $ idOcc x
+                  let t = Just $ lowerTy $ sigTy $ idSig x
+                  go (n : acc) (IM.insert (idUniq x) (M.Var an Nothing t n) lcl) xs
 
 lowerTy :: Ty -> M.Ty
 lowerTy = \ case
