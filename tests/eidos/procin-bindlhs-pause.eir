@@ -1,7 +1,8 @@
--- Procify input shape (negative for the procify pass, well-formed at
--- the P level): a recursive, pausing reactive callee in bind-LHS
--- position (it might pause mid-computation, so it may only be called in
--- tail position). Mirrors tests/negative/bind-lhs-pause.hs.
+-- Procify input shape (positive since the plan's Q3 relaxation): a
+-- pausing reactive callee in bind-LHS position splices its block graph
+-- once per continuation — sequential machine composition. The callee's
+-- internal tail recursion re-enters under the same continuation and
+-- closes through the (definition, continuation) memo.
 data Bool * {
       False :: Bool;
       True :: Bool
