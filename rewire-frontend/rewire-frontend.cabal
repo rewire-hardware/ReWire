@@ -31,12 +31,6 @@ source-repository head
 library
   exposed-modules:
       ReWire.Builtins
-      ReWire.Crust.PrimBasis
-      ReWire.Crust.Syntax
-      ReWire.Crust.Transform
-      ReWire.Crust.TypeCheck
-      ReWire.Crust.Types
-      ReWire.Crust.Util
       ReWire.Eidos.ANF
       ReWire.Eidos.Externs
       ReWire.Eidos.Inline
@@ -57,7 +51,6 @@ library
       ReWire.GHC.Recognize
       ReWire.GHC.Session
       ReWire.GHC.ToEidos
-      ReWire.GHC.Vocab
       ReWire.ModCache
       ReWire.Pass
   other-modules:

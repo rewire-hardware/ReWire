@@ -3,9 +3,9 @@
 {-# LANGUAGE FlexibleContexts #-}
 -- | The Core -> Eidos bridge: translates the -O0 desugared Core of the
 --   whole home module graph into an Eidos-P 'Program' (doc/eidos.md §3) by
---   near-transliteration. Where the Crust bridge ("ReWire.GHC.ToCrust")
---   lowers lets to beta-redexes (with demand-order rescheduling), crushes
---   cases to single-arm cascades, and discards type instantiations for the
+--   near-transliteration. Where the retired Crust bridge lowered lets to
+--   beta-redexes (with demand-order rescheduling), crushed cases to
+--   single-arm cascades, and discarded type instantiations for the
 --   typechecker to re-infer, this bridge PRESERVES them: Core lets become
 --   'Let's (recursive groups included), join-tagged binders become 'Join'
 --   binds with 'Jump's at their call sites, cases stay n-ary with their
@@ -14,7 +14,7 @@
 --   untranslatable type is a located error at the occurrence, never a
 --   silent Nothing.
 --
---   Shared with the Crust bridge (and unchanged): the reachability walk
+--   Inherited from the retired Crust bridge (unchanged): the reachability walk
 --   from the start symbol + rwPrim* roots, evidence erasure (dictionary
 --   arguments/binders/binds erased; user-class dictionaries kept as data),
 --   rwPrim* recognition, the reactive-monad class-op recognition (Bind and

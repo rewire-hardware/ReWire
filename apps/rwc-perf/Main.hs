@@ -130,9 +130,8 @@ genLetChain n = unlines $
       ]
 
 -- | A chain of n small top-level definitions, each calling the previous.
---   Stresses the inlining/specialization/purge fixpoints in
---   Crust.Transform, which repeatedly substitute and re-scan the full
---   definition list.
+--   Stresses the inlining/specialization/purge fixpoints, which
+--   repeatedly substitute and re-scan the full definition list.
 genDefChain :: Int -> String
 genDefChain n = unlines $
       [ "{-# LANGUAGE DataKinds #-}"

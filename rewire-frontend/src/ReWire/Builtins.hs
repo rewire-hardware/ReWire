@@ -3,8 +3,8 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
--- | The compiler's primitive operations, shared between the rewire-core
---   pipeline (Crust IR) and the rewire-embedder pipeline (Atmo IR).
+-- | The compiler's primitive operations, shared between the rwc
+--   pipeline (Eidos IR) and the rewire-embedder pipeline (Atmo IR).
 module ReWire.Builtins (Builtin (..), builtins, builtinName) where
 
 import ReWire.Orphans ()

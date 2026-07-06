@@ -25,7 +25,6 @@ data Flag = FlagO !String
           | FlagTestbench !(Maybe String)
           | FlagEvalDepth !String
           | FlagPretty
-          | FlagDebugTypeCheck
           | FlagDebugLint
           | FlagEidos
           | FlagRtlOpt !String

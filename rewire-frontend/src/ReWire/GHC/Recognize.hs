@@ -1,11 +1,11 @@
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE OverloadedStrings #-}
--- | Recognition for the Core-to-Crust bridge: classifying GHC names and
+-- | Recognition for the Core-to-Eidos bridge: classifying GHC names and
 --   types (primitives, the RWC.Primitives mirror module, user classes,
 --   erasable evidence), the external tycon and base-vocabulary tables,
---   Crust naming conventions for Vars and constructors, and source
+--   naming conventions for Vars and constructors, and source
 --   locations. Everything here answers "what is this Core thing to
---   ReWire?"; the translation itself lives in "ReWire.GHC.ToCrust".
+--   ReWire?"; the translation itself lives in "ReWire.GHC.ToEidos".
 module ReWire.GHC.Recognize
       ( uKey
       , spanAnnote, varAnnote

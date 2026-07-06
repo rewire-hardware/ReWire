@@ -2,8 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
--- | Extern neutering on Eidos (the retired Crust pass's successor; see
---   ReWire.Crust.Transform.neuterExterns for the policy's rationale).
+-- | Extern neutering (the retired Crust pass's successor).
 --   Decides, per extern, whether the user-supplied Haskell implementation
 --   (rwPrimExtern's seventh argument) can serve as a model for the
 --   interpreter, and replaces it with an inert error placeholder

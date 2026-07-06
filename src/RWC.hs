@@ -23,7 +23,6 @@ options =
        , Option []    ["no-clock"]        (NoArg  FlagNoClock)                       "No implicitly generated clock signal (implies no-reset: generate a purely combinatorial circuit)."
        , Option []    ["sync-reset"]      (NoArg  FlagSyncReset)                     "Only reset on positive clock edge."
        , Option ['d'] ["dump"]            (ReqArg FlagDump        "1,2,...")         "Dump the intermediate form of the corresponding pass number (in brackets; see -v output)."
-       , Option []    ["debug-typecheck"] (NoArg  FlagDebugTypeCheck)                "Re-run type-checking after every transformation to possibly catch compiler bugs."
        , Option []    ["debug-lint"]      (NoArg  FlagDebugLint)                     "Re-lint the Eidos IR after every front-half pass to possibly catch compiler bugs."
        , Option []    ["eidos"]           (NoArg  FlagEidos)                         "Dump the Eidos IR (.eir) beside the output; see doc/eidos.md."
        , Option []    ["flatten"]         (NoArg  FlagFlatten)                       "Flatten RTL output into a single module (currently slow, memory-intensive)."
