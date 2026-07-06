@@ -1,17 +1,17 @@
-$Pure.dispatch : ([8]) -> [16]
-$Pure.dispatch i =
-      $L.$x4 i
+main.$dispatch : ([8]) -> [16]
+main.$dispatch i =
+      main.$L.$x4$242 i
 
-$L.$x5 : ([16]) -> [16]
-$L.$x5 $x =
+main.$L.$x4$242 : ([8]) -> [16]
+main.$L.$x4$242 $x =
+      main.$L.$x5$244 (xor (zext 16 $x) 16'h1)
+
+main.$L.$x5$244 : ([16]) -> [16]
+main.$L.$x5$244 $x =
       $x
-
-$L.$x4 : ([8]) -> [16]
-$L.$x4 $x =
-      $L.$x5 (xor (zext 16 $x) 16'h1)
 
 device top_level
       input __in0 : [8]
       output __out0 : [16]
-      let $res = $Pure.dispatch __in0
+      let $res = main.$dispatch __in0
       __out0 := $res

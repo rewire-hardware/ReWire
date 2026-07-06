@@ -251,38 +251,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \Main_xorModel\ is
-port (arg0 : in std_logic_vector (31 downto 0);
-      arg1 : in std_logic_vector (31 downto 0);
-      res : out std_logic_vector (31 downto 0));
-end entity;
-
-architecture rtl of \Main_xorModel\ is
-
-begin
-res <= rw_xor(arg0, arg1);
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \Main_plusModel\ is
-port (arg0 : in std_logic_vector (31 downto 0);
-      arg1 : in std_logic_vector (31 downto 0);
-      res : out std_logic_vector (31 downto 0));
-end entity;
-
-architecture rtl of \Main_plusModel\ is
-
-begin
-res <= rw_add(arg0, arg1);
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
 entity \Main_andModel\ is
 port (arg0 : in std_logic_vector (31 downto 0);
       arg1 : in std_logic_vector (31 downto 0);
@@ -299,6 +267,22 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
+entity \Main_xorModel\ is
+port (arg0 : in std_logic_vector (31 downto 0);
+      arg1 : in std_logic_vector (31 downto 0);
+      res : out std_logic_vector (31 downto 0));
+end entity;
+
+architecture rtl of \Main_xorModel\ is
+
+begin
+res <= rw_xor(arg0, arg1);
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
 entity \Main_notModel\ is
 port (arg0 : in std_logic_vector (31 downto 0);
       res : out std_logic_vector (31 downto 0));
@@ -308,4 +292,20 @@ architecture rtl of \Main_notModel\ is
 
 begin
 res <= rw_not(arg0);
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \Main_plusModel\ is
+port (arg0 : in std_logic_vector (31 downto 0);
+      arg1 : in std_logic_vector (31 downto 0);
+      res : out std_logic_vector (31 downto 0));
+end entity;
+
+architecture rtl of \Main_plusModel\ is
+
+begin
+res <= rw_add(arg0, arg1);
 end architecture;

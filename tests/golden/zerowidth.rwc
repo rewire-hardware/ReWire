@@ -1,38 +1,35 @@
-$Pure.dispatch : ([8]) -> [16]
-$Pure.dispatch disc =
-      $L._unused6 disc
+main.$dispatch : ([8]) -> [16]
+main.$dispatch disc =
+      main.$L._unused6$257 disc
 
-$LL.L.x3 : ([8], [8]) -> [16]
-$LL.L.x3 x s' =
-      $L._unused4 x s'
+main.$L._unused6$257 : ([8]) -> [16]
+main.$L._unused6$257 s0 =
+      main.$L.Main.loop1$252 s0
 
-$L._unused5 : ([8], [8]) -> [16]
-$L._unused5 x s0 =
+main.$L._unused5$256 : ([8], [8]) -> [16]
+main.$L._unused5$256 x s0 =
       x # s0
 
-$L._unused6 : ([8]) -> [16]
-$L._unused6 $x =
-      $L.Main.loop1 $x
+main.$L._unused4$255 : ([8], [8]) -> [16]
+main.$L._unused4$255 x s0 =
+      main.$L._unused5$256 x s0
 
-$L.z2 : ([8]) -> [16]
-$L.z2 s0 =
-      $L.x3 s0 s0
+main.$L.x3$254 : ([8], [8]) -> [16]
+main.$L.x3$254 x s0 =
+      let s01 = add x 8'h1 in
+      main.$L._unused4$255 x s01
 
-$L.Main.loop1 : ([8]) -> [16]
-$L.Main.loop1 s0 =
-      $L.z2 s0
+main.$L.z2$253 : ([8]) -> [16]
+main.$L.z2$253 s0 =
+      main.$L.x3$254 s0 s0
 
-$L._unused4 : ([8], [8]) -> [16]
-$L._unused4 x s0 =
-      $L._unused5 x s0
-
-$L.x3 : ([8], [8]) -> [16]
-$L.x3 x s0 =
-      $LL.L.x3 x (add x 8'h1)
+main.$L.Main.loop1$252 : ([8]) -> [16]
+main.$L.Main.loop1$252 s0 =
+      main.$L.z2$253 s0
 
 device top_level
       output __out0 : [8]
       register __st0 : [8] init 8'h1
-      let $res = $Pure.dispatch __st0
+      let $res = main.$dispatch __st0
       __out0 := $res[8 +: 8]
       next __st0 := $res[0 +: 8]

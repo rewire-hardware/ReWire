@@ -4,12 +4,12 @@ module top_level (input logic [0:0] clk,
   output logic [0:0] __out0);
   logic [0:0] __st0;
   logic [0:0] __st0_next;
-  logic [1:0] zl__unused3_out;
-  logic [1:0] zl__unused3_outR1;
+  logic [1:0] main_$l__unused3$293_out;
+  logic [1:0] main_$l__unused3$293_outR1;
   logic [1:0] zres;
-  ZL___unused3  inst (__st0, __st0, zl__unused3_out);
-  ZL___unused3  instR1 (__st0, 1'h0, zl__unused3_outR1);
-  assign zres = (__in0 == 1'h0) ? ((__st0 == 1'h0) ? zl__unused3_out : zl__unused3_outR1) : 2'h2;
+  main_$L___unused3$293  inst (__st0, __st0, main_$l__unused3$293_out);
+  main_$L___unused3$293  instR1 (__st0, 1'h0, main_$l__unused3$293_outR1);
+  assign zres = (__in0 == 1'h0) ? ((__st0 == 1'h0) ? main_$l__unused3$293_out : main_$l__unused3$293_outR1) : 2'h2;
   assign __st0_next = zres[0];
   assign __out0 = zres[1];
   initial __st0 = 1'h1;
@@ -22,18 +22,18 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module ZL___unused3 (input logic [0:0] arg0,
-  input logic [0:0] arg1,
-  output logic [1:0] res);
-  logic [1:0] zl__unused4_out;
-  logic [1:0] zl__unused4_outR1;
-  ZL___unused4  inst (arg0, 1'h1, zl__unused4_out);
-  ZL___unused4  instR1 (arg0, arg1, zl__unused4_outR1);
-  assign res = (arg0 == 1'h0) ? zl__unused4_out : zl__unused4_outR1;
-endmodule
-
-module ZL___unused4 (input logic [0:0] arg0,
+module main_$L___unused4$294 (input logic [0:0] arg0,
   input logic [0:0] arg1,
   output logic [1:0] res);
   assign res = {arg0, arg1};
+endmodule
+
+module main_$L___unused3$293 (input logic [0:0] arg0,
+  input logic [0:0] arg1,
+  output logic [1:0] res);
+  logic [1:0] main_$l__unused4$294_out;
+  logic [1:0] main_$l__unused4$294_outR1;
+  main_$L___unused4$294  inst (arg0, 1'h1, main_$l__unused4$294_out);
+  main_$L___unused4$294  instR1 (arg0, arg1, main_$l__unused4$294_outR1);
+  assign res = (arg0 == 1'h0) ? main_$l__unused4$294_out : main_$l__unused4$294_outR1;
 endmodule

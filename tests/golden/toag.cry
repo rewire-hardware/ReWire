@@ -16,48 +16,28 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// $Pure.dispatch
-rw__Pure_dispatch : [3] -> [1] -> [4]
-rw__Pure_dispatch x0 x1 = if (take`{2} x0) == 0b00 then (rw__L_z4 x1) else (if (take`{2} x0) == 0b01 then (rw__L_y3 s0 x1) else (rw__L_x2 x1))
+// main.$dispatch
+rw_main__dispatch : [3] -> [1] -> [4]
+rw_main__dispatch x0 x1 = if (take`{2} x0) == 0b00 then (rw_main__L_z4_236 x1) else (if (take`{2} x0) == 0b01 then (rw_main__L_y3_235 (drop`{2} x0) x1) else (rw_main__L_x2_234 x1))
+
+// main.$L.z4$236
+rw_main__L_z4_236 : [1] -> [4]
+rw_main__L_z4_236 x0 = 0x4
+
+// main.$L.y3$235
+rw_main__L_y3_235 : [1] -> [1] -> [4]
+rw_main__L_y3_235 x0 x1 = s2 # 0b000
   where
     s0 : [1]
-    s0 = drop`{2} x0
+    s0 = if x0 == 0b1 then x0 else 0b0
+    s1 : [1]
+    s1 = if x1 == 0b0 then s0 else x0
+    s2 : [1]
+    s2 = if s1 == 0b1 then x1 else 0b0
 
-// $LL.L.y35
-rw__LL_L_y35 : [1] -> [1]
-rw__LL_L_y35 x0 = x0
-
-// $LL.L.y34
-rw__LL_L_y34 : [1] -> [1] -> [1]
-rw__LL_L_y34 x0 x1 = if x1 == 0b1 then x0 else 0b0
-
-// $L.z4
-rw__L_z4 : [1] -> [4]
-rw__L_z4 x0 = 0x4
-
-// $LL.L.y33
-rw__LL_L_y33 : [1] -> [1] -> [1]
-rw__LL_L_y33 x0 x1 = if x1 == 0b0 then (rw__LL_L_y35 (rw__LL_L_y3 x0 x0)) else x0
-
-// $L.x2
-rw__L_x2 : [1] -> [4]
-rw__L_x2 x0 = if x0 == 0b0 then (x0 # (0b01 # x0)) else (0b001 # x0)
-
-// $LL.L.y32
-rw__LL_L_y32 : [1] -> [1] -> [4]
-rw__LL_L_y32 x0 x1 = rw__LL_L_y31 (rw__LL_L_y34 x0 x1)
-
-// $LL.L.y31
-rw__LL_L_y31 : [1] -> [4]
-rw__LL_L_y31 x0 = x0 # 0b000
-
-// $LL.L.y3
-rw__LL_L_y3 : [1] -> [1] -> [1]
-rw__LL_L_y3 x0 x1 = if x1 == 0b1 then x0 else 0b0
-
-// $L.y3
-rw__L_y3 : [1] -> [1] -> [4]
-rw__L_y3 x0 x1 = rw__LL_L_y32 x1 (rw__LL_L_y33 x0 x1)
+// main.$L.x2$234
+rw_main__L_x2_234 : [1] -> [4]
+rw_main__L_x2_234 x0 = if x0 == 0b0 then (x0 # (0b01 # x0)) else (0b001 # x0)
 
 // Per-cycle step: outputs # next register values.
 rw_step : [3] -> [1] -> [4]
@@ -68,7 +48,7 @@ rw_step st i = (take`{1} s2) # (drop`{1} s2)
     s1 : [1]
     s1 = i
     s2 : [4]
-    s2 = rw__Pure_dispatch s0 s1
+    s2 = rw_main__dispatch s0 s1
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1]

@@ -16,9 +16,24 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// $Pure.dispatch
-rw__Pure_dispatch : [128] -> [128]
-rw__Pure_dispatch x0 = rw__L__x4 x0
+// main.$dispatch
+rw_main__dispatch : [128] -> [128]
+rw_main__dispatch x0 = rw_main__L__x4_340 x0
+
+// main.$L.$x4$340
+rw_main__L__x4_340 : [128] -> [128]
+rw_main__L__x4_340 x0 = rw_main__L_Main_loop3_338 x0
+
+// main.$L.$x5$342
+rw_main__L__x5_342 : [128] -> [128]
+rw_main__L__x5_342 x0 = x0
+
+// main.$L.Main.loop3$338
+rw_main__L_Main_loop3_338 : [128] -> [128]
+rw_main__L_Main_loop3_338 x0 = rw_main__L__x5_342 s0
+  where
+    s0 : [128]
+    s0 = rw_Main_compute x0
 
 // Main.compute
 rw_Main_compute : [128] -> [128]
@@ -26,18 +41,6 @@ rw_Main_compute x0 = (take`{56} (drop`{8} x0)) # ((rw'resize`{8} (s0 >> 0x000000
   where
     s0 : [64]
     s0 = drop`{64} x0
-
-// $L.Main.loop3
-rw__L_Main_loop3 : [128] -> [128]
-rw__L_Main_loop3 x0 = rw__L__x5 (rw_Main_compute x0)
-
-// $L.$x5
-rw__L__x5 : [128] -> [128]
-rw__L__x5 x0 = x0
-
-// $L.$x4
-rw__L__x4 : [128] -> [128]
-rw__L__x4 x0 = rw__L_Main_loop3 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [128] -> [128]
@@ -50,7 +53,7 @@ rw_step i = (take`{64} s3) # (drop`{64} s3)
     s2 : [128]
     s2 = s0 # s1
     s3 : [128]
-    s3 = rw__Pure_dispatch s2
+    s3 = rw_main__dispatch s2
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [64], __in1 : [64]

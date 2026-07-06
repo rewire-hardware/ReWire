@@ -208,7 +208,7 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZL_Main_loop4\ is
+component \main_$L_Main_loop4$283\ is
       port (arg0 : in std_logic_vector (7 downto 0);
             res : out std_logic_vector (16 downto 0));
       end component;
@@ -216,13 +216,13 @@ component \ZL_Main_loop4\ is
       signal \__resumption_tag_next\ : std_logic_vector (0 downto 0);
       signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal zl_main_loop4_out : std_logic_vector (16 downto 0);
-      signal \zl_main_loop4_outR1\ : std_logic_vector (16 downto 0);
+      signal \main_$l_main_loop4$283_out\ : std_logic_vector (16 downto 0);
+      signal \main_$l_main_loop4$283_outR1\ : std_logic_vector (16 downto 0);
       signal zres : std_logic_vector (16 downto 0);
 begin
-inst : \ZL_Main_loop4\ port map (\__st0\, zl_main_loop4_out);
-      \instR1\ : \ZL_Main_loop4\ port map (\__in0\, \zl_main_loop4_outR1\);
-      zres <= rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"0")), zl_main_loop4_out, \zl_main_loop4_outR1\);
+inst : \main_$L_Main_loop4$283\ port map (\__st0\, \main_$l_main_loop4$283_out\);
+      \instR1\ : \main_$L_Main_loop4$283\ port map (\__in0\, \main_$l_main_loop4$283_outR1\);
+      zres <= rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"0")), \main_$l_main_loop4$283_out\, \main_$l_main_loop4$283_outR1\);
       \__resumption_tag_next\ <= zres(8 downto 8);
       \__st0_next\ <= zres(7 downto 0);
       \__out0\ <= zres(16 downto 9);
@@ -242,41 +242,41 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZL_Main_loop4\ is
+entity \main_$L_Main_incr7$286\ is
 port (arg0 : in std_logic_vector (7 downto 0);
       res : out std_logic_vector (16 downto 0));
 end entity;
 
-architecture rtl of \ZL_Main_loop4\ is
-component \ZL_Main_incr7\ is
-      port (arg0 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (16 downto 0));
-      end component;
-      signal zi0 : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (0 downto 0);
-      signal zi2 : std_logic_vector (0 downto 0);
-      signal zl_main_incr7_out : std_logic_vector (16 downto 0);
-      signal \zl_main_incr7_outR1\ : std_logic_vector (16 downto 0);
+architecture rtl of \main_$L_Main_incr7$286\ is
+
 begin
-zi0 <= rw_resize(arg0, 1);
-      zi1 <= zi0;
-      zi2 <= rw_cond(rw_eq(zi1, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
-      inst : \ZL_Main_incr7\ port map (arg0, zl_main_incr7_out);
-      \instR1\ : \ZL_Main_incr7\ port map (arg0, \zl_main_incr7_outR1\);
-      res <= rw_cond(rw_eq(zi2, std_logic_vector'(B"0")), zl_main_incr7_out, \zl_main_incr7_outR1\);
+res <= (std_logic_vector'(B"000000100") & arg0);
 end architecture;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZL_Main_incr7\ is
+entity \main_$L_Main_loop4$283\ is
 port (arg0 : in std_logic_vector (7 downto 0);
       res : out std_logic_vector (16 downto 0));
 end entity;
 
-architecture rtl of \ZL_Main_incr7\ is
-
+architecture rtl of \main_$L_Main_loop4$283\ is
+component \main_$L_Main_incr7$286\ is
+      port (arg0 : in std_logic_vector (7 downto 0);
+            res : out std_logic_vector (16 downto 0));
+      end component;
+      signal zi0 : std_logic_vector (0 downto 0);
+      signal zi1 : std_logic_vector (0 downto 0);
+      signal zi2 : std_logic_vector (0 downto 0);
+      signal \main_$l_main_incr7$286_out\ : std_logic_vector (16 downto 0);
+      signal \main_$l_main_incr7$286_outR1\ : std_logic_vector (16 downto 0);
 begin
-res <= (std_logic_vector'(B"000000100") & arg0);
+zi0 <= rw_resize(arg0, 1);
+      zi1 <= zi0;
+      zi2 <= rw_cond(rw_eq(zi1, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
+      inst : \main_$L_Main_incr7$286\ port map (arg0, \main_$l_main_incr7$286_out\);
+      \instR1\ : \main_$L_Main_incr7$286\ port map (arg0, \main_$l_main_incr7$286_outR1\);
+      res <= rw_cond(rw_eq(zi2, std_logic_vector'(B"0")), \main_$l_main_incr7$286_out\, \main_$l_main_incr7$286_outR1\);
 end architecture;

@@ -1,52 +1,54 @@
-$Pure.dispatch : ([8], [1]) -> [16]
-$Pure.dispatch disc i =
-      $L.b2 i disc
+main.$dispatch : ([8], [1]) -> [16]
+main.$dispatch disc i =
+      main.$L.b2$269 i disc
 
-$L.$x8 : ([8], [8]) -> [16]
-$L.$x8 $x s0 =
+main.$L.n4$271 : ([8], [8]) -> [16]
+main.$L.n4$271 n s0 =
+      let $a = Main.incW8 n in
+      main.$L.Main.go1$268 $a
+
+main.$L.arm5$273 : ([8]) -> [16]
+main.$L.arm5$273 s0 =
+      main.$L.n4$271 s0 s0
+
+main.$L.n6$274 : ([8], [8]) -> [16]
+main.$L.n6$274 n s0 =
+      let $a = Main.rolW8 n in
+      main.$L.Main.go1$268 $a
+
+main.$L.arm7$276 : ([8]) -> [16]
+main.$L.arm7$276 s0 =
+      main.$L.n6$274 s0 s0
+
+main.$L.b2$269 : ([1], [8]) -> [16]
+main.$L.b2$269 b s0 =
+      if eq b 1'h0 then main.$L.arm5$273 s0
+            else main.$L.arm7$276 s0
+
+main.$L.$x8$278 : ([8], [8]) -> [16]
+main.$L.$x8$278 $x s0 =
       $x # s0
 
-$L.b2 : ([1], [8]) -> [16]
-$L.b2 b s0 =
-      if eq b 1'h0 then $L.arm5 s0
-            else $L.arm7 s0
-
-$L.Main.go1 : ([8]) -> [16]
-$L.Main.go1 s0 =
-      $L.$x8 s0 s0
-
-$L.n6 : ([8], [8]) -> [16]
-$L.n6 n s0 =
-      $L.Main.go1 (Main.rolW8 n)
-
-Main.rolW8 : ([8]) -> [8]
-Main.rolW8 n =
-      or (shl n 8'h1) (Main.msbitW8 n)
+main.$L.Main.go1$268 : ([8]) -> [16]
+main.$L.Main.go1$268 s0 =
+      main.$L.$x8$278 s0 s0
 
 Main.incW8 : ([8]) -> [8]
 Main.incW8 n =
       add n 8'h1
 
-$L.arm5 : ([8]) -> [16]
-$L.arm5 s0 =
-      $L.n4 s0 s0
-
-$L.arm7 : ([8]) -> [16]
-$L.arm7 s0 =
-      $L.n6 s0 s0
-
-$L.n4 : ([8], [8]) -> [16]
-$L.n4 n s0 =
-      $L.Main.go1 (Main.incW8 n)
-
 Main.msbitW8 : ([8]) -> [8]
 Main.msbitW8 n =
       zext 8 n[7 +: 1]
+
+Main.rolW8 : ([8]) -> [8]
+Main.rolW8 n =
+      or (shl n 8'h1) (Main.msbitW8 n)
 
 device top_level
       input __in0 : [1]
       output __out0 : [8]
       register __st0 : [8] init 8'h0
-      let $res = $Pure.dispatch __st0 __in0
+      let $res = main.$dispatch __st0 __in0
       __out0 := $res[8 +: 8]
       next __st0 := $res[0 +: 8]

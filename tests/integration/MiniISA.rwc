@@ -1,1404 +1,2112 @@
-$Pure.dispatch : ([88], [10]) -> [106]
-$Pure.dispatch disc i =
-      if eq disc[85 +: 3] 3'h0 then (let e = disc[83 +: 1] in
-            let e1 = disc[81 +: 2] in
-            let s = disc[0 +: 81] in
-            $L.i30 e e1 i s)
-            else if eq disc[85 +: 3] 3'h1 then (let e = disc[84 +: 1] in
-            let e1 = disc[83 +: 1] in
-            let e2 = disc[81 +: 2] in
-            let s = disc[0 +: 81] in
-            $L.i57 e e1 e2 i s) else if eq disc[85 +: 3] 3'h2 then (let e = disc[82 +: 1] in
-            let e1 = disc[81 +: 1] in
-            let s = disc[0 +: 81] in
-            $L.i81 e e1 i s) else if eq disc[85 +: 3] 3'h3 then (let s = disc[0 +: 81] in
-            $L.i139 i s) else let s = disc[0 +: 81] in
-            $L.i139 i s
-
-$LL.L.fail78 : ([81], [8]) -> [106]
-$LL.L.fail78 s0 i =
-      $LL.L.fail7 s0 i i[6 +: 1]
-
-$LL.L.arm4041 : ([2], [81], [2]) -> [106]
-$LL.L.arm4041 rD s0 rS =
-      if eq rD 2'h0 then $L.arm397 rD rS s0
-            else if eq rD 2'h1 then $L.arm399 rD rS s0 else if eq rD 2'h2 then $L.arm401 rD rS s0 else $L.arm403 rD rS s0
-
-$LL.L.arm3321 : ([81], [1], [1], [2]) -> [106]
-$LL.L.arm3321 s0 b1 b0 rD =
-      $LL.L.arm332 s0 rD (Main.mkReg b0 b1)
-
-Main.setOutputs : ([81], [18]) -> [81]
-Main.setOutputs ds o =
-      let i = ds[71 +: 10] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
-      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
-
-$L.arm285 : ([8], [81]) -> [106]
-$L.arm285 x s0 =
-      $L.s284 x s0 s0
-
-$L.c545 : ([1], [81]) -> [106]
-$L.c545 c s0 =
-      $L.s551 c s0 s0
-
-$LL.L.arm448 : ([81], [2]) -> [106]
-$LL.L.arm448 s0 $a =
-      if eq $a 2'h0 then $L.arm441 s0
-            else if eq $a 2'h1 then $L.arm443 s0 else if eq $a 2'h2 then $L.arm445 s0 else $L.arm447 s0
-
-$L.s58 : ([1], [1], [2], [10], [81], [81]) -> [106]
-$L.s58 rEn wEn r i s s0 =
-      $L._unused10 rEn wEn r (Main.setInputs s i)
-
-$L.s131 : ([1], [1], [81], [81]) -> [106]
-$L.s131 rEn wEn s s0 =
-      $LL.L.s131 s0 rEn wEn (Main.r3 s)
-
-$LL.L.s538 : ([81], [18]) -> [106]
-$LL.L.s538 s0 $a =
-      $L.o536 $a s0
-
-$L.o84 : ([1], [1], [8], [18], [81]) -> [106]
-$L.o84 rEn wEn a o s0 =
-      $L.s85 rEn wEn a o s0 s0
-
-Main.setZSave : ([81], [1]) -> [81]
-Main.setZSave ds zs =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
-      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
-
-$L.o37 : ([1], [2], [8], [18], [81]) -> [106]
-$L.o37 rEn r d o s0 =
-      $L.s38 rEn r d o s0 s0
-
-$L.s115 : ([8], [8], [18], [81], [81]) -> [106]
-$L.s115 a v o s s0 =
-      $LL.L.s115 v s a (Main.setWeOut o 1'h1)
-
-$L.arm266 : ([2], [2], [81]) -> [106]
-$L.arm266 rD rS s0 =
-      $L.vD238 rD rS (Main.r0 s0) s0
-
-Main.setDataOut : ([18], [8]) -> [18]
-Main.setDataOut ds d_o =
-      let a_o = ds[10 +: 8] in
-      let we_o = ds[1 +: 1] in
-      let iack_o = ds[0 +: 1] in
-      a_o # d_o # we_o # iack_o
-
-$L.vS135 : ([2], [8], [8], [81]) -> [106]
-$L.vS135 rD vD vS s0 =
-      $LL.L.cin240 rD s0 (Main.plusCW8$s2 vD vS)
-
-$LL.L.s446 : ([81], [8]) -> [106]
-$LL.L.s446 s0 $a =
-      $L.pc438 $a s0
-
-$LL.L.v6722 : ([2], [81], [8], [8]) -> [106]
-$LL.L.v6722 r s0 v eta =
-      $LL.L.v6721 r s0 ($LL.L.v672 eta v)
-
-$LL.L.arm721 : ([1], [81], [1], [2]) -> [106]
-$LL.L.arm721 wEn s0 rEn r =
-      if eq r 2'h0 then $L.arm714 rEn wEn r s0
-            else if eq r 2'h1 then $L.arm716 rEn wEn r s0 else if eq r 2'h2 then $L.arm718 rEn wEn r s0 else $L.arm720 rEn wEn r s0
-
-$L.s79 : ([1], [1], [81], [81]) -> [106]
-$L.s79 rEn wEn s s0 =
-      $LL.L.s79 rEn wEn s0 (Main.inputs s)
-
-$L.arm581 : ([1], [1], [81]) -> [106]
-$L.arm581 b0 b1 s0 =
-      $LL.L.arm581 s0 (Main.mkReg b0 b1)
-
-$L.arm93 : ([1], [1], [81]) -> [106]
-$L.arm93 rEn wEn s0 =
-      $L.s92 rEn wEn s0 s0
-
-$L.arm359 : ([2], [8], [81]) -> [106]
-$L.arm359 rD vD s0 =
-      $L.vS334 rD vD (Main.r3 s0) s0
-
-$LL.L.v6231 : ([9], [2], [81], [8]) -> [106]
-$LL.L.v6231 p r s0 v' =
-      if eq r 2'h0 then $L.arm607 p v' s0
-            else if eq r 2'h1 then $L.arm609 p v' s0 else if eq r 2'h2 then $L.arm611 p v' s0 else $L.arm613 p v' s0
-
-$L.z451 : ([1], [1], [1], [81]) -> [106]
-$L.z451 b0 b1 z s0 =
-      $LL.L.z451 s0 b1 b0 (Main.notb z)
-
-$LL.L.s417 : ([8], [81], [8]) -> [106]
-$LL.L.s417 vD s0 $a =
-      $L.vS406 vD $a s0
-
-$LL.L.arm2031 : ([81], [2], [2]) -> [106]
-$LL.L.arm2031 s0 rD rS =
-      if eq rD 2'h0 then $L.arm196 rD rS s0
-            else if eq rD 2'h1 then $L.arm198 rD rS s0 else if eq rD 2'h2 then $L.arm200 rD rS s0 else $L.arm202 rD rS s0
-
-$L.cin240 : ([2], [8], [8], [1], [81]) -> [106]
-$L.cin240 rD vD vS cin s0 =
-      $LL.L.cin240 rD s0 (Main.minusCW8 vD vS cin)
-
-$L.arm590 : ([81]) -> [106]
-$L.arm590 s0 =
-      $L.s589 s0 s0
-
-Main.shlCW8$s1 : ([8]) -> [9]
-Main.shlCW8$s1 v =
-      Main.msbW8 v # or (shl v 8'h1) 8'h0
-
-$LL.L.s664 : ([2], [81], [8]) -> [106]
-$LL.L.s664 r s0 $a =
-      $L.v650 r $a s0
-
-$LL.L.s129 : ([1], [81], [1], [8]) -> [106]
-$LL.L.s129 wEn s0 rEn $a =
-      $L.a99 rEn wEn $a s0
-
-$LL.L.s292 : ([81], [1], [1], [8]) -> [106]
-$LL.L.s292 s0 rEn wEn $a =
-      $L.x274 rEn wEn $a s0
-
-$L.arm237 : ([1], [1], [1], [1], [81]) -> [106]
-$L.arm237 rEn wEn b0 b1 s0 =
-      $LL.L.arm2371 b0 b1 s0 (Main.mkReg rEn wEn)
-
-$L.arm281 : ([8], [81]) -> [106]
-$L.arm281 x s0 =
-      $L.s280 x s0 s0
-
-$L.pc541 : ([8], [81]) -> [106]
-$L.pc541 pc s0 =
-      $L.s555 pc s0 s0
-
-$LL.L.s575 : ([2], [81], [8]) -> [106]
-$LL.L.s575 r s0 $a =
-      $L.v559 r $a s0
-
-$LL.L.s423 : ([1], [1], [81], [8]) -> [106]
-$LL.L.s423 b1 b0 s0 $a =
-      $L.vD405 b0 b1 $a s0
-
-$LL.Main.mkReg2 : ([1], [1]) -> [2]
-$LL.Main.mkReg2 ds wild =
-      if eq wild 1'h0 then $LL.Main.mkReg ds
-            else $LL.Main.mkReg1 ds
-
-$L.arm315 : ([8], [81]) -> [106]
-$L.arm315 vD' s0 =
-      $L.s314 vD' s0 s0
-
-$L.arm160 : ([2], [2], [81]) -> [106]
-$L.arm160 rD rS s0 =
-      $L.vD134 rD rS (Main.r0 s0) s0
-
-$LL.L.v69512 : ([9]) -> [9]
-$LL.L.v69512 $a =
-      $a
-
-$L.o104 : ([18], [81]) -> [106]
-$L.o104 o s0 =
-      o # 7'h30 # s0
-
-$L.arm133 : ([1], [1], [1], [1], [81]) -> [106]
-$L.arm133 rEn wEn b0 b1 s0 =
-      $LL.L.arm133 s0 rEn wEn (Main.mkReg b0 b1)
-
-Main.pcSave : ([81]) -> [8]
-Main.pcSave ds =
-      let pcs = ds[32 +: 8] in
-      pcs
-
-$L.arm164 : ([2], [2], [81]) -> [106]
-$L.arm164 rD rS s0 =
-      $L.vD134 rD rS (Main.r2 s0) s0
-
-$LL.L.s40 : ([1], [2], [81], [8]) -> [106]
-$LL.L.s40 rEn r s0 $a =
-      $L.d36 rEn r $a s0
-
-$L.arm431 : ([1], [1], [1], [1], [81]) -> [106]
-$L.arm431 rEn wEn b0 b1 s0 =
-      $LL.L.arm431 b0 s0 b1 (Main.mkReg rEn wEn)
-
-$L.arm361 : ([2], [2], [81]) -> [106]
-$L.arm361 rD rS s0 =
-      $L.vD333 rD rS (Main.r0 s0) s0
-
-$L.arm721 : ([1], [1], [1], [1], [81]) -> [106]
-$L.arm721 rEn wEn b0 b1 s0 =
-      $LL.L.arm721 wEn s0 rEn (Main.mkReg b0 b1)
-
-$L.s34 : ([1], [2], [8], [81], [81]) -> [106]
-$L.s34 rEn r pc s s0 =
-      $LL.L.s34 s rEn r (Main.plusCW8$s1 pc)
-
-$L.x17 : ([2], [8], [81]) -> [106]
-$L.x17 r x s0 =
-      if eq r 2'h0 then $L.arm19 x s0
-            else if eq r 2'h1 then $L.arm21 x s0 else if eq r 2'h2 then $L.arm23 x s0 else $L.arm25 x s0
-
-$L.s737 : ([8], [81], [81]) -> [106]
-$L.s737 pc s s0 =
-      $LL.L.s737 pc s0 (Main.zFlag s)
-
-$L.s612 : ([9], [8], [81], [81]) -> [106]
-$L.s612 p v' s s0 =
-      $L._unused597 p v' (Main.setR3 s v')
-
-$L.arm162 : ([2], [2], [81]) -> [106]
-$L.arm162 rD rS s0 =
-      $L.vD134 rD rS (Main.r1 s0) s0
-
-$L.arm665 : ([2], [81]) -> [106]
-$L.arm665 r s0 =
-      $L.s664 r s0 s0
-
-$L.s146 : ([8], [81], [81]) -> [106]
-$L.s146 v s s0 =
-      $L._unused137 (Main.setR2 s v)
-
-$L._unused722 : ([81]) -> [106]
-$L._unused722 s0 =
-      $L.s738 s0 s0
-
-Main.setAddrOut : ([18], [8]) -> [18]
-Main.setAddrOut ds a_o =
-      let d_o = ds[2 +: 8] in
-      let we_o = ds[1 +: 1] in
-      let iack_o = ds[0 +: 1] in
-      a_o # d_o # we_o # iack_o
-
-$L.s86 : ([1], [1], [8], [81], [81]) -> [106]
-$L.s86 rEn wEn a s s0 =
-      $LL.L.s86 rEn a s0 wEn (Main.outputs s)
-
-$L.s27 : ([2], [81], [81]) -> [106]
-$L.s27 r s s0 =
-      $LL.L.s27 s0 r (Main.inputs s)
-
-$L.s668 : ([2], [81], [81]) -> [106]
-$L.s668 r s s0 =
-      $LL.L.s664 r s0 (Main.r2 s)
-
-$L.s52 : ([1], [1], [2], [8], [18], [81], [81]) -> [106]
-$L.s52 rEn wEn r a o s s0 =
-      $LL.L.s52 wEn rEn s r (Main.setAddrOut o a)
-
-$LL.L.vS205 : ([81], [2], [9]) -> [106]
-$LL.L.vS205 s0 rD p =
-      $L.s150 rD p s0 s0
-
-$LL.L.s44 : ([2], [81], [1], [8]) -> [106]
-$LL.L.s44 r s0 rEn $a =
-      $L.d36 rEn r $a s0
-
-$L.s96 : ([1], [1], [81], [81]) -> [106]
-$L.s96 rEn wEn s s0 =
-      $LL.L.s90 wEn s0 rEn (Main.r3 s)
-
-$LL.L.s616 : ([2], [81], [8]) -> [106]
-$LL.L.s616 r s0 $a =
-      $L.v596 r $a s0
-
-$L.s579 : ([2], [81], [81]) -> [106]
-$L.s579 r s s0 =
-      $LL.L.s577 s0 r (Main.r3 s)
-
-$L.arm393 : ([2], [8], [81]) -> [106]
-$L.arm393 rD vD s0 =
-      $L.vS370 rD vD (Main.r2 s0) s0
-
-Main.setR0 : ([81], [8]) -> [81]
-Main.setR0 ds r0 =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
-      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
-
-Main.setIackOut : ([18], [1]) -> [18]
-Main.setIackOut ds iack_o =
-      let a_o = ds[10 +: 8] in
-      let d_o = ds[2 +: 8] in
-      let we_o = ds[1 +: 1] in
-      a_o # d_o # we_o # iack_o
-
-$L.o138 : ([18], [81]) -> [106]
-$L.o138 o s0 =
-      o # 7'h40 # s0
-
-$LL.L.s742 : ([81], [10], [1]) -> [106]
-$LL.L.s742 s0 inp $a =
-      $L.ie6 inp $a s0
-
-$LL.Main.plusCW8$s2 : ([9]) -> [9]
-$LL.Main.plusCW8$s2 s =
-      s[8 +: 1] # trunc 8 s
-
-$L.vD369 : ([2], [2], [8], [81]) -> [106]
-$L.vD369 rD rS vD s0 =
-      if eq rS 2'h0 then $L.arm389 rD vD s0
-            else if eq rS 2'h1 then $L.arm391 rD vD s0 else if eq rS 2'h2 then $L.arm393 rD vD s0 else $L.arm395 rD vD s0
-
-$LL.L.s427 : ([81], [1], [1], [8]) -> [106]
-$LL.L.s427 s0 b1 b0 $a =
-      $L.vD405 b0 b1 $a s0
-
-$L.arm73 : ([8], [81]) -> [106]
-$L.arm73 v s0 =
-      $L.s72 v s0 s0
-
-$L.arm592 : ([81]) -> [106]
-$L.arm592 s0 =
-      $L.s591 s0 s0
-
-$L.arm77 : ([8], [81]) -> [106]
-$L.arm77 v s0 =
-      $L.s76 v s0 s0
-
-$L.arm441 : ([81]) -> [106]
-$L.arm441 s0 =
-      $L.s440 s0 s0
-
-$L.pc33 : ([1], [2], [8], [81]) -> [106]
-$L.pc33 rEn r pc s0 =
-      $L.s34 rEn r pc s0 s0
-
-$L.s752 : ([81], [81]) -> [106]
-$L.s752 s s0 =
-      $L._unused745 (Main.setZFlag s 1'h0)
-
-$LL.L.s127 : ([1], [81], [1], [8]) -> [106]
-$LL.L.s127 rEn s0 wEn $a =
-      $L.a99 rEn wEn $a s0
-
-$L.s306 : ([8], [81], [81]) -> [106]
-$L.s306 vD' s s0 =
-      $L._unused137 (Main.setZFlag s (eq vD' 8'h0))
-
-$L.arm445 : ([81]) -> [106]
-$L.arm445 s0 =
-      $L.s444 s0 s0
-
-$LL.L.s643 : ([81], [2], [8]) -> [106]
-$LL.L.s643 s0 r $a =
-      $L.v623 r $a s0
-
-$L.o108 : ([8], [18], [81]) -> [106]
-$L.o108 a o s0 =
-      $L.s109 a o s0 s0
-
-$L.vD168 : ([2], [2], [8], [81]) -> [106]
-$L.vD168 rD rS vD s0 =
-      if eq rS 2'h0 then $L.arm188 rD vD s0
-            else if eq rS 2'h1 then $L.arm190 rD vD s0 else if eq rS 2'h2 then $L.arm192 rD vD s0 else $L.arm194 rD vD s0
-
-$L.s736 : ([8], [1], [81], [81]) -> [106]
-$L.s736 pc z s s0 =
-      $LL.L.s736 s0 pc z (Main.cFlag s)
-
-$L.arm430 : ([1], [1], [81]) -> [106]
-$L.arm430 b0 b1 s0 =
-      $L.s429 b0 b1 s0 s0
-
-$LL.L.v6721 : ([2], [81], [8]) -> [106]
-$LL.L.v6721 r s0 v =
-      if eq r 2'h0 then $L.arm566 v s0
-            else if eq r 2'h1 then $L.arm568 v s0 else if eq r 2'h2 then $L.arm570 v s0 else $L.arm572 v s0
-
-$L.arm687 : ([2], [81]) -> [106]
-$L.arm687 r s0 =
-      $L.s686 r s0 s0
-
-$L.s557 : ([81], [81]) -> [106]
-$L.s557 s s0 =
-      $L._unused540 (Main.setIEFlag s 1'h1)
-
-$L.s734 : ([1], [1], [81], [81]) -> [106]
-$L.s734 z c s s0 =
-      $L._unused727 c (Main.setZSave s z)
-
-$L._unused67 : ([1], [1], [81]) -> [106]
-$L._unused67 rEn wEn s0 =
-      $L.s83 rEn wEn s0 s0
-
-$L.arm130 : ([1], [1], [81]) -> [106]
-$L.arm130 rEn wEn s0 =
-      $L.s129 rEn wEn s0 s0
-
-$L.o536 : ([18], [81]) -> [106]
-$L.o536 o s0 =
-      $L.s537 o s0 s0
-
-$L.s647 : ([2], [81], [81]) -> [106]
-$L.s647 r s s0 =
-      $LL.L.s643 s0 r (Main.r3 s)
-
-$LL.L.vS406 : ([81], [9]) -> [106]
-$LL.L.vS406 s0 p =
-      $L.s414 p s0 s0
-
-$LL.L.s577 : ([81], [2], [8]) -> [106]
-$LL.L.s577 s0 r $a =
-      $L.v559 r $a s0
-
-$L.arm428 : ([1], [1], [81]) -> [106]
-$L.arm428 b0 b1 s0 =
-      $L.s427 b0 b1 s0 s0
-
-$L.arm741 : ([10], [81]) -> [106]
-$L.arm741 inp s0 =
-      $LL.L.arm741 s0 inp (Main.intIn inp)
-
-$L.s519 : ([81], [81]) -> [106]
-$L.s519 s s0 =
-      $LL.L.s515 s0 (Main.r2 s)
-
-$LL.L.s421 : ([81], [8], [8]) -> [106]
-$LL.L.s421 s0 vD $a =
-      $L.vS406 vD $a s0
-
-$L.s49 : ([1], [1], [2], [18], [81], [81]) -> [106]
-$L.s49 rEn wEn r o s s0 =
-      $LL.L.s49 rEn s r wEn (Main.setWeOut o wEn)
-
-$L.arm258 : ([2], [8], [81]) -> [106]
-$L.arm258 rD vD s0 =
-      $L.vS239 rD vD (Main.r0 s0) s0
-
-$L.arm588 : ([81]) -> [106]
-$L.arm588 s0 =
-      $L.s587 s0 s0
-
-$L.s664 : ([2], [81], [81]) -> [106]
-$L.s664 r s s0 =
-      $LL.L.s664 r s0 (Main.r0 s)
-
-$L.d36 : ([1], [2], [8], [81]) -> [106]
-$L.d36 rEn r d s0 =
-      $L.s39 rEn r d s0 s0
-
-$L.vS334 : ([2], [8], [8], [81]) -> [106]
-$L.vS334 rD vD vS s0 =
-      $LL.L.vS334 rD s0 (and vD vS)
-
-$L.arm420 : ([8], [81]) -> [106]
-$L.arm420 vD s0 =
-      $L.s419 vD s0 s0
-
-$L.arm365 : ([2], [2], [81]) -> [106]
-$L.arm365 rD rS s0 =
-      $L.vD333 rD rS (Main.r2 s0) s0
-
-$LL.L.s717 : ([81], [2], [1], [1], [8]) -> [106]
-$LL.L.s717 s0 r wEn rEn $a =
-      $L.v695 rEn wEn r $a s0
-
-$L.s280 : ([8], [81], [81]) -> [106]
-$L.s280 x s s0 =
-      $L._unused103 (Main.setR0 s x)
-
-$LL.L.v5961 : ([9], [81], [2], [8]) -> [106]
-$LL.L.v5961 p s0 r v' =
-      if eq r 2'h0 then $L.arm607 p v' s0
-            else if eq r 2'h1 then $L.arm609 p v' s0 else if eq r 2'h2 then $L.arm611 p v' s0 else $L.arm613 p v' s0
-
-$L.arm740 : ([81]) -> [106]
-$L.arm740 s0 =
-      $L.s739 s0 s0
-
-$LL.L.inp4 : ([10], [81], [1]) -> [106]
-$LL.L.inp4 inp s0 $a =
-      if eq $a 1'h0 then $L.arm743 inp s0
-            else $L.arm754 s0
-
-$L.arm644 : ([2], [81]) -> [106]
-$L.arm644 r s0 =
-      $L.s643 r s0 s0
-
-$L.s310 : ([8], [81], [81]) -> [106]
-$L.s310 vD' s s0 =
-      $L._unused299 vD' (Main.setR1 s vD')
-
-$L.arm422 : ([8], [81]) -> [106]
-$L.arm422 vD s0 =
-      $L.s421 vD s0 s0
-
-$LL.L.arm581 : ([81], [2]) -> [106]
-$LL.L.arm581 s0 r =
-      if eq r 2'h0 then $L.arm574 r s0
-            else if eq r 2'h1 then $L.arm576 r s0 else if eq r 2'h2 then $L.arm578 r s0 else $L.arm580 r s0
-
-$L.c470 : ([1], [1], [1], [81]) -> [106]
-$L.c470 b0 b1 c s0 =
-      if eq c 1'h0 then $L._unused103 s0
-            else $L.arm448 b0 b1 s0
-
-$L.arm122 : ([8], [81]) -> [106]
-$L.arm122 a s0 =
-      $L.s121 a s0 s0
-
-$L.s127 : ([1], [1], [81], [81]) -> [106]
-$L.s127 rEn wEn s s0 =
-      $LL.L.s127 rEn s0 wEn (Main.r1 s)
-
-$L.arm669 : ([2], [81]) -> [106]
-$L.arm669 r s0 =
-      $L.s668 r s0 s0
-
-$L._unused544 : ([81]) -> [106]
-$L._unused544 s0 =
-      $L.s552 s0 s0
-
-$L.arm399 : ([2], [2], [81]) -> [106]
-$L.arm399 rD rS s0 =
-      $L.vD369 rD rS (Main.r1 s0) s0
-
-$L.s308 : ([8], [81], [81]) -> [106]
-$L.s308 vD' s s0 =
-      $L._unused299 vD' (Main.setR0 s vD')
-
-$LL.L.s62 : ([8], [81], [1], [2], [1], [18]) -> [106]
-$LL.L.s62 pc s0 rEn r wEn $a =
-      $L.o60 rEn wEn r pc $a s0
-
-$L.arm236 : ([2], [2], [81]) -> [106]
-$L.arm236 rD rS s0 =
-      $L.vD204 rD rS (Main.r3 s0) s0
-
-$LL.L.s341 : ([81], [1], [2], [8]) -> [106]
-$LL.L.s341 s rEn r $a =
-      $L._unused15 rEn r (Main.setPC s $a)
-
-$L.s31 : ([1], [2], [10], [81], [81]) -> [106]
-$L.s31 rEn r i s s0 =
-      $L._unused16 rEn r (Main.setInputs s i)
-
-$L.arm566 : ([8], [81]) -> [106]
-$L.arm566 v s0 =
-      $L.s565 v s0 s0
-
-$LL.L.s737 : ([8], [81], [1]) -> [106]
-$LL.L.s737 pc s0 $a =
-      $L.z724 pc $a s0
-
-$L.arm714 : ([1], [1], [2], [81]) -> [106]
-$L.arm714 rEn wEn r s0 =
-      $L.s713 rEn wEn r s0 s0
-
-$L.arm260 : ([2], [8], [81]) -> [106]
-$L.arm260 rD vD s0 =
-      $L.vS239 rD vD (Main.r1 s0) s0
-
-$L.arm158 : ([2], [8], [81]) -> [106]
-$L.arm158 rD vD s0 =
-      $L.vS135 rD vD (Main.r3 s0) s0
-
-$L.s606 : ([9], [8], [81], [81]) -> [106]
-$L.s606 p v' s s0 =
-      $L._unused597 p v' (Main.setR0 s v')
-
-Main.setIEFlag : ([81], [1]) -> [81]
-Main.setIEFlag ds ie =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
-      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
-
-$L.arm447 : ([81]) -> [106]
-$L.arm447 s0 =
-      $L.s446 s0 s0
-
-$LL.L.s515 : ([81], [8]) -> [106]
-$LL.L.s515 s0 $a =
-      $L.x508 $a s0
-
-$LL.L.arm741 : ([81], [10], [1]) -> [106]
-$LL.L.arm741 s0 inp $a =
-      if eq $a 1'h1 then $L.arm740 s0
-            else $L.fail7 inp s0
-
-$LL.L.v6502 : ([8], [8]) -> [8]
-$LL.L.v6502 eta w =
-      or (shl w eta) (lshr w (sub 8'h8 eta))
-
-$L.arm329 : ([2], [2], [81]) -> [106]
-$L.arm329 rD rS s0 =
-      $L.vD297 rD rS (Main.r2 s0) s0
-
-$L.arm230 : ([2], [2], [81]) -> [106]
-$L.arm230 rD rS s0 =
-      $L.vD204 rD rS (Main.r0 s0) s0
-
-$L.s604 : ([8], [81], [81]) -> [106]
-$L.s604 v' s s0 =
-      $L._unused103 (Main.setZFlag s (eq v' 8'h0))
-
-$L.arm321 : ([2], [8], [81]) -> [106]
-$L.arm321 rD vD s0 =
-      $L.vS298 rD vD (Main.r2 s0) s0
-
-$L.arm716 : ([1], [1], [2], [81]) -> [106]
-$L.arm716 rEn wEn r s0 =
-      $L.s715 rEn wEn r s0 s0
-
-Main.setCFlag : ([81], [1]) -> [81]
-Main.setCFlag ds c =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
-      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
-
-$LL.L.s90 : ([1], [81], [1], [8]) -> [106]
-$LL.L.s90 wEn s0 rEn $a =
-      $L.a65 rEn wEn $a s0
-
-$LL.L.arm2371 : ([1], [1], [81], [2]) -> [106]
-$LL.L.arm2371 b0 b1 s0 rD =
-      $LL.L.arm237 rD s0 (Main.mkReg b0 b1)
-
-$LL.L.arm431 : ([1], [81], [1], [2]) -> [106]
-$LL.L.arm431 b0 s0 b1 $a =
-      if eq $a 2'h0 then $L.arm424 b0 b1 s0
-            else if eq $a 2'h1 then $L.arm426 b0 b1 s0 else if eq $a 2'h2 then $L.arm428 b0 b1 s0 else $L.arm430 b0 b1 s0
-
-$L.s82 : ([1], [1], [10], [81], [81]) -> [106]
-$L.s82 rEn wEn i s s0 =
-      $L._unused68 rEn wEn (Main.setInputs s i)
-
-$LL.L.s125 : ([81], [1], [1], [8]) -> [106]
-$LL.L.s125 s0 wEn rEn $a =
-      $L.a99 rEn wEn $a s0
-
-$L.arm234 : ([2], [2], [81]) -> [106]
-$L.arm234 rD rS s0 =
-      $L.vD204 rD rS (Main.r2 s0) s0
-
-$LL.L.s688 : ([2], [81], [8]) -> [106]
-$LL.L.s688 r s0 $a =
-      $L.v672 r $a s0
-
-$L.arm516 : ([81]) -> [106]
-$L.arm516 s0 =
-      $L.s515 s0 s0
-
-$L.arm43 : ([1], [2], [81]) -> [106]
-$L.arm43 rEn r s0 =
-      $L.s42 rEn r s0 s0
-
-$L.arm47 : ([1], [2], [81]) -> [106]
-$L.arm47 rEn r s0 =
-      $L.s46 rEn r s0 s0
-
-$L.s555 : ([8], [81], [81]) -> [106]
-$L.s555 pc s s0 =
-      $L._unused542 (Main.setPC s pc)
-
-$LL.L.s59 : ([81], [2], [1], [1], [18]) -> [106]
-$LL.L.s59 s0 r rEn wEn $a =
-      $L.o56 rEn wEn r $a s0
-
-$LL.L.vD405 : ([8], [81], [2]) -> [106]
-$LL.L.vD405 vD s0 $a =
-      if eq $a 2'h0 then $L.arm416 vD s0
-            else if eq $a 2'h1 then $L.arm418 vD s0 else if eq $a 2'h2 then $L.arm420 vD s0 else $L.arm422 vD s0
-
-$L.arm198 : ([2], [2], [81]) -> [106]
-$L.arm198 rD rS s0 =
-      $L.vD168 rD rS (Main.r1 s0) s0
-
-$L.inp4 : ([10], [81]) -> [106]
-$L.inp4 inp s0 =
-      $LL.L.inp4 inp s0 (Main.rstIn inp)
-
-$L.s556 : ([81], [81]) -> [106]
-$L.s556 s s0 =
-      $LL.L.s556 s0 (Main.pcSave s)
-
-$LL.L.arm649 : ([81], [2]) -> [106]
-$LL.L.arm649 s0 r =
-      if eq r 2'h0 then $L.arm642 r s0
-            else if eq r 2'h1 then $L.arm644 r s0 else if eq r 2'h2 then $L.arm646 r s0 else $L.arm648 r s0
-
-$LL.L.arm64 : ([1], [1], [81], [2]) -> [106]
-$LL.L.arm64 wEn rEn s0 r =
-      $L.s63 rEn wEn r s0 s0
-
-$LL.L.s556 : ([81], [8]) -> [106]
-$LL.L.s556 s0 $a =
-      $L.pc541 $a s0
-
-$L.arm693 : ([2], [81]) -> [106]
-$L.arm693 r s0 =
-      $L.s692 r s0 s0
-
-$L.arm152 : ([2], [8], [81]) -> [106]
-$L.arm152 rD vD s0 =
-      $L.vS135 rD vD (Main.r0 s0) s0
-
-$L.s605 : ([9], [8], [81], [81]) -> [106]
-$L.s605 p v' s s0 =
-      $LL.L.s605 v' s (let x = p[8 +: 1] in
-      x)
-
-$LL.L.v6959 : ([8], [1]) -> [9]
-$LL.L.v6959 v wild =
-      if eq wild 1'h0 then $LL.L.v695 v (Main.lsbW8 v)
-            else $LL.L.v69512 (Main.shrCW8$s1 v)
-
-$L.s751 : ([81], [81]) -> [106]
-$L.s751 s s0 =
-      $L._unused103 (Main.setOutputs s 18'h0)
-
-$LL.L.i26 : ([81], [2], [8]) -> [106]
-$LL.L.i26 s0 r $a =
-      $L.x17 r $a s0
-
-$L.s417 : ([8], [81], [81]) -> [106]
-$L.s417 vD s s0 =
-      $LL.L.s417 vD s0 (Main.r1 s)
-
-$LL.L.i54 : ([2], [81], [1], [1], [8]) -> [106]
-$LL.L.i54 r s0 rEn wEn $a =
-      $L.a11 rEn wEn r $a s0
-
-$LL.L.s113 : ([8], [81], [8], [18]) -> [106]
-$LL.L.s113 a s0 v $a =
-      $L.o111 a v $a s0
-
-$LL.L.s61 : ([1], [1], [2], [81], [18]) -> [106]
-$LL.L.s61 wEn rEn r s $a =
-      $L._unused9 rEn wEn r (Main.setOutputs s $a)
-
-$L.s35 : ([1], [2], [81], [81]) -> [106]
-$L.s35 rEn r s s0 =
-      $LL.L.s35 rEn s0 r (Main.pc s)
-
-$L.i78 : ([1], [1], [10], [81]) -> [106]
-$L.i78 rEn wEn i s0 =
-      $LL.L.i78 s0 wEn rEn (Main.dataIn i)
-
-$L.arm311 : ([8], [81]) -> [106]
-$L.arm311 vD' s0 =
-      $L.s310 vD' s0 s0
-
-$L.arm19 : ([8], [81]) -> [106]
-$L.arm19 x s0 =
-      $L.s18 x s0 s0
-
-$L.s614 : ([2], [81], [81]) -> [106]
-$L.s614 r s s0 =
-      $LL.L.s616 r s0 (Main.r0 s)
-
-$L.s110 : ([8], [81], [81]) -> [106]
-$L.s110 a s s0 =
-      $LL.L.s110 a s0 (Main.outputs s)
-
-$L.arm403 : ([2], [2], [81]) -> [106]
-$L.arm403 rD rS s0 =
-      $L.vD369 rD rS (Main.r3 s0) s0
-
-$L.s717 : ([1], [1], [2], [81], [81]) -> [106]
-$L.s717 rEn wEn r s s0 =
-      $LL.L.s717 s0 r wEn rEn (Main.r2 s)
-
-$L.arm149 : ([8], [81]) -> [106]
-$L.arm149 v s0 =
-      $L.s148 v s0 s0
-
-$L.o48 : ([1], [1], [2], [18], [81]) -> [106]
-$L.o48 rEn wEn r o s0 =
-      $L.s49 rEn wEn r o s0 s0
-
-$L.arm295 : ([1], [1], [81]) -> [106]
-$L.arm295 rEn wEn s0 =
-      $L.s294 rEn wEn s0 s0
-
-$L.arm25 : ([8], [81]) -> [106]
-$L.arm25 x s0 =
-      $L.s24 x s0 s0
-
-$L.arm120 : ([8], [81]) -> [106]
-$L.arm120 a s0 =
-      $L.s119 a s0 s0
-
-$LL.L.s27 : ([81], [2], [10]) -> [106]
-$LL.L.s27 s0 r $a =
-      $L.i26 r $a s0
-
-$L.s414 : ([9], [81], [81]) -> [106]
-$L.s414 p s s0 =
-      $LL.L.s414 p s (let x = p[8 +: 1] in
-      x)
-
-$L.arm580 : ([2], [81]) -> [106]
-$L.arm580 r s0 =
-      $L.s579 r s0 s0
-
-$L.s565 : ([8], [81], [81]) -> [106]
-$L.s565 v s s0 =
-      $L._unused103 (Main.setR0 s v)
-
-$L.Main.loop3 : ([81]) -> [106]
-$L.Main.loop3 s0 =
-      $L.s755 s0 s0
-
-Main.setZFlag : ([81], [1]) -> [81]
-Main.setZFlag ds z =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
-      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
-
-$L.arm568 : ([8], [81]) -> [106]
-$L.arm568 v s0 =
-      $L.s567 v s0 s0
-
-$L.arm203 : ([1], [1], [1], [1], [81]) -> [106]
-$L.arm203 rEn wEn b0 b1 s0 =
-      $LL.L.arm203 s0 b0 b1 (Main.mkReg rEn wEn)
-
-$L.s72 : ([8], [81], [81]) -> [106]
-$L.s72 v s s0 =
-      $L.Main.loop3 (Main.setR1 s v)
-
-$L.s85 : ([1], [1], [8], [18], [81], [81]) -> [106]
-$L.s85 rEn wEn a o s s0 =
-      $LL.L.s85 wEn rEn s (Main.setAddrOut o a)
-
-$L._unused726 : ([1], [1], [81]) -> [106]
-$L._unused726 z c s0 =
-      $L.s734 z c s0 s0
-
-$L.arm558 : ([81]) -> [106]
-$L.arm558 s0 =
-      $L.s557 s0 s0
-
-$L.arm273 : ([1], [1], [1], [1], [81]) -> [106]
-$L.arm273 rEn wEn b0 b1 s0 =
-      $LL.L.arm273 b1 b0 s0 (Main.mkReg rEn wEn)
-
-$LL.L.s738 : ([81], [8]) -> [106]
-$LL.L.s738 s0 $a =
-      $L.pc723 $a s0
-
-$L.ie6 : ([10], [1], [81]) -> [106]
-$L.ie6 inp ie s0 =
-      if eq ie 1'h1 then $L.arm741 inp s0
-            else $L.fail7 inp s0
-
-$L.arm309 : ([8], [81]) -> [106]
-$L.arm309 vD' s0 =
-      $L.s308 vD' s0 s0
-
-Main.msbW8 : ([8]) -> [1]
-Main.msbW8 v =
-      v[7 +: 1]
-
-$L.arm331 : ([2], [2], [81]) -> [106]
-$L.arm331 rD rS s0 =
-      $L.vD297 rD rS (Main.r3 s0) s0
-
-$LL.L.s63 : ([2], [1], [1], [81], [8]) -> [106]
-$LL.L.s63 r rEn wEn s0 $a =
-      $L.pc8 rEn wEn r $a s0
-
-$LL.L.s692 : ([81], [2], [8]) -> [106]
-$LL.L.s692 s0 r $a =
-      $L.v672 r $a s0
-
-$LL.L.v596 : ([81], [2], [9]) -> [106]
-$LL.L.v596 s0 r p =
-      $LL.L.v5961 p s0 r (let y = p[0 +: 8] in
-      y)
-
-$L._unused598 : ([8], [81]) -> [106]
-$L._unused598 v' s0 =
-      $L.s604 v' s0 s0
-
-$L.arm743 : ([10], [81]) -> [106]
-$L.arm743 inp s0 =
-      $L.s742 inp s0 s0
-
-Main.pc : ([81]) -> [8]
-Main.pc ds =
-      let pc = ds[42 +: 8] in
-      pc
-
-$LL.L.arm404 : ([1], [1], [81], [2]) -> [106]
-$LL.L.arm404 b1 b0 s0 rD =
-      $LL.L.arm4041 rD s0 (Main.mkReg b0 b1)
-
-$LL.L.s552 : ([81], [1]) -> [106]
-$LL.L.s552 s0 $a =
-      $L.c545 $a s0
-
-Main.minusCW8$s2 : ([8]) -> [9]
-Main.minusCW8$s2 a =
-      $LL.Main.plusCW8$s2 (sub (sub (zext 9 a) 9'h1) 9'h0)
-
-$L.s123 : ([8], [81], [81]) -> [106]
-$L.s123 a s s0 =
-      $LL.L.s123 s0 a (Main.r3 s)
-
-$LL.L.arm2731 : ([81], [2], [2]) -> [106]
-$LL.L.arm2731 s0 rD rS =
-      if eq rD 2'h0 then $L.arm266 rD rS s0
-            else if eq rD 2'h1 then $L.arm268 rD rS s0 else if eq rD 2'h2 then $L.arm270 rD rS s0 else $L.arm272 rD rS s0
-
-$L.arm367 : ([2], [2], [81]) -> [106]
-$L.arm367 rD rS s0 =
-      $L.vD333 rD rS (Main.r3 s0) s0
-
-$L.arm23 : ([8], [81]) -> [106]
-$L.arm23 x s0 =
-      $L.s22 x s0 s0
-
-$L.arm283 : ([8], [81]) -> [106]
-$L.arm283 x s0 =
-      $L.s282 x s0 s0
-
-$LL.L.s50 : ([1], [81], [2], [1], [18]) -> [106]
-$LL.L.s50 wEn s0 r rEn $a =
-      $L.o48 rEn wEn r $a s0
-
-$L.o29 : ([1], [2], [18], [81]) -> [106]
-$L.o29 rEn r o s0 =
+main.$dispatch : ([88], [10]) -> [106]
+main.$dispatch disc i =
+      if eq disc[85 +: 3] 3'h0 then main.$L.i30$6391 disc[83 +: 1] disc[81 +: 2] i disc[0 +: 81]
+            else if eq disc[85 +: 3] 3'h1 then main.$L.i57$6433 disc[84 +: 1] disc[83 +: 1] disc[81 +: 2] i disc[0 +: 81] else if eq disc[85 +: 3] 3'h2 then main.$L.i81$6467 disc[82 +: 1] disc[81 +: 1] i disc[0 +: 81] else if eq disc[85 +: 3] 3'h3 then main.$L.i105$6501 i disc[0 +: 81] else main.$L.i139$6551 i disc[0 +: 81]
+
+main.$L.s18$6374 : ([8], [81], [81]) -> [106]
+main.$L.s18$6374 x s s0 =
+      let $a = Main.setR0 s x in
+      main.$L.Main.loop3$6359 $a
+
+main.$L.arm19$6376 : ([8], [81]) -> [106]
+main.$L.arm19$6376 x s0 =
+      main.$L.s18$6374 x s0 s0
+
+main.$L.s20$6377 : ([8], [81], [81]) -> [106]
+main.$L.s20$6377 x s s0 =
+      let $a = Main.setR1 s x in
+      main.$L.Main.loop3$6359 $a
+
+main.$L.arm21$6379 : ([8], [81]) -> [106]
+main.$L.arm21$6379 x s0 =
+      main.$L.s20$6377 x s0 s0
+
+main.$L.s22$6380 : ([8], [81], [81]) -> [106]
+main.$L.s22$6380 x s s0 =
+      let $a = Main.setR2 s x in
+      main.$L.Main.loop3$6359 $a
+
+main.$L.arm23$6382 : ([8], [81]) -> [106]
+main.$L.arm23$6382 x s0 =
+      main.$L.s22$6380 x s0 s0
+
+main.$L.s24$6383 : ([8], [81], [81]) -> [106]
+main.$L.s24$6383 x s s0 =
+      let $a = Main.setR3 s x in
+      main.$L.Main.loop3$6359 $a
+
+main.$L.arm25$6385 : ([8], [81]) -> [106]
+main.$L.arm25$6385 x s0 =
+      main.$L.s24$6383 x s0 s0
+
+main.$L.x17$6373 : ([2], [8], [81]) -> [106]
+main.$L.x17$6373 r x s0 =
+      if eq r 2'h0 then main.$L.arm19$6376 x s0
+            else if eq r 2'h1 then main.$L.arm21$6379 x s0 else if eq r 2'h2 then main.$L.arm23$6382 x s0 else main.$L.arm25$6385 x s0
+
+main.$L.i26$6386 : ([2], [10], [81]) -> [106]
+main.$L.i26$6386 r i s0 =
+      let $a = Main.dataIn i in
+      main.$L.x17$6373 r $a s0
+
+main.$L.s27$6387 : ([2], [81], [81]) -> [106]
+main.$L.s27$6387 r s s0 =
+      let $a = Main.inputs s in
+      main.$L.i26$6386 r $a s0
+
+main.$L.arm28$6389 : ([2], [81]) -> [106]
+main.$L.arm28$6389 r s0 =
+      main.$L.s27$6387 r s0 s0
+
+main.$L._unused16$6372 : ([1], [2], [81]) -> [106]
+main.$L._unused16$6372 rEn r s0 =
+      if eq rEn 1'h0 then main.$L.Main.loop3$6359 s0
+            else main.$L.arm28$6389 r s0
+
+main.$L.s31$6392 : ([1], [2], [10], [81], [81]) -> [106]
+main.$L.s31$6392 rEn r i s s0 =
+      let $a = Main.setInputs s i in
+      main.$L._unused16$6372 rEn r $a
+
+main.$L.i30$6391 : ([1], [2], [10], [81]) -> [106]
+main.$L.i30$6391 rEn r i s0 =
+      main.$L.s31$6392 rEn r i s0 s0
+
+main.$L.o29$6390 : ([1], [2], [18], [81]) -> [106]
+main.$L.o29$6390 rEn r o s0 =
       o # 4'h0 # rEn # r # s0
 
-$LL.L.s55 : ([1], [81], [1], [2], [10]) -> [106]
-$LL.L.s55 wEn s0 rEn r $a =
-      $L.i54 rEn wEn r $a s0
+main.$L.s32$6394 : ([1], [2], [81], [81]) -> [106]
+main.$L.s32$6394 rEn r s s0 =
+      let $a = Main.outputs s in
+      main.$L.o29$6390 rEn r $a s0
 
-$L._unused13 : ([1], [1], [2], [81]) -> [106]
-$L._unused13 rEn wEn r s0 =
-      if eq wEn 1'h0 then $L._unused14 rEn r s0
-            else if eq r 2'h0 then $L.arm41 rEn r s0 else if eq r 2'h1 then $L.arm43 rEn r s0 else if eq r 2'h2 then $L.arm45 rEn r s0 else $L.arm47 rEn r s0
+main.$L._unused15$6371 : ([1], [2], [81]) -> [106]
+main.$L._unused15$6371 rEn r s0 =
+      main.$L.s32$6394 rEn r s0 s0
 
-$L.s112 : ([8], [8], [18], [81], [81]) -> [106]
-$L.s112 a v o s s0 =
-      $LL.L.s112 a s (Main.setDataOut o v)
+main.$L.s34$6397 : ([1], [2], [8], [81], [81]) -> [106]
+main.$L.s34$6397 rEn r pc s s0 =
+      let $a = Main.plusCW8$s1 pc in
+      let $a1 = (let y = $a[0 +: 8] in
+      y) in
+      let $a2 = Main.setPC s $a1 in
+      main.$L._unused15$6371 rEn r $a2
 
-$L.s89 : ([1], [1], [8], [81], [81]) -> [106]
-$L.s89 rEn wEn a s s0 =
-      $LL.L.s89 s0 wEn rEn a (Main.outputs s)
+main.$L.pc33$6396 : ([1], [2], [8], [81]) -> [106]
+main.$L.pc33$6396 rEn r pc s0 =
+      main.$L.s34$6397 rEn r pc s0 s0
 
-$L.v695 : ([1], [1], [2], [8], [81]) -> [106]
-$L.v695 rEn wEn r v s0 =
-      $LL.L.v6956 s0 r ($LL.L.v6958 rEn v wEn)
+main.$L.s35$6399 : ([1], [2], [81], [81]) -> [106]
+main.$L.s35$6399 rEn r s s0 =
+      let $a = Main.pc s in
+      main.$L.pc33$6396 rEn r $a s0
 
-Main.setPC : ([81], [8]) -> [81]
-Main.setPC ds pc =
-      let i = ds[71 +: 10] in
+main.$L._unused14$6370 : ([1], [2], [81]) -> [106]
+main.$L._unused14$6370 rEn r s0 =
+      main.$L.s35$6399 rEn r s0 s0
+
+main.$L.s38$6403 : ([1], [2], [8], [18], [81], [81]) -> [106]
+main.$L.s38$6403 rEn r d o s s0 =
+      let $a = Main.setDataOut o d in
+      let $a1 = Main.setOutputs s $a in
+      main.$L._unused14$6370 rEn r $a1
+
+main.$L.o37$6402 : ([1], [2], [8], [18], [81]) -> [106]
+main.$L.o37$6402 rEn r d o s0 =
+      main.$L.s38$6403 rEn r d o s0 s0
+
+main.$L.s39$6405 : ([1], [2], [8], [81], [81]) -> [106]
+main.$L.s39$6405 rEn r d s s0 =
+      let $a = Main.outputs s in
+      main.$L.o37$6402 rEn r d $a s0
+
+main.$L.d36$6401 : ([1], [2], [8], [81]) -> [106]
+main.$L.d36$6401 rEn r d s0 =
+      main.$L.s39$6405 rEn r d s0 s0
+
+main.$L.s40$6407 : ([1], [2], [81], [81]) -> [106]
+main.$L.s40$6407 rEn r s s0 =
+      let $a = Main.r0 s in
+      main.$L.d36$6401 rEn r $a s0
+
+main.$L.arm41$6409 : ([1], [2], [81]) -> [106]
+main.$L.arm41$6409 rEn r s0 =
+      main.$L.s40$6407 rEn r s0 s0
+
+main.$L.s42$6410 : ([1], [2], [81], [81]) -> [106]
+main.$L.s42$6410 rEn r s s0 =
+      let $a = Main.r1 s in
+      main.$L.d36$6401 rEn r $a s0
+
+main.$L.arm43$6412 : ([1], [2], [81]) -> [106]
+main.$L.arm43$6412 rEn r s0 =
+      main.$L.s42$6410 rEn r s0 s0
+
+main.$L.s44$6413 : ([1], [2], [81], [81]) -> [106]
+main.$L.s44$6413 rEn r s s0 =
+      let $a = Main.r2 s in
+      main.$L.d36$6401 rEn r $a s0
+
+main.$L.arm45$6415 : ([1], [2], [81]) -> [106]
+main.$L.arm45$6415 rEn r s0 =
+      main.$L.s44$6413 rEn r s0 s0
+
+main.$L.s46$6416 : ([1], [2], [81], [81]) -> [106]
+main.$L.s46$6416 rEn r s s0 =
+      let $a = Main.r3 s in
+      main.$L.d36$6401 rEn r $a s0
+
+main.$L.arm47$6418 : ([1], [2], [81]) -> [106]
+main.$L.arm47$6418 rEn r s0 =
+      main.$L.s46$6416 rEn r s0 s0
+
+main.$L._unused13$6369 : ([1], [1], [2], [81]) -> [106]
+main.$L._unused13$6369 rEn wEn r s0 =
+      if eq wEn 1'h0 then main.$L._unused14$6370 rEn r s0
+            else if eq r 2'h0 then main.$L.arm41$6409 rEn r s0 else if eq r 2'h1 then main.$L.arm43$6412 rEn r s0 else if eq r 2'h2 then main.$L.arm45$6415 rEn r s0 else main.$L.arm47$6418 rEn r s0
+
+main.$L.s49$6420 : ([1], [1], [2], [18], [81], [81]) -> [106]
+main.$L.s49$6420 rEn wEn r o s s0 =
+      let $a = Main.setWeOut o wEn in
+      let $a1 = Main.setOutputs s $a in
+      main.$L._unused13$6369 rEn wEn r $a1
+
+main.$L.o48$6419 : ([1], [1], [2], [18], [81]) -> [106]
+main.$L.o48$6419 rEn wEn r o s0 =
+      main.$L.s49$6420 rEn wEn r o s0 s0
+
+main.$L.s50$6422 : ([1], [1], [2], [81], [81]) -> [106]
+main.$L.s50$6422 rEn wEn r s s0 =
+      let $a = Main.outputs s in
+      main.$L.o48$6419 rEn wEn r $a s0
+
+main.$L._unused12$6368 : ([1], [1], [2], [81]) -> [106]
+main.$L._unused12$6368 rEn wEn r s0 =
+      main.$L.s50$6422 rEn wEn r s0 s0
+
+main.$L.s52$6425 : ([1], [1], [2], [8], [18], [81], [81]) -> [106]
+main.$L.s52$6425 rEn wEn r a o s s0 =
+      let $a = Main.setAddrOut o a in
+      let $a1 = Main.setOutputs s $a in
+      main.$L._unused12$6368 rEn wEn r $a1
+
+main.$L.o51$6424 : ([1], [1], [2], [8], [18], [81]) -> [106]
+main.$L.o51$6424 rEn wEn r a o s0 =
+      main.$L.s52$6425 rEn wEn r a o s0 s0
+
+main.$L.s53$6427 : ([1], [1], [2], [8], [81], [81]) -> [106]
+main.$L.s53$6427 rEn wEn r a s s0 =
+      let $a = Main.outputs s in
+      main.$L.o51$6424 rEn wEn r a $a s0
+
+main.$L.a11$6367 : ([1], [1], [2], [8], [81]) -> [106]
+main.$L.a11$6367 rEn wEn r a s0 =
+      main.$L.s53$6427 rEn wEn r a s0 s0
+
+main.$L.i54$6429 : ([1], [1], [2], [10], [81]) -> [106]
+main.$L.i54$6429 rEn wEn r i s0 =
+      let $a = Main.dataIn i in
+      main.$L.a11$6367 rEn wEn r $a s0
+
+main.$L.s55$6430 : ([1], [1], [2], [81], [81]) -> [106]
+main.$L.s55$6430 rEn wEn r s s0 =
+      let $a = Main.inputs s in
+      main.$L.i54$6429 rEn wEn r $a s0
+
+main.$L._unused10$6366 : ([1], [1], [2], [81]) -> [106]
+main.$L._unused10$6366 rEn wEn r s0 =
+      main.$L.s55$6430 rEn wEn r s0 s0
+
+main.$L.s58$6434 : ([1], [1], [2], [10], [81], [81]) -> [106]
+main.$L.s58$6434 rEn wEn r i s s0 =
+      let $a = Main.setInputs s i in
+      main.$L._unused10$6366 rEn wEn r $a
+
+main.$L.i57$6433 : ([1], [1], [2], [10], [81]) -> [106]
+main.$L.i57$6433 rEn wEn r i s0 =
+      main.$L.s58$6434 rEn wEn r i s0 s0
+
+main.$L.o56$6432 : ([1], [1], [2], [18], [81]) -> [106]
+main.$L.o56$6432 rEn wEn r o s0 =
+      o # 3'h1 # rEn # wEn # r # s0
+
+main.$L.s59$6436 : ([1], [1], [2], [81], [81]) -> [106]
+main.$L.s59$6436 rEn wEn r s s0 =
+      let $a = Main.outputs s in
+      main.$L.o56$6432 rEn wEn r $a s0
+
+main.$L._unused9$6365 : ([1], [1], [2], [81]) -> [106]
+main.$L._unused9$6365 rEn wEn r s0 =
+      main.$L.s59$6436 rEn wEn r s0 s0
+
+main.$L.s61$6439 : ([1], [1], [2], [8], [18], [81], [81]) -> [106]
+main.$L.s61$6439 rEn wEn r pc o s s0 =
+      let $a = Main.setAddrOut o pc in
+      let $a1 = Main.setOutputs s $a in
+      main.$L._unused9$6365 rEn wEn r $a1
+
+main.$L.o60$6438 : ([1], [1], [2], [8], [18], [81]) -> [106]
+main.$L.o60$6438 rEn wEn r pc o s0 =
+      main.$L.s61$6439 rEn wEn r pc o s0 s0
+
+main.$L.s62$6441 : ([1], [1], [2], [8], [81], [81]) -> [106]
+main.$L.s62$6441 rEn wEn r pc s s0 =
+      let $a = Main.outputs s in
+      main.$L.o60$6438 rEn wEn r pc $a s0
+
+main.$L.pc8$6364 : ([1], [1], [2], [8], [81]) -> [106]
+main.$L.pc8$6364 rEn wEn r pc s0 =
+      main.$L.s62$6441 rEn wEn r pc s0 s0
+
+main.$L.s63$6443 : ([1], [1], [2], [81], [81]) -> [106]
+main.$L.s63$6443 rEn wEn r s s0 =
+      let $a = Main.pc s in
+      main.$L.pc8$6364 rEn wEn r $a s0
+
+main.$L.arm64$6445 : ([1], [1], [1], [1], [81]) -> [106]
+main.$L.arm64$6445 rEn wEn b0 b1 s0 =
+      let r = Main.mkReg b0 b1 in
+      main.$L.s63$6443 rEn wEn r s0 s0
+
+main.$L.s70$6451 : ([8], [81], [81]) -> [106]
+main.$L.s70$6451 v s s0 =
+      let $a = Main.setR0 s v in
+      main.$L.Main.loop3$6359 $a
+
+main.$L.arm71$6453 : ([8], [81]) -> [106]
+main.$L.arm71$6453 v s0 =
+      main.$L.s70$6451 v s0 s0
+
+main.$L.s72$6454 : ([8], [81], [81]) -> [106]
+main.$L.s72$6454 v s s0 =
+      let $a = Main.setR1 s v in
+      main.$L.Main.loop3$6359 $a
+
+main.$L.arm73$6456 : ([8], [81]) -> [106]
+main.$L.arm73$6456 v s0 =
+      main.$L.s72$6454 v s0 s0
+
+main.$L.s74$6457 : ([8], [81], [81]) -> [106]
+main.$L.s74$6457 v s s0 =
+      let $a = Main.setR2 s v in
+      main.$L.Main.loop3$6359 $a
+
+main.$L.arm75$6459 : ([8], [81]) -> [106]
+main.$L.arm75$6459 v s0 =
+      main.$L.s74$6457 v s0 s0
+
+main.$L.s76$6460 : ([8], [81], [81]) -> [106]
+main.$L.s76$6460 v s s0 =
+      let $a = Main.setR3 s v in
+      main.$L.Main.loop3$6359 $a
+
+main.$L.arm77$6462 : ([8], [81]) -> [106]
+main.$L.arm77$6462 v s0 =
+      main.$L.s76$6460 v s0 s0
+
+main.$L.v69$6450 : ([1], [1], [8], [81]) -> [106]
+main.$L.v69$6450 rEn wEn v s0 =
+      let $a = Main.mkReg rEn wEn in
+      if eq $a 2'h0 then main.$L.arm71$6453 v s0
+            else if eq $a 2'h1 then main.$L.arm73$6456 v s0 else if eq $a 2'h2 then main.$L.arm75$6459 v s0 else main.$L.arm77$6462 v s0
+
+main.$L.i78$6463 : ([1], [1], [10], [81]) -> [106]
+main.$L.i78$6463 rEn wEn i s0 =
+      let $a = Main.dataIn i in
+      main.$L.v69$6450 rEn wEn $a s0
+
+main.$L.s79$6464 : ([1], [1], [81], [81]) -> [106]
+main.$L.s79$6464 rEn wEn s s0 =
+      let $a = Main.inputs s in
+      main.$L.i78$6463 rEn wEn $a s0
+
+main.$L._unused68$6449 : ([1], [1], [81]) -> [106]
+main.$L._unused68$6449 rEn wEn s0 =
+      main.$L.s79$6464 rEn wEn s0 s0
+
+main.$L.s82$6468 : ([1], [1], [10], [81], [81]) -> [106]
+main.$L.s82$6468 rEn wEn i s s0 =
+      let $a = Main.setInputs s i in
+      main.$L._unused68$6449 rEn wEn $a
+
+main.$L.i81$6467 : ([1], [1], [10], [81]) -> [106]
+main.$L.i81$6467 rEn wEn i s0 =
+      main.$L.s82$6468 rEn wEn i s0 s0
+
+main.$L.o80$6466 : ([1], [1], [18], [81]) -> [106]
+main.$L.o80$6466 rEn wEn o s0 =
+      o # 5'h8 # rEn # wEn # s0
+
+main.$L.s83$6470 : ([1], [1], [81], [81]) -> [106]
+main.$L.s83$6470 rEn wEn s s0 =
+      let $a = Main.outputs s in
+      main.$L.o80$6466 rEn wEn $a s0
+
+main.$L._unused67$6448 : ([1], [1], [81]) -> [106]
+main.$L._unused67$6448 rEn wEn s0 =
+      main.$L.s83$6470 rEn wEn s0 s0
+
+main.$L.s85$6473 : ([1], [1], [8], [18], [81], [81]) -> [106]
+main.$L.s85$6473 rEn wEn a o s s0 =
+      let $a = Main.setAddrOut o a in
+      let $a1 = Main.setOutputs s $a in
+      main.$L._unused67$6448 rEn wEn $a1
+
+main.$L.o84$6472 : ([1], [1], [8], [18], [81]) -> [106]
+main.$L.o84$6472 rEn wEn a o s0 =
+      main.$L.s85$6473 rEn wEn a o s0 s0
+
+main.$L.s86$6475 : ([1], [1], [8], [81], [81]) -> [106]
+main.$L.s86$6475 rEn wEn a s s0 =
+      let $a = Main.outputs s in
+      main.$L.o84$6472 rEn wEn a $a s0
+
+main.$L._unused66$6447 : ([1], [1], [8], [81]) -> [106]
+main.$L._unused66$6447 rEn wEn a s0 =
+      main.$L.s86$6475 rEn wEn a s0 s0
+
+main.$L.s88$6478 : ([1], [1], [8], [18], [81], [81]) -> [106]
+main.$L.s88$6478 rEn wEn a o s s0 =
+      let $a = Main.setWeOut o 1'h0 in
+      let $a1 = Main.setOutputs s $a in
+      main.$L._unused66$6447 rEn wEn a $a1
+
+main.$L.o87$6477 : ([1], [1], [8], [18], [81]) -> [106]
+main.$L.o87$6477 rEn wEn a o s0 =
+      main.$L.s88$6478 rEn wEn a o s0 s0
+
+main.$L.s89$6480 : ([1], [1], [8], [81], [81]) -> [106]
+main.$L.s89$6480 rEn wEn a s s0 =
+      let $a = Main.outputs s in
+      main.$L.o87$6477 rEn wEn a $a s0
+
+main.$L.a65$6446 : ([1], [1], [8], [81]) -> [106]
+main.$L.a65$6446 rEn wEn a s0 =
+      main.$L.s89$6480 rEn wEn a s0 s0
+
+main.$L.s90$6482 : ([1], [1], [81], [81]) -> [106]
+main.$L.s90$6482 rEn wEn s s0 =
+      let $a = Main.r0 s in
+      main.$L.a65$6446 rEn wEn $a s0
+
+main.$L.arm91$6484 : ([1], [1], [81]) -> [106]
+main.$L.arm91$6484 rEn wEn s0 =
+      main.$L.s90$6482 rEn wEn s0 s0
+
+main.$L.s92$6485 : ([1], [1], [81], [81]) -> [106]
+main.$L.s92$6485 rEn wEn s s0 =
+      let $a = Main.r1 s in
+      main.$L.a65$6446 rEn wEn $a s0
+
+main.$L.arm93$6487 : ([1], [1], [81]) -> [106]
+main.$L.arm93$6487 rEn wEn s0 =
+      main.$L.s92$6485 rEn wEn s0 s0
+
+main.$L.s94$6488 : ([1], [1], [81], [81]) -> [106]
+main.$L.s94$6488 rEn wEn s s0 =
+      let $a = Main.r2 s in
+      main.$L.a65$6446 rEn wEn $a s0
+
+main.$L.arm95$6490 : ([1], [1], [81]) -> [106]
+main.$L.arm95$6490 rEn wEn s0 =
+      main.$L.s94$6488 rEn wEn s0 s0
+
+main.$L.s96$6491 : ([1], [1], [81], [81]) -> [106]
+main.$L.s96$6491 rEn wEn s s0 =
+      let $a = Main.r3 s in
+      main.$L.a65$6446 rEn wEn $a s0
+
+main.$L.arm97$6493 : ([1], [1], [81]) -> [106]
+main.$L.arm97$6493 rEn wEn s0 =
+      main.$L.s96$6491 rEn wEn s0 s0
+
+main.$L.arm98$6494 : ([1], [1], [1], [1], [81]) -> [106]
+main.$L.arm98$6494 rEn wEn b0 b1 s0 =
+      let $a = Main.mkReg b0 b1 in
+      if eq $a 2'h0 then main.$L.arm91$6484 rEn wEn s0
+            else if eq $a 2'h1 then main.$L.arm93$6487 rEn wEn s0 else if eq $a 2'h2 then main.$L.arm95$6490 rEn wEn s0 else main.$L.arm97$6493 rEn wEn s0
+
+main.$L.s106$6502 : ([10], [81], [81]) -> [106]
+main.$L.s106$6502 i s s0 =
+      let $a = Main.setInputs s i in
+      main.$L.Main.loop3$6359 $a
+
+main.$L.i105$6501 : ([10], [81]) -> [106]
+main.$L.i105$6501 i s0 =
+      main.$L.s106$6502 i s0 s0
+
+main.$L.o104$6500 : ([18], [81]) -> [106]
+main.$L.o104$6500 o s0 =
+      o # 7'h30 # s0
+
+main.$L.s107$6504 : ([81], [81]) -> [106]
+main.$L.s107$6504 s s0 =
+      let $a = Main.outputs s in
+      main.$L.o104$6500 $a s0
+
+main.$L._unused103$6499 : ([81]) -> [106]
+main.$L._unused103$6499 s0 =
+      main.$L.s107$6504 s0 s0
+
+main.$L.s109$6507 : ([8], [18], [81], [81]) -> [106]
+main.$L.s109$6507 a o s s0 =
+      let $a = Main.setAddrOut o a in
+      let $a1 = Main.setOutputs s $a in
+      main.$L._unused103$6499 $a1
+
+main.$L.o108$6506 : ([8], [18], [81]) -> [106]
+main.$L.o108$6506 a o s0 =
+      main.$L.s109$6507 a o s0 s0
+
+main.$L.s110$6509 : ([8], [81], [81]) -> [106]
+main.$L.s110$6509 a s s0 =
+      let $a = Main.outputs s in
+      main.$L.o108$6506 a $a s0
+
+main.$L._unused102$6498 : ([8], [81]) -> [106]
+main.$L._unused102$6498 a s0 =
+      main.$L.s110$6509 a s0 s0
+
+main.$L.s112$6512 : ([8], [8], [18], [81], [81]) -> [106]
+main.$L.s112$6512 a v o s s0 =
+      let $a = Main.setDataOut o v in
+      let $a1 = Main.setOutputs s $a in
+      main.$L._unused102$6498 a $a1
+
+main.$L.o111$6511 : ([8], [8], [18], [81]) -> [106]
+main.$L.o111$6511 a v o s0 =
+      main.$L.s112$6512 a v o s0 s0
+
+main.$L.s113$6514 : ([8], [8], [81], [81]) -> [106]
+main.$L.s113$6514 a v s s0 =
+      let $a = Main.outputs s in
+      main.$L.o111$6511 a v $a s0
+
+main.$L._unused101$6497 : ([8], [8], [81]) -> [106]
+main.$L._unused101$6497 a v s0 =
+      main.$L.s113$6514 a v s0 s0
+
+main.$L.s115$6517 : ([8], [8], [18], [81], [81]) -> [106]
+main.$L.s115$6517 a v o s s0 =
+      let $a = Main.setWeOut o 1'h1 in
+      let $a1 = Main.setOutputs s $a in
+      main.$L._unused101$6497 a v $a1
+
+main.$L.o114$6516 : ([8], [8], [18], [81]) -> [106]
+main.$L.o114$6516 a v o s0 =
+      main.$L.s115$6517 a v o s0 s0
+
+main.$L.s116$6519 : ([8], [8], [81], [81]) -> [106]
+main.$L.s116$6519 a v s s0 =
+      let $a = Main.outputs s in
+      main.$L.o114$6516 a v $a s0
+
+main.$L.v100$6496 : ([8], [8], [81]) -> [106]
+main.$L.v100$6496 a v s0 =
+      main.$L.s116$6519 a v s0 s0
+
+main.$L.s117$6521 : ([8], [81], [81]) -> [106]
+main.$L.s117$6521 a s s0 =
+      let $a = Main.r0 s in
+      main.$L.v100$6496 a $a s0
+
+main.$L.arm118$6523 : ([8], [81]) -> [106]
+main.$L.arm118$6523 a s0 =
+      main.$L.s117$6521 a s0 s0
+
+main.$L.s119$6524 : ([8], [81], [81]) -> [106]
+main.$L.s119$6524 a s s0 =
+      let $a = Main.r1 s in
+      main.$L.v100$6496 a $a s0
+
+main.$L.arm120$6526 : ([8], [81]) -> [106]
+main.$L.arm120$6526 a s0 =
+      main.$L.s119$6524 a s0 s0
+
+main.$L.s121$6527 : ([8], [81], [81]) -> [106]
+main.$L.s121$6527 a s s0 =
+      let $a = Main.r2 s in
+      main.$L.v100$6496 a $a s0
+
+main.$L.arm122$6529 : ([8], [81]) -> [106]
+main.$L.arm122$6529 a s0 =
+      main.$L.s121$6527 a s0 s0
+
+main.$L.s123$6530 : ([8], [81], [81]) -> [106]
+main.$L.s123$6530 a s s0 =
+      let $a = Main.r3 s in
+      main.$L.v100$6496 a $a s0
+
+main.$L.arm124$6532 : ([8], [81]) -> [106]
+main.$L.arm124$6532 a s0 =
+      main.$L.s123$6530 a s0 s0
+
+main.$L.a99$6495 : ([1], [1], [8], [81]) -> [106]
+main.$L.a99$6495 rEn wEn a s0 =
+      let $a = Main.mkReg rEn wEn in
+      if eq $a 2'h0 then main.$L.arm118$6523 a s0
+            else if eq $a 2'h1 then main.$L.arm120$6526 a s0 else if eq $a 2'h2 then main.$L.arm122$6529 a s0 else main.$L.arm124$6532 a s0
+
+main.$L.s125$6533 : ([1], [1], [81], [81]) -> [106]
+main.$L.s125$6533 rEn wEn s s0 =
+      let $a = Main.r0 s in
+      main.$L.a99$6495 rEn wEn $a s0
+
+main.$L.arm126$6535 : ([1], [1], [81]) -> [106]
+main.$L.arm126$6535 rEn wEn s0 =
+      main.$L.s125$6533 rEn wEn s0 s0
+
+main.$L.s127$6536 : ([1], [1], [81], [81]) -> [106]
+main.$L.s127$6536 rEn wEn s s0 =
+      let $a = Main.r1 s in
+      main.$L.a99$6495 rEn wEn $a s0
+
+main.$L.arm128$6538 : ([1], [1], [81]) -> [106]
+main.$L.arm128$6538 rEn wEn s0 =
+      main.$L.s127$6536 rEn wEn s0 s0
+
+main.$L.s129$6539 : ([1], [1], [81], [81]) -> [106]
+main.$L.s129$6539 rEn wEn s s0 =
+      let $a = Main.r2 s in
+      main.$L.a99$6495 rEn wEn $a s0
+
+main.$L.arm130$6541 : ([1], [1], [81]) -> [106]
+main.$L.arm130$6541 rEn wEn s0 =
+      main.$L.s129$6539 rEn wEn s0 s0
+
+main.$L.s131$6542 : ([1], [1], [81], [81]) -> [106]
+main.$L.s131$6542 rEn wEn s s0 =
+      let $a = Main.r3 s in
+      main.$L.a99$6495 rEn wEn $a s0
+
+main.$L.arm132$6544 : ([1], [1], [81]) -> [106]
+main.$L.arm132$6544 rEn wEn s0 =
+      main.$L.s131$6542 rEn wEn s0 s0
+
+main.$L.arm133$6545 : ([1], [1], [1], [1], [81]) -> [106]
+main.$L.arm133$6545 rEn wEn b0 b1 s0 =
+      let $a = Main.mkReg b0 b1 in
+      if eq $a 2'h0 then main.$L.arm126$6535 rEn wEn s0
+            else if eq $a 2'h1 then main.$L.arm128$6538 rEn wEn s0 else if eq $a 2'h2 then main.$L.arm130$6541 rEn wEn s0 else main.$L.arm132$6544 rEn wEn s0
+
+main.$L.s140$6552 : ([10], [81], [81]) -> [106]
+main.$L.s140$6552 i s s0 =
+      let s01 = Main.setInputs s i in
+      main.$L.Main.loop3$6359 s01
+
+main.$L.i139$6551 : ([10], [81]) -> [106]
+main.$L.i139$6551 i s0 =
+      main.$L.s140$6552 i s0 s0
+
+main.$L.o138$6550 : ([18], [81]) -> [106]
+main.$L.o138$6550 o s0 =
+      o # 7'h40 # s0
+
+main.$L._unused137$6549 : ([81]) -> [106]
+main.$L._unused137$6549 s0 =
+      main.$L.o138$6550 (Main.outputs s0) s0
+
+main.$L.s142$6556 : ([8], [81], [81]) -> [106]
+main.$L.s142$6556 v s s0 =
+      let s01 = Main.setR0 s v in
+      main.$L._unused137$6549 s01
+
+main.$L.arm143$6558 : ([8], [81]) -> [106]
+main.$L.arm143$6558 v s0 =
+      main.$L.s142$6556 v s0 s0
+
+main.$L.s144$6559 : ([8], [81], [81]) -> [106]
+main.$L.s144$6559 v s s0 =
+      let s01 = Main.setR1 s v in
+      main.$L._unused137$6549 s01
+
+main.$L.arm145$6561 : ([8], [81]) -> [106]
+main.$L.arm145$6561 v s0 =
+      main.$L.s144$6559 v s0 s0
+
+main.$L.s146$6562 : ([8], [81], [81]) -> [106]
+main.$L.s146$6562 v s s0 =
+      let s01 = Main.setR2 s v in
+      main.$L._unused137$6549 s01
+
+main.$L.arm147$6564 : ([8], [81]) -> [106]
+main.$L.arm147$6564 v s0 =
+      main.$L.s146$6562 v s0 s0
+
+main.$L.s148$6565 : ([8], [81], [81]) -> [106]
+main.$L.s148$6565 v s s0 =
+      let s01 = Main.setR3 s v in
+      main.$L._unused137$6549 s01
+
+main.$L.arm149$6567 : ([8], [81]) -> [106]
+main.$L.arm149$6567 v s0 =
+      main.$L.s148$6565 v s0 s0
+
+main.$L._unused136$6548 : ([2], [9], [81]) -> [106]
+main.$L._unused136$6548 rD p s0 =
+      let v = (let y = p[0 +: 8] in
+      y) in
+      if eq rD 2'h0 then main.$L.arm143$6558 v s0
+            else if eq rD 2'h1 then main.$L.arm145$6561 v s0 else if eq rD 2'h2 then main.$L.arm147$6564 v s0 else main.$L.arm149$6567 v s0
+
+main.$L.s150$6568 : ([2], [9], [81], [81]) -> [106]
+main.$L.s150$6568 rD p s s0 =
+      let s01 = Main.setCFlag s (let x = p[8 +: 1] in
+      x) in
+      main.$L._unused136$6548 rD p s01
+
+main.$L.vS135$6547 : ([2], [8], [8], [81]) -> [106]
+main.$L.vS135$6547 rD vD vS s0 =
+      let p = Main.plusCW8$s2 vD vS in
+      main.$L.s150$6568 rD p s0 s0
+
+main.$L.arm152$6572 : ([2], [8], [81]) -> [106]
+main.$L.arm152$6572 rD vD s0 =
+      main.$L.vS135$6547 rD vD (Main.r0 s0) s0
+
+main.$L.arm154$6575 : ([2], [8], [81]) -> [106]
+main.$L.arm154$6575 rD vD s0 =
+      main.$L.vS135$6547 rD vD (Main.r1 s0) s0
+
+main.$L.arm156$6578 : ([2], [8], [81]) -> [106]
+main.$L.arm156$6578 rD vD s0 =
+      main.$L.vS135$6547 rD vD (Main.r2 s0) s0
+
+main.$L.arm158$6581 : ([2], [8], [81]) -> [106]
+main.$L.arm158$6581 rD vD s0 =
+      main.$L.vS135$6547 rD vD (Main.r3 s0) s0
+
+main.$L.vD134$6546 : ([2], [2], [8], [81]) -> [106]
+main.$L.vD134$6546 rD rS vD s0 =
+      if eq rS 2'h0 then main.$L.arm152$6572 rD vD s0
+            else if eq rS 2'h1 then main.$L.arm154$6575 rD vD s0 else if eq rS 2'h2 then main.$L.arm156$6578 rD vD s0 else main.$L.arm158$6581 rD vD s0
+
+main.$L.arm160$6584 : ([2], [2], [81]) -> [106]
+main.$L.arm160$6584 rD rS s0 =
+      main.$L.vD134$6546 rD rS (Main.r0 s0) s0
+
+main.$L.arm162$6587 : ([2], [2], [81]) -> [106]
+main.$L.arm162$6587 rD rS s0 =
+      main.$L.vD134$6546 rD rS (Main.r1 s0) s0
+
+main.$L.arm164$6590 : ([2], [2], [81]) -> [106]
+main.$L.arm164$6590 rD rS s0 =
+      main.$L.vD134$6546 rD rS (Main.r2 s0) s0
+
+main.$L.arm166$6593 : ([2], [2], [81]) -> [106]
+main.$L.arm166$6593 rD rS s0 =
+      main.$L.vD134$6546 rD rS (Main.r3 s0) s0
+
+main.$L.arm167$6594 : ([1], [1], [1], [1], [81]) -> [106]
+main.$L.arm167$6594 rEn wEn b0 b1 s0 =
+      let rD = Main.mkReg rEn wEn in
+      let $a = Main.mkReg b0 b1 in
+      if eq rD 2'h0 then main.$L.arm160$6584 rD $a s0
+            else if eq rD 2'h1 then main.$L.arm162$6587 rD $a s0 else if eq rD 2'h2 then main.$L.arm164$6590 rD $a s0 else main.$L.arm166$6593 rD $a s0
+
+main.$L.cin170$6597 : ([2], [8], [8], [1], [81]) -> [106]
+main.$L.cin170$6597 rD vD vS cin s0 =
+      let p = Main.plusCW8 vD vS cin in
+      main.$L.s150$6568 rD p s0 s0
+
+main.$L.vS169$6596 : ([2], [8], [8], [81]) -> [106]
+main.$L.vS169$6596 rD vD vS s0 =
+      main.$L.cin170$6597 rD vD vS (Main.cFlag s0) s0
+
+main.$L.arm188$6624 : ([2], [8], [81]) -> [106]
+main.$L.arm188$6624 rD vD s0 =
+      main.$L.vS169$6596 rD vD (Main.r0 s0) s0
+
+main.$L.arm190$6627 : ([2], [8], [81]) -> [106]
+main.$L.arm190$6627 rD vD s0 =
+      main.$L.vS169$6596 rD vD (Main.r1 s0) s0
+
+main.$L.arm192$6630 : ([2], [8], [81]) -> [106]
+main.$L.arm192$6630 rD vD s0 =
+      main.$L.vS169$6596 rD vD (Main.r2 s0) s0
+
+main.$L.arm194$6633 : ([2], [8], [81]) -> [106]
+main.$L.arm194$6633 rD vD s0 =
+      main.$L.vS169$6596 rD vD (Main.r3 s0) s0
+
+main.$L.vD168$6595 : ([2], [2], [8], [81]) -> [106]
+main.$L.vD168$6595 rD rS vD s0 =
+      if eq rS 2'h0 then main.$L.arm188$6624 rD vD s0
+            else if eq rS 2'h1 then main.$L.arm190$6627 rD vD s0 else if eq rS 2'h2 then main.$L.arm192$6630 rD vD s0 else main.$L.arm194$6633 rD vD s0
+
+main.$L.arm196$6636 : ([2], [2], [81]) -> [106]
+main.$L.arm196$6636 rD rS s0 =
+      main.$L.vD168$6595 rD rS (Main.r0 s0) s0
+
+main.$L.arm198$6639 : ([2], [2], [81]) -> [106]
+main.$L.arm198$6639 rD rS s0 =
+      main.$L.vD168$6595 rD rS (Main.r1 s0) s0
+
+main.$L.arm200$6642 : ([2], [2], [81]) -> [106]
+main.$L.arm200$6642 rD rS s0 =
+      main.$L.vD168$6595 rD rS (Main.r2 s0) s0
+
+main.$L.arm202$6645 : ([2], [2], [81]) -> [106]
+main.$L.arm202$6645 rD rS s0 =
+      main.$L.vD168$6595 rD rS (Main.r3 s0) s0
+
+main.$L.arm203$6646 : ([1], [1], [1], [1], [81]) -> [106]
+main.$L.arm203$6646 rEn wEn b0 b1 s0 =
+      let rD = Main.mkReg rEn wEn in
+      let $a = Main.mkReg b0 b1 in
+      if eq rD 2'h0 then main.$L.arm196$6636 rD $a s0
+            else if eq rD 2'h1 then main.$L.arm198$6639 rD $a s0 else if eq rD 2'h2 then main.$L.arm200$6642 rD $a s0 else main.$L.arm202$6645 rD $a s0
+
+main.$L.vS205$6648 : ([2], [8], [8], [81]) -> [106]
+main.$L.vS205$6648 rD vD vS s0 =
+      let p = Main.minusCW8$s1 vD vS in
+      main.$L.s150$6568 rD p s0 s0
+
+main.$L.arm222$6673 : ([2], [8], [81]) -> [106]
+main.$L.arm222$6673 rD vD s0 =
+      main.$L.vS205$6648 rD vD (Main.r0 s0) s0
+
+main.$L.arm224$6676 : ([2], [8], [81]) -> [106]
+main.$L.arm224$6676 rD vD s0 =
+      main.$L.vS205$6648 rD vD (Main.r1 s0) s0
+
+main.$L.arm226$6679 : ([2], [8], [81]) -> [106]
+main.$L.arm226$6679 rD vD s0 =
+      main.$L.vS205$6648 rD vD (Main.r2 s0) s0
+
+main.$L.arm228$6682 : ([2], [8], [81]) -> [106]
+main.$L.arm228$6682 rD vD s0 =
+      main.$L.vS205$6648 rD vD (Main.r3 s0) s0
+
+main.$L.vD204$6647 : ([2], [2], [8], [81]) -> [106]
+main.$L.vD204$6647 rD rS vD s0 =
+      if eq rS 2'h0 then main.$L.arm222$6673 rD vD s0
+            else if eq rS 2'h1 then main.$L.arm224$6676 rD vD s0 else if eq rS 2'h2 then main.$L.arm226$6679 rD vD s0 else main.$L.arm228$6682 rD vD s0
+
+main.$L.arm230$6685 : ([2], [2], [81]) -> [106]
+main.$L.arm230$6685 rD rS s0 =
+      main.$L.vD204$6647 rD rS (Main.r0 s0) s0
+
+main.$L.arm232$6688 : ([2], [2], [81]) -> [106]
+main.$L.arm232$6688 rD rS s0 =
+      main.$L.vD204$6647 rD rS (Main.r1 s0) s0
+
+main.$L.arm234$6691 : ([2], [2], [81]) -> [106]
+main.$L.arm234$6691 rD rS s0 =
+      main.$L.vD204$6647 rD rS (Main.r2 s0) s0
+
+main.$L.arm236$6694 : ([2], [2], [81]) -> [106]
+main.$L.arm236$6694 rD rS s0 =
+      main.$L.vD204$6647 rD rS (Main.r3 s0) s0
+
+main.$L.arm237$6695 : ([1], [1], [1], [1], [81]) -> [106]
+main.$L.arm237$6695 rEn wEn b0 b1 s0 =
+      let rD = Main.mkReg rEn wEn in
+      let $a = Main.mkReg b0 b1 in
+      if eq rD 2'h0 then main.$L.arm230$6685 rD $a s0
+            else if eq rD 2'h1 then main.$L.arm232$6688 rD $a s0 else if eq rD 2'h2 then main.$L.arm234$6691 rD $a s0 else main.$L.arm236$6694 rD $a s0
+
+main.$L.cin240$6698 : ([2], [8], [8], [1], [81]) -> [106]
+main.$L.cin240$6698 rD vD vS cin s0 =
+      let p = Main.minusCW8 vD vS cin in
+      main.$L.s150$6568 rD p s0 s0
+
+main.$L.vS239$6697 : ([2], [8], [8], [81]) -> [106]
+main.$L.vS239$6697 rD vD vS s0 =
+      main.$L.cin240$6698 rD vD vS (Main.cFlag s0) s0
+
+main.$L.arm258$6725 : ([2], [8], [81]) -> [106]
+main.$L.arm258$6725 rD vD s0 =
+      main.$L.vS239$6697 rD vD (Main.r0 s0) s0
+
+main.$L.arm260$6728 : ([2], [8], [81]) -> [106]
+main.$L.arm260$6728 rD vD s0 =
+      main.$L.vS239$6697 rD vD (Main.r1 s0) s0
+
+main.$L.arm262$6731 : ([2], [8], [81]) -> [106]
+main.$L.arm262$6731 rD vD s0 =
+      main.$L.vS239$6697 rD vD (Main.r2 s0) s0
+
+main.$L.arm264$6734 : ([2], [8], [81]) -> [106]
+main.$L.arm264$6734 rD vD s0 =
+      main.$L.vS239$6697 rD vD (Main.r3 s0) s0
+
+main.$L.vD238$6696 : ([2], [2], [8], [81]) -> [106]
+main.$L.vD238$6696 rD rS vD s0 =
+      if eq rS 2'h0 then main.$L.arm258$6725 rD vD s0
+            else if eq rS 2'h1 then main.$L.arm260$6728 rD vD s0 else if eq rS 2'h2 then main.$L.arm262$6731 rD vD s0 else main.$L.arm264$6734 rD vD s0
+
+main.$L.arm266$6737 : ([2], [2], [81]) -> [106]
+main.$L.arm266$6737 rD rS s0 =
+      main.$L.vD238$6696 rD rS (Main.r0 s0) s0
+
+main.$L.arm268$6740 : ([2], [2], [81]) -> [106]
+main.$L.arm268$6740 rD rS s0 =
+      main.$L.vD238$6696 rD rS (Main.r1 s0) s0
+
+main.$L.arm270$6743 : ([2], [2], [81]) -> [106]
+main.$L.arm270$6743 rD rS s0 =
+      main.$L.vD238$6696 rD rS (Main.r2 s0) s0
+
+main.$L.arm272$6746 : ([2], [2], [81]) -> [106]
+main.$L.arm272$6746 rD rS s0 =
+      main.$L.vD238$6696 rD rS (Main.r3 s0) s0
+
+main.$L.arm273$6747 : ([1], [1], [1], [1], [81]) -> [106]
+main.$L.arm273$6747 rEn wEn b0 b1 s0 =
+      let rD = Main.mkReg rEn wEn in
+      let $a = Main.mkReg b0 b1 in
+      if eq rD 2'h0 then main.$L.arm266$6737 rD $a s0
+            else if eq rD 2'h1 then main.$L.arm268$6740 rD $a s0 else if eq rD 2'h2 then main.$L.arm270$6743 rD $a s0 else main.$L.arm272$6746 rD $a s0
+
+main.$L.s280$6756 : ([8], [81], [81]) -> [106]
+main.$L.s280$6756 x s s0 =
+      let $a = Main.setR0 s x in
+      main.$L._unused103$6499 $a
+
+main.$L.arm281$6758 : ([8], [81]) -> [106]
+main.$L.arm281$6758 x s0 =
+      main.$L.s280$6756 x s0 s0
+
+main.$L.s282$6759 : ([8], [81], [81]) -> [106]
+main.$L.s282$6759 x s s0 =
+      let $a = Main.setR1 s x in
+      main.$L._unused103$6499 $a
+
+main.$L.arm283$6761 : ([8], [81]) -> [106]
+main.$L.arm283$6761 x s0 =
+      main.$L.s282$6759 x s0 s0
+
+main.$L.s284$6762 : ([8], [81], [81]) -> [106]
+main.$L.s284$6762 x s s0 =
+      let $a = Main.setR2 s x in
+      main.$L._unused103$6499 $a
+
+main.$L.arm285$6764 : ([8], [81]) -> [106]
+main.$L.arm285$6764 x s0 =
+      main.$L.s284$6762 x s0 s0
+
+main.$L.s286$6765 : ([8], [81], [81]) -> [106]
+main.$L.s286$6765 x s s0 =
+      let $a = Main.setR3 s x in
+      main.$L._unused103$6499 $a
+
+main.$L.arm287$6767 : ([8], [81]) -> [106]
+main.$L.arm287$6767 x s0 =
+      main.$L.s286$6765 x s0 s0
+
+main.$L.x274$6748 : ([1], [1], [8], [81]) -> [106]
+main.$L.x274$6748 rEn wEn x s0 =
+      let $a = Main.mkReg rEn wEn in
+      if eq $a 2'h0 then main.$L.arm281$6758 x s0
+            else if eq $a 2'h1 then main.$L.arm283$6761 x s0 else if eq $a 2'h2 then main.$L.arm285$6764 x s0 else main.$L.arm287$6767 x s0
+
+main.$L.s288$6768 : ([1], [1], [81], [81]) -> [106]
+main.$L.s288$6768 rEn wEn s s0 =
+      let $a = Main.r0 s in
+      main.$L.x274$6748 rEn wEn $a s0
+
+main.$L.arm289$6770 : ([1], [1], [81]) -> [106]
+main.$L.arm289$6770 rEn wEn s0 =
+      main.$L.s288$6768 rEn wEn s0 s0
+
+main.$L.s290$6771 : ([1], [1], [81], [81]) -> [106]
+main.$L.s290$6771 rEn wEn s s0 =
+      let $a = Main.r1 s in
+      main.$L.x274$6748 rEn wEn $a s0
+
+main.$L.arm291$6773 : ([1], [1], [81]) -> [106]
+main.$L.arm291$6773 rEn wEn s0 =
+      main.$L.s290$6771 rEn wEn s0 s0
+
+main.$L.s292$6774 : ([1], [1], [81], [81]) -> [106]
+main.$L.s292$6774 rEn wEn s s0 =
+      let $a = Main.r2 s in
+      main.$L.x274$6748 rEn wEn $a s0
+
+main.$L.arm293$6776 : ([1], [1], [81]) -> [106]
+main.$L.arm293$6776 rEn wEn s0 =
+      main.$L.s292$6774 rEn wEn s0 s0
+
+main.$L.s294$6777 : ([1], [1], [81], [81]) -> [106]
+main.$L.s294$6777 rEn wEn s s0 =
+      let $a = Main.r3 s in
+      main.$L.x274$6748 rEn wEn $a s0
+
+main.$L.arm295$6779 : ([1], [1], [81]) -> [106]
+main.$L.arm295$6779 rEn wEn s0 =
+      main.$L.s294$6777 rEn wEn s0 s0
+
+main.$L.arm296$6780 : ([1], [1], [1], [1], [81]) -> [106]
+main.$L.arm296$6780 rEn wEn b0 b1 s0 =
+      let $a = Main.mkReg b0 b1 in
+      if eq $a 2'h0 then main.$L.arm289$6770 rEn wEn s0
+            else if eq $a 2'h1 then main.$L.arm291$6773 rEn wEn s0 else if eq $a 2'h2 then main.$L.arm293$6776 rEn wEn s0 else main.$L.arm295$6779 rEn wEn s0
+
+main.$L.s306$6792 : ([8], [81], [81]) -> [106]
+main.$L.s306$6792 vD' s s0 =
+      let s01 = Main.setZFlag s (eq vD' 8'h0) in
+      main.$L._unused137$6549 s01
+
+main.$L._unused300$6784 : ([8], [81]) -> [106]
+main.$L._unused300$6784 vD' s0 =
+      main.$L.s306$6792 vD' s0 s0
+
+main.$L.s307$6794 : ([8], [81], [81]) -> [106]
+main.$L.s307$6794 vD' s s0 =
+      let s01 = Main.setCFlag s 1'h0 in
+      main.$L._unused300$6784 vD' s01
+
+main.$L._unused299$6783 : ([8], [81]) -> [106]
+main.$L._unused299$6783 vD' s0 =
+      main.$L.s307$6794 vD' s0 s0
+
+main.$L.s308$6796 : ([8], [81], [81]) -> [106]
+main.$L.s308$6796 vD' s s0 =
+      let s01 = Main.setR0 s vD' in
+      main.$L._unused299$6783 vD' s01
+
+main.$L.arm309$6798 : ([8], [81]) -> [106]
+main.$L.arm309$6798 vD' s0 =
+      main.$L.s308$6796 vD' s0 s0
+
+main.$L.s310$6799 : ([8], [81], [81]) -> [106]
+main.$L.s310$6799 vD' s s0 =
+      let s01 = Main.setR1 s vD' in
+      main.$L._unused299$6783 vD' s01
+
+main.$L.arm311$6801 : ([8], [81]) -> [106]
+main.$L.arm311$6801 vD' s0 =
+      main.$L.s310$6799 vD' s0 s0
+
+main.$L.s312$6802 : ([8], [81], [81]) -> [106]
+main.$L.s312$6802 vD' s s0 =
+      let s01 = Main.setR2 s vD' in
+      main.$L._unused299$6783 vD' s01
+
+main.$L.arm313$6804 : ([8], [81]) -> [106]
+main.$L.arm313$6804 vD' s0 =
+      main.$L.s312$6802 vD' s0 s0
+
+main.$L.s314$6805 : ([8], [81], [81]) -> [106]
+main.$L.s314$6805 vD' s s0 =
+      let s01 = Main.setR3 s vD' in
+      main.$L._unused299$6783 vD' s01
+
+main.$L.arm315$6807 : ([8], [81]) -> [106]
+main.$L.arm315$6807 vD' s0 =
+      main.$L.s314$6805 vD' s0 s0
+
+main.$L.vS298$6782 : ([2], [8], [8], [81]) -> [106]
+main.$L.vS298$6782 rD vD vS s0 =
+      let vD' = or vD vS in
+      if eq rD 2'h0 then main.$L.arm309$6798 vD' s0
+            else if eq rD 2'h1 then main.$L.arm311$6801 vD' s0 else if eq rD 2'h2 then main.$L.arm313$6804 vD' s0 else main.$L.arm315$6807 vD' s0
+
+main.$L.arm317$6810 : ([2], [8], [81]) -> [106]
+main.$L.arm317$6810 rD vD s0 =
+      main.$L.vS298$6782 rD vD (Main.r0 s0) s0
+
+main.$L.arm319$6813 : ([2], [8], [81]) -> [106]
+main.$L.arm319$6813 rD vD s0 =
+      main.$L.vS298$6782 rD vD (Main.r1 s0) s0
+
+main.$L.arm321$6816 : ([2], [8], [81]) -> [106]
+main.$L.arm321$6816 rD vD s0 =
+      main.$L.vS298$6782 rD vD (Main.r2 s0) s0
+
+main.$L.arm323$6819 : ([2], [8], [81]) -> [106]
+main.$L.arm323$6819 rD vD s0 =
+      main.$L.vS298$6782 rD vD (Main.r3 s0) s0
+
+main.$L.vD297$6781 : ([2], [2], [8], [81]) -> [106]
+main.$L.vD297$6781 rD rS vD s0 =
+      if eq rS 2'h0 then main.$L.arm317$6810 rD vD s0
+            else if eq rS 2'h1 then main.$L.arm319$6813 rD vD s0 else if eq rS 2'h2 then main.$L.arm321$6816 rD vD s0 else main.$L.arm323$6819 rD vD s0
+
+main.$L.arm325$6822 : ([2], [2], [81]) -> [106]
+main.$L.arm325$6822 rD rS s0 =
+      main.$L.vD297$6781 rD rS (Main.r0 s0) s0
+
+main.$L.arm327$6825 : ([2], [2], [81]) -> [106]
+main.$L.arm327$6825 rD rS s0 =
+      main.$L.vD297$6781 rD rS (Main.r1 s0) s0
+
+main.$L.arm329$6828 : ([2], [2], [81]) -> [106]
+main.$L.arm329$6828 rD rS s0 =
+      main.$L.vD297$6781 rD rS (Main.r2 s0) s0
+
+main.$L.arm331$6831 : ([2], [2], [81]) -> [106]
+main.$L.arm331$6831 rD rS s0 =
+      main.$L.vD297$6781 rD rS (Main.r3 s0) s0
+
+main.$L.arm332$6832 : ([1], [1], [1], [1], [81]) -> [106]
+main.$L.arm332$6832 rEn wEn b0 b1 s0 =
+      let rD = Main.mkReg rEn wEn in
+      let $a = Main.mkReg b0 b1 in
+      if eq rD 2'h0 then main.$L.arm325$6822 rD $a s0
+            else if eq rD 2'h1 then main.$L.arm327$6825 rD $a s0 else if eq rD 2'h2 then main.$L.arm329$6828 rD $a s0 else main.$L.arm331$6831 rD $a s0
+
+main.$L.vS334$6834 : ([2], [8], [8], [81]) -> [106]
+main.$L.vS334$6834 rD vD vS s0 =
+      let vD' = and vD vS in
+      if eq rD 2'h0 then main.$L.arm309$6798 vD' s0
+            else if eq rD 2'h1 then main.$L.arm311$6801 vD' s0 else if eq rD 2'h2 then main.$L.arm313$6804 vD' s0 else main.$L.arm315$6807 vD' s0
+
+main.$L.arm353$6862 : ([2], [8], [81]) -> [106]
+main.$L.arm353$6862 rD vD s0 =
+      main.$L.vS334$6834 rD vD (Main.r0 s0) s0
+
+main.$L.arm355$6865 : ([2], [8], [81]) -> [106]
+main.$L.arm355$6865 rD vD s0 =
+      main.$L.vS334$6834 rD vD (Main.r1 s0) s0
+
+main.$L.arm357$6868 : ([2], [8], [81]) -> [106]
+main.$L.arm357$6868 rD vD s0 =
+      main.$L.vS334$6834 rD vD (Main.r2 s0) s0
+
+main.$L.arm359$6871 : ([2], [8], [81]) -> [106]
+main.$L.arm359$6871 rD vD s0 =
+      main.$L.vS334$6834 rD vD (Main.r3 s0) s0
+
+main.$L.vD333$6833 : ([2], [2], [8], [81]) -> [106]
+main.$L.vD333$6833 rD rS vD s0 =
+      if eq rS 2'h0 then main.$L.arm353$6862 rD vD s0
+            else if eq rS 2'h1 then main.$L.arm355$6865 rD vD s0 else if eq rS 2'h2 then main.$L.arm357$6868 rD vD s0 else main.$L.arm359$6871 rD vD s0
+
+main.$L.arm361$6874 : ([2], [2], [81]) -> [106]
+main.$L.arm361$6874 rD rS s0 =
+      main.$L.vD333$6833 rD rS (Main.r0 s0) s0
+
+main.$L.arm363$6877 : ([2], [2], [81]) -> [106]
+main.$L.arm363$6877 rD rS s0 =
+      main.$L.vD333$6833 rD rS (Main.r1 s0) s0
+
+main.$L.arm365$6880 : ([2], [2], [81]) -> [106]
+main.$L.arm365$6880 rD rS s0 =
+      main.$L.vD333$6833 rD rS (Main.r2 s0) s0
+
+main.$L.arm367$6883 : ([2], [2], [81]) -> [106]
+main.$L.arm367$6883 rD rS s0 =
+      main.$L.vD333$6833 rD rS (Main.r3 s0) s0
+
+main.$L.arm368$6884 : ([1], [1], [1], [1], [81]) -> [106]
+main.$L.arm368$6884 rEn wEn b0 b1 s0 =
+      let rD = Main.mkReg rEn wEn in
+      let $a = Main.mkReg b0 b1 in
+      if eq rD 2'h0 then main.$L.arm361$6874 rD $a s0
+            else if eq rD 2'h1 then main.$L.arm363$6877 rD $a s0 else if eq rD 2'h2 then main.$L.arm365$6880 rD $a s0 else main.$L.arm367$6883 rD $a s0
+
+main.$L.vS370$6886 : ([2], [8], [8], [81]) -> [106]
+main.$L.vS370$6886 rD vD vS s0 =
+      let vD' = xor vD vS in
+      if eq rD 2'h0 then main.$L.arm309$6798 vD' s0
+            else if eq rD 2'h1 then main.$L.arm311$6801 vD' s0 else if eq rD 2'h2 then main.$L.arm313$6804 vD' s0 else main.$L.arm315$6807 vD' s0
+
+main.$L.arm389$6914 : ([2], [8], [81]) -> [106]
+main.$L.arm389$6914 rD vD s0 =
+      main.$L.vS370$6886 rD vD (Main.r0 s0) s0
+
+main.$L.arm391$6917 : ([2], [8], [81]) -> [106]
+main.$L.arm391$6917 rD vD s0 =
+      main.$L.vS370$6886 rD vD (Main.r1 s0) s0
+
+main.$L.arm393$6920 : ([2], [8], [81]) -> [106]
+main.$L.arm393$6920 rD vD s0 =
+      main.$L.vS370$6886 rD vD (Main.r2 s0) s0
+
+main.$L.arm395$6923 : ([2], [8], [81]) -> [106]
+main.$L.arm395$6923 rD vD s0 =
+      main.$L.vS370$6886 rD vD (Main.r3 s0) s0
+
+main.$L.vD369$6885 : ([2], [2], [8], [81]) -> [106]
+main.$L.vD369$6885 rD rS vD s0 =
+      if eq rS 2'h0 then main.$L.arm389$6914 rD vD s0
+            else if eq rS 2'h1 then main.$L.arm391$6917 rD vD s0 else if eq rS 2'h2 then main.$L.arm393$6920 rD vD s0 else main.$L.arm395$6923 rD vD s0
+
+main.$L.arm397$6926 : ([2], [2], [81]) -> [106]
+main.$L.arm397$6926 rD rS s0 =
+      main.$L.vD369$6885 rD rS (Main.r0 s0) s0
+
+main.$L.arm399$6929 : ([2], [2], [81]) -> [106]
+main.$L.arm399$6929 rD rS s0 =
+      main.$L.vD369$6885 rD rS (Main.r1 s0) s0
+
+main.$L.arm401$6932 : ([2], [2], [81]) -> [106]
+main.$L.arm401$6932 rD rS s0 =
+      main.$L.vD369$6885 rD rS (Main.r2 s0) s0
+
+main.$L.arm403$6935 : ([2], [2], [81]) -> [106]
+main.$L.arm403$6935 rD rS s0 =
+      main.$L.vD369$6885 rD rS (Main.r3 s0) s0
+
+main.$L.arm404$6936 : ([1], [1], [1], [1], [81]) -> [106]
+main.$L.arm404$6936 rEn wEn b0 b1 s0 =
+      let rD = Main.mkReg rEn wEn in
+      let $a = Main.mkReg b0 b1 in
+      if eq rD 2'h0 then main.$L.arm397$6926 rD $a s0
+            else if eq rD 2'h1 then main.$L.arm399$6929 rD $a s0 else if eq rD 2'h2 then main.$L.arm401$6932 rD $a s0 else main.$L.arm403$6935 rD $a s0
+
+main.$L.s413$6947 : ([9], [81], [81]) -> [106]
+main.$L.s413$6947 p s s0 =
+      let $a = (let y = p[0 +: 8] in
+      y) in
+      let $a1 = Main.setZFlag s (eq $a 8'h0) in
+      main.$L._unused103$6499 $a1
+
+main.$L._unused407$6939 : ([9], [81]) -> [106]
+main.$L._unused407$6939 p s0 =
+      main.$L.s413$6947 p s0 s0
+
+main.$L.s414$6949 : ([9], [81], [81]) -> [106]
+main.$L.s414$6949 p s s0 =
+      let $a = (let x = p[8 +: 1] in
+      x) in
+      let $a1 = Main.setCFlag s $a in
+      main.$L._unused407$6939 p $a1
+
+main.$L.vS406$6938 : ([8], [8], [81]) -> [106]
+main.$L.vS406$6938 vD vS s0 =
+      let p = Main.minusCW8$s1 vD vS in
+      main.$L.s414$6949 p s0 s0
+
+main.$L.s415$6951 : ([8], [81], [81]) -> [106]
+main.$L.s415$6951 vD s s0 =
+      let $a = Main.r0 s in
+      main.$L.vS406$6938 vD $a s0
+
+main.$L.arm416$6953 : ([8], [81]) -> [106]
+main.$L.arm416$6953 vD s0 =
+      main.$L.s415$6951 vD s0 s0
+
+main.$L.s417$6954 : ([8], [81], [81]) -> [106]
+main.$L.s417$6954 vD s s0 =
+      let $a = Main.r1 s in
+      main.$L.vS406$6938 vD $a s0
+
+main.$L.arm418$6956 : ([8], [81]) -> [106]
+main.$L.arm418$6956 vD s0 =
+      main.$L.s417$6954 vD s0 s0
+
+main.$L.s419$6957 : ([8], [81], [81]) -> [106]
+main.$L.s419$6957 vD s s0 =
+      let $a = Main.r2 s in
+      main.$L.vS406$6938 vD $a s0
+
+main.$L.arm420$6959 : ([8], [81]) -> [106]
+main.$L.arm420$6959 vD s0 =
+      main.$L.s419$6957 vD s0 s0
+
+main.$L.s421$6960 : ([8], [81], [81]) -> [106]
+main.$L.s421$6960 vD s s0 =
+      let $a = Main.r3 s in
+      main.$L.vS406$6938 vD $a s0
+
+main.$L.arm422$6962 : ([8], [81]) -> [106]
+main.$L.arm422$6962 vD s0 =
+      main.$L.s421$6960 vD s0 s0
+
+main.$L.vD405$6937 : ([1], [1], [8], [81]) -> [106]
+main.$L.vD405$6937 b0 b1 vD s0 =
+      let $a = Main.mkReg b0 b1 in
+      if eq $a 2'h0 then main.$L.arm416$6953 vD s0
+            else if eq $a 2'h1 then main.$L.arm418$6956 vD s0 else if eq $a 2'h2 then main.$L.arm420$6959 vD s0 else main.$L.arm422$6962 vD s0
+
+main.$L.s423$6963 : ([1], [1], [81], [81]) -> [106]
+main.$L.s423$6963 b0 b1 s s0 =
+      let $a = Main.r0 s in
+      main.$L.vD405$6937 b0 b1 $a s0
+
+main.$L.arm424$6965 : ([1], [1], [81]) -> [106]
+main.$L.arm424$6965 b0 b1 s0 =
+      main.$L.s423$6963 b0 b1 s0 s0
+
+main.$L.s425$6966 : ([1], [1], [81], [81]) -> [106]
+main.$L.s425$6966 b0 b1 s s0 =
+      let $a = Main.r1 s in
+      main.$L.vD405$6937 b0 b1 $a s0
+
+main.$L.arm426$6968 : ([1], [1], [81]) -> [106]
+main.$L.arm426$6968 b0 b1 s0 =
+      main.$L.s425$6966 b0 b1 s0 s0
+
+main.$L.s427$6969 : ([1], [1], [81], [81]) -> [106]
+main.$L.s427$6969 b0 b1 s s0 =
+      let $a = Main.r2 s in
+      main.$L.vD405$6937 b0 b1 $a s0
+
+main.$L.arm428$6971 : ([1], [1], [81]) -> [106]
+main.$L.arm428$6971 b0 b1 s0 =
+      main.$L.s427$6969 b0 b1 s0 s0
+
+main.$L.s429$6972 : ([1], [1], [81], [81]) -> [106]
+main.$L.s429$6972 b0 b1 s s0 =
+      let $a = Main.r3 s in
+      main.$L.vD405$6937 b0 b1 $a s0
+
+main.$L.arm430$6974 : ([1], [1], [81]) -> [106]
+main.$L.arm430$6974 b0 b1 s0 =
+      main.$L.s429$6972 b0 b1 s0 s0
+
+main.$L.arm431$6975 : ([1], [1], [1], [1], [81]) -> [106]
+main.$L.arm431$6975 rEn wEn b0 b1 s0 =
+      let $a = Main.mkReg rEn wEn in
+      if eq $a 2'h0 then main.$L.arm424$6965 b0 b1 s0
+            else if eq $a 2'h1 then main.$L.arm426$6968 b0 b1 s0 else if eq $a 2'h2 then main.$L.arm428$6971 b0 b1 s0 else main.$L.arm430$6974 b0 b1 s0
+
+main.$L.s439$6985 : ([8], [81], [81]) -> [106]
+main.$L.s439$6985 pc s s0 =
+      let $a = Main.setPC s pc in
+      main.$L._unused103$6499 $a
+
+main.$L.pc438$6984 : ([8], [81]) -> [106]
+main.$L.pc438$6984 pc s0 =
+      main.$L.s439$6985 pc s0 s0
+
+main.$L.s440$6987 : ([81], [81]) -> [106]
+main.$L.s440$6987 s s0 =
+      let $a = Main.r0 s in
+      main.$L.pc438$6984 $a s0
+
+main.$L.arm441$6989 : ([81]) -> [106]
+main.$L.arm441$6989 s0 =
+      main.$L.s440$6987 s0 s0
+
+main.$L.s442$6990 : ([81], [81]) -> [106]
+main.$L.s442$6990 s s0 =
+      let $a = Main.r1 s in
+      main.$L.pc438$6984 $a s0
+
+main.$L.arm443$6992 : ([81]) -> [106]
+main.$L.arm443$6992 s0 =
+      main.$L.s442$6990 s0 s0
+
+main.$L.s444$6993 : ([81], [81]) -> [106]
+main.$L.s444$6993 s s0 =
+      let $a = Main.r2 s in
+      main.$L.pc438$6984 $a s0
+
+main.$L.arm445$6995 : ([81]) -> [106]
+main.$L.arm445$6995 s0 =
+      main.$L.s444$6993 s0 s0
+
+main.$L.s446$6996 : ([81], [81]) -> [106]
+main.$L.s446$6996 s s0 =
+      let $a = Main.r3 s in
+      main.$L.pc438$6984 $a s0
+
+main.$L.arm447$6998 : ([81]) -> [106]
+main.$L.arm447$6998 s0 =
+      main.$L.s446$6996 s0 s0
+
+main.$L.arm448$6999 : ([1], [1], [81]) -> [106]
+main.$L.arm448$6999 b0 b1 s0 =
+      let $a = Main.mkReg b0 b1 in
+      if eq $a 2'h0 then main.$L.arm441$6989 s0
+            else if eq $a 2'h1 then main.$L.arm443$6992 s0 else if eq $a 2'h2 then main.$L.arm445$6995 s0 else main.$L.arm447$6998 s0
+
+main.$L.z432$6976 : ([1], [1], [1], [81]) -> [106]
+main.$L.z432$6976 b0 b1 z s0 =
+      if eq z 1'h0 then main.$L._unused103$6499 s0
+            else main.$L.arm448$6999 b0 b1 s0
+
+main.$L.s449$7000 : ([1], [1], [81], [81]) -> [106]
+main.$L.s449$7000 b0 b1 s s0 =
+      let $a = Main.zFlag s in
+      main.$L.z432$6976 b0 b1 $a s0
+
+main.$L.arm450$7002 : ([1], [1], [81]) -> [106]
+main.$L.arm450$7002 b0 b1 s0 =
+      main.$L.s449$7000 b0 b1 s0 s0
+
+main.$L.z451$7003 : ([1], [1], [1], [81]) -> [106]
+main.$L.z451$7003 b0 b1 z s0 =
+      let $a = Main.notb z in
+      if eq $a 1'h0 then main.$L._unused103$6499 s0
+            else main.$L.arm448$6999 b0 b1 s0
+
+main.$L.s468$7027 : ([1], [1], [81], [81]) -> [106]
+main.$L.s468$7027 b0 b1 s s0 =
+      let $a = Main.zFlag s in
+      main.$L.z451$7003 b0 b1 $a s0
+
+main.$L.arm469$7029 : ([1], [1], [81]) -> [106]
+main.$L.arm469$7029 b0 b1 s0 =
+      main.$L.s468$7027 b0 b1 s0 s0
+
+main.$L.c470$7030 : ([1], [1], [1], [81]) -> [106]
+main.$L.c470$7030 b0 b1 c s0 =
+      if eq c 1'h0 then main.$L._unused103$6499 s0
+            else main.$L.arm448$6999 b0 b1 s0
+
+main.$L.s487$7054 : ([1], [1], [81], [81]) -> [106]
+main.$L.s487$7054 b0 b1 s s0 =
+      let $a = Main.cFlag s in
+      main.$L.c470$7030 b0 b1 $a s0
+
+main.$L.arm488$7056 : ([1], [1], [81]) -> [106]
+main.$L.arm488$7056 b0 b1 s0 =
+      main.$L.s487$7054 b0 b1 s0 s0
+
+main.$L.c489$7057 : ([1], [1], [1], [81]) -> [106]
+main.$L.c489$7057 b0 b1 c s0 =
+      let $a = Main.notb c in
+      if eq $a 1'h0 then main.$L._unused103$6499 s0
+            else main.$L.arm448$6999 b0 b1 s0
+
+main.$L.s506$7081 : ([1], [1], [81], [81]) -> [106]
+main.$L.s506$7081 b0 b1 s s0 =
+      let $a = Main.cFlag s in
+      main.$L.c489$7057 b0 b1 $a s0
+
+main.$L.arm507$7083 : ([1], [1], [81]) -> [106]
+main.$L.arm507$7083 b0 b1 s0 =
+      main.$L.s506$7081 b0 b1 s0 s0
+
+main.$L.s514$7092 : ([8], [81], [81]) -> [106]
+main.$L.s514$7092 x s s0 =
+      let $a = Main.setPC s x in
+      main.$L._unused103$6499 $a
+
+main.$L.x508$7084 : ([8], [81]) -> [106]
+main.$L.x508$7084 x s0 =
+      main.$L.s514$7092 x s0 s0
+
+main.$L.s515$7094 : ([81], [81]) -> [106]
+main.$L.s515$7094 s s0 =
+      let $a = Main.r0 s in
+      main.$L.x508$7084 $a s0
+
+main.$L.arm516$7096 : ([81]) -> [106]
+main.$L.arm516$7096 s0 =
+      main.$L.s515$7094 s0 s0
+
+main.$L.s517$7097 : ([81], [81]) -> [106]
+main.$L.s517$7097 s s0 =
+      let $a = Main.r1 s in
+      main.$L.x508$7084 $a s0
+
+main.$L.arm518$7099 : ([81]) -> [106]
+main.$L.arm518$7099 s0 =
+      main.$L.s517$7097 s0 s0
+
+main.$L.s519$7100 : ([81], [81]) -> [106]
+main.$L.s519$7100 s s0 =
+      let $a = Main.r2 s in
+      main.$L.x508$7084 $a s0
+
+main.$L.arm520$7102 : ([81]) -> [106]
+main.$L.arm520$7102 s0 =
+      main.$L.s519$7100 s0 s0
+
+main.$L.s521$7103 : ([81], [81]) -> [106]
+main.$L.s521$7103 s s0 =
+      let $a = Main.r3 s in
+      main.$L.x508$7084 $a s0
+
+main.$L.arm522$7105 : ([81]) -> [106]
+main.$L.arm522$7105 s0 =
+      main.$L.s521$7103 s0 s0
+
+main.$L.arm523$7106 : ([1], [1], [81]) -> [106]
+main.$L.arm523$7106 b0 b1 s0 =
+      let $a = Main.mkReg b0 b1 in
+      if eq $a 2'h0 then main.$L.arm516$7096 s0
+            else if eq $a 2'h1 then main.$L.arm518$7099 s0 else if eq $a 2'h2 then main.$L.arm520$7102 s0 else main.$L.arm522$7105 s0
+
+main.$L.s529$7114 : ([1], [81], [81]) -> [106]
+main.$L.s529$7114 b1 s s0 =
+      let $a = Main.setIEFlag s b1 in
+      main.$L._unused103$6499 $a
+
+main.$L.arm530$7116 : ([1], [81]) -> [106]
+main.$L.arm530$7116 b1 s0 =
+      main.$L.s529$7114 b1 s0 s0
+
+main.$L.s537$7125 : ([18], [81], [81]) -> [106]
+main.$L.s537$7125 o s s0 =
+      let $a = Main.setIackOut o 1'h1 in
+      let $a1 = Main.setOutputs s $a in
+      main.$L._unused103$6499 $a1
+
+main.$L.o536$7124 : ([18], [81]) -> [106]
+main.$L.o536$7124 o s0 =
+      main.$L.s537$7125 o s0 s0
+
+main.$L.s538$7127 : ([81], [81]) -> [106]
+main.$L.s538$7127 s s0 =
+      let $a = Main.outputs s in
+      main.$L.o536$7124 $a s0
+
+main.$L.arm539$7129 : ([81]) -> [106]
+main.$L.arm539$7129 s0 =
+      main.$L.s538$7127 s0 s0
+
+main.$L.s551$7143 : ([1], [81], [81]) -> [106]
+main.$L.s551$7143 c s s0 =
+      let $a = Main.setCFlag s c in
+      main.$L._unused103$6499 $a
+
+main.$L.c545$7135 : ([1], [81]) -> [106]
+main.$L.c545$7135 c s0 =
+      main.$L.s551$7143 c s0 s0
+
+main.$L.s552$7145 : ([81], [81]) -> [106]
+main.$L.s552$7145 s s0 =
+      let $a = Main.csFlag s in
+      main.$L.c545$7135 $a s0
+
+main.$L._unused544$7134 : ([81]) -> [106]
+main.$L._unused544$7134 s0 =
+      main.$L.s552$7145 s0 s0
+
+main.$L.s553$7147 : ([1], [81], [81]) -> [106]
+main.$L.s553$7147 z s s0 =
+      let $a = Main.setZFlag s z in
+      main.$L._unused544$7134 $a
+
+main.$L.z543$7133 : ([1], [81]) -> [106]
+main.$L.z543$7133 z s0 =
+      main.$L.s553$7147 z s0 s0
+
+main.$L.s554$7149 : ([81], [81]) -> [106]
+main.$L.s554$7149 s s0 =
+      let $a = Main.zsFlag s in
+      main.$L.z543$7133 $a s0
+
+main.$L._unused542$7132 : ([81]) -> [106]
+main.$L._unused542$7132 s0 =
+      main.$L.s554$7149 s0 s0
+
+main.$L.s555$7151 : ([8], [81], [81]) -> [106]
+main.$L.s555$7151 pc s s0 =
+      let $a = Main.setPC s pc in
+      main.$L._unused542$7132 $a
+
+main.$L.pc541$7131 : ([8], [81]) -> [106]
+main.$L.pc541$7131 pc s0 =
+      main.$L.s555$7151 pc s0 s0
+
+main.$L.s556$7153 : ([81], [81]) -> [106]
+main.$L.s556$7153 s s0 =
+      let $a = Main.pcSave s in
+      main.$L.pc541$7131 $a s0
+
+main.$L._unused540$7130 : ([81]) -> [106]
+main.$L._unused540$7130 s0 =
+      main.$L.s556$7153 s0 s0
+
+main.$L.s557$7155 : ([81], [81]) -> [106]
+main.$L.s557$7155 s s0 =
+      let $a = Main.setIEFlag s 1'h1 in
+      main.$L._unused540$7130 $a
+
+main.$L.arm558$7157 : ([81]) -> [106]
+main.$L.arm558$7157 s0 =
+      main.$L.s557$7155 s0 s0
+
+main.$L.s565$7166 : ([8], [81], [81]) -> [106]
+main.$L.s565$7166 v s s0 =
+      let $a = Main.setR0 s v in
+      main.$L._unused103$6499 $a
+
+main.$L.arm566$7168 : ([8], [81]) -> [106]
+main.$L.arm566$7168 v s0 =
+      main.$L.s565$7166 v s0 s0
+
+main.$L.s567$7169 : ([8], [81], [81]) -> [106]
+main.$L.s567$7169 v s s0 =
+      let $a = Main.setR1 s v in
+      main.$L._unused103$6499 $a
+
+main.$L.arm568$7171 : ([8], [81]) -> [106]
+main.$L.arm568$7171 v s0 =
+      main.$L.s567$7169 v s0 s0
+
+main.$L.s569$7172 : ([8], [81], [81]) -> [106]
+main.$L.s569$7172 v s s0 =
+      let $a = Main.setR2 s v in
+      main.$L._unused103$6499 $a
+
+main.$L.arm570$7174 : ([8], [81]) -> [106]
+main.$L.arm570$7174 v s0 =
+      main.$L.s569$7172 v s0 s0
+
+main.$L.s571$7175 : ([8], [81], [81]) -> [106]
+main.$L.s571$7175 v s s0 =
+      let $a = Main.setR3 s v in
+      main.$L._unused103$6499 $a
+
+main.$L.arm572$7177 : ([8], [81]) -> [106]
+main.$L.arm572$7177 v s0 =
+      main.$L.s571$7175 v s0 s0
+
+main.$L.v559$7158 : ([2], [8], [81]) -> [106]
+main.$L.v559$7158 r v s0 =
+      let v1 = not v in
+      if eq r 2'h0 then main.$L.arm566$7168 v1 s0
+            else if eq r 2'h1 then main.$L.arm568$7171 v1 s0 else if eq r 2'h2 then main.$L.arm570$7174 v1 s0 else main.$L.arm572$7177 v1 s0
+
+main.$L.s573$7178 : ([2], [81], [81]) -> [106]
+main.$L.s573$7178 r s s0 =
+      let $a = Main.r0 s in
+      main.$L.v559$7158 r $a s0
+
+main.$L.arm574$7180 : ([2], [81]) -> [106]
+main.$L.arm574$7180 r s0 =
+      main.$L.s573$7178 r s0 s0
+
+main.$L.s575$7181 : ([2], [81], [81]) -> [106]
+main.$L.s575$7181 r s s0 =
+      let $a = Main.r1 s in
+      main.$L.v559$7158 r $a s0
+
+main.$L.arm576$7183 : ([2], [81]) -> [106]
+main.$L.arm576$7183 r s0 =
+      main.$L.s575$7181 r s0 s0
+
+main.$L.s577$7184 : ([2], [81], [81]) -> [106]
+main.$L.s577$7184 r s s0 =
+      let $a = Main.r2 s in
+      main.$L.v559$7158 r $a s0
+
+main.$L.arm578$7186 : ([2], [81]) -> [106]
+main.$L.arm578$7186 r s0 =
+      main.$L.s577$7184 r s0 s0
+
+main.$L.s579$7187 : ([2], [81], [81]) -> [106]
+main.$L.s579$7187 r s s0 =
+      let $a = Main.r3 s in
+      main.$L.v559$7158 r $a s0
+
+main.$L.arm580$7189 : ([2], [81]) -> [106]
+main.$L.arm580$7189 r s0 =
+      main.$L.s579$7187 r s0 s0
+
+main.$L.arm581$7190 : ([1], [1], [81]) -> [106]
+main.$L.arm581$7190 b0 b1 s0 =
+      let r = Main.mkReg b0 b1 in
+      if eq r 2'h0 then main.$L.arm574$7180 r s0
+            else if eq r 2'h1 then main.$L.arm576$7183 r s0 else if eq r 2'h2 then main.$L.arm578$7186 r s0 else main.$L.arm580$7189 r s0
+
+main.$L.s587$7198 : ([81], [81]) -> [106]
+main.$L.s587$7198 s s0 =
+      let $a = Main.setR0 s 8'h0 in
+      main.$L._unused103$6499 $a
+
+main.$L.arm588$7200 : ([81]) -> [106]
+main.$L.arm588$7200 s0 =
+      main.$L.s587$7198 s0 s0
+
+main.$L.s589$7201 : ([81], [81]) -> [106]
+main.$L.s589$7201 s s0 =
+      let $a = Main.setR1 s 8'h0 in
+      main.$L._unused103$6499 $a
+
+main.$L.arm590$7203 : ([81]) -> [106]
+main.$L.arm590$7203 s0 =
+      main.$L.s589$7201 s0 s0
+
+main.$L.s591$7204 : ([81], [81]) -> [106]
+main.$L.s591$7204 s s0 =
+      let $a = Main.setR2 s 8'h0 in
+      main.$L._unused103$6499 $a
+
+main.$L.arm592$7206 : ([81]) -> [106]
+main.$L.arm592$7206 s0 =
+      main.$L.s591$7204 s0 s0
+
+main.$L.s593$7207 : ([81], [81]) -> [106]
+main.$L.s593$7207 s s0 =
+      let $a = Main.setR3 s 8'h0 in
+      main.$L._unused103$6499 $a
+
+main.$L.arm594$7209 : ([81]) -> [106]
+main.$L.arm594$7209 s0 =
+      main.$L.s593$7207 s0 s0
+
+main.$L.arm595$7210 : ([1], [1], [81]) -> [106]
+main.$L.arm595$7210 b0 b1 s0 =
+      let $a = Main.mkReg b0 b1 in
+      if eq $a 2'h0 then main.$L.arm588$7200 s0
+            else if eq $a 2'h1 then main.$L.arm590$7203 s0 else if eq $a 2'h2 then main.$L.arm592$7206 s0 else main.$L.arm594$7209 s0
+
+main.$L.s604$7221 : ([8], [81], [81]) -> [106]
+main.$L.s604$7221 v' s s0 =
+      let $a = Main.setZFlag s (eq v' 8'h0) in
+      main.$L._unused103$6499 $a
+
+main.$L._unused598$7213 : ([8], [81]) -> [106]
+main.$L._unused598$7213 v' s0 =
+      main.$L.s604$7221 v' s0 s0
+
+main.$L.s605$7223 : ([9], [8], [81], [81]) -> [106]
+main.$L.s605$7223 p v' s s0 =
+      let $a = (let x = p[8 +: 1] in
+      x) in
+      let $a1 = Main.setCFlag s $a in
+      main.$L._unused598$7213 v' $a1
+
+main.$L._unused597$7212 : ([9], [8], [81]) -> [106]
+main.$L._unused597$7212 p v' s0 =
+      main.$L.s605$7223 p v' s0 s0
+
+main.$L.s606$7225 : ([9], [8], [81], [81]) -> [106]
+main.$L.s606$7225 p v' s s0 =
+      let $a = Main.setR0 s v' in
+      main.$L._unused597$7212 p v' $a
+
+main.$L.arm607$7227 : ([9], [8], [81]) -> [106]
+main.$L.arm607$7227 p v' s0 =
+      main.$L.s606$7225 p v' s0 s0
+
+main.$L.s608$7228 : ([9], [8], [81], [81]) -> [106]
+main.$L.s608$7228 p v' s s0 =
+      let $a = Main.setR1 s v' in
+      main.$L._unused597$7212 p v' $a
+
+main.$L.arm609$7230 : ([9], [8], [81]) -> [106]
+main.$L.arm609$7230 p v' s0 =
+      main.$L.s608$7228 p v' s0 s0
+
+main.$L.s610$7231 : ([9], [8], [81], [81]) -> [106]
+main.$L.s610$7231 p v' s s0 =
+      let $a = Main.setR2 s v' in
+      main.$L._unused597$7212 p v' $a
+
+main.$L.arm611$7233 : ([9], [8], [81]) -> [106]
+main.$L.arm611$7233 p v' s0 =
+      main.$L.s610$7231 p v' s0 s0
+
+main.$L.s612$7234 : ([9], [8], [81], [81]) -> [106]
+main.$L.s612$7234 p v' s s0 =
+      let $a = Main.setR3 s v' in
+      main.$L._unused597$7212 p v' $a
+
+main.$L.arm613$7236 : ([9], [8], [81]) -> [106]
+main.$L.arm613$7236 p v' s0 =
+      main.$L.s612$7234 p v' s0 s0
+
+main.$L.v596$7211 : ([2], [8], [81]) -> [106]
+main.$L.v596$7211 r v s0 =
+      let p = Main.plusCW8$s1 v in
+      let v' = (let y = p[0 +: 8] in
+      y) in
+      if eq r 2'h0 then main.$L.arm607$7227 p v' s0
+            else if eq r 2'h1 then main.$L.arm609$7230 p v' s0 else if eq r 2'h2 then main.$L.arm611$7233 p v' s0 else main.$L.arm613$7236 p v' s0
+
+main.$L.s614$7237 : ([2], [81], [81]) -> [106]
+main.$L.s614$7237 r s s0 =
+      let $a = Main.r0 s in
+      main.$L.v596$7211 r $a s0
+
+main.$L.arm615$7239 : ([2], [81]) -> [106]
+main.$L.arm615$7239 r s0 =
+      main.$L.s614$7237 r s0 s0
+
+main.$L.s616$7240 : ([2], [81], [81]) -> [106]
+main.$L.s616$7240 r s s0 =
+      let $a = Main.r1 s in
+      main.$L.v596$7211 r $a s0
+
+main.$L.arm617$7242 : ([2], [81]) -> [106]
+main.$L.arm617$7242 r s0 =
+      main.$L.s616$7240 r s0 s0
+
+main.$L.s618$7243 : ([2], [81], [81]) -> [106]
+main.$L.s618$7243 r s s0 =
+      let $a = Main.r2 s in
+      main.$L.v596$7211 r $a s0
+
+main.$L.arm619$7245 : ([2], [81]) -> [106]
+main.$L.arm619$7245 r s0 =
+      main.$L.s618$7243 r s0 s0
+
+main.$L.s620$7246 : ([2], [81], [81]) -> [106]
+main.$L.s620$7246 r s s0 =
+      let $a = Main.r3 s in
+      main.$L.v596$7211 r $a s0
+
+main.$L.arm621$7248 : ([2], [81]) -> [106]
+main.$L.arm621$7248 r s0 =
+      main.$L.s620$7246 r s0 s0
+
+main.$L.arm622$7249 : ([1], [1], [81]) -> [106]
+main.$L.arm622$7249 b0 b1 s0 =
+      let r = Main.mkReg b0 b1 in
+      if eq r 2'h0 then main.$L.arm615$7239 r s0
+            else if eq r 2'h1 then main.$L.arm617$7242 r s0 else if eq r 2'h2 then main.$L.arm619$7245 r s0 else main.$L.arm621$7248 r s0
+
+main.$L.v623$7250 : ([2], [8], [81]) -> [106]
+main.$L.v623$7250 r v s0 =
+      let p = Main.minusCW8$s2 v in
+      let v' = (let y = p[0 +: 8] in
+      y) in
+      if eq r 2'h0 then main.$L.arm607$7227 p v' s0
+            else if eq r 2'h1 then main.$L.arm609$7230 p v' s0 else if eq r 2'h2 then main.$L.arm611$7233 p v' s0 else main.$L.arm613$7236 p v' s0
+
+main.$L.s641$7276 : ([2], [81], [81]) -> [106]
+main.$L.s641$7276 r s s0 =
+      let $a = Main.r0 s in
+      main.$L.v623$7250 r $a s0
+
+main.$L.arm642$7278 : ([2], [81]) -> [106]
+main.$L.arm642$7278 r s0 =
+      main.$L.s641$7276 r s0 s0
+
+main.$L.s643$7279 : ([2], [81], [81]) -> [106]
+main.$L.s643$7279 r s s0 =
+      let $a = Main.r1 s in
+      main.$L.v623$7250 r $a s0
+
+main.$L.arm644$7281 : ([2], [81]) -> [106]
+main.$L.arm644$7281 r s0 =
+      main.$L.s643$7279 r s0 s0
+
+main.$L.s645$7282 : ([2], [81], [81]) -> [106]
+main.$L.s645$7282 r s s0 =
+      let $a = Main.r2 s in
+      main.$L.v623$7250 r $a s0
+
+main.$L.arm646$7284 : ([2], [81]) -> [106]
+main.$L.arm646$7284 r s0 =
+      main.$L.s645$7282 r s0 s0
+
+main.$L.s647$7285 : ([2], [81], [81]) -> [106]
+main.$L.s647$7285 r s s0 =
+      let $a = Main.r3 s in
+      main.$L.v623$7250 r $a s0
+
+main.$L.arm648$7287 : ([2], [81]) -> [106]
+main.$L.arm648$7287 r s0 =
+      main.$L.s647$7285 r s0 s0
+
+main.$L.arm649$7288 : ([1], [1], [81]) -> [106]
+main.$L.arm649$7288 b0 b1 s0 =
+      let r = Main.mkReg b0 b1 in
+      if eq r 2'h0 then main.$L.arm642$7278 r s0
+            else if eq r 2'h1 then main.$L.arm644$7281 r s0 else if eq r 2'h2 then main.$L.arm646$7284 r s0 else main.$L.arm648$7287 r s0
+
+main.$L.v650$7289 : ([2], [8], [81]) -> [106]
+main.$L.v650$7289 r v s0 =
+      let v1 = or (shl v 8'h1) (lshr v 8'h7) in
+      if eq r 2'h0 then main.$L.arm566$7168 v1 s0
+            else if eq r 2'h1 then main.$L.arm568$7171 v1 s0 else if eq r 2'h2 then main.$L.arm570$7174 v1 s0 else main.$L.arm572$7177 v1 s0
+
+main.$L.s664$7309 : ([2], [81], [81]) -> [106]
+main.$L.s664$7309 r s s0 =
+      let $a = Main.r0 s in
+      main.$L.v650$7289 r $a s0
+
+main.$L.arm665$7311 : ([2], [81]) -> [106]
+main.$L.arm665$7311 r s0 =
+      main.$L.s664$7309 r s0 s0
+
+main.$L.s666$7312 : ([2], [81], [81]) -> [106]
+main.$L.s666$7312 r s s0 =
+      let $a = Main.r1 s in
+      main.$L.v650$7289 r $a s0
+
+main.$L.arm667$7314 : ([2], [81]) -> [106]
+main.$L.arm667$7314 r s0 =
+      main.$L.s666$7312 r s0 s0
+
+main.$L.s668$7315 : ([2], [81], [81]) -> [106]
+main.$L.s668$7315 r s s0 =
+      let $a = Main.r2 s in
+      main.$L.v650$7289 r $a s0
+
+main.$L.arm669$7317 : ([2], [81]) -> [106]
+main.$L.arm669$7317 r s0 =
+      main.$L.s668$7315 r s0 s0
+
+main.$L.s670$7318 : ([2], [81], [81]) -> [106]
+main.$L.s670$7318 r s s0 =
+      let $a = Main.r3 s in
+      main.$L.v650$7289 r $a s0
+
+main.$L.arm671$7320 : ([2], [81]) -> [106]
+main.$L.arm671$7320 r s0 =
+      main.$L.s670$7318 r s0 s0
+
+main.$L.v672$7321 : ([2], [8], [81]) -> [106]
+main.$L.v672$7321 r v s0 =
+      let v1 = or (lshr v 8'h1) (shl v 8'h7) in
+      if eq r 2'h0 then main.$L.arm566$7168 v1 s0
+            else if eq r 2'h1 then main.$L.arm568$7171 v1 s0 else if eq r 2'h2 then main.$L.arm570$7174 v1 s0 else main.$L.arm572$7177 v1 s0
+
+main.$L.s686$7341 : ([2], [81], [81]) -> [106]
+main.$L.s686$7341 r s s0 =
+      let $a = Main.r0 s in
+      main.$L.v672$7321 r $a s0
+
+main.$L.arm687$7343 : ([2], [81]) -> [106]
+main.$L.arm687$7343 r s0 =
+      main.$L.s686$7341 r s0 s0
+
+main.$L.s688$7344 : ([2], [81], [81]) -> [106]
+main.$L.s688$7344 r s s0 =
+      let $a = Main.r1 s in
+      main.$L.v672$7321 r $a s0
+
+main.$L.arm689$7346 : ([2], [81]) -> [106]
+main.$L.arm689$7346 r s0 =
+      main.$L.s688$7344 r s0 s0
+
+main.$L.s690$7347 : ([2], [81], [81]) -> [106]
+main.$L.s690$7347 r s s0 =
+      let $a = Main.r2 s in
+      main.$L.v672$7321 r $a s0
+
+main.$L.arm691$7349 : ([2], [81]) -> [106]
+main.$L.arm691$7349 r s0 =
+      main.$L.s690$7347 r s0 s0
+
+main.$L.s692$7350 : ([2], [81], [81]) -> [106]
+main.$L.s692$7350 r s s0 =
+      let $a = Main.r3 s in
+      main.$L.v672$7321 r $a s0
+
+main.$L.arm693$7352 : ([2], [81]) -> [106]
+main.$L.arm693$7352 r s0 =
+      main.$L.s692$7350 r s0 s0
+
+main.$L.arm694$7353 : ([1], [1], [1], [81]) -> [106]
+main.$L.arm694$7353 wEn b0 b1 s0 =
+      let r = Main.mkReg b0 b1 in
+      if eq wEn 1'h0 then (if eq r 2'h0 then main.$L.arm665$7311 r s0
+                  else if eq r 2'h1 then main.$L.arm667$7314 r s0 else if eq r 2'h2 then main.$L.arm669$7317 r s0 else main.$L.arm671$7320 r s0)
+            else if eq r 2'h0 then main.$L.arm687$7343 r s0 else if eq r 2'h1 then main.$L.arm689$7346 r s0 else if eq r 2'h2 then main.$L.arm691$7349 r s0 else main.$L.arm693$7352 r s0
+
+main.$L.v695$7354 : ([1], [1], [2], [8], [81]) -> [106]
+main.$L.v695$7354 rEn wEn r v s0 =
+      let p = (if eq wEn 1'h0 then (let $a = (if eq rEn 1'h0 then (let $a = Main.msbW8 v in
+                  let $a1 = Main.shlCW8 v $a in
+                  $a1)
+                  else let $a = Main.shlCW8$s1 v in
+                  $a) in
+            $a)
+            else let $a = (if eq rEn 1'h0 then (let $a = Main.lsbW8 v in
+                  let $a1 = Main.shrCW8 v $a in
+                  $a1)
+                  else let $a = Main.shrCW8$s1 v in
+                  $a) in
+            $a) in
+      let v' = (let y = p[0 +: 8] in
+      y) in
+      if eq r 2'h0 then main.$L.arm607$7227 p v' s0
+            else if eq r 2'h1 then main.$L.arm609$7230 p v' s0 else if eq r 2'h2 then main.$L.arm611$7233 p v' s0 else main.$L.arm613$7236 p v' s0
+
+main.$L.s713$7380 : ([1], [1], [2], [81], [81]) -> [106]
+main.$L.s713$7380 rEn wEn r s s0 =
+      let $a = Main.r0 s in
+      main.$L.v695$7354 rEn wEn r $a s0
+
+main.$L.arm714$7382 : ([1], [1], [2], [81]) -> [106]
+main.$L.arm714$7382 rEn wEn r s0 =
+      main.$L.s713$7380 rEn wEn r s0 s0
+
+main.$L.s715$7383 : ([1], [1], [2], [81], [81]) -> [106]
+main.$L.s715$7383 rEn wEn r s s0 =
+      let $a = Main.r1 s in
+      main.$L.v695$7354 rEn wEn r $a s0
+
+main.$L.arm716$7385 : ([1], [1], [2], [81]) -> [106]
+main.$L.arm716$7385 rEn wEn r s0 =
+      main.$L.s715$7383 rEn wEn r s0 s0
+
+main.$L.s717$7386 : ([1], [1], [2], [81], [81]) -> [106]
+main.$L.s717$7386 rEn wEn r s s0 =
+      let $a = Main.r2 s in
+      main.$L.v695$7354 rEn wEn r $a s0
+
+main.$L.arm718$7388 : ([1], [1], [2], [81]) -> [106]
+main.$L.arm718$7388 rEn wEn r s0 =
+      main.$L.s717$7386 rEn wEn r s0 s0
+
+main.$L.s719$7389 : ([1], [1], [2], [81], [81]) -> [106]
+main.$L.s719$7389 rEn wEn r s s0 =
+      let $a = Main.r3 s in
+      main.$L.v695$7354 rEn wEn r $a s0
+
+main.$L.arm720$7391 : ([1], [1], [2], [81]) -> [106]
+main.$L.arm720$7391 rEn wEn r s0 =
+      main.$L.s719$7389 rEn wEn r s0 s0
+
+main.$L.arm721$7392 : ([1], [1], [1], [1], [81]) -> [106]
+main.$L.arm721$7392 rEn wEn b0 b1 s0 =
+      let r = Main.mkReg b0 b1 in
+      if eq r 2'h0 then main.$L.arm714$7382 rEn wEn r s0
+            else if eq r 2'h1 then main.$L.arm716$7385 rEn wEn r s0 else if eq r 2'h2 then main.$L.arm718$7388 rEn wEn r s0 else main.$L.arm720$7391 rEn wEn r s0
+
+main.$L.fail7$6363 : ([10], [81]) -> [106]
+main.$L.fail7$6363 inp s0 =
+      let i = Main.dataIn inp in
+      let ds1 = i[6 +: 1] in
+      let ds2 = i[5 +: 1] in
+      let ds3 = i[4 +: 1] in
+      let rEn = i[3 +: 1] in
+      let wEn = i[2 +: 1] in
+      let b0 = i[1 +: 1] in
+      let b1 = i[0 +: 1] in
+      let $a = i[7 +: 1] in
+      if eq $a 1'h0 then (if eq ds1 1'h0 then (if eq ds2 1'h0 then (if eq ds3 1'h0 then main.$L.arm64$6445 rEn wEn b0 b1 s0
+                              else main.$L.arm98$6494 rEn wEn b0 b1 s0)
+                        else if eq ds3 1'h0 then main.$L.arm133$6545 rEn wEn b0 b1 s0 else main.$L.arm167$6594 rEn wEn b0 b1 s0)
+                  else if eq ds2 1'h0 then (if eq ds3 1'h0 then main.$L.arm203$6646 rEn wEn b0 b1 s0
+                        else main.$L.arm237$6695 rEn wEn b0 b1 s0) else if eq ds3 1'h0 then main.$L.arm273$6747 rEn wEn b0 b1 s0 else main.$L.arm296$6780 rEn wEn b0 b1 s0)
+            else if eq ds1 1'h0 then (if eq ds2 1'h0 then (if eq ds3 1'h0 then main.$L.arm332$6832 rEn wEn b0 b1 s0
+                        else main.$L.arm368$6884 rEn wEn b0 b1 s0)
+                  else if eq ds3 1'h0 then main.$L.arm404$6936 rEn wEn b0 b1 s0 else main.$L.arm431$6975 rEn wEn b0 b1 s0) else if eq ds2 1'h0 then (if eq ds3 1'h0 then (if eq rEn 1'h0 then (if eq wEn 1'h0 then main.$L.arm450$7002 b0 b1 s0
+                              else main.$L.arm469$7029 b0 b1 s0)
+                        else if eq wEn 1'h0 then main.$L.arm488$7056 b0 b1 s0 else main.$L.arm507$7083 b0 b1 s0)
+                  else if eq rEn 1'h0 then (if eq wEn 1'h0 then main.$L.arm523$7106 b0 b1 s0
+                        else if eq b0 1'h0 then main.$L.arm530$7116 b1 s0 else if eq b1 1'h0 then main.$L.arm539$7129 s0 else main.$L.arm558$7157 s0) else if eq wEn 1'h0 then main.$L.arm581$7190 b0 b1 s0 else main.$L.arm595$7210 b0 b1 s0) else if eq ds3 1'h0 then (if eq rEn 1'h0 then (if eq wEn 1'h0 then main.$L.arm622$7249 b0 b1 s0
+                        else main.$L.arm649$7288 b0 b1 s0)
+                  else main.$L.arm694$7353 wEn b0 b1 s0) else main.$L.arm721$7392 rEn wEn b0 b1 s0
+
+main.$L.s733$7406 : ([1], [81], [81]) -> [106]
+main.$L.s733$7406 c s s0 =
+      let $a = Main.setCSave s c in
+      main.$L._unused103$6499 $a
+
+main.$L._unused727$7398 : ([1], [81]) -> [106]
+main.$L._unused727$7398 c s0 =
+      main.$L.s733$7406 c s0 s0
+
+main.$L.s734$7408 : ([1], [1], [81], [81]) -> [106]
+main.$L.s734$7408 z c s s0 =
+      let $a = Main.setZSave s z in
+      main.$L._unused727$7398 c $a
+
+main.$L._unused726$7397 : ([1], [1], [81]) -> [106]
+main.$L._unused726$7397 z c s0 =
+      main.$L.s734$7408 z c s0 s0
+
+main.$L.s735$7410 : ([8], [1], [1], [81], [81]) -> [106]
+main.$L.s735$7410 pc z c s s0 =
+      let $a = Main.setPCSave s pc in
+      main.$L._unused726$7397 z c $a
+
+main.$L.c725$7396 : ([8], [1], [1], [81]) -> [106]
+main.$L.c725$7396 pc z c s0 =
+      main.$L.s735$7410 pc z c s0 s0
+
+main.$L.s736$7412 : ([8], [1], [81], [81]) -> [106]
+main.$L.s736$7412 pc z s s0 =
+      let $a = Main.cFlag s in
+      main.$L.c725$7396 pc z $a s0
+
+main.$L.z724$7395 : ([8], [1], [81]) -> [106]
+main.$L.z724$7395 pc z s0 =
+      main.$L.s736$7412 pc z s0 s0
+
+main.$L.s737$7414 : ([8], [81], [81]) -> [106]
+main.$L.s737$7414 pc s s0 =
+      let $a = Main.zFlag s in
+      main.$L.z724$7395 pc $a s0
+
+main.$L.pc723$7394 : ([8], [81]) -> [106]
+main.$L.pc723$7394 pc s0 =
+      main.$L.s737$7414 pc s0 s0
+
+main.$L.s738$7416 : ([81], [81]) -> [106]
+main.$L.s738$7416 s s0 =
+      let $a = Main.pc s in
+      main.$L.pc723$7394 $a s0
+
+main.$L._unused722$7393 : ([81]) -> [106]
+main.$L._unused722$7393 s0 =
+      main.$L.s738$7416 s0 s0
+
+main.$L.s739$7418 : ([81], [81]) -> [106]
+main.$L.s739$7418 s s0 =
+      let $a = Main.setIEFlag s 1'h0 in
+      main.$L._unused722$7393 $a
+
+main.$L.arm740$7420 : ([81]) -> [106]
+main.$L.arm740$7420 s0 =
+      main.$L.s739$7418 s0 s0
+
+main.$L.arm741$7421 : ([10], [81]) -> [106]
+main.$L.arm741$7421 inp s0 =
+      let $a = Main.intIn inp in
+      if eq $a 1'h1 then main.$L.arm740$7420 s0
+            else main.$L.fail7$6363 inp s0
+
+main.$L.ie6$6362 : ([10], [1], [81]) -> [106]
+main.$L.ie6$6362 inp ie s0 =
+      if eq ie 1'h1 then main.$L.arm741$7421 inp s0
+            else main.$L.fail7$6363 inp s0
+
+main.$L.s742$7422 : ([10], [81], [81]) -> [106]
+main.$L.s742$7422 inp s s0 =
+      let $a = (let ie = s[50 +: 1] in
+      ie) in
+      main.$L.ie6$6362 inp $a s0
+
+main.$L.arm743$7424 : ([10], [81]) -> [106]
+main.$L.arm743$7424 inp s0 =
+      main.$L.s742$7422 inp s0 s0
+
+main.$L.s751$7434 : ([81], [81]) -> [106]
+main.$L.s751$7434 s s0 =
+      let $a = Main.setOutputs s 18'h0 in
+      main.$L._unused103$6499 $a
+
+main.$L._unused745$7426 : ([81]) -> [106]
+main.$L._unused745$7426 s0 =
+      main.$L.s751$7434 s0 s0
+
+main.$L.s752$7436 : ([81], [81]) -> [106]
+main.$L.s752$7436 s s0 =
+      let $a = Main.setZFlag s 1'h0 in
+      main.$L._unused745$7426 $a
+
+main.$L._unused744$7425 : ([81]) -> [106]
+main.$L._unused744$7425 s0 =
+      main.$L.s752$7436 s0 s0
+
+main.$L.s753$7438 : ([81], [81]) -> [106]
+main.$L.s753$7438 s s0 =
+      let $a = Main.setCFlag s 1'h0 in
+      main.$L._unused744$7425 $a
+
+main.$L.arm754$7440 : ([81]) -> [106]
+main.$L.arm754$7440 s0 =
+      main.$L.s753$7438 s0 s0
+
+main.$L.inp4$6360 : ([10], [81]) -> [106]
+main.$L.inp4$6360 inp s0 =
+      let $a = Main.rstIn inp in
+      if eq $a 1'h0 then main.$L.arm743$7424 inp s0
+            else main.$L.arm754$7440 s0
+
+main.$L.s755$7441 : ([81], [81]) -> [106]
+main.$L.s755$7441 s s0 =
+      let $a = Main.inputs s in
+      main.$L.inp4$6360 $a s0
+
+main.$L.Main.loop3$6359 : ([81]) -> [106]
+main.$L.Main.loop3$6359 s0 =
+      main.$L.s755$7441 s0 s0
+
+Main.notb : ([1]) -> [1]
+Main.notb b =
+      if eq b 1'h0 then 1'h1
+            else 1'h0
+
+Main.mkReg : ([1], [1]) -> [2]
+Main.mkReg ds ds1 =
+      if eq ds 1'h0 then (if eq ds1 1'h0 then 2'h0
+                  else 2'h1)
+            else if eq ds1 1'h0 then 2'h2 else 2'h3
+
+Main.outputs : ([81]) -> [18]
+Main.outputs ds =
       let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
-      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
-
-$L.s733 : ([1], [81], [81]) -> [106]
-$L.s733 c s s0 =
-      $L._unused103 (Main.setCSave s c)
-
-$L._unused66 : ([1], [1], [8], [81]) -> [106]
-$L._unused66 rEn wEn a s0 =
-      $L.s86 rEn wEn a s0 s0
-
-$L.arm424 : ([1], [1], [81]) -> [106]
-$L.arm424 b0 b1 s0 =
-      $L.s423 b0 b1 s0 s0
-
-$L.s121 : ([8], [81], [81]) -> [106]
-$L.s121 a s s0 =
-      $LL.L.s123 s0 a (Main.r2 s)
-
-$LL.L.fail77 : ([1], [1], [1], [1], [81], [1], [1], [8], [1]) -> [106]
-$LL.L.fail77 rEn ds wEn ds1 s0 b0 ds2 i b1 =
-      $LL.L.fail76 b1 rEn ds wEn ds1 s0 b0 ds2 i[7 +: 1]
-
-$L.arm523 : ([1], [1], [81]) -> [106]
-$L.arm523 b0 b1 s0 =
-      $LL.L.arm523 s0 (Main.mkReg b0 b1)
-
-$L.v672 : ([2], [8], [81]) -> [106]
-$L.v672 r v s0 =
-      $LL.L.v6722 r s0 v 8'h1
-
-$LL.L.arm273 : ([1], [1], [81], [2]) -> [106]
-$LL.L.arm273 b1 b0 s0 rD =
-      $LL.L.arm2731 s0 rD (Main.mkReg b0 b1)
-
-$L.s587 : ([81], [81]) -> [106]
-$L.s587 s s0 =
-      $L._unused103 (Main.setR0 s 8'h0)
-
-$L.arm202 : ([2], [2], [81]) -> [106]
-$L.arm202 rD rS s0 =
-      $L.vD168 rD rS (Main.r3 s0) s0
-
-$L.x274 : ([1], [1], [8], [81]) -> [106]
-$L.x274 rEn wEn x s0 =
-      $LL.L.x274 s0 x (Main.mkReg rEn wEn)
-
-$L.arm619 : ([2], [81]) -> [106]
-$L.arm619 r s0 =
-      $L.s618 r s0 s0
-
-$L.arm443 : ([81]) -> [106]
-$L.arm443 s0 =
-      $L.s442 s0 s0
-
-$L.arm646 : ([2], [81]) -> [106]
-$L.arm646 r s0 =
-      $L.s645 r s0 s0
-
-$LL.L.s554 : ([81], [1]) -> [106]
-$LL.L.s554 s0 $a =
-      $L.z543 $a s0
-
-$L.arm450 : ([1], [1], [81]) -> [106]
-$L.arm450 b0 b1 s0 =
-      $L.s449 b0 b1 s0 s0
-
-$L.s589 : ([81], [81]) -> [106]
-$L.s589 s s0 =
-      $L._unused103 (Main.setR1 s 8'h0)
-
-$LL.L.s94 : ([1], [1], [81], [8]) -> [106]
-$LL.L.s94 wEn rEn s0 $a =
-      $L.a65 rEn wEn $a s0
-
-$L.s567 : ([8], [81], [81]) -> [106]
-$L.s567 v s s0 =
-      $L._unused103 (Main.setR1 s v)
-
-$L.arm97 : ([1], [1], [81]) -> [106]
-$L.arm97 rEn wEn s0 =
-      $L.s96 rEn wEn s0 s0
-
-$L._unused9 : ([1], [1], [2], [81]) -> [106]
-$L._unused9 rEn wEn r s0 =
-      $L.s59 rEn wEn r s0 s0
-
-$L.arm192 : ([2], [8], [81]) -> [106]
-$L.arm192 rD vD s0 =
-      $L.vS169 rD vD (Main.r2 s0) s0
-
-Main.setR2 : ([81], [8]) -> [81]
-Main.setR2 ds r2 =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r3 = ds[0 +: 8] in
-      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
-
-Main.intIn : ([10]) -> [1]
-Main.intIn ds =
-      let i_i = ds[0 +: 1] in
-      i_i
-
-$LL.L.arm622 : ([81], [2]) -> [106]
-$LL.L.arm622 s0 r =
-      if eq r 2'h0 then $L.arm615 r s0
-            else if eq r 2'h1 then $L.arm617 r s0 else if eq r 2'h2 then $L.arm619 r s0 else $L.arm621 r s0
-
-$L.arm576 : ([2], [81]) -> [106]
-$L.arm576 r s0 =
-      $L.s575 r s0 s0
-
-$L.o114 : ([8], [8], [18], [81]) -> [106]
-$L.o114 a v o s0 =
-      $L.s115 a v o s0 s0
-
-$LL.L.v6958 : ([1], [8], [1]) -> [9]
-$LL.L.v6958 rEn v wild =
-      if eq wild 1'h0 then $LL.L.v69512 ($LL.L.v6952 v rEn)
-            else $LL.L.v69512 ($LL.L.v6959 v rEn)
-
-$LL.L.s116 : ([81], [8], [8], [18]) -> [106]
-$LL.L.s116 s0 v a $a =
-      $L.o114 a v $a s0
-
-$LL.L.cin240 : ([2], [81], [9]) -> [106]
-$LL.L.cin240 rD s0 p =
-      $L.s150 rD p s0 s0
-
-$L.s18 : ([8], [81], [81]) -> [106]
-$L.s18 x s s0 =
-      $L.Main.loop3 (Main.setR0 s x)
-
-$LL.L.fail76 : ([1], [1], [1], [1], [1], [81], [1], [1], [1]) -> [106]
-$LL.L.fail76 b1 rEn ds wEn ds1 s0 b0 ds2 $a =
-      if eq $a 1'h0 then (if eq ds 1'h0 then (if eq ds1 1'h0 then (if eq ds2 1'h0 then $L.arm64 rEn wEn b0 b1 s0
-                              else $L.arm98 rEn wEn b0 b1 s0)
-                        else if eq ds2 1'h0 then $L.arm133 rEn wEn b0 b1 s0 else $L.arm167 rEn wEn b0 b1 s0)
-                  else if eq ds1 1'h0 then (if eq ds2 1'h0 then $L.arm203 rEn wEn b0 b1 s0
-                        else $L.arm237 rEn wEn b0 b1 s0) else if eq ds2 1'h0 then $L.arm273 rEn wEn b0 b1 s0 else $L.arm296 rEn wEn b0 b1 s0)
-            else if eq ds 1'h0 then (if eq ds1 1'h0 then (if eq ds2 1'h0 then $L.arm332 rEn wEn b0 b1 s0
-                        else $L.arm368 rEn wEn b0 b1 s0)
-                  else if eq ds2 1'h0 then $L.arm404 rEn wEn b0 b1 s0 else $L.arm431 rEn wEn b0 b1 s0) else if eq ds1 1'h0 then (if eq ds2 1'h0 then (if eq rEn 1'h0 then (if eq wEn 1'h0 then $L.arm450 b0 b1 s0
-                              else $L.arm469 b0 b1 s0)
-                        else if eq wEn 1'h0 then $L.arm488 b0 b1 s0 else $L.arm507 b0 b1 s0)
-                  else if eq rEn 1'h0 then (if eq wEn 1'h0 then $L.arm523 b0 b1 s0
-                        else if eq b0 1'h0 then $L.arm530 b1 s0 else if eq b1 1'h0 then $L.arm539 s0 else $L.arm558 s0) else if eq wEn 1'h0 then $L.arm581 b0 b1 s0 else $L.arm595 b0 b1 s0) else if eq ds2 1'h0 then (if eq rEn 1'h0 then (if eq wEn 1'h0 then $L.arm622 b0 b1 s0
-                        else $L.arm649 b0 b1 s0)
-                  else $L.arm694 wEn b0 b1 s0) else $L.arm721 rEn wEn b0 b1 s0
-
-$LL.L.s755 : ([81], [10]) -> [106]
-$LL.L.s755 s0 $a =
-      $L.inp4 $a s0
-
-$L.s125 : ([1], [1], [81], [81]) -> [106]
-$L.s125 rEn wEn s s0 =
-      $LL.L.s125 s0 wEn rEn (Main.r0 s)
-
-$L.pc723 : ([8], [81]) -> [106]
-$L.pc723 pc s0 =
-      $L.s737 pc s0 s0
-
-$LL.L.arm98 : ([1], [81], [1], [2]) -> [106]
-$LL.L.arm98 rEn s0 wEn $a =
-      if eq $a 2'h0 then $L.arm91 rEn wEn s0
-            else if eq $a 2'h1 then $L.arm93 rEn wEn s0 else if eq $a 2'h2 then $L.arm95 rEn wEn s0 else $L.arm97 rEn wEn s0
-
-$L._unused407 : ([9], [81]) -> [106]
-$L._unused407 p s0 =
-      $L.s413 p s0 s0
-
-$L.vS406 : ([8], [8], [81]) -> [106]
-$L.vS406 vD vS s0 =
-      $LL.L.vS406 s0 (Main.minusCW8$s1 vD vS)
-
-$LL.L.s35 : ([1], [81], [2], [8]) -> [106]
-$LL.L.s35 rEn s0 r $a =
-      $L.pc33 rEn r $a s0
-
-$LL.L.i78 : ([81], [1], [1], [8]) -> [106]
-$LL.L.i78 s0 wEn rEn $a =
-      $L.v69 rEn wEn $a s0
-
-$L.s59 : ([1], [1], [2], [81], [81]) -> [106]
-$L.s59 rEn wEn r s s0 =
-      $LL.L.s59 s0 r rEn wEn (Main.outputs s)
-
-$LL.L.arm237 : ([2], [81], [2]) -> [106]
-$LL.L.arm237 rD s0 rS =
-      if eq rD 2'h0 then $L.arm230 rD rS s0
-            else if eq rD 2'h1 then $L.arm232 rD rS s0 else if eq rD 2'h2 then $L.arm234 rD rS s0 else $L.arm236 rD rS s0
-
-$L.vD333 : ([2], [2], [8], [81]) -> [106]
-$L.vD333 rD rS vD s0 =
-      if eq rS 2'h0 then $L.arm353 rD vD s0
-            else if eq rS 2'h1 then $L.arm355 rD vD s0 else if eq rS 2'h2 then $L.arm357 rD vD s0 else $L.arm359 rD vD s0
-
-$LL.L.v6956 : ([81], [2], [9]) -> [106]
-$LL.L.v6956 s0 r p =
-      $LL.L.v6954 s0 r p (let y = p[0 +: 8] in
-      y)
-
-$L.s468 : ([1], [1], [81], [81]) -> [106]
-$L.s468 b0 b1 s s0 =
-      $LL.L.s468 b1 b0 s0 (Main.zFlag s)
-
-$L.s119 : ([8], [81], [81]) -> [106]
-$L.s119 a s s0 =
-      $LL.L.s119 a s0 (Main.r1 s)
-
-$LL.L.s115 : ([8], [81], [8], [18]) -> [106]
-$LL.L.s115 v s a $a =
-      $L._unused101 a v (Main.setOutputs s $a)
-
-$L.s106 : ([10], [81], [81]) -> [106]
-$L.s106 i s s0 =
-      $L.Main.loop3 (Main.setInputs s i)
-
-$L.arm416 : ([8], [81]) -> [106]
-$L.arm416 vD s0 =
-      $L.s415 vD s0 s0
-
-$L.s554 : ([81], [81]) -> [106]
-$L.s554 s s0 =
-      $LL.L.s554 s0 (Main.zsFlag s)
-
-$L._unused597 : ([9], [8], [81]) -> [106]
-$L._unused597 p v' s0 =
-      $L.s605 p v' s0 s0
-
-$LL.L.s112 : ([8], [81], [18]) -> [106]
-$LL.L.s112 a s $a =
-      $L._unused102 a (Main.setOutputs s $a)
-
-$L.arm401 : ([2], [2], [81]) -> [106]
-$L.arm401 rD rS s0 =
-      $L.vD369 rD rS (Main.r2 s0) s0
-
-$L.i54 : ([1], [1], [2], [10], [81]) -> [106]
-$L.i54 rEn wEn r i s0 =
-      $LL.L.i54 r s0 rEn wEn (Main.dataIn i)
-
-$L.s735 : ([8], [1], [1], [81], [81]) -> [106]
-$L.s735 pc z c s s0 =
-      $L._unused726 z c (Main.setPCSave s pc)
-
-$L.arm594 : ([81]) -> [106]
-$L.arm594 s0 =
-      $L.s593 s0 s0
-
-$L.s39 : ([1], [2], [8], [81], [81]) -> [106]
-$L.s39 rEn r d s s0 =
-      $LL.L.s39 r d rEn s0 (Main.outputs s)
-
-$LL.L.s123 : ([81], [8], [8]) -> [106]
-$LL.L.s123 s0 a $a =
-      $L.v100 a $a s0
-
-$LL.L.v6955 : ([8], [1]) -> [9]
-$LL.L.v6955 v $a =
-      $LL.L.v69512 (Main.shlCW8 v $a)
-
-$L.s284 : ([8], [81], [81]) -> [106]
-$L.s284 x s s0 =
-      $L._unused103 (Main.setR2 s x)
-
-Main.setR1 : ([81], [8]) -> [81]
-Main.setR1 ds r1 =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
-      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
-
-$LL.L.s42 : ([1], [81], [2], [8]) -> [106]
-$LL.L.s42 rEn s0 r $a =
-      $L.d36 rEn r $a s0
-
-$L.s307 : ([8], [81], [81]) -> [106]
-$L.s307 vD' s s0 =
-      $L._unused300 vD' (Main.setCFlag s 1'h0)
-
-$L.s24 : ([8], [81], [81]) -> [106]
-$L.s24 x s s0 =
-      $L.Main.loop3 (Main.setR3 s x)
-
-Main.inputs : ([81]) -> [10]
-Main.inputs ds =
-      let i = ds[71 +: 10] in
-      i
-
-$L.v623 : ([2], [8], [81]) -> [106]
-$L.v623 r v s0 =
-      $LL.L.v623 r s0 (Main.minusCW8$s2 v)
-
-$L.s514 : ([8], [81], [81]) -> [106]
-$L.s514 x s s0 =
-      $L._unused103 (Main.setPC s x)
-
-$L.arm488 : ([1], [1], [81]) -> [106]
-$L.arm488 b0 b1 s0 =
-      $L.s487 b0 b1 s0 s0
-
-$L.arm226 : ([2], [8], [81]) -> [106]
-$L.arm226 rD vD s0 =
-      $L.vS205 rD vD (Main.r2 s0) s0
-
-$L.arm224 : ([2], [8], [81]) -> [106]
-$L.arm224 rD vD s0 =
-      $L.vS205 rD vD (Main.r1 s0) s0
-
-$L.x508 : ([8], [81]) -> [106]
-$L.x508 x s0 =
-      $L.s514 x s0 s0
-
-$L.s109 : ([8], [18], [81], [81]) -> [106]
-$L.s109 a o s s0 =
-      $LL.L.s537 s (Main.setAddrOut o a)
-
-$L.s53 : ([1], [1], [2], [8], [81], [81]) -> [106]
-$L.s53 rEn wEn r a s s0 =
-      $LL.L.s53 r a s0 wEn rEn (Main.outputs s)
+      o
 
 Main.setInputs : ([81], [10]) -> [81]
 Main.setInputs ds i =
@@ -1416,237 +2124,20 @@ Main.setInputs ds i =
       let r3 = ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
-$LL.L.v6954 : ([81], [2], [9], [8]) -> [106]
-$LL.L.v6954 s0 r p v' =
-      if eq r 2'h0 then $L.arm607 p v' s0
-            else if eq r 2'h1 then $L.arm609 p v' s0 else if eq r 2'h2 then $L.arm611 p v' s0 else $L.arm613 p v' s0
+Main.pc : ([81]) -> [8]
+Main.pc ds =
+      let pc = ds[42 +: 8] in
+      pc
 
-$L.arm156 : ([2], [8], [81]) -> [106]
-$L.arm156 rD vD s0 =
-      $L.vS135 rD vD (Main.r2 s0) s0
-
-$L.s616 : ([2], [81], [81]) -> [106]
-$L.s616 r s s0 =
-      $LL.L.s616 r s0 (Main.r1 s)
-
-$LL.L.vS370 : ([81], [2], [8]) -> [106]
-$LL.L.vS370 s0 rD vD' =
-      if eq rD 2'h0 then $L.arm309 vD' s0
-            else if eq rD 2'h1 then $L.arm311 vD' s0 else if eq rD 2'h2 then $L.arm313 vD' s0 else $L.arm315 vD' s0
-
-$L.s288 : ([1], [1], [81], [81]) -> [106]
-$L.s288 rEn wEn s s0 =
-      $LL.L.s288 s0 wEn rEn (Main.r0 s)
-
-$LL.L.arm133 : ([81], [1], [1], [2]) -> [106]
-$LL.L.arm133 s0 rEn wEn $a =
-      if eq $a 2'h0 then $L.arm126 rEn wEn s0
-            else if eq $a 2'h1 then $L.arm128 rEn wEn s0 else if eq $a 2'h2 then $L.arm130 rEn wEn s0 else $L.arm132 rEn wEn s0
-
-$L.pc8 : ([1], [1], [2], [8], [81]) -> [106]
-$L.pc8 rEn wEn r pc s0 =
-      $L.s62 rEn wEn r pc s0 s0
-
-$L.s692 : ([2], [81], [81]) -> [106]
-$L.s692 r s s0 =
-      $LL.L.s692 s0 r (Main.r3 s)
-
-$LL.L.s85 : ([1], [1], [81], [18]) -> [106]
-$LL.L.s85 wEn rEn s $a =
-      $L._unused67 rEn wEn (Main.setOutputs s $a)
-
-$L.s419 : ([8], [81], [81]) -> [106]
-$L.s419 vD s s0 =
-      $LL.L.s421 s0 vD (Main.r2 s)
-
-Main.rstIn : ([10]) -> [1]
-Main.rstIn ds =
-      let r_i = ds[1 +: 1] in
-      r_i
-
-$LL.L.v6501 : ([81], [2], [8]) -> [106]
-$LL.L.v6501 s0 r v =
-      if eq r 2'h0 then $L.arm566 v s0
-            else if eq r 2'h1 then $L.arm568 v s0 else if eq r 2'h2 then $L.arm570 v s0 else $L.arm572 v s0
-
-$LL.L.s666 : ([81], [2], [8]) -> [106]
-$LL.L.s666 s0 r $a =
-      $L.v650 r $a s0
-
-$LL.L.s506 : ([1], [81], [1], [1]) -> [106]
-$LL.L.s506 b0 s0 b1 $a =
-      $L.c489 b0 b1 $a s0
-
-$L.s715 : ([1], [1], [2], [81], [81]) -> [106]
-$L.s715 rEn wEn r s s0 =
-      $LL.L.s715 s0 r rEn wEn (Main.r1 s)
-
-$L._unused137 : ([81]) -> [106]
-$L._unused137 s0 =
-      $L.o138 (Main.outputs s0) s0
-
-$L.arm671 : ([2], [81]) -> [106]
-$L.arm671 r s0 =
-      $L.s670 r s0 s0
-
-Main.r0 : ([81]) -> [8]
-Main.r0 ds =
-      let r0 = ds[24 +: 8] in
-      r0
-
-$L.s282 : ([8], [81], [81]) -> [106]
-$L.s282 x s s0 =
-      $L._unused103 (Main.setR1 s x)
-
-$L.a99 : ([1], [1], [8], [81]) -> [106]
-$L.a99 rEn wEn a s0 =
-      $LL.L.a99 a s0 (Main.mkReg rEn wEn)
-
-$LL.L.s32 : ([2], [1], [81], [18]) -> [106]
-$LL.L.s32 r rEn s0 $a =
-      $L.o29 rEn r $a s0
-
-$LL.L.s413 : ([81], [8]) -> [106]
-$LL.L.s413 s $a =
-      $L._unused103 (Main.setZFlag s (eq $a 8'h0))
-
-$L.s92 : ([1], [1], [81], [81]) -> [106]
-$L.s92 rEn wEn s s0 =
-      $LL.L.s92 rEn s0 wEn (Main.r1 s)
-
-$L._unused101 : ([8], [8], [81]) -> [106]
-$L._unused101 a v s0 =
-      $L.s113 a v s0 s0
-
-$L.arm91 : ([1], [1], [81]) -> [106]
-$L.arm91 rEn wEn s0 =
-      $L.s90 rEn wEn s0 s0
-
-$L.arm313 : ([8], [81]) -> [106]
-$L.arm313 vD' s0 =
-      $L.s312 vD' s0 s0
-
-$L.s90 : ([1], [1], [81], [81]) -> [106]
-$L.s90 rEn wEn s s0 =
-      $LL.L.s90 wEn s0 rEn (Main.r0 s)
-
-$L.s113 : ([8], [8], [81], [81]) -> [106]
-$L.s113 a v s s0 =
-      $LL.L.s113 a s0 v (Main.outputs s)
-
-$LL.L.s53 : ([2], [8], [81], [1], [1], [18]) -> [106]
-$LL.L.s53 r a s0 wEn rEn $a =
-      $L.o51 rEn wEn r a $a s0
-
-$L.s506 : ([1], [1], [81], [81]) -> [106]
-$L.s506 b0 b1 s s0 =
-      $LL.L.s506 b0 s0 b1 (Main.cFlag s)
-
-Main.shrCW8$s1 : ([8]) -> [9]
-Main.shrCW8$s1 v =
-      Main.lsbW8 v # or (lshr v 8'h1) 8'h0
-
-$L.arm145 : ([8], [81]) -> [106]
-$L.arm145 v s0 =
-      $L.s144 v s0 s0
-
-$L.arm166 : ([2], [2], [81]) -> [106]
-$L.arm166 rD rS s0 =
-      $L.vD134 rD rS (Main.r3 s0) s0
-
-$L.s739 : ([81], [81]) -> [106]
-$L.s739 s s0 =
-      $L._unused722 (Main.setIEFlag s 1'h0)
-
-$L.arm124 : ([8], [81]) -> [106]
-$L.arm124 a s0 =
-      $L.s123 a s0 s0
-
-$L.v650 : ([2], [8], [81]) -> [106]
-$L.v650 r v s0 =
-      $LL.L.v650 s0 r v 8'h1
-
-$LL.L.arm1671 : ([81], [2], [2]) -> [106]
-$LL.L.arm1671 s0 rD rS =
-      if eq rD 2'h0 then $L.arm160 rD rS s0
-            else if eq rD 2'h1 then $L.arm162 rD rS s0 else if eq rD 2'h2 then $L.arm164 rD rS s0 else $L.arm166 rD rS s0
-
-$L.s63 : ([1], [1], [2], [81], [81]) -> [106]
-$L.s63 rEn wEn r s s0 =
-      $LL.L.s63 r rEn wEn s0 (Main.pc s)
-
-$L.arm426 : ([1], [1], [81]) -> [106]
-$L.arm426 b0 b1 s0 =
-      $L.s425 b0 b1 s0 s0
-
-$LL.L.arm332 : ([81], [2], [2]) -> [106]
-$LL.L.arm332 s0 rD rS =
-      if eq rD 2'h0 then $L.arm325 rD rS s0
-            else if eq rD 2'h1 then $L.arm327 rD rS s0 else if eq rD 2'h2 then $L.arm329 rD rS s0 else $L.arm331 rD rS s0
-
-$L.i139 : ([10], [81]) -> [106]
-$L.i139 i s0 =
-      $L.s106 i s0 s0
-
-$L.arm232 : ([2], [2], [81]) -> [106]
-$L.arm232 rD rS s0 =
-      $L.vD204 rD rS (Main.r1 s0) s0
-
-$LL.L.s414 : ([9], [81], [1]) -> [106]
-$LL.L.s414 p s $a =
-      $L._unused407 p (Main.setCFlag s $a)
-
-$L.s440 : ([81], [81]) -> [106]
-$L.s440 s s0 =
-      $LL.L.s446 s0 (Main.r0 s)
-
-$L.arm95 : ([1], [1], [81]) -> [106]
-$L.arm95 rEn wEn s0 =
-      $L.s94 rEn wEn s0 s0
-
-$LL.L.s487 : ([81], [1], [1], [1]) -> [106]
-$LL.L.s487 s0 b1 b0 $a =
-      $L.c470 b0 b1 $a s0
-
-Main.notb : ([1]) -> [1]
-Main.notb $x =
-      $LL.Main.notb $x
-
-$L.arm64 : ([1], [1], [1], [1], [81]) -> [106]
-$L.arm64 rEn wEn b0 b1 s0 =
-      $LL.L.arm64 wEn rEn s0 (Main.mkReg b0 b1)
-
-$LL.L.s290 : ([1], [81], [1], [8]) -> [106]
-$LL.L.s290 wEn s0 rEn $a =
-      $L.x274 rEn wEn $a s0
-
-$L.s444 : ([81], [81]) -> [106]
-$L.s444 s s0 =
-      $LL.L.s446 s0 (Main.r2 s)
-
-Main.dataIn : ([10]) -> [8]
-Main.dataIn ds =
-      let d_i = ds[2 +: 8] in
-      d_i
-
-$L.s713 : ([1], [1], [2], [81], [81]) -> [106]
-$L.s713 rEn wEn r s s0 =
-      $LL.L.s713 wEn r s0 rEn (Main.r0 s)
-
-$L.s150 : ([2], [9], [81], [81]) -> [106]
-$L.s150 rD p s s0 =
-      $L._unused136 rD p (Main.setCFlag s (let x = p[8 +: 1] in
-      x))
-
-Main.setCSave : ([81], [1]) -> [81]
-Main.setCSave ds cs =
+Main.setPC : ([81], [8]) -> [81]
+Main.setPC ds pc =
       let i = ds[71 +: 10] in
       let o = ds[53 +: 18] in
       let z = ds[52 +: 1] in
       let c = ds[51 +: 1] in
       let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
       let zs = ds[41 +: 1] in
+      let cs = ds[40 +: 1] in
       let pcs = ds[32 +: 8] in
       let r0 = ds[24 +: 8] in
       let r1 = ds[16 +: 8] in
@@ -1654,153 +2145,73 @@ Main.setCSave ds cs =
       let r3 = ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
-$LL.L.s736 : ([81], [8], [1], [1]) -> [106]
-$LL.L.s736 s0 pc z $a =
-      $L.c725 pc z $a s0
-
-$L.arm572 : ([8], [81]) -> [106]
-$L.arm572 v s0 =
-      $L.s571 v s0 s0
-
-$L._unused102 : ([8], [81]) -> [106]
-$L._unused102 a s0 =
-      $L.s110 a s0 s0
-
-$L.s666 : ([2], [81], [81]) -> [106]
-$L.s666 r s s0 =
-      $LL.L.s666 s0 r (Main.r1 s)
-
-$L.arm188 : ([2], [8], [81]) -> [106]
-$L.arm188 rD vD s0 =
-      $L.vS169 rD vD (Main.r0 s0) s0
-
-$L._unused299 : ([8], [81]) -> [106]
-$L._unused299 vD' s0 =
-      $L.s307 vD' s0 s0
-
-$L.arm289 : ([1], [1], [81]) -> [106]
-$L.arm289 rEn wEn s0 =
-      $L.s288 rEn wEn s0 s0
-
-$LL.Main.notb : ([1]) -> [1]
-$LL.Main.notb wild =
-      if eq wild 1'h0 then 1'h1
-            else 1'h0
-
-$L.c489 : ([1], [1], [1], [81]) -> [106]
-$L.c489 b0 b1 c s0 =
-      $LL.L.z451 s0 b1 b0 (Main.notb c)
-
-$L.s107 : ([81], [81]) -> [106]
-$L.s107 s s0 =
-      $LL.L.s107 s0 (Main.outputs s)
-
-Main.plusCW8 : ([8], [8], [1]) -> [9]
-Main.plusCW8 a b cin =
-      $LL.Main.plusCW8$s2 (add (add (zext 9 a) (zext 9 b)) (zext 9 cin))
-
-$LL.Main.mkReg1 : ([1]) -> [2]
-$LL.Main.mkReg1 wild =
-      if eq wild 1'h0 then 2'h2
-            else 2'h3
-
-$LL.L.s88 : ([81], [1], [1], [8], [18]) -> [106]
-$LL.L.s88 s wEn rEn a $a =
-      $L._unused66 rEn wEn a (Main.setOutputs s $a)
-
-Main.lsbW8 : ([8]) -> [1]
-Main.lsbW8 v =
-      v[0 +: 1]
+Main.r0 : ([81]) -> [8]
+Main.r0 ds =
+      let r0 = ds[24 +: 8] in
+      r0
 
 Main.r1 : ([81]) -> [8]
 Main.r1 ds =
       let r1 = ds[16 +: 8] in
       r1
 
-$L._unused727 : ([1], [81]) -> [106]
-$L._unused727 c s0 =
-      $L.s733 c s0 s0
+Main.r2 : ([81]) -> [8]
+Main.r2 ds =
+      let r2 = ds[8 +: 8] in
+      r2
 
-$LL.L.s468 : ([1], [1], [81], [1]) -> [106]
-$LL.L.s468 b1 b0 s0 $a =
-      $L.z451 b0 b1 $a s0
+Main.r3 : ([81]) -> [8]
+Main.r3 ds =
+      let r3 = ds[0 +: 8] in
+      r3
 
-$L.arm132 : ([1], [1], [81]) -> [106]
-$L.arm132 rEn wEn s0 =
-      $L.s131 rEn wEn s0 s0
+Main.setR0 : ([81], [8]) -> [81]
+Main.setR0 ds r0 =
+      let i = ds[71 +: 10] in
+      let o = ds[53 +: 18] in
+      let z = ds[52 +: 1] in
+      let c = ds[51 +: 1] in
+      let ie = ds[50 +: 1] in
+      let pc = ds[42 +: 8] in
+      let zs = ds[41 +: 1] in
+      let cs = ds[40 +: 1] in
+      let pcs = ds[32 +: 8] in
+      let r1 = ds[16 +: 8] in
+      let r2 = ds[8 +: 8] in
+      let r3 = ds[0 +: 8] in
+      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
-$L.s421 : ([8], [81], [81]) -> [106]
-$L.s421 vD s s0 =
-      $LL.L.s421 s0 vD (Main.r3 s)
+Main.setR1 : ([81], [8]) -> [81]
+Main.setR1 ds r1 =
+      let i = ds[71 +: 10] in
+      let o = ds[53 +: 18] in
+      let z = ds[52 +: 1] in
+      let c = ds[51 +: 1] in
+      let ie = ds[50 +: 1] in
+      let pc = ds[42 +: 8] in
+      let zs = ds[41 +: 1] in
+      let cs = ds[40 +: 1] in
+      let pcs = ds[32 +: 8] in
+      let r0 = ds[24 +: 8] in
+      let r2 = ds[8 +: 8] in
+      let r3 = ds[0 +: 8] in
+      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
-$L.arm391 : ([2], [8], [81]) -> [106]
-$L.arm391 rD vD s0 =
-      $L.vS370 rD vD (Main.r1 s0) s0
-
-$L.arm21 : ([8], [81]) -> [106]
-$L.arm21 x s0 =
-      $L.s20 x s0 s0
-
-$L.s76 : ([8], [81], [81]) -> [106]
-$L.s76 v s s0 =
-      $L.Main.loop3 (Main.setR3 s v)
-
-$LL.L.s715 : ([81], [2], [1], [1], [8]) -> [106]
-$LL.L.s715 s0 r rEn wEn $a =
-      $L.v695 rEn wEn r $a s0
-
-$L.s591 : ([81], [81]) -> [106]
-$L.s591 s s0 =
-      $L._unused103 (Main.setR2 s 8'h0)
-
-$L.i26 : ([2], [10], [81]) -> [106]
-$L.i26 r i s0 =
-      $LL.L.i26 s0 r (Main.dataIn i)
-
-$LL.L.s719 : ([1], [1], [81], [2], [8]) -> [106]
-$LL.L.s719 wEn rEn s0 r $a =
-      $L.v695 rEn wEn r $a s0
-
-$L.arm648 : ([2], [81]) -> [106]
-$L.arm648 r s0 =
-      $L.s647 r s0 s0
-
-$L.arm147 : ([8], [81]) -> [106]
-$L.arm147 v s0 =
-      $L.s146 v s0 s0
-
-$L.s690 : ([2], [81], [81]) -> [106]
-$L.s690 r s s0 =
-      $LL.L.s692 s0 r (Main.r2 s)
-
-$L.arm622 : ([1], [1], [81]) -> [106]
-$L.arm622 b0 b1 s0 =
-      $LL.L.arm622 s0 (Main.mkReg b0 b1)
-
-$LL.L.vS334 : ([2], [81], [8]) -> [106]
-$LL.L.vS334 rD s0 vD' =
-      if eq rD 2'h0 then $L.arm309 vD' s0
-            else if eq rD 2'h1 then $L.arm311 vD' s0 else if eq rD 2'h2 then $L.arm313 vD' s0 else $L.arm315 vD' s0
-
-$L.s551 : ([1], [81], [81]) -> [106]
-$L.s551 c s s0 =
-      $L._unused103 (Main.setCFlag s c)
-
-$L.arm615 : ([2], [81]) -> [106]
-$L.arm615 r s0 =
-      $L.s614 r s0 s0
-
-$LL.L.s537 : ([81], [18]) -> [106]
-$LL.L.s537 s $a =
-      $L._unused103 (Main.setOutputs s $a)
-
-Main.minusCW8$s1 : ([8], [8]) -> [9]
-Main.minusCW8$s1 a b =
-      $LL.Main.plusCW8$s2 (sub (sub (zext 9 a) (zext 9 b)) 9'h0)
-
-$LL.L.arm167 : ([81], [1], [1], [2]) -> [106]
-$LL.L.arm167 s0 b1 b0 rD =
-      $LL.L.arm1671 s0 rD (Main.mkReg b0 b1)
+Main.setR2 : ([81], [8]) -> [81]
+Main.setR2 ds r2 =
+      let i = ds[71 +: 10] in
+      let o = ds[53 +: 18] in
+      let z = ds[52 +: 1] in
+      let c = ds[51 +: 1] in
+      let ie = ds[50 +: 1] in
+      let pc = ds[42 +: 8] in
+      let zs = ds[41 +: 1] in
+      let cs = ds[40 +: 1] in
+      let pcs = ds[32 +: 8] in
+      let r0 = ds[24 +: 8] in
+      let r1 = ds[16 +: 8] in
+      let r3 = ds[0 +: 8] in
+      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
 Main.setR3 : ([81], [8]) -> [81]
 Main.setR3 ds r3 =
@@ -1818,996 +2229,6 @@ Main.setR3 ds r3 =
       let r2 = ds[8 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
-$LL.L.z451 : ([81], [1], [1], [1]) -> [106]
-$LL.L.z451 s0 b1 b0 $a =
-      if eq $a 1'h0 then $L._unused103 s0
-            else $L.arm448 b0 b1 s0
-
-$L._unused542 : ([81]) -> [106]
-$L._unused542 s0 =
-      $L.s554 s0 s0
-
-$L.arm611 : ([9], [8], [81]) -> [106]
-$L.arm611 p v' s0 =
-      $L.s610 p v' s0 s0
-
-$L.vD238 : ([2], [2], [8], [81]) -> [106]
-$L.vD238 rD rS vD s0 =
-      if eq rS 2'h0 then $L.arm258 rD vD s0
-            else if eq rS 2'h1 then $L.arm260 rD vD s0 else if eq rS 2'h2 then $L.arm262 rD vD s0 else $L.arm264 rD vD s0
-
-$L.s32 : ([1], [2], [81], [81]) -> [106]
-$L.s32 rEn r s s0 =
-      $LL.L.s32 r rEn s0 (Main.outputs s)
-
-$L.arm518 : ([81]) -> [106]
-$L.arm518 s0 =
-      $L.s517 s0 s0
-
-$L.s755 : ([81], [81]) -> [106]
-$L.s755 s s0 =
-      $LL.L.s755 s0 (Main.inputs s)
-
-$L.s618 : ([2], [81], [81]) -> [106]
-$L.s618 r s s0 =
-      $LL.L.s616 r s0 (Main.r2 s)
-
-$L.arm448 : ([1], [1], [81]) -> [106]
-$L.arm448 b0 b1 s0 =
-      $LL.L.arm448 s0 (Main.mkReg b0 b1)
-
-$L.arm520 : ([81]) -> [106]
-$L.arm520 s0 =
-      $L.s519 s0 s0
-
-$L.arm595 : ([1], [1], [81]) -> [106]
-$L.arm595 b0 b1 s0 =
-      $LL.L.arm595 s0 (Main.mkReg b0 b1)
-
-$LL.L.arm694 : ([81], [1], [2]) -> [106]
-$LL.L.arm694 s0 wEn r =
-      if eq wEn 1'h0 then (if eq r 2'h0 then $L.arm665 r s0
-                  else if eq r 2'h1 then $L.arm667 r s0 else if eq r 2'h2 then $L.arm669 r s0 else $L.arm671 r s0)
-            else if eq r 2'h0 then $L.arm687 r s0 else if eq r 2'h1 then $L.arm689 r s0 else if eq r 2'h2 then $L.arm691 r s0 else $L.arm693 r s0
-
-$L._unused15 : ([1], [2], [81]) -> [106]
-$L._unused15 rEn r s0 =
-      $L.s32 rEn r s0 s0
-
-$L.z432 : ([1], [1], [1], [81]) -> [106]
-$L.z432 b0 b1 z s0 =
-      if eq z 1'h0 then $L._unused103 s0
-            else $L.arm448 b0 b1 s0
-
-$L.arm570 : ([8], [81]) -> [106]
-$L.arm570 v s0 =
-      $L.s569 v s0 s0
-
-Main.r3 : ([81]) -> [8]
-Main.r3 ds =
-      let r3 = ds[0 +: 8] in
-      r3
-
-$L.arm368 : ([1], [1], [1], [1], [81]) -> [106]
-$L.arm368 rEn wEn b0 b1 s0 =
-      $LL.L.arm3681 b0 s0 b1 (Main.mkReg rEn wEn)
-
-$L.s645 : ([2], [81], [81]) -> [106]
-$L.s645 r s s0 =
-      $LL.L.s645 r s0 (Main.r2 s)
-
-$L.s719 : ([1], [1], [2], [81], [81]) -> [106]
-$L.s719 rEn wEn r s s0 =
-      $LL.L.s719 wEn rEn s0 r (Main.r3 s)
-
-$L.s116 : ([8], [8], [81], [81]) -> [106]
-$L.s116 a v s s0 =
-      $LL.L.s116 s0 v a (Main.outputs s)
-
-Main.r2 : ([81]) -> [8]
-Main.r2 ds =
-      let r2 = ds[8 +: 8] in
-      r2
-
-$L.s94 : ([1], [1], [81], [81]) -> [106]
-$L.s94 rEn wEn s s0 =
-      $LL.L.s94 wEn rEn s0 (Main.r2 s)
-
-$L.arm578 : ([2], [81]) -> [106]
-$L.arm578 r s0 =
-      $L.s577 r s0 s0
-
-$L.s529 : ([1], [81], [81]) -> [106]
-$L.s529 b1 s s0 =
-      $L._unused103 (Main.setIEFlag s b1)
-
-$L._unused540 : ([81]) -> [106]
-$L._unused540 s0 =
-      $L.s556 s0 s0
-
-$L.s439 : ([8], [81], [81]) -> [106]
-$L.s439 pc s s0 =
-      $L._unused103 (Main.setPC s pc)
-
-$L._unused745 : ([81]) -> [106]
-$L._unused745 s0 =
-      $L.s751 s0 s0
-
-$L.s292 : ([1], [1], [81], [81]) -> [106]
-$L.s292 rEn wEn s s0 =
-      $LL.L.s292 s0 rEn wEn (Main.r2 s)
-
-$L.cin170 : ([2], [8], [8], [1], [81]) -> [106]
-$L.cin170 rD vD vS cin s0 =
-      $LL.L.vS205 s0 rD (Main.plusCW8 vD vS cin)
-
-$LL.L.s294 : ([1], [1], [81], [8]) -> [106]
-$LL.L.s294 rEn wEn s0 $a =
-      $L.x274 rEn wEn $a s0
-
-$L.arm190 : ([2], [8], [81]) -> [106]
-$L.arm190 rD vD s0 =
-      $L.vS169 rD vD (Main.r1 s0) s0
-
-$L.arm689 : ([2], [81]) -> [106]
-$L.arm689 r s0 =
-      $L.s688 r s0 s0
-
-$L.arm363 : ([2], [2], [81]) -> [106]
-$L.arm363 rD rS s0 =
-      $L.vD333 rD rS (Main.r1 s0) s0
-
-$L.arm200 : ([2], [2], [81]) -> [106]
-$L.arm200 rD rS s0 =
-      $L.vD168 rD rS (Main.r2 s0) s0
-
-$L.arm574 : ([2], [81]) -> [106]
-$L.arm574 r s0 =
-      $L.s573 r s0 s0
-
-$L.arm469 : ([1], [1], [81]) -> [106]
-$L.arm469 b0 b1 s0 =
-      $L.s468 b0 b1 s0 s0
-
-$LL.Main.mkReg : ([1]) -> [2]
-$LL.Main.mkReg wild =
-      if eq wild 1'h0 then 2'h0
-            else 2'h1
-
-$L.s487 : ([1], [1], [81], [81]) -> [106]
-$L.s487 b0 b1 s s0 =
-      $LL.L.s487 s0 b1 b0 (Main.cFlag s)
-
-$L.s70 : ([8], [81], [81]) -> [106]
-$L.s70 v s s0 =
-      $L.Main.loop3 (Main.setR0 s v)
-
-$L.v69 : ([1], [1], [8], [81]) -> [106]
-$L.v69 rEn wEn v s0 =
-      $LL.L.v69 s0 v (Main.mkReg rEn wEn)
-
-$L.s442 : ([81], [81]) -> [106]
-$L.s442 s s0 =
-      $LL.L.s446 s0 (Main.r1 s)
-
-$L.arm222 : ([2], [8], [81]) -> [106]
-$L.arm222 rD vD s0 =
-      $L.vS205 rD vD (Main.r0 s0) s0
-
-$L.s290 : ([1], [1], [81], [81]) -> [106]
-$L.s290 rEn wEn s s0 =
-      $LL.L.s290 wEn s0 rEn (Main.r1 s)
-
-$L.o51 : ([1], [1], [2], [8], [18], [81]) -> [106]
-$L.o51 rEn wEn r a o s0 =
-      $L.s52 rEn wEn r a o s0 s0
-
-$L.arm291 : ([1], [1], [81]) -> [106]
-$L.arm291 rEn wEn s0 =
-      $L.s290 rEn wEn s0 s0
-
-$L.s688 : ([2], [81], [81]) -> [106]
-$L.s688 r s s0 =
-      $LL.L.s688 r s0 (Main.r1 s)
-
-$L._unused16 : ([1], [2], [81]) -> [106]
-$L._unused16 rEn r s0 =
-      if eq rEn 1'h0 then $L.Main.loop3 s0
-            else $L.arm28 r s0
-
-Main.shlCW8 : ([8], [1]) -> [9]
-Main.shlCW8 v cin =
-      Main.msbW8 v # or (shl v 8'h1) (zext 8 cin)
-
-$L.arm143 : ([8], [81]) -> [106]
-$L.arm143 v s0 =
-      $L.s142 v s0 s0
-
-$L._unused744 : ([81]) -> [106]
-$L._unused744 s0 =
-      $L.s752 s0 s0
-
-$L._unused103 : ([81]) -> [106]
-$L._unused103 s0 =
-      $L.s107 s0 s0
-
-Main.plusCW8$s1 : ([8]) -> [9]
-Main.plusCW8$s1 a =
-      $LL.Main.plusCW8$s2 (add (add (zext 9 a) 9'h1) 9'h0)
-
-$L.arm642 : ([2], [81]) -> [106]
-$L.arm642 r s0 =
-      $L.s641 r s0 s0
-
-$L.a65 : ([1], [1], [8], [81]) -> [106]
-$L.a65 rEn wEn a s0 =
-      $L.s89 rEn wEn a s0 s0
-
-$LL.L.arm3681 : ([1], [81], [1], [2]) -> [106]
-$LL.L.arm3681 b0 s0 b1 rD =
-      $LL.L.arm368 s0 rD (Main.mkReg b0 b1)
-
-$LL.L.s288 : ([81], [1], [1], [8]) -> [106]
-$LL.L.s288 s0 wEn rEn $a =
-      $L.x274 rEn wEn $a s0
-
-$L.s74 : ([8], [81], [81]) -> [106]
-$L.s74 v s s0 =
-      $L.Main.loop3 (Main.setR2 s v)
-
-$L.s62 : ([1], [1], [2], [8], [81], [81]) -> [106]
-$L.s62 rEn wEn r pc s s0 =
-      $LL.L.s62 pc s0 rEn r wEn (Main.outputs s)
-
-$L.fail7 : ([10], [81]) -> [106]
-$L.fail7 inp s0 =
-      $LL.L.fail78 s0 (Main.dataIn inp)
-
-$L.arm353 : ([2], [8], [81]) -> [106]
-$L.arm353 rD vD s0 =
-      $L.vS334 rD vD (Main.r0 s0) s0
-
-$LL.L.fail75 : ([1], [1], [1], [81], [1], [8], [1]) -> [106]
-$LL.L.fail75 rEn ds ds1 s0 ds2 i wEn =
-      $LL.L.fail74 rEn ds wEn ds1 s0 ds2 i i[1 +: 1]
-
-$L.s446 : ([81], [81]) -> [106]
-$L.s446 s s0 =
-      $LL.L.s446 s0 (Main.r3 s)
-
-$L.arm613 : ([9], [8], [81]) -> [106]
-$L.arm613 p v' s0 =
-      $L.s612 p v' s0 s0
-
-$LL.L.fail74 : ([1], [1], [1], [1], [81], [1], [8], [1]) -> [106]
-$LL.L.fail74 rEn ds wEn ds1 s0 ds2 i b0 =
-      $LL.L.fail77 rEn ds wEn ds1 s0 b0 ds2 i i[0 +: 1]
-
-$L.arm389 : ([2], [8], [81]) -> [106]
-$L.arm389 rD vD s0 =
-      $L.vS370 rD vD (Main.r0 s0) s0
-
-$L.pc438 : ([8], [81]) -> [106]
-$L.pc438 pc s0 =
-      $L.s439 pc s0 s0
-
-$LL.L.s131 : ([81], [1], [1], [8]) -> [106]
-$LL.L.s131 s0 rEn wEn $a =
-      $L.a99 rEn wEn $a s0
-
-$LL.L.s34 : ([81], [1], [2], [9]) -> [106]
-$LL.L.s34 s rEn r $a =
-      $LL.L.s341 s rEn r (let y = $a[0 +: 8] in
-      y)
-
-$LL.L.arm523 : ([81], [2]) -> [106]
-$LL.L.arm523 s0 $a =
-      if eq $a 2'h0 then $L.arm516 s0
-            else if eq $a 2'h1 then $L.arm518 s0 else if eq $a 2'h2 then $L.arm520 s0 else $L.arm522 s0
-
-$L.s686 : ([2], [81], [81]) -> [106]
-$L.s686 r s s0 =
-      $LL.L.s688 r s0 (Main.r0 s)
-
-$LL.L.arm368 : ([81], [2], [2]) -> [106]
-$LL.L.arm368 s0 rD rS =
-      if eq rD 2'h0 then $L.arm361 rD rS s0
-            else if eq rD 2'h1 then $L.arm363 rD rS s0 else if eq rD 2'h2 then $L.arm365 rD rS s0 else $L.arm367 rD rS s0
-
-$L.s552 : ([81], [81]) -> [106]
-$L.s552 s s0 =
-      $LL.L.s552 s0 (Main.csFlag s)
-
-$L.i30 : ([1], [2], [10], [81]) -> [106]
-$L.i30 rEn r i s0 =
-      $L.s31 rEn r i s0 s0
-
-$L.arm720 : ([1], [1], [2], [81]) -> [106]
-$L.arm720 rEn wEn r s0 =
-      $L.s719 rEn wEn r s0 s0
-
-$L.arm228 : ([2], [8], [81]) -> [106]
-$L.arm228 rD vD s0 =
-      $L.vS205 rD vD (Main.r3 s0) s0
-
-$L.arm404 : ([1], [1], [1], [1], [81]) -> [106]
-$L.arm404 rEn wEn b0 b1 s0 =
-      $LL.L.arm404 b1 b0 s0 (Main.mkReg rEn wEn)
-
-Main.csFlag : ([81]) -> [1]
-Main.csFlag ds =
-      let cs = ds[40 +: 1] in
-      cs
-
-$LL.L.a99 : ([8], [81], [2]) -> [106]
-$LL.L.a99 a s0 $a =
-      if eq $a 2'h0 then $L.arm118 a s0
-            else if eq $a 2'h1 then $L.arm120 a s0 else if eq $a 2'h2 then $L.arm122 a s0 else $L.arm124 a s0
-
-$L.o111 : ([8], [8], [18], [81]) -> [106]
-$L.o111 a v o s0 =
-      $L.s112 a v o s0 s0
-
-$L.i81 : ([1], [1], [10], [81]) -> [106]
-$L.i81 rEn wEn i s0 =
-      $L.s82 rEn wEn i s0 s0
-
-$L._unused12 : ([1], [1], [2], [81]) -> [106]
-$L._unused12 rEn wEn r s0 =
-      $L.s50 rEn wEn r s0 s0
-
-Main.plusCW8$s2 : ([8], [8]) -> [9]
-Main.plusCW8$s2 a b =
-      $LL.Main.plusCW8$s2 (add (add (zext 9 a) (zext 9 b)) 9'h0)
-
-$L.s643 : ([2], [81], [81]) -> [106]
-$L.s643 r s s0 =
-      $LL.L.s643 s0 r (Main.r1 s)
-
-$L.arm609 : ([9], [8], [81]) -> [106]
-$L.arm609 p v' s0 =
-      $L.s608 p v' s0 s0
-
-$L.s42 : ([1], [2], [81], [81]) -> [106]
-$L.s42 rEn r s s0 =
-      $LL.L.s42 rEn s0 r (Main.r1 s)
-
-$LL.L.v623 : ([2], [81], [9]) -> [106]
-$LL.L.v623 r s0 p =
-      $LL.L.v6231 p r s0 (let y = p[0 +: 8] in
-      y)
-
-$L.s553 : ([1], [81], [81]) -> [106]
-$L.s553 z s s0 =
-      $L._unused544 (Main.setZFlag s z)
-
-$LL.L.fail73 : ([1], [1], [81], [1], [8], [1]) -> [106]
-$LL.L.fail73 ds ds1 s0 ds2 i rEn =
-      $LL.L.fail75 rEn ds ds1 s0 ds2 i i[2 +: 1]
-
-Main.cFlag : ([81]) -> [1]
-Main.cFlag ds =
-      let c = ds[51 +: 1] in
-      c
-
-$L.s294 : ([1], [1], [81], [81]) -> [106]
-$L.s294 rEn wEn s s0 =
-      $LL.L.s294 rEn wEn s0 (Main.r3 s)
-
-$L.arm167 : ([1], [1], [1], [1], [81]) -> [106]
-$L.arm167 rEn wEn b0 b1 s0 =
-      $LL.L.arm167 s0 b1 b0 (Main.mkReg rEn wEn)
-
-$L.s449 : ([1], [1], [81], [81]) -> [106]
-$L.s449 b0 b1 s s0 =
-      $LL.L.s449 b1 b0 s0 (Main.zFlag s)
-
-$LL.L.s38 : ([1], [2], [81], [18]) -> [106]
-$LL.L.s38 rEn r s $a =
-      $L._unused14 rEn r (Main.setOutputs s $a)
-
-$LL.L.fail72 : ([1], [1], [81], [8], [1]) -> [106]
-$LL.L.fail72 ds ds1 s0 i ds2 =
-      $LL.L.fail73 ds ds1 s0 ds2 i i[3 +: 1]
-
-$L.s129 : ([1], [1], [81], [81]) -> [106]
-$L.s129 rEn wEn s s0 =
-      $LL.L.s129 wEn s0 rEn (Main.r2 s)
-
-$L.arm507 : ([1], [1], [81]) -> [106]
-$L.arm507 b0 b1 s0 =
-      $L.s506 b0 b1 s0 s0
-
-$L.arm287 : ([8], [81]) -> [106]
-$L.arm287 x s0 =
-      $L.s286 x s0 s0
-
-$LL.L.v69 : ([81], [8], [2]) -> [106]
-$LL.L.v69 s0 v $a =
-      if eq $a 2'h0 then $L.arm71 v s0
-            else if eq $a 2'h1 then $L.arm73 v s0 else if eq $a 2'h2 then $L.arm75 v s0 else $L.arm77 v s0
-
-$L.s46 : ([1], [2], [81], [81]) -> [106]
-$L.s46 rEn r s s0 =
-      $LL.L.s44 r s0 rEn (Main.r3 s)
-
-$LL.L.x274 : ([81], [8], [2]) -> [106]
-$LL.L.x274 s0 x $a =
-      if eq $a 2'h0 then $L.arm281 x s0
-            else if eq $a 2'h1 then $L.arm283 x s0 else if eq $a 2'h2 then $L.arm285 x s0 else $L.arm287 x s0
-
-Main.setWeOut : ([18], [1]) -> [18]
-Main.setWeOut ds we_o =
-      let a_o = ds[10 +: 8] in
-      let d_o = ds[2 +: 8] in
-      let iack_o = ds[0 +: 1] in
-      a_o # d_o # we_o # iack_o
-
-$L.arm264 : ([2], [8], [81]) -> [106]
-$L.arm264 rD vD s0 =
-      $L.vS239 rD vD (Main.r3 s0) s0
-
-$L.s20 : ([8], [81], [81]) -> [106]
-$L.s20 x s s0 =
-      $L.Main.loop3 (Main.setR1 s x)
-
-$L.arm539 : ([81]) -> [106]
-$L.arm539 s0 =
-      $L.s538 s0 s0
-
-$L.s44 : ([1], [2], [81], [81]) -> [106]
-$L.s44 rEn r s s0 =
-      $LL.L.s44 r s0 rEn (Main.r2 s)
-
-$L.s148 : ([8], [81], [81]) -> [106]
-$L.s148 v s s0 =
-      $L._unused137 (Main.setR3 s v)
-
-$L._unused136 : ([2], [9], [81]) -> [106]
-$L._unused136 rD p s0 =
-      $LL.L._unused136 s0 rD (let y = p[0 +: 8] in
-      y)
-
-$L.arm395 : ([2], [8], [81]) -> [106]
-$L.arm395 rD vD s0 =
-      $L.vS370 rD vD (Main.r3 s0) s0
-
-$L.arm418 : ([8], [81]) -> [106]
-$L.arm418 vD s0 =
-      $L.s417 vD s0 s0
-
-$L.s608 : ([9], [8], [81], [81]) -> [106]
-$L.s608 p v' s s0 =
-      $L._unused597 p v' (Main.setR1 s v')
-
-$LL.L.s92 : ([1], [81], [1], [8]) -> [106]
-$LL.L.s92 rEn s0 wEn $a =
-      $L.a65 rEn wEn $a s0
-
-$LL.L.arm203 : ([81], [1], [1], [2]) -> [106]
-$LL.L.arm203 s0 b0 b1 rD =
-      $LL.L.arm2031 s0 rD (Main.mkReg b0 b1)
-
-$L.s620 : ([2], [81], [81]) -> [106]
-$L.s620 r s s0 =
-      $LL.L.s616 r s0 (Main.r3 s)
-
-$L.s83 : ([1], [1], [81], [81]) -> [106]
-$L.s83 rEn wEn s s0 =
-      $LL.L.s83 wEn rEn s0 (Main.outputs s)
-
-$L.s142 : ([8], [81], [81]) -> [106]
-$L.s142 v s s0 =
-      $L._unused137 (Main.setR0 s v)
-
-Main.minusCW8 : ([8], [8], [1]) -> [9]
-Main.minusCW8 a b cin =
-      $LL.Main.plusCW8$s2 (sub (sub (zext 9 a) (zext 9 b)) (zext 9 cin))
-
-$L.arm691 : ([2], [81]) -> [106]
-$L.arm691 r s0 =
-      $L.s690 r s0 s0
-
-$L.arm325 : ([2], [2], [81]) -> [106]
-$L.arm325 rD rS s0 =
-      $L.vD297 rD rS (Main.r0 s0) s0
-
-$LL.L.v6952 : ([8], [1]) -> [9]
-$LL.L.v6952 v wild =
-      if eq wild 1'h0 then $LL.L.v6955 v (Main.msbW8 v)
-            else $LL.L.v69512 (Main.shlCW8$s1 v)
-
-$L.arm355 : ([2], [8], [81]) -> [106]
-$L.arm355 rD vD s0 =
-      $L.vS334 rD vD (Main.r1 s0) s0
-
-$L.v596 : ([2], [8], [81]) -> [106]
-$L.v596 r v s0 =
-      $LL.L.v596 s0 r (Main.plusCW8$s1 v)
-
-$L.s569 : ([8], [81], [81]) -> [106]
-$L.s569 v s s0 =
-      $L._unused103 (Main.setR2 s v)
-
-$L.c725 : ([8], [1], [1], [81]) -> [106]
-$L.c725 pc z c s0 =
-      $L.s735 pc z c s0 s0
-
-$L.arm268 : ([2], [2], [81]) -> [106]
-$L.arm268 rD rS s0 =
-      $L.vD238 rD rS (Main.r1 s0) s0
-
-$L.arm667 : ([2], [81]) -> [106]
-$L.arm667 r s0 =
-      $L.s666 r s0 s0
-
-$L.s738 : ([81], [81]) -> [106]
-$L.s738 s s0 =
-      $LL.L.s738 s0 (Main.pc s)
-
-$LL.L.v650 : ([81], [2], [8], [8]) -> [106]
-$LL.L.v650 s0 r v eta =
-      $LL.L.v6501 s0 r ($LL.L.v6502 eta v)
-
-$L.arm196 : ([2], [2], [81]) -> [106]
-$L.arm196 rD rS s0 =
-      $L.vD168 rD rS (Main.r0 s0) s0
-
-$L.arm270 : ([2], [2], [81]) -> [106]
-$L.arm270 rD rS s0 =
-      $L.vD238 rD rS (Main.r2 s0) s0
-
-$L.vD297 : ([2], [2], [8], [81]) -> [106]
-$L.vD297 rD rS vD s0 =
-      if eq rS 2'h0 then $L.arm317 rD vD s0
-            else if eq rS 2'h1 then $L.arm319 rD vD s0 else if eq rS 2'h2 then $L.arm321 rD vD s0 else $L.arm323 rD vD s0
-
-$L.o60 : ([1], [1], [2], [8], [18], [81]) -> [106]
-$L.o60 rEn wEn r pc o s0 =
-      $L.s61 rEn wEn r pc o s0 s0
-
-$L._unused14 : ([1], [2], [81]) -> [106]
-$L._unused14 rEn r s0 =
-      $L.s35 rEn r s0 s0
-
-$L.arm296 : ([1], [1], [1], [1], [81]) -> [106]
-$L.arm296 rEn wEn b0 b1 s0 =
-      $LL.L.arm296 wEn s0 rEn (Main.mkReg b0 b1)
-
-$L.vD204 : ([2], [2], [8], [81]) -> [106]
-$L.vD204 rD rS vD s0 =
-      if eq rS 2'h0 then $L.arm222 rD vD s0
-            else if eq rS 2'h1 then $L.arm224 rD vD s0 else if eq rS 2'h2 then $L.arm226 rD vD s0 else $L.arm228 rD vD s0
-
-$L.arm317 : ([2], [8], [81]) -> [106]
-$L.arm317 rD vD s0 =
-      $L.vS298 rD vD (Main.r0 s0) s0
-
-$L.vS298 : ([2], [8], [8], [81]) -> [106]
-$L.vS298 rD vD vS s0 =
-      $LL.L.vS370 s0 rD (or vD vS)
-
-$L.s573 : ([2], [81], [81]) -> [106]
-$L.s573 r s s0 =
-      $LL.L.s577 s0 r (Main.r0 s)
-
-$L.arm323 : ([2], [8], [81]) -> [106]
-$L.arm323 rD vD s0 =
-      $L.vS298 rD vD (Main.r3 s0) s0
-
-$L.arm126 : ([1], [1], [81]) -> [106]
-$L.arm126 rEn wEn s0 =
-      $L.s125 rEn wEn s0 s0
-
-$L._unused10 : ([1], [1], [2], [81]) -> [106]
-$L._unused10 rEn wEn r s0 =
-      $L.s55 rEn wEn r s0 s0
-
-$L.s61 : ([1], [1], [2], [8], [18], [81], [81]) -> [106]
-$L.s61 rEn wEn r pc o s s0 =
-      $LL.L.s61 wEn rEn r s (Main.setAddrOut o pc)
-
-$L.z543 : ([1], [81]) -> [106]
-$L.z543 z s0 =
-      $L.s553 z s0 s0
-
-$L.s610 : ([9], [8], [81], [81]) -> [106]
-$L.s610 p v' s s0 =
-      $L._unused597 p v' (Main.setR2 s v')
-
-$L.vS239 : ([2], [8], [8], [81]) -> [106]
-$L.vS239 rD vD vS s0 =
-      $L.cin240 rD vD vS (Main.cFlag s0) s0
-
-$L.arm397 : ([2], [2], [81]) -> [106]
-$L.arm397 rD rS s0 =
-      $L.vD369 rD rS (Main.r0 s0) s0
-
-$L.arm98 : ([1], [1], [1], [1], [81]) -> [106]
-$L.arm98 rEn wEn b0 b1 s0 =
-      $LL.L.arm98 rEn s0 wEn (Main.mkReg b0 b1)
-
-$LL.L.s39 : ([2], [8], [1], [81], [18]) -> [106]
-$LL.L.s39 r d rEn s0 $a =
-      $L.o37 rEn r d $a s0
-
-$L.arm530 : ([1], [81]) -> [106]
-$L.arm530 b1 s0 =
-      $L.s529 b1 s0 s0
-
-$L.arm71 : ([8], [81]) -> [106]
-$L.arm71 v s0 =
-      $L.s70 v s0 s0
-
-$L.arm128 : ([1], [1], [81]) -> [106]
-$L.arm128 rEn wEn s0 =
-      $L.s127 rEn wEn s0 s0
-
-$L.vD134 : ([2], [2], [8], [81]) -> [106]
-$L.vD134 rD rS vD s0 =
-      if eq rS 2'h0 then $L.arm152 rD vD s0
-            else if eq rS 2'h1 then $L.arm154 rD vD s0 else if eq rS 2'h2 then $L.arm156 rD vD s0 else $L.arm158 rD vD s0
-
-$LL.L.s449 : ([1], [1], [81], [1]) -> [106]
-$LL.L.s449 b1 b0 s0 $a =
-      $L.z432 b0 b1 $a s0
-
-$L.vD405 : ([1], [1], [8], [81]) -> [106]
-$L.vD405 b0 b1 vD s0 =
-      $LL.L.vD405 vD s0 (Main.mkReg b0 b1)
-
-$L.s286 : ([8], [81], [81]) -> [106]
-$L.s286 x s s0 =
-      $L._unused103 (Main.setR3 s x)
-
-$LL.L.s605 : ([8], [81], [1]) -> [106]
-$LL.L.s605 v' s $a =
-      $L._unused598 v' (Main.setCFlag s $a)
-
-$L.arm327 : ([2], [2], [81]) -> [106]
-$L.arm327 rD rS s0 =
-      $L.vD297 rD rS (Main.r1 s0) s0
-
-$L.s423 : ([1], [1], [81], [81]) -> [106]
-$L.s423 b0 b1 s s0 =
-      $LL.L.s423 b1 b0 s0 (Main.r0 s)
-
-$L.s312 : ([8], [81], [81]) -> [106]
-$L.s312 vD' s s0 =
-      $L._unused299 vD' (Main.setR2 s vD')
-
-$LL.L.arm595 : ([81], [2]) -> [106]
-$LL.L.arm595 s0 $a =
-      if eq $a 2'h0 then $L.arm588 s0
-            else if eq $a 2'h1 then $L.arm590 s0 else if eq $a 2'h2 then $L.arm592 s0 else $L.arm594 s0
-
-$L.s55 : ([1], [1], [2], [81], [81]) -> [106]
-$L.s55 rEn wEn r s s0 =
-      $LL.L.s55 wEn s0 rEn r (Main.inputs s)
-
-$L.s88 : ([1], [1], [8], [18], [81], [81]) -> [106]
-$L.s88 rEn wEn a o s s0 =
-      $LL.L.s88 s wEn rEn a (Main.setWeOut o 1'h0)
-
-$L.arm319 : ([2], [8], [81]) -> [106]
-$L.arm319 rD vD s0 =
-      $L.vS298 rD vD (Main.r1 s0) s0
-
-$L.vS205 : ([2], [8], [8], [81]) -> [106]
-$L.vS205 rD vD vS s0 =
-      $LL.L.vS205 s0 rD (Main.minusCW8$s1 vD vS)
-
-$L.arm45 : ([1], [2], [81]) -> [106]
-$L.arm45 rEn r s0 =
-      $L.s44 rEn r s0 s0
-
-$LL.L.s119 : ([8], [81], [8]) -> [106]
-$LL.L.s119 a s0 $a =
-      $L.v100 a $a s0
-
-$LL.L.s713 : ([1], [2], [81], [1], [8]) -> [106]
-$LL.L.s713 wEn r s0 rEn $a =
-      $L.v695 rEn wEn r $a s0
-
-$L.arm522 : ([81]) -> [106]
-$L.arm522 s0 =
-      $L.s521 s0 s0
-
-$LL.L.s79 : ([1], [1], [81], [10]) -> [106]
-$LL.L.s79 rEn wEn s0 $a =
-      $L.i78 rEn wEn $a s0
-
-$L.arm262 : ([2], [8], [81]) -> [106]
-$L.arm262 rD vD s0 =
-      $L.vS239 rD vD (Main.r2 s0) s0
-
-$L.arm621 : ([2], [81]) -> [106]
-$L.arm621 r s0 =
-      $L.s620 r s0 s0
-
-$L.s314 : ([8], [81], [81]) -> [106]
-$L.s314 vD' s s0 =
-      $L._unused299 vD' (Main.setR3 s vD')
-
-$L.s429 : ([1], [1], [81], [81]) -> [106]
-$L.s429 b0 b1 s s0 =
-      $LL.L.s427 s0 b1 b0 (Main.r3 s)
-
-$L.vS370 : ([2], [8], [8], [81]) -> [106]
-$L.vS370 rD vD vS s0 =
-      $LL.L.vS370 s0 rD (xor vD vS)
-
-Main.zFlag : ([81]) -> [1]
-Main.zFlag ds =
-      let z = ds[52 +: 1] in
-      z
-
-$L.s742 : ([10], [81], [81]) -> [106]
-$L.s742 inp s s0 =
-      $LL.L.s742 s0 inp (let ie = s[50 +: 1] in
-      ie)
-
-$LL.L.v695 : ([8], [1]) -> [9]
-$LL.L.v695 v $a =
-      $LL.L.v69512 (Main.shrCW8 v $a)
-
-$L.arm154 : ([2], [8], [81]) -> [106]
-$L.arm154 rD vD s0 =
-      $L.vS135 rD vD (Main.r1 s0) s0
-
-$L.a11 : ([1], [1], [2], [8], [81]) -> [106]
-$L.a11 rEn wEn r a s0 =
-      $L.s53 rEn wEn r a s0 s0
-
-$L.s753 : ([81], [81]) -> [106]
-$L.s753 s s0 =
-      $L._unused744 (Main.setCFlag s 1'h0)
-
-$L.arm617 : ([2], [81]) -> [106]
-$L.arm617 r s0 =
-      $L.s616 r s0 s0
-
-$LL.L.v672 : ([8], [8]) -> [8]
-$LL.L.v672 eta w =
-      or (lshr w eta) (shl w (sub 8'h8 eta))
-
-$L.arm357 : ([2], [8], [81]) -> [106]
-$L.arm357 rD vD s0 =
-      $L.vS334 rD vD (Main.r2 s0) s0
-
-$L.o87 : ([1], [1], [8], [18], [81]) -> [106]
-$L.o87 rEn wEn a o s0 =
-      $L.s88 rEn wEn a o s0 s0
-
-$L.arm118 : ([8], [81]) -> [106]
-$L.arm118 a s0 =
-      $L.s117 a s0 s0
-
-$L.s117 : ([8], [81], [81]) -> [106]
-$L.s117 a s s0 =
-      $LL.L.s123 s0 a (Main.r0 s)
-
-$L.s593 : ([81], [81]) -> [106]
-$L.s593 s s0 =
-      $L._unused103 (Main.setR3 s 8'h0)
-
-$L.arm293 : ([1], [1], [81]) -> [106]
-$L.arm293 rEn wEn s0 =
-      $L.s292 rEn wEn s0 s0
-
-$L.vS169 : ([2], [8], [8], [81]) -> [106]
-$L.vS169 rD vD vS s0 =
-      $L.cin170 rD vD vS (Main.cFlag s0) s0
-
-$L.s50 : ([1], [1], [2], [81], [81]) -> [106]
-$L.s50 rEn wEn r s s0 =
-      $LL.L.s50 wEn s0 r rEn (Main.outputs s)
-
-$L.s537 : ([18], [81], [81]) -> [106]
-$L.s537 o s s0 =
-      $LL.L.s537 s (Main.setIackOut o 1'h1)
-
-Main.zsFlag : ([81]) -> [1]
-Main.zsFlag ds =
-      let zs = ds[41 +: 1] in
-      zs
-
-$L.s40 : ([1], [2], [81], [81]) -> [106]
-$L.s40 rEn r s s0 =
-      $LL.L.s40 rEn r s0 (Main.r0 s)
-
-$L.s538 : ([81], [81]) -> [106]
-$L.s538 s s0 =
-      $LL.L.s538 s0 (Main.outputs s)
-
-$L.s425 : ([1], [1], [81], [81]) -> [106]
-$L.s425 b0 b1 s s0 =
-      $LL.L.s427 s0 b1 b0 (Main.r1 s)
-
-$LL.L.s83 : ([1], [1], [81], [18]) -> [106]
-$LL.L.s83 wEn rEn s0 $a =
-      $L.o80 rEn wEn $a s0
-
-$L.arm607 : ([9], [8], [81]) -> [106]
-$L.arm607 p v' s0 =
-      $L.s606 p v' s0 s0
-
-$L.arm28 : ([2], [81]) -> [106]
-$L.arm28 r s0 =
-      $L.s27 r s0 s0
-
-$LL.L.fail71 : ([1], [81], [8], [1]) -> [106]
-$LL.L.fail71 ds s0 i ds1 =
-      $LL.L.fail72 ds ds1 s0 i i[4 +: 1]
-
-$L.arm649 : ([1], [1], [81]) -> [106]
-$L.arm649 b0 b1 s0 =
-      $LL.L.arm649 s0 (Main.mkReg b0 b1)
-
-$L.s571 : ([8], [81], [81]) -> [106]
-$L.s571 v s s0 =
-      $L._unused103 (Main.setR3 s v)
-
-$L.arm694 : ([1], [1], [1], [81]) -> [106]
-$L.arm694 wEn b0 b1 s0 =
-      $LL.L.arm694 s0 wEn (Main.mkReg b0 b1)
-
-$L.s413 : ([9], [81], [81]) -> [106]
-$L.s413 p s s0 =
-      $LL.L.s413 s (let y = p[0 +: 8] in
-      y)
-
-$LL.L.s86 : ([1], [8], [81], [1], [18]) -> [106]
-$LL.L.s86 rEn a s0 wEn $a =
-      $L.o84 rEn wEn a $a s0
-
-$LL.L._unused136 : ([81], [2], [8]) -> [106]
-$LL.L._unused136 s0 rD v =
-      if eq rD 2'h0 then $L.arm143 v s0
-            else if eq rD 2'h1 then $L.arm145 v s0 else if eq rD 2'h2 then $L.arm147 v s0 else $L.arm149 v s0
-
-$L.s415 : ([8], [81], [81]) -> [106]
-$L.s415 vD s s0 =
-      $LL.L.s421 s0 vD (Main.r0 s)
-
-$LL.L.fail7 : ([81], [8], [1]) -> [106]
-$LL.L.fail7 s0 i ds =
-      $LL.L.fail71 ds s0 i i[5 +: 1]
-
-$L._unused300 : ([8], [81]) -> [106]
-$L._unused300 vD' s0 =
-      $L.s306 vD' s0 s0
-
-$L.s575 : ([2], [81], [81]) -> [106]
-$L.s575 r s s0 =
-      $LL.L.s575 r s0 (Main.r1 s)
-
-$LL.L.s52 : ([1], [1], [81], [2], [18]) -> [106]
-$LL.L.s52 wEn rEn s r $a =
-      $L._unused12 rEn wEn r (Main.setOutputs s $a)
-
-$L.s670 : ([2], [81], [81]) -> [106]
-$L.s670 r s s0 =
-      $LL.L.s666 s0 r (Main.r3 s)
-
-$L.z724 : ([8], [1], [81]) -> [106]
-$L.z724 pc z s0 =
-      $L.s736 pc z s0 s0
-
-Main.outputs : ([81]) -> [18]
-Main.outputs ds =
-      let o = ds[53 +: 18] in
-      o
-
-$L.arm194 : ([2], [8], [81]) -> [106]
-$L.arm194 rD vD s0 =
-      $L.vS169 rD vD (Main.r3 s0) s0
-
-Main.shrCW8 : ([8], [1]) -> [9]
-Main.shrCW8 v cin =
-      Main.lsbW8 v # or (lshr v 8'h1) (shl (zext 8 cin) 8'h7)
-
-$L.v100 : ([8], [8], [81]) -> [106]
-$L.v100 a v s0 =
-      $L.s116 a v s0 s0
-
-$L.o56 : ([1], [1], [2], [18], [81]) -> [106]
-$L.o56 rEn wEn r o s0 =
-      o # 3'h1 # rEn # wEn # r # s0
-
-$L.s144 : ([8], [81], [81]) -> [106]
-$L.s144 v s s0 =
-      $L._unused137 (Main.setR1 s v)
-
-$L.s515 : ([81], [81]) -> [106]
-$L.s515 s s0 =
-      $LL.L.s515 s0 (Main.r0 s)
-
-$L.i57 : ([1], [1], [2], [10], [81]) -> [106]
-$L.i57 rEn wEn r i s0 =
-      $L.s58 rEn wEn r i s0 s0
-
-$L.s22 : ([8], [81], [81]) -> [106]
-$L.s22 x s s0 =
-      $L.Main.loop3 (Main.setR2 s x)
-
-$LL.L.s49 : ([1], [81], [2], [1], [18]) -> [106]
-$LL.L.s49 rEn s r wEn $a =
-      $L._unused13 rEn wEn r (Main.setOutputs s $a)
-
-$L.s427 : ([1], [1], [81], [81]) -> [106]
-$L.s427 b0 b1 s s0 =
-      $LL.L.s427 s0 b1 b0 (Main.r2 s)
-
-$L.arm75 : ([8], [81]) -> [106]
-$L.arm75 v s0 =
-      $L.s74 v s0 s0
-
-$L.o80 : ([1], [1], [18], [81]) -> [106]
-$L.o80 rEn wEn o s0 =
-      o # 5'h8 # rEn # wEn # s0
-
-$L.arm272 : ([2], [2], [81]) -> [106]
-$L.arm272 rD rS s0 =
-      $L.vD238 rD rS (Main.r3 s0) s0
-
-$LL.L.s110 : ([8], [81], [18]) -> [106]
-$LL.L.s110 a s0 $a =
-      $L.o108 a $a s0
-
-$LL.L.s89 : ([81], [1], [1], [8], [18]) -> [106]
-$LL.L.s89 s0 wEn rEn a $a =
-      $L.o87 rEn wEn a $a s0
-
-$L.s517 : ([81], [81]) -> [106]
-$L.s517 s s0 =
-      $LL.L.s515 s0 (Main.r1 s)
-
-$LL.L.s107 : ([81], [18]) -> [106]
-$LL.L.s107 s0 $a =
-      $L.o104 $a s0
-
-$L.s641 : ([2], [81], [81]) -> [106]
-$L.s641 r s s0 =
-      $LL.L.s643 s0 r (Main.r0 s)
-
-$L.v559 : ([2], [8], [81]) -> [106]
-$L.v559 r v s0 =
-      $LL.L.v6721 r s0 (not v)
-
-$L.arm332 : ([1], [1], [1], [1], [81]) -> [106]
-$L.arm332 rEn wEn b0 b1 s0 =
-      $LL.L.arm3321 s0 b1 b0 (Main.mkReg rEn wEn)
-
-Main.mkReg : ([1], [1]) -> [2]
-Main.mkReg ds ds1 =
-      $LL.Main.mkReg2 ds1 ds
-
-$L._unused68 : ([1], [1], [81]) -> [106]
-$L._unused68 rEn wEn s0 =
-      $L.s79 rEn wEn s0 s0
-
-$L.arm41 : ([1], [2], [81]) -> [106]
-$L.arm41 rEn r s0 =
-      $L.s40 rEn r s0 s0
-
-$L.s38 : ([1], [2], [8], [18], [81], [81]) -> [106]
-$L.s38 rEn r d o s s0 =
-      $LL.L.s38 rEn r s (Main.setDataOut o d)
-
-$LL.L.arm296 : ([1], [81], [1], [2]) -> [106]
-$LL.L.arm296 wEn s0 rEn $a =
-      if eq $a 2'h0 then $L.arm289 rEn wEn s0
-            else if eq $a 2'h1 then $L.arm291 rEn wEn s0 else if eq $a 2'h2 then $L.arm293 rEn wEn s0 else $L.arm295 rEn wEn s0
-
-$L.s521 : ([81], [81]) -> [106]
-$L.s521 s s0 =
-      $LL.L.s515 s0 (Main.r3 s)
-
-$L.s577 : ([2], [81], [81]) -> [106]
-$L.s577 r s s0 =
-      $LL.L.s577 s0 r (Main.r2 s)
-
 Main.setPCSave : ([81], [8]) -> [81]
 Main.setPCSave ds pcs =
       let i = ds[71 +: 10] in
@@ -2824,17 +2245,228 @@ Main.setPCSave ds pcs =
       let r3 = ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
-$L.arm754 : ([81]) -> [106]
-$L.arm754 s0 =
-      $L.s753 s0 s0
+Main.pcSave : ([81]) -> [8]
+Main.pcSave ds =
+      let pcs = ds[32 +: 8] in
+      pcs
 
-$LL.L.s645 : ([2], [81], [8]) -> [106]
-$LL.L.s645 r s0 $a =
-      $L.v623 r $a s0
+Main.zFlag : ([81]) -> [1]
+Main.zFlag ds =
+      let z = ds[52 +: 1] in
+      z
 
-$L.arm718 : ([1], [1], [2], [81]) -> [106]
-$L.arm718 rEn wEn r s0 =
-      $L.s717 rEn wEn r s0 s0
+Main.zsFlag : ([81]) -> [1]
+Main.zsFlag ds =
+      let zs = ds[41 +: 1] in
+      zs
+
+Main.setZFlag : ([81], [1]) -> [81]
+Main.setZFlag ds z =
+      let i = ds[71 +: 10] in
+      let o = ds[53 +: 18] in
+      let c = ds[51 +: 1] in
+      let ie = ds[50 +: 1] in
+      let pc = ds[42 +: 8] in
+      let zs = ds[41 +: 1] in
+      let cs = ds[40 +: 1] in
+      let pcs = ds[32 +: 8] in
+      let r0 = ds[24 +: 8] in
+      let r1 = ds[16 +: 8] in
+      let r2 = ds[8 +: 8] in
+      let r3 = ds[0 +: 8] in
+      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
+
+Main.setZSave : ([81], [1]) -> [81]
+Main.setZSave ds zs =
+      let i = ds[71 +: 10] in
+      let o = ds[53 +: 18] in
+      let z = ds[52 +: 1] in
+      let c = ds[51 +: 1] in
+      let ie = ds[50 +: 1] in
+      let pc = ds[42 +: 8] in
+      let cs = ds[40 +: 1] in
+      let pcs = ds[32 +: 8] in
+      let r0 = ds[24 +: 8] in
+      let r1 = ds[16 +: 8] in
+      let r2 = ds[8 +: 8] in
+      let r3 = ds[0 +: 8] in
+      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
+
+Main.cFlag : ([81]) -> [1]
+Main.cFlag ds =
+      let c = ds[51 +: 1] in
+      c
+
+Main.csFlag : ([81]) -> [1]
+Main.csFlag ds =
+      let cs = ds[40 +: 1] in
+      cs
+
+Main.setCFlag : ([81], [1]) -> [81]
+Main.setCFlag ds c =
+      let i = ds[71 +: 10] in
+      let o = ds[53 +: 18] in
+      let z = ds[52 +: 1] in
+      let ie = ds[50 +: 1] in
+      let pc = ds[42 +: 8] in
+      let zs = ds[41 +: 1] in
+      let cs = ds[40 +: 1] in
+      let pcs = ds[32 +: 8] in
+      let r0 = ds[24 +: 8] in
+      let r1 = ds[16 +: 8] in
+      let r2 = ds[8 +: 8] in
+      let r3 = ds[0 +: 8] in
+      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
+
+Main.setCSave : ([81], [1]) -> [81]
+Main.setCSave ds cs =
+      let i = ds[71 +: 10] in
+      let o = ds[53 +: 18] in
+      let z = ds[52 +: 1] in
+      let c = ds[51 +: 1] in
+      let ie = ds[50 +: 1] in
+      let pc = ds[42 +: 8] in
+      let zs = ds[41 +: 1] in
+      let pcs = ds[32 +: 8] in
+      let r0 = ds[24 +: 8] in
+      let r1 = ds[16 +: 8] in
+      let r2 = ds[8 +: 8] in
+      let r3 = ds[0 +: 8] in
+      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
+
+Main.setIEFlag : ([81], [1]) -> [81]
+Main.setIEFlag ds ie =
+      let i = ds[71 +: 10] in
+      let o = ds[53 +: 18] in
+      let z = ds[52 +: 1] in
+      let c = ds[51 +: 1] in
+      let pc = ds[42 +: 8] in
+      let zs = ds[41 +: 1] in
+      let cs = ds[40 +: 1] in
+      let pcs = ds[32 +: 8] in
+      let r0 = ds[24 +: 8] in
+      let r1 = ds[16 +: 8] in
+      let r2 = ds[8 +: 8] in
+      let r3 = ds[0 +: 8] in
+      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
+
+Main.inputs : ([81]) -> [10]
+Main.inputs ds =
+      let i = ds[71 +: 10] in
+      i
+
+Main.setOutputs : ([81], [18]) -> [81]
+Main.setOutputs ds o =
+      let i = ds[71 +: 10] in
+      let z = ds[52 +: 1] in
+      let c = ds[51 +: 1] in
+      let ie = ds[50 +: 1] in
+      let pc = ds[42 +: 8] in
+      let zs = ds[41 +: 1] in
+      let cs = ds[40 +: 1] in
+      let pcs = ds[32 +: 8] in
+      let r0 = ds[24 +: 8] in
+      let r1 = ds[16 +: 8] in
+      let r2 = ds[8 +: 8] in
+      let r3 = ds[0 +: 8] in
+      i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
+
+Main.setAddrOut : ([18], [8]) -> [18]
+Main.setAddrOut ds a_o =
+      let d_o = ds[2 +: 8] in
+      let we_o = ds[1 +: 1] in
+      let iack_o = ds[0 +: 1] in
+      a_o # d_o # we_o # iack_o
+
+Main.setDataOut : ([18], [8]) -> [18]
+Main.setDataOut ds d_o =
+      let a_o = ds[10 +: 8] in
+      let we_o = ds[1 +: 1] in
+      let iack_o = ds[0 +: 1] in
+      a_o # d_o # we_o # iack_o
+
+Main.dataIn : ([10]) -> [8]
+Main.dataIn ds =
+      let d_i = ds[2 +: 8] in
+      d_i
+
+Main.setWeOut : ([18], [1]) -> [18]
+Main.setWeOut ds we_o =
+      let a_o = ds[10 +: 8] in
+      let d_o = ds[2 +: 8] in
+      let iack_o = ds[0 +: 1] in
+      a_o # d_o # we_o # iack_o
+
+Main.setIackOut : ([18], [1]) -> [18]
+Main.setIackOut ds iack_o =
+      let a_o = ds[10 +: 8] in
+      let d_o = ds[2 +: 8] in
+      let we_o = ds[1 +: 1] in
+      a_o # d_o # we_o # iack_o
+
+Main.rstIn : ([10]) -> [1]
+Main.rstIn ds =
+      let r_i = ds[1 +: 1] in
+      r_i
+
+Main.intIn : ([10]) -> [1]
+Main.intIn ds =
+      let i_i = ds[0 +: 1] in
+      i_i
+
+Main.minusCW8 : ([8], [8], [1]) -> [9]
+Main.minusCW8 a b cin =
+      let s = sub (sub (zext 9 a) (zext 9 b)) (zext 9 cin) in
+      s[8 +: 1] # trunc 8 s
+
+Main.plusCW8 : ([8], [8], [1]) -> [9]
+Main.plusCW8 a b cin =
+      let s = add (add (zext 9 a) (zext 9 b)) (zext 9 cin) in
+      s[8 +: 1] # trunc 8 s
+
+Main.lsbW8 : ([8]) -> [1]
+Main.lsbW8 v =
+      v[0 +: 1]
+
+Main.shrCW8 : ([8], [1]) -> [9]
+Main.shrCW8 v cin =
+      Main.lsbW8 v # or (lshr v 8'h1) (shl (zext 8 cin) 8'h7)
+
+Main.msbW8 : ([8]) -> [1]
+Main.msbW8 v =
+      v[7 +: 1]
+
+Main.shlCW8 : ([8], [1]) -> [9]
+Main.shlCW8 v cin =
+      Main.msbW8 v # or (shl v 8'h1) (zext 8 cin)
+
+Main.plusCW8$s1 : ([8]) -> [9]
+Main.plusCW8$s1 a =
+      let s = add (add (zext 9 a) 9'h1) 9'h0 in
+      s[8 +: 1] # trunc 8 s
+
+Main.minusCW8$s1 : ([8], [8]) -> [9]
+Main.minusCW8$s1 a b =
+      let s = sub (sub (zext 9 a) (zext 9 b)) 9'h0 in
+      s[8 +: 1] # trunc 8 s
+
+Main.plusCW8$s2 : ([8], [8]) -> [9]
+Main.plusCW8$s2 a b =
+      let s = add (add (zext 9 a) (zext 9 b)) 9'h0 in
+      s[8 +: 1] # trunc 8 s
+
+Main.shlCW8$s1 : ([8]) -> [9]
+Main.shlCW8$s1 v =
+      Main.msbW8 v # or (shl v 8'h1) 8'h0
+
+Main.shrCW8$s1 : ([8]) -> [9]
+Main.shrCW8$s1 v =
+      Main.lsbW8 v # or (lshr v 8'h1) 8'h0
+
+Main.minusCW8$s2 : ([8]) -> [9]
+Main.minusCW8$s2 a =
+      let s = sub (sub (zext 9 a) 9'h1) 9'h0 in
+      s[8 +: 1] # trunc 8 s
 
 device top_level
       input __in0 : [8]
@@ -2846,7 +2478,7 @@ device top_level
       output __out3 : [1]
       register __resumption_tag : [7] init 7'h30
       register __st0 : [81] init 81'h0
-      let $res = $Pure.dispatch (__resumption_tag # __st0) (__in0 # __in1 # __in2)
+      let $res = main.$dispatch (__resumption_tag # __st0) (__in0 # __in1 # __in2)
       __out0 := $res[98 +: 8]
       __out1 := $res[90 +: 8]
       __out2 := $res[89 +: 1]

@@ -1,24 +1,24 @@
-$Pure.dispatch : ([8], [1]) -> [16]
-$Pure.dispatch disc i =
-      $L.b2 i disc
+main.$dispatch : ([8], [1]) -> [16]
+main.$dispatch disc i =
+      main.$L.b2$238 i disc
 
-$L.b2 : ([1], [8]) -> [16]
-$L.b2 b s0 =
-      if eq b 1'h0 then $L.Main.tick3 s0
-            else $L.Main.tick3 s0
+main.$L.b2$238 : ([1], [8]) -> [16]
+main.$L.b2$238 b s0 =
+      if eq b 1'h0 then main.$L.Main.tick3$239 s0
+            else main.$L.Main.tick3$239 s0
 
-$L.Main.tick3 : ([8]) -> [16]
-$L.Main.tick3 s0 =
-      $L.$x4 s0 s0
-
-$L.$x4 : ([8], [8]) -> [16]
-$L.$x4 $x s0 =
+main.$L.$x4$241 : ([8], [8]) -> [16]
+main.$L.$x4$241 $x s0 =
       $x # s0
+
+main.$L.Main.tick3$239 : ([8]) -> [16]
+main.$L.Main.tick3$239 s0 =
+      main.$L.$x4$241 s0 s0
 
 device top_level
       input __in0 : [1]
       output __out0 : [8]
       register __st0 : [8] init 8'h0
-      let $res = $Pure.dispatch __st0 __in0
+      let $res = main.$dispatch __st0 __in0
       __out0 := $res[8 +: 8]
       next __st0 := $res[0 +: 8]

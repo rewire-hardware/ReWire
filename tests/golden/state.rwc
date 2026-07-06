@@ -1,28 +1,29 @@
-$Pure.dispatch : ([1], [1]) -> [2]
-$Pure.dispatch disc i =
-      $L.$x4 i disc
+main.$dispatch : ([1], [1]) -> [2]
+main.$dispatch disc i =
+      main.$L.$x4$280 i disc
 
-$L.s7 : ([1], [1], [1]) -> [2]
-$L.s7 i s s0 =
-      $L.$x5 s (let $t1 = xor i s in
-      $t1)
+main.$L.$x4$280 : ([1], [1]) -> [2]
+main.$L.$x4$280 $x s0 =
+      main.$L.Main.stateAction6$283 $x s0
 
-$L.$x5 : ([1], [1]) -> [2]
-$L.$x5 $x s0 =
+main.$L.$x5$282 : ([1], [1]) -> [2]
+main.$L.$x5$282 $x s0 =
       $x # s0
 
-$L.Main.stateAction6 : ([1], [1]) -> [2]
-$L.Main.stateAction6 i s0 =
-      $L.s7 i s0 s0
+main.$L.s7$284 : ([1], [1], [1]) -> [2]
+main.$L.s7$284 i s s0 =
+      let s01 = (let $t1 = xor i s in
+      $t1) in
+      main.$L.$x5$282 s s01
 
-$L.$x4 : ([1], [1]) -> [2]
-$L.$x4 $x $x1 =
-      $L.Main.stateAction6 $x $x1
+main.$L.Main.stateAction6$283 : ([1], [1]) -> [2]
+main.$L.Main.stateAction6$283 i s0 =
+      main.$L.s7$284 i s0 s0
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
       register __st0 : [1] init 1'h0
-      let $res = $Pure.dispatch __st0 __in0
+      let $res = main.$dispatch __st0 __in0
       __out0 := $res[1 +: 1]
       next __st0 := $res[0 +: 1]

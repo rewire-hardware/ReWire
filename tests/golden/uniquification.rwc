@@ -1,13 +1,13 @@
-$Pure.dispatch : ([2]) -> [2]
-$Pure.dispatch i =
-      $L._unused3 i
+main.$dispatch : ([2]) -> [2]
+main.$dispatch i =
+      main.$L._unused3$228 i
 
-$L._unused3 : ([2]) -> [2]
-$L._unused3 _unused =
+main.$L._unused3$228 : ([2]) -> [2]
+main.$L._unused3$228 _unused =
       2'h1
 
 device top_level
       input __in0 : [2]
       output __out0 : [2]
-      let $res = $Pure.dispatch __in0
+      let $res = main.$dispatch __in0
       __out0 := $res

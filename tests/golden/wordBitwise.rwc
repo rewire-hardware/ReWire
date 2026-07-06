@@ -1,6 +1,19 @@
-$Pure.dispatch : ([24]) -> [8]
-$Pure.dispatch i =
-      $L.$x4 i
+main.$dispatch : ([24]) -> [8]
+main.$dispatch i =
+      main.$L.$x4$258 i
+
+main.$L.$x4$258 : ([24]) -> [8]
+main.$L.$x4$258 $x =
+      main.$L.Main.loop3$256 $x
+
+main.$L.$x5$260 : ([8]) -> [8]
+main.$L.$x5$260 $x =
+      $x
+
+main.$L.Main.loop3$256 : ([24]) -> [8]
+main.$L.Main.loop3$256 i =
+      let $a = Main.compute i in
+      main.$L.$x5$260 $a
 
 Main.compute : ([24]) -> [8]
 Main.compute ds =
@@ -9,23 +22,11 @@ Main.compute ds =
       let w = ds[0 +: 8] in
       or (xor (and u v) w) (not (xor (and (not u) (not v)) w))
 
-$L.Main.loop3 : ([24]) -> [8]
-$L.Main.loop3 i =
-      $L.$x5 (Main.compute i)
-
-$L.$x5 : ([8]) -> [8]
-$L.$x5 $x =
-      $x
-
-$L.$x4 : ([24]) -> [8]
-$L.$x4 $x =
-      $L.Main.loop3 $x
-
 device top_level
       input __in0 : [8]
       input __in1 : [8]
       input __in2 : [8]
       output __out0 : [8]
       let $in = __in0 # __in1 # __in2
-      let $res = $Pure.dispatch $in
+      let $res = main.$dispatch $in
       __out0 := $res

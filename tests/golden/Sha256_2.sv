@@ -8,18 +8,24 @@ module top_level (input logic [0:0] clk,
   logic [223:0] __st0_next;
   logic [31:0] __st1;
   logic [31:0] __st1_next;
-  logic [511:0] __st2;
-  logic [511:0] __st2_next;
-  logic [261:0] __st3;
-  logic [261:0] __st3_next;
+  logic [479:0] __st2;
+  logic [479:0] __st2_next;
+  logic [31:0] __st3;
+  logic [31:0] __st3_next;
+  logic [223:0] __st4;
+  logic [223:0] __st4_next;
+  logic [31:0] __st5;
+  logic [31:0] __st5_next;
+  logic [5:0] __st6;
+  logic [5:0] __st6_next;
   logic [255:0] zi1;
+  logic [511:0] zi2;
   logic [255:0] zi3;
-  logic [5:0] zi4;
-  logic [1102:0] zl_main_dev3_out;
+  logic [1102:0] main_$l_main_dev3$1603_out;
   logic [5:0] zi5;
   logic [255:0] zi6;
+  logic [511:0] zi7;
   logic [255:0] zi8;
-  logic [5:0] zi9;
   logic [31:0] zi10;
   logic [31:0] zi11;
   logic [31:0] zi12;
@@ -27,7 +33,6 @@ module top_level (input logic [0:0] clk,
   logic [31:0] zi14;
   logic [31:0] zi15;
   logic [31:0] zi16;
-  logic [31:0] zi17;
   logic [31:0] zi18;
   logic [31:0] zi19;
   logic [31:0] zi20;
@@ -52,29 +57,28 @@ module top_level (input logic [0:0] clk,
   logic [31:0] main_plusw32_outR7;
   logic [31:0] zi33;
   logic [255:0] zi34;
-  logic [1102:0] zl_main_dev3_outR1;
-  logic [1102:0] zl_main_genhash$48_out;
+  logic [1102:0] main_$l_main_dev3$1603_outR1;
+  logic [1102:0] main_$l_main_genhash$48$1666_out;
   logic [255:0] zi35;
+  logic [511:0] zi36;
   logic [255:0] zi37;
-  logic [5:0] zi38;
-  logic [1102:0] zl_main_genhash$48_outR1;
+  logic [1102:0] main_$l_main_genhash$48$1666_outR1;
   logic [1102:0] zres;
   assign zi1 = {__st0, __st1};
-  assign zi3 = __st3[261:6];
-  assign zi4 = __st3[5:0];
-  ZL_Main_dev3  inst (__in0, zi1, __st2, zi3, zi4, zl_main_dev3_out);
+  assign zi2 = {__st2, __st3};
+  assign zi3 = {__st4, __st5};
+  main_$L_Main_dev3$1603  inst (__in0, zi1, zi2, zi3, __st6, main_$l_main_dev3$1603_out);
   assign zi5 = __resumption_tag[5:0];
   assign zi6 = {__st0, __st1};
-  assign zi8 = __st3[261:6];
-  assign zi9 = __st3[5:0];
-  assign zi10 = __st3[261:230];
-  assign zi11 = __st3[229:198];
-  assign zi12 = __st3[197:166];
-  assign zi13 = __st3[165:134];
-  assign zi14 = __st3[133:102];
-  assign zi15 = __st3[101:70];
-  assign zi16 = __st3[69:38];
-  assign zi17 = __st3[37:6];
+  assign zi7 = {__st2, __st3};
+  assign zi8 = {__st4, __st5};
+  assign zi10 = __st4[223:192];
+  assign zi11 = __st4[191:160];
+  assign zi12 = __st4[159:128];
+  assign zi13 = __st4[127:96];
+  assign zi14 = __st4[95:64];
+  assign zi15 = __st4[63:32];
+  assign zi16 = __st4[31:0];
   assign zi18 = __st0[223:192];
   assign zi19 = __st0[191:160];
   assign zi20 = __st0[159:128];
@@ -96,76 +100,44 @@ module top_level (input logic [0:0] clk,
   assign zi31 = main_plusw32_outR5;
   Main_plusW32  instR7 (zi24, zi16, main_plusw32_outR6);
   assign zi32 = main_plusw32_outR6;
-  Main_plusW32  instR8 (__st1, zi17, main_plusw32_outR7);
+  Main_plusW32  instR8 (__st1, __st5, main_plusw32_outR7);
   assign zi33 = main_plusw32_outR7;
   assign zi34 = {zi26, zi27, zi28, zi29, zi30, zi31, zi32, zi33};
-  ZL_Main_dev3  instR9 (__in0, zi6, __st2, zi34, zi9, zl_main_dev3_outR1);
-  ZL_Main_genhash$48  instR10 (zi6, __st2, zi8, zi9, zl_main_genhash$48_out);
+  main_$L_Main_dev3$1603  instR9 (__in0, zi6, zi7, zi34, __st6, main_$l_main_dev3$1603_outR1);
+  main_$L_Main_genhash$48$1666  instR10 (zi6, zi7, zi8, __st6, main_$l_main_genhash$48$1666_out);
   assign zi35 = {__st0, __st1};
-  assign zi37 = __st3[261:6];
-  assign zi38 = __st3[5:0];
-  ZL_Main_genhash$48  instR11 (zi35, __st2, zi37, zi38, zl_main_genhash$48_outR1);
-  assign zres = (__resumption_tag[7:6] == 2'h0) ? zl_main_dev3_out : ((__resumption_tag[7:6] == 2'h1) ? ((zi5 == 6'h3f) ? zl_main_dev3_outR1 : zl_main_genhash$48_out) : zl_main_genhash$48_outR1);
+  assign zi36 = {__st2, __st3};
+  assign zi37 = {__st4, __st5};
+  main_$L_Main_genhash$48$1666  instR11 (zi35, zi36, zi37, __st6, main_$l_main_genhash$48$1666_outR1);
+  assign zres = (__resumption_tag[7:6] == 2'h0) ? main_$l_main_dev3$1603_out : ((__resumption_tag[7:6] == 2'h1) ? ((zi5 == 6'h3f) ? main_$l_main_dev3$1603_outR1 : main_$l_main_genhash$48$1666_out) : main_$l_main_genhash$48$1666_outR1);
   assign __resumption_tag_next = zres[1037:1030];
   assign __st0_next = zres[1029:806];
   assign __st1_next = zres[805:774];
-  assign __st2_next = zres[773:262];
-  assign __st3_next = zres[261:0];
+  assign __st2_next = zres[773:294];
+  assign __st3_next = zres[293:262];
+  assign __st4_next = zres[261:38];
+  assign __st5_next = zres[37:6];
+  assign __st6_next = zres[5:0];
   assign __out0 = zres[1102:1038];
-  initial {__resumption_tag, __st0, __st1, __st2, __st3} = {11'h40e{1'h0}};
+  initial {__resumption_tag, __st0, __st1, __st2, __st3, __st4, __st5, __st6} = {11'h40e{1'h0}};
   always @ (posedge clk or posedge rst) begin
     if (rst == 1'h1) begin
-      {__resumption_tag, __st0, __st1, __st2, __st3} <= {11'h40e{1'h0}};
+      {__resumption_tag, __st0, __st1, __st2, __st3, __st4, __st5, __st6} <= {11'h40e{1'h0}};
     end else begin
-      {__resumption_tag, __st0, __st1, __st2, __st3} <= {__resumption_tag_next, __st0_next, __st1_next, __st2_next, __st3_next};
+      {__resumption_tag, __st0, __st1, __st2, __st3, __st4, __st5, __st6} <= {__resumption_tag_next, __st0_next, __st1_next, __st2_next, __st3_next, __st4_next, __st5_next, __st6_next};
     end
   end
 endmodule
 
-module ZLL_L_hw151 (input logic [511:0] arg0,
-  output logic [511:0] res);
-  assign res = arg0;
-endmodule
-
-module ZLL_L_hw271 (input logic [5:0] arg0,
-  input logic [255:0] arg1,
+module main_$L___unused4$1604 (input logic [255:0] arg0,
+  input logic [511:0] arg1,
   input logic [255:0] arg2,
-  input logic [511:0] arg3,
+  input logic [5:0] arg3,
   output logic [1102:0] res);
-  logic [1102:0] zl__unused4_out;
-  ZL___unused4  inst (arg1, arg3, arg2, arg0, zl__unused4_out);
-  assign res = zl__unused4_out;
+  assign res = {{1'h1, {7'h48{1'h0}}}, arg0, arg1, arg2, arg3};
 endmodule
 
-module ZLL_L_hw191 (input logic [255:0] arg0,
-  input logic [5:0] arg1,
-  input logic [255:0] arg2,
-  input logic [511:0] arg3,
-  output logic [1102:0] res);
-  logic [1102:0] zl__unused4_out;
-  ZL___unused4  inst (arg0, arg3, arg2, arg1, zl__unused4_out);
-  assign res = zl__unused4_out;
-endmodule
-
-module ZLL_L_hw311 (input logic [255:0] arg0,
-  input logic [5:0] arg1,
-  input logic [255:0] arg2,
-  input logic [511:0] arg3,
-  output logic [1102:0] res);
-  logic [1102:0] zl__unused4_out;
-  ZL___unused4  inst (arg2, arg3, arg0, arg1, zl__unused4_out);
-  assign res = zl__unused4_out;
-endmodule
-
-module Main_plusW32 (input logic [31:0] arg0,
-  input logic [31:0] arg1,
-  output logic [31:0] res);
-  logic [31:0] extres;
-  plusW32  inst (arg0, arg1, extres[31:0]);
-  assign res = extres;
-endmodule
-
-module ZL___unused6 (input logic [31:0] arg0,
+module main_$L___unused6$1607 (input logic [31:0] arg0,
   input logic [31:0] arg1,
   input logic [255:0] arg2,
   input logic [511:0] arg3,
@@ -186,8 +158,9 @@ module ZL___unused6 (input logic [31:0] arg0,
   logic [31:0] zi11;
   logic [31:0] zi12;
   logic [31:0] zi13;
-  logic [511:0] zll_l_hw151_out;
-  logic [1102:0] zll_l_hw271_out;
+  logic [511:0] zi14;
+  logic [511:0] zi15;
+  logic [1102:0] main_$l__unused4$1604_out;
   assign zi0 = arg3[447:416];
   assign zi1 = arg3[415:384];
   assign zi2 = arg3[383:352];
@@ -202,20 +175,13 @@ module ZL___unused6 (input logic [31:0] arg0,
   assign zi11 = arg3[95:64];
   assign zi12 = arg3[63:32];
   assign zi13 = arg3[31:0];
-  ZLL_L_hw151  inst ({arg0, arg1, zi0, zi1, zi2, zi3, zi4, zi5, zi6, zi7, zi8, zi9, zi10, zi11, zi12, zi13}, zll_l_hw151_out);
-  ZLL_L_hw271  instR1 (arg5, arg2, arg4, zll_l_hw151_out, zll_l_hw271_out);
-  assign res = zll_l_hw271_out;
+  assign zi14 = {arg0, arg1, zi0, zi1, zi2, zi3, zi4, zi5, zi6, zi7, zi8, zi9, zi10, zi11, zi12, zi13};
+  assign zi15 = zi14;
+  main_$L___unused4$1604  inst (arg2, zi15, arg4, arg5, main_$l__unused4$1604_out);
+  assign res = main_$l__unused4$1604_out;
 endmodule
 
-module Main_xorW32 (input logic [31:0] arg0,
-  input logic [31:0] arg1,
-  output logic [31:0] res);
-  logic [31:0] extres;
-  xorW32  inst (arg0, arg1, extres[31:0]);
-  assign res = extres;
-endmodule
-
-module ZL_Main_genhash$48 (input logic [255:0] arg0,
+module main_$L_Main_genhash$48$1666 (input logic [255:0] arg0,
   input logic [511:0] arg1,
   input logic [255:0] arg2,
   input logic [5:0] arg3,
@@ -1079,23 +1045,7 @@ module ZL_Main_genhash$48 (input logic [255:0] arg0,
   assign res = {67'h40000000000000001, arg3, zi414, zi211, arg2, zi415};
 endmodule
 
-module Main_andW32 (input logic [31:0] arg0,
-  input logic [31:0] arg1,
-  output logic [31:0] res);
-  logic [31:0] extres;
-  andW32  inst (arg0, arg1, extres[31:0]);
-  assign res = extres;
-endmodule
-
-module ZL___unused4 (input logic [255:0] arg0,
-  input logic [511:0] arg1,
-  input logic [255:0] arg2,
-  input logic [5:0] arg3,
-  output logic [1102:0] res);
-  assign res = {{1'h1, {7'h48{1'h0}}}, arg0, arg1, arg2, arg3};
-endmodule
-
-module ZL_Main_dev3 (input logic [67:0] arg0,
+module main_$L_Main_dev3$1603 (input logic [67:0] arg0,
   input logic [255:0] arg1,
   input logic [511:0] arg2,
   input logic [255:0] arg3,
@@ -1103,10 +1053,10 @@ module ZL_Main_dev3 (input logic [67:0] arg0,
   output logic [1102:0] res);
   logic [31:0] w1;
   logic [31:0] w2;
-  logic [1102:0] zl__unused6_out;
+  logic [1102:0] main_$l__unused6$1607_out;
   logic [31:0] w1R1;
   logic [31:0] w2R1;
-  logic [1102:0] zl__unused6_outR1;
+  logic [1102:0] main_$l__unused6$1607_outR1;
   logic [31:0] w1R2;
   logic [31:0] w2R2;
   logic [31:0] zi0;
@@ -1123,12 +1073,11 @@ module ZL_Main_dev3 (input logic [67:0] arg0,
   logic [31:0] zi11;
   logic [31:0] zi12;
   logic [31:0] zi13;
-  logic [511:0] zll_l_hw151_out;
-  logic [1102:0] zll_l_hw311_out;
+  logic [511:0] zi14;
+  logic [511:0] zi15;
+  logic [1102:0] main_$l__unused4$1604_out;
   logic [31:0] w1R3;
   logic [31:0] w2R3;
-  logic [31:0] zi14;
-  logic [31:0] zi15;
   logic [31:0] zi16;
   logic [31:0] zi17;
   logic [31:0] zi18;
@@ -1141,14 +1090,13 @@ module ZL_Main_dev3 (input logic [67:0] arg0,
   logic [31:0] zi25;
   logic [31:0] zi26;
   logic [31:0] zi27;
-  logic [511:0] zll_l_hw151_outR1;
-  logic [1102:0] zll_l_hw191_out;
-  logic [31:0] w1R4;
-  logic [31:0] w2R4;
   logic [31:0] zi28;
   logic [31:0] zi29;
-  logic [31:0] zi30;
-  logic [31:0] zi31;
+  logic [511:0] zi30;
+  logic [511:0] zi31;
+  logic [1102:0] main_$l__unused4$1604_outR1;
+  logic [31:0] w1R4;
+  logic [31:0] w2R4;
   logic [31:0] zi32;
   logic [31:0] zi33;
   logic [31:0] zi34;
@@ -1159,16 +1107,15 @@ module ZL_Main_dev3 (input logic [67:0] arg0,
   logic [31:0] zi39;
   logic [31:0] zi40;
   logic [31:0] zi41;
-  logic [511:0] zll_l_hw151_outR2;
-  logic [1102:0] zll_l_hw311_outR1;
-  logic [31:0] w1R5;
-  logic [31:0] w2R5;
   logic [31:0] zi42;
   logic [31:0] zi43;
   logic [31:0] zi44;
   logic [31:0] zi45;
-  logic [31:0] zi46;
-  logic [31:0] zi47;
+  logic [511:0] zi46;
+  logic [511:0] zi47;
+  logic [1102:0] main_$l__unused4$1604_outR2;
+  logic [31:0] w1R5;
+  logic [31:0] w2R5;
   logic [31:0] zi48;
   logic [31:0] zi49;
   logic [31:0] zi50;
@@ -1177,28 +1124,23 @@ module ZL_Main_dev3 (input logic [67:0] arg0,
   logic [31:0] zi53;
   logic [31:0] zi54;
   logic [31:0] zi55;
-  logic [511:0] zll_l_hw151_outR3;
-  logic [1102:0] zll_l_hw271_out;
-  logic [31:0] w1R6;
-  logic [31:0] w2R6;
   logic [31:0] zi56;
   logic [31:0] zi57;
   logic [31:0] zi58;
   logic [31:0] zi59;
   logic [31:0] zi60;
   logic [31:0] zi61;
-  logic [31:0] zi62;
-  logic [31:0] zi63;
+  logic [511:0] zi62;
+  logic [511:0] zi63;
+  logic [1102:0] main_$l__unused4$1604_outR3;
+  logic [31:0] w1R6;
+  logic [31:0] w2R6;
   logic [31:0] zi64;
   logic [31:0] zi65;
   logic [31:0] zi66;
   logic [31:0] zi67;
   logic [31:0] zi68;
   logic [31:0] zi69;
-  logic [511:0] zll_l_hw151_outR4;
-  logic [1102:0] zll_l_hw311_outR2;
-  logic [31:0] w1R7;
-  logic [31:0] w2R7;
   logic [31:0] zi70;
   logic [31:0] zi71;
   logic [31:0] zi72;
@@ -1207,16 +1149,15 @@ module ZL_Main_dev3 (input logic [67:0] arg0,
   logic [31:0] zi75;
   logic [31:0] zi76;
   logic [31:0] zi77;
-  logic [31:0] zi78;
-  logic [31:0] zi79;
+  logic [511:0] zi78;
+  logic [511:0] zi79;
+  logic [1102:0] main_$l__unused4$1604_outR4;
+  logic [31:0] w1R7;
+  logic [31:0] w2R7;
   logic [31:0] zi80;
   logic [31:0] zi81;
   logic [31:0] zi82;
   logic [31:0] zi83;
-  logic [511:0] zll_l_hw151_outR5;
-  logic [1102:0] zll_l_hw191_outR1;
-  logic [31:0] w1R8;
-  logic [31:0] w2R8;
   logic [31:0] zi84;
   logic [31:0] zi85;
   logic [31:0] zi86;
@@ -1227,30 +1168,45 @@ module ZL_Main_dev3 (input logic [67:0] arg0,
   logic [31:0] zi91;
   logic [31:0] zi92;
   logic [31:0] zi93;
-  logic [31:0] zi94;
-  logic [31:0] zi95;
+  logic [511:0] zi94;
+  logic [511:0] zi95;
+  logic [1102:0] main_$l__unused4$1604_outR5;
+  logic [31:0] w1R8;
+  logic [31:0] w2R8;
   logic [31:0] zi96;
   logic [31:0] zi97;
-  logic [511:0] zll_l_hw151_outR6;
-  logic [511:0] zi98;
+  logic [31:0] zi98;
   logic [31:0] zi99;
   logic [31:0] zi100;
-  logic [64:0] zi101;
+  logic [31:0] zi101;
   logic [31:0] zi102;
   logic [31:0] zi103;
-  logic [64:0] zi104;
+  logic [31:0] zi104;
   logic [31:0] zi105;
   logic [31:0] zi106;
-  logic [64:0] zi107;
+  logic [31:0] zi107;
   logic [31:0] zi108;
   logic [31:0] zi109;
-  logic [64:0] zi110;
+  logic [511:0] zi110;
+  logic [511:0] zi111;
+  logic [31:0] zi112;
+  logic [31:0] zi113;
+  logic [64:0] zi114;
+  logic [31:0] zi115;
+  logic [31:0] zi116;
+  logic [64:0] zi117;
+  logic [31:0] zi118;
+  logic [31:0] zi119;
+  logic [64:0] zi120;
+  logic [31:0] zi121;
+  logic [31:0] zi122;
+  logic [64:0] zi123;
   assign w1 = arg0[63:32];
   assign w2 = arg0[31:0];
-  ZL___unused6  inst (w1, w2, arg1, arg2, 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19, arg4, zl__unused6_out);
+  main_$L___unused6$1607  inst (w1, w2, arg1, arg2, 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19, arg4, main_$l__unused6$1607_out);
   assign w1R1 = arg0[63:32];
   assign w2R1 = arg0[31:0];
-  ZL___unused6  instR1 (w1R1, w2R1, arg1, arg2, arg3, arg4, zl__unused6_outR1);
+  main_$L___unused6$1607  instR1 (w1R1, w2R1, arg1, arg2, arg3, arg4, main_$l__unused6$1607_outR1);
   assign w1R2 = arg0[63:32];
   assign w2R2 = arg0[31:0];
   assign zi0 = arg2[511:480];
@@ -1267,127 +1223,157 @@ module ZL_Main_dev3 (input logic [67:0] arg0,
   assign zi11 = arg2[95:64];
   assign zi12 = arg2[63:32];
   assign zi13 = arg2[31:0];
-  ZLL_L_hw151  instR2 ({zi0, zi1, w1R2, w2R2, zi2, zi3, zi4, zi5, zi6, zi7, zi8, zi9, zi10, zi11, zi12, zi13}, zll_l_hw151_out);
-  ZLL_L_hw311  instR3 (arg3, arg4, arg1, zll_l_hw151_out, zll_l_hw311_out);
+  assign zi14 = {zi0, zi1, w1R2, w2R2, zi2, zi3, zi4, zi5, zi6, zi7, zi8, zi9, zi10, zi11, zi12, zi13};
+  assign zi15 = zi14;
+  main_$L___unused4$1604  instR2 (arg1, zi15, arg3, arg4, main_$l__unused4$1604_out);
   assign w1R3 = arg0[63:32];
   assign w2R3 = arg0[31:0];
-  assign zi14 = arg2[511:480];
-  assign zi15 = arg2[479:448];
-  assign zi16 = arg2[447:416];
-  assign zi17 = arg2[415:384];
-  assign zi18 = arg2[319:288];
-  assign zi19 = arg2[287:256];
-  assign zi20 = arg2[255:224];
-  assign zi21 = arg2[223:192];
-  assign zi22 = arg2[191:160];
-  assign zi23 = arg2[159:128];
-  assign zi24 = arg2[127:96];
-  assign zi25 = arg2[95:64];
-  assign zi26 = arg2[63:32];
-  assign zi27 = arg2[31:0];
-  ZLL_L_hw151  instR4 ({zi14, zi15, zi16, zi17, w1R3, w2R3, zi18, zi19, zi20, zi21, zi22, zi23, zi24, zi25, zi26, zi27}, zll_l_hw151_outR1);
-  ZLL_L_hw191  instR5 (arg1, arg4, arg3, zll_l_hw151_outR1, zll_l_hw191_out);
+  assign zi16 = arg2[511:480];
+  assign zi17 = arg2[479:448];
+  assign zi18 = arg2[447:416];
+  assign zi19 = arg2[415:384];
+  assign zi20 = arg2[319:288];
+  assign zi21 = arg2[287:256];
+  assign zi22 = arg2[255:224];
+  assign zi23 = arg2[223:192];
+  assign zi24 = arg2[191:160];
+  assign zi25 = arg2[159:128];
+  assign zi26 = arg2[127:96];
+  assign zi27 = arg2[95:64];
+  assign zi28 = arg2[63:32];
+  assign zi29 = arg2[31:0];
+  assign zi30 = {zi16, zi17, zi18, zi19, w1R3, w2R3, zi20, zi21, zi22, zi23, zi24, zi25, zi26, zi27, zi28, zi29};
+  assign zi31 = zi30;
+  main_$L___unused4$1604  instR3 (arg1, zi31, arg3, arg4, main_$l__unused4$1604_outR1);
   assign w1R4 = arg0[63:32];
   assign w2R4 = arg0[31:0];
-  assign zi28 = arg2[511:480];
-  assign zi29 = arg2[479:448];
-  assign zi30 = arg2[447:416];
-  assign zi31 = arg2[415:384];
-  assign zi32 = arg2[383:352];
-  assign zi33 = arg2[351:320];
-  assign zi34 = arg2[255:224];
-  assign zi35 = arg2[223:192];
-  assign zi36 = arg2[191:160];
-  assign zi37 = arg2[159:128];
-  assign zi38 = arg2[127:96];
-  assign zi39 = arg2[95:64];
-  assign zi40 = arg2[63:32];
-  assign zi41 = arg2[31:0];
-  ZLL_L_hw151  instR6 ({zi28, zi29, zi30, zi31, zi32, zi33, w1R4, w2R4, zi34, zi35, zi36, zi37, zi38, zi39, zi40, zi41}, zll_l_hw151_outR2);
-  ZLL_L_hw311  instR7 (arg3, arg4, arg1, zll_l_hw151_outR2, zll_l_hw311_outR1);
+  assign zi32 = arg2[511:480];
+  assign zi33 = arg2[479:448];
+  assign zi34 = arg2[447:416];
+  assign zi35 = arg2[415:384];
+  assign zi36 = arg2[383:352];
+  assign zi37 = arg2[351:320];
+  assign zi38 = arg2[255:224];
+  assign zi39 = arg2[223:192];
+  assign zi40 = arg2[191:160];
+  assign zi41 = arg2[159:128];
+  assign zi42 = arg2[127:96];
+  assign zi43 = arg2[95:64];
+  assign zi44 = arg2[63:32];
+  assign zi45 = arg2[31:0];
+  assign zi46 = {zi32, zi33, zi34, zi35, zi36, zi37, w1R4, w2R4, zi38, zi39, zi40, zi41, zi42, zi43, zi44, zi45};
+  assign zi47 = zi46;
+  main_$L___unused4$1604  instR4 (arg1, zi47, arg3, arg4, main_$l__unused4$1604_outR2);
   assign w1R5 = arg0[63:32];
   assign w2R5 = arg0[31:0];
-  assign zi42 = arg2[511:480];
-  assign zi43 = arg2[479:448];
-  assign zi44 = arg2[447:416];
-  assign zi45 = arg2[415:384];
-  assign zi46 = arg2[383:352];
-  assign zi47 = arg2[351:320];
-  assign zi48 = arg2[319:288];
-  assign zi49 = arg2[287:256];
-  assign zi50 = arg2[191:160];
-  assign zi51 = arg2[159:128];
-  assign zi52 = arg2[127:96];
-  assign zi53 = arg2[95:64];
-  assign zi54 = arg2[63:32];
-  assign zi55 = arg2[31:0];
-  ZLL_L_hw151  instR8 ({zi42, zi43, zi44, zi45, zi46, zi47, zi48, zi49, w1R5, w2R5, zi50, zi51, zi52, zi53, zi54, zi55}, zll_l_hw151_outR3);
-  ZLL_L_hw271  instR9 (arg4, arg1, arg3, zll_l_hw151_outR3, zll_l_hw271_out);
+  assign zi48 = arg2[511:480];
+  assign zi49 = arg2[479:448];
+  assign zi50 = arg2[447:416];
+  assign zi51 = arg2[415:384];
+  assign zi52 = arg2[383:352];
+  assign zi53 = arg2[351:320];
+  assign zi54 = arg2[319:288];
+  assign zi55 = arg2[287:256];
+  assign zi56 = arg2[191:160];
+  assign zi57 = arg2[159:128];
+  assign zi58 = arg2[127:96];
+  assign zi59 = arg2[95:64];
+  assign zi60 = arg2[63:32];
+  assign zi61 = arg2[31:0];
+  assign zi62 = {zi48, zi49, zi50, zi51, zi52, zi53, zi54, zi55, w1R5, w2R5, zi56, zi57, zi58, zi59, zi60, zi61};
+  assign zi63 = zi62;
+  main_$L___unused4$1604  instR5 (arg1, zi63, arg3, arg4, main_$l__unused4$1604_outR3);
   assign w1R6 = arg0[63:32];
   assign w2R6 = arg0[31:0];
-  assign zi56 = arg2[511:480];
-  assign zi57 = arg2[479:448];
-  assign zi58 = arg2[447:416];
-  assign zi59 = arg2[415:384];
-  assign zi60 = arg2[383:352];
-  assign zi61 = arg2[351:320];
-  assign zi62 = arg2[319:288];
-  assign zi63 = arg2[287:256];
-  assign zi64 = arg2[255:224];
-  assign zi65 = arg2[223:192];
-  assign zi66 = arg2[127:96];
-  assign zi67 = arg2[95:64];
-  assign zi68 = arg2[63:32];
-  assign zi69 = arg2[31:0];
-  ZLL_L_hw151  instR10 ({zi56, zi57, zi58, zi59, zi60, zi61, zi62, zi63, zi64, zi65, w1R6, w2R6, zi66, zi67, zi68, zi69}, zll_l_hw151_outR4);
-  ZLL_L_hw311  instR11 (arg3, arg4, arg1, zll_l_hw151_outR4, zll_l_hw311_outR2);
+  assign zi64 = arg2[511:480];
+  assign zi65 = arg2[479:448];
+  assign zi66 = arg2[447:416];
+  assign zi67 = arg2[415:384];
+  assign zi68 = arg2[383:352];
+  assign zi69 = arg2[351:320];
+  assign zi70 = arg2[319:288];
+  assign zi71 = arg2[287:256];
+  assign zi72 = arg2[255:224];
+  assign zi73 = arg2[223:192];
+  assign zi74 = arg2[127:96];
+  assign zi75 = arg2[95:64];
+  assign zi76 = arg2[63:32];
+  assign zi77 = arg2[31:0];
+  assign zi78 = {zi64, zi65, zi66, zi67, zi68, zi69, zi70, zi71, zi72, zi73, w1R6, w2R6, zi74, zi75, zi76, zi77};
+  assign zi79 = zi78;
+  main_$L___unused4$1604  instR6 (arg1, zi79, arg3, arg4, main_$l__unused4$1604_outR4);
   assign w1R7 = arg0[63:32];
   assign w2R7 = arg0[31:0];
-  assign zi70 = arg2[511:480];
-  assign zi71 = arg2[479:448];
-  assign zi72 = arg2[447:416];
-  assign zi73 = arg2[415:384];
-  assign zi74 = arg2[383:352];
-  assign zi75 = arg2[351:320];
-  assign zi76 = arg2[319:288];
-  assign zi77 = arg2[287:256];
-  assign zi78 = arg2[255:224];
-  assign zi79 = arg2[223:192];
-  assign zi80 = arg2[191:160];
-  assign zi81 = arg2[159:128];
-  assign zi82 = arg2[63:32];
-  assign zi83 = arg2[31:0];
-  ZLL_L_hw151  instR12 ({zi70, zi71, zi72, zi73, zi74, zi75, zi76, zi77, zi78, zi79, zi80, zi81, w1R7, w2R7, zi82, zi83}, zll_l_hw151_outR5);
-  ZLL_L_hw191  instR13 (arg1, arg4, arg3, zll_l_hw151_outR5, zll_l_hw191_outR1);
+  assign zi80 = arg2[511:480];
+  assign zi81 = arg2[479:448];
+  assign zi82 = arg2[447:416];
+  assign zi83 = arg2[415:384];
+  assign zi84 = arg2[383:352];
+  assign zi85 = arg2[351:320];
+  assign zi86 = arg2[319:288];
+  assign zi87 = arg2[287:256];
+  assign zi88 = arg2[255:224];
+  assign zi89 = arg2[223:192];
+  assign zi90 = arg2[191:160];
+  assign zi91 = arg2[159:128];
+  assign zi92 = arg2[63:32];
+  assign zi93 = arg2[31:0];
+  assign zi94 = {zi80, zi81, zi82, zi83, zi84, zi85, zi86, zi87, zi88, zi89, zi90, zi91, w1R7, w2R7, zi92, zi93};
+  assign zi95 = zi94;
+  main_$L___unused4$1604  instR7 (arg1, zi95, arg3, arg4, main_$l__unused4$1604_outR5);
   assign w1R8 = arg0[63:32];
   assign w2R8 = arg0[31:0];
-  assign zi84 = arg2[511:480];
-  assign zi85 = arg2[479:448];
-  assign zi86 = arg2[447:416];
-  assign zi87 = arg2[415:384];
-  assign zi88 = arg2[383:352];
-  assign zi89 = arg2[351:320];
-  assign zi90 = arg2[319:288];
-  assign zi91 = arg2[287:256];
-  assign zi92 = arg2[255:224];
-  assign zi93 = arg2[223:192];
-  assign zi94 = arg2[191:160];
-  assign zi95 = arg2[159:128];
-  assign zi96 = arg2[127:96];
-  assign zi97 = arg2[95:64];
-  ZLL_L_hw151  instR14 ({zi84, zi85, zi86, zi87, zi88, zi89, zi90, zi91, zi92, zi93, zi94, zi95, zi96, zi97, w1R8, w2R8}, zll_l_hw151_outR6);
-  assign zi98 = zll_l_hw151_outR6;
-  assign zi99 = arg3[255:224];
-  assign zi100 = arg3[223:192];
-  assign zi101 = {1'h0, zi99, zi100};
-  assign zi102 = arg3[191:160];
-  assign zi103 = arg3[159:128];
-  assign zi104 = {1'h0, zi102, zi103};
-  assign zi105 = arg3[127:96];
-  assign zi106 = arg3[95:64];
-  assign zi107 = {1'h0, zi105, zi106};
-  assign zi108 = arg3[63:32];
-  assign zi109 = arg3[31:0];
-  assign zi110 = {1'h0, zi108, zi109};
-  assign res = (arg0[67:64] == 4'h0) ? zl__unused6_out : ((arg0[67:64] == 4'h1) ? zl__unused6_outR1 : ((arg0[67:64] == 4'h2) ? zll_l_hw311_out : ((arg0[67:64] == 4'h3) ? zll_l_hw191_out : ((arg0[67:64] == 4'h4) ? zll_l_hw311_outR1 : ((arg0[67:64] == 4'h5) ? zll_l_hw271_out : ((arg0[67:64] == 4'h6) ? zll_l_hw311_outR2 : ((arg0[67:64] == 4'h7) ? zll_l_hw191_outR1 : ((arg0[67:64] == 4'h8) ? {73'h1000000000000000080, arg3, zi98, arg3, 6'h0} : ((arg0[67:64] == 4'h9) ? {zi101, 8'h0, arg1, arg2, arg3, arg4} : ((arg0[67:64] == 4'ha) ? {zi104, 8'h0, arg1, arg2, arg3, arg4} : ((arg0[67:64] == 4'hb) ? {zi107, 8'h0, arg1, arg2, arg3, arg4} : {zi110, 8'h0, arg1, arg2, arg3, arg4})))))))))));
+  assign zi96 = arg2[511:480];
+  assign zi97 = arg2[479:448];
+  assign zi98 = arg2[447:416];
+  assign zi99 = arg2[415:384];
+  assign zi100 = arg2[383:352];
+  assign zi101 = arg2[351:320];
+  assign zi102 = arg2[319:288];
+  assign zi103 = arg2[287:256];
+  assign zi104 = arg2[255:224];
+  assign zi105 = arg2[223:192];
+  assign zi106 = arg2[191:160];
+  assign zi107 = arg2[159:128];
+  assign zi108 = arg2[127:96];
+  assign zi109 = arg2[95:64];
+  assign zi110 = {zi96, zi97, zi98, zi99, zi100, zi101, zi102, zi103, zi104, zi105, zi106, zi107, zi108, zi109, w1R8, w2R8};
+  assign zi111 = zi110;
+  assign zi112 = arg3[255:224];
+  assign zi113 = arg3[223:192];
+  assign zi114 = {1'h0, zi112, zi113};
+  assign zi115 = arg3[191:160];
+  assign zi116 = arg3[159:128];
+  assign zi117 = {1'h0, zi115, zi116};
+  assign zi118 = arg3[127:96];
+  assign zi119 = arg3[95:64];
+  assign zi120 = {1'h0, zi118, zi119};
+  assign zi121 = arg3[63:32];
+  assign zi122 = arg3[31:0];
+  assign zi123 = {1'h0, zi121, zi122};
+  assign res = (arg0[67:64] == 4'h0) ? main_$l__unused6$1607_out : ((arg0[67:64] == 4'h1) ? main_$l__unused6$1607_outR1 : ((arg0[67:64] == 4'h2) ? main_$l__unused4$1604_out : ((arg0[67:64] == 4'h3) ? main_$l__unused4$1604_outR1 : ((arg0[67:64] == 4'h4) ? main_$l__unused4$1604_outR2 : ((arg0[67:64] == 4'h5) ? main_$l__unused4$1604_outR3 : ((arg0[67:64] == 4'h6) ? main_$l__unused4$1604_outR4 : ((arg0[67:64] == 4'h7) ? main_$l__unused4$1604_outR5 : ((arg0[67:64] == 4'h8) ? {73'h1000000000000000080, arg3, zi111, arg3, 6'h0} : ((arg0[67:64] == 4'h9) ? {zi114, 8'h0, arg1, arg2, arg3, arg4} : ((arg0[67:64] == 4'ha) ? {zi117, 8'h0, arg1, arg2, arg3, arg4} : ((arg0[67:64] == 4'hb) ? {zi120, 8'h0, arg1, arg2, arg3, arg4} : {zi123, 8'h0, arg1, arg2, arg3, arg4})))))))))));
+endmodule
+
+module Main_plusW32 (input logic [31:0] arg0,
+  input logic [31:0] arg1,
+  output logic [31:0] res);
+  logic [31:0] extres;
+  plusW32  inst (arg0, arg1, extres[31:0]);
+  assign res = extres;
+endmodule
+
+module Main_andW32 (input logic [31:0] arg0,
+  input logic [31:0] arg1,
+  output logic [31:0] res);
+  logic [31:0] extres;
+  andW32  inst (arg0, arg1, extres[31:0]);
+  assign res = extres;
+endmodule
+
+module Main_xorW32 (input logic [31:0] arg0,
+  input logic [31:0] arg1,
+  output logic [31:0] res);
+  logic [31:0] extres;
+  xorW32  inst (arg0, arg1, extres[31:0]);
+  assign res = extres;
 endmodule

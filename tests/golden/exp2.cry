@@ -16,34 +16,32 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// $Pure.dispatch
-rw__Pure_dispatch : [2000] -> [100] -> [2100]
-rw__Pure_dispatch x0 x1 = rw__L_i3 s0 x1 s1
+// main.$dispatch
+rw_main__dispatch : [2000] -> [100] -> [2100]
+rw_main__dispatch x0 x1 = rw_main__L_i3_309 (take`{1000} x0) x1 (drop`{1000} x0)
+
+// main.$L.i3$309
+rw_main__L_i3_309 : [1000] -> [100] -> [1000] -> [2100]
+rw_main__L_i3_309 x0 x1 x2 = rw_main__L_Main_dev_11_307 s0
   where
     s0 : [1000]
-    s0 = take`{1000} x0
-    s1 : [1000]
-    s1 = drop`{1000} x0
+    s0 = rw_Main_ss_ x0 x1
 
-// $L.i3
-rw__L_i3 : [1000] -> [100] -> [1000] -> [2100]
-rw__L_i3 x0 x1 x2 = rw__L_Main_dev_11 (rw_Main_ss_ x0 x1)
+// main.$L.ss2$308
+rw_main__L_ss2_308 : [1000] -> [1000] -> [2100]
+rw_main__L_ss2_308 x0 x1 = (take`{100} x0) # (x0 # x1)
 
-// $L.ss2
-rw__L_ss2 : [1000] -> [1000] -> [2100]
-rw__L_ss2 x0 x1 = (take`{100} x0) # (x0 # x1)
-
-// Main.ss'
-rw_Main_ss_ : [1000] -> [100] -> [1000]
-rw_Main_ss_ x0 x1 = (rw_Main_x2 (take`{100} (drop`{100} x0))) # ((rw_Main_x2 (take`{100} (drop`{200} x0))) # ((rw_Main_x2 (take`{100} (drop`{300} x0))) # ((rw_Main_x2 (take`{100} (drop`{400} x0))) # ((rw_Main_x2 (take`{100} (drop`{500} x0))) # ((rw_Main_x2 (take`{100} (drop`{600} x0))) # ((rw_Main_x2 (take`{100} (drop`{700} x0))) # ((rw_Main_x2 (take`{100} (drop`{800} x0))) # ((rw_Main_x2 (drop`{900} x0)) # (rw_Main_x2 x1)))))))))
-
-// $L.Main.dev$11
-rw__L_Main_dev_11 : [1000] -> [2100]
-rw__L_Main_dev_11 x0 = rw__L_ss2 x0 x0
+// main.$L.Main.dev$11$307
+rw_main__L_Main_dev_11_307 : [1000] -> [2100]
+rw_main__L_Main_dev_11_307 x0 = rw_main__L_ss2_308 x0 x0
 
 // Main.x2
 rw_Main_x2 : [100] -> [100]
 rw_Main_x2 x0 = x0 * 0x0000000000000000000000002
+
+// Main.ss'
+rw_Main_ss_ : [1000] -> [100] -> [1000]
+rw_Main_ss_ x0 x1 = (rw_Main_x2 (take`{100} (drop`{100} x0))) # ((rw_Main_x2 (take`{100} (drop`{200} x0))) # ((rw_Main_x2 (take`{100} (drop`{300} x0))) # ((rw_Main_x2 (take`{100} (drop`{400} x0))) # ((rw_Main_x2 (take`{100} (drop`{500} x0))) # ((rw_Main_x2 (take`{100} (drop`{600} x0))) # ((rw_Main_x2 (take`{100} (drop`{700} x0))) # ((rw_Main_x2 (take`{100} (drop`{800} x0))) # ((rw_Main_x2 (drop`{900} x0)) # (rw_Main_x2 x1)))))))))
 
 // Per-cycle step: outputs # next register values.
 rw_step : [2000] -> [100] -> [2100]
@@ -56,7 +54,7 @@ rw_step st i = (take`{100} s3) # ((take`{1000} (drop`{100} s3)) # (drop`{1100} s
     s2 : [100]
     s2 = i
     s3 : [2100]
-    s3 = rw__Pure_dispatch (s0 # s1) s2
+    s3 = rw_main__dispatch (s0 # s1) s2
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [100]

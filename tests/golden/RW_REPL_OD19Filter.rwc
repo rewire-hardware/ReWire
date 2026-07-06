@@ -18,150 +18,145 @@ extern test4
       input p1 : [32]
       output p2 : [1]
 
-$Pure.dispatch : ([39], [33]) -> [41]
-$Pure.dispatch disc i =
-      $L.$x6 i disc
+main.$dispatch : ([39], [33]) -> [41]
+main.$dispatch disc i =
+      main.$L.$x6$356 i disc
 
-$LL.OD19.ProgramCounter.incPC : ([7]) -> [7]
-$LL.OD19.ProgramCounter.incPC wild =
-      if eq wild 7'h0 then 7'h1
-            else if eq wild 7'h1 then 7'h2 else if eq wild 7'h2 then 7'h3 else if eq wild 7'h3 then 7'h4 else if eq wild 7'h4 then 7'h5 else if eq wild 7'h5 then 7'h6 else if eq wild 7'h6 then 7'h7 else if eq wild 7'h7 then 7'h8 else if eq wild 7'h8 then 7'h9 else if eq wild 7'h9 then 7'ha else if eq wild 7'ha then 7'hb else if eq wild 7'hb then 7'hc else if eq wild 7'hc then 7'hd else if eq wild 7'hd then 7'he else if eq wild 7'he then 7'hf else if eq wild 7'hf then 7'h10 else if eq wild 7'h10 then 7'h11 else if eq wild 7'h11 then 7'h12 else if eq wild 7'h12 then 7'h13 else if eq wild 7'h13 then 7'h14 else if eq wild 7'h14 then 7'h15 else if eq wild 7'h15 then 7'h16 else if eq wild 7'h16 then 7'h17 else if eq wild 7'h17 then 7'h18 else if eq wild 7'h18 then 7'h19 else if eq wild 7'h19 then 7'h1a else if eq wild 7'h1a then 7'h1b else if eq wild 7'h1b then 7'h1c else if eq wild 7'h1c then 7'h1d else if eq wild 7'h1d then 7'h1e else if eq wild 7'h1e then 7'h1f else if eq wild 7'h1f then 7'h20 else if eq wild 7'h20 then 7'h21 else if eq wild 7'h21 then 7'h22 else if eq wild 7'h22 then 7'h23 else if eq wild 7'h23 then 7'h24 else if eq wild 7'h24 then 7'h25 else if eq wild 7'h25 then 7'h26 else if eq wild 7'h26 then 7'h27 else if eq wild 7'h27 then 7'h28 else if eq wild 7'h28 then 7'h29 else if eq wild 7'h29 then 7'h2a else if eq wild 7'h2a then 7'h2b else if eq wild 7'h2b then 7'h2c else if eq wild 7'h2c then 7'h2d else if eq wild 7'h2d then 7'h2e else if eq wild 7'h2e then 7'h2f else if eq wild 7'h2f then 7'h30 else if eq wild 7'h30 then 7'h31 else if eq wild 7'h31 then 7'h32 else if eq wild 7'h32 then 7'h33 else if eq wild 7'h33 then 7'h34 else if eq wild 7'h34 then 7'h35 else if eq wild 7'h35 then 7'h36 else if eq wild 7'h36 then 7'h37 else if eq wild 7'h37 then 7'h38 else if eq wild 7'h38 then 7'h39 else if eq wild 7'h39 then 7'h3a else if eq wild 7'h3a then 7'h3b else if eq wild 7'h3b then 7'h3c else if eq wild 7'h3c then 7'h3d else if eq wild 7'h3d then 7'h3e else if eq wild 7'h3e then 7'h3f else if eq wild 7'h3f then 7'h40 else if eq wild 7'h40 then 7'h41 else if eq wild 7'h41 then 7'h42 else if eq wild 7'h42 then 7'h43 else if eq wild 7'h43 then 7'h44 else if eq wild 7'h44 then 7'h45 else if eq wild 7'h45 then 7'h46 else if eq wild 7'h46 then 7'h47 else if eq wild 7'h47 then 7'h48 else if eq wild 7'h48 then 7'h49 else if eq wild 7'h49 then 7'h4a else if eq wild 7'h4a then 7'h4b else if eq wild 7'h4b then 7'h4c else if eq wild 7'h4c then 7'h4d else if eq wild 7'h4d then 7'h4e else if eq wild 7'h4e then 7'h4f else if eq wild 7'h4f then 7'h50 else if eq wild 7'h50 then 7'h51 else if eq wild 7'h51 then 7'h52 else if eq wild 7'h52 then 7'h53 else if eq wild 7'h53 then 7'h54 else if eq wild 7'h54 then 7'h55 else if eq wild 7'h55 then 7'h56 else if eq wild 7'h56 then 7'h57 else if eq wild 7'h57 then 7'h58 else if eq wild 7'h58 then 7'h59 else if eq wild 7'h59 then 7'h5a else if eq wild 7'h5a then 7'h5b else if eq wild 7'h5b then 7'h5c else if eq wild 7'h5c then 7'h5d else if eq wild 7'h5d then 7'h5e else if eq wild 7'h5e then 7'h5f else if eq wild 7'h5f then 7'h60 else if eq wild 7'h60 then 7'h61 else if eq wild 7'h61 then 7'h62 else if eq wild 7'h62 then 7'h63 else if eq wild 7'h63 then 7'h64 else if eq wild 7'h64 then 7'h65 else if eq wild 7'h65 then 7'h66 else if eq wild 7'h66 then 7'h67 else if eq wild 7'h67 then 7'h68 else if eq wild 7'h68 then 7'h69 else if eq wild 7'h69 then 7'h6a else if eq wild 7'h6a then 7'h6b else if eq wild 7'h6b then 7'h6c else if eq wild 7'h6c then 7'h6d else if eq wild 7'h6d then 7'h6e else if eq wild 7'h6e then 7'h6f else if eq wild 7'h6f then 7'h70 else if eq wild 7'h70 then 7'h71 else if eq wild 7'h71 then 7'h72 else if eq wild 7'h72 then 7'h73 else if eq wild 7'h73 then 7'h74 else if eq wild 7'h74 then 7'h75 else if eq wild 7'h75 then 7'h76 else if eq wild 7'h76 then 7'h77 else if eq wild 7'h77 then 7'h78 else if eq wild 7'h78 then 7'h79 else if eq wild 7'h79 then 7'h7a else if eq wild 7'h7a then 7'h7b else if eq wild 7'h7b then 7'h7c else if eq wild 7'h7c then 7'h7d else if eq wild 7'h7d then 7'h7e else 7'h0
+main.$L.$x6$356 : ([33], [39]) -> [41]
+main.$L.$x6$356 $x s0 =
+      main.$L.Main.repl4$353 $x s0
 
-$L.Main.repl4 : ([33], [39]) -> [41]
-$L.Main.repl4 ds s0 =
-      if eq ds[32 +: 1] 1'h0 then (let w32 = ds[0 +: 32] in
-            $L.arm52 w32 s0)
-            else 2'h2 # s0
-
-$L.r45 : ([32], [32], [39]) -> [41]
-$L.r45 w32 r s0 =
-      $LL.L.r45 s0 (Main.test3 w32 r)
-
-$L.ds5 : ([32], [39], [39]) -> [41]
-$L.ds5 w32 ds s0 =
-      let pc = ds[0 +: 7] in
-      if eq pc 7'h0 then $L.Main.putReg19 w32 s0
-            else if eq pc 7'h1 then $L.Main.getReg24 w32 s0 else if eq pc 7'h2 then $L.Main.putReg19 w32 s0 else if eq pc 7'h3 then $L.Main.getReg24 w32 s0 else if eq pc 7'h4 then $L.Main.getReg42 w32 s0 else if eq pc 7'h5 then $L.Main.getReg46 w32 s0 else if eq pc 7'h6 then $L.Main.getReg50 w32 s0 else $L.Main.nextPC9 s0
-
-$L.r23 : ([32], [32], [39]) -> [41]
-$L.r23 w32 r s0 =
-      $LL.L.r45 s0 (Main.test1 w32 r)
-
-OD19.ProgramCounter.incPC : ([7]) -> [7]
-OD19.ProgramCounter.incPC $x =
-      $LL.OD19.ProgramCounter.incPC $x
-
-$LL.L.r411 : ([39], [2]) -> [41]
-$LL.L.r411 s0 $a =
-      $a # s0
-
-Main.test2 : ([32], [32]) -> [1]
-Main.test2 $x $x1 =
-      test2 $x $x1
-
-Main.test1 : ([32], [32]) -> [1]
-Main.test1 $x $x1 =
-      test1 $x $x1
-
-$L.ds10 : ([39], [39]) -> [41]
-$L.ds10 ds s0 =
-      let r = ds[7 +: 32] in
-      let pc = ds[0 +: 7] in
-      $L.arm11 r pc s0
-
-$L.ds43 : ([32], [39], [39]) -> [41]
-$L.ds43 w32 ds s0 =
-      let r = ds[7 +: 32] in
-      $L.r41 w32 r s0
-
-$L.Main.getReg50 : ([32], [39]) -> [41]
-$L.Main.getReg50 w32 s0 =
-      $L.ds51 w32 s0 s0
-
-$LL.L.arm11 : ([32], [7]) -> [41]
-$LL.L.arm11 r $a =
-      $L.Main.repl$s12 (r # $a)
-
-$LL.L.r45 : ([39], [1]) -> [41]
-$LL.L.r45 s0 $a =
-      $LL.L.r411 s0 (1'h0 # $a)
-
-$L.r41 : ([32], [32], [39]) -> [41]
-$L.r41 w32 r s0 =
-      $LL.L.r45 s0 (Main.test2 w32 r)
-
-$L.ds47 : ([32], [39], [39]) -> [41]
-$L.ds47 w32 ds s0 =
-      let r = ds[7 +: 32] in
-      $L.r45 w32 r s0
-
-$L.arm52 : ([32], [39]) -> [41]
-$L.arm52 w32 s0 =
-      $L.ds5 w32 s0 s0
-
-$L.Main.repl$s12 : ([39]) -> [41]
-$L.Main.repl$s12 s0 =
+main.$L._unused8$358 : ([39]) -> [41]
+main.$L._unused8$358 s0 =
       2'h2 # s0
 
-$L.arm21 : ([32], [32], [7], [39]) -> [41]
-$L.arm21 w32 d pc s0 =
-      $L.Main.nextPC9 (w32 # pc)
+main.$L.arm11$361 : ([32], [7], [39]) -> [41]
+main.$L.arm11$361 r pc s0 =
+      let $a = OD19.ProgramCounter.incPC pc in
+      let $a1 = r # $a in
+      main.$L._unused8$358 $a1
 
-$L.Main.getReg24 : ([32], [39]) -> [41]
-$L.Main.getReg24 w32 s0 =
-      $L.ds25 w32 s0 s0
-
-$L.ds51 : ([32], [39], [39]) -> [41]
-$L.ds51 w32 ds s0 =
+main.$L.ds10$360 : ([39], [39]) -> [41]
+main.$L.ds10$360 ds s0 =
       let r = ds[7 +: 32] in
-      $L.r49 w32 r s0
+      let pc = ds[0 +: 7] in
+      main.$L.arm11$361 r pc s0
 
-$L.Main.putReg19 : ([32], [39]) -> [41]
-$L.Main.putReg19 w32 s0 =
-      $L.ds20 w32 s0 s0
+main.$L.Main.nextPC9$359 : ([39]) -> [41]
+main.$L.Main.nextPC9$359 s0 =
+      main.$L.ds10$360 s0 s0
 
-Main.test3 : ([32], [32]) -> [1]
-Main.test3 $x $x1 =
-      test3 $x $x1
+main.$L.arm21$374 : ([32], [32], [7], [39]) -> [41]
+main.$L.arm21$374 w32 d pc s0 =
+      let $a = w32 # pc in
+      main.$L.Main.nextPC9$359 $a
 
-$L.Main.getReg46 : ([32], [39]) -> [41]
-$L.Main.getReg46 w32 s0 =
-      $L.ds47 w32 s0 s0
-
-$L.ds20 : ([32], [39], [39]) -> [41]
-$L.ds20 w32 ds s0 =
+main.$L.ds20$373 : ([32], [39], [39]) -> [41]
+main.$L.ds20$373 w32 ds s0 =
       let d = ds[7 +: 32] in
       let pc = ds[0 +: 7] in
-      $L.arm21 w32 d pc s0
+      main.$L.arm21$374 w32 d pc s0
 
-$L.Main.getReg42 : ([32], [39]) -> [41]
-$L.Main.getReg42 w32 s0 =
-      $L.ds43 w32 s0 s0
+main.$L.Main.putReg19$372 : ([32], [39]) -> [41]
+main.$L.Main.putReg19$372 w32 s0 =
+      main.$L.ds20$373 w32 s0 s0
 
-$L.r49 : ([32], [32], [39]) -> [41]
-$L.r49 w32 r s0 =
-      $LL.L.r45 s0 (Main.test4 w32 r)
+main.$L.r23$378 : ([32], [32], [39]) -> [41]
+main.$L.r23$378 w32 r s0 =
+      let $a = Main.test1 w32 r in
+      let $a1 = 1'h0 # $a in
+      $a1 # s0
+
+main.$L.ds25$380 : ([32], [39], [39]) -> [41]
+main.$L.ds25$380 w32 ds s0 =
+      let r = ds[7 +: 32] in
+      main.$L.r23$378 w32 r s0
+
+main.$L.Main.getReg24$379 : ([32], [39]) -> [41]
+main.$L.Main.getReg24$379 w32 s0 =
+      main.$L.ds25$380 w32 s0 s0
+
+main.$L.r41$403 : ([32], [32], [39]) -> [41]
+main.$L.r41$403 w32 r s0 =
+      let $a = Main.test2 w32 r in
+      let $a1 = 1'h0 # $a in
+      $a1 # s0
+
+main.$L.ds43$405 : ([32], [39], [39]) -> [41]
+main.$L.ds43$405 w32 ds s0 =
+      let r = ds[7 +: 32] in
+      main.$L.r41$403 w32 r s0
+
+main.$L.Main.getReg42$404 : ([32], [39]) -> [41]
+main.$L.Main.getReg42$404 w32 s0 =
+      main.$L.ds43$405 w32 s0 s0
+
+main.$L.r45$409 : ([32], [32], [39]) -> [41]
+main.$L.r45$409 w32 r s0 =
+      let $a = Main.test3 w32 r in
+      let $a1 = 1'h0 # $a in
+      $a1 # s0
+
+main.$L.ds47$411 : ([32], [39], [39]) -> [41]
+main.$L.ds47$411 w32 ds s0 =
+      let r = ds[7 +: 32] in
+      main.$L.r45$409 w32 r s0
+
+main.$L.Main.getReg46$410 : ([32], [39]) -> [41]
+main.$L.Main.getReg46$410 w32 s0 =
+      main.$L.ds47$411 w32 s0 s0
+
+main.$L.r49$415 : ([32], [32], [39]) -> [41]
+main.$L.r49$415 w32 r s0 =
+      let $a = Main.test4 w32 r in
+      let $a1 = 1'h0 # $a in
+      $a1 # s0
+
+main.$L.ds51$417 : ([32], [39], [39]) -> [41]
+main.$L.ds51$417 w32 ds s0 =
+      let r = ds[7 +: 32] in
+      main.$L.r49$415 w32 r s0
+
+main.$L.Main.getReg50$416 : ([32], [39]) -> [41]
+main.$L.Main.getReg50$416 w32 s0 =
+      main.$L.ds51$417 w32 s0 s0
+
+main.$L.ds5$354 : ([32], [39], [39]) -> [41]
+main.$L.ds5$354 w32 ds s0 =
+      let pc = ds[0 +: 7] in
+      if eq pc 7'h0 then main.$L.Main.putReg19$372 w32 s0
+            else if eq pc 7'h1 then main.$L.Main.getReg24$379 w32 s0 else if eq pc 7'h2 then main.$L.Main.putReg19$372 w32 s0 else if eq pc 7'h3 then main.$L.Main.getReg24$379 w32 s0 else if eq pc 7'h4 then main.$L.Main.getReg42$404 w32 s0 else if eq pc 7'h5 then main.$L.Main.getReg46$410 w32 s0 else if eq pc 7'h6 then main.$L.Main.getReg50$416 w32 s0 else main.$L.Main.nextPC9$359 s0
+
+main.$L.arm52$420 : ([32], [39]) -> [41]
+main.$L.arm52$420 w32 s0 =
+      main.$L.ds5$354 w32 s0 s0
+
+main.$L.Main.repl4$353 : ([33], [39]) -> [41]
+main.$L.Main.repl4$353 ds s0 =
+      if eq ds[32 +: 1] 1'h0 then (let w32 = ds[0 +: 32] in
+            main.$L.arm52$420 w32 s0)
+            else 2'h2 # s0
+
+Main.test1 : ([32], [32]) -> [1]
+Main.test1 $eta0 $eta1 =
+      test1 $eta0 $eta1
+
+Main.test2 : ([32], [32]) -> [1]
+Main.test2 $eta0 $eta1 =
+      test2 $eta0 $eta1
+
+Main.test3 : ([32], [32]) -> [1]
+Main.test3 $eta0 $eta1 =
+      test3 $eta0 $eta1
 
 Main.test4 : ([32], [32]) -> [1]
-Main.test4 $x $x1 =
-      test4 $x $x1
+Main.test4 $eta0 $eta1 =
+      test4 $eta0 $eta1
 
-$L.$x6 : ([33], [39]) -> [41]
-$L.$x6 $x $x1 =
-      $L.Main.repl4 $x $x1
-
-$L.arm11 : ([32], [7], [39]) -> [41]
-$L.arm11 r pc s0 =
-      $LL.L.arm11 r (OD19.ProgramCounter.incPC pc)
-
-$L.ds25 : ([32], [39], [39]) -> [41]
-$L.ds25 w32 ds s0 =
-      let r = ds[7 +: 32] in
-      $L.r23 w32 r s0
-
-$L.Main.nextPC9 : ([39]) -> [41]
-$L.Main.nextPC9 s0 =
-      $L.ds10 s0 s0
+OD19.ProgramCounter.incPC : ([7]) -> [7]
+OD19.ProgramCounter.incPC ds =
+      if eq ds 7'h0 then 7'h1
+            else if eq ds 7'h1 then 7'h2 else if eq ds 7'h2 then 7'h3 else if eq ds 7'h3 then 7'h4 else if eq ds 7'h4 then 7'h5 else if eq ds 7'h5 then 7'h6 else if eq ds 7'h6 then 7'h7 else if eq ds 7'h7 then 7'h8 else if eq ds 7'h8 then 7'h9 else if eq ds 7'h9 then 7'ha else if eq ds 7'ha then 7'hb else if eq ds 7'hb then 7'hc else if eq ds 7'hc then 7'hd else if eq ds 7'hd then 7'he else if eq ds 7'he then 7'hf else if eq ds 7'hf then 7'h10 else if eq ds 7'h10 then 7'h11 else if eq ds 7'h11 then 7'h12 else if eq ds 7'h12 then 7'h13 else if eq ds 7'h13 then 7'h14 else if eq ds 7'h14 then 7'h15 else if eq ds 7'h15 then 7'h16 else if eq ds 7'h16 then 7'h17 else if eq ds 7'h17 then 7'h18 else if eq ds 7'h18 then 7'h19 else if eq ds 7'h19 then 7'h1a else if eq ds 7'h1a then 7'h1b else if eq ds 7'h1b then 7'h1c else if eq ds 7'h1c then 7'h1d else if eq ds 7'h1d then 7'h1e else if eq ds 7'h1e then 7'h1f else if eq ds 7'h1f then 7'h20 else if eq ds 7'h20 then 7'h21 else if eq ds 7'h21 then 7'h22 else if eq ds 7'h22 then 7'h23 else if eq ds 7'h23 then 7'h24 else if eq ds 7'h24 then 7'h25 else if eq ds 7'h25 then 7'h26 else if eq ds 7'h26 then 7'h27 else if eq ds 7'h27 then 7'h28 else if eq ds 7'h28 then 7'h29 else if eq ds 7'h29 then 7'h2a else if eq ds 7'h2a then 7'h2b else if eq ds 7'h2b then 7'h2c else if eq ds 7'h2c then 7'h2d else if eq ds 7'h2d then 7'h2e else if eq ds 7'h2e then 7'h2f else if eq ds 7'h2f then 7'h30 else if eq ds 7'h30 then 7'h31 else if eq ds 7'h31 then 7'h32 else if eq ds 7'h32 then 7'h33 else if eq ds 7'h33 then 7'h34 else if eq ds 7'h34 then 7'h35 else if eq ds 7'h35 then 7'h36 else if eq ds 7'h36 then 7'h37 else if eq ds 7'h37 then 7'h38 else if eq ds 7'h38 then 7'h39 else if eq ds 7'h39 then 7'h3a else if eq ds 7'h3a then 7'h3b else if eq ds 7'h3b then 7'h3c else if eq ds 7'h3c then 7'h3d else if eq ds 7'h3d then 7'h3e else if eq ds 7'h3e then 7'h3f else if eq ds 7'h3f then 7'h40 else if eq ds 7'h40 then 7'h41 else if eq ds 7'h41 then 7'h42 else if eq ds 7'h42 then 7'h43 else if eq ds 7'h43 then 7'h44 else if eq ds 7'h44 then 7'h45 else if eq ds 7'h45 then 7'h46 else if eq ds 7'h46 then 7'h47 else if eq ds 7'h47 then 7'h48 else if eq ds 7'h48 then 7'h49 else if eq ds 7'h49 then 7'h4a else if eq ds 7'h4a then 7'h4b else if eq ds 7'h4b then 7'h4c else if eq ds 7'h4c then 7'h4d else if eq ds 7'h4d then 7'h4e else if eq ds 7'h4e then 7'h4f else if eq ds 7'h4f then 7'h50 else if eq ds 7'h50 then 7'h51 else if eq ds 7'h51 then 7'h52 else if eq ds 7'h52 then 7'h53 else if eq ds 7'h53 then 7'h54 else if eq ds 7'h54 then 7'h55 else if eq ds 7'h55 then 7'h56 else if eq ds 7'h56 then 7'h57 else if eq ds 7'h57 then 7'h58 else if eq ds 7'h58 then 7'h59 else if eq ds 7'h59 then 7'h5a else if eq ds 7'h5a then 7'h5b else if eq ds 7'h5b then 7'h5c else if eq ds 7'h5c then 7'h5d else if eq ds 7'h5d then 7'h5e else if eq ds 7'h5e then 7'h5f else if eq ds 7'h5f then 7'h60 else if eq ds 7'h60 then 7'h61 else if eq ds 7'h61 then 7'h62 else if eq ds 7'h62 then 7'h63 else if eq ds 7'h63 then 7'h64 else if eq ds 7'h64 then 7'h65 else if eq ds 7'h65 then 7'h66 else if eq ds 7'h66 then 7'h67 else if eq ds 7'h67 then 7'h68 else if eq ds 7'h68 then 7'h69 else if eq ds 7'h69 then 7'h6a else if eq ds 7'h6a then 7'h6b else if eq ds 7'h6b then 7'h6c else if eq ds 7'h6c then 7'h6d else if eq ds 7'h6d then 7'h6e else if eq ds 7'h6e then 7'h6f else if eq ds 7'h6f then 7'h70 else if eq ds 7'h70 then 7'h71 else if eq ds 7'h71 then 7'h72 else if eq ds 7'h72 then 7'h73 else if eq ds 7'h73 then 7'h74 else if eq ds 7'h74 then 7'h75 else if eq ds 7'h75 then 7'h76 else if eq ds 7'h76 then 7'h77 else if eq ds 7'h77 then 7'h78 else if eq ds 7'h78 then 7'h79 else if eq ds 7'h79 then 7'h7a else if eq ds 7'h7a then 7'h7b else if eq ds 7'h7b then 7'h7c else if eq ds 7'h7c then 7'h7d else if eq ds 7'h7d then 7'h7e else 7'h0
 
 device top_level
       input __in0 : [1]
@@ -170,7 +165,7 @@ device top_level
       output __out1 : [1]
       register __st0 : [32] init 32'h0
       register __st1 : [7] init 7'h0
-      let $res = $Pure.dispatch (__st0 # __st1) (__in0 # __in1)
+      let $res = main.$dispatch (__st0 # __st1) (__in0 # __in1)
       __out0 := $res[40 +: 1]
       __out1 := $res[39 +: 1]
       next __st0 := $res[7 +: 32]

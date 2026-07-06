@@ -1,474 +1,567 @@
-$Pure.dispatch : ([208], [46]) -> [241]
-$Pure.dispatch disc i =
-      if eq disc[205 +: 3] 3'h0 then (let s = disc[0 +: 205] in
-            $L.$x10 i s)
-            else if eq disc[205 +: 3] 3'h1 then (let s = disc[0 +: 205] in
-            $L.$x20 i s) else if eq disc[205 +: 3] 3'h2 then (let s = disc[0 +: 205] in
-            $L.$x62 i s) else if eq disc[205 +: 3] 3'h3 then (let s = disc[0 +: 205] in
-            $L._unused101 i s) else let s = disc[0 +: 205] in
-            $L.$x2 i s
+main.$dispatch : ([208], [46]) -> [241]
+main.$dispatch disc i =
+      if eq disc[205 +: 3] 3'h0 then main.$L.$x10$851 i disc[0 +: 205]
+            else if eq disc[205 +: 3] 3'h1 then main.$L.$x20$866 i disc[0 +: 205] else if eq disc[205 +: 3] 3'h2 then main.$L.$x62$924 i disc[0 +: 205] else if eq disc[205 +: 3] 3'h3 then main.$L._unused101$977 i disc[0 +: 205] else main.$L.$x2$840 i disc[0 +: 205]
 
-$LL.L.x602 : ([205]) -> [205]
-$LL.L.x602 $a =
-      $a
+main.$L.$x10$851 : ([46], [205]) -> [241]
+main.$L.$x10$851 $x s0 =
+      main.$L.Main.idle9$849 $x s0
 
-$L.Main.connect12 : ([205], [205]) -> [241]
-$L.Main.connect12 x s0 =
-      $L._unused13 x x
+main.$L._unused13$855 : ([205], [205]) -> [241]
+main.$L._unused13$855 x s0 =
+      let s = (let x1 = x[128 +: 77] in
+      x1) in
+      let $a = Main.ack_reg s in
+      let $a1 = Main.data_out_reg s in
+      let $a2 = $a # $a1 in
+      $a2 # 3'h0 # s0
 
-$L.x90 : ([205], [205]) -> [241]
-$L.x90 x s0 =
-      $L._unused85 (let m = x[0 +: 128] in
-      $LL.L.x542 m (let partition_reg = x[203 +: 2] in
+main.$L.Main.connect12$854 : ([205], [205]) -> [241]
+main.$L.Main.connect12$854 x s0 =
+      main.$L._unused13$855 x x
+
+main.$L._unused14$856 : ([205]) -> [241]
+main.$L._unused14$856 s0 =
+      main.$L.Main.connect12$854 s0 s0
+
+main.$L.x17$860 : ([205], [205]) -> [241]
+main.$L.x17$860 x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let partition_reg = x[203 +: 2] in
       let addr_reg = x[193 +: 10] in
       let data_reg = x[161 +: 32] in
       let ack_reg = x[160 +: 1] in
-      $LL.L.x922 (partition_reg # addr_reg # data_reg # ack_reg # 32'h0)))
+      let $a = partition_reg # addr_reg # data_reg # ack_reg # 32'h0 in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L._unused14$856 $a
 
-$L.Main.get_addr_reg79 : ([205]) -> [241]
-$L.Main.get_addr_reg79 s0 =
-      $L.ds80 s0 s0
+main.$L.Main.set_data_out_reg$s116$859 : ([205]) -> [241]
+main.$L.Main.set_data_out_reg$s116$859 s0 =
+      main.$L.x17$860 s0 s0
 
-Main.data_out_reg : ([77]) -> [32]
-Main.data_out_reg ds =
-      let ds5 = ds[0 +: 32] in
-      ds5
+main.$L.x19$863 : ([205], [205]) -> [241]
+main.$L.x19$863 x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let partition_reg = x[203 +: 2] in
+      let addr_reg = x[193 +: 10] in
+      let data_reg = x[161 +: 32] in
+      let data_out_reg = x[128 +: 32] in
+      let $a = partition_reg # addr_reg # data_reg # 1'h0 # data_out_reg in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L.Main.set_data_out_reg$s116$859 $a
 
-$L._unused45 : ([205], [205]) -> [241]
-$L._unused45 x s0 =
-      $LL.L._unused451 s0 (let x1 = x[128 +: 77] in
-      x1)
+main.$L.Main.set_ack_reg$s218$862 : ([205]) -> [241]
+main.$L.Main.set_ack_reg$s218$862 s0 =
+      main.$L.x19$863 s0 s0
 
-$LL.L.arm37 : ([10], [205], [32]) -> [241]
-$LL.L.arm37 addr s0 $a =
-      $L.Main.setloc33 addr $a s0
+main.$L.x32$881 : ([205], [205]) -> [241]
+main.$L.x32$881 x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let partition_reg = x[203 +: 2] in
+      let addr_reg = x[193 +: 10] in
+      let data_reg = x[161 +: 32] in
+      let data_out_reg = x[128 +: 32] in
+      let $a = partition_reg # addr_reg # data_reg # 1'h1 # data_out_reg in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L._unused14$856 $a
 
-$LL.Main.memLookup10 : ([1], [128]) -> [32]
-$LL.Main.memLookup10 wild $x =
-      if eq wild 1'h0 then Main.mem0 $x
-            else Main.mem1 $x
+main.$L.Main.set_ack_reg$s131$880 : ([205]) -> [241]
+main.$L.Main.set_ack_reg$s131$880 s0 =
+      main.$L.x32$881 s0 s0
 
-$L.Main.set_data_out_reg74 : ([32], [205]) -> [241]
-$L.Main.set_data_out_reg74 w32 s0 =
-      $L.x75 w32 s0 s0
+main.$L.x34$884 : ([10], [32], [205], [205]) -> [241]
+main.$L.x34$884 i e x s0 =
+      let $a = (let s = x[128 +: 77] in
+      let m = x[0 +: 128] in
+      let $a = Main.memTweak i e m in
+      let $a1 = s # $a in
+      $a1) in
+      main.$L.Main.set_ack_reg$s131$880 $a
 
-$L.Main.set_partition_reg55 : ([2], [205]) -> [241]
-$L.Main.set_partition_reg55 w2 s0 =
-      $L.x56 w2 s0 s0
+main.$L.Main.setloc33$883 : ([10], [32], [205]) -> [241]
+main.$L.Main.setloc33$883 i e s0 =
+      main.$L.x34$884 i e s0 s0
 
-$LL.L.x922 : ([77]) -> [77]
-$LL.L.x922 $a =
-      $a
+main.$L.arm37$888 : ([10], [77], [128], [205]) -> [241]
+main.$L.arm37$888 addr s ds s0 =
+      let $a = Main.data_reg s in
+      main.$L.Main.setloc33$883 addr $a s0
 
-$L.ds77 : ([10], [205], [205]) -> [241]
-$L.ds77 a ds s0 =
+main.$L.ds36$887 : ([10], [205], [205]) -> [241]
+main.$L.ds36$887 addr ds s0 =
+      let s = ds[128 +: 77] in
+      let ds1 = ds[0 +: 128] in
+      main.$L.arm37$888 addr s ds1 s0
+
+main.$L.Main.get_data_reg35$886 : ([10], [205]) -> [241]
+main.$L.Main.get_data_reg35$886 addr s0 =
+      main.$L.ds36$887 addr s0 s0
+
+main.$L.arm40$892 : ([77], [128], [205]) -> [241]
+main.$L.arm40$892 s ds s0 =
+      let $a = Main.addr_reg s in
+      main.$L.Main.get_data_reg35$886 $a s0
+
+main.$L.ds39$891 : ([205], [205]) -> [241]
+main.$L.ds39$891 ds s0 =
+      let s = ds[128 +: 77] in
+      let ds1 = ds[0 +: 128] in
+      main.$L.arm40$892 s ds1 s0
+
+main.$L.Main.get_addr_reg38$890 : ([205]) -> [241]
+main.$L.Main.get_addr_reg38$890 s0 =
+      main.$L.ds39$891 s0 s0
+
+main.$L.x42$895 : ([205], [205]) -> [241]
+main.$L.x42$895 x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let partition_reg = x[203 +: 2] in
+      let addr_reg = x[193 +: 10] in
+      let data_reg = x[161 +: 32] in
+      let ack_reg = x[160 +: 1] in
+      let $a = partition_reg # addr_reg # data_reg # ack_reg # 32'h0 in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L.Main.get_addr_reg38$890 $a
+
+main.$L.Main.set_data_out_reg$s141$894 : ([205]) -> [241]
+main.$L.Main.set_data_out_reg$s141$894 s0 =
+      main.$L.x42$895 s0 s0
+
+main.$L.$x20$866 : ([46], [205]) -> [241]
+main.$L.$x20$866 $x s0 =
+      main.$L.Main.set_data_out_reg$s141$894 s0
+
+main.$L._unused45$900 : ([205], [205]) -> [241]
+main.$L._unused45$900 x s0 =
+      let s = (let x1 = x[128 +: 77] in
+      x1) in
+      let $a = Main.ack_reg s in
+      let $a1 = Main.data_out_reg s in
+      let $a2 = $a # $a1 in
+      $a2 # 3'h1 # s0
+
+main.$L.Main.connect44$899 : ([205], [205]) -> [241]
+main.$L.Main.connect44$899 x s0 =
+      main.$L._unused45$900 x x
+
+main.$L._unused46$901 : ([205]) -> [241]
+main.$L._unused46$901 s0 =
+      main.$L.Main.connect44$899 s0 s0
+
+main.$L.x52$908 : ([205], [205]) -> [241]
+main.$L.x52$908 x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let partition_reg = x[203 +: 2] in
+      let addr_reg = x[193 +: 10] in
+      let data_reg = x[161 +: 32] in
+      let ack_reg = x[160 +: 1] in
+      let $a = partition_reg # addr_reg # data_reg # ack_reg # 32'h0 in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L._unused46$901 $a
+
+main.$L.Main.set_data_out_reg$s151$907 : ([205]) -> [241]
+main.$L.Main.set_data_out_reg$s151$907 s0 =
+      main.$L.x52$908 s0 s0
+
+main.$L.x54$911 : ([205], [205]) -> [241]
+main.$L.x54$911 x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let partition_reg = x[203 +: 2] in
+      let addr_reg = x[193 +: 10] in
+      let data_reg = x[161 +: 32] in
+      let data_out_reg = x[128 +: 32] in
+      let $a = partition_reg # addr_reg # data_reg # 1'h0 # data_out_reg in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L.Main.set_data_out_reg$s151$907 $a
+
+main.$L.Main.set_ack_reg$s253$910 : ([205]) -> [241]
+main.$L.Main.set_ack_reg$s253$910 s0 =
+      main.$L.x54$911 s0 s0
+
+main.$L.x56$914 : ([2], [205], [205]) -> [241]
+main.$L.x56$914 w2 x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let addr_reg = x[193 +: 10] in
+      let data_reg = x[161 +: 32] in
+      let ack_reg = x[160 +: 1] in
+      let data_out_reg = x[128 +: 32] in
+      let $a = w2 # addr_reg # data_reg # ack_reg # data_out_reg in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L.Main.set_ack_reg$s253$910 $a
+
+main.$L.Main.set_partition_reg55$913 : ([2], [205]) -> [241]
+main.$L.Main.set_partition_reg55$913 w2 s0 =
+      main.$L.x56$914 w2 s0 s0
+
+main.$L.x58$917 : ([32], [2], [205], [205]) -> [241]
+main.$L.x58$917 w32 p_i x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let partition_reg = x[203 +: 2] in
+      let addr_reg = x[193 +: 10] in
+      let ack_reg = x[160 +: 1] in
+      let data_out_reg = x[128 +: 32] in
+      let $a = partition_reg # addr_reg # w32 # ack_reg # data_out_reg in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L.Main.set_partition_reg55$913 p_i $a
+
+main.$L.Main.set_data_reg57$916 : ([2], [32], [205]) -> [241]
+main.$L.Main.set_data_reg57$916 p_i w32 s0 =
+      main.$L.x58$917 w32 p_i s0 s0
+
+main.$L._unused47$903 : ([46], [2], [205]) -> [241]
+main.$L._unused47$903 ip p_i s0 =
+      let $a = Main.data_in ip in
+      main.$L.Main.set_data_reg57$916 p_i $a s0
+
+main.$L.x60$920 : ([10], [46], [2], [205], [205]) -> [241]
+main.$L.x60$920 w10 ip p_i x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let partition_reg = x[203 +: 2] in
+      let data_reg = x[161 +: 32] in
+      let ack_reg = x[160 +: 1] in
+      let data_out_reg = x[128 +: 32] in
+      let $a = partition_reg # w10 # data_reg # ack_reg # data_out_reg in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L._unused47$903 ip p_i $a
+
+main.$L.Main.set_addr_reg59$919 : ([46], [2], [10], [205]) -> [241]
+main.$L.Main.set_addr_reg59$919 ip p_i w10 s0 =
+      main.$L.x60$920 w10 ip p_i s0 s0
+
+main.$L.arm61$922 : ([46], [10], [2], [205]) -> [241]
+main.$L.arm61$922 ip a_i p_i s0 =
+      let $a = "Main.<&>" p_i a_i in
+      main.$L.Main.set_addr_reg59$919 ip p_i $a s0
+
+main.$L.x75$941 : ([32], [205], [205]) -> [241]
+main.$L.x75$941 w32 x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let partition_reg = x[203 +: 2] in
+      let addr_reg = x[193 +: 10] in
+      let data_reg = x[161 +: 32] in
+      let ack_reg = x[160 +: 1] in
+      let $a = partition_reg # addr_reg # data_reg # ack_reg # w32 in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L.Main.set_ack_reg$s131$880 $a
+
+main.$L.Main.set_data_out_reg74$940 : ([32], [205]) -> [241]
+main.$L.Main.set_data_out_reg74$940 w32 s0 =
+      main.$L.x75$941 w32 s0 s0
+
+main.$L.arm78$945 : ([10], [77], [128], [205]) -> [241]
+main.$L.arm78$945 a ds mem s0 =
+      let $a = Main.memLookup a mem in
+      main.$L.Main.set_data_out_reg74$940 $a s0
+
+main.$L.ds77$944 : ([10], [205], [205]) -> [241]
+main.$L.ds77$944 a ds s0 =
       let ds1 = ds[128 +: 77] in
       let mem = ds[0 +: 128] in
-      $L.arm78 a ds1 mem s0
+      main.$L.arm78$945 a ds1 mem s0
 
-$LL.Main.scrubbing9 : ([1], [1], [1], [1]) -> [1]
-$LL.Main.scrubbing9 ds ds1 ds2 wild =
-      if eq wild 1'h1 then $LL.Main.scrubbing4 ds1 ds2 ds
-            else 1'h1
+main.$L.Main.getloc76$943 : ([10], [205]) -> [241]
+main.$L.Main.getloc76$943 a s0 =
+      main.$L.ds77$944 a s0 s0
 
-$LL.L._unused453 : ([1], [205], [32]) -> [241]
-$LL.L._unused453 $a s0 $a1 =
-      $LL.L._unused452 s0 ($a # $a1)
+main.$L.arm81$949 : ([77], [128], [205]) -> [241]
+main.$L.arm81$949 s ds s0 =
+      let $a = Main.addr_reg s in
+      main.$L.Main.getloc76$943 $a s0
 
-$LL.L.x542 : ([128], [77]) -> [205]
-$LL.L.x542 m $a =
-      $LL.L.x602 ($a # m)
+main.$L.ds80$948 : ([205], [205]) -> [241]
+main.$L.ds80$948 ds s0 =
+      let s = ds[128 +: 77] in
+      let ds1 = ds[0 +: 128] in
+      main.$L.arm81$949 s ds1 s0
 
-$L.Main.setloc33 : ([10], [32], [205]) -> [241]
-$L.Main.setloc33 i e s0 =
-      $L.x34 i e s0 s0
+main.$L.Main.get_addr_reg79$947 : ([205]) -> [241]
+main.$L.Main.get_addr_reg79$947 s0 =
+      main.$L.ds80$948 s0 s0
 
-$LL.Main.memLookup9 : ([1], [1], [1], [1], [1], [1], [1], [1], [1], [128]) -> [32]
-$LL.Main.memLookup9 ds ds1 ds2 ds3 ds4 ds5 ds6 ds7 wild $x =
-      if eq wild 1'h0 then $LL.Main.memLookup ds ds1 ds2 ds3 ds4 ds5 ds6 ds7 $x
-            else $LL.Main.memLookup.fail1 $x
+main.$L.$x62$924 : ([46], [205]) -> [241]
+main.$L.$x62$924 $x s0 =
+      main.$L.Main.get_addr_reg79$947 s0
 
-$LL.Main.scrubbing8 : ([1], [1], [1], [1], [1], [1], [1], [1], [1]) -> [1]
-$LL.Main.scrubbing8 ds ds1 ds2 ds3 ds4 ds5 ds6 ds7 wild =
-      if eq wild 1'h1 then $LL.Main.scrubbing5 ds ds1 ds3 ds4 ds5 ds6 ds7 ds2
-            else 1'h1
+main.$L._unused84$954 : ([205], [205]) -> [241]
+main.$L._unused84$954 x s0 =
+      let s = (let x1 = x[128 +: 77] in
+      x1) in
+      let $a = Main.ack_reg s in
+      let $a1 = Main.data_out_reg s in
+      let $a2 = $a # $a1 in
+      $a2 # 3'h2 # s0
 
-$L.Main.set_data_out_reg$s141 : ([205]) -> [241]
-$L.Main.set_data_out_reg$s141 s0 =
-      $L.x42 s0 s0
+main.$L.Main.connect83$953 : ([205], [205]) -> [241]
+main.$L.Main.connect83$953 x s0 =
+      main.$L._unused84$954 x x
 
-$LL.Main.memLookup8 : ([1], [1], [1], [1], [1], [1], [1], [128]) -> [32]
-$LL.Main.memLookup8 ds ds1 ds2 ds3 ds4 ds5 wild $x =
-      if eq wild 1'h0 then $LL.Main.memLookup3 ds ds1 ds3 ds4 ds5 ds2 $x
-            else $LL.Main.memLookup.fail1 $x
+main.$L._unused85$955 : ([205]) -> [241]
+main.$L._unused85$955 s0 =
+      main.$L.Main.connect83$953 s0 s0
 
-$L.x17 : ([205], [205]) -> [241]
-$L.x17 x s0 =
-      $L._unused14 (let m = x[0 +: 128] in
-      $LL.L.x542 m (let partition_reg = x[203 +: 2] in
+main.$L.x90$961 : ([205], [205]) -> [241]
+main.$L.x90$961 x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let partition_reg = x[203 +: 2] in
       let addr_reg = x[193 +: 10] in
       let data_reg = x[161 +: 32] in
       let ack_reg = x[160 +: 1] in
-      $LL.L.x922 (partition_reg # addr_reg # data_reg # ack_reg # 32'h0)))
+      let $a = partition_reg # addr_reg # data_reg # ack_reg # 32'h0 in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L._unused85$955 $a
 
-$LL.L._unused47 : ([205], [2], [32]) -> [241]
-$LL.L._unused47 s0 p_i $a =
-      $L.Main.set_data_reg57 p_i $a s0
+main.$L.Main.set_data_out_reg$s189$960 : ([205]) -> [241]
+main.$L.Main.set_data_out_reg$s189$960 s0 =
+      main.$L.x90$961 s0 s0
 
-$L.x32 : ([205], [205]) -> [241]
-$L.x32 x s0 =
-      $L._unused14 (let m = x[0 +: 128] in
-      $LL.L.x542 m (let partition_reg = x[203 +: 2] in
+main.$L.x92$964 : ([205], [205]) -> [241]
+main.$L.x92$964 x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let partition_reg = x[203 +: 2] in
       let addr_reg = x[193 +: 10] in
       let data_reg = x[161 +: 32] in
       let data_out_reg = x[128 +: 32] in
-      $LL.L.x922 (partition_reg # addr_reg # data_reg # 1'h1 # data_out_reg)))
+      let $a = partition_reg # addr_reg # data_reg # 1'h0 # data_out_reg in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L.Main.set_data_out_reg$s189$960 $a
 
-$L.Main.idle9 : ([46], [205]) -> [241]
-$L.Main.idle9 ip s0 =
-      $LL.L.Main.idle9 s0 ip (Main.addr_in ip)
+main.$L.Main.set_ack_reg$s291$963 : ([205]) -> [241]
+main.$L.Main.set_ack_reg$s291$963 s0 =
+      main.$L.x92$964 s0 s0
 
-Main.mem1 : ([128]) -> [32]
-Main.mem1 ds =
-      let ds2 = ds[64 +: 32] in
-      ds2
-
-$L.$x10 : ([46], [205]) -> [241]
-$L.$x10 $x $x1 =
-      $L.Main.idle9 $x $x1
-
-$LL.L.arm61 : ([46], [205], [2], [10]) -> [241]
-$LL.L.arm61 ip s0 p_i $a =
-      $L.Main.set_addr_reg59 ip p_i $a s0
-
-$L.x54 : ([205], [205]) -> [241]
-$L.x54 x s0 =
-      $L.Main.set_data_out_reg$s151 (let m = x[0 +: 128] in
-      $LL.L.x542 m (let partition_reg = x[203 +: 2] in
-      let addr_reg = x[193 +: 10] in
+main.$L.x94$967 : ([2], [205], [205]) -> [241]
+main.$L.x94$967 w2 x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let addr_reg = x[193 +: 10] in
       let data_reg = x[161 +: 32] in
+      let ack_reg = x[160 +: 1] in
       let data_out_reg = x[128 +: 32] in
-      $LL.L.x922 (partition_reg # addr_reg # data_reg # 1'h0 # data_out_reg)))
+      let $a = w2 # addr_reg # data_reg # ack_reg # data_out_reg in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L.Main.set_ack_reg$s291$963 $a
+
+main.$L.Main.set_partition_reg93$966 : ([2], [205]) -> [241]
+main.$L.Main.set_partition_reg93$966 w2 s0 =
+      main.$L.x94$967 w2 s0 s0
+
+main.$L.x96$970 : ([10], [2], [205], [205]) -> [241]
+main.$L.x96$970 w10 p_i x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let partition_reg = x[203 +: 2] in
+      let data_reg = x[161 +: 32] in
+      let ack_reg = x[160 +: 1] in
+      let data_out_reg = x[128 +: 32] in
+      let $a = partition_reg # w10 # data_reg # ack_reg # data_out_reg in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L.Main.set_partition_reg93$966 p_i $a
+
+main.$L.Main.set_addr_reg95$969 : ([2], [10], [205]) -> [241]
+main.$L.Main.set_addr_reg95$969 p_i w10 s0 =
+      main.$L.x96$970 w10 p_i s0 s0
+
+main.$L.arm97$972 : ([10], [2], [205]) -> [241]
+main.$L.arm97$972 a_i p_i s0 =
+      let $a = "Main.<&>" p_i a_i in
+      main.$L.Main.set_addr_reg95$969 p_i $a s0
+
+main.$L.arm98$973 : ([46], [10], [2], [205]) -> [241]
+main.$L.arm98$973 ip a_i p_i s0 =
+      let $a = Main.rnw ip in
+      if eq $a 1'h0 then main.$L.arm61$922 ip a_i p_i s0
+            else main.$L.arm97$972 a_i p_i s0
+
+main.$L.Main.idle9$849 : ([46], [205]) -> [241]
+main.$L.Main.idle9$849 ip s0 =
+      let a_i = Main.addr_in ip in
+      let p_i = Main.partition_in ip in
+      let $a = Main.go ip in
+      if eq $a 1'h1 then main.$L.arm98$973 ip a_i p_i s0
+            else main.$L.Main.set_ack_reg$s218$862 s0
+
+main.$L.arm99$974 : ([77], [128], [205]) -> [241]
+main.$L.arm99$974 sigs ds s0 =
+      let $a = Main.ack_reg sigs in
+      let $a1 = Main.data_out_reg sigs in
+      let $a2 = $a # $a1 in
+      $a2 # 3'h0 # s0
+
+main.$L.ds7$846 : ([205], [205]) -> [241]
+main.$L.ds7$846 ds s0 =
+      let sigs = ds[128 +: 77] in
+      let ds1 = ds[0 +: 128] in
+      main.$L.arm99$974 sigs ds1 s0
+
+main.$L.arm100$976 : ([205]) -> [241]
+main.$L.arm100$976 s0 =
+      main.$L.ds7$846 s0 s0
+
+main.$L._unused103$980 : ([205]) -> [241]
+main.$L._unused103$980 s0 =
+      main.$L.Main.get_addr_reg115$996 s0 s0
+
+main.$L.x107$985 : ([10], [205], [205]) -> [241]
+main.$L.x107$985 w10 x s0 =
+      let $a = (let m = x[0 +: 128] in
+      let $a = (let partition_reg = x[203 +: 2] in
+      let data_reg = x[161 +: 32] in
+      let ack_reg = x[160 +: 1] in
+      let data_out_reg = x[128 +: 32] in
+      let $a = partition_reg # w10 # data_reg # ack_reg # data_out_reg in
+      $a) in
+      let $a1 = $a # m in
+      $a1) in
+      main.$L._unused103$980 $a
+
+main.$L.Main.set_addr_reg106$984 : ([10], [205]) -> [241]
+main.$L.Main.set_addr_reg106$984 w10 s0 =
+      main.$L.x107$985 w10 s0 s0
+
+main.$L._unused105$983 : ([10], [205]) -> [241]
+main.$L._unused105$983 addr s0 =
+      let $a = Main.nextKey addr in
+      main.$L.Main.set_addr_reg106$984 $a s0
+
+main.$L.x109$988 : ([10], [10], [205], [205]) -> [241]
+main.$L.x109$988 addr i x s0 =
+      let $a = (let s = x[128 +: 77] in
+      let m = x[0 +: 128] in
+      let $a = Main.memTweak i 32'h0 m in
+      let $a1 = s # $a in
+      $a1) in
+      main.$L._unused105$983 addr $a
+
+main.$L.Main.setloc$s1108$987 : ([10], [10], [205]) -> [241]
+main.$L.Main.setloc$s1108$987 addr i s0 =
+      main.$L.x109$988 addr i s0 s0
+
+main.$L.arm112$992 : ([77], [128], [205]) -> [241]
+main.$L.arm112$992 s ds s0 =
+      let $a = Main.addr_reg s in
+      main.$L.Main.setloc$s1108$987 $a $a s0
+
+main.$L.ds111$991 : ([205], [205]) -> [241]
+main.$L.ds111$991 ds s0 =
+      let s = ds[128 +: 77] in
+      let ds1 = ds[0 +: 128] in
+      main.$L.arm112$992 s ds1 s0
+
+main.$L.Main.get_addr_reg110$990 : ([205]) -> [241]
+main.$L.Main.get_addr_reg110$990 s0 =
+      main.$L.ds111$991 s0 s0
+
+main.$L._unused101$977 : ([46], [205]) -> [241]
+main.$L._unused101$977 _unused s0 =
+      main.$L.Main.get_addr_reg110$990 s0
+
+main.$L._unused114$995 : ([205], [205]) -> [241]
+main.$L._unused114$995 x s0 =
+      let s = (let x1 = x[128 +: 77] in
+      x1) in
+      let $a = Main.ack_reg s in
+      let $a1 = Main.data_out_reg s in
+      let $a2 = $a # $a1 in
+      $a2 # 3'h3 # s0
+
+main.$L.Main.connect113$994 : ([205], [205]) -> [241]
+main.$L.Main.connect113$994 x s0 =
+      main.$L._unused114$995 x x
+
+main.$L.addr6$845 : ([205], [10], [205]) -> [241]
+main.$L.addr6$845 x addr s0 =
+      let $a = Main.scrubbing addr in
+      if eq $a 1'h0 then main.$L.arm100$976 s0
+            else main.$L.Main.connect113$994 x s0
+
+main.$L.arm117$998 : ([205], [77], [128], [205]) -> [241]
+main.$L.arm117$998 x s ds s0 =
+      let $a = Main.addr_reg s in
+      main.$L.addr6$845 x $a s0
+
+main.$L.ds116$997 : ([205], [205], [205]) -> [241]
+main.$L.ds116$997 x ds s0 =
+      let s = ds[128 +: 77] in
+      let ds1 = ds[0 +: 128] in
+      main.$L.arm117$998 x s ds1 s0
+
+main.$L.Main.get_addr_reg115$996 : ([205], [205]) -> [241]
+main.$L.Main.get_addr_reg115$996 x s0 =
+      main.$L.ds116$997 x s0 s0
+
+main.$L.Main.scrub_ram3$841 : ([46], [205]) -> [241]
+main.$L.Main.scrub_ram3$841 ips s0 =
+      main.$L.Main.get_addr_reg115$996 s0 s0
+
+main.$L.$x2$840 : ([46], [205]) -> [241]
+main.$L.$x2$840 $x s0 =
+      main.$L.Main.scrub_ram3$841 $x s0
 
 Main.mem3 : ([128]) -> [32]
 Main.mem3 ds =
       let ds4 = ds[0 +: 32] in
       ds4
 
-$L.Main.connect83 : ([205], [205]) -> [241]
-$L.Main.connect83 x s0 =
-      $L._unused84 x x
+Main.mem2 : ([128]) -> [32]
+Main.mem2 ds =
+      let ds3 = ds[32 +: 32] in
+      ds3
 
-$LL.Main.memLookup7 : ([1], [1], [128]) -> [32]
-$LL.Main.memLookup7 ds wild $x =
-      if eq wild 1'h0 then $LL.Main.memLookup10 ds $x
-            else $LL.Main.memLookup1 ds $x
-
-$LL.Main.memTweak10 : ([1], [32], [1], [1], [1], [1], [1], [128], [1]) -> [128]
-$LL.Main.memTweak10 ds v ds1 ds2 ds3 ds4 ds5 m wild =
-      if eq wild 1'h0 then $LL.Main.memTweak8 ds v ds1 ds2 ds4 ds5 m ds3
-            else 128'h0
-
-$LL.Main.memTweak9 : ([32], [128], [1]) -> [128]
-$LL.Main.memTweak9 v m wild =
-      if eq wild 1'h0 then (let mem0 = m[96 +: 32] in
-            let mem1 = m[64 +: 32] in
-            let mem3 = m[0 +: 32] in
-            mem0 # mem1 # v # mem3)
-            else let mem0 = m[96 +: 32] in
-            let mem1 = m[64 +: 32] in
-            let mem2 = m[32 +: 32] in
-            mem0 # mem1 # mem2 # v
-
-$L.Main.set_partition_reg93 : ([2], [205]) -> [241]
-$L.Main.set_partition_reg93 w2 s0 =
-      $L.x94 w2 s0 s0
-
-$LL.L.arm97 : ([2], [205], [10]) -> [241]
-$LL.L.arm97 p_i s0 $a =
-      $L.Main.set_addr_reg95 p_i $a s0
-
-$LL.L.Main.idle92 : ([205], [10], [46], [2]) -> [241]
-$LL.L.Main.idle92 s0 a_i ip p_i =
-      $LL.L.Main.idle91 s0 p_i a_i ip (Main.go ip)
-
-$LL.L._unused843 : ([205], [77]) -> [241]
-$LL.L._unused843 s0 s =
-      $LL.L._unused84 s s0 (Main.ack_reg s)
-
-$L.addr6 : ([205], [10], [205]) -> [241]
-$L.addr6 x addr s0 =
-      $LL.L.addr6 s0 x (Main.scrubbing addr)
-
-$LL.Main.memTweak8 : ([1], [32], [1], [1], [1], [1], [128], [1]) -> [128]
-$LL.Main.memTweak8 ds v ds1 ds2 ds3 ds4 m wild =
-      if eq wild 1'h0 then $LL.Main.memTweak1 ds v ds1 ds2 ds3 m ds4
-            else 128'h0
-
-$L.arm37 : ([10], [77], [128], [205]) -> [241]
-$L.arm37 addr s ds s0 =
-      $LL.L.arm37 addr s0 (Main.data_reg s)
-
-$LL.Main.memTweak7 : ([1], [32], [1], [1], [1], [1], [1], [1], [128], [1]) -> [128]
-$LL.Main.memTweak7 ds v ds1 ds2 ds3 ds4 ds5 ds6 m wild =
-      if eq wild 1'h0 then $LL.Main.memTweak10 ds v ds1 ds2 ds3 ds4 ds6 m ds5
-            else 128'h0
-
-$LL.L._unused842 : ([205], [33]) -> [241]
-$LL.L._unused842 s0 $a =
-      $a # 3'h2 # s0
-
-$L.arm81 : ([77], [128], [205]) -> [241]
-$L.arm81 s ds s0 =
-      $LL.L.arm81 s0 (Main.addr_reg s)
-
-$L.ds7 : ([205], [205]) -> [241]
-$L.ds7 ds s0 =
-      let sigs = ds[128 +: 77] in
-      let ds1 = ds[0 +: 128] in
-      $L.arm99 sigs ds1 s0
-
-$L._unused84 : ([205], [205]) -> [241]
-$L._unused84 x s0 =
-      $LL.L._unused843 s0 (let x1 = x[128 +: 77] in
-      x1)
-
-$L._unused105 : ([10], [205]) -> [241]
-$L._unused105 addr s0 =
-      $LL.L._unused105 s0 (Main.nextKey addr)
-
-$LL.L._unused1143 : ([205], [33]) -> [241]
-$LL.L._unused1143 s0 $a =
-      $a # 3'h3 # s0
-
-$L.arm78 : ([10], [77], [128], [205]) -> [241]
-$L.arm78 a ds mem s0 =
-      $LL.L.arm78 s0 (Main.memLookup a mem)
-
-$LL.L._unused133 : ([205], [77]) -> [241]
-$LL.L._unused133 s0 s =
-      $LL.L._unused13 s0 s (Main.ack_reg s)
-
-$L.$x20 : ([46], [205]) -> [241]
-$L.$x20 $x $x1 =
-      $L.Main.set_data_out_reg$s141 $x1
-
-$LL.L.arm117 : ([205], [205], [10]) -> [241]
-$LL.L.arm117 x s0 $a =
-      $L.addr6 x $a s0
-
-$LL.L._unused132 : ([205], [33]) -> [241]
-$LL.L._unused132 s0 $a =
-      $a # 3'h0 # s0
-
-$LL.L.Main.idle91 : ([205], [2], [10], [46], [1]) -> [241]
-$LL.L.Main.idle91 s0 p_i a_i ip $a =
-      if eq $a 1'h1 then $L.arm98 ip a_i p_i s0
-            else $L.Main.set_ack_reg$s218 s0
-
-$LL.L._unused841 : ([1], [205], [32]) -> [241]
-$LL.L._unused841 $a s0 $a1 =
-      $LL.L._unused842 s0 ($a # $a1)
-
-$L.arm117 : ([205], [77], [128], [205]) -> [241]
-$L.arm117 x s ds s0 =
-      $LL.L.arm117 x s0 (Main.addr_reg s)
-
-$LL.L._unused84 : ([77], [205], [1]) -> [241]
-$LL.L._unused84 s s0 $a =
-      $LL.L._unused841 $a s0 (Main.data_out_reg s)
-
-$LL.Main.nextKey10 : ([1], [1], [1]) -> [10]
-$LL.Main.nextKey10 ds ds1 wild =
-      if eq wild 1'h0 then $LL.Main.nextKey8 ds ds1
-            else 10'h3ff
-
-$LL.Main.memLookup6 : ([1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [128]) -> [32]
-$LL.Main.memLookup6 ds ds1 ds2 ds3 ds4 ds5 ds6 ds7 ds8 wild $x =
-      if eq wild 1'h0 then $LL.Main.memLookup9 ds ds1 ds2 ds3 ds5 ds6 ds7 ds8 ds4 $x
-            else $LL.Main.memLookup.fail1 $x
-
-$L.x107 : ([10], [205], [205]) -> [241]
-$L.x107 w10 x s0 =
-      $L._unused103 (let m = x[0 +: 128] in
-      $LL.L.x542 m (let partition_reg = x[203 +: 2] in
-      let data_reg = x[161 +: 32] in
-      let ack_reg = x[160 +: 1] in
-      let data_out_reg = x[128 +: 32] in
-      $LL.L.x922 (partition_reg # w10 # data_reg # ack_reg # data_out_reg)))
-
-$L.Main.set_ack_reg$s131 : ([205]) -> [241]
-$L.Main.set_ack_reg$s131 s0 =
-      $L.x32 s0 s0
-
-$L.Main.set_addr_reg95 : ([2], [10], [205]) -> [241]
-$L.Main.set_addr_reg95 p_i w10 s0 =
-      $L.x96 w10 p_i s0 s0
-
-$L.Main.get_addr_reg38 : ([205]) -> [241]
-$L.Main.get_addr_reg38 s0 =
-      $L.ds39 s0 s0
-
-$LL.Main.scrubbing7 : ([1], [1], [1], [1], [1], [1], [1]) -> [1]
-$LL.Main.scrubbing7 ds ds1 ds2 ds3 ds4 ds5 wild =
-      if eq wild 1'h1 then $LL.Main.scrubbing1 ds ds1 ds3 ds4 ds5 ds2
-            else 1'h1
-
-$L.Main.set_data_out_reg$s116 : ([205]) -> [241]
-$L.Main.set_data_out_reg$s116 s0 =
-      $L.x17 s0 s0
-
-$L.Main.set_addr_reg106 : ([10], [205]) -> [241]
-$L.Main.set_addr_reg106 w10 s0 =
-      $L.x107 w10 s0 s0
-
-$L.Main.set_ack_reg$s291 : ([205]) -> [241]
-$L.Main.set_ack_reg$s291 s0 =
-      $L.x92 s0 s0
-
-$L.ds116 : ([205], [205], [205]) -> [241]
-$L.ds116 x ds s0 =
-      let s = ds[128 +: 77] in
-      let ds1 = ds[0 +: 128] in
-      $L.arm117 x s ds1 s0
-
-$LL.L.arm78 : ([205], [32]) -> [241]
-$LL.L.arm78 s0 $a =
-      $L.Main.set_data_out_reg74 $a s0
-
-$LL.Main.nextKey9 : ([1], [1], [1], [1], [1], [1]) -> [10]
-$LL.Main.nextKey9 ds ds1 ds2 ds3 ds4 wild =
-      if eq wild 1'h0 then $LL.Main.nextKey2 ds ds1 ds3 ds4 ds2
-            else 10'h3ff
-
-$L._unused13 : ([205], [205]) -> [241]
-$L._unused13 x s0 =
-      $LL.L._unused133 s0 (let x1 = x[128 +: 77] in
-      x1)
-
-$L.Main.set_ack_reg$s253 : ([205]) -> [241]
-$L.Main.set_ack_reg$s253 s0 =
-      $L.x54 s0 s0
-
-$LL.Main.memLookup5 : ([1], [1], [1], [128]) -> [32]
-$LL.Main.memLookup5 ds ds1 wild $x =
-      if eq wild 1'h0 then $LL.Main.memLookup7 ds1 ds $x
-            else $LL.Main.memLookup.fail1 $x
-
-$LL.Main.nextKey8 : ([1], [1]) -> [10]
-$LL.Main.nextKey8 ds wild =
-      if eq wild 1'h0 then $LL.Main.nextKey ds
-            else $LL.Main.nextKey4 ds
-
-$L.x19 : ([205], [205]) -> [241]
-$L.x19 x s0 =
-      $L.Main.set_data_out_reg$s116 (let m = x[0 +: 128] in
-      $LL.L.x542 m (let partition_reg = x[203 +: 2] in
-      let addr_reg = x[193 +: 10] in
-      let data_reg = x[161 +: 32] in
-      let data_out_reg = x[128 +: 32] in
-      $LL.L.x922 (partition_reg # addr_reg # data_reg # 1'h0 # data_out_reg)))
-
-$L.Main.set_data_reg57 : ([2], [32], [205]) -> [241]
-$L.Main.set_data_reg57 p_i w32 s0 =
-      $L.x58 w32 p_i s0 s0
-
-$LL.Main.memLookup4 : ([1], [1], [1], [1], [128]) -> [32]
-$LL.Main.memLookup4 ds ds1 ds2 wild $x =
-      if eq wild 1'h0 then $LL.Main.memLookup5 ds ds2 ds1 $x
-            else $LL.Main.memLookup.fail1 $x
-
-$L.x109 : ([10], [10], [205], [205]) -> [241]
-$L.x109 addr i x s0 =
-      $L._unused105 addr (let s = x[128 +: 77] in
-      let m = x[0 +: 128] in
-      $LL.L.x341 s (Main.memTweak i 32'h0 m))
-
-$L.arm97 : ([10], [2], [205]) -> [241]
-$L.arm97 a_i p_i s0 =
-      $LL.L.arm97 p_i s0 ("Main.<&>" p_i a_i)
-
-$LL.Main.memLookup3 : ([1], [1], [1], [1], [1], [1], [128]) -> [32]
-$LL.Main.memLookup3 ds ds1 ds2 ds3 ds4 wild $x =
-      if eq wild 1'h0 then $LL.Main.memLookup2 ds1 ds2 ds3 ds4 ds $x
-            else $LL.Main.memLookup.fail1 $x
-
-$LL.Main.nextKey7 : ([1], [1], [1], [1], [1], [1], [1], [1], [1]) -> [10]
-$LL.Main.nextKey7 ds ds1 ds2 ds3 ds4 ds5 ds6 ds7 wild =
-      if eq wild 1'h0 then $LL.Main.nextKey1 ds ds1 ds2 ds3 ds5 ds6 ds7 ds4
-            else 10'h3ff
-
-$L.arm112 : ([77], [128], [205]) -> [241]
-$L.arm112 s ds s0 =
-      $LL.L.arm112 s0 (Main.addr_reg s)
-
-$LL.Main.scrubbing6 : ([1], [1], [1], [1], [1], [1], [1], [1], [1], [1]) -> [1]
-$LL.Main.scrubbing6 ds ds1 ds2 ds3 ds4 ds5 ds6 ds7 ds8 wild =
-      if eq wild 1'h1 then $LL.Main.scrubbing8 ds ds1 ds2 ds3 ds4 ds5 ds7 ds8 ds6
-            else 1'h1
-
-$L.x52 : ([205], [205]) -> [241]
-$L.x52 x s0 =
-      $L._unused46 (let m = x[0 +: 128] in
-      $LL.L.x542 m (let partition_reg = x[203 +: 2] in
-      let addr_reg = x[193 +: 10] in
-      let data_reg = x[161 +: 32] in
-      let ack_reg = x[160 +: 1] in
-      $LL.L.x922 (partition_reg # addr_reg # data_reg # ack_reg # 32'h0)))
-
-Main.nextKey : ([10]) -> [10]
-Main.nextKey ds =
-      let ds1 = ds[9 +: 1] in
-      let ds2 = ds[8 +: 1] in
-      let ds3 = ds[7 +: 1] in
-      let ds4 = ds[6 +: 1] in
-      let ds5 = ds[5 +: 1] in
-      let ds6 = ds[4 +: 1] in
-      let ds7 = ds[3 +: 1] in
-      let ds8 = ds[2 +: 1] in
-      let ds9 = ds[1 +: 1] in
-      let ds10 = ds[0 +: 1] in
-      $LL.Main.nextKey3 ds10 ds4 ds9 ds6 ds3 ds8 ds2 ds7 ds5 ds1
-
-$L.$x2 : ([46], [205]) -> [241]
-$L.$x2 $x $x1 =
-      $L.Main.scrub_ram3 $x $x1
-
-$LL.Main.scrubbing5 : ([1], [1], [1], [1], [1], [1], [1], [1]) -> [1]
-$LL.Main.scrubbing5 ds ds1 ds2 ds3 ds4 ds5 ds6 wild =
-      if eq wild 1'h1 then $LL.Main.scrubbing7 ds ds1 ds2 ds3 ds4 ds6 ds5
-            else 1'h1
-
-$L.Main.get_data_reg35 : ([10], [205]) -> [241]
-$L.Main.get_data_reg35 addr s0 =
-      $L.ds36 addr s0 s0
+Main.mem1 : ([128]) -> [32]
+Main.mem1 ds =
+      let ds2 = ds[64 +: 32] in
+      ds2
 
 Main.mem0 : ([128]) -> [32]
 Main.mem0 ds =
       let ds1 = ds[96 +: 32] in
       ds1
 
-$LL.Main.nextKey6 : ([1], [1], [1], [1]) -> [10]
-$LL.Main.nextKey6 ds ds1 ds2 wild =
-      if eq wild 1'h0 then $LL.Main.nextKey10 ds ds1 ds2
-            else 10'h3ff
+Main.data_out_reg : ([77]) -> [32]
+Main.data_out_reg ds =
+      let ds5 = ds[0 +: 32] in
+      ds5
 
-$LL.L.arm98 : ([46], [10], [205], [2], [1]) -> [241]
-$LL.L.arm98 ip a_i s0 p_i $a =
-      if eq $a 1'h0 then $L.arm61 ip a_i p_i s0
-            else $L.arm97 a_i p_i s0
+Main.ack_reg : ([77]) -> [1]
+Main.ack_reg ds =
+      let ds4 = ds[32 +: 1] in
+      ds4
 
-$L._unused101 : ([46], [205]) -> [241]
-$L._unused101 _unused $x =
-      $L.Main.get_addr_reg110 $x
+Main.data_reg : ([77]) -> [32]
+Main.data_reg ds =
+      let ds3 = ds[33 +: 32] in
+      ds3
 
-$L.Main.connect44 : ([205], [205]) -> [241]
-$L.Main.connect44 x s0 =
-      $L._unused45 x x
-
-$L.arm40 : ([77], [128], [205]) -> [241]
-$L.arm40 s ds s0 =
-      $LL.L.arm40 s0 (Main.addr_reg s)
+Main.addr_reg : ([77]) -> [10]
+Main.addr_reg ds =
+      let ds2 = ds[65 +: 10] in
+      ds2
 
 Main.partition_in : ([46]) -> [2]
 Main.partition_in ds =
@@ -480,137 +573,84 @@ Main.rnw ds =
       let ds4 = ds[2 +: 1] in
       ds4
 
-$LL.Main.memLookup2 : ([1], [1], [1], [1], [1], [128]) -> [32]
-$LL.Main.memLookup2 ds ds1 ds2 ds3 wild $x =
-      if eq wild 1'h0 then $LL.Main.memLookup4 ds1 ds2 ds3 ds $x
-            else $LL.Main.memLookup.fail1 $x
+Main.go : ([46]) -> [1]
+Main.go ds =
+      let ds3 = ds[3 +: 1] in
+      ds3
 
-$LL.L._unused131 : ([1], [205], [32]) -> [241]
-$LL.L._unused131 $a s0 $a1 =
-      $LL.L._unused132 s0 ($a # $a1)
+Main.addr_in : ([46]) -> [10]
+Main.addr_in ds =
+      let ds2 = ds[4 +: 10] in
+      ds2
 
-$LL.L._unused1142 : ([205], [77], [1]) -> [241]
-$LL.L._unused1142 s0 s $a =
-      $LL.L._unused114 s0 $a (Main.data_out_reg s)
+Main.data_in : ([46]) -> [32]
+Main.data_in ds =
+      let ds1 = ds[14 +: 32] in
+      ds1
 
-$L.Main.connect113 : ([205], [205]) -> [241]
-$L.Main.connect113 x s0 =
-      $L._unused114 x x
+Main.memLookup : ([10], [128]) -> [32]
+Main.memLookup ds $eta0 =
+      let ds1 = ds[9 +: 1] in
+      let ds2 = ds[8 +: 1] in
+      let ds3 = ds[7 +: 1] in
+      let ds4 = ds[6 +: 1] in
+      let ds5 = ds[5 +: 1] in
+      let ds6 = ds[4 +: 1] in
+      let ds7 = ds[3 +: 1] in
+      let ds8 = ds[2 +: 1] in
+      let ds9 = ds[1 +: 1] in
+      let ds10 = ds[0 +: 1] in
+      if eq ds1 1'h0 then (if eq ds2 1'h0 then (if eq ds3 1'h0 then (if eq ds4 1'h0 then (if eq ds5 1'h0 then (if eq ds6 1'h0 then (if eq ds7 1'h0 then (if eq ds8 1'h0 then (if eq ds9 1'h0 then (if eq ds10 1'h0 then Main.mem0 $eta0
+                                                                  else Main.mem1 $eta0)
+                                                            else if eq ds10 1'h0 then Main.mem2 $eta0 else Main.mem3 $eta0)
+                                                      else $LL.Main.memLookup.fail1 $eta0)
+                                                else $LL.Main.memLookup.fail1 $eta0)
+                                          else $LL.Main.memLookup.fail1 $eta0)
+                                    else $LL.Main.memLookup.fail1 $eta0)
+                              else $LL.Main.memLookup.fail1 $eta0)
+                        else $LL.Main.memLookup.fail1 $eta0)
+                  else $LL.Main.memLookup.fail1 $eta0)
+            else $LL.Main.memLookup.fail1 $eta0
 
-$LL.Main.memTweak6 : ([1], [32], [1], [1], [128], [1]) -> [128]
-$LL.Main.memTweak6 ds v ds1 ds2 m wild =
-      if eq wild 1'h0 then $LL.Main.memTweak4 ds v ds2 m ds1
+$LL.Main.memLookup.fail1 : ([128]) -> [32]
+$LL.Main.memLookup.fail1 $eta0 =
+      (undef 32)
+
+Main.memTweak : ([10], [32], [128]) -> [128]
+Main.memTweak ds v m =
+      let ds1 = ds[9 +: 1] in
+      let ds2 = ds[8 +: 1] in
+      let ds3 = ds[7 +: 1] in
+      let ds4 = ds[6 +: 1] in
+      let ds5 = ds[5 +: 1] in
+      let ds6 = ds[4 +: 1] in
+      let ds7 = ds[3 +: 1] in
+      let ds8 = ds[2 +: 1] in
+      let ds9 = ds[1 +: 1] in
+      let ds10 = ds[0 +: 1] in
+      if eq ds1 1'h0 then (if eq ds2 1'h0 then (if eq ds3 1'h0 then (if eq ds4 1'h0 then (if eq ds5 1'h0 then (if eq ds6 1'h0 then (if eq ds7 1'h0 then (if eq ds8 1'h0 then (if eq ds9 1'h0 then (if eq ds10 1'h0 then (let mem1 = m[64 +: 32] in
+                                                                  let mem2 = m[32 +: 32] in
+                                                                  let mem3 = m[0 +: 32] in
+                                                                  v # mem1 # mem2 # mem3)
+                                                                  else let mem0 = m[96 +: 32] in
+                                                                  let mem2 = m[32 +: 32] in
+                                                                  let mem3 = m[0 +: 32] in
+                                                                  mem0 # v # mem2 # mem3)
+                                                            else if eq ds10 1'h0 then (let mem0 = m[96 +: 32] in
+                                                            let mem1 = m[64 +: 32] in
+                                                            let mem3 = m[0 +: 32] in
+                                                            mem0 # mem1 # v # mem3) else let mem0 = m[96 +: 32] in
+                                                            let mem1 = m[64 +: 32] in
+                                                            let mem2 = m[32 +: 32] in
+                                                            mem0 # mem1 # mem2 # v)
+                                                      else 128'h0)
+                                                else 128'h0)
+                                          else 128'h0)
+                                    else 128'h0)
+                              else 128'h0)
+                        else 128'h0)
+                  else 128'h0)
             else 128'h0
-
-$LL.Main.memTweak5 : ([1], [32], [1], [1], [1], [1], [1], [1], [1], [128], [1]) -> [128]
-$LL.Main.memTweak5 ds v ds1 ds2 ds3 ds4 ds5 ds6 ds7 m wild =
-      if eq wild 1'h0 then $LL.Main.memTweak7 ds v ds1 ds3 ds4 ds5 ds6 ds7 m ds2
-            else 128'h0
-
-$LL.L._unused452 : ([205], [33]) -> [241]
-$LL.L._unused452 s0 $a =
-      $a # 3'h1 # s0
-
-$L.ds80 : ([205], [205]) -> [241]
-$L.ds80 ds s0 =
-      let s = ds[128 +: 77] in
-      let ds1 = ds[0 +: 128] in
-      $L.arm81 s ds1 s0
-
-$LL.L._unused451 : ([205], [77]) -> [241]
-$LL.L._unused451 s0 s =
-      $LL.L._unused45 s0 s (Main.ack_reg s)
-
-$L._unused114 : ([205], [205]) -> [241]
-$L._unused114 x s0 =
-      $LL.L._unused1141 s0 (let x1 = x[128 +: 77] in
-      x1)
-
-$L.Main.set_ack_reg$s218 : ([205]) -> [241]
-$L.Main.set_ack_reg$s218 s0 =
-      $L.x19 s0 s0
-
-$L._unused85 : ([205]) -> [241]
-$L._unused85 s0 =
-      $L.Main.connect83 s0 s0
-
-$L.x34 : ([10], [32], [205], [205]) -> [241]
-$L.x34 i e x s0 =
-      $L.Main.set_ack_reg$s131 (let s = x[128 +: 77] in
-      let m = x[0 +: 128] in
-      $LL.L.x341 s (Main.memTweak i e m))
-
-$L.ds39 : ([205], [205]) -> [241]
-$L.ds39 ds s0 =
-      let s = ds[128 +: 77] in
-      let ds1 = ds[0 +: 128] in
-      $L.arm40 s ds1 s0
-
-$L.x75 : ([32], [205], [205]) -> [241]
-$L.x75 w32 x s0 =
-      $L.Main.set_ack_reg$s131 (let m = x[0 +: 128] in
-      $LL.L.x542 m (let partition_reg = x[203 +: 2] in
-      let addr_reg = x[193 +: 10] in
-      let data_reg = x[161 +: 32] in
-      let ack_reg = x[160 +: 1] in
-      $LL.L.x922 (partition_reg # addr_reg # data_reg # ack_reg # w32)))
-
-$LL.Main.scrubbing4 : ([1], [1], [1]) -> [1]
-$LL.Main.scrubbing4 ds ds1 wild =
-      if eq wild 1'h1 then $LL.Main.scrubbing2 ds1 ds
-            else 1'h1
-
-$L._unused46 : ([205]) -> [241]
-$L._unused46 s0 =
-      $L.Main.connect44 s0 s0
-
-$LL.Main.nextKey5 : ([1], [1], [1], [1], [1], [1], [1]) -> [10]
-$LL.Main.nextKey5 ds ds1 ds2 ds3 ds4 ds5 wild =
-      if eq wild 1'h0 then $LL.Main.nextKey9 ds ds1 ds2 ds3 ds4 ds5
-            else 10'h3ff
-
-$L.Main.set_addr_reg59 : ([46], [2], [10], [205]) -> [241]
-$L.Main.set_addr_reg59 ip p_i w10 s0 =
-      $L.x60 w10 ip p_i s0 s0
-
-$LL.Main.scrubbing3 : ([1], [1], [1], [1], [1]) -> [1]
-$LL.Main.scrubbing3 ds ds1 ds2 ds3 wild =
-      if eq wild 1'h1 then $LL.Main.scrubbing9 ds ds1 ds2 ds3
-            else 1'h1
-
-$LL.L._unused1141 : ([205], [77]) -> [241]
-$LL.L._unused1141 s0 s =
-      $LL.L._unused1142 s0 s (Main.ack_reg s)
-
-$LL.L._unused114 : ([205], [1], [32]) -> [241]
-$LL.L._unused114 s0 $a $a1 =
-      $LL.L._unused1143 s0 ($a # $a1)
-
-$L.x58 : ([32], [2], [205], [205]) -> [241]
-$L.x58 w32 p_i x s0 =
-      $L.Main.set_partition_reg55 p_i (let m = x[0 +: 128] in
-      $LL.L.x542 m (let partition_reg = x[203 +: 2] in
-      let addr_reg = x[193 +: 10] in
-      let ack_reg = x[160 +: 1] in
-      let data_out_reg = x[128 +: 32] in
-      $LL.L.x922 (partition_reg # addr_reg # w32 # ack_reg # data_out_reg)))
-
-$LL.Main.memTweak4 : ([1], [32], [1], [128], [1]) -> [128]
-$LL.Main.memTweak4 ds v ds1 m wild =
-      if eq wild 1'h0 then $LL.Main.memTweak3 ds v m ds1
-            else 128'h0
-
-$LL.L._unused105 : ([205], [10]) -> [241]
-$LL.L._unused105 s0 $a =
-      $L.Main.set_addr_reg106 $a s0
-
-$L.Main.setloc$s1108 : ([10], [10], [205]) -> [241]
-$L.Main.setloc$s1108 addr i s0 =
-      $L.x109 addr i s0 s0
-
-$L._unused103 : ([205]) -> [241]
-$L._unused103 s0 =
-      $L.Main.get_addr_reg115 s0 s0
 
 "Main.<&>" : ([2], [10]) -> [10]
 "Main.<&>" ds ds1 =
@@ -626,35 +666,28 @@ $L._unused103 s0 =
       let b9 = ds1[0 +: 1] in
       b0 # b1 # b2 # b3 # b4 # b5 # b6 # b7 # b8 # b9
 
-$LL.L.arm991 : ([205], [1], [32]) -> [241]
-$LL.L.arm991 s0 $a $a1 =
-      $LL.L._unused132 s0 ($a # $a1)
-
-$LL.Main.nextKey4 : ([1]) -> [10]
-$LL.Main.nextKey4 wild =
-      if eq wild 1'h0 then 10'h1
-            else 10'h2
-
-$L.Main.get_addr_reg110 : ([205]) -> [241]
-$L.Main.get_addr_reg110 s0 =
-      $L.ds111 s0 s0
-
-$LL.Main.memTweak3 : ([1], [32], [128], [1]) -> [128]
-$LL.Main.memTweak3 ds v m wild =
-      if eq wild 1'h0 then $LL.Main.memTweak2 v m ds
-            else $LL.Main.memTweak9 v m ds
-
-$LL.L._unused45 : ([205], [77], [1]) -> [241]
-$LL.L._unused45 s0 s $a =
-      $LL.L._unused453 $a s0 (Main.data_out_reg s)
-
-$LL.L._unused13 : ([205], [77], [1]) -> [241]
-$LL.L._unused13 s0 s $a =
-      $LL.L._unused131 $a s0 (Main.data_out_reg s)
-
-$LL.Main.nextKey3 : ([1], [1], [1], [1], [1], [1], [1], [1], [1], [1]) -> [10]
-$LL.Main.nextKey3 ds ds1 ds2 ds3 ds4 ds5 ds6 ds7 ds8 wild =
-      if eq wild 1'h0 then $LL.Main.nextKey7 ds ds1 ds2 ds3 ds4 ds5 ds7 ds8 ds6
+Main.nextKey : ([10]) -> [10]
+Main.nextKey ds =
+      let ds1 = ds[9 +: 1] in
+      let ds2 = ds[8 +: 1] in
+      let ds3 = ds[7 +: 1] in
+      let ds4 = ds[6 +: 1] in
+      let ds5 = ds[5 +: 1] in
+      let ds6 = ds[4 +: 1] in
+      let ds7 = ds[3 +: 1] in
+      let ds8 = ds[2 +: 1] in
+      let ds9 = ds[1 +: 1] in
+      let ds10 = ds[0 +: 1] in
+      if eq ds1 1'h0 then (if eq ds2 1'h0 then (if eq ds3 1'h0 then (if eq ds4 1'h0 then (if eq ds5 1'h0 then (if eq ds6 1'h0 then (if eq ds7 1'h0 then (if eq ds8 1'h0 then (if eq ds9 1'h0 then (if eq ds10 1'h1 then 10'h0
+                                                                  else 10'h3ff)
+                                                            else if eq ds10 1'h0 then 10'h1 else 10'h2)
+                                                      else 10'h3ff)
+                                                else 10'h3ff)
+                                          else 10'h3ff)
+                                    else 10'h3ff)
+                              else 10'h3ff)
+                        else 10'h3ff)
+                  else 10'h3ff)
             else 10'h3ff
 
 Main.scrubbing : ([10]) -> [1]
@@ -669,278 +702,17 @@ Main.scrubbing ds =
       let ds8 = ds[2 +: 1] in
       let ds9 = ds[1 +: 1] in
       let ds10 = ds[0 +: 1] in
-      $LL.Main.scrubbing6 ds8 ds9 ds3 ds5 ds10 ds6 ds2 ds4 ds7 ds1
-
-$L.x94 : ([2], [205], [205]) -> [241]
-$L.x94 w2 x s0 =
-      $L.Main.set_ack_reg$s291 (let m = x[0 +: 128] in
-      $LL.L.x542 m (let addr_reg = x[193 +: 10] in
-      let data_reg = x[161 +: 32] in
-      let ack_reg = x[160 +: 1] in
-      let data_out_reg = x[128 +: 32] in
-      $LL.L.x922 (w2 # addr_reg # data_reg # ack_reg # data_out_reg)))
-
-$L.x60 : ([10], [46], [2], [205], [205]) -> [241]
-$L.x60 w10 ip p_i x s0 =
-      $L._unused47 ip p_i (let m = x[0 +: 128] in
-      $LL.L.x542 m (let partition_reg = x[203 +: 2] in
-      let data_reg = x[161 +: 32] in
-      let ack_reg = x[160 +: 1] in
-      let data_out_reg = x[128 +: 32] in
-      $LL.L.x922 (partition_reg # w10 # data_reg # ack_reg # data_out_reg)))
-
-$L.Main.scrub_ram3 : ([46], [205]) -> [241]
-$L.Main.scrub_ram3 ips s0 =
-      $L.Main.get_addr_reg115 s0 s0
-
-$L.ds36 : ([10], [205], [205]) -> [241]
-$L.ds36 addr ds s0 =
-      let s = ds[128 +: 77] in
-      let ds1 = ds[0 +: 128] in
-      $L.arm37 addr s ds1 s0
-
-$LL.Main.memTweak2 : ([32], [128], [1]) -> [128]
-$LL.Main.memTweak2 v m wild =
-      if eq wild 1'h0 then (let mem1 = m[64 +: 32] in
-            let mem2 = m[32 +: 32] in
-            let mem3 = m[0 +: 32] in
-            v # mem1 # mem2 # mem3)
-            else let mem0 = m[96 +: 32] in
-            let mem2 = m[32 +: 32] in
-            let mem3 = m[0 +: 32] in
-            mem0 # v # mem2 # mem3
-
-$L.Main.get_addr_reg115 : ([205], [205]) -> [241]
-$L.Main.get_addr_reg115 x s0 =
-      $L.ds116 x s0 s0
-
-$LL.Main.nextKey2 : ([1], [1], [1], [1], [1]) -> [10]
-$LL.Main.nextKey2 ds ds1 ds2 ds3 wild =
-      if eq wild 1'h0 then $LL.Main.nextKey6 ds ds1 ds2 ds3
-            else 10'h3ff
-
-$LL.Main.scrubbing2 : ([1], [1]) -> [1]
-$LL.Main.scrubbing2 ds wild =
-      if eq wild 1'h1 then $LL.Main.scrubbing ds
+      if eq ds1 1'h1 then (if eq ds2 1'h1 then (if eq ds3 1'h1 then (if eq ds4 1'h1 then (if eq ds5 1'h1 then (if eq ds6 1'h1 then (if eq ds7 1'h1 then (if eq ds8 1'h1 then (if eq ds9 1'h1 then (if eq ds10 1'h1 then 1'h0
+                                                                  else 1'h1)
+                                                            else 1'h1)
+                                                      else 1'h1)
+                                                else 1'h1)
+                                          else 1'h1)
+                                    else 1'h1)
+                              else 1'h1)
+                        else 1'h1)
+                  else 1'h1)
             else 1'h1
-
-$LL.L.x341 : ([77], [128]) -> [205]
-$LL.L.x341 s $a =
-      $LL.L.x602 (s # $a)
-
-$L._unused47 : ([46], [2], [205]) -> [241]
-$L._unused47 ip p_i s0 =
-      $LL.L._unused47 s0 p_i (Main.data_in ip)
-
-$LL.Main.nextKey1 : ([1], [1], [1], [1], [1], [1], [1], [1]) -> [10]
-$LL.Main.nextKey1 ds ds1 ds2 ds3 ds4 ds5 ds6 wild =
-      if eq wild 1'h0 then $LL.Main.nextKey5 ds ds2 ds3 ds4 ds5 ds6 ds1
-            else 10'h3ff
-
-$L.arm61 : ([46], [10], [2], [205]) -> [241]
-$L.arm61 ip a_i p_i s0 =
-      $LL.L.arm61 ip s0 p_i ("Main.<&>" p_i a_i)
-
-$L._unused14 : ([205]) -> [241]
-$L._unused14 s0 =
-      $L.Main.connect12 s0 s0
-
-$LL.Main.memLookup.fail1 : ([128]) -> [32]
-$LL.Main.memLookup.fail1 $x =
-      (undef 32)
-
-$LL.L.arm112 : ([205], [10]) -> [241]
-$LL.L.arm112 s0 $a =
-      $L.Main.setloc$s1108 $a $a s0
-
-$L.arm99 : ([77], [128], [205]) -> [241]
-$L.arm99 sigs ds s0 =
-      $LL.L.arm99 s0 sigs (Main.ack_reg sigs)
-
-$L.x96 : ([10], [2], [205], [205]) -> [241]
-$L.x96 w10 p_i x s0 =
-      $L.Main.set_partition_reg93 p_i (let m = x[0 +: 128] in
-      $LL.L.x542 m (let partition_reg = x[203 +: 2] in
-      let data_reg = x[161 +: 32] in
-      let ack_reg = x[160 +: 1] in
-      let data_out_reg = x[128 +: 32] in
-      $LL.L.x922 (partition_reg # w10 # data_reg # ack_reg # data_out_reg)))
-
-$L.arm98 : ([46], [10], [2], [205]) -> [241]
-$L.arm98 ip a_i p_i s0 =
-      $LL.L.arm98 ip a_i s0 p_i (Main.rnw ip)
-
-$LL.L.arm81 : ([205], [10]) -> [241]
-$LL.L.arm81 s0 $a =
-      $L.Main.getloc76 $a s0
-
-$LL.Main.scrubbing1 : ([1], [1], [1], [1], [1], [1]) -> [1]
-$LL.Main.scrubbing1 ds ds1 ds2 ds3 ds4 wild =
-      if eq wild 1'h1 then $LL.Main.scrubbing3 ds ds1 ds2 ds4 ds3
-            else 1'h1
-
-Main.mem2 : ([128]) -> [32]
-Main.mem2 ds =
-      let ds3 = ds[32 +: 32] in
-      ds3
-
-Main.memLookup : ([10], [128]) -> [32]
-Main.memLookup ds $x =
-      let ds1 = ds[9 +: 1] in
-      let ds2 = ds[8 +: 1] in
-      let ds3 = ds[7 +: 1] in
-      let ds4 = ds[6 +: 1] in
-      let ds5 = ds[5 +: 1] in
-      let ds6 = ds[4 +: 1] in
-      let ds7 = ds[3 +: 1] in
-      let ds8 = ds[2 +: 1] in
-      let ds9 = ds[1 +: 1] in
-      let ds10 = ds[0 +: 1] in
-      $LL.Main.memLookup6 ds6 ds7 ds5 ds9 ds2 ds8 ds4 ds10 ds3 ds1 $x
-
-$L.arm100 : ([205]) -> [241]
-$L.arm100 s0 =
-      $L.ds7 s0 s0
-
-$L.x56 : ([2], [205], [205]) -> [241]
-$L.x56 w2 x s0 =
-      $L.Main.set_ack_reg$s253 (let m = x[0 +: 128] in
-      $LL.L.x542 m (let addr_reg = x[193 +: 10] in
-      let data_reg = x[161 +: 32] in
-      let ack_reg = x[160 +: 1] in
-      let data_out_reg = x[128 +: 32] in
-      $LL.L.x922 (w2 # addr_reg # data_reg # ack_reg # data_out_reg)))
-
-$L.x42 : ([205], [205]) -> [241]
-$L.x42 x s0 =
-      $L.Main.get_addr_reg38 (let m = x[0 +: 128] in
-      $LL.L.x542 m (let partition_reg = x[203 +: 2] in
-      let addr_reg = x[193 +: 10] in
-      let data_reg = x[161 +: 32] in
-      let ack_reg = x[160 +: 1] in
-      $LL.L.x922 (partition_reg # addr_reg # data_reg # ack_reg # 32'h0)))
-
-$L.Main.set_data_out_reg$s189 : ([205]) -> [241]
-$L.Main.set_data_out_reg$s189 s0 =
-      $L.x90 s0 s0
-
-Main.ack_reg : ([77]) -> [1]
-Main.ack_reg ds =
-      let ds4 = ds[32 +: 1] in
-      ds4
-
-$LL.Main.memLookup1 : ([1], [128]) -> [32]
-$LL.Main.memLookup1 wild $x =
-      if eq wild 1'h0 then Main.mem2 $x
-            else Main.mem3 $x
-
-$LL.Main.scrubbing : ([1]) -> [1]
-$LL.Main.scrubbing wild =
-      if eq wild 1'h1 then 1'h0
-            else 1'h1
-
-Main.addr_reg : ([77]) -> [10]
-Main.addr_reg ds =
-      let ds2 = ds[65 +: 10] in
-      ds2
-
-$LL.L.addr6 : ([205], [205], [1]) -> [241]
-$LL.L.addr6 s0 x $a =
-      if eq $a 1'h0 then $L.arm100 s0
-            else $L.Main.connect113 x s0
-
-$LL.L.Main.idle9 : ([205], [46], [10]) -> [241]
-$LL.L.Main.idle9 s0 ip a_i =
-      $LL.L.Main.idle92 s0 a_i ip (Main.partition_in ip)
-
-$LL.Main.memTweak1 : ([1], [32], [1], [1], [1], [128], [1]) -> [128]
-$LL.Main.memTweak1 ds v ds1 ds2 ds3 m wild =
-      if eq wild 1'h0 then $LL.Main.memTweak6 ds v ds1 ds3 m ds2
-            else 128'h0
-
-$L.Main.set_data_out_reg$s151 : ([205]) -> [241]
-$L.Main.set_data_out_reg$s151 s0 =
-      $L.x52 s0 s0
-
-$LL.Main.memLookup : ([1], [1], [1], [1], [1], [1], [1], [1], [128]) -> [32]
-$LL.Main.memLookup ds ds1 ds2 ds3 ds4 ds5 ds6 wild $x =
-      if eq wild 1'h0 then $LL.Main.memLookup8 ds ds1 ds2 ds3 ds4 ds6 ds5 $x
-            else $LL.Main.memLookup.fail1 $x
-
-Main.data_reg : ([77]) -> [32]
-Main.data_reg ds =
-      let ds3 = ds[33 +: 32] in
-      ds3
-
-$L.Main.getloc76 : ([10], [205]) -> [241]
-$L.Main.getloc76 a s0 =
-      $L.ds77 a s0 s0
-
-Main.go : ([46]) -> [1]
-Main.go ds =
-      let ds3 = ds[3 +: 1] in
-      ds3
-
-Main.data_in : ([46]) -> [32]
-Main.data_in ds =
-      let ds1 = ds[14 +: 32] in
-      ds1
-
-Main.memTweak : ([10], [32], [128]) -> [128]
-Main.memTweak ds v m =
-      let ds1 = ds[9 +: 1] in
-      let ds2 = ds[8 +: 1] in
-      let ds3 = ds[7 +: 1] in
-      let ds4 = ds[6 +: 1] in
-      let ds5 = ds[5 +: 1] in
-      let ds6 = ds[4 +: 1] in
-      let ds7 = ds[3 +: 1] in
-      let ds8 = ds[2 +: 1] in
-      let ds9 = ds[1 +: 1] in
-      let ds10 = ds[0 +: 1] in
-      $LL.Main.memTweak ds2 ds10 v ds8 ds3 ds7 ds5 ds9 ds4 ds6 m ds1
-
-Main.addr_in : ([46]) -> [10]
-Main.addr_in ds =
-      let ds2 = ds[4 +: 10] in
-      ds2
-
-$L.$x62 : ([46], [205]) -> [241]
-$L.$x62 $x $x1 =
-      $L.Main.get_addr_reg79 $x1
-
-$LL.Main.nextKey : ([1]) -> [10]
-$LL.Main.nextKey wild =
-      if eq wild 1'h1 then 10'h0
-            else 10'h3ff
-
-$L.ds111 : ([205], [205]) -> [241]
-$L.ds111 ds s0 =
-      let s = ds[128 +: 77] in
-      let ds1 = ds[0 +: 128] in
-      $L.arm112 s ds1 s0
-
-$LL.Main.memTweak : ([1], [1], [32], [1], [1], [1], [1], [1], [1], [1], [128], [1]) -> [128]
-$LL.Main.memTweak ds ds1 v ds2 ds3 ds4 ds5 ds6 ds7 ds8 m wild =
-      if eq wild 1'h0 then $LL.Main.memTweak5 ds1 v ds2 ds3 ds4 ds5 ds6 ds7 ds8 m ds
-            else 128'h0
-
-$L.x92 : ([205], [205]) -> [241]
-$L.x92 x s0 =
-      $L.Main.set_data_out_reg$s189 (let m = x[0 +: 128] in
-      $LL.L.x542 m (let partition_reg = x[203 +: 2] in
-      let addr_reg = x[193 +: 10] in
-      let data_reg = x[161 +: 32] in
-      let data_out_reg = x[128 +: 32] in
-      $LL.L.x922 (partition_reg # addr_reg # data_reg # 1'h0 # data_out_reg)))
-
-$LL.L.arm99 : ([205], [77], [1]) -> [241]
-$LL.L.arm99 s0 sigs $a =
-      $LL.L.arm991 s0 $a (Main.data_out_reg sigs)
-
-$LL.L.arm40 : ([205], [10]) -> [241]
-$LL.L.arm40 s0 $a =
-      $L.Main.get_data_reg35 $a s0
 
 device top_level
       input __in0 : [46]
@@ -948,7 +720,7 @@ device top_level
       register __resumption_tag : [3] init 3'h4
       register __st0 : [77] init 77'h60000000000000000
       register __st1 : [128] init 128'h0
-      let $res = $Pure.dispatch (__resumption_tag # __st0 # __st1) __in0
+      let $res = main.$dispatch (__resumption_tag # __st0 # __st1) __in0
       __out0 := $res[208 +: 33]
       next __resumption_tag := $res[205 +: 3]
       next __st0 := $res[128 +: 77]

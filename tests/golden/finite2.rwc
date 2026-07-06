@@ -1,25 +1,26 @@
-$Pure.dispatch : ([7]) -> [5]
-$Pure.dispatch i =
-      $L.$x4 i
+main.$dispatch : ([7]) -> [5]
+main.$dispatch i =
+      main.$L.$x4$274 i
+
+main.$L.$x4$274 : ([7]) -> [5]
+main.$L.$x4$274 $x =
+      main.$L.Main.loop3$272 $x
+
+main.$L.$x5$276 : ([5]) -> [5]
+main.$L.$x5$276 $x =
+      $x
+
+main.$L.Main.loop3$272 : ([7]) -> [5]
+main.$L.Main.loop3$272 i =
+      let $a = Main.compute i in
+      main.$L.$x5$276 $a
 
 Main.compute : ([7]) -> [5]
 Main.compute n =
       trunc 5 (umod (add (zext 128 (trunc 5 (umod n 7'h14))) 128'h6) 128'h14)
 
-$L.Main.loop3 : ([7]) -> [5]
-$L.Main.loop3 i =
-      $L.$x5 (Main.compute i)
-
-$L.$x5 : ([5]) -> [5]
-$L.$x5 $x =
-      $x
-
-$L.$x4 : ([7]) -> [5]
-$L.$x4 $x =
-      $L.Main.loop3 $x
-
 device top_level
       input __in0 : [7]
       output __out0 : [5]
-      let $res = $Pure.dispatch __in0
+      let $res = main.$dispatch __in0
       __out0 := $res

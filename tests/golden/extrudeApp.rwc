@@ -1,27 +1,25 @@
-$Pure.dispatch : ([16], [8]) -> [24]
-$Pure.dispatch disc i =
-      let e = disc[8 +: 8] in
-      let s = disc[0 +: 8] in
-      $L.i4 e i s
+main.$dispatch : ([16], [8]) -> [24]
+main.$dispatch disc i =
+      main.$L.i4$260 disc[8 +: 8] i disc[0 +: 8]
 
-$L.i4 : ([8], [8], [8]) -> [24]
-$L.i4 k i s0 =
-      $L.Main.dev2 k i
+main.$L.i4$260 : ([8], [8], [8]) -> [24]
+main.$L.i4$260 k i s0 =
+      main.$L.Main.dev2$258 k i
 
-$L.Main.dev2 : ([8], [8]) -> [24]
-$L.Main.dev2 k s0 =
-      $L.s3 k s0 s0
-
-$L.s3 : ([8], [8], [8]) -> [24]
-$L.s3 k s s0 =
+main.$L.s3$259 : ([8], [8], [8]) -> [24]
+main.$L.s3$259 k s s0 =
       add s k # k # s0
+
+main.$L.Main.dev2$258 : ([8], [8]) -> [24]
+main.$L.Main.dev2$258 k s0 =
+      main.$L.s3$259 k s0 s0
 
 device top_level
       input __in0 : [8]
       output __out0 : [8]
       register __resumption_tag : [8] init 8'h3
       register __st0 : [8] init 8'h0
-      let $res = $Pure.dispatch (__resumption_tag # __st0) __in0
+      let $res = main.$dispatch (__resumption_tag # __st0) __in0
       __out0 := $res[16 +: 8]
       next __resumption_tag := $res[8 +: 8]
       next __st0 := $res[0 +: 8]

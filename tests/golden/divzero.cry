@@ -16,29 +16,27 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// $Pure.dispatch
-rw__Pure_dispatch : [8] -> [16]
-rw__Pure_dispatch x0 = rw__L__x4 x0
+// main.$dispatch
+rw_main__dispatch : [8] -> [16]
+rw_main__dispatch x0 = rw_main__L__x4_272 x0
 
-// $LL.L.ReWire.Monad.iter$1$s23
-rw__LL_L_ReWire_Monad_iter_1_s23 : [16] -> [16]
-rw__LL_L_ReWire_Monad_iter_1_s23 x0 = x0
+// main.$L.$x4$272
+rw_main__L__x4_272 : [8] -> [16]
+rw_main__L__x4_272 x0 = rw_main__L_ReWire_Monad_iter_1_s23_270 x0
 
-// $L.ReWire.Monad.iter$1$s23
-rw__L_ReWire_Monad_iter_1_s23 : [8] -> [16]
-rw__L_ReWire_Monad_iter_1_s23 x0 = rw__LL_L_ReWire_Monad_iter_1_s23 (rw_Main_f x0)
+// main.$L.ReWire.Monad.iter$1$s23$270
+rw_main__L_ReWire_Monad_iter_1_s23_270 : [8] -> [16]
+rw_main__L_ReWire_Monad_iter_1_s23_270 x0 = s0
+  where
+    s0 : [16]
+    s0 = rw_Main_f x0
 
 // Main.f
 rw_Main_f : [8] -> [16]
-rw_Main_f x0 = rw__LL_Main_f x0 (x0 && 0x03)
-
-// $LL.Main.f
-rw__LL_Main_f : [8] -> [8] -> [16]
-rw__LL_Main_f x0 x1 = (if x1 == zero then 0xff else (x0 / x1)) # ((if x1 == zero then x0 else (x0 % x1)) ^ 0xff)
-
-// $L.$x4
-rw__L__x4 : [8] -> [16]
-rw__L__x4 x0 = rw__L_ReWire_Monad_iter_1_s23 x0
+rw_Main_f x0 = (if s0 == zero then 0xff else (x0 / s0)) # ((if s0 == zero then x0 else (x0 % s0)) ^ 0xff)
+  where
+    s0 : [8]
+    s0 = x0 && 0x03
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [16]
@@ -47,7 +45,7 @@ rw_step i = s1
     s0 : [8]
     s0 = i
     s1 : [16]
-    s1 = rw__Pure_dispatch s0
+    s1 = rw_main__dispatch s0
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [8]

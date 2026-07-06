@@ -1,23 +1,24 @@
-$Pure.dispatch : ([128]) -> [128]
-$Pure.dispatch i =
-      $L.$x4 i
+main.$dispatch : ([128]) -> [128]
+main.$dispatch i =
+      main.$L.$x4$340 i
+
+main.$L.$x4$340 : ([128]) -> [128]
+main.$L.$x4$340 $x =
+      main.$L.Main.loop3$338 $x
+
+main.$L.$x5$342 : ([128]) -> [128]
+main.$L.$x5$342 $x =
+      $x
+
+main.$L.Main.loop3$338 : ([128]) -> [128]
+main.$L.Main.loop3$338 i =
+      let $a = Main.compute i in
+      main.$L.$x5$342 $a
 
 Main.compute : ([128]) -> [128]
 Main.compute ds =
       let w = ds[0 +: 64] in
       ds[64 +: 56] # trunc 8 (lshr w 128'h0) # ds[120 +: 8] # ds[8 +: 56]
-
-$L.Main.loop3 : ([128]) -> [128]
-$L.Main.loop3 i =
-      $L.$x5 (Main.compute i)
-
-$L.$x5 : ([128]) -> [128]
-$L.$x5 $x =
-      $x
-
-$L.$x4 : ([128]) -> [128]
-$L.$x4 $x =
-      $L.Main.loop3 $x
 
 device top_level
       input __in0 : [64]
@@ -25,6 +26,6 @@ device top_level
       output __out0 : [64]
       output __out1 : [64]
       let $in = __in0 # __in1
-      let $res = $Pure.dispatch $in
+      let $res = main.$dispatch $in
       __out0 := $res[64 +: 64]
       __out1 := $res[0 +: 64]

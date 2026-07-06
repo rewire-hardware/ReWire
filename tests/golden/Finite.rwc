@@ -1,17 +1,17 @@
-$Pure.dispatch : ([7]) -> [7]
-$Pure.dispatch i =
-      $L.a'4 i
+main.$dispatch : ([7]) -> [7]
+main.$dispatch i =
+      main.$L.a'4$248 i
 
-$L.Main.dev3 : ([7]) -> [7]
-$L.Main.dev3 a =
+main.$L.a'4$248 : ([7]) -> [7]
+main.$L.a'4$248 a' =
+      main.$L.Main.dev3$247 (umod (add a' 7'h1) 7'h64)
+
+main.$L.Main.dev3$247 : ([7]) -> [7]
+main.$L.Main.dev3$247 a =
       a
-
-$L.a'4 : ([7]) -> [7]
-$L.a'4 a' =
-      $L.Main.dev3 (umod (add a' 7'h1) 7'h64)
 
 device top_level
       input __in0 : [7]
       output __out0 : [7]
-      let $res = $Pure.dispatch __in0
+      let $res = main.$dispatch __in0
       __out0 := $res

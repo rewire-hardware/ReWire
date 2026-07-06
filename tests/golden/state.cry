@@ -16,28 +16,30 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// $Pure.dispatch
-rw__Pure_dispatch : [1] -> [1] -> [2]
-rw__Pure_dispatch x0 x1 = rw__L__x4 x1 x0
+// main.$dispatch
+rw_main__dispatch : [1] -> [1] -> [2]
+rw_main__dispatch x0 x1 = rw_main__L__x4_280 x1 x0
 
-// $L.s7
-rw__L_s7 : [1] -> [1] -> [1] -> [2]
-rw__L_s7 x0 x1 x2 = rw__L__x5 x1 s0
+// main.$L.$x4$280
+rw_main__L__x4_280 : [1] -> [1] -> [2]
+rw_main__L__x4_280 x0 x1 = rw_main__L_Main_stateAction6_283 x0 x1
+
+// main.$L.$x5$282
+rw_main__L__x5_282 : [1] -> [1] -> [2]
+rw_main__L__x5_282 x0 x1 = x0 # x1
+
+// main.$L.s7$284
+rw_main__L_s7_284 : [1] -> [1] -> [1] -> [2]
+rw_main__L_s7_284 x0 x1 x2 = rw_main__L__x5_282 x1 s1
   where
     s0 : [1]
     s0 = x0 ^ x1
+    s1 : [1]
+    s1 = s0
 
-// $L.$x5
-rw__L__x5 : [1] -> [1] -> [2]
-rw__L__x5 x0 x1 = x0 # x1
-
-// $L.Main.stateAction6
-rw__L_Main_stateAction6 : [1] -> [1] -> [2]
-rw__L_Main_stateAction6 x0 x1 = rw__L_s7 x0 x1 x1
-
-// $L.$x4
-rw__L__x4 : [1] -> [1] -> [2]
-rw__L__x4 x0 x1 = rw__L_Main_stateAction6 x0 x1
+// main.$L.Main.stateAction6$283
+rw_main__L_Main_stateAction6_283 : [1] -> [1] -> [2]
+rw_main__L_Main_stateAction6_283 x0 x1 = rw_main__L_s7_284 x0 x1 x1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [1] -> [1] -> [2]
@@ -48,7 +50,7 @@ rw_step st i = (take`{1} s2) # (drop`{1} s2)
     s1 : [1]
     s1 = i
     s2 : [2]
-    s2 = rw__Pure_dispatch s0 s1
+    s2 = rw_main__dispatch s0 s1
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1]

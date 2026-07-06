@@ -1,35 +1,34 @@
-$Pure.dispatch : ([2000], [100]) -> [2100]
-$Pure.dispatch disc i =
-      let e = disc[1000 +: 1000] in
-      let s = disc[0 +: 1000] in
-      $L.i3 e i s
+main.$dispatch : ([2000], [100]) -> [2100]
+main.$dispatch disc i =
+      main.$L.i3$309 disc[1000 +: 1000] i disc[0 +: 1000]
 
-$L.i3 : ([1000], [100], [1000]) -> [2100]
-$L.i3 ss i s0 =
-      $L.Main.dev$11 (Main.ss' ss i)
+main.$L.i3$309 : ([1000], [100], [1000]) -> [2100]
+main.$L.i3$309 ss i s0 =
+      let $a = Main.ss' ss i in
+      main.$L.Main.dev$11$307 $a
 
-$L.ss2 : ([1000], [1000]) -> [2100]
-$L.ss2 ss s0 =
+main.$L.ss2$308 : ([1000], [1000]) -> [2100]
+main.$L.ss2$308 ss s0 =
       ss[900 +: 100] # ss # s0
 
-Main.ss' : ([1000], [100]) -> [1000]
-Main.ss' ss i =
-      Main.x2 ss[800 +: 100] # Main.x2 ss[700 +: 100] # Main.x2 ss[600 +: 100] # Main.x2 ss[500 +: 100] # Main.x2 ss[400 +: 100] # Main.x2 ss[300 +: 100] # Main.x2 ss[200 +: 100] # Main.x2 ss[100 +: 100] # Main.x2 ss[0 +: 100] # Main.x2 i
-
-$L.Main.dev$11 : ([1000]) -> [2100]
-$L.Main.dev$11 s0 =
-      $L.ss2 s0 s0
+main.$L.Main.dev$11$307 : ([1000]) -> [2100]
+main.$L.Main.dev$11$307 s0 =
+      main.$L.ss2$308 s0 s0
 
 Main.x2 : ([100]) -> [100]
 Main.x2 x =
       mul x 100'h2
+
+Main.ss' : ([1000], [100]) -> [1000]
+Main.ss' ss i =
+      Main.x2 ss[800 +: 100] # Main.x2 ss[700 +: 100] # Main.x2 ss[600 +: 100] # Main.x2 ss[500 +: 100] # Main.x2 ss[400 +: 100] # Main.x2 ss[300 +: 100] # Main.x2 ss[200 +: 100] # Main.x2 ss[100 +: 100] # Main.x2 ss[0 +: 100] # Main.x2 i
 
 device top_level
       input __in0 : [100]
       output __out0 : [100]
       register __resumption_tag : [1000] init 1000'h0
       register __st0 : [1000] init 1000'h0
-      let $res = $Pure.dispatch (__resumption_tag # __st0) __in0
+      let $res = main.$dispatch (__resumption_tag # __st0) __in0
       __out0 := $res[2000 +: 100]
       next __resumption_tag := $res[1000 +: 1000]
       next __st0 := $res[0 +: 1000]
