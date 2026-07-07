@@ -48,6 +48,7 @@ library
       ReWire.Eidos.ToHyle
       ReWire.Eidos.Types
       ReWire.FrontEnd
+      ReWire.GHC.PackagePath
       ReWire.GHC.Recognize
       ReWire.GHC.Session
       ReWire.GHC.ToEidos
@@ -80,6 +81,7 @@ library
     , process ==1.6.*
     , rewire-backend >=2.8
     , rewire-base >=2.8
+    , template-haskell ==2.22.*
     , text ==2.1.*
     , unordered-containers ==0.2.*
     , yaml ==0.11.*
