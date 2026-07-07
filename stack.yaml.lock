@@ -3,7 +3,88 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/topics/lock_files
 
-packages: []
+packages:
+- completed:
+    commit: aa70cab02ca18c54fdb77b30e01a94238353b4ab
+    git: https://github.com/GaloisInc/cryptol.git
+    name: cryptol
+    pantry-tree:
+      sha256: aaea0b886726a33bbc33a645c3825d27f4405ed3b81fb0de42db7ca9ed24e80e
+      size: 277577
+    version: 3.5.0.99
+  original:
+    commit: aa70cab02ca18c54fdb77b30e01a94238353b4ab
+    git: https://github.com/GaloisInc/cryptol.git
+- completed:
+    hackage: GraphSCC-1.0.4@sha256:dc3c6d6c59c15a50c9ce701bdead86f19bc2367e0d30c81a7bf55ccc6e5bd04d,936
+    pantry-tree:
+      sha256: 9a52cc3eafbca3ab1b9f7e3de63f7311ae82ec1cdaa1202eead796011e47bc25
+      size: 333
+  original:
+    hackage: GraphSCC-1.0.4@sha256:dc3c6d6c59c15a50c9ce701bdead86f19bc2367e0d30c81a7bf55ccc6e5bd04d,936
+- completed:
+    hackage: base-compat-0.12.3@sha256:4ef57766629fda9a5a6e41777e5279beb48a37b9d6cf5904c78643ad11a8a1ee,7490
+    pantry-tree:
+      sha256: 2ba5df55ffc1362ae856866df90e4a090cf69eee418e2d18a109c383f602f64c
+      size: 9038
+  original:
+    hackage: base-compat-0.12.3@sha256:4ef57766629fda9a5a6e41777e5279beb48a37b9d6cf5904c78643ad11a8a1ee,7490
+- completed:
+    hackage: base-compat-batteries-0.12.3@sha256:398c0d3c01407d5f79d7737961e79d0da1272ea11285238c6082850afc60dd9d,9666
+    pantry-tree:
+      sha256: 8fd110a93061c4caef6454bc29dfa266023b888659207777648448a286caac58
+      size: 11224
+  original:
+    hackage: base-compat-batteries-0.12.3@sha256:398c0d3c01407d5f79d7737961e79d0da1272ea11285238c6082850afc60dd9d,9666
+- completed:
+    hackage: hgmp-0.1.2.1@sha256:9d247b386e069de731442038988a5cf4bb221913ceb9f639215dd52856472088,2421
+    pantry-tree:
+      sha256: ce4feae8e8c84f55eb7db2cb836290ef2fd301de87586c75094f2c040bb9a2b7
+      size: 687
+  original:
+    hackage: hgmp-0.1.2.1@sha256:9d247b386e069de731442038988a5cf4bb221913ceb9f639215dd52856472088,2421
+- completed:
+    hackage: monadLib-3.10.3@sha256:026ba169762e63f0fe5f5c78829808f522a28730043bc3ad9b7c146baedf709f,637
+    pantry-tree:
+      sha256: da85680ad661e0c7ad4de37437ddbfb029c789ada8f856f6abce0465f6836830
+      size: 425
+  original:
+    hackage: monadLib-3.10.3@sha256:026ba169762e63f0fe5f5c78829808f522a28730043bc3ad9b7c146baedf709f,637
+- completed:
+    hackage: rme-what4-0.1.2@sha256:9d6a996f38cae3785fe942d8f7887ef5979a73bd9c32517932ae329d7822fd96,1329
+    pantry-tree:
+      sha256: 74f7c9834fecbbbd757448fdf3248c49ee73e8510812af3516af75c54b84188a
+      size: 222
+  original:
+    hackage: rme-what4-0.1.2@sha256:9d6a996f38cae3785fe942d8f7887ef5979a73bd9c32517932ae329d7822fd96,1329
+- completed:
+    hackage: sbv-11.0@sha256:7c8d8b54028aa33caa118b27775d669436a22812d08057c2adb1224af9890b93,25534
+    pantry-tree:
+      sha256: c58ca5ee8968337fd202ba85ac37f4b59d763863e357eee7d4d2f1c3323fc5cf
+      size: 77025
+  original:
+    hackage: sbv-11.0@sha256:7c8d8b54028aa33caa118b27775d669436a22812d08057c2adb1224af9890b93,25534
+- completed:
+    hackage: simple-smt-0.9.8@sha256:d0b06f24372c0a15d4d6296708a349e837924274fa4b6d9dc0d148d5554cfec7,736
+    pantry-tree:
+      sha256: ad967264a5c77874f0eadc6225dd73a6a8edd5f8573a4cb531d73ab9c5b1ddd9
+      size: 253
+  original:
+    hackage: simple-smt-0.9.8@sha256:d0b06f24372c0a15d4d6296708a349e837924274fa4b6d9dc0d148d5554cfec7,736
+- completed:
+    hackage: rme-0.1.2@sha256:0a35ec28e56c122b85f3c473a3c6fb08168541dbc66991978ce8ffa76675273f,952
+    pantry-tree:
+      sha256: d4826c74b0315826316cb405d84b592a5d607fc77d2ad6867f0ef3f82ed9de94
+      size: 331
+  original:
+    hackage: rme-0.1.2@sha256:0a35ec28e56c122b85f3c473a3c6fb08168541dbc66991978ce8ffa76675273f,952
+- completed:
+    hackage: what4-1.7.3@sha256:df51452ddc5c3f3ee541d91fca640961b0266e327cc7093d15d26fb632f84ef5,11149
+    pantry-tree:
+      sha256: 3aabee4de94267b1b253033e5e5dcf63c303d50bb88892a55987ec7f5cf78722
+      size: 10401
+  original:
+    hackage: what4-1.7.3@sha256:df51452ddc5c3f3ee541d91fca640961b0266e327cc7093d15d26fb632f84ef5,11149
 snapshots:
 - completed:
     sha256: 2e84de3088a8643c3743210ec31c50b2aeccf5fb085042d2e43e3ef700e7a2cd

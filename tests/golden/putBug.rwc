@@ -1,18 +1,18 @@
 main.$dispatch : ([3], [1]) -> [4]
 main.$dispatch disc i =
-      if eq disc[2 +: 1] 1'h0 then main.$L._unused5$247 disc[1 +: 1] i disc[0 +: 1]
-            else main.$L._unused2$244 i disc[0 +: 1]
+      if eq disc[2 +: 1] 1'h0 then main.$L._unused5$249 disc[1 +: 1] i disc[0 +: 1]
+            else main.$L._unused2$246 i disc[0 +: 1]
 
-main.$L._unused5$247 : ([1], [1], [1]) -> [4]
-main.$L._unused5$247 b _unused s0 =
-      main.$L.Main.convtest4$246 b b
+main.$L._unused5$249 : ([1], [1], [1]) -> [4]
+main.$L._unused5$249 b _unused s0 =
+      main.$L.Main.convtest4$248 b b
 
-main.$L.Main.convtest4$246 : ([1], [1]) -> [4]
-main.$L.Main.convtest4$246 b s0 =
+main.$L.Main.convtest4$248 : ([1], [1]) -> [4]
+main.$L.Main.convtest4$248 b s0 =
       b # 1'h0 # b # s0
 
-main.$L._unused2$244 : ([1], [1]) -> [4]
-main.$L._unused2$244 _unused s0 =
+main.$L._unused2$246 : ([1], [1]) -> [4]
+main.$L._unused2$246 _unused s0 =
       4'h0
 
 device top_level

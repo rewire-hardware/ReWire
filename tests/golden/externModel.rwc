@@ -23,14 +23,14 @@ extern xorW32
 
 main.$dispatch : ([32]) -> [32]
 main.$dispatch i =
-      main.$L.$x4$299 i
+      main.$L.$x4$301 i
 
-main.$L.$x4$299 : ([32]) -> [32]
-main.$L.$x4$299 $x =
-      main.$L.ReWire.Monad.iter$1$s23$297 $x
+main.$L.$x4$301 : ([32]) -> [32]
+main.$L.$x4$301 $x =
+      main.$L.ReWire.Monad.iter$1$s23$299 $x
 
-main.$L.ReWire.Monad.iter$1$s23$297 : ([32]) -> [32]
-main.$L.ReWire.Monad.iter$1$s23$297 i =
+main.$L.ReWire.Monad.iter$1$s23$299 : ([32]) -> [32]
+main.$L.ReWire.Monad.iter$1$s23$299 i =
       let $a = Main.f i in
       $a
 

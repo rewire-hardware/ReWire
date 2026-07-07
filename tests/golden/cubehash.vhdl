@@ -242,7 +242,7 @@ component \Main_add\ is
       port (arg0 : in std_logic_vector (1023 downto 0);
             res : out std_logic_vector (1023 downto 0));
       end component;
-      component \main_$L___unused5$838\ is
+      component \main_$L___unused5$840\ is
       port (arg0 : in std_logic_vector (1023 downto 0);
             res : out std_logic_vector (2047 downto 0));
       end component;
@@ -454,8 +454,8 @@ component \Main_add\ is
       signal \main_swapix4_outR30\ : std_logic_vector (31 downto 0);
       signal \main_swapix4_outR31\ : std_logic_vector (31 downto 0);
       signal zi6 : std_logic_vector (1023 downto 0);
-      signal \main_$l__unused5$838_out\ : std_logic_vector (2047 downto 0);
-      signal \main_$l__unused5$838_outR1\ : std_logic_vector (2047 downto 0);
+      signal \main_$l__unused5$840_out\ : std_logic_vector (2047 downto 0);
+      signal \main_$l__unused5$840_outR1\ : std_logic_vector (2047 downto 0);
       signal zres : std_logic_vector (2047 downto 0);
 begin
 inst : \Main_add\ port map (\__st0\, main_add_out);
@@ -664,9 +664,9 @@ inst : \Main_add\ port map (\__st0\, main_add_out);
       \instR194\ : \Main_swapix4\ port map (zi5, std_logic_vector'(B"11110"), \main_swapix4_outR30\);
       \instR195\ : \Main_swapix4\ port map (zi5, std_logic_vector'(B"11111"), \main_swapix4_outR31\);
       zi6 <= (main_swapix4_out & \main_swapix4_outR1\ & \main_swapix4_outR2\ & \main_swapix4_outR3\ & \main_swapix4_outR4\ & \main_swapix4_outR5\ & \main_swapix4_outR6\ & \main_swapix4_outR7\ & \main_swapix4_outR8\ & \main_swapix4_outR9\ & \main_swapix4_outR10\ & \main_swapix4_outR11\ & \main_swapix4_outR12\ & \main_swapix4_outR13\ & \main_swapix4_outR14\ & \main_swapix4_outR15\ & \main_swapix4_outR16\ & \main_swapix4_outR17\ & \main_swapix4_outR18\ & \main_swapix4_outR19\ & \main_swapix4_outR20\ & \main_swapix4_outR21\ & \main_swapix4_outR22\ & \main_swapix4_outR23\ & \main_swapix4_outR24\ & \main_swapix4_outR25\ & \main_swapix4_outR26\ & \main_swapix4_outR27\ & \main_swapix4_outR28\ & \main_swapix4_outR29\ & \main_swapix4_outR30\ & \main_swapix4_outR31\);
-      \instR196\ : \main_$L___unused5$838\ port map (zi6, \main_$l__unused5$838_out\);
-      \instR197\ : \main_$L___unused5$838\ port map (\__st0\, \main_$l__unused5$838_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), \main_$l__unused5$838_out\, \main_$l__unused5$838_outR1\);
+      \instR196\ : \main_$L___unused5$840\ port map (zi6, \main_$l__unused5$840_out\);
+      \instR197\ : \main_$L___unused5$840\ port map (\__st0\, \main_$l__unused5$840_outR1\);
+      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), \main_$l__unused5$840_out\, \main_$l__unused5$840_outR1\);
       \__st0_next\ <= zres(1023 downto 0);
       \__out0\ <= zres(2047 downto 1024);
       process (clk, rst)
@@ -683,12 +683,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L___unused5$838\ is
+entity \main_$L___unused5$840\ is
 port (arg0 : in std_logic_vector (1023 downto 0);
       res : out std_logic_vector (2047 downto 0));
 end entity;
 
-architecture rtl of \main_$L___unused5$838\ is
+architecture rtl of \main_$L___unused5$840\ is
 
 begin
 res <= (arg0 & arg0);

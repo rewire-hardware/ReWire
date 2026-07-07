@@ -1,31 +1,31 @@
 main.$dispatch : ([6], [3]) -> [10]
 main.$dispatch disc i =
-      if eq disc[3 +: 3] 3'h0 then main.$L.$x4$239 i
-            else if eq disc[3 +: 3] 3'h1 then main.$L._unused5$240 disc[0 +: 3] i else if eq disc[3 +: 3] 3'h2 then main.$L._unused6$241 disc[0 +: 3] i else if eq disc[3 +: 3] 3'h3 then main.$L._unused7$242 i else main.$L._unused8$243 i
+      if eq disc[3 +: 3] 3'h0 then main.$L.$x4$241 i
+            else if eq disc[3 +: 3] 3'h1 then main.$L._unused5$242 disc[0 +: 3] i else if eq disc[3 +: 3] 3'h2 then main.$L._unused6$243 disc[0 +: 3] i else if eq disc[3 +: 3] 3'h3 then main.$L._unused7$244 i else main.$L._unused8$245 i
 
-main.$L.$x4$239 : ([3]) -> [10]
-main.$L.$x4$239 $x =
-      main.$L.Main.dev3$237 $x
+main.$L.$x4$241 : ([3]) -> [10]
+main.$L.$x4$241 $x =
+      main.$L.Main.dev3$239 $x
 
-main.$L._unused5$240 : ([3], [3]) -> [10]
-main.$L._unused5$240 i _unused =
+main.$L._unused5$242 : ([3], [3]) -> [10]
+main.$L._unused5$242 i _unused =
       let $a = 1'h1 # i in
       $a # 6'h0
 
-main.$L._unused6$241 : ([3], [3]) -> [10]
-main.$L._unused6$241 i _unused =
+main.$L._unused6$243 : ([3], [3]) -> [10]
+main.$L._unused6$243 i _unused =
       7'h1 # i
 
-main.$L.Main.dev3$237 : ([3]) -> [10]
-main.$L.Main.dev3$237 i =
+main.$L.Main.dev3$239 : ([3]) -> [10]
+main.$L.Main.dev3$239 i =
       7'h2 # i
 
-main.$L._unused7$242 : ([3]) -> [10]
-main.$L._unused7$242 _unused =
+main.$L._unused7$244 : ([3]) -> [10]
+main.$L._unused7$244 _unused =
       10'h200
 
-main.$L._unused8$243 : ([3]) -> [10]
-main.$L._unused8$243 _unused =
+main.$L._unused8$245 : ([3]) -> [10]
+main.$L._unused8$245 _unused =
       10'h18
 
 device top_level

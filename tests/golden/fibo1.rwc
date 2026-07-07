@@ -1,36 +1,36 @@
 main.$dispatch : ([16], [1]) -> [24]
 main.$dispatch disc i =
-      main.$L.i8$258 i disc[8 +: 8] disc[0 +: 8]
+      main.$L.i8$260 i disc[8 +: 8] disc[0 +: 8]
 
-main.$L._unused12$262 : ([8], [8], [8], [8]) -> [24]
-main.$L._unused12$262 r0 r1 s0 s1 =
+main.$L._unused12$264 : ([8], [8], [8], [8]) -> [24]
+main.$L._unused12$264 r0 r1 s0 s1 =
       let s11 = add r0 r1 in
-      main.$L.Main.sig6$256 s0 s11
+      main.$L.Main.sig6$258 s0 s11
 
-main.$L.r111$261 : ([8], [8], [8], [8]) -> [24]
-main.$L.r111$261 r0 r1 s0 s1 =
-      main.$L._unused12$262 r0 r1 r1 s1
+main.$L.r111$263 : ([8], [8], [8], [8]) -> [24]
+main.$L.r111$263 r0 r1 s0 s1 =
+      main.$L._unused12$264 r0 r1 r1 s1
 
-main.$L.r010$260 : ([8], [8], [8]) -> [24]
-main.$L.r010$260 r0 s0 s1 =
-      main.$L.r111$261 r0 s1 s0 s1
+main.$L.r010$262 : ([8], [8], [8]) -> [24]
+main.$L.r010$262 r0 s0 s1 =
+      main.$L.r111$263 r0 s1 s0 s1
 
-main.$L.Main.incr9$259 : ([8], [8]) -> [24]
-main.$L.Main.incr9$259 s0 s1 =
-      main.$L.r010$260 s0 s0 s1
+main.$L.Main.incr9$261 : ([8], [8]) -> [24]
+main.$L.Main.incr9$261 s0 s1 =
+      main.$L.r010$262 s0 s0 s1
 
-main.$L.i8$258 : ([1], [8], [8]) -> [24]
-main.$L.i8$258 i s0 s1 =
-      if eq i 1'h0 then main.$L.Main.incr9$259 s0 s1
-            else main.$L.Main.sig6$256 s0 s1
+main.$L.i8$260 : ([1], [8], [8]) -> [24]
+main.$L.i8$260 i s0 s1 =
+      if eq i 1'h0 then main.$L.Main.incr9$261 s0 s1
+            else main.$L.Main.sig6$258 s0 s1
 
-main.$L.r07$257 : ([8], [8], [8]) -> [24]
-main.$L.r07$257 r0 s0 s1 =
+main.$L.r07$259 : ([8], [8], [8]) -> [24]
+main.$L.r07$259 r0 s0 s1 =
       r0 # s0 # s1
 
-main.$L.Main.sig6$256 : ([8], [8]) -> [24]
-main.$L.Main.sig6$256 s0 s1 =
-      main.$L.r07$257 s0 s0 s1
+main.$L.Main.sig6$258 : ([8], [8]) -> [24]
+main.$L.Main.sig6$258 s0 s1 =
+      main.$L.r07$259 s0 s0 s1
 
 device top_level
       input __in0 : [1]

@@ -1,40 +1,40 @@
 main.$dispatch : ([28], [4]) -> [44]
 main.$dispatch disc i =
-      main.$L.$x16$309 i disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
+      main.$L.$x16$311 i disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
 
-main.$L.$x16$309 : ([4], [4], [8], [16]) -> [44]
-main.$L.$x16$309 $x s0 s1 s2 =
-      main.$L.Main.loop9$301 $x s0 s1 s2
+main.$L.$x16$311 : ([4], [4], [8], [16]) -> [44]
+main.$L.$x16$311 $x s0 s1 s2 =
+      main.$L.Main.loop9$303 $x s0 s1 s2
 
-main.$L._unused15$307 : ([4], [16], [4], [8], [16]) -> [44]
-main.$L._unused15$307 a c s0 s1 s2 =
+main.$L._unused15$309 : ([4], [16], [4], [8], [16]) -> [44]
+main.$L._unused15$309 a c s0 s1 s2 =
       add (zext 16 a) c # s0 # s1 # s2
 
-main.$L._unused14$306 : ([4], [8], [16], [4], [8], [16]) -> [44]
-main.$L._unused14$306 a b c s0 s1 s2 =
+main.$L._unused14$308 : ([4], [8], [16], [4], [8], [16]) -> [44]
+main.$L._unused14$308 a b c s0 s1 s2 =
       let s21 = add (zext 16 b) c in
-      main.$L._unused15$307 a c s0 s1 s21
+      main.$L._unused15$309 a c s0 s1 s21
 
-main.$L._unused13$305 : ([4], [8], [16], [4], [8], [16]) -> [44]
-main.$L._unused13$305 a b c s0 s1 s2 =
+main.$L._unused13$307 : ([4], [8], [16], [4], [8], [16]) -> [44]
+main.$L._unused13$307 a b c s0 s1 s2 =
       let s11 = add (zext 8 a) b in
-      main.$L._unused14$306 a b c s0 s11 s2
+      main.$L._unused14$308 a b c s0 s11 s2
 
-main.$L.c12$304 : ([4], [4], [8], [16], [4], [8], [16]) -> [44]
-main.$L.c12$304 i a b c s0 s1 s2 =
-      main.$L._unused13$305 a b c i s1 s2
+main.$L.c12$306 : ([4], [4], [8], [16], [4], [8], [16]) -> [44]
+main.$L.c12$306 i a b c s0 s1 s2 =
+      main.$L._unused13$307 a b c i s1 s2
 
-main.$L.b11$303 : ([4], [4], [8], [4], [8], [16]) -> [44]
-main.$L.b11$303 i a b s0 s1 s2 =
-      main.$L.c12$304 i a b s2 s0 s1 s2
+main.$L.b11$305 : ([4], [4], [8], [4], [8], [16]) -> [44]
+main.$L.b11$305 i a b s0 s1 s2 =
+      main.$L.c12$306 i a b s2 s0 s1 s2
 
-main.$L.a10$302 : ([4], [4], [4], [8], [16]) -> [44]
-main.$L.a10$302 i a s0 s1 s2 =
-      main.$L.b11$303 i a s1 s0 s1 s2
+main.$L.a10$304 : ([4], [4], [4], [8], [16]) -> [44]
+main.$L.a10$304 i a s0 s1 s2 =
+      main.$L.b11$305 i a s1 s0 s1 s2
 
-main.$L.Main.loop9$301 : ([4], [4], [8], [16]) -> [44]
-main.$L.Main.loop9$301 i s0 s1 s2 =
-      main.$L.a10$302 i s0 s0 s1 s2
+main.$L.Main.loop9$303 : ([4], [4], [8], [16]) -> [44]
+main.$L.Main.loop9$303 i s0 s1 s2 =
+      main.$L.a10$304 i s0 s0 s1 s2
 
 device top_level
       input __in0 : [4]

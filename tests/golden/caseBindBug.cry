@@ -18,38 +18,38 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [1] -> [1] -> [2]
-rw_main__dispatch x0 x1 = rw_main__L__x4_268 x1 x0
+rw_main__dispatch x0 x1 = rw_main__L__x4_270 x1 x0
 
-// main.$L.$x4$268
-rw_main__L__x4_268 : [1] -> [1] -> [2]
-rw_main__L__x4_268 x0 x1 = rw_main__L_Main_go3_266 x0 x1
+// main.$L.$x4$270
+rw_main__L__x4_270 : [1] -> [1] -> [2]
+rw_main__L__x4_270 x0 x1 = rw_main__L_Main_go3_268 x0 x1
 
-// main.$L._unused7$272
-rw_main__L__unused7_272 : [1] -> [1] -> [2]
-rw_main__L__unused7_272 x0 x1 = x0 # x1
+// main.$L._unused7$274
+rw_main__L__unused7_274 : [1] -> [1] -> [2]
+rw_main__L__unused7_274 x0 x1 = x0 # x1
 
-// main.$L.Main.emit6$271
-rw_main__L_Main_emit6_271 : [1] -> [1] -> [2]
-rw_main__L_Main_emit6_271 x0 x1 = rw_main__L__unused7_272 x0 x0
+// main.$L.Main.emit6$273
+rw_main__L_Main_emit6_273 : [1] -> [1] -> [2]
+rw_main__L_Main_emit6_273 x0 x1 = rw_main__L__unused7_274 x0 x0
 
-// main.$L.arm8$274
-rw_main__L_arm8_274 : [1] -> [2]
-rw_main__L_arm8_274 x0 = rw_main__L_Main_emit6_271 x0 x0
+// main.$L.arm8$276
+rw_main__L_arm8_276 : [1] -> [2]
+rw_main__L_arm8_276 x0 = rw_main__L_Main_emit6_273 x0 x0
 
-// main.$L.x14$283
-rw_main__L_x14_283 : [1] -> [1] -> [2]
-rw_main__L_x14_283 x0 x1 = rw_main__L_arm8_274 s0
+// main.$L.x14$285
+rw_main__L_x14_285 : [1] -> [1] -> [2]
+rw_main__L_x14_285 x0 x1 = rw_main__L_arm8_276 s0
   where
     s0 : [1]
     s0 = rw_Main_notb x0
 
-// main.$L.arm15$285
-rw_main__L_arm15_285 : [1] -> [2]
-rw_main__L_arm15_285 x0 = rw_main__L_x14_283 x0 x0
+// main.$L.arm15$287
+rw_main__L_arm15_287 : [1] -> [2]
+rw_main__L_arm15_287 x0 = rw_main__L_x14_285 x0 x0
 
-// main.$L.Main.go3$266
-rw_main__L_Main_go3_266 : [1] -> [1] -> [2]
-rw_main__L_Main_go3_266 x0 x1 = if x0 == 0b0 then (rw_main__L_arm8_274 x1) else (rw_main__L_arm15_285 x1)
+// main.$L.Main.go3$268
+rw_main__L_Main_go3_268 : [1] -> [1] -> [2]
+rw_main__L_Main_go3_268 x0 x1 = if x0 == 0b0 then (rw_main__L_arm8_276 x1) else (rw_main__L_arm15_287 x1)
 
 // Main.notb
 rw_Main_notb : [1] -> [1]

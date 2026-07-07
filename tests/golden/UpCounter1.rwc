@@ -1,19 +1,19 @@
 main.$dispatch : ([16]) -> [24]
 main.$dispatch disc =
-      main.$L.ds3$243 disc[8 +: 8] disc[0 +: 8]
+      main.$L.ds3$245 disc[8 +: 8] disc[0 +: 8]
 
-main.$L.ds3$243 : ([8], [8]) -> [24]
-main.$L.ds3$243 n s0 =
+main.$L.ds3$245 : ([8], [8]) -> [24]
+main.$L.ds3$245 n s0 =
       let s01 = add n 8'h1 in
-      main.$L.Main.go1$241 s01
+      main.$L.Main.go1$243 s01
 
-main.$L.n2$242 : ([8], [8]) -> [24]
-main.$L.n2$242 n s0 =
+main.$L.n2$244 : ([8], [8]) -> [24]
+main.$L.n2$244 n s0 =
       n # n # s0
 
-main.$L.Main.go1$241 : ([8]) -> [24]
-main.$L.Main.go1$241 s0 =
-      main.$L.n2$242 s0 s0
+main.$L.Main.go1$243 : ([8]) -> [24]
+main.$L.Main.go1$243 s0 =
+      main.$L.n2$244 s0 s0
 
 device top_level
       output __out0 : [8]

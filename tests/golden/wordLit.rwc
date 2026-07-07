@@ -1,13 +1,13 @@
 main.$dispatch : ([8]) -> [16]
 main.$dispatch i =
-      main.$L.$x4$242 i
+      main.$L.$x4$244 i
 
-main.$L.$x4$242 : ([8]) -> [16]
-main.$L.$x4$242 $x =
-      main.$L.$x5$244 (xor (zext 16 $x) 16'h1)
+main.$L.$x4$244 : ([8]) -> [16]
+main.$L.$x4$244 $x =
+      main.$L.$x5$246 (xor (zext 16 $x) 16'h1)
 
-main.$L.$x5$244 : ([16]) -> [16]
-main.$L.$x5$244 $x =
+main.$L.$x5$246 : ([16]) -> [16]
+main.$L.$x5$246 $x =
       $x
 
 device top_level

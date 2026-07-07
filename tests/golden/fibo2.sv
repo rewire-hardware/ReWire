@@ -6,20 +6,20 @@ module top_level (input logic [0:0] clk,
   logic [16:0] __resumption_tag_next;
   logic [7:0] zi0;
   logic [7:0] zi1;
-  logic [24:0] main_$l_main_loop4$247_out;
-  logic [24:0] main_$l_main_loop4$247_outR1;
+  logic [24:0] main_$l_main_loop4$249_out;
+  logic [24:0] main_$l_main_loop4$249_outR1;
   logic [7:0] zi2;
-  logic [24:0] main_$l_main_loop4$247_outR2;
-  logic [24:0] main_$l_main_loop4$247_outR3;
+  logic [24:0] main_$l_main_loop4$249_outR2;
+  logic [24:0] main_$l_main_loop4$249_outR3;
   logic [24:0] zres;
   assign zi0 = __resumption_tag[15:8];
   assign zi1 = __resumption_tag[7:0];
-  main_$L_Main_loop4$247  inst (zi1, zi0 + zi1, main_$l_main_loop4$247_out);
-  main_$L_Main_loop4$247  instR1 (zi0, zi1, main_$l_main_loop4$247_outR1);
+  main_$L_Main_loop4$249  inst (zi1, zi0 + zi1, main_$l_main_loop4$249_out);
+  main_$L_Main_loop4$249  instR1 (zi0, zi1, main_$l_main_loop4$249_outR1);
   assign zi2 = __resumption_tag[7:0];
-  main_$L_Main_loop4$247  instR2 (zi2, 8'h0 + zi2, main_$l_main_loop4$247_outR2);
-  main_$L_Main_loop4$247  instR3 (8'h0, zi2, main_$l_main_loop4$247_outR3);
-  assign zres = (__resumption_tag[16] == 1'h0) ? ((__in0 == 1'h0) ? main_$l_main_loop4$247_out : main_$l_main_loop4$247_outR1) : ((__in0 == 1'h0) ? main_$l_main_loop4$247_outR2 : main_$l_main_loop4$247_outR3);
+  main_$L_Main_loop4$249  instR2 (zi2, 8'h0 + zi2, main_$l_main_loop4$249_outR2);
+  main_$L_Main_loop4$249  instR3 (8'h0, zi2, main_$l_main_loop4$249_outR3);
+  assign zres = (__resumption_tag[16] == 1'h0) ? ((__in0 == 1'h0) ? main_$l_main_loop4$249_out : main_$l_main_loop4$249_outR1) : ((__in0 == 1'h0) ? main_$l_main_loop4$249_outR2 : main_$l_main_loop4$249_outR3);
   assign __resumption_tag_next = zres[16:0];
   assign __out0 = zres[24:17];
   initial __resumption_tag = 17'h10001;
@@ -32,7 +32,7 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module main_$L_Main_loop4$247 (input logic [7:0] arg0,
+module main_$L_Main_loop4$249 (input logic [7:0] arg0,
   input logic [7:0] arg1,
   output logic [24:0] res);
   assign res = {arg0, 1'h0, arg0, arg1};

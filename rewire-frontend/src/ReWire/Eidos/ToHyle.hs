@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE Trustworthy #-} -- Trustworthy, not Safe: invokes rwcry (the Cryptol translator).
 -- | The Eidos-to-Hyle producer (the direct fold; doc/eidos.md §7.3): the
 --   pure fragment translates per-construct (n-ary cases compile to
 --   if-chains over constructor tags; joins are lifted to definitions
@@ -21,10 +21,10 @@
 --   tag per distinct answer type) in place of @out | label@.
 module ReWire.Eidos.ToHyle (eidosToHyle) where
 
-import ReWire.Annotation (Annote, noAnn, Annotated (ann))
+import ReWire.Annotation (Annote, noAnn, Annotated (ann), Provenance (..), Span (..), annProv)
 import ReWire.BitVector (BV, bitVec, zeros, nbits)
 import ReWire.Builtins (Builtin (..))
-import ReWire.Config (Config, inputSigs, outputSigs, stateSigs, top)
+import ReWire.Config (Config, inputSigs, outputSigs, stateSigs, top, loadPath)
 import ReWire.Error (failAt, failAtWith, failInternal, warnAt, AstError, MonadError, Warning (..), relocatingTo)
 import ReWire.Eidos.Pretty ()
 import ReWire.Eidos.Syntax
@@ -32,21 +32,29 @@ import ReWire.Eidos.Naming (liftedJoinName)
 import ReWire.Eidos.Subst (nextUniq, freeUniqs, occIds)
 import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, flattenTyApp, evalNat, substTv, higherOrder, fundamental, reacOrStateT)
 import ReWire.Hyle.Interp (evalExp, IEnv (..))
+import ReWire.Hyle.Parse (parseHyleDefns)
 import ReWire.Hyle.Transform (hoistInstances)
 import ReWire.Pretty (showt, prettyPrint)
+import ReWire.SYB (query)
 
 import Control.Lens ((^.))
 import Control.Monad (unless, foldM)
 import Control.Monad.Except (catchError)
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT (..), MonadState, State, runState, get, put, gets, modify)
-import Data.Containers.ListUtils (nubOrd)
+import Data.Char (isAlphaNum)
+import Data.Containers.ListUtils (nubOrd, nubOrdOn)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
 import Data.List (findIndex, genericLength, sortOn)
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import Numeric.Natural (Natural)
+import System.Directory (doesFileExist, findExecutable)
+import System.Environment (lookupEnv, getExecutablePath)
+import System.Exit (ExitCode (..))
+import System.FilePath (takeDirectory, isAbsolute, (</>))
+import System.Process (readCreateProcessWithExitCode, proc)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
@@ -65,6 +73,7 @@ data Env = Env
       { envCtors   :: HashMap TyConId [DataConId]      -- ^ Constructors of each datatype, in declaration order.
       , envCtorSig :: HashMap DataConId Sig            -- ^ Each constructor's declared signature.
       , envTops    :: IM.IntMap A.GId                  -- ^ Hyle names of the translated top-level definitions.
+      , envCry     :: HashMap (Text, Text, Text) A.GId -- ^ Hyle entry names of the compiled Cryptol foreign functions, by (module file, function, type key).
       }
 
 data S = S
@@ -227,18 +236,20 @@ liftJoins p@(Program datas defns procs top) = Program datas defns' procs top
 
 eidosToHyle :: (MonadIO m, MonadError AstError m) => Config -> Program -> m A.Program
 eidosToHyle conf p0 = do
-      let Program datas defns procs _top = liftJoins p0
+      let p1@(Program datas defns procs _top) = liftJoins p0
       pr <- case procs of
             [pr] -> pure pr
             _    -> failAt noAnn $ "expected exactly one process, got " <> showt (length procs)
+      (cryMap, cryDefns) <- compileCryptols conf p1
       (p, s) <- flip runStateT s0 $ do
             let pures = filter emit defns
                 env   = Env { envCtors   = Map.fromList [ (dataName d, [ c | DataCon _ c _ <- dataCons d ]) | d <- datas ]
                             , envCtorSig = Map.fromList [ (c, sig) | d <- datas, DataCon _ c sig <- dataCons d ]
                             , envTops    = buildNameMap pures
+                            , envCry     = cryMap
                             }
             pureDefns <- mapM (transDefn env) pures
-            transProc conf env pr pureDefns
+            transProc conf env pr (pureDefns <> cryDefns)
       mapM_ (\ (Warning an msg) -> warnAt conf an msg) $ nubOrd $ sWarns s
       pure p
       where -- Primitive-named definitions (undotted; the polymorphic prim
@@ -252,6 +263,120 @@ eidosToHyle conf p0 = do
 
             isPrim :: Text -> Bool
             isPrim = T.all (/= '.')
+
+---
+--- Cryptol foreign functions.
+---
+
+-- | Compile every Cryptol foreign function the program uses -- one Hyle
+--   definition set per distinct (module file, function, type)
+--   instantiation -- by invoking the out-of-process translator (rwcry),
+--   which loads and typechecks the Cryptol module, checks the use-site
+--   type against the function's Cryptol type scheme, and emits a
+--   self-contained Hyle fragment. Returns the entry names for the fold
+--   ('transBuiltin''s Cryptol case, which is pure -- all the IO happens
+--   here, before the fold) and the generated definitions.
+compileCryptols :: forall m. (MonadIO m, MonadError AstError m) => Config -> Program -> m (HashMap (Text, Text, Text) A.GId, [A.Defn])
+compileCryptols conf p = case uses of
+      []                 -> pure (mempty, [])
+      (an0, _, _, _) : _ -> do
+            rwcry <- liftIO findRwcry >>= maybe (failAt an0 missingRwcry) pure
+            foldM (step rwcry) (mempty, []) uses
+      where uses :: [(Annote, Text, Text, Ty)]
+            uses = nubOrdOn (\ (_, f, n, t) -> (f, n, tyKey t)) $ mapMaybe cryUse $ query p
+
+            step :: FilePath -> (HashMap (Text, Text, Text) A.GId, [A.Defn]) -> (Annote, Text, Text, Ty) -> m (HashMap (Text, Text, Text) A.GId, [A.Defn])
+            step rwcry (memo, ds) (an, f, n, t) = do
+                  path <- resolveCry an f
+                  cty  <- either (\ e -> failAt an $ "cryptol: unsupported type at a Cryptol foreign function: " <> e) pure $ cryTy t
+                  let entry = "cry$" <> sanitize n <> "$" <> showt (Map.size memo)
+                  (ec, out, err) <- liftIO $ readCreateProcessWithExitCode (proc rwcry [path, T.unpack n, T.unpack cty, T.unpack entry]) ""
+                  case ec of
+                        ExitSuccess   -> do
+                              ds' <- parseHyleDefns (T.pack out) path
+                              pure (Map.insert (f, n, tyKey t) entry memo, ds <> ds')
+                        ExitFailure _ -> failAt an $ case T.strip $ T.pack err of
+                              "" -> "cryptol: the translator (rwcry) failed without a diagnostic."
+                              e  -> e
+
+            -- The module file, resolved against the call site's directory,
+            -- then the loadpath.
+            resolveCry :: Annote -> Text -> m FilePath
+            resolveCry an f = firstExisting cands >>= \ case
+                  Just p' -> pure p'
+                  Nothing -> failAt an $ "cryptol: module file not found: " <> f
+                  where fp    = T.unpack f
+                        cands | isAbsolute fp = [fp]
+                              | otherwise     = map (</> fp) $ maybe [] (pure . takeDirectory) (anFile an) <> conf^.loadPath <> ["."]
+
+            firstExisting :: [FilePath] -> m (Maybe FilePath)
+            firstExisting = \ case
+                  []       -> pure Nothing
+                  c : rest -> liftIO (doesFileExist c) >>= \ ok ->
+                        if ok then pure (Just c) else firstExisting rest
+
+            anFile :: Annote -> Maybe FilePath
+            anFile a = case annProv a of
+                  FromSource sp          -> Just $ spanFile sp
+                  Synthesized _ (sp : _) -> Just $ spanFile sp
+                  _                      -> Nothing
+
+            -- RWC_RWCRY, then next to the rwc executable, then the PATH.
+            findRwcry :: IO (Maybe FilePath)
+            findRwcry = lookupEnv "RWC_RWCRY" >>= \ case
+                  Just r  -> pure $ Just r
+                  Nothing -> do
+                        cand <- (</> "rwcry") . takeDirectory <$> getExecutablePath
+                        doesFileExist cand >>= \ case
+                              True  -> pure $ Just cand
+                              False -> findExecutable "rwcry"
+
+            missingRwcry :: Text
+            missingRwcry = "cryptol: the Cryptol translator (rwcry) was not found next to rwc or on the PATH; it is built and installed along with rwc (or set RWC_RWCRY to its location)."
+
+            sanitize :: Text -> Text
+            sanitize = T.map (\ c -> if isAlphaNum c || c `elem` ("_.$'" :: String) then c else '.')
+
+-- | A saturated Cryptol foreign-function application: the module file and
+--   function name (literals, after inlining), and the use-site type, read
+--   off the implementation argument (which the neutering pass reduced to
+--   a placeholder of the same type). The annote is the file literal's --
+--   the prim occurrence's annote points into the inlined rewire-user
+--   wrapper, while the literal is the user's.
+cryUse :: Exp -> Maybe (Annote, Text, Text, Ty)
+cryUse e = case flattenApp e of
+      (Prim _ _ Cryptol, args) | fl@(LitStr _ f) : LitStr _ n : impl : _ <- [ x | EArg x <- args ] -> Just (ann fl, f, n, typeOf impl)
+      _                                                                                            -> Nothing
+
+-- | The memo key for a type: pretty-printed, annotations scrubbed.
+tyKey :: Ty -> Text
+tyKey = prettyPrint . (Ann.unAnn :: Ty -> Ty)
+
+-- | Render a monomorphic Eidos type as Cryptol type text, for the
+--   instantiation check on the Cryptol side; the inverse of the
+--   correspondence in doc/hyle.md, section 8.4. The supported fragment:
+--   Bool, bit vectors, vectors, tuples, and first-order arrows.
+cryTy :: Ty -> Either Text Text
+cryTy t = case flattenArrow t of
+      ([], tr) -> go tr
+      (ts, tr) -> do
+            ts' <- mapM go ts
+            tr' <- go tr
+            pure $ T.intercalate " -> " $ ts' <> [tr']
+      where go :: Ty -> Either Text Text
+            go t' | (_ : _, _) <- flattenArrow t' = Left "a function-typed component cannot cross the Cryptol boundary"
+                  | otherwise = case flattenTyApp t' of
+                        (TyCon _ "Bool", [])     -> pure "Bit"
+                        (TyCon _ "Vec", [n, te])
+                              | Just k <- evalNat n -> do
+                                    te' <- go te
+                                    pure $ "[" <> showt k <> "]" <> (if te' == "Bit" then "" else "(" <> te' <> ")")
+                        (TyCon _ c, args)
+                              | isTupleCon c, not (null args) -> do
+                                    args' <- mapM go args
+                                    pure $ "(" <> T.intercalate ", " args' <> ")"
+                              | c == "()", null args          -> pure "()"
+                        _                        -> Left $ prettyPrint (Ann.unAnn t' :: Ty)
 
 -- | Hyle names for the top-level definitions: the occurrence text,
 --   disambiguated by a numeric suffix in definition order.
@@ -652,6 +777,15 @@ transBuiltin env sc an' t' an theExp = case theExp of
             args' <- mapM (transExp env sc) args
             applyExtern an' sz (ps, clk, rst, as, rs, s) a args'
       (Extern,  _) -> failInternal an "encountered not-fully-applied extern (after inlining)."
+      (Cryptol, (litStr -> Just f) : (litStr -> Just n) : a : args)
+            | length (fst $ flattenArrow $ typeOf a) == length args ->
+            case Map.lookup (f, n, tyKey $ typeOf a) $ envCry env of
+                  Just g  -> do
+                        sz    <- sizeOf env "rwPrimCryptol" an t'
+                        args' <- mapM (transExp env sc) args
+                        pure $ A.Call an' sz g args'
+                  Nothing -> failInternal an "Cryptol foreign function was not precompiled (rwc bug)."
+      (Cryptol, _) -> failInternal an "encountered not-fully-applied Cryptol foreign function (after inlining)."
       (b, _) | b `elem` [Bind, Return]
                      -> failAt an ("encountered unsupported builtin use: rwPrim" <> showt b
                           <> " (a monadic operator at a monad other than the ReacT/StateT/Identity stack?).")

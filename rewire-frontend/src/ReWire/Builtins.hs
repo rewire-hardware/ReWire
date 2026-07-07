@@ -20,7 +20,7 @@ import Data.Text (Text)
 import Data.Tuple (swap)
 import GHC.Generics (Generic (..))
 
-data Builtin = Error | Extern
+data Builtin = Error | Extern | Cryptol
              | Bind | Return
              | Put | Get
              | Signal | Lift | Extrude | Unfold

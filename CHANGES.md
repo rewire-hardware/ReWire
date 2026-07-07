@@ -37,6 +37,25 @@
 * New `rwc --no-halt` flag: statically reject a device that can halt
   (post-halt outputs are unspecified; a rejected device must pause forever
   instead).
+* New Cryptol foreign-function interface: `ReWire.Cryptol.cryptol file fn
+  impl` (in rewire-user) compiles the Cryptol function `fn` from module
+  `file` at the use-site type and realizes it in hardware along with the
+  rest of the program -- unlike `extern` (a black box realized by
+  hand-written HDL), the function is present in the generated
+  Verilog/VHDL/Cryptol and the interpreter can evaluate it. The Cryptol
+  module is loaded and typechecked by the Cryptol implementation itself
+  (which needs `z3` on the PATH), the use-site type is checked against
+  the function's Cryptol type scheme, and the monomorphized result is
+  translated to Hyle definitions by the new `rwcry` executable (the
+  `rewire-cryptol` package; rwc invokes it out of process, so rwc itself
+  does not link the Cryptol toolchain). The `impl` argument is the
+  implementation used when the program runs under GHC (`f = cryptol
+  "f.cry" "f" f` for none), mirroring the extern-model idiom. The
+  initial fragment: first-order combinational functions over
+  Bit/words/vectors/tuples, if-then-else, local value bindings, and the
+  scalar and slicing primitives; comprehensions, folds, local function
+  bindings, and recursive (stateful) Cryptol are rejected with located
+  errors.
 * The `rewire-core` library has been split into three packages: `rewire-frontend`
   (the GHC driver and Core-to-Eidos bridge `ReWire.GHC.*`, the Eidos IR and
   its passes `ReWire.Eidos.*`, and the pass orchestration), `rewire-backend`

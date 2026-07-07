@@ -9,7 +9,7 @@
 --   signatures of the named defns and externs. Full well-formedness checking
 --   (ReWire.Hyle.Check) is separate; elaboration only fails where a size
 --   cannot be reconstructed at all.
-module ReWire.Hyle.Parse (parseHyle, parseHyleText) where
+module ReWire.Hyle.Parse (parseHyle, parseHyleText, parseHyleDefns) where
 
 import ReWire.Annotation (Annote, noAnn, srcAnnote)
 import ReWire.BitVector (BV, bitVec)
@@ -25,7 +25,7 @@ import Data.HashMap.Strict (HashMap)
 import Data.Text (Text, pack)
 import Data.Void (Void)
 import Numeric.Natural (Natural)
-import Text.Megaparsec (Parsec, many, try, (<|>), (<?>), manyTill, parse, between, sepBy, sepBy1, notFollowedBy, optional, satisfy, eof, empty, getSourcePos, attachSourcePos, errorOffset, bundleErrors, bundlePosState, parseErrorTextPretty)
+import Text.Megaparsec (Parsec, ParseErrorBundle, many, try, (<|>), (<?>), manyTill, parse, between, sepBy, sepBy1, notFollowedBy, optional, satisfy, eof, empty, getSourcePos, attachSourcePos, errorOffset, bundleErrors, bundlePosState, parseErrorTextPretty)
 import Text.Megaparsec.Char (char, space1)
 import Text.Megaparsec.Pos (SourcePos (..), unPos)
 
@@ -43,8 +43,23 @@ parseHyle p = liftIO (T.readFile p) >>= flip parseHyleText p
 
 parseHyleText :: MonadError AstError m => Text -> FilePath -> m Program
 parseHyleText txt p = either failParse elabProgram $ parse (space *> program <* eof) p txt
-      where failParse bundle = failAt (srcAnnote (sourceName pos) (lc pos) (lc pos)) (pack $ parseErrorTextPretty e)
-                  where (e, pos)  = NE.head $ fst $ attachSourcePos errorOffset (bundleErrors bundle) (bundlePosState bundle)
+
+-- | Parse a defns-only Hyle fragment (no device declaration): the
+--   interchange format for definitions generated outside the fold (the
+--   rwcry Cryptol translator). The fragment must be self-contained --
+--   elaboration resolves calls against the fragment's own definitions
+--   (and externs, if any) only.
+parseHyleDefns :: MonadError AstError m => Text -> FilePath -> m [Defn]
+parseHyleDefns txt p = either failParse elab $ parse (space *> many decl <* eof) p txt
+      where elab :: MonadError AstError m => [Decl] -> m [Defn]
+            elab ds = mapM (elabDefn env) defns
+                  where defns = [ d | DDefn d <- ds ]
+                        env   = SigEnv (Map.fromList $ map (\ d -> (defnName d, defnSig d)) defns)
+                                       (Map.fromList [ (extName e, e) | DExtern e <- ds ])
+
+failParse :: MonadError AstError m => ParseErrorBundle Text Void -> m a
+failParse bundle = failAt (srcAnnote (sourceName pos) (lc pos) (lc pos)) (pack $ parseErrorTextPretty e)
+      where (e, pos) = NE.head $ fst $ attachSourcePos errorOffset (bundleErrors bundle) (bundlePosState bundle)
             lc sp = (unPos $ sourceLine sp, unPos $ sourceColumn sp)
 
 ---

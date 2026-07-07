@@ -18,28 +18,28 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [1] -> [1] -> [2]
-rw_main__dispatch x0 x1 = rw_main__L__x4_280 x1 x0
+rw_main__dispatch x0 x1 = rw_main__L__x4_282 x1 x0
 
-// main.$L.$x4$280
-rw_main__L__x4_280 : [1] -> [1] -> [2]
-rw_main__L__x4_280 x0 x1 = rw_main__L_Main_stateAction6_283 x0 x1
+// main.$L.$x4$282
+rw_main__L__x4_282 : [1] -> [1] -> [2]
+rw_main__L__x4_282 x0 x1 = rw_main__L_Main_stateAction6_285 x0 x1
 
-// main.$L.$x5$282
-rw_main__L__x5_282 : [1] -> [1] -> [2]
-rw_main__L__x5_282 x0 x1 = x0 # x1
+// main.$L.$x5$284
+rw_main__L__x5_284 : [1] -> [1] -> [2]
+rw_main__L__x5_284 x0 x1 = x0 # x1
 
-// main.$L.s7$284
-rw_main__L_s7_284 : [1] -> [1] -> [1] -> [2]
-rw_main__L_s7_284 x0 x1 x2 = rw_main__L__x5_282 x1 s1
+// main.$L.s7$286
+rw_main__L_s7_286 : [1] -> [1] -> [1] -> [2]
+rw_main__L_s7_286 x0 x1 x2 = rw_main__L__x5_284 x1 s1
   where
     s0 : [1]
     s0 = x0 ^ x1
     s1 : [1]
     s1 = s0
 
-// main.$L.Main.stateAction6$283
-rw_main__L_Main_stateAction6_283 : [1] -> [1] -> [2]
-rw_main__L_Main_stateAction6_283 x0 x1 = rw_main__L_s7_284 x0 x1 x1
+// main.$L.Main.stateAction6$285
+rw_main__L_Main_stateAction6_285 : [1] -> [1] -> [2]
+rw_main__L_Main_stateAction6_285 x0 x1 = rw_main__L_s7_286 x0 x1 x1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [1] -> [1] -> [2]

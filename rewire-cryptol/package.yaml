@@ -1,0 +1,50 @@
+name:         rewire-cryptol
+version:      2.7
+synopsis:     "A Haskell-to-Verilog/VHDL compiler, Cryptol foreign functions"
+description:  "The Cryptol-to-Hyle translator behind rwc's Cryptol foreign-function interface (ReWire.Cryptol.cryptol in rewire-user): loads and typechecks a Cryptol module with the Cryptol implementation itself, checks and instantiates a function at a requested monomorphic type, and emits it as ReWire.Hyle definitions. Provides the rwcry executable, which rwc invokes; rwc does not link this package."
+license:      BSD3
+license-file: LICENSE
+category:     Language
+build-type:   Simple
+github:       rewire-hardware/ReWire/rewire-cryptol
+maintainer:   Chris Hathhorn <hathhorn@gmail.com>
+author:
+- Chris Hathhorn <hathhorn@gmail.com>
+
+ghc-options:
+- -Wall
+- -Werror
+- -Wunused-packages
+- -fno-warn-name-shadowing
+- -funbox-strict-fields
+- -O2
+default-extensions:
+- LambdaCase
+- TupleSections
+- ViewPatterns
+
+dependencies:
+- base ^>= 4.20
+- text ^>= 2.1
+
+library:
+  source-dirs: src
+  dependencies:
+  - rewire-base >= 2.7
+  - rewire-backend >= 2.7
+  - bytestring ^>= 0.12
+  - containers ^>= 0.7
+  - cryptol
+  - filepath ^>= 1.5
+  - mtl ^>= 2.3
+  - unordered-containers ^>= 0.2
+
+executables:
+  rwcry:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+    - -threaded
+    dependencies:
+    - rewire-cryptol
+    - rewire-base

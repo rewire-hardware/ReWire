@@ -18,15 +18,15 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [3] -> [1] -> [4]
-rw_main__dispatch x0 x1 = if (take`{2} x0) == 0b00 then (rw_main__L_z4_236 x1) else (if (take`{2} x0) == 0b01 then (rw_main__L_y3_235 (drop`{2} x0) x1) else (rw_main__L_x2_234 x1))
+rw_main__dispatch x0 x1 = if (take`{2} x0) == 0b00 then (rw_main__L_z4_238 x1) else (if (take`{2} x0) == 0b01 then (rw_main__L_y3_237 (drop`{2} x0) x1) else (rw_main__L_x2_236 x1))
 
-// main.$L.z4$236
-rw_main__L_z4_236 : [1] -> [4]
-rw_main__L_z4_236 x0 = 0x4
+// main.$L.z4$238
+rw_main__L_z4_238 : [1] -> [4]
+rw_main__L_z4_238 x0 = 0x4
 
-// main.$L.y3$235
-rw_main__L_y3_235 : [1] -> [1] -> [4]
-rw_main__L_y3_235 x0 x1 = s2 # 0b000
+// main.$L.y3$237
+rw_main__L_y3_237 : [1] -> [1] -> [4]
+rw_main__L_y3_237 x0 x1 = s2 # 0b000
   where
     s0 : [1]
     s0 = if x0 == 0b1 then x0 else 0b0
@@ -35,9 +35,9 @@ rw_main__L_y3_235 x0 x1 = s2 # 0b000
     s2 : [1]
     s2 = if s1 == 0b1 then x1 else 0b0
 
-// main.$L.x2$234
-rw_main__L_x2_234 : [1] -> [4]
-rw_main__L_x2_234 x0 = if x0 == 0b0 then (x0 # (0b01 # x0)) else (0b001 # x0)
+// main.$L.x2$236
+rw_main__L_x2_236 : [1] -> [4]
+rw_main__L_x2_236 x0 = if x0 == 0b0 then (x0 # (0b01 # x0)) else (0b001 # x0)
 
 // Per-cycle step: outputs # next register values.
 rw_step : [3] -> [1] -> [4]

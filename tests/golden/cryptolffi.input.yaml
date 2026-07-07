@@ -1,0 +1,13 @@
+# Interpreter stimulus for cryptolffi.
+#
+# Device: combinational; ReacT input type (W 8, W 8) = (m, x), output
+# clamp m (nibswap x) -- the nibble-swap of x, saturated at m, computed
+# by the Cryptol function `step` in cry/crymix.cry.
+- __in0: 255
+  __in1: 18
+- __in0: 16
+  __in1: 18
+- __in0: 255
+  __in1: 171
+- __in0: 0
+  __in1: 255

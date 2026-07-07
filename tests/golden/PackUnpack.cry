@@ -18,15 +18,15 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [8] -> [32]
-rw_main__dispatch x0 = rw_main__L__x2_708 x0
+rw_main__dispatch x0 = rw_main__L__x2_710 x0
 
-// main.$L.$x2$708
-rw_main__L__x2_708 : [8] -> [32]
-rw_main__L__x2_708 x0 = rw_main__L_Main_dev1_706 x0
+// main.$L.$x2$710
+rw_main__L__x2_710 : [8] -> [32]
+rw_main__L__x2_710 x0 = rw_main__L_Main_dev1_708 x0
 
-// main.$L.Main.dev1$706
-rw_main__L_Main_dev1_706 : [8] -> [32]
-rw_main__L_Main_dev1_706 x0 = s69
+// main.$L.Main.dev1$708
+rw_main__L_Main_dev1_708 : [8] -> [32]
+rw_main__L_Main_dev1_708 x0 = s69
   where
     s0 : [8]
     s0 = rw_Main_x2 x0

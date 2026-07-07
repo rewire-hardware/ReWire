@@ -4,8 +4,8 @@ extern mymod
       input x : [16]
       output out : [8]
 
-main.$L.$x5$240 : ([8]) -> [8]
-main.$L.$x5$240 $x =
+main.$L.$x5$242 : ([8]) -> [8]
+main.$L.$x5$242 $x =
       $x
 
 device top_level
@@ -13,5 +13,5 @@ device top_level
       output __out0 : [8]
       instance $x1 of mymod
       $x1.x := __in0
-      let $res = main.$L.$x5$240 $x1.out
+      let $res = main.$L.$x5$242 $x1.out
       __out0 := $res

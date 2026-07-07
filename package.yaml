@@ -34,6 +34,7 @@ extra-source-files:
 data-files:
 - tests/negative/*.hs
 - tests/negative/*.rwc
+- tests/negative/cry/*.cry
 - tests/warning/*.hs
 - tests/golden/Mods/*.hs
 - tests/golden/OD19/*.hs
@@ -45,6 +46,7 @@ data-files:
 - tests/golden/*.rwc
 - tests/golden/*.vhdl
 - tests/golden/*.cry
+- tests/golden/cry/*.cry
 - tests/golden/*.yaml
 - tests/integration/*.hs
 - tests/integration/*.sv

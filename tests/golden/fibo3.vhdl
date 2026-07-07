@@ -208,7 +208,7 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \main_$L_Main_first14$292\ is
+component \main_$L_Main_first14$294\ is
       port (arg0 : in std_logic_vector (15 downto 0);
             res : out std_logic_vector (23 downto 0));
       end component;
@@ -218,17 +218,17 @@ component \main_$L_Main_first14$292\ is
       signal zi1 : std_logic_vector (7 downto 0);
       signal zi2 : std_logic_vector (7 downto 0);
       signal zi3 : std_logic_vector (15 downto 0);
-      signal \main_$l_main_first14$292_out\ : std_logic_vector (23 downto 0);
-      signal \main_$l_main_first14$292_outR1\ : std_logic_vector (23 downto 0);
+      signal \main_$l_main_first14$294_out\ : std_logic_vector (23 downto 0);
+      signal \main_$l_main_first14$294_outR1\ : std_logic_vector (23 downto 0);
       signal zres : std_logic_vector (23 downto 0);
 begin
 zi0 <= \__st0\(15 downto 8);
       zi1 <= rw_resize(rw_shiftr(\__st0\, rw_repl(128, std_logic_vector'(B"0"))), 8);
       zi2 <= rw_add(zi0, zi1);
       zi3 <= (zi1 & zi2);
-      inst : \main_$L_Main_first14$292\ port map (zi3, \main_$l_main_first14$292_out\);
-      \instR1\ : \main_$L_Main_first14$292\ port map (\__st0\, \main_$l_main_first14$292_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), \main_$l_main_first14$292_out\, \main_$l_main_first14$292_outR1\);
+      inst : \main_$L_Main_first14$294\ port map (zi3, \main_$l_main_first14$294_out\);
+      \instR1\ : \main_$L_Main_first14$294\ port map (\__st0\, \main_$l_main_first14$294_outR1\);
+      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), \main_$l_main_first14$294_out\, \main_$l_main_first14$294_outR1\);
       \__st0_next\ <= zres(15 downto 0);
       \__out0\ <= zres(23 downto 16);
       process (clk, rst)
@@ -245,12 +245,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L_Main_first14$292\ is
+entity \main_$L_Main_first14$294\ is
 port (arg0 : in std_logic_vector (15 downto 0);
       res : out std_logic_vector (23 downto 0));
 end entity;
 
-architecture rtl of \main_$L_Main_first14$292\ is
+architecture rtl of \main_$L_Main_first14$294\ is
 signal zi0 : std_logic_vector (7 downto 0);
 begin
 zi0 <= arg0(15 downto 8);

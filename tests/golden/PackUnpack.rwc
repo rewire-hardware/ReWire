@@ -1,13 +1,13 @@
 main.$dispatch : ([8]) -> [32]
 main.$dispatch i =
-      main.$L.$x2$708 i
+      main.$L.$x2$710 i
 
-main.$L.$x2$708 : ([8]) -> [32]
-main.$L.$x2$708 $x =
-      main.$L.Main.dev1$706 $x
+main.$L.$x2$710 : ([8]) -> [32]
+main.$L.$x2$710 $x =
+      main.$L.Main.dev1$708 $x
 
-main.$L.Main.dev1$706 : ([8]) -> [32]
-main.$L.Main.dev1$706 a =
+main.$L.Main.dev1$708 : ([8]) -> [32]
+main.$L.Main.dev1$708 a =
       let b = Main.x2 a in
       let $a = (let $a2 = (let $a2 = trunc 1 (lshr a 128'h7) in
       $a2) in

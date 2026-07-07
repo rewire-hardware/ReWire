@@ -1,32 +1,32 @@
 main.$dispatch : ([1024], [1]) -> [2048]
 main.$dispatch disc i =
-      main.$L.$x7$841 i disc
+      main.$L.$x7$843 i disc
 
-main.$L.$x7$841 : ([1], [1024]) -> [2048]
-main.$L.$x7$841 $x s0 =
-      main.$L.Main.nopipeline4$837 $x s0
+main.$L.$x7$843 : ([1], [1024]) -> [2048]
+main.$L.$x7$843 $x s0 =
+      main.$L.Main.nopipeline4$839 $x s0
 
-main.$L.x6$839 : ([1024], [1024]) -> [2048]
-main.$L.x6$839 x s0 =
+main.$L.x6$841 : ([1024], [1024]) -> [2048]
+main.$L.x6$841 x s0 =
       x # s0
 
-main.$L._unused5$838 : ([1024]) -> [2048]
-main.$L._unused5$838 s0 =
-      main.$L.x6$839 s0 s0
+main.$L._unused5$840 : ([1024]) -> [2048]
+main.$L._unused5$840 s0 =
+      main.$L.x6$841 s0 s0
 
-main.$L.x8$843 : ([1024], [1024]) -> [2048]
-main.$L.x8$843 x s0 =
+main.$L.x8$845 : ([1024], [1024]) -> [2048]
+main.$L.x8$845 x s0 =
       let $a = Main.round x in
-      main.$L._unused5$838 $a
+      main.$L._unused5$840 $a
 
-main.$L.arm9$845 : ([1024]) -> [2048]
-main.$L.arm9$845 s0 =
-      main.$L.x8$843 s0 s0
+main.$L.arm9$847 : ([1024]) -> [2048]
+main.$L.arm9$847 s0 =
+      main.$L.x8$845 s0 s0
 
-main.$L.Main.nopipeline4$837 : ([1], [1024]) -> [2048]
-main.$L.Main.nopipeline4$837 ds s0 =
-      if eq ds 1'h0 then main.$L.arm9$845 s0
-            else main.$L._unused5$838 s0
+main.$L.Main.nopipeline4$839 : ([1], [1024]) -> [2048]
+main.$L.Main.nopipeline4$839 ds s0 =
+      if eq ds 1'h0 then main.$L.arm9$847 s0
+            else main.$L._unused5$840 s0
 
 Main.explode5 : ([5]) -> [5]
 Main.explode5 w5 =

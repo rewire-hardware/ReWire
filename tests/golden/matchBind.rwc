@@ -1,32 +1,32 @@
 main.$dispatch : ([9], [8]) -> [17]
 main.$dispatch disc i =
-      if eq disc[8 +: 1] 1'h0 then main.$L.ds8$287 i disc[0 +: 8]
-            else main.$L.i11$291 i disc[0 +: 8]
+      if eq disc[8 +: 1] 1'h0 then main.$L.ds8$289 i disc[0 +: 8]
+            else main.$L.i11$293 i disc[0 +: 8]
 
-main.$L.ds8$287 : ([8], [8]) -> [17]
-main.$L.ds8$287 ds s0 =
-      main.$L.Main.loop4$283 s0
+main.$L.ds8$289 : ([8], [8]) -> [17]
+main.$L.ds8$289 ds s0 =
+      main.$L.Main.loop4$285 s0
 
-main.$L.Main.incr7$286 : ([8]) -> [17]
-main.$L.Main.incr7$286 s0 =
+main.$L.Main.incr7$288 : ([8]) -> [17]
+main.$L.Main.incr7$288 s0 =
       9'h4 # s0
 
-main.$L.i5$284 : ([8], [8]) -> [17]
-main.$L.i5$284 i s0 =
+main.$L.i5$286 : ([8], [8]) -> [17]
+main.$L.i5$286 i s0 =
       let $a = (let $t0 = trunc 1 i in
       $t0) in
       let $a1 = (if eq $a 1'h1 then 1'h0
             else 1'h1) in
-      if eq $a1 1'h0 then main.$L.Main.incr7$286 s0
-            else main.$L.Main.incr7$286 s0
+      if eq $a1 1'h0 then main.$L.Main.incr7$288 s0
+            else main.$L.Main.incr7$288 s0
 
-main.$L.Main.loop4$283 : ([8]) -> [17]
-main.$L.Main.loop4$283 s0 =
-      main.$L.i5$284 s0 s0
+main.$L.Main.loop4$285 : ([8]) -> [17]
+main.$L.Main.loop4$285 s0 =
+      main.$L.i5$286 s0 s0
 
-main.$L.i11$291 : ([8], [8]) -> [17]
-main.$L.i11$291 i s0 =
-      main.$L.Main.loop4$283 i
+main.$L.i11$293 : ([8], [8]) -> [17]
+main.$L.i11$293 i s0 =
+      main.$L.Main.loop4$285 i
 
 device top_level
       input __in0 : [8]

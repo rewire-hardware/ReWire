@@ -1,20 +1,20 @@
 main.$dispatch : ([8]) -> [8]
 main.$dispatch i =
-      main.$L.$x4$282 i
+      main.$L.$x4$284 i
 
-main.$L.$x4$282 : ([8]) -> [8]
-main.$L.$x4$282 $x =
-      main.$L.Main.loop3$280 $x
+main.$L.$x4$284 : ([8]) -> [8]
+main.$L.$x4$284 $x =
+      main.$L.Main.loop3$282 $x
 
-main.$L.$x5$284 : ([8]) -> [8]
-main.$L.$x5$284 $x =
+main.$L.$x5$286 : ([8]) -> [8]
+main.$L.$x5$286 $x =
       $x
 
-main.$L.Main.loop3$280 : ([8]) -> [8]
-main.$L.Main.loop3$280 i =
+main.$L.Main.loop3$282 : ([8]) -> [8]
+main.$L.Main.loop3$282 i =
       let $a = Main.myRotr$s1 i in
       let $a1 = Main.myArithRotr$s1 $a in
-      main.$L.$x5$284 $a1
+      main.$L.$x5$286 $a1
 
 Main.myRotr$s1 : ([8]) -> [8]
 Main.myRotr$s1 w =

@@ -5,15 +5,15 @@ module top_level (input logic [0:0] clk,
   logic [7:0] __st0;
   logic [7:0] __st0_next;
   logic [7:0] zi0;
-  logic [15:0] main_$l_main_go1$268_out;
+  logic [15:0] main_$l_main_go1$270_out;
   logic [7:0] zi1;
-  logic [15:0] main_$l_main_go1$268_outR1;
+  logic [15:0] main_$l_main_go1$270_outR1;
   logic [15:0] zres;
   assign zi0 = __st0 + 8'h1;
-  main_$L_Main_go1$268  inst (zi0, main_$l_main_go1$268_out);
+  main_$L_Main_go1$270  inst (zi0, main_$l_main_go1$270_out);
   assign zi1 = (__st0 << 8'h1) | {7'h0, __st0[7]};
-  main_$L_Main_go1$268  instR1 (zi1, main_$l_main_go1$268_outR1);
-  assign zres = (__in0 == 1'h0) ? main_$l_main_go1$268_out : main_$l_main_go1$268_outR1;
+  main_$L_Main_go1$270  instR1 (zi1, main_$l_main_go1$270_outR1);
+  assign zres = (__in0 == 1'h0) ? main_$l_main_go1$270_out : main_$l_main_go1$270_outR1;
   assign __st0_next = zres[7:0];
   assign __out0 = zres[15:8];
   initial __st0 = 8'h0;
@@ -26,7 +26,7 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module main_$L_Main_go1$268 (input logic [7:0] arg0,
+module main_$L_Main_go1$270 (input logic [7:0] arg0,
   output logic [15:0] res);
   assign res = {arg0, arg0};
 endmodule

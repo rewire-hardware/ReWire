@@ -7,13 +7,13 @@ module top_level (input logic [0:0] clk,
   logic [7:0] __st0;
   logic [7:0] __st0_next;
   logic [7:0] zi1;
-  logic [24:0] main_$l_main_dev2$244_out;
-  logic [24:0] main_$l_main_dev2$244_outR1;
+  logic [24:0] main_$l_main_dev2$246_out;
+  logic [24:0] main_$l_main_dev2$246_outR1;
   logic [24:0] zres;
   assign zi1 = __resumption_tag[7:0];
-  main_$L_Main_dev2$244  inst (zi1, __in0, main_$l_main_dev2$244_out);
-  main_$L_Main_dev2$244  instR1 (__in0, 8'h0, main_$l_main_dev2$244_outR1);
-  assign zres = (__resumption_tag[8] == 1'h0) ? main_$l_main_dev2$244_out : main_$l_main_dev2$244_outR1;
+  main_$L_Main_dev2$246  inst (zi1, __in0, main_$l_main_dev2$246_out);
+  main_$L_Main_dev2$246  instR1 (__in0, 8'h0, main_$l_main_dev2$246_outR1);
+  assign zres = (__resumption_tag[8] == 1'h0) ? main_$l_main_dev2$246_out : main_$l_main_dev2$246_outR1;
   assign __resumption_tag_next = zres[16:8];
   assign __st0_next = zres[7:0];
   assign __out0 = zres[24:17];
@@ -27,7 +27,7 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module main_$L_Main_dev2$244 (input logic [7:0] arg0,
+module main_$L_Main_dev2$246 (input logic [7:0] arg0,
   input logic [7:0] arg1,
   output logic [24:0] res);
   assign res = {arg1 + arg0, 1'h0, arg0, arg1};
