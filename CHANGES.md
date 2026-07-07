@@ -51,11 +51,12 @@
   does not link the Cryptol toolchain). The `impl` argument is the
   implementation used when the program runs under GHC (`f = cryptol
   "f.cry" "f" f` for none), mirroring the extern-model idiom. The
-  initial fragment: first-order combinational functions over
-  Bit/words/vectors/tuples, if-then-else, local value bindings, and the
-  scalar and slicing primitives; comprehensions, folds, local function
-  bindings, and recursive (stateful) Cryptol are rejected with located
-  errors.
+  supported fragment: first-order combinational functions over
+  Bit/words/vectors/tuples -- if-then-else, local value bindings,
+  sequence comprehensions (fully unrolled), foldl/foldr, indexing with
+  constant or variable indices, and the scalar, slicing, and enumeration
+  primitives; local function bindings, records, enums, and recursive
+  (stateful) Cryptol are rejected with located errors.
 * The `rewire-core` library has been split into three packages: `rewire-frontend`
   (the GHC driver and Core-to-Eidos bridge `ReWire.GHC.*`, the Eidos IR and
   its passes `ReWire.Eidos.*`, and the pass orchestration), `rewire-backend`

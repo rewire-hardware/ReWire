@@ -1,0 +1,64 @@
+main.$dispatch : ([16]) -> [20]
+main.$dispatch i =
+      main.$L.$x4$260 i
+
+main.$L.$x4$260 : ([16]) -> [20]
+main.$L.$x4$260 $x =
+      main.$L.ReWire.Monad.iter$1$s23$258 $x
+
+main.$L.ReWire.Monad.iter$1$s23$258 : ([16]) -> [20]
+main.$L.ReWire.Monad.iter$1$s23$258 i =
+      let $a = Main.go i in
+      $a
+
+Main.crysub : ([16]) -> [16]
+Main.crysub $eta0 =
+      cry$bytemap$0 $eta0
+
+Main.cryflip16 : ([16]) -> [16]
+Main.cryflip16 $eta0 =
+      cry$flipHalves$1 $eta0
+
+Main.cryflip4 : ([4]) -> [4]
+Main.cryflip4 $eta0 =
+      cry$flipHalves$2 $eta0
+
+Main.cryxor : ([16]) -> [4]
+Main.cryxor $eta0 =
+      cry$xorWord$3 $eta0
+
+Main.go : ([16]) -> [20]
+Main.go x =
+      Main.cryflip16 (Main.crysub x) # Main.cryflip4 (Main.cryxor x)
+
+cry$bytemap$0.subst$1 : ([4]) -> [4]
+cry$bytemap$0.subst$1 i$0 =
+      (shl 64'he4d12fb83a6c5907 (mul (zext 6 i$0) 6'h4))[60 +: 4]
+
+cry$bytemap$0 : ([16]) -> [16]
+cry$bytemap$0 x$0 =
+      cry$bytemap$0.subst$1 x$0[12 +: 4] # cry$bytemap$0.subst$1 x$0[8 +: 4] # cry$bytemap$0.subst$1 x$0[4 +: 4] # cry$bytemap$0.subst$1 x$0[0 +: 4]
+
+cry$flipHalves$1 : ([16]) -> [16]
+cry$flipHalves$1 x$0 =
+      x$0[0 +: 8] # x$0[8 +: 8]
+
+cry$flipHalves$2 : ([4]) -> [4]
+cry$flipHalves$2 x$0 =
+      x$0[0 +: 2] # x$0[2 +: 2]
+
+cry$xorWord$3.xorAll$0 : ([16]) -> [4]
+cry$xorWord$3.xorAll$0 xs$0 =
+      xor (xor (xor (xor 4'h0 xs$0[12 +: 4]) xs$0[8 +: 4]) xs$0[4 +: 4]) xs$0[0 +: 4]
+
+cry$xorWord$3 : ([16]) -> [4]
+cry$xorWord$3 x$0 =
+      cry$xorWord$3.xorAll$0 x$0
+
+device top_level
+      input __in0 : [16]
+      output __out0 : [16]
+      output __out1 : [4]
+      let $res = main.$dispatch __in0
+      __out0 := $res[4 +: 16]
+      __out1 := $res[0 +: 4]

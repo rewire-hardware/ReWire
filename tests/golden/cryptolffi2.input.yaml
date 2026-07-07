@@ -1,0 +1,10 @@
+# Interpreter stimulus for cryptolffi2.
+#
+# Device: combinational; input x : W 16; outputs (flipHalves (bytemap x),
+# flipHalves (xorAll (split x))) -- an sbox substitution on each nibble
+# with the byte halves swapped, and the nibble-xor of x with its halves
+# swapped, all computed by Cryptol functions in cry/crysbox.cry.
+- __in0: 4660
+- __in0: 0
+- __in0: 65535
+- __in0: 43981
