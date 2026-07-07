@@ -1,0 +1,9 @@
+module cryneg where
+
+f : [8] -> [8]
+f x = x + 1
+
+comp : [8] -> [8]
+comp x = ys @ (0 : [1])
+  where
+    ys = [ x + i | i <- [1, 2] ]

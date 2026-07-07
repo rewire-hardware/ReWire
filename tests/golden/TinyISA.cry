@@ -18,11 +18,11 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [73] -> [17] -> [88]
-rw_main__dispatch x0 x1 = if (take`{3} x0) == 0b000 then (rw_main__L_i15_694 x1 (drop`{3} x0)) else (if (take`{3} x0) == 0b001 then (rw_main__L_i58_749 x1 (drop`{3} x0)) else (if (take`{3} x0) == 0b010 then (rw_main__L_i87_787 x1 (drop`{3} x0)) else (if (take`{3} x0) == 0b011 then (rw_main__L_i117_825 x1 (drop`{3} x0)) else (rw_main__L_i225_968 x1 (drop`{3} x0)))))
+rw_main__dispatch x0 x1 = if (take`{3} x0) == 0b000 then (rw_main__L_i15_696 x1 (drop`{3} x0)) else (if (take`{3} x0) == 0b001 then (rw_main__L_i58_751 x1 (drop`{3} x0)) else (if (take`{3} x0) == 0b010 then (rw_main__L_i87_789 x1 (drop`{3} x0)) else (if (take`{3} x0) == 0b011 then (rw_main__L_i117_827 x1 (drop`{3} x0)) else (rw_main__L_i225_970 x1 (drop`{3} x0)))))
 
-// main.$L.s17$696
-rw_main__L_s17_696 : [17] -> [70] -> [70] -> [88]
-rw_main__L_s17_696 x0 x1 x2 = rw_main__L_Main_getIns196_931 s7
+// main.$L.s17$698
+rw_main__L_s17_698 : [17] -> [70] -> [70] -> [88]
+rw_main__L_s17_698 x0 x1 x2 = rw_main__L_Main_getIns196_933 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -41,32 +41,32 @@ rw_main__L_s17_696 x0 x1 x2 = rw_main__L_Main_getIns196_931 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putIns16$695
-rw_main__L_Main_putIns16_695 : [17] -> [70] -> [88]
-rw_main__L_Main_putIns16_695 x0 x1 = rw_main__L_s17_696 x0 x1 x1
+// main.$L.Main.putIns16$697
+rw_main__L_Main_putIns16_697 : [17] -> [70] -> [88]
+rw_main__L_Main_putIns16_697 x0 x1 = rw_main__L_s17_698 x0 x1 x1
 
-// main.$L.i15$694
-rw_main__L_i15_694 : [17] -> [70] -> [88]
-rw_main__L_i15_694 x0 x1 = rw_main__L_Main_putIns16_695 x0 x1
+// main.$L.i15$696
+rw_main__L_i15_696 : [17] -> [70] -> [88]
+rw_main__L_i15_696 x0 x1 = rw_main__L_Main_putIns16_697 x0 x1
 
-// main.$L.o14$693
-rw_main__L_o14_693 : [15] -> [70] -> [88]
-rw_main__L_o14_693 x0 x1 = x0 # (0b000 # x1)
+// main.$L.o14$695
+rw_main__L_o14_695 : [15] -> [70] -> [88]
+rw_main__L_o14_695 x0 x1 = x0 # (0b000 # x1)
 
-// main.$L.s19$699
-rw_main__L_s19_699 : [70] -> [70] -> [88]
-rw_main__L_s19_699 x0 x1 = rw_main__L_o14_693 s0 x1
+// main.$L.s19$701
+rw_main__L_s19_701 : [70] -> [70] -> [88]
+rw_main__L_s19_701 x0 x1 = rw_main__L_o14_695 s0 x1
   where
     s0 : [15]
     s0 = rw_Main_outputs x0
 
-// main.$L.Main.getOut18$698
-rw_main__L_Main_getOut18_698 : [70] -> [88]
-rw_main__L_Main_getOut18_698 x0 = rw_main__L_s19_699 x0 x0
+// main.$L.Main.getOut18$700
+rw_main__L_Main_getOut18_700 : [70] -> [88]
+rw_main__L_Main_getOut18_700 x0 = rw_main__L_s19_701 x0 x0
 
-// main.$L.s25$706
-rw_main__L_s25_706 : [15] -> [70] -> [70] -> [88]
-rw_main__L_s25_706 x0 x1 x2 = rw_main__L_Main_getOut18_698 s7
+// main.$L.s25$708
+rw_main__L_s25_708 : [15] -> [70] -> [70] -> [88]
+rw_main__L_s25_708 x0 x1 x2 = rw_main__L_Main_getOut18_700 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -85,13 +85,13 @@ rw_main__L_s25_706 x0 x1 x2 = rw_main__L_Main_getOut18_698 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putOut24$705
-rw_main__L_Main_putOut24_705 : [15] -> [70] -> [88]
-rw_main__L_Main_putOut24_705 x0 x1 = rw_main__L_s25_706 x0 x1 x1
+// main.$L.Main.putOut24$707
+rw_main__L_Main_putOut24_707 : [15] -> [70] -> [88]
+rw_main__L_Main_putOut24_707 x0 x1 = rw_main__L_s25_708 x0 x1 x1
 
-// main.$L.o23$704
-rw_main__L_o23_704 : [15] -> [70] -> [88]
-rw_main__L_o23_704 x0 x1 = rw_main__L_Main_putOut24_705 s3 x1
+// main.$L.o23$706
+rw_main__L_o23_706 : [15] -> [70] -> [88]
+rw_main__L_o23_706 x0 x1 = rw_main__L_Main_putOut24_707 s3 x1
   where
     s0 : [6]
     s0 = take`{6} (drop`{1} x0)
@@ -102,20 +102,20 @@ rw_main__L_o23_704 x0 x1 = rw_main__L_Main_putOut24_705 s3 x1
     s3 : [15]
     s3 = s2
 
-// main.$L.s27$709
-rw_main__L_s27_709 : [70] -> [70] -> [88]
-rw_main__L_s27_709 x0 x1 = rw_main__L_o23_704 s0 x1
+// main.$L.s27$711
+rw_main__L_s27_711 : [70] -> [70] -> [88]
+rw_main__L_s27_711 x0 x1 = rw_main__L_o23_706 s0 x1
   where
     s0 : [15]
     s0 = rw_Main_outputs x0
 
-// main.$L.Main.getOut26$708
-rw_main__L_Main_getOut26_708 : [70] -> [88]
-rw_main__L_Main_getOut26_708 x0 = rw_main__L_s27_709 x0 x0
+// main.$L.Main.getOut26$710
+rw_main__L_Main_getOut26_710 : [70] -> [88]
+rw_main__L_Main_getOut26_710 x0 = rw_main__L_s27_711 x0 x0
 
-// main.$L.s31$714
-rw_main__L_s31_714 : [15] -> [70] -> [70] -> [88]
-rw_main__L_s31_714 x0 x1 x2 = rw_main__L_Main_getOut26_708 s7
+// main.$L.s31$716
+rw_main__L_s31_716 : [15] -> [70] -> [70] -> [88]
+rw_main__L_s31_716 x0 x1 x2 = rw_main__L_Main_getOut26_710 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -134,13 +134,13 @@ rw_main__L_s31_714 x0 x1 x2 = rw_main__L_Main_getOut26_708 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putOut30$713
-rw_main__L_Main_putOut30_713 : [15] -> [70] -> [88]
-rw_main__L_Main_putOut30_713 x0 x1 = rw_main__L_s31_714 x0 x1 x1
+// main.$L.Main.putOut30$715
+rw_main__L_Main_putOut30_715 : [15] -> [70] -> [88]
+rw_main__L_Main_putOut30_715 x0 x1 = rw_main__L_s31_716 x0 x1 x1
 
-// main.$L.o29$712
-rw_main__L_o29_712 : [6] -> [15] -> [70] -> [88]
-rw_main__L_o29_712 x0 x1 x2 = rw_main__L_Main_putOut30_713 s3 x2
+// main.$L.o29$714
+rw_main__L_o29_714 : [6] -> [15] -> [70] -> [88]
+rw_main__L_o29_714 x0 x1 x2 = rw_main__L_Main_putOut30_715 s3 x2
   where
     s0 : [1]
     s0 = take`{1} x1
@@ -151,31 +151,31 @@ rw_main__L_o29_712 x0 x1 x2 = rw_main__L_Main_putOut30_713 s3 x2
     s3 : [15]
     s3 = s2
 
-// main.$L.s33$717
-rw_main__L_s33_717 : [6] -> [70] -> [70] -> [88]
-rw_main__L_s33_717 x0 x1 x2 = rw_main__L_o29_712 x0 s0 x2
+// main.$L.s33$719
+rw_main__L_s33_719 : [6] -> [70] -> [70] -> [88]
+rw_main__L_s33_719 x0 x1 x2 = rw_main__L_o29_714 x0 s0 x2
   where
     s0 : [15]
     s0 = rw_Main_outputs x1
 
-// main.$L.Main.getOut32$716
-rw_main__L_Main_getOut32_716 : [6] -> [70] -> [88]
-rw_main__L_Main_getOut32_716 x0 x1 = rw_main__L_s33_717 x0 x1 x1
+// main.$L.Main.getOut32$718
+rw_main__L_Main_getOut32_718 : [6] -> [70] -> [88]
+rw_main__L_Main_getOut32_718 x0 x1 = rw_main__L_s33_719 x0 x1 x1
 
-// main.$L.s35$720
-rw_main__L_s35_720 : [70] -> [70] -> [88]
-rw_main__L_s35_720 x0 x1 = rw_main__L_Main_getOut32_716 s0 x1
+// main.$L.s35$722
+rw_main__L_s35_722 : [70] -> [70] -> [88]
+rw_main__L_s35_722 x0 x1 = rw_main__L_Main_getOut32_718 s0 x1
   where
     s0 : [6]
     s0 = rw_Main_pc x0
 
-// main.$L.Main.getPC34$719
-rw_main__L_Main_getPC34_719 : [70] -> [88]
-rw_main__L_Main_getPC34_719 x0 = rw_main__L_s35_720 x0 x0
+// main.$L.Main.getPC34$721
+rw_main__L_Main_getPC34_721 : [70] -> [88]
+rw_main__L_Main_getPC34_721 x0 = rw_main__L_s35_722 x0 x0
 
-// main.$L.s39$725
-rw_main__L_s39_725 : [6] -> [70] -> [70] -> [88]
-rw_main__L_s39_725 x0 x1 x2 = rw_main__L_Main_getPC34_719 s7
+// main.$L.s39$727
+rw_main__L_s39_727 : [6] -> [70] -> [70] -> [88]
+rw_main__L_s39_727 x0 x1 x2 = rw_main__L_Main_getPC34_721 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -194,24 +194,24 @@ rw_main__L_s39_725 x0 x1 x2 = rw_main__L_Main_getPC34_719 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putPC38$724
-rw_main__L_Main_putPC38_724 : [6] -> [70] -> [88]
-rw_main__L_Main_putPC38_724 x0 x1 = rw_main__L_s39_725 x0 x1 x1
+// main.$L.Main.putPC38$726
+rw_main__L_Main_putPC38_726 : [6] -> [70] -> [88]
+rw_main__L_Main_putPC38_726 x0 x1 = rw_main__L_s39_727 x0 x1 x1
 
-// main.$L.s41$728
-rw_main__L_s41_728 : [70] -> [70] -> [88]
-rw_main__L_s41_728 x0 x1 = rw_main__L_Main_putPC38_724 (s0 + 0b000001) x1
+// main.$L.s41$730
+rw_main__L_s41_730 : [70] -> [70] -> [88]
+rw_main__L_s41_730 x0 x1 = rw_main__L_Main_putPC38_726 (s0 + 0b000001) x1
   where
     s0 : [6]
     s0 = rw_Main_pc x0
 
-// main.$L.Main.getPC40$727
-rw_main__L_Main_getPC40_727 : [70] -> [88]
-rw_main__L_Main_getPC40_727 x0 = rw_main__L_s41_728 x0 x0
+// main.$L.Main.getPC40$729
+rw_main__L_Main_getPC40_729 : [70] -> [88]
+rw_main__L_Main_getPC40_729 x0 = rw_main__L_s41_730 x0 x0
 
-// main.$L.s49$738
-rw_main__L_s49_738 : [8] -> [70] -> [70] -> [88]
-rw_main__L_s49_738 x0 x1 x2 = rw_main__L_Main_getIns196_931 s7
+// main.$L.s49$740
+rw_main__L_s49_740 : [8] -> [70] -> [70] -> [88]
+rw_main__L_s49_740 x0 x1 x2 = rw_main__L_Main_getIns196_933 s7
   where
     s0 : [8]
     s0 = take`{8} (drop`{8} x1)
@@ -230,31 +230,31 @@ rw_main__L_s49_738 x0 x1 x2 = rw_main__L_Main_getIns196_931 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putReg$s148$737
-rw_main__L_Main_putReg_s148_737 : [8] -> [70] -> [88]
-rw_main__L_Main_putReg_s148_737 x0 x1 = rw_main__L_s49_738 x0 x1 x1
+// main.$L.Main.putReg$s148$739
+rw_main__L_Main_putReg_s148_739 : [8] -> [70] -> [88]
+rw_main__L_Main_putReg_s148_739 x0 x1 = rw_main__L_s49_740 x0 x1 x1
 
-// main.$L.i51$741
-rw_main__L_i51_741 : [17] -> [70] -> [88]
-rw_main__L_i51_741 x0 x1 = rw_main__L_Main_putReg_s148_737 s0 x1
+// main.$L.i51$743
+rw_main__L_i51_743 : [17] -> [70] -> [88]
+rw_main__L_i51_743 x0 x1 = rw_main__L_Main_putReg_s148_739 s0 x1
   where
     s0 : [8]
     s0 = rw_Main_dataIn x0
 
-// main.$L.s53$743
-rw_main__L_s53_743 : [70] -> [70] -> [88]
-rw_main__L_s53_743 x0 x1 = rw_main__L_i51_741 s0 x1
+// main.$L.s53$745
+rw_main__L_s53_745 : [70] -> [70] -> [88]
+rw_main__L_s53_745 x0 x1 = rw_main__L_i51_743 s0 x1
   where
     s0 : [17]
     s0 = rw_Main_inputs x0
 
-// main.$L.Main.getIns52$742
-rw_main__L_Main_getIns52_742 : [70] -> [88]
-rw_main__L_Main_getIns52_742 x0 = rw_main__L_s53_743 x0 x0
+// main.$L.Main.getIns52$744
+rw_main__L_Main_getIns52_744 : [70] -> [88]
+rw_main__L_Main_getIns52_744 x0 = rw_main__L_s53_745 x0 x0
 
-// main.$L.s60$751
-rw_main__L_s60_751 : [17] -> [70] -> [70] -> [88]
-rw_main__L_s60_751 x0 x1 x2 = rw_main__L_Main_getIns52_742 s7
+// main.$L.s60$753
+rw_main__L_s60_753 : [17] -> [70] -> [70] -> [88]
+rw_main__L_s60_753 x0 x1 x2 = rw_main__L_Main_getIns52_744 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -273,32 +273,32 @@ rw_main__L_s60_751 x0 x1 x2 = rw_main__L_Main_getIns52_742 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putIns59$750
-rw_main__L_Main_putIns59_750 : [17] -> [70] -> [88]
-rw_main__L_Main_putIns59_750 x0 x1 = rw_main__L_s60_751 x0 x1 x1
+// main.$L.Main.putIns59$752
+rw_main__L_Main_putIns59_752 : [17] -> [70] -> [88]
+rw_main__L_Main_putIns59_752 x0 x1 = rw_main__L_s60_753 x0 x1 x1
 
-// main.$L.i58$749
-rw_main__L_i58_749 : [17] -> [70] -> [88]
-rw_main__L_i58_749 x0 x1 = rw_main__L_Main_putIns59_750 x0 x1
+// main.$L.i58$751
+rw_main__L_i58_751 : [17] -> [70] -> [88]
+rw_main__L_i58_751 x0 x1 = rw_main__L_Main_putIns59_752 x0 x1
 
-// main.$L.o57$748
-rw_main__L_o57_748 : [15] -> [70] -> [88]
-rw_main__L_o57_748 x0 x1 = x0 # (0b001 # x1)
+// main.$L.o57$750
+rw_main__L_o57_750 : [15] -> [70] -> [88]
+rw_main__L_o57_750 x0 x1 = x0 # (0b001 # x1)
 
-// main.$L.s62$754
-rw_main__L_s62_754 : [70] -> [70] -> [88]
-rw_main__L_s62_754 x0 x1 = rw_main__L_o57_748 s0 x1
+// main.$L.s62$756
+rw_main__L_s62_756 : [70] -> [70] -> [88]
+rw_main__L_s62_756 x0 x1 = rw_main__L_o57_750 s0 x1
   where
     s0 : [15]
     s0 = rw_Main_outputs x0
 
-// main.$L.Main.getOut61$753
-rw_main__L_Main_getOut61_753 : [70] -> [88]
-rw_main__L_Main_getOut61_753 x0 = rw_main__L_s62_754 x0 x0
+// main.$L.Main.getOut61$755
+rw_main__L_Main_getOut61_755 : [70] -> [88]
+rw_main__L_Main_getOut61_755 x0 = rw_main__L_s62_756 x0 x0
 
-// main.$L.s68$761
-rw_main__L_s68_761 : [15] -> [70] -> [70] -> [88]
-rw_main__L_s68_761 x0 x1 x2 = rw_main__L_Main_getOut61_753 s7
+// main.$L.s68$763
+rw_main__L_s68_763 : [15] -> [70] -> [70] -> [88]
+rw_main__L_s68_763 x0 x1 x2 = rw_main__L_Main_getOut61_755 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -317,13 +317,13 @@ rw_main__L_s68_761 x0 x1 x2 = rw_main__L_Main_getOut61_753 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putOut67$760
-rw_main__L_Main_putOut67_760 : [15] -> [70] -> [88]
-rw_main__L_Main_putOut67_760 x0 x1 = rw_main__L_s68_761 x0 x1 x1
+// main.$L.Main.putOut67$762
+rw_main__L_Main_putOut67_762 : [15] -> [70] -> [88]
+rw_main__L_Main_putOut67_762 x0 x1 = rw_main__L_s68_763 x0 x1 x1
 
-// main.$L.o66$759
-rw_main__L_o66_759 : [15] -> [70] -> [88]
-rw_main__L_o66_759 x0 x1 = rw_main__L_Main_putOut67_760 s3 x1
+// main.$L.o66$761
+rw_main__L_o66_761 : [15] -> [70] -> [88]
+rw_main__L_o66_761 x0 x1 = rw_main__L_Main_putOut67_762 s3 x1
   where
     s0 : [6]
     s0 = take`{6} (drop`{1} x0)
@@ -334,20 +334,20 @@ rw_main__L_o66_759 x0 x1 = rw_main__L_Main_putOut67_760 s3 x1
     s3 : [15]
     s3 = s2
 
-// main.$L.s70$764
-rw_main__L_s70_764 : [70] -> [70] -> [88]
-rw_main__L_s70_764 x0 x1 = rw_main__L_o66_759 s0 x1
+// main.$L.s70$766
+rw_main__L_s70_766 : [70] -> [70] -> [88]
+rw_main__L_s70_766 x0 x1 = rw_main__L_o66_761 s0 x1
   where
     s0 : [15]
     s0 = rw_Main_outputs x0
 
-// main.$L.Main.getOut69$763
-rw_main__L_Main_getOut69_763 : [70] -> [88]
-rw_main__L_Main_getOut69_763 x0 = rw_main__L_s70_764 x0 x0
+// main.$L.Main.getOut69$765
+rw_main__L_Main_getOut69_765 : [70] -> [88]
+rw_main__L_Main_getOut69_765 x0 = rw_main__L_s70_766 x0 x0
 
-// main.$L.s74$769
-rw_main__L_s74_769 : [15] -> [70] -> [70] -> [88]
-rw_main__L_s74_769 x0 x1 x2 = rw_main__L_Main_getOut69_763 s7
+// main.$L.s74$771
+rw_main__L_s74_771 : [15] -> [70] -> [70] -> [88]
+rw_main__L_s74_771 x0 x1 x2 = rw_main__L_Main_getOut69_765 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -366,13 +366,13 @@ rw_main__L_s74_769 x0 x1 x2 = rw_main__L_Main_getOut69_763 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putOut73$768
-rw_main__L_Main_putOut73_768 : [15] -> [70] -> [88]
-rw_main__L_Main_putOut73_768 x0 x1 = rw_main__L_s74_769 x0 x1 x1
+// main.$L.Main.putOut73$770
+rw_main__L_Main_putOut73_770 : [15] -> [70] -> [88]
+rw_main__L_Main_putOut73_770 x0 x1 = rw_main__L_s74_771 x0 x1 x1
 
-// main.$L.o72$767
-rw_main__L_o72_767 : [6] -> [15] -> [70] -> [88]
-rw_main__L_o72_767 x0 x1 x2 = rw_main__L_Main_putOut73_768 s3 x2
+// main.$L.o72$769
+rw_main__L_o72_769 : [6] -> [15] -> [70] -> [88]
+rw_main__L_o72_769 x0 x1 x2 = rw_main__L_Main_putOut73_770 s3 x2
   where
     s0 : [1]
     s0 = take`{1} x1
@@ -383,31 +383,31 @@ rw_main__L_o72_767 x0 x1 x2 = rw_main__L_Main_putOut73_768 s3 x2
     s3 : [15]
     s3 = s2
 
-// main.$L.s76$772
-rw_main__L_s76_772 : [6] -> [70] -> [70] -> [88]
-rw_main__L_s76_772 x0 x1 x2 = rw_main__L_o72_767 x0 s0 x2
+// main.$L.s76$774
+rw_main__L_s76_774 : [6] -> [70] -> [70] -> [88]
+rw_main__L_s76_774 x0 x1 x2 = rw_main__L_o72_769 x0 s0 x2
   where
     s0 : [15]
     s0 = rw_Main_outputs x1
 
-// main.$L.Main.getOut75$771
-rw_main__L_Main_getOut75_771 : [6] -> [70] -> [88]
-rw_main__L_Main_getOut75_771 x0 x1 = rw_main__L_s76_772 x0 x1 x1
+// main.$L.Main.getOut75$773
+rw_main__L_Main_getOut75_773 : [6] -> [70] -> [88]
+rw_main__L_Main_getOut75_773 x0 x1 = rw_main__L_s76_774 x0 x1 x1
 
-// main.$L.s78$775
-rw_main__L_s78_775 : [70] -> [70] -> [88]
-rw_main__L_s78_775 x0 x1 = rw_main__L_Main_getOut75_771 s0 x1
+// main.$L.s78$777
+rw_main__L_s78_777 : [70] -> [70] -> [88]
+rw_main__L_s78_777 x0 x1 = rw_main__L_Main_getOut75_773 s0 x1
   where
     s0 : [6]
     s0 = rw_Main_pc x0
 
-// main.$L.Main.getPC77$774
-rw_main__L_Main_getPC77_774 : [70] -> [88]
-rw_main__L_Main_getPC77_774 x0 = rw_main__L_s78_775 x0 x0
+// main.$L.Main.getPC77$776
+rw_main__L_Main_getPC77_776 : [70] -> [88]
+rw_main__L_Main_getPC77_776 x0 = rw_main__L_s78_777 x0 x0
 
-// main.$L.s82$780
-rw_main__L_s82_780 : [6] -> [70] -> [70] -> [88]
-rw_main__L_s82_780 x0 x1 x2 = rw_main__L_Main_getPC77_774 s7
+// main.$L.s82$782
+rw_main__L_s82_782 : [6] -> [70] -> [70] -> [88]
+rw_main__L_s82_782 x0 x1 x2 = rw_main__L_Main_getPC77_776 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -426,24 +426,24 @@ rw_main__L_s82_780 x0 x1 x2 = rw_main__L_Main_getPC77_774 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putPC81$779
-rw_main__L_Main_putPC81_779 : [6] -> [70] -> [88]
-rw_main__L_Main_putPC81_779 x0 x1 = rw_main__L_s82_780 x0 x1 x1
+// main.$L.Main.putPC81$781
+rw_main__L_Main_putPC81_781 : [6] -> [70] -> [88]
+rw_main__L_Main_putPC81_781 x0 x1 = rw_main__L_s82_782 x0 x1 x1
 
-// main.$L.s84$783
-rw_main__L_s84_783 : [70] -> [70] -> [88]
-rw_main__L_s84_783 x0 x1 = rw_main__L_Main_putPC81_779 (s0 + 0b000001) x1
+// main.$L.s84$785
+rw_main__L_s84_785 : [70] -> [70] -> [88]
+rw_main__L_s84_785 x0 x1 = rw_main__L_Main_putPC81_781 (s0 + 0b000001) x1
   where
     s0 : [6]
     s0 = rw_Main_pc x0
 
-// main.$L.Main.getPC83$782
-rw_main__L_Main_getPC83_782 : [70] -> [88]
-rw_main__L_Main_getPC83_782 x0 = rw_main__L_s84_783 x0 x0
+// main.$L.Main.getPC83$784
+rw_main__L_Main_getPC83_784 : [70] -> [88]
+rw_main__L_Main_getPC83_784 x0 = rw_main__L_s84_785 x0 x0
 
-// main.$L.s89$789
-rw_main__L_s89_789 : [17] -> [70] -> [70] -> [88]
-rw_main__L_s89_789 x0 x1 x2 = rw_main__L_Main_getPC83_782 s7
+// main.$L.s89$791
+rw_main__L_s89_791 : [17] -> [70] -> [70] -> [88]
+rw_main__L_s89_791 x0 x1 x2 = rw_main__L_Main_getPC83_784 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -462,32 +462,32 @@ rw_main__L_s89_789 x0 x1 x2 = rw_main__L_Main_getPC83_782 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putIns88$788
-rw_main__L_Main_putIns88_788 : [17] -> [70] -> [88]
-rw_main__L_Main_putIns88_788 x0 x1 = rw_main__L_s89_789 x0 x1 x1
+// main.$L.Main.putIns88$790
+rw_main__L_Main_putIns88_790 : [17] -> [70] -> [88]
+rw_main__L_Main_putIns88_790 x0 x1 = rw_main__L_s89_791 x0 x1 x1
 
-// main.$L.i87$787
-rw_main__L_i87_787 : [17] -> [70] -> [88]
-rw_main__L_i87_787 x0 x1 = rw_main__L_Main_putIns88_788 x0 x1
+// main.$L.i87$789
+rw_main__L_i87_789 : [17] -> [70] -> [88]
+rw_main__L_i87_789 x0 x1 = rw_main__L_Main_putIns88_790 x0 x1
 
-// main.$L.o86$786
-rw_main__L_o86_786 : [15] -> [70] -> [88]
-rw_main__L_o86_786 x0 x1 = x0 # (0b010 # x1)
+// main.$L.o86$788
+rw_main__L_o86_788 : [15] -> [70] -> [88]
+rw_main__L_o86_788 x0 x1 = x0 # (0b010 # x1)
 
-// main.$L.s91$792
-rw_main__L_s91_792 : [70] -> [70] -> [88]
-rw_main__L_s91_792 x0 x1 = rw_main__L_o86_786 s0 x1
+// main.$L.s91$794
+rw_main__L_s91_794 : [70] -> [70] -> [88]
+rw_main__L_s91_794 x0 x1 = rw_main__L_o86_788 s0 x1
   where
     s0 : [15]
     s0 = rw_Main_outputs x0
 
-// main.$L.Main.getOut90$791
-rw_main__L_Main_getOut90_791 : [70] -> [88]
-rw_main__L_Main_getOut90_791 x0 = rw_main__L_s91_792 x0 x0
+// main.$L.Main.getOut90$793
+rw_main__L_Main_getOut90_793 : [70] -> [88]
+rw_main__L_Main_getOut90_793 x0 = rw_main__L_s91_794 x0 x0
 
-// main.$L.s96$798
-rw_main__L_s96_798 : [15] -> [70] -> [70] -> [88]
-rw_main__L_s96_798 x0 x1 x2 = rw_main__L_Main_getOut90_791 s7
+// main.$L.s96$800
+rw_main__L_s96_800 : [15] -> [70] -> [70] -> [88]
+rw_main__L_s96_800 x0 x1 x2 = rw_main__L_Main_getOut90_793 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -506,13 +506,13 @@ rw_main__L_s96_798 x0 x1 x2 = rw_main__L_Main_getOut90_791 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putOut95$797
-rw_main__L_Main_putOut95_797 : [15] -> [70] -> [88]
-rw_main__L_Main_putOut95_797 x0 x1 = rw_main__L_s96_798 x0 x1 x1
+// main.$L.Main.putOut95$799
+rw_main__L_Main_putOut95_799 : [15] -> [70] -> [88]
+rw_main__L_Main_putOut95_799 x0 x1 = rw_main__L_s96_800 x0 x1 x1
 
-// main.$L.o94$796
-rw_main__L_o94_796 : [15] -> [70] -> [88]
-rw_main__L_o94_796 x0 x1 = rw_main__L_Main_putOut95_797 s3 x1
+// main.$L.o94$798
+rw_main__L_o94_798 : [15] -> [70] -> [88]
+rw_main__L_o94_798 x0 x1 = rw_main__L_Main_putOut95_799 s3 x1
   where
     s0 : [6]
     s0 = take`{6} (drop`{1} x0)
@@ -523,20 +523,20 @@ rw_main__L_o94_796 x0 x1 = rw_main__L_Main_putOut95_797 s3 x1
     s3 : [15]
     s3 = s2
 
-// main.$L.s98$801
-rw_main__L_s98_801 : [70] -> [70] -> [88]
-rw_main__L_s98_801 x0 x1 = rw_main__L_o94_796 s0 x1
+// main.$L.s98$803
+rw_main__L_s98_803 : [70] -> [70] -> [88]
+rw_main__L_s98_803 x0 x1 = rw_main__L_o94_798 s0 x1
   where
     s0 : [15]
     s0 = rw_Main_outputs x0
 
-// main.$L.Main.getOut97$800
-rw_main__L_Main_getOut97_800 : [70] -> [88]
-rw_main__L_Main_getOut97_800 x0 = rw_main__L_s98_801 x0 x0
+// main.$L.Main.getOut97$802
+rw_main__L_Main_getOut97_802 : [70] -> [88]
+rw_main__L_Main_getOut97_802 x0 = rw_main__L_s98_803 x0 x0
 
-// main.$L.s102$806
-rw_main__L_s102_806 : [15] -> [70] -> [70] -> [88]
-rw_main__L_s102_806 x0 x1 x2 = rw_main__L_Main_getOut97_800 s7
+// main.$L.s102$808
+rw_main__L_s102_808 : [15] -> [70] -> [70] -> [88]
+rw_main__L_s102_808 x0 x1 x2 = rw_main__L_Main_getOut97_802 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -555,13 +555,13 @@ rw_main__L_s102_806 x0 x1 x2 = rw_main__L_Main_getOut97_800 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putOut101$805
-rw_main__L_Main_putOut101_805 : [15] -> [70] -> [88]
-rw_main__L_Main_putOut101_805 x0 x1 = rw_main__L_s102_806 x0 x1 x1
+// main.$L.Main.putOut101$807
+rw_main__L_Main_putOut101_807 : [15] -> [70] -> [88]
+rw_main__L_Main_putOut101_807 x0 x1 = rw_main__L_s102_808 x0 x1 x1
 
-// main.$L.o100$804
-rw_main__L_o100_804 : [6] -> [15] -> [70] -> [88]
-rw_main__L_o100_804 x0 x1 x2 = rw_main__L_Main_putOut101_805 s3 x2
+// main.$L.o100$806
+rw_main__L_o100_806 : [6] -> [15] -> [70] -> [88]
+rw_main__L_o100_806 x0 x1 x2 = rw_main__L_Main_putOut101_807 s3 x2
   where
     s0 : [1]
     s0 = take`{1} x1
@@ -572,20 +572,20 @@ rw_main__L_o100_804 x0 x1 x2 = rw_main__L_Main_putOut101_805 s3 x2
     s3 : [15]
     s3 = s2
 
-// main.$L.s104$809
-rw_main__L_s104_809 : [6] -> [70] -> [70] -> [88]
-rw_main__L_s104_809 x0 x1 x2 = rw_main__L_o100_804 x0 s0 x2
+// main.$L.s104$811
+rw_main__L_s104_811 : [6] -> [70] -> [70] -> [88]
+rw_main__L_s104_811 x0 x1 x2 = rw_main__L_o100_806 x0 s0 x2
   where
     s0 : [15]
     s0 = rw_Main_outputs x1
 
-// main.$L.Main.getOut103$808
-rw_main__L_Main_getOut103_808 : [6] -> [70] -> [88]
-rw_main__L_Main_getOut103_808 x0 x1 = rw_main__L_s104_809 x0 x1 x1
+// main.$L.Main.getOut103$810
+rw_main__L_Main_getOut103_810 : [6] -> [70] -> [88]
+rw_main__L_Main_getOut103_810 x0 x1 = rw_main__L_s104_811 x0 x1 x1
 
-// main.$L.s119$827
-rw_main__L_s119_827 : [17] -> [70] -> [70] -> [88]
-rw_main__L_s119_827 x0 x1 x2 = rw_main__L_Main_getPC40_727 s7
+// main.$L.s119$829
+rw_main__L_s119_829 : [17] -> [70] -> [70] -> [88]
+rw_main__L_s119_829 x0 x1 x2 = rw_main__L_Main_getPC40_729 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -604,32 +604,32 @@ rw_main__L_s119_827 x0 x1 x2 = rw_main__L_Main_getPC40_727 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putIns118$826
-rw_main__L_Main_putIns118_826 : [17] -> [70] -> [88]
-rw_main__L_Main_putIns118_826 x0 x1 = rw_main__L_s119_827 x0 x1 x1
+// main.$L.Main.putIns118$828
+rw_main__L_Main_putIns118_828 : [17] -> [70] -> [88]
+rw_main__L_Main_putIns118_828 x0 x1 = rw_main__L_s119_829 x0 x1 x1
 
-// main.$L.i117$825
-rw_main__L_i117_825 : [17] -> [70] -> [88]
-rw_main__L_i117_825 x0 x1 = rw_main__L_Main_putIns118_826 x0 x1
+// main.$L.i117$827
+rw_main__L_i117_827 : [17] -> [70] -> [88]
+rw_main__L_i117_827 x0 x1 = rw_main__L_Main_putIns118_828 x0 x1
 
-// main.$L.o116$824
-rw_main__L_o116_824 : [15] -> [70] -> [88]
-rw_main__L_o116_824 x0 x1 = x0 # (0b011 # x1)
+// main.$L.o116$826
+rw_main__L_o116_826 : [15] -> [70] -> [88]
+rw_main__L_o116_826 x0 x1 = x0 # (0b011 # x1)
 
-// main.$L.s121$830
-rw_main__L_s121_830 : [70] -> [70] -> [88]
-rw_main__L_s121_830 x0 x1 = rw_main__L_o116_824 s0 x1
+// main.$L.s121$832
+rw_main__L_s121_832 : [70] -> [70] -> [88]
+rw_main__L_s121_832 x0 x1 = rw_main__L_o116_826 s0 x1
   where
     s0 : [15]
     s0 = rw_Main_outputs x0
 
-// main.$L.Main.getOut120$829
-rw_main__L_Main_getOut120_829 : [70] -> [88]
-rw_main__L_Main_getOut120_829 x0 = rw_main__L_s121_830 x0 x0
+// main.$L.Main.getOut120$831
+rw_main__L_Main_getOut120_831 : [70] -> [88]
+rw_main__L_Main_getOut120_831 x0 = rw_main__L_s121_832 x0 x0
 
-// main.$L.s128$838
-rw_main__L_s128_838 : [15] -> [70] -> [70] -> [88]
-rw_main__L_s128_838 x0 x1 x2 = rw_main__L_Main_getOut120_829 s7
+// main.$L.s128$840
+rw_main__L_s128_840 : [15] -> [70] -> [70] -> [88]
+rw_main__L_s128_840 x0 x1 x2 = rw_main__L_Main_getOut120_831 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -648,13 +648,13 @@ rw_main__L_s128_838 x0 x1 x2 = rw_main__L_Main_getOut120_829 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putOut127$837
-rw_main__L_Main_putOut127_837 : [15] -> [70] -> [88]
-rw_main__L_Main_putOut127_837 x0 x1 = rw_main__L_s128_838 x0 x1 x1
+// main.$L.Main.putOut127$839
+rw_main__L_Main_putOut127_839 : [15] -> [70] -> [88]
+rw_main__L_Main_putOut127_839 x0 x1 = rw_main__L_s128_840 x0 x1 x1
 
-// main.$L.o126$836
-rw_main__L_o126_836 : [15] -> [70] -> [88]
-rw_main__L_o126_836 x0 x1 = rw_main__L_Main_putOut127_837 s3 x1
+// main.$L.o126$838
+rw_main__L_o126_838 : [15] -> [70] -> [88]
+rw_main__L_o126_838 x0 x1 = rw_main__L_Main_putOut127_839 s3 x1
   where
     s0 : [6]
     s0 = take`{6} (drop`{1} x0)
@@ -665,20 +665,20 @@ rw_main__L_o126_836 x0 x1 = rw_main__L_Main_putOut127_837 s3 x1
     s3 : [15]
     s3 = s2
 
-// main.$L.s130$841
-rw_main__L_s130_841 : [70] -> [70] -> [88]
-rw_main__L_s130_841 x0 x1 = rw_main__L_o126_836 s0 x1
+// main.$L.s130$843
+rw_main__L_s130_843 : [70] -> [70] -> [88]
+rw_main__L_s130_843 x0 x1 = rw_main__L_o126_838 s0 x1
   where
     s0 : [15]
     s0 = rw_Main_outputs x0
 
-// main.$L.Main.getOut129$840
-rw_main__L_Main_getOut129_840 : [70] -> [88]
-rw_main__L_Main_getOut129_840 x0 = rw_main__L_s130_841 x0 x0
+// main.$L.Main.getOut129$842
+rw_main__L_Main_getOut129_842 : [70] -> [88]
+rw_main__L_Main_getOut129_842 x0 = rw_main__L_s130_843 x0 x0
 
-// main.$L.s134$846
-rw_main__L_s134_846 : [15] -> [70] -> [70] -> [88]
-rw_main__L_s134_846 x0 x1 x2 = rw_main__L_Main_getOut129_840 s7
+// main.$L.s134$848
+rw_main__L_s134_848 : [15] -> [70] -> [70] -> [88]
+rw_main__L_s134_848 x0 x1 x2 = rw_main__L_Main_getOut129_842 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -697,13 +697,13 @@ rw_main__L_s134_846 x0 x1 x2 = rw_main__L_Main_getOut129_840 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putOut133$845
-rw_main__L_Main_putOut133_845 : [15] -> [70] -> [88]
-rw_main__L_Main_putOut133_845 x0 x1 = rw_main__L_s134_846 x0 x1 x1
+// main.$L.Main.putOut133$847
+rw_main__L_Main_putOut133_847 : [15] -> [70] -> [88]
+rw_main__L_Main_putOut133_847 x0 x1 = rw_main__L_s134_848 x0 x1 x1
 
-// main.$L.o132$844
-rw_main__L_o132_844 : [8] -> [15] -> [70] -> [88]
-rw_main__L_o132_844 x0 x1 x2 = rw_main__L_Main_putOut133_845 s3 x2
+// main.$L.o132$846
+rw_main__L_o132_846 : [8] -> [15] -> [70] -> [88]
+rw_main__L_o132_846 x0 x1 x2 = rw_main__L_Main_putOut133_847 s3 x2
   where
     s0 : [1]
     s0 = take`{1} x1
@@ -714,20 +714,20 @@ rw_main__L_o132_844 x0 x1 x2 = rw_main__L_Main_putOut133_845 s3 x2
     s3 : [15]
     s3 = s2
 
-// main.$L.s136$849
-rw_main__L_s136_849 : [8] -> [70] -> [70] -> [88]
-rw_main__L_s136_849 x0 x1 x2 = rw_main__L_o132_844 x0 s0 x2
+// main.$L.s136$851
+rw_main__L_s136_851 : [8] -> [70] -> [70] -> [88]
+rw_main__L_s136_851 x0 x1 x2 = rw_main__L_o132_846 x0 s0 x2
   where
     s0 : [15]
     s0 = rw_Main_outputs x1
 
-// main.$L.Main.getOut135$848
-rw_main__L_Main_getOut135_848 : [8] -> [70] -> [88]
-rw_main__L_Main_getOut135_848 x0 x1 = rw_main__L_s136_849 x0 x1 x1
+// main.$L.Main.getOut135$850
+rw_main__L_Main_getOut135_850 : [8] -> [70] -> [88]
+rw_main__L_Main_getOut135_850 x0 x1 = rw_main__L_s136_851 x0 x1 x1
 
-// main.$L.s140$854
-rw_main__L_s140_854 : [15] -> [8] -> [70] -> [70] -> [88]
-rw_main__L_s140_854 x0 x1 x2 x3 = rw_main__L_Main_getOut135_848 x1 s7
+// main.$L.s140$856
+rw_main__L_s140_856 : [15] -> [8] -> [70] -> [70] -> [88]
+rw_main__L_s140_856 x0 x1 x2 x3 = rw_main__L_Main_getOut135_850 x1 s7
   where
     s0 : [8]
     s0 = take`{8} x2
@@ -746,13 +746,13 @@ rw_main__L_s140_854 x0 x1 x2 x3 = rw_main__L_Main_getOut135_848 x1 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putOut139$853
-rw_main__L_Main_putOut139_853 : [8] -> [15] -> [70] -> [88]
-rw_main__L_Main_putOut139_853 x0 x1 x2 = rw_main__L_s140_854 x1 x0 x2 x2
+// main.$L.Main.putOut139$855
+rw_main__L_Main_putOut139_855 : [8] -> [15] -> [70] -> [88]
+rw_main__L_Main_putOut139_855 x0 x1 x2 = rw_main__L_s140_856 x1 x0 x2 x2
 
-// main.$L.o138$852
-rw_main__L_o138_852 : [6] -> [8] -> [15] -> [70] -> [88]
-rw_main__L_o138_852 x0 x1 x2 x3 = rw_main__L_Main_putOut139_853 x1 s3 x3
+// main.$L.o138$854
+rw_main__L_o138_854 : [6] -> [8] -> [15] -> [70] -> [88]
+rw_main__L_o138_854 x0 x1 x2 x3 = rw_main__L_Main_putOut139_855 x1 s3 x3
   where
     s0 : [1]
     s0 = take`{1} x2
@@ -763,31 +763,31 @@ rw_main__L_o138_852 x0 x1 x2 x3 = rw_main__L_Main_putOut139_853 x1 s3 x3
     s3 : [15]
     s3 = s2
 
-// main.$L.s142$857
-rw_main__L_s142_857 : [6] -> [8] -> [70] -> [70] -> [88]
-rw_main__L_s142_857 x0 x1 x2 x3 = rw_main__L_o138_852 x0 x1 s0 x3
+// main.$L.s142$859
+rw_main__L_s142_859 : [6] -> [8] -> [70] -> [70] -> [88]
+rw_main__L_s142_859 x0 x1 x2 x3 = rw_main__L_o138_854 x0 x1 s0 x3
   where
     s0 : [15]
     s0 = rw_Main_outputs x2
 
-// main.$L.Main.getOut141$856
-rw_main__L_Main_getOut141_856 : [6] -> [8] -> [70] -> [88]
-rw_main__L_Main_getOut141_856 x0 x1 x2 = rw_main__L_s142_857 x0 x1 x2 x2
+// main.$L.Main.getOut141$858
+rw_main__L_Main_getOut141_858 : [6] -> [8] -> [70] -> [88]
+rw_main__L_Main_getOut141_858 x0 x1 x2 = rw_main__L_s142_859 x0 x1 x2 x2
 
-// main.$L.x144$860
-rw_main__L_x144_860 : [6] -> [70] -> [70] -> [88]
-rw_main__L_x144_860 x0 x1 x2 = rw_main__L_Main_getOut141_856 x0 s0 x2
+// main.$L.x144$862
+rw_main__L_x144_862 : [6] -> [70] -> [70] -> [88]
+rw_main__L_x144_862 x0 x1 x2 = rw_main__L_Main_getOut141_858 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r0 x1
 
-// main.$L.Main.getReg$s1143$859
-rw_main__L_Main_getReg_s1143_859 : [6] -> [70] -> [88]
-rw_main__L_Main_getReg_s1143_859 x0 x1 = rw_main__L_x144_860 x0 x1 x1
+// main.$L.Main.getReg$s1143$861
+rw_main__L_Main_getReg_s1143_861 : [6] -> [70] -> [88]
+rw_main__L_Main_getReg_s1143_861 x0 x1 = rw_main__L_x144_862 x0 x1 x1
 
-// main.$L.s157$876
-rw_main__L_s157_876 : [8] -> [70] -> [70] -> [88]
-rw_main__L_s157_876 x0 x1 x2 = rw_main__L_Main_getPC40_727 s7
+// main.$L.s157$878
+rw_main__L_s157_878 : [8] -> [70] -> [70] -> [88]
+rw_main__L_s157_878 x0 x1 x2 = rw_main__L_Main_getPC40_729 s7
   where
     s0 : [8]
     s0 = take`{8} (drop`{8} x1)
@@ -806,13 +806,13 @@ rw_main__L_s157_876 x0 x1 x2 = rw_main__L_Main_getPC40_727 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.arm158$878
-rw_main__L_arm158_878 : [8] -> [70] -> [88]
-rw_main__L_arm158_878 x0 x1 = rw_main__L_s157_876 x0 x1 x1
+// main.$L.arm158$880
+rw_main__L_arm158_880 : [8] -> [70] -> [88]
+rw_main__L_arm158_880 x0 x1 = rw_main__L_s157_878 x0 x1 x1
 
-// main.$L.s159$879
-rw_main__L_s159_879 : [8] -> [70] -> [70] -> [88]
-rw_main__L_s159_879 x0 x1 x2 = rw_main__L_Main_getPC40_727 s7
+// main.$L.s159$881
+rw_main__L_s159_881 : [8] -> [70] -> [70] -> [88]
+rw_main__L_s159_881 x0 x1 x2 = rw_main__L_Main_getPC40_729 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -831,13 +831,13 @@ rw_main__L_s159_879 x0 x1 x2 = rw_main__L_Main_getPC40_727 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.arm160$881
-rw_main__L_arm160_881 : [8] -> [70] -> [88]
-rw_main__L_arm160_881 x0 x1 = rw_main__L_s159_879 x0 x1 x1
+// main.$L.arm160$883
+rw_main__L_arm160_883 : [8] -> [70] -> [88]
+rw_main__L_arm160_883 x0 x1 = rw_main__L_s159_881 x0 x1 x1
 
-// main.$L.s161$882
-rw_main__L_s161_882 : [8] -> [70] -> [70] -> [88]
-rw_main__L_s161_882 x0 x1 x2 = rw_main__L_Main_getPC40_727 s7
+// main.$L.s161$884
+rw_main__L_s161_884 : [8] -> [70] -> [70] -> [88]
+rw_main__L_s161_884 x0 x1 x2 = rw_main__L_Main_getPC40_729 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -856,13 +856,13 @@ rw_main__L_s161_882 x0 x1 x2 = rw_main__L_Main_getPC40_727 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.arm162$884
-rw_main__L_arm162_884 : [8] -> [70] -> [88]
-rw_main__L_arm162_884 x0 x1 = rw_main__L_s161_882 x0 x1 x1
+// main.$L.arm162$886
+rw_main__L_arm162_886 : [8] -> [70] -> [88]
+rw_main__L_arm162_886 x0 x1 = rw_main__L_s161_884 x0 x1 x1
 
-// main.$L.s163$885
-rw_main__L_s163_885 : [8] -> [70] -> [70] -> [88]
-rw_main__L_s163_885 x0 x1 x2 = rw_main__L_Main_getPC40_727 s7
+// main.$L.s163$887
+rw_main__L_s163_887 : [8] -> [70] -> [70] -> [88]
+rw_main__L_s163_887 x0 x1 x2 = rw_main__L_Main_getPC40_729 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -881,131 +881,131 @@ rw_main__L_s163_885 x0 x1 x2 = rw_main__L_Main_getPC40_727 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.arm164$887
-rw_main__L_arm164_887 : [8] -> [70] -> [88]
-rw_main__L_arm164_887 x0 x1 = rw_main__L_s163_885 x0 x1 x1
+// main.$L.arm164$889
+rw_main__L_arm164_889 : [8] -> [70] -> [88]
+rw_main__L_arm164_889 x0 x1 = rw_main__L_s163_887 x0 x1 x1
 
-// main.$L.Main.putReg156$875
-rw_main__L_Main_putReg156_875 : [2] -> [8] -> [70] -> [88]
-rw_main__L_Main_putReg156_875 x0 x1 x2 = if x0 == 0b00 then (rw_main__L_arm158_878 x1 x2) else (if x0 == 0b01 then (rw_main__L_arm160_881 x1 x2) else (if x0 == 0b10 then (rw_main__L_arm162_884 x1 x2) else (rw_main__L_arm164_887 x1 x2)))
+// main.$L.Main.putReg156$877
+rw_main__L_Main_putReg156_877 : [2] -> [8] -> [70] -> [88]
+rw_main__L_Main_putReg156_877 x0 x1 x2 = if x0 == 0b00 then (rw_main__L_arm158_880 x1 x2) else (if x0 == 0b01 then (rw_main__L_arm160_883 x1 x2) else (if x0 == 0b10 then (rw_main__L_arm162_886 x1 x2) else (rw_main__L_arm164_889 x1 x2)))
 
-// main.$L.x166$889
-rw_main__L_x166_889 : [2] -> [8] -> [70] -> [70] -> [88]
-rw_main__L_x166_889 x0 x1 x2 x3 = rw_main__L_Main_putReg156_875 x0 (~ (x1 && s0)) x3
+// main.$L.x166$891
+rw_main__L_x166_891 : [2] -> [8] -> [70] -> [70] -> [88]
+rw_main__L_x166_891 x0 x1 x2 x3 = rw_main__L_Main_putReg156_877 x0 (~ (x1 && s0)) x3
   where
     s0 : [8]
     s0 = rw_Main_r0 x2
 
-// main.$L.arm167$891
-rw_main__L_arm167_891 : [2] -> [8] -> [70] -> [88]
-rw_main__L_arm167_891 x0 x1 x2 = rw_main__L_x166_889 x0 x1 x2 x2
+// main.$L.arm167$893
+rw_main__L_arm167_893 : [2] -> [8] -> [70] -> [88]
+rw_main__L_arm167_893 x0 x1 x2 = rw_main__L_x166_891 x0 x1 x2 x2
 
-// main.$L.x168$892
-rw_main__L_x168_892 : [2] -> [8] -> [70] -> [70] -> [88]
-rw_main__L_x168_892 x0 x1 x2 x3 = rw_main__L_Main_putReg156_875 x0 (~ (x1 && s0)) x3
+// main.$L.x168$894
+rw_main__L_x168_894 : [2] -> [8] -> [70] -> [70] -> [88]
+rw_main__L_x168_894 x0 x1 x2 x3 = rw_main__L_Main_putReg156_877 x0 (~ (x1 && s0)) x3
   where
     s0 : [8]
     s0 = rw_Main_r1 x2
 
-// main.$L.arm169$894
-rw_main__L_arm169_894 : [2] -> [8] -> [70] -> [88]
-rw_main__L_arm169_894 x0 x1 x2 = rw_main__L_x168_892 x0 x1 x2 x2
+// main.$L.arm169$896
+rw_main__L_arm169_896 : [2] -> [8] -> [70] -> [88]
+rw_main__L_arm169_896 x0 x1 x2 = rw_main__L_x168_894 x0 x1 x2 x2
 
-// main.$L.x170$895
-rw_main__L_x170_895 : [2] -> [8] -> [70] -> [70] -> [88]
-rw_main__L_x170_895 x0 x1 x2 x3 = rw_main__L_Main_putReg156_875 x0 (~ (x1 && s0)) x3
+// main.$L.x170$897
+rw_main__L_x170_897 : [2] -> [8] -> [70] -> [70] -> [88]
+rw_main__L_x170_897 x0 x1 x2 x3 = rw_main__L_Main_putReg156_877 x0 (~ (x1 && s0)) x3
   where
     s0 : [8]
     s0 = rw_Main_r2 x2
 
-// main.$L.arm171$897
-rw_main__L_arm171_897 : [2] -> [8] -> [70] -> [88]
-rw_main__L_arm171_897 x0 x1 x2 = rw_main__L_x170_895 x0 x1 x2 x2
+// main.$L.arm171$899
+rw_main__L_arm171_899 : [2] -> [8] -> [70] -> [88]
+rw_main__L_arm171_899 x0 x1 x2 = rw_main__L_x170_897 x0 x1 x2 x2
 
-// main.$L.x172$898
-rw_main__L_x172_898 : [2] -> [8] -> [70] -> [70] -> [88]
-rw_main__L_x172_898 x0 x1 x2 x3 = rw_main__L_Main_putReg156_875 x0 (~ (x1 && s0)) x3
+// main.$L.x172$900
+rw_main__L_x172_900 : [2] -> [8] -> [70] -> [70] -> [88]
+rw_main__L_x172_900 x0 x1 x2 x3 = rw_main__L_Main_putReg156_877 x0 (~ (x1 && s0)) x3
   where
     s0 : [8]
     s0 = rw_Main_r3 x2
 
-// main.$L.arm173$900
-rw_main__L_arm173_900 : [2] -> [8] -> [70] -> [88]
-rw_main__L_arm173_900 x0 x1 x2 = rw_main__L_x172_898 x0 x1 x2 x2
+// main.$L.arm173$902
+rw_main__L_arm173_902 : [2] -> [8] -> [70] -> [88]
+rw_main__L_arm173_902 x0 x1 x2 = rw_main__L_x172_900 x0 x1 x2 x2
 
-// main.$L.Main.getReg165$888
-rw_main__L_Main_getReg165_888 : [2] -> [8] -> [2] -> [70] -> [88]
-rw_main__L_Main_getReg165_888 x0 x1 x2 x3 = if x2 == 0b00 then (rw_main__L_arm167_891 x0 x1 x3) else (if x2 == 0b01 then (rw_main__L_arm169_894 x0 x1 x3) else (if x2 == 0b10 then (rw_main__L_arm171_897 x0 x1 x3) else (rw_main__L_arm173_900 x0 x1 x3)))
+// main.$L.Main.getReg165$890
+rw_main__L_Main_getReg165_890 : [2] -> [8] -> [2] -> [70] -> [88]
+rw_main__L_Main_getReg165_890 x0 x1 x2 x3 = if x2 == 0b00 then (rw_main__L_arm167_893 x0 x1 x3) else (if x2 == 0b01 then (rw_main__L_arm169_896 x0 x1 x3) else (if x2 == 0b10 then (rw_main__L_arm171_899 x0 x1 x3) else (rw_main__L_arm173_902 x0 x1 x3)))
 
-// main.$L.x175$902
-rw_main__L_x175_902 : [2] -> [2] -> [70] -> [70] -> [88]
-rw_main__L_x175_902 x0 x1 x2 x3 = rw_main__L_Main_getReg165_888 x0 s0 x1 x3
+// main.$L.x175$904
+rw_main__L_x175_904 : [2] -> [2] -> [70] -> [70] -> [88]
+rw_main__L_x175_904 x0 x1 x2 x3 = rw_main__L_Main_getReg165_890 x0 s0 x1 x3
   where
     s0 : [8]
     s0 = rw_Main_r0 x2
 
-// main.$L.arm176$904
-rw_main__L_arm176_904 : [2] -> [2] -> [70] -> [88]
-rw_main__L_arm176_904 x0 x1 x2 = rw_main__L_x175_902 x0 x1 x2 x2
+// main.$L.arm176$906
+rw_main__L_arm176_906 : [2] -> [2] -> [70] -> [88]
+rw_main__L_arm176_906 x0 x1 x2 = rw_main__L_x175_904 x0 x1 x2 x2
 
-// main.$L.x177$905
-rw_main__L_x177_905 : [2] -> [2] -> [70] -> [70] -> [88]
-rw_main__L_x177_905 x0 x1 x2 x3 = rw_main__L_Main_getReg165_888 x0 s0 x1 x3
+// main.$L.x177$907
+rw_main__L_x177_907 : [2] -> [2] -> [70] -> [70] -> [88]
+rw_main__L_x177_907 x0 x1 x2 x3 = rw_main__L_Main_getReg165_890 x0 s0 x1 x3
   where
     s0 : [8]
     s0 = rw_Main_r1 x2
 
-// main.$L.arm178$907
-rw_main__L_arm178_907 : [2] -> [2] -> [70] -> [88]
-rw_main__L_arm178_907 x0 x1 x2 = rw_main__L_x177_905 x0 x1 x2 x2
+// main.$L.arm178$909
+rw_main__L_arm178_909 : [2] -> [2] -> [70] -> [88]
+rw_main__L_arm178_909 x0 x1 x2 = rw_main__L_x177_907 x0 x1 x2 x2
 
-// main.$L.x179$908
-rw_main__L_x179_908 : [2] -> [2] -> [70] -> [70] -> [88]
-rw_main__L_x179_908 x0 x1 x2 x3 = rw_main__L_Main_getReg165_888 x0 s0 x1 x3
+// main.$L.x179$910
+rw_main__L_x179_910 : [2] -> [2] -> [70] -> [70] -> [88]
+rw_main__L_x179_910 x0 x1 x2 x3 = rw_main__L_Main_getReg165_890 x0 s0 x1 x3
   where
     s0 : [8]
     s0 = rw_Main_r2 x2
 
-// main.$L.arm180$910
-rw_main__L_arm180_910 : [2] -> [2] -> [70] -> [88]
-rw_main__L_arm180_910 x0 x1 x2 = rw_main__L_x179_908 x0 x1 x2 x2
+// main.$L.arm180$912
+rw_main__L_arm180_912 : [2] -> [2] -> [70] -> [88]
+rw_main__L_arm180_912 x0 x1 x2 = rw_main__L_x179_910 x0 x1 x2 x2
 
-// main.$L.x181$911
-rw_main__L_x181_911 : [2] -> [2] -> [70] -> [70] -> [88]
-rw_main__L_x181_911 x0 x1 x2 x3 = rw_main__L_Main_getReg165_888 x0 s0 x1 x3
+// main.$L.x181$913
+rw_main__L_x181_913 : [2] -> [2] -> [70] -> [70] -> [88]
+rw_main__L_x181_913 x0 x1 x2 x3 = rw_main__L_Main_getReg165_890 x0 s0 x1 x3
   where
     s0 : [8]
     s0 = rw_Main_r3 x2
 
-// main.$L.arm182$913
-rw_main__L_arm182_913 : [2] -> [2] -> [70] -> [88]
-rw_main__L_arm182_913 x0 x1 x2 = rw_main__L_x181_911 x0 x1 x2 x2
+// main.$L.arm182$915
+rw_main__L_arm182_915 : [2] -> [2] -> [70] -> [88]
+rw_main__L_arm182_915 x0 x1 x2 = rw_main__L_x181_913 x0 x1 x2 x2
 
-// main.$L.Main.getReg174$901
-rw_main__L_Main_getReg174_901 : [2] -> [2] -> [2] -> [70] -> [88]
-rw_main__L_Main_getReg174_901 x0 x1 x2 x3 = if x2 == 0b00 then (rw_main__L_arm176_904 x0 x1 x3) else (if x2 == 0b01 then (rw_main__L_arm178_907 x0 x1 x3) else (if x2 == 0b10 then (rw_main__L_arm180_910 x0 x1 x3) else (rw_main__L_arm182_913 x0 x1 x3)))
+// main.$L.Main.getReg174$903
+rw_main__L_Main_getReg174_903 : [2] -> [2] -> [2] -> [70] -> [88]
+rw_main__L_Main_getReg174_903 x0 x1 x2 x3 = if x2 == 0b00 then (rw_main__L_arm176_906 x0 x1 x3) else (if x2 == 0b01 then (rw_main__L_arm178_909 x0 x1 x3) else (if x2 == 0b10 then (rw_main__L_arm180_912 x0 x1 x3) else (rw_main__L_arm182_915 x0 x1 x3)))
 
-// main.$L.v185$916
-rw_main__L_v185_916 : [6] -> [8] -> [70] -> [88]
-rw_main__L_v185_916 x0 x1 x2 = if s0 == 0b0 then (rw_main__L_Main_putPC38_724 x0 x2) else (rw_main__L_Main_getPC40_727 x2)
+// main.$L.v185$918
+rw_main__L_v185_918 : [6] -> [8] -> [70] -> [88]
+rw_main__L_v185_918 x0 x1 x2 = if s0 == 0b0 then (rw_main__L_Main_putPC38_726 x0 x2) else (rw_main__L_Main_getPC40_729 x2)
   where
     s0 : [1]
     s0 = [x1 == 0x00]
 
-// main.$L.x193$926
-rw_main__L_x193_926 : [6] -> [70] -> [70] -> [88]
-rw_main__L_x193_926 x0 x1 x2 = rw_main__L_v185_916 x0 s0 x2
+// main.$L.x193$928
+rw_main__L_x193_928 : [6] -> [70] -> [70] -> [88]
+rw_main__L_x193_928 x0 x1 x2 = rw_main__L_v185_918 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r0 x1
 
-// main.$L.Main.getReg$s1192$925
-rw_main__L_Main_getReg_s1192_925 : [6] -> [70] -> [88]
-rw_main__L_Main_getReg_s1192_925 x0 x1 = rw_main__L_x193_926 x0 x1 x1
+// main.$L.Main.getReg$s1192$927
+rw_main__L_Main_getReg_s1192_927 : [6] -> [70] -> [88]
+rw_main__L_Main_getReg_s1192_927 x0 x1 = rw_main__L_x193_928 x0 x1 x1
 
-// main.$L.s7$686
-rw_main__L_s7_686 : [9] -> [70] -> [70] -> [88]
-rw_main__L_s7_686 x0 x1 x2 = if (take`{3} x0) == 0b000 then (rw_main__L_Main_getPC40_727 x2) else (if (take`{3} x0) == 0b001 then (rw_main__L_Main_getOut103_808 s0 x2) else (if (take`{3} x0) == 0b010 then (rw_main__L_Main_getReg_s1143_859 s1 x2) else (if (take`{3} x0) == 0b011 then (rw_main__L_Main_getReg174_901 s2 s4 s3 x2) else (rw_main__L_Main_getReg_s1192_925 s5 x2))))
+// main.$L.s7$688
+rw_main__L_s7_688 : [9] -> [70] -> [70] -> [88]
+rw_main__L_s7_688 x0 x1 x2 = if (take`{3} x0) == 0b000 then (rw_main__L_Main_getPC40_729 x2) else (if (take`{3} x0) == 0b001 then (rw_main__L_Main_getOut103_810 s0 x2) else (if (take`{3} x0) == 0b010 then (rw_main__L_Main_getReg_s1143_861 s1 x2) else (if (take`{3} x0) == 0b011 then (rw_main__L_Main_getReg174_903 s2 s4 s3 x2) else (rw_main__L_Main_getReg_s1192_927 s5 x2))))
   where
     s0 : [6]
     s0 = drop`{3} x0
@@ -1020,31 +1020,31 @@ rw_main__L_s7_686 x0 x1 x2 = if (take`{3} x0) == 0b000 then (rw_main__L_Main_get
     s5 : [6]
     s5 = drop`{3} x0
 
-// main.$L.instr6$685
-rw_main__L_instr6_685 : [9] -> [70] -> [88]
-rw_main__L_instr6_685 x0 x1 = rw_main__L_s7_686 x0 x1 x1
+// main.$L.instr6$687
+rw_main__L_instr6_687 : [9] -> [70] -> [88]
+rw_main__L_instr6_687 x0 x1 = rw_main__L_s7_688 x0 x1 x1
 
-// main.$L.i195$930
-rw_main__L_i195_930 : [17] -> [70] -> [88]
-rw_main__L_i195_930 x0 x1 = rw_main__L_instr6_685 s0 x1
+// main.$L.i195$932
+rw_main__L_i195_932 : [17] -> [70] -> [88]
+rw_main__L_i195_932 x0 x1 = rw_main__L_instr6_687 s0 x1
   where
     s0 : [9]
     s0 = rw_Main_instrIn x0
 
-// main.$L.s197$932
-rw_main__L_s197_932 : [70] -> [70] -> [88]
-rw_main__L_s197_932 x0 x1 = rw_main__L_i195_930 s0 x1
+// main.$L.s197$934
+rw_main__L_s197_934 : [70] -> [70] -> [88]
+rw_main__L_s197_934 x0 x1 = rw_main__L_i195_932 s0 x1
   where
     s0 : [17]
     s0 = rw_Main_inputs x0
 
-// main.$L.Main.getIns196$931
-rw_main__L_Main_getIns196_931 : [70] -> [88]
-rw_main__L_Main_getIns196_931 x0 = rw_main__L_s197_932 x0 x0
+// main.$L.Main.getIns196$933
+rw_main__L_Main_getIns196_933 : [70] -> [88]
+rw_main__L_Main_getIns196_933 x0 = rw_main__L_s197_934 x0 x0
 
-// main.$L.s227$970
-rw_main__L_s227_970 : [17] -> [70] -> [70] -> [88]
-rw_main__L_s227_970 x0 x1 x2 = rw_main__L_Main_getPC34_719 s7
+// main.$L.s227$972
+rw_main__L_s227_972 : [17] -> [70] -> [70] -> [88]
+rw_main__L_s227_972 x0 x1 x2 = rw_main__L_Main_getPC34_721 s7
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -1063,13 +1063,13 @@ rw_main__L_s227_970 x0 x1 x2 = rw_main__L_Main_getPC34_719 s7
     s7 : [70]
     s7 = s6
 
-// main.$L.Main.putIns226$969
-rw_main__L_Main_putIns226_969 : [17] -> [70] -> [88]
-rw_main__L_Main_putIns226_969 x0 x1 = rw_main__L_s227_970 x0 x1 x1
+// main.$L.Main.putIns226$971
+rw_main__L_Main_putIns226_971 : [17] -> [70] -> [88]
+rw_main__L_Main_putIns226_971 x0 x1 = rw_main__L_s227_972 x0 x1 x1
 
-// main.$L.i225$968
-rw_main__L_i225_968 : [17] -> [70] -> [88]
-rw_main__L_i225_968 x0 x1 = rw_main__L_Main_putIns226_969 x0 x1
+// main.$L.i225$970
+rw_main__L_i225_970 : [17] -> [70] -> [88]
+rw_main__L_i225_970 x0 x1 = rw_main__L_Main_putIns226_971 x0 x1
 
 // Main.dataIn
 rw_Main_dataIn : [17] -> [8]

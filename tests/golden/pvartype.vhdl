@@ -208,19 +208,19 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \main_$L___unused2$249\ is
+component \main_$L___unused2$251\ is
       port (arg0 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (1 downto 0));
       end component;
       signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal \main_$l__unused2$249_out\ : std_logic_vector (1 downto 0);
-      signal \main_$l__unused2$249_outR1\ : std_logic_vector (1 downto 0);
+      signal \main_$l__unused2$251_out\ : std_logic_vector (1 downto 0);
+      signal \main_$l__unused2$251_outR1\ : std_logic_vector (1 downto 0);
       signal zres : std_logic_vector (1 downto 0);
 begin
-inst : \main_$L___unused2$249\ port map (\__st0\, \main_$l__unused2$249_out\);
-      \instR1\ : \main_$L___unused2$249\ port map (\__st0\, \main_$l__unused2$249_outR1\);
-      zres <= rw_cond(rw_eq(\__st0\, std_logic_vector'(B"0")), \main_$l__unused2$249_out\, \main_$l__unused2$249_outR1\);
+inst : \main_$L___unused2$251\ port map (\__st0\, \main_$l__unused2$251_out\);
+      \instR1\ : \main_$L___unused2$251\ port map (\__st0\, \main_$l__unused2$251_outR1\);
+      zres <= rw_cond(rw_eq(\__st0\, std_logic_vector'(B"0")), \main_$l__unused2$251_out\, \main_$l__unused2$251_outR1\);
       \__st0_next\ <= zres(0 downto 0);
       \__out0\ <= zres(1 downto 1);
       process (clk, rst)
@@ -237,12 +237,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L___unused2$249\ is
+entity \main_$L___unused2$251\ is
 port (arg0 : in std_logic_vector (0 downto 0);
       res : out std_logic_vector (1 downto 0));
 end entity;
 
-architecture rtl of \main_$L___unused2$249\ is
+architecture rtl of \main_$L___unused2$251\ is
 
 begin
 res <= (std_logic_vector'(B"0") & arg0);

@@ -1,0 +1,13 @@
+module crymix where
+
+step : [8] -> [8] -> [8]
+step m x = clamp m (nibswap x)
+
+nibswap : [8] -> [8]
+nibswap x = lo # hi
+  where
+    hi = take`{4} x
+    lo = drop`{4} x
+
+clamp : [8] -> [8] -> [8]
+clamp m x = if x > m then m else x

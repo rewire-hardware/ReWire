@@ -1,14 +1,14 @@
 main.$dispatch : ([5], [1]) -> [6]
 main.$dispatch disc i =
-      if eq disc[3 +: 2] 2'h0 then main.$L.z4$260 disc[2 +: 1] i disc[1 +: 1] disc[0 +: 1]
-            else if eq disc[3 +: 2] 2'h1 then main.$L.y3$259 disc[2 +: 1] i disc[1 +: 1] disc[0 +: 1] else main.$L.x2$258 i disc[1 +: 1] disc[0 +: 1]
+      if eq disc[3 +: 2] 2'h0 then main.$L.z4$262 disc[2 +: 1] i disc[1 +: 1] disc[0 +: 1]
+            else if eq disc[3 +: 2] 2'h1 then main.$L.y3$261 disc[2 +: 1] i disc[1 +: 1] disc[0 +: 1] else main.$L.x2$260 i disc[1 +: 1] disc[0 +: 1]
 
-main.$L.z4$260 : ([1], [1], [1], [1]) -> [6]
-main.$L.z4$260 y z s0 s1 =
-      main.$L.Main.go1$257 s0 y
+main.$L.z4$262 : ([1], [1], [1], [1]) -> [6]
+main.$L.z4$262 y z s0 s1 =
+      main.$L.Main.go1$259 s0 y
 
-main.$L.y3$259 : ([1], [1], [1], [1]) -> [6]
-main.$L.y3$259 x y s0 s1 =
+main.$L.y3$261 : ([1], [1], [1], [1]) -> [6]
+main.$L.y3$261 x y s0 s1 =
       let $a = (if eq y 1'h0 then (let $a = (if eq x 1'h1 then x
                   else 1'h0) in
             $a)
@@ -17,17 +17,17 @@ main.$L.y3$259 x y s0 s1 =
             else 1'h0) in
       $a1 # 2'h0 # y # s0 # s1
 
-main.$L.arm6$263 : ([1], [1], [1]) -> [6]
-main.$L.arm6$263 x s0 s1 =
-      main.$L.y3$259 x s0 s0 s1
+main.$L.arm6$265 : ([1], [1], [1]) -> [6]
+main.$L.arm6$265 x s0 s1 =
+      main.$L.y3$261 x s0 s0 s1
 
-main.$L.x2$258 : ([1], [1], [1]) -> [6]
-main.$L.x2$258 x s0 s1 =
-      if eq x 1'h0 then main.$L.arm6$263 x s0 s1
+main.$L.x2$260 : ([1], [1], [1]) -> [6]
+main.$L.x2$260 x s0 s1 =
+      if eq x 1'h0 then main.$L.arm6$265 x s0 s1
             else 3'h1 # x # s0 # s1
 
-main.$L.Main.go1$257 : ([1], [1]) -> [6]
-main.$L.Main.go1$257 s0 s1 =
+main.$L.Main.go1$259 : ([1], [1]) -> [6]
+main.$L.Main.go1$259 s0 s1 =
       4'h4 # s0 # s1
 
 device top_level

@@ -27,7 +27,11 @@ data-files:
     tests/negative/ambiguous-size.hs
     tests/negative/bind-lhs-pause.hs
     tests/negative/bind-lhs-unbounded.hs
+    tests/negative/cryptol-badtype.hs
     tests/negative/cryptol-clocked-extern.hs
+    tests/negative/cryptol-missing.hs
+    tests/negative/cryptol-unknown.hs
+    tests/negative/cryptol-unsupported.hs
     tests/negative/do-block-rec-stmt.hs
     tests/negative/empty-record-update.hs
     tests/negative/existential-ctor.hs
@@ -85,6 +89,7 @@ data-files:
     tests/negative/core-no-device.rwc
     tests/negative/core-slice-out-of-bounds.rwc
     tests/negative/core-unknown-extern-instance.rwc
+    tests/negative/cry/cryneg.cry
     tests/warning/extern-model-clocked.hs
     tests/warning/extern-model-rejected.hs
     tests/warning/live-error-call.hs
@@ -104,6 +109,7 @@ data-files:
     tests/golden/case1.hs
     tests/golden/case2.hs
     tests/golden/caseBindBug.hs
+    tests/golden/cryptolffi.hs
     tests/golden/cubehash.hs
     tests/golden/dependencyGraph.hs
     tests/golden/dissex.hs
@@ -174,6 +180,7 @@ data-files:
     tests/golden/case1.sv
     tests/golden/case2.sv
     tests/golden/caseBindBug.sv
+    tests/golden/cryptolffi.sv
     tests/golden/cubehash.sv
     tests/golden/dependencyGraph.sv
     tests/golden/dissex.sv
@@ -244,6 +251,7 @@ data-files:
     tests/golden/case1.rwc
     tests/golden/case2.rwc
     tests/golden/caseBindBug.rwc
+    tests/golden/cryptolffi.rwc
     tests/golden/cubehash.rwc
     tests/golden/dependencyGraph.rwc
     tests/golden/dissex.rwc
@@ -314,6 +322,7 @@ data-files:
     tests/golden/case1.vhdl
     tests/golden/case2.vhdl
     tests/golden/caseBindBug.vhdl
+    tests/golden/cryptolffi.vhdl
     tests/golden/cubehash.vhdl
     tests/golden/dependencyGraph.vhdl
     tests/golden/dissex.vhdl
@@ -384,6 +393,7 @@ data-files:
     tests/golden/case1.cry
     tests/golden/case2.cry
     tests/golden/caseBindBug.cry
+    tests/golden/cryptolffi.cry
     tests/golden/cubehash.cry
     tests/golden/dependencyGraph.cry
     tests/golden/dissex.cry
@@ -450,10 +460,13 @@ data-files:
     tests/golden/wordShift.cry
     tests/golden/wordSlice.cry
     tests/golden/zerowidth.cry
+    tests/golden/cry/crymix.cry
     tests/golden/case1.yaml
     tests/golden/case2.yaml
     tests/golden/caseBindBug.input.yaml
     tests/golden/caseBindBug.yaml
+    tests/golden/cryptolffi.input.yaml
+    tests/golden/cryptolffi.yaml
     tests/golden/cubehash.input.yaml
     tests/golden/cubehash.yaml
     tests/golden/dependencyGraph.input.yaml
@@ -602,6 +615,7 @@ data-files:
     rewire-user/src/RWC/Primitives.hs
     rewire-user/src/ReWire/Bits.hs
     rewire-user/src/ReWire/BitWord.hs
+    rewire-user/src/ReWire/Cryptol.hs
     rewire-user/src/ReWire/Finite.hs
     rewire-user/src/ReWire/FiniteComp.hs
     rewire-user/src/ReWire/Interactive.hs

@@ -207,8 +207,8 @@ module top_level (input logic [0:0] clk,
   logic [31:0] main_swapix4_outR30;
   logic [31:0] main_swapix4_outR31;
   logic [1023:0] zi6;
-  logic [2047:0] main_$l__unused5$838_out;
-  logic [2047:0] main_$l__unused5$838_outR1;
+  logic [2047:0] main_$l__unused5$840_out;
+  logic [2047:0] main_$l__unused5$840_outR1;
   logic [2047:0] zres;
   Main_add  inst (__st0, main_add_out);
   assign zi0 = main_add_out;
@@ -413,9 +413,9 @@ module top_level (input logic [0:0] clk,
   Main_swapix4  instR194 (zi5, 5'h1e, main_swapix4_outR30);
   Main_swapix4  instR195 (zi5, 5'h1f, main_swapix4_outR31);
   assign zi6 = {main_swapix4_out, main_swapix4_outR1, main_swapix4_outR2, main_swapix4_outR3, main_swapix4_outR4, main_swapix4_outR5, main_swapix4_outR6, main_swapix4_outR7, main_swapix4_outR8, main_swapix4_outR9, main_swapix4_outR10, main_swapix4_outR11, main_swapix4_outR12, main_swapix4_outR13, main_swapix4_outR14, main_swapix4_outR15, main_swapix4_outR16, main_swapix4_outR17, main_swapix4_outR18, main_swapix4_outR19, main_swapix4_outR20, main_swapix4_outR21, main_swapix4_outR22, main_swapix4_outR23, main_swapix4_outR24, main_swapix4_outR25, main_swapix4_outR26, main_swapix4_outR27, main_swapix4_outR28, main_swapix4_outR29, main_swapix4_outR30, main_swapix4_outR31};
-  main_$L___unused5$838  instR196 (zi6, main_$l__unused5$838_out);
-  main_$L___unused5$838  instR197 (__st0, main_$l__unused5$838_outR1);
-  assign zres = (__in0 == 1'h0) ? main_$l__unused5$838_out : main_$l__unused5$838_outR1;
+  main_$L___unused5$840  instR196 (zi6, main_$l__unused5$840_out);
+  main_$L___unused5$840  instR197 (__st0, main_$l__unused5$840_outR1);
+  assign zres = (__in0 == 1'h0) ? main_$l__unused5$840_out : main_$l__unused5$840_outR1;
   assign __st0_next = zres[1023:0];
   assign __out0 = zres[2047:1024];
   initial __st0 = {93'h40000000020000001, {10'h3a3{1'h0}}};
@@ -428,7 +428,7 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module main_$L___unused5$838 (input logic [1023:0] arg0,
+module main_$L___unused5$840 (input logic [1023:0] arg0,
   output logic [2047:0] res);
   assign res = {arg0, arg0};
 endmodule

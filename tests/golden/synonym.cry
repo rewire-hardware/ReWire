@@ -18,38 +18,38 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [16] -> [1] -> [24]
-rw_main__dispatch x0 x1 = rw_main__L_i6_261 x1 (take`{8} x0) (drop`{8} x0)
+rw_main__dispatch x0 x1 = rw_main__L_i6_263 x1 (take`{8} x0) (drop`{8} x0)
 
-// main.$L._unused10$265
-rw_main__L__unused10_265 : [8] -> [8] -> [8] -> [8] -> [24]
-rw_main__L__unused10_265 x0 x1 x2 x3 = rw_main__L_Main_sig4_259 x2 s0
+// main.$L._unused10$267
+rw_main__L__unused10_267 : [8] -> [8] -> [8] -> [8] -> [24]
+rw_main__L__unused10_267 x0 x1 x2 x3 = rw_main__L_Main_sig4_261 x2 s0
   where
     s0 : [8]
     s0 = x0 + x1
 
-// main.$L.r19$264
-rw_main__L_r19_264 : [8] -> [8] -> [8] -> [8] -> [24]
-rw_main__L_r19_264 x0 x1 x2 x3 = rw_main__L__unused10_265 x0 x1 x1 x3
+// main.$L.r19$266
+rw_main__L_r19_266 : [8] -> [8] -> [8] -> [8] -> [24]
+rw_main__L_r19_266 x0 x1 x2 x3 = rw_main__L__unused10_267 x0 x1 x1 x3
 
-// main.$L.r08$263
-rw_main__L_r08_263 : [8] -> [8] -> [8] -> [24]
-rw_main__L_r08_263 x0 x1 x2 = rw_main__L_r19_264 x0 x2 x1 x2
+// main.$L.r08$265
+rw_main__L_r08_265 : [8] -> [8] -> [8] -> [24]
+rw_main__L_r08_265 x0 x1 x2 = rw_main__L_r19_266 x0 x2 x1 x2
 
-// main.$L.Main.incr7$262
-rw_main__L_Main_incr7_262 : [8] -> [8] -> [24]
-rw_main__L_Main_incr7_262 x0 x1 = rw_main__L_r08_263 x0 x0 x1
+// main.$L.Main.incr7$264
+rw_main__L_Main_incr7_264 : [8] -> [8] -> [24]
+rw_main__L_Main_incr7_264 x0 x1 = rw_main__L_r08_265 x0 x0 x1
 
-// main.$L.i6$261
-rw_main__L_i6_261 : [1] -> [8] -> [8] -> [24]
-rw_main__L_i6_261 x0 x1 x2 = if x0 == 0b0 then (rw_main__L_Main_sig4_259 x1 x2) else (rw_main__L_Main_incr7_262 x1 x2)
+// main.$L.i6$263
+rw_main__L_i6_263 : [1] -> [8] -> [8] -> [24]
+rw_main__L_i6_263 x0 x1 x2 = if x0 == 0b0 then (rw_main__L_Main_sig4_261 x1 x2) else (rw_main__L_Main_incr7_264 x1 x2)
 
-// main.$L.r05$260
-rw_main__L_r05_260 : [8] -> [8] -> [8] -> [24]
-rw_main__L_r05_260 x0 x1 x2 = x0 # (x1 # x2)
+// main.$L.r05$262
+rw_main__L_r05_262 : [8] -> [8] -> [8] -> [24]
+rw_main__L_r05_262 x0 x1 x2 = x0 # (x1 # x2)
 
-// main.$L.Main.sig4$259
-rw_main__L_Main_sig4_259 : [8] -> [8] -> [24]
-rw_main__L_Main_sig4_259 x0 x1 = rw_main__L_r05_260 x0 x0 x1
+// main.$L.Main.sig4$261
+rw_main__L_Main_sig4_261 : [8] -> [8] -> [24]
+rw_main__L_Main_sig4_261 x0 x1 = rw_main__L_r05_262 x0 x0 x1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [16] -> [1] -> [24]

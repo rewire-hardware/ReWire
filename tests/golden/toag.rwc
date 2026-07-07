@@ -1,14 +1,14 @@
 main.$dispatch : ([3], [1]) -> [4]
 main.$dispatch disc i =
-      if eq disc[1 +: 2] 2'h0 then main.$L.z4$236 i
-            else if eq disc[1 +: 2] 2'h1 then main.$L.y3$235 disc[0 +: 1] i else main.$L.x2$234 i
+      if eq disc[1 +: 2] 2'h0 then main.$L.z4$238 i
+            else if eq disc[1 +: 2] 2'h1 then main.$L.y3$237 disc[0 +: 1] i else main.$L.x2$236 i
 
-main.$L.z4$236 : ([1]) -> [4]
-main.$L.z4$236 z =
+main.$L.z4$238 : ([1]) -> [4]
+main.$L.z4$238 z =
       4'h4
 
-main.$L.y3$235 : ([1], [1]) -> [4]
-main.$L.y3$235 x y =
+main.$L.y3$237 : ([1], [1]) -> [4]
+main.$L.y3$237 x y =
       let $a = (if eq y 1'h0 then (let $a = (if eq x 1'h1 then x
                   else 1'h0) in
             $a)
@@ -17,8 +17,8 @@ main.$L.y3$235 x y =
             else 1'h0) in
       $a1 # 3'h0
 
-main.$L.x2$234 : ([1]) -> [4]
-main.$L.x2$234 x =
+main.$L.x2$236 : ([1]) -> [4]
+main.$L.x2$236 x =
       if eq x 1'h0 then x # 2'h1 # x
             else 3'h1 # x
 

@@ -208,7 +208,7 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \main_$L_y3$259\ is
+component \main_$L_y3$261\ is
       port (arg0 : in std_logic_vector (0 downto 0);
             arg1 : in std_logic_vector (0 downto 0);
             arg2 : in std_logic_vector (0 downto 0);
@@ -222,14 +222,14 @@ component \main_$L_y3$259\ is
       signal \__st1\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st1_next\ : std_logic_vector (0 downto 0);
       signal zi1 : std_logic_vector (0 downto 0);
-      signal \main_$l_y3$259_out\ : std_logic_vector (5 downto 0);
-      signal \main_$l_y3$259_outR1\ : std_logic_vector (5 downto 0);
+      signal \main_$l_y3$261_out\ : std_logic_vector (5 downto 0);
+      signal \main_$l_y3$261_outR1\ : std_logic_vector (5 downto 0);
       signal zres : std_logic_vector (5 downto 0);
 begin
 zi1 <= \__resumption_tag\(0 downto 0);
-      inst : \main_$L_y3$259\ port map (\__resumption_tag\(0 downto 0), \__in0\, \__st0\, \__st1\, \main_$l_y3$259_out\);
-      \instR1\ : \main_$L_y3$259\ port map (\__in0\, \__st0\, \__st0\, \__st1\, \main_$l_y3$259_outR1\);
-      zres <= rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"00")), (std_logic_vector'(B"0100") & \__st0\ & zi1), rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"01")), \main_$l_y3$259_out\, rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), \main_$l_y3$259_outR1\, (std_logic_vector'(B"001") & \__in0\ & \__st0\ & \__st1\))));
+      inst : \main_$L_y3$261\ port map (\__resumption_tag\(0 downto 0), \__in0\, \__st0\, \__st1\, \main_$l_y3$261_out\);
+      \instR1\ : \main_$L_y3$261\ port map (\__in0\, \__st0\, \__st0\, \__st1\, \main_$l_y3$261_outR1\);
+      zres <= rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"00")), (std_logic_vector'(B"0100") & \__st0\ & zi1), rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"01")), \main_$l_y3$261_out\, rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), \main_$l_y3$261_outR1\, (std_logic_vector'(B"001") & \__in0\ & \__st0\ & \__st1\))));
       \__resumption_tag_next\ <= zres(4 downto 2);
       \__st0_next\ <= zres(1 downto 1);
       \__st1_next\ <= zres(0 downto 0);
@@ -252,7 +252,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L_y3$259\ is
+entity \main_$L_y3$261\ is
 port (arg0 : in std_logic_vector (0 downto 0);
       arg1 : in std_logic_vector (0 downto 0);
       arg2 : in std_logic_vector (0 downto 0);
@@ -260,7 +260,7 @@ port (arg0 : in std_logic_vector (0 downto 0);
       res : out std_logic_vector (5 downto 0));
 end entity;
 
-architecture rtl of \main_$L_y3$259\ is
+architecture rtl of \main_$L_y3$261\ is
 signal za : std_logic_vector (0 downto 0);
       signal \zaR1\ : std_logic_vector (0 downto 0);
       signal za1 : std_logic_vector (0 downto 0);

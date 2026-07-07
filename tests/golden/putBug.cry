@@ -18,19 +18,19 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [3] -> [1] -> [4]
-rw_main__dispatch x0 x1 = if (take`{1} x0) == 0b0 then (rw_main__L__unused5_247 (take`{1} (drop`{1} x0)) x1 (drop`{2} x0)) else (rw_main__L__unused2_244 x1 (drop`{2} x0))
+rw_main__dispatch x0 x1 = if (take`{1} x0) == 0b0 then (rw_main__L__unused5_249 (take`{1} (drop`{1} x0)) x1 (drop`{2} x0)) else (rw_main__L__unused2_246 x1 (drop`{2} x0))
 
-// main.$L._unused5$247
-rw_main__L__unused5_247 : [1] -> [1] -> [1] -> [4]
-rw_main__L__unused5_247 x0 x1 x2 = rw_main__L_Main_convtest4_246 x0 x0
+// main.$L._unused5$249
+rw_main__L__unused5_249 : [1] -> [1] -> [1] -> [4]
+rw_main__L__unused5_249 x0 x1 x2 = rw_main__L_Main_convtest4_248 x0 x0
 
-// main.$L.Main.convtest4$246
-rw_main__L_Main_convtest4_246 : [1] -> [1] -> [4]
-rw_main__L_Main_convtest4_246 x0 x1 = x0 # (0b0 # (x0 # x1))
+// main.$L.Main.convtest4$248
+rw_main__L_Main_convtest4_248 : [1] -> [1] -> [4]
+rw_main__L_Main_convtest4_248 x0 x1 = x0 # (0b0 # (x0 # x1))
 
-// main.$L._unused2$244
-rw_main__L__unused2_244 : [1] -> [1] -> [4]
-rw_main__L__unused2_244 x0 x1 = 0x0
+// main.$L._unused2$246
+rw_main__L__unused2_246 : [1] -> [1] -> [4]
+rw_main__L__unused2_246 x0 x1 = 0x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [3] -> [1] -> [4]

@@ -11,6 +11,7 @@ module RWC.Primitives
       , rwPrimBitIndex
       , rwPrimBitSlice
       , rwPrimBits
+      , rwPrimCryptol
       , rwPrimDiv
       , rwPrimEq
       , rwPrimError
@@ -135,6 +136,14 @@ rwPrimExtern :: [(String, Integer)] -- ^ Module parameters (name and integer lit
              -> String              -- ^ Instance name to use in generated Verilog.
              -> a
 rwPrimExtern _ _ _ _ _ _ f _ = f
+
+-- | The String arguments must be literals (after inlining).
+{-# OPAQUE rwPrimCryptol #-}
+rwPrimCryptol :: String -- ^ Cryptol module file.
+              -> String -- ^ Function name.
+              -> a      -- ^ Haskell definition to use when running under GHC.
+              -> a
+rwPrimCryptol _ _ f = f
 
 {-# OPAQUE rwPrimBind #-}
 rwPrimBind :: GHC.Monad m => m a -> (a -> m b) -> m b

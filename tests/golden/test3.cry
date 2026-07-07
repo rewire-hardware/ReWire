@@ -18,19 +18,19 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [8] -> [1] -> [16]
-rw_main__dispatch x0 x1 = rw_main__L_b2_238 x1 x0
+rw_main__dispatch x0 x1 = rw_main__L_b2_240 x1 x0
 
-// main.$L.b2$238
-rw_main__L_b2_238 : [1] -> [8] -> [16]
-rw_main__L_b2_238 x0 x1 = if x0 == 0b0 then (rw_main__L_Main_tick3_239 x1) else (rw_main__L_Main_tick3_239 x1)
+// main.$L.b2$240
+rw_main__L_b2_240 : [1] -> [8] -> [16]
+rw_main__L_b2_240 x0 x1 = if x0 == 0b0 then (rw_main__L_Main_tick3_241 x1) else (rw_main__L_Main_tick3_241 x1)
 
-// main.$L.$x4$241
-rw_main__L__x4_241 : [8] -> [8] -> [16]
-rw_main__L__x4_241 x0 x1 = x0 # x1
+// main.$L.$x4$243
+rw_main__L__x4_243 : [8] -> [8] -> [16]
+rw_main__L__x4_243 x0 x1 = x0 # x1
 
-// main.$L.Main.tick3$239
-rw_main__L_Main_tick3_239 : [8] -> [16]
-rw_main__L_Main_tick3_239 x0 = rw_main__L__x4_241 x0 x0
+// main.$L.Main.tick3$241
+rw_main__L_Main_tick3_241 : [8] -> [16]
+rw_main__L_Main_tick3_241 x0 = rw_main__L__x4_243 x0 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [1] -> [16]

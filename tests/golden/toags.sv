@@ -9,13 +9,13 @@ module top_level (input logic [0:0] clk,
   logic [0:0] __st1;
   logic [0:0] __st1_next;
   logic [0:0] zi1;
-  logic [5:0] main_$l_y3$259_out;
-  logic [5:0] main_$l_y3$259_outR1;
+  logic [5:0] main_$l_y3$261_out;
+  logic [5:0] main_$l_y3$261_outR1;
   logic [5:0] zres;
   assign zi1 = __resumption_tag[0];
-  main_$L_y3$259  inst (__resumption_tag[0], __in0, __st0, __st1, main_$l_y3$259_out);
-  main_$L_y3$259  instR1 (__in0, __st0, __st0, __st1, main_$l_y3$259_outR1);
-  assign zres = (__resumption_tag[2:1] == 2'h0) ? {4'h4, __st0, zi1} : ((__resumption_tag[2:1] == 2'h1) ? main_$l_y3$259_out : ((__in0 == 1'h0) ? main_$l_y3$259_outR1 : {3'h1, __in0, __st0, __st1}));
+  main_$L_y3$261  inst (__resumption_tag[0], __in0, __st0, __st1, main_$l_y3$261_out);
+  main_$L_y3$261  instR1 (__in0, __st0, __st0, __st1, main_$l_y3$261_outR1);
+  assign zres = (__resumption_tag[2:1] == 2'h0) ? {4'h4, __st0, zi1} : ((__resumption_tag[2:1] == 2'h1) ? main_$l_y3$261_out : ((__in0 == 1'h0) ? main_$l_y3$261_outR1 : {3'h1, __in0, __st0, __st1}));
   assign __resumption_tag_next = zres[4:2];
   assign __st0_next = zres[1];
   assign __st1_next = zres[0];
@@ -30,7 +30,7 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module main_$L_y3$259 (input logic [0:0] arg0,
+module main_$L_y3$261 (input logic [0:0] arg0,
   input logic [0:0] arg1,
   input logic [0:0] arg2,
   input logic [0:0] arg3,

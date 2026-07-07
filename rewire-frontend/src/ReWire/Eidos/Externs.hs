@@ -14,6 +14,13 @@
 --   and representable. Implementations that look like real models but
 --   fail the checks are neutered with a warning.
 --
+--   Cryptol foreign functions (rwPrimCryptol's third argument, the
+--   GHC-side implementation) are neutered unconditionally and silently:
+--   their meaning is the Cryptol source, compiled to an ordinary
+--   definition by the fold, so there is never a model to keep — only the
+--   argument's type survives (the fold reads the use-site monotype off
+--   the placeholder).
+--
 --   After INLINE inlining, an extern application is still wrapped in the
 --   beta redexes left by inlining the extern/externWithSig wrappers, so
 --   definitions containing externs are reduced first to expose the
@@ -23,7 +30,7 @@
 module ReWire.Eidos.Externs (neuterExterns) where
 
 import ReWire.Annotation (Annote, ann)
-import ReWire.Builtins (Builtin (Error, Extern))
+import ReWire.Builtins (Builtin (Error, Extern, Cryptol))
 import ReWire.Error (AstError, MonadError, Warning (..))
 import ReWire.Eidos.Simplify (SimpT, runSimpT, reduceExp)
 import ReWire.Eidos.Subst (freeUniqs)
@@ -69,7 +76,8 @@ neuterExterns p@(Program datas defns procs top) = do
             hasExtern = go . defnBody
                   where go :: Exp -> Bool
                         go = \ case
-                              Prim _ _ Extern -> True
+                              Prim _ _ Extern  -> True
+                              Prim _ _ Cryptol -> True
                               App _ f a       -> go f || goArg a
                               Lam _ _ b       -> go b
                               Let _ b body    -> goBind b || go body
@@ -169,6 +177,8 @@ neuterExterns p@(Program datas defns procs top) = do
                         go e = case e of
                               App an ex (EArg impl) | isExtern ex, sel impl, not (isPlaceholder impl) ->
                                     App an (goE ex) $ EArg $ mkError (ann impl) (typeOf impl) "Extern expression placeholder"
+                              App an cx (EArg impl) | isCryptol cx, not (isPlaceholder impl) ->
+                                    App an (goE cx) $ EArg $ mkError (ann impl) (typeOf impl) "Cryptol expression placeholder"
                               App an f a      -> App an (goE f) $ goA a
                               _               -> goE e
 
@@ -223,6 +233,13 @@ neuterExterns p@(Program datas defns procs top) = do
             isExtern e = case flattenApp e of
                   (Prim _ _ Extern, args) -> length [ () | EArg _ <- args ] == 6
                   _                       -> False
+
+            -- | A saturated Cryptol foreign-function application (two
+            --   arguments; the third is the GHC-side implementation).
+            isCryptol :: Exp -> Bool
+            isCryptol e = case flattenApp e of
+                  (Prim _ _ Cryptol, args) -> length [ () | EArg _ <- args ] == 2
+                  _                        -> False
 
             isPlaceholder :: Exp -> Bool
             isPlaceholder e = case flattenApp e of

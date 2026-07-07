@@ -1,33 +1,33 @@
 main.$dispatch : ([30], [10]) -> [46]
 main.$dispatch disc i =
-      main.$L.$x8$479 i disc
+      main.$L.$x8$481 i disc
 
-main.$L.$x8$479 : ([10], [30]) -> [46]
-main.$L.$x8$479 $x s0 =
-      main.$L.ReWire.Monad.iterSt$1$s25$475 $x s0
+main.$L.$x8$481 : ([10], [30]) -> [46]
+main.$L.$x8$481 $x s0 =
+      main.$L.ReWire.Monad.iterSt$1$s25$477 $x s0
 
-main.$L._unused7$477 : ([16], [30]) -> [46]
-main.$L._unused7$477 o s0 =
+main.$L._unused7$479 : ([16], [30]) -> [46]
+main.$L._unused7$479 o s0 =
       o # s0
 
-main.$L.arm9$480 : ([16], [30], [30]) -> [46]
-main.$L.arm9$480 o s s0 =
-      main.$L._unused7$477 o s
+main.$L.arm9$482 : ([16], [30], [30]) -> [46]
+main.$L.arm9$482 o s s0 =
+      main.$L._unused7$479 o s
 
-main.$L.ds6$476 : ([46], [30]) -> [46]
-main.$L.ds6$476 ds s0 =
+main.$L.ds6$478 : ([46], [30]) -> [46]
+main.$L.ds6$478 ds s0 =
       let o = ds[30 +: 16] in
       let s = ds[0 +: 30] in
-      main.$L.arm9$480 o s s0
+      main.$L.arm9$482 o s s0
 
-main.$L.x10$481 : ([10], [30], [30]) -> [46]
-main.$L.x10$481 i x s0 =
+main.$L.x10$483 : ([10], [30], [30]) -> [46]
+main.$L.x10$483 i x s0 =
       let $a = Main.loop i x in
-      main.$L.ds6$476 $a s0
+      main.$L.ds6$478 $a s0
 
-main.$L.ReWire.Monad.iterSt$1$s25$475 : ([10], [30]) -> [46]
-main.$L.ReWire.Monad.iterSt$1$s25$475 i s0 =
-      main.$L.x10$481 i s0 s0
+main.$L.ReWire.Monad.iterSt$1$s25$477 : ([10], [30]) -> [46]
+main.$L.ReWire.Monad.iterSt$1$s25$477 i s0 =
+      main.$L.x10$483 i s0 s0
 
 Main.inputToMyState : ([10], [15]) -> [15]
 Main.inputToMyState ds ds1 =

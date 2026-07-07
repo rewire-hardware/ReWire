@@ -28,6 +28,7 @@ library
       ReWire
       ReWire.Bits
       ReWire.BitWord
+      ReWire.Cryptol
       ReWire.Finite
       ReWire.FiniteComp
       ReWire.Interactive

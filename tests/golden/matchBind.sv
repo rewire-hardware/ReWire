@@ -6,12 +6,12 @@ module top_level (input logic [0:0] clk,
   logic [0:0] __resumption_tag_next;
   logic [7:0] __st0;
   logic [7:0] __st0_next;
-  logic [16:0] main_$l_main_loop4$283_out;
-  logic [16:0] main_$l_main_loop4$283_outR1;
+  logic [16:0] main_$l_main_loop4$285_out;
+  logic [16:0] main_$l_main_loop4$285_outR1;
   logic [16:0] zres;
-  main_$L_Main_loop4$283  inst (__st0, main_$l_main_loop4$283_out);
-  main_$L_Main_loop4$283  instR1 (__in0, main_$l_main_loop4$283_outR1);
-  assign zres = (__resumption_tag == 1'h0) ? main_$l_main_loop4$283_out : main_$l_main_loop4$283_outR1;
+  main_$L_Main_loop4$285  inst (__st0, main_$l_main_loop4$285_out);
+  main_$L_Main_loop4$285  instR1 (__in0, main_$l_main_loop4$285_outR1);
+  assign zres = (__resumption_tag == 1'h0) ? main_$l_main_loop4$285_out : main_$l_main_loop4$285_outR1;
   assign __resumption_tag_next = zres[8];
   assign __st0_next = zres[7:0];
   assign __out0 = zres[16:9];
@@ -25,22 +25,22 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module main_$L_Main_incr7$286 (input logic [7:0] arg0,
+module main_$L_Main_incr7$288 (input logic [7:0] arg0,
   output logic [16:0] res);
   assign res = {9'h4, arg0};
 endmodule
 
-module main_$L_Main_loop4$283 (input logic [7:0] arg0,
+module main_$L_Main_loop4$285 (input logic [7:0] arg0,
   output logic [16:0] res);
   logic [0:0] zi0;
   logic [0:0] zi1;
   logic [0:0] zi2;
-  logic [16:0] main_$l_main_incr7$286_out;
-  logic [16:0] main_$l_main_incr7$286_outR1;
+  logic [16:0] main_$l_main_incr7$288_out;
+  logic [16:0] main_$l_main_incr7$288_outR1;
   assign zi0 = arg0[0];
   assign zi1 = zi0;
   assign zi2 = (zi1 == 1'h1) ? 1'h0 : 1'h1;
-  main_$L_Main_incr7$286  inst (arg0, main_$l_main_incr7$286_out);
-  main_$L_Main_incr7$286  instR1 (arg0, main_$l_main_incr7$286_outR1);
-  assign res = (zi2 == 1'h0) ? main_$l_main_incr7$286_out : main_$l_main_incr7$286_outR1;
+  main_$L_Main_incr7$288  inst (arg0, main_$l_main_incr7$288_out);
+  main_$L_Main_incr7$288  instR1 (arg0, main_$l_main_incr7$288_outR1);
+  assign res = (zi2 == 1'h0) ? main_$l_main_incr7$288_out : main_$l_main_incr7$288_outR1;
 endmodule

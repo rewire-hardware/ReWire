@@ -6,3 +6,29 @@ packages:
 - rewire-backend
 - rewire-frontend
 - rewire-embedder
+- rewire-cryptol
+
+# The Cryptol implementation (the rwcry translator behind the Cryptol FFI
+# in rewire-cryptol) and the parts of its dependency tree that are not in
+# the snapshot. Pinned to a git commit; bump deliberately (the typechecked
+# Cryptol AST is not a stable API).
+extra-deps:
+- git: https://github.com/GaloisInc/cryptol.git
+  commit: aa70cab02ca18c54fdb77b30e01a94238353b4ab
+- GraphSCC-1.0.4@sha256:dc3c6d6c59c15a50c9ce701bdead86f19bc2367e0d30c81a7bf55ccc6e5bd04d,936
+- base-compat-0.12.3@sha256:4ef57766629fda9a5a6e41777e5279beb48a37b9d6cf5904c78643ad11a8a1ee,7490
+- base-compat-batteries-0.12.3@sha256:398c0d3c01407d5f79d7737961e79d0da1272ea11285238c6082850afc60dd9d,9666
+- hgmp-0.1.2.1@sha256:9d247b386e069de731442038988a5cf4bb221913ceb9f639215dd52856472088,2421
+- monadLib-3.10.3@sha256:026ba169762e63f0fe5f5c78829808f522a28730043bc3ad9b7c146baedf709f,637
+- rme-what4-0.1.2@sha256:9d6a996f38cae3785fe942d8f7887ef5979a73bd9c32517932ae329d7822fd96,1329
+- sbv-11.0@sha256:7c8d8b54028aa33caa118b27775d669436a22812d08057c2adb1224af9890b93,25534
+- simple-smt-0.9.8@sha256:d0b06f24372c0a15d4d6296708a349e837924274fa4b6d9dc0d148d5554cfec7,736
+- rme-0.1.2@sha256:0a35ec28e56c122b85f3c473a3c6fb08168541dbc66991978ce8ffa76675273f,952
+- what4-1.7.3@sha256:df51452ddc5c3f3ee541d91fca640961b0266e327cc7093d15d26fb632f84ef5,11149
+
+flags:
+  # Without this, cryptol's module/solver-prelude discovery is
+  # executable-relative only, which breaks for executables (rwcry) that
+  # link cryptol as a library.
+  cryptol:
+    relocatable: false

@@ -20,121 +20,121 @@ extern test4
 
 main.$dispatch : ([39], [33]) -> [41]
 main.$dispatch disc i =
-      main.$L.$x6$356 i disc
+      main.$L.$x6$358 i disc
 
-main.$L.$x6$356 : ([33], [39]) -> [41]
-main.$L.$x6$356 $x s0 =
-      main.$L.Main.repl4$353 $x s0
+main.$L.$x6$358 : ([33], [39]) -> [41]
+main.$L.$x6$358 $x s0 =
+      main.$L.Main.repl4$355 $x s0
 
-main.$L._unused8$358 : ([39]) -> [41]
-main.$L._unused8$358 s0 =
+main.$L._unused8$360 : ([39]) -> [41]
+main.$L._unused8$360 s0 =
       2'h2 # s0
 
-main.$L.arm11$361 : ([32], [7], [39]) -> [41]
-main.$L.arm11$361 r pc s0 =
+main.$L.arm11$363 : ([32], [7], [39]) -> [41]
+main.$L.arm11$363 r pc s0 =
       let $a = OD19.ProgramCounter.incPC pc in
       let $a1 = r # $a in
-      main.$L._unused8$358 $a1
+      main.$L._unused8$360 $a1
 
-main.$L.ds10$360 : ([39], [39]) -> [41]
-main.$L.ds10$360 ds s0 =
+main.$L.ds10$362 : ([39], [39]) -> [41]
+main.$L.ds10$362 ds s0 =
       let r = ds[7 +: 32] in
       let pc = ds[0 +: 7] in
-      main.$L.arm11$361 r pc s0
+      main.$L.arm11$363 r pc s0
 
-main.$L.Main.nextPC9$359 : ([39]) -> [41]
-main.$L.Main.nextPC9$359 s0 =
-      main.$L.ds10$360 s0 s0
+main.$L.Main.nextPC9$361 : ([39]) -> [41]
+main.$L.Main.nextPC9$361 s0 =
+      main.$L.ds10$362 s0 s0
 
-main.$L.arm21$374 : ([32], [32], [7], [39]) -> [41]
-main.$L.arm21$374 w32 d pc s0 =
+main.$L.arm21$376 : ([32], [32], [7], [39]) -> [41]
+main.$L.arm21$376 w32 d pc s0 =
       let $a = w32 # pc in
-      main.$L.Main.nextPC9$359 $a
+      main.$L.Main.nextPC9$361 $a
 
-main.$L.ds20$373 : ([32], [39], [39]) -> [41]
-main.$L.ds20$373 w32 ds s0 =
+main.$L.ds20$375 : ([32], [39], [39]) -> [41]
+main.$L.ds20$375 w32 ds s0 =
       let d = ds[7 +: 32] in
       let pc = ds[0 +: 7] in
-      main.$L.arm21$374 w32 d pc s0
+      main.$L.arm21$376 w32 d pc s0
 
-main.$L.Main.putReg19$372 : ([32], [39]) -> [41]
-main.$L.Main.putReg19$372 w32 s0 =
-      main.$L.ds20$373 w32 s0 s0
+main.$L.Main.putReg19$374 : ([32], [39]) -> [41]
+main.$L.Main.putReg19$374 w32 s0 =
+      main.$L.ds20$375 w32 s0 s0
 
-main.$L.r23$378 : ([32], [32], [39]) -> [41]
-main.$L.r23$378 w32 r s0 =
+main.$L.r23$380 : ([32], [32], [39]) -> [41]
+main.$L.r23$380 w32 r s0 =
       let $a = Main.test1 w32 r in
       let $a1 = 1'h0 # $a in
       $a1 # s0
 
-main.$L.ds25$380 : ([32], [39], [39]) -> [41]
-main.$L.ds25$380 w32 ds s0 =
+main.$L.ds25$382 : ([32], [39], [39]) -> [41]
+main.$L.ds25$382 w32 ds s0 =
       let r = ds[7 +: 32] in
-      main.$L.r23$378 w32 r s0
+      main.$L.r23$380 w32 r s0
 
-main.$L.Main.getReg24$379 : ([32], [39]) -> [41]
-main.$L.Main.getReg24$379 w32 s0 =
-      main.$L.ds25$380 w32 s0 s0
+main.$L.Main.getReg24$381 : ([32], [39]) -> [41]
+main.$L.Main.getReg24$381 w32 s0 =
+      main.$L.ds25$382 w32 s0 s0
 
-main.$L.r41$403 : ([32], [32], [39]) -> [41]
-main.$L.r41$403 w32 r s0 =
+main.$L.r41$405 : ([32], [32], [39]) -> [41]
+main.$L.r41$405 w32 r s0 =
       let $a = Main.test2 w32 r in
       let $a1 = 1'h0 # $a in
       $a1 # s0
 
-main.$L.ds43$405 : ([32], [39], [39]) -> [41]
-main.$L.ds43$405 w32 ds s0 =
+main.$L.ds43$407 : ([32], [39], [39]) -> [41]
+main.$L.ds43$407 w32 ds s0 =
       let r = ds[7 +: 32] in
-      main.$L.r41$403 w32 r s0
+      main.$L.r41$405 w32 r s0
 
-main.$L.Main.getReg42$404 : ([32], [39]) -> [41]
-main.$L.Main.getReg42$404 w32 s0 =
-      main.$L.ds43$405 w32 s0 s0
+main.$L.Main.getReg42$406 : ([32], [39]) -> [41]
+main.$L.Main.getReg42$406 w32 s0 =
+      main.$L.ds43$407 w32 s0 s0
 
-main.$L.r45$409 : ([32], [32], [39]) -> [41]
-main.$L.r45$409 w32 r s0 =
+main.$L.r45$411 : ([32], [32], [39]) -> [41]
+main.$L.r45$411 w32 r s0 =
       let $a = Main.test3 w32 r in
       let $a1 = 1'h0 # $a in
       $a1 # s0
 
-main.$L.ds47$411 : ([32], [39], [39]) -> [41]
-main.$L.ds47$411 w32 ds s0 =
+main.$L.ds47$413 : ([32], [39], [39]) -> [41]
+main.$L.ds47$413 w32 ds s0 =
       let r = ds[7 +: 32] in
-      main.$L.r45$409 w32 r s0
+      main.$L.r45$411 w32 r s0
 
-main.$L.Main.getReg46$410 : ([32], [39]) -> [41]
-main.$L.Main.getReg46$410 w32 s0 =
-      main.$L.ds47$411 w32 s0 s0
+main.$L.Main.getReg46$412 : ([32], [39]) -> [41]
+main.$L.Main.getReg46$412 w32 s0 =
+      main.$L.ds47$413 w32 s0 s0
 
-main.$L.r49$415 : ([32], [32], [39]) -> [41]
-main.$L.r49$415 w32 r s0 =
+main.$L.r49$417 : ([32], [32], [39]) -> [41]
+main.$L.r49$417 w32 r s0 =
       let $a = Main.test4 w32 r in
       let $a1 = 1'h0 # $a in
       $a1 # s0
 
-main.$L.ds51$417 : ([32], [39], [39]) -> [41]
-main.$L.ds51$417 w32 ds s0 =
+main.$L.ds51$419 : ([32], [39], [39]) -> [41]
+main.$L.ds51$419 w32 ds s0 =
       let r = ds[7 +: 32] in
-      main.$L.r49$415 w32 r s0
+      main.$L.r49$417 w32 r s0
 
-main.$L.Main.getReg50$416 : ([32], [39]) -> [41]
-main.$L.Main.getReg50$416 w32 s0 =
-      main.$L.ds51$417 w32 s0 s0
+main.$L.Main.getReg50$418 : ([32], [39]) -> [41]
+main.$L.Main.getReg50$418 w32 s0 =
+      main.$L.ds51$419 w32 s0 s0
 
-main.$L.ds5$354 : ([32], [39], [39]) -> [41]
-main.$L.ds5$354 w32 ds s0 =
+main.$L.ds5$356 : ([32], [39], [39]) -> [41]
+main.$L.ds5$356 w32 ds s0 =
       let pc = ds[0 +: 7] in
-      if eq pc 7'h0 then main.$L.Main.putReg19$372 w32 s0
-            else if eq pc 7'h1 then main.$L.Main.getReg24$379 w32 s0 else if eq pc 7'h2 then main.$L.Main.putReg19$372 w32 s0 else if eq pc 7'h3 then main.$L.Main.getReg24$379 w32 s0 else if eq pc 7'h4 then main.$L.Main.getReg42$404 w32 s0 else if eq pc 7'h5 then main.$L.Main.getReg46$410 w32 s0 else if eq pc 7'h6 then main.$L.Main.getReg50$416 w32 s0 else main.$L.Main.nextPC9$359 s0
+      if eq pc 7'h0 then main.$L.Main.putReg19$374 w32 s0
+            else if eq pc 7'h1 then main.$L.Main.getReg24$381 w32 s0 else if eq pc 7'h2 then main.$L.Main.putReg19$374 w32 s0 else if eq pc 7'h3 then main.$L.Main.getReg24$381 w32 s0 else if eq pc 7'h4 then main.$L.Main.getReg42$406 w32 s0 else if eq pc 7'h5 then main.$L.Main.getReg46$412 w32 s0 else if eq pc 7'h6 then main.$L.Main.getReg50$418 w32 s0 else main.$L.Main.nextPC9$361 s0
 
-main.$L.arm52$420 : ([32], [39]) -> [41]
-main.$L.arm52$420 w32 s0 =
-      main.$L.ds5$354 w32 s0 s0
+main.$L.arm52$422 : ([32], [39]) -> [41]
+main.$L.arm52$422 w32 s0 =
+      main.$L.ds5$356 w32 s0 s0
 
-main.$L.Main.repl4$353 : ([33], [39]) -> [41]
-main.$L.Main.repl4$353 ds s0 =
+main.$L.Main.repl4$355 : ([33], [39]) -> [41]
+main.$L.Main.repl4$355 ds s0 =
       if eq ds[32 +: 1] 1'h0 then (let w32 = ds[0 +: 32] in
-            main.$L.arm52$420 w32 s0)
+            main.$L.arm52$422 w32 s0)
             else 2'h2 # s0
 
 Main.test1 : ([32], [32]) -> [1]

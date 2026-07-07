@@ -1,19 +1,19 @@
 main.$dispatch : ([16]) -> [8]
 main.$dispatch i =
-      main.$L.$x4$321 i
+      main.$L.$x4$323 i
 
-main.$L.$x4$321 : ([16]) -> [8]
-main.$L.$x4$321 $x =
-      main.$L.Main.loop3$319 $x
+main.$L.$x4$323 : ([16]) -> [8]
+main.$L.$x4$323 $x =
+      main.$L.Main.loop3$321 $x
 
-main.$L.$x5$323 : ([8]) -> [8]
-main.$L.$x5$323 $x =
+main.$L.$x5$325 : ([8]) -> [8]
+main.$L.$x5$325 $x =
       $x
 
-main.$L.Main.loop3$319 : ([16]) -> [8]
-main.$L.Main.loop3$319 i =
+main.$L.Main.loop3$321 : ([16]) -> [8]
+main.$L.Main.loop3$321 i =
       let $a = Main.compute i in
-      main.$L.$x5$323 $a
+      main.$L.$x5$325 $a
 
 Main.compute : ([16]) -> [8]
 Main.compute w =

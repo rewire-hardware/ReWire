@@ -1,20 +1,20 @@
 main.$dispatch : ([1]) -> [1]
 main.$dispatch i =
-      main.$L.$x3$228 i
+      main.$L.$x3$230 i
 
-main.$L.$x3$228 : ([1]) -> [1]
-main.$L.$x3$228 $x =
-      main.$L.Main.loop2$226 $x
+main.$L.$x3$230 : ([1]) -> [1]
+main.$L.$x3$230 $x =
+      main.$L.Main.loop2$228 $x
 
-main.$L.$x4$230 : ([1]) -> [1]
-main.$L.$x4$230 $x =
+main.$L.$x4$232 : ([1]) -> [1]
+main.$L.$x4$232 $x =
       $x
 
-main.$L.Main.loop2$226 : ([1]) -> [1]
-main.$L.Main.loop2$226 i =
+main.$L.Main.loop2$228 : ([1]) -> [1]
+main.$L.Main.loop2$228 i =
       let $a = (if eq i 1'h1 then 1'h0
             else 1'h1) in
-      main.$L.$x4$230 $a
+      main.$L.$x4$232 $a
 
 device top_level
       input __in0 : [1]

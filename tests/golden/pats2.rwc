@@ -1,9 +1,9 @@
 main.$dispatch : ([1]) -> [1]
 main.$dispatch i =
-      main.$L._unused3$244 i
+      main.$L._unused3$246 i
 
-main.$L._unused3$244 : ([1]) -> [1]
-main.$L._unused3$244 _unused =
+main.$L._unused3$246 : ([1]) -> [1]
+main.$L._unused3$246 _unused =
       1'h1
 
 device top_level

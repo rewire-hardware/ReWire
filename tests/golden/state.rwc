@@ -1,24 +1,24 @@
 main.$dispatch : ([1], [1]) -> [2]
 main.$dispatch disc i =
-      main.$L.$x4$280 i disc
+      main.$L.$x4$282 i disc
 
-main.$L.$x4$280 : ([1], [1]) -> [2]
-main.$L.$x4$280 $x s0 =
-      main.$L.Main.stateAction6$283 $x s0
+main.$L.$x4$282 : ([1], [1]) -> [2]
+main.$L.$x4$282 $x s0 =
+      main.$L.Main.stateAction6$285 $x s0
 
-main.$L.$x5$282 : ([1], [1]) -> [2]
-main.$L.$x5$282 $x s0 =
+main.$L.$x5$284 : ([1], [1]) -> [2]
+main.$L.$x5$284 $x s0 =
       $x # s0
 
-main.$L.s7$284 : ([1], [1], [1]) -> [2]
-main.$L.s7$284 i s s0 =
+main.$L.s7$286 : ([1], [1], [1]) -> [2]
+main.$L.s7$286 i s s0 =
       let s01 = (let $t1 = xor i s in
       $t1) in
-      main.$L.$x5$282 s s01
+      main.$L.$x5$284 s s01
 
-main.$L.Main.stateAction6$283 : ([1], [1]) -> [2]
-main.$L.Main.stateAction6$283 i s0 =
-      main.$L.s7$284 i s0 s0
+main.$L.Main.stateAction6$285 : ([1], [1]) -> [2]
+main.$L.Main.stateAction6$285 i s0 =
+      main.$L.s7$286 i s0 s0
 
 device top_level
       input __in0 : [1]

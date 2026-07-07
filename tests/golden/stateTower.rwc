@@ -1,43 +1,43 @@
 main.$dispatch : ([2], [1]) -> [3]
 main.$dispatch disc i =
-      main.$L.$x6$295 i disc[1 +: 1] disc[0 +: 1]
+      main.$L.$x6$297 i disc[1 +: 1] disc[0 +: 1]
 
-main.$L.$x6$295 : ([1], [1], [1]) -> [3]
-main.$L.$x6$295 $x s0 s1 =
-      main.$L.Main.sig4$292 $x s0 s1
+main.$L.$x6$297 : ([1], [1], [1]) -> [3]
+main.$L.$x6$297 $x s0 s1 =
+      main.$L.Main.sig4$294 $x s0 s1
 
-main.$L.r05$293 : ([1], [1], [1]) -> [3]
-main.$L.r05$293 r0 s0 s1 =
+main.$L.r05$295 : ([1], [1], [1]) -> [3]
+main.$L.r05$295 r0 s0 s1 =
       r0 # s0 # s1
 
-main.$L._unused7$296 : ([1], [1]) -> [3]
-main.$L._unused7$296 s0 s1 =
-      main.$L.r05$293 s0 s0 s1
+main.$L._unused7$298 : ([1], [1]) -> [3]
+main.$L._unused7$298 s0 s1 =
+      main.$L.r05$295 s0 s0 s1
 
-main.$L._unused11$301 : ([1], [1], [1], [1]) -> [3]
-main.$L._unused11$301 r0 r1 s0 s1 =
+main.$L._unused11$303 : ([1], [1], [1], [1]) -> [3]
+main.$L._unused11$303 r0 r1 s0 s1 =
       let s11 = (let $t1 = xor r0 r1 in
       $t1) in
-      main.$L._unused7$296 s0 s11
+      main.$L._unused7$298 s0 s11
 
-main.$L.r110$300 : ([1], [1], [1], [1]) -> [3]
-main.$L.r110$300 r0 r1 s0 s1 =
-      main.$L._unused11$301 r0 r1 r1 s1
+main.$L.r110$302 : ([1], [1], [1], [1]) -> [3]
+main.$L.r110$302 r0 r1 s0 s1 =
+      main.$L._unused11$303 r0 r1 r1 s1
 
-main.$L.r09$299 : ([1], [1], [1]) -> [3]
-main.$L.r09$299 r0 s0 s1 =
-      main.$L.r110$300 r0 s1 s0 s1
+main.$L.r09$301 : ([1], [1], [1]) -> [3]
+main.$L.r09$301 r0 s0 s1 =
+      main.$L.r110$302 r0 s1 s0 s1
 
-main.$L.Main.incr8$298 : ([1], [1]) -> [3]
-main.$L.Main.incr8$298 s0 s1 =
-      main.$L.r09$299 s0 s0 s1
+main.$L.Main.incr8$300 : ([1], [1]) -> [3]
+main.$L.Main.incr8$300 s0 s1 =
+      main.$L.r09$301 s0 s0 s1
 
-main.$L.Main.sig4$292 : ([1], [1], [1]) -> [3]
-main.$L.Main.sig4$292 i s0 s1 =
+main.$L.Main.sig4$294 : ([1], [1], [1]) -> [3]
+main.$L.Main.sig4$294 i s0 s1 =
       let $a = (if eq i 1'h1 then 1'h0
             else 1'h1) in
-      if eq $a 1'h0 then main.$L._unused7$296 s0 s1
-            else main.$L.Main.incr8$298 s0 s1
+      if eq $a 1'h0 then main.$L._unused7$298 s0 s1
+            else main.$L.Main.incr8$300 s0 s1
 
 device top_level
       input __in0 : [1]

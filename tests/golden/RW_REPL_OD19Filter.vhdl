@@ -210,16 +210,16 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \main_$L_Main_getReg24$379\ is
+component \main_$L_Main_getReg24$381\ is
       port (arg0 : in std_logic_vector (31 downto 0);
             arg1 : in std_logic_vector (38 downto 0);
             res : out std_logic_vector (40 downto 0));
       end component;
-      component \main_$L_Main_nextPC9$359\ is
+      component \main_$L_Main_nextPC9$361\ is
       port (arg0 : in std_logic_vector (38 downto 0);
             res : out std_logic_vector (40 downto 0));
       end component;
-      component \main_$L_Main_putReg19$372\ is
+      component \main_$L_Main_putReg19$374\ is
       port (arg0 : in std_logic_vector (31 downto 0);
             arg1 : in std_logic_vector (38 downto 0);
             res : out std_logic_vector (40 downto 0));
@@ -244,10 +244,10 @@ component \main_$L_Main_getReg24$379\ is
       signal \__st1\ : std_logic_vector (6 downto 0) := std_logic_vector'(B"0000000");
       signal \__st1_next\ : std_logic_vector (6 downto 0);
       signal zi0 : std_logic_vector (38 downto 0);
-      signal \main_$l_main_putreg19$372_out\ : std_logic_vector (40 downto 0);
-      signal \main_$l_main_getreg24$379_out\ : std_logic_vector (40 downto 0);
-      signal \main_$l_main_putreg19$372_outR1\ : std_logic_vector (40 downto 0);
-      signal \main_$l_main_getreg24$379_outR1\ : std_logic_vector (40 downto 0);
+      signal \main_$l_main_putreg19$374_out\ : std_logic_vector (40 downto 0);
+      signal \main_$l_main_getreg24$381_out\ : std_logic_vector (40 downto 0);
+      signal \main_$l_main_putreg19$374_outR1\ : std_logic_vector (40 downto 0);
+      signal \main_$l_main_getreg24$381_outR1\ : std_logic_vector (40 downto 0);
       signal extres : std_logic_vector (0 downto 0);
       signal zi5 : std_logic_vector (0 downto 0);
       signal zi6 : std_logic_vector (1 downto 0);
@@ -257,14 +257,14 @@ component \main_$L_Main_getReg24$379\ is
       signal \extresR2\ : std_logic_vector (0 downto 0);
       signal zi11 : std_logic_vector (0 downto 0);
       signal zi12 : std_logic_vector (1 downto 0);
-      signal \main_$l_main_nextpc9$359_out\ : std_logic_vector (40 downto 0);
+      signal \main_$l_main_nextpc9$361_out\ : std_logic_vector (40 downto 0);
       signal zres : std_logic_vector (40 downto 0);
 begin
 zi0 <= (\__st0\ & \__st1\);
-      inst : \main_$L_Main_putReg19$372\ port map (\__in1\, zi0, \main_$l_main_putreg19$372_out\);
-      \instR1\ : \main_$L_Main_getReg24$379\ port map (\__in1\, zi0, \main_$l_main_getreg24$379_out\);
-      \instR2\ : \main_$L_Main_putReg19$372\ port map (\__in1\, zi0, \main_$l_main_putreg19$372_outR1\);
-      \instR3\ : \main_$L_Main_getReg24$379\ port map (\__in1\, zi0, \main_$l_main_getreg24$379_outR1\);
+      inst : \main_$L_Main_putReg19$374\ port map (\__in1\, zi0, \main_$l_main_putreg19$374_out\);
+      \instR1\ : \main_$L_Main_getReg24$381\ port map (\__in1\, zi0, \main_$l_main_getreg24$381_out\);
+      \instR2\ : \main_$L_Main_putReg19$374\ port map (\__in1\, zi0, \main_$l_main_putreg19$374_outR1\);
+      \instR3\ : \main_$L_Main_getReg24$381\ port map (\__in1\, zi0, \main_$l_main_getreg24$381_outR1\);
       \instR4\ : test2 port map (p0 => \__in1\, p1 => \__st0\, p2 => extres(0 downto 0));
       zi5 <= extres;
       zi6 <= (std_logic_vector'(B"0") & zi5);
@@ -274,8 +274,8 @@ zi0 <= (\__st0\ & \__st1\);
       \instR6\ : test4 port map (p0 => \__in1\, p1 => \__st0\, p2 => \extresR2\(0 downto 0));
       zi11 <= \extresR2\;
       zi12 <= (std_logic_vector'(B"0") & zi11);
-      \instR7\ : \main_$L_Main_nextPC9$359\ port map (zi0, \main_$l_main_nextpc9$359_out\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000000")), \main_$l_main_putreg19$372_out\, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000001")), \main_$l_main_getreg24$379_out\, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000010")), \main_$l_main_putreg19$372_outR1\, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000011")), \main_$l_main_getreg24$379_outR1\, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000100")), (zi6 & zi0), rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000101")), (zi9 & zi0), rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000110")), (zi12 & zi0), \main_$l_main_nextpc9$359_out\))))))), (std_logic_vector'(B"10") & zi0));
+      \instR7\ : \main_$L_Main_nextPC9$361\ port map (zi0, \main_$l_main_nextpc9$361_out\);
+      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000000")), \main_$l_main_putreg19$374_out\, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000001")), \main_$l_main_getreg24$381_out\, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000010")), \main_$l_main_putreg19$374_outR1\, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000011")), \main_$l_main_getreg24$381_outR1\, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000100")), (zi6 & zi0), rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000101")), (zi9 & zi0), rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000110")), (zi12 & zi0), \main_$l_main_nextpc9$361_out\))))))), (std_logic_vector'(B"10") & zi0));
       \__st0_next\ <= zres(38 downto 7);
       \__st1_next\ <= zres(6 downto 0);
       \__out0\ <= zres(40 downto 40);
@@ -296,12 +296,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L_Main_nextPC9$359\ is
+entity \main_$L_Main_nextPC9$361\ is
 port (arg0 : in std_logic_vector (38 downto 0);
       res : out std_logic_vector (40 downto 0));
 end entity;
 
-architecture rtl of \main_$L_Main_nextPC9$359\ is
+architecture rtl of \main_$L_Main_nextPC9$361\ is
 signal zi0 : std_logic_vector (31 downto 0);
       signal zi1 : std_logic_vector (6 downto 0);
       signal zi2 : std_logic_vector (6 downto 0);
@@ -318,38 +318,38 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L_Main_putReg19$372\ is
+entity \main_$L_Main_putReg19$374\ is
 port (arg0 : in std_logic_vector (31 downto 0);
       arg1 : in std_logic_vector (38 downto 0);
       res : out std_logic_vector (40 downto 0));
 end entity;
 
-architecture rtl of \main_$L_Main_putReg19$372\ is
-component \main_$L_Main_nextPC9$359\ is
+architecture rtl of \main_$L_Main_putReg19$374\ is
+component \main_$L_Main_nextPC9$361\ is
       port (arg0 : in std_logic_vector (38 downto 0);
             res : out std_logic_vector (40 downto 0));
       end component;
       signal zi1 : std_logic_vector (6 downto 0);
       signal zi2 : std_logic_vector (38 downto 0);
-      signal \main_$l_main_nextpc9$359_out\ : std_logic_vector (40 downto 0);
+      signal \main_$l_main_nextpc9$361_out\ : std_logic_vector (40 downto 0);
 begin
 zi1 <= arg1(6 downto 0);
       zi2 <= (arg0 & zi1);
-      inst : \main_$L_Main_nextPC9$359\ port map (zi2, \main_$l_main_nextpc9$359_out\);
-      res <= \main_$l_main_nextpc9$359_out\;
+      inst : \main_$L_Main_nextPC9$361\ port map (zi2, \main_$l_main_nextpc9$361_out\);
+      res <= \main_$l_main_nextpc9$361_out\;
 end architecture;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L_Main_getReg24$379\ is
+entity \main_$L_Main_getReg24$381\ is
 port (arg0 : in std_logic_vector (31 downto 0);
       arg1 : in std_logic_vector (38 downto 0);
       res : out std_logic_vector (40 downto 0));
 end entity;
 
-architecture rtl of \main_$L_Main_getReg24$379\ is
+architecture rtl of \main_$L_Main_getReg24$381\ is
 component test1 is
       port (p0 : in std_logic_vector (31 downto 0);
             p1 : in std_logic_vector (31 downto 0);
