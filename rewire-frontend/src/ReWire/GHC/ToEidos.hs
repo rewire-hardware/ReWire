@@ -762,7 +762,8 @@ harvestDatas g
 
 ---
 --- The base vocabulary's synthesized definitions ($, ., id, not, &&, ||,
---- fst, snd), mirroring "ReWire.GHC.Vocab" on the Eidos side.
+--- fst, snd): INLINE Eidos definitions bridged in place of the base
+--- originals.
 ---
 
 vocabDefns :: MonadError AstError m => BM m [E.Defn]

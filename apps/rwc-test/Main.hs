@@ -182,8 +182,8 @@ testCompiler flags fn = do
             check = FlagNoCheck `notElem` flags
 
             -- RWC_TEST_FLAGS: extra rwc flags for every invocation (for
-            -- sweeping the suite under an alternate pipeline, e.g.
-            -- --hyle-m, against swapped goldens).
+            -- sweeping the suite under alternate flags, e.g. --flatten,
+            -- against swapped goldens).
             extraFlags :: [String]
             extraFlags = ["-v" | FlagV `elem` flags] <> envFlags
 

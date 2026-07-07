@@ -1,8 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
--- | Export-list resolution on the HSE AST, shared between the compiler
---   (ReWire.HSE.ToCrust) and the embedder (Embedder.HSE.ToAtmo).
+-- | Export-list resolution on the HSE AST, used by the embedder
+--   (Embedder.HSE.ToAtmo).
 module ReWire.HSE.Exports
       ( Export (..)
       , sDeclHead

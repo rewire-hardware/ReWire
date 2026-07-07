@@ -2,11 +2,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
--- | The IR-agnostic part of the front end: locating, parsing, and caching
---   modules and (recursively) their imports. The per-module pipeline
---   (desugaring and translation out of the HSE AST) is supplied by the
---   caller; rewire-core instantiates it for Crust (see 'ReWire.ModCache')
---   and rewire-embedder for Atmo.
+-- | The IR-agnostic part of the HSE front end: locating, parsing, and
+--   caching modules and (recursively) their imports. The per-module
+--   pipeline (desugaring and translation out of the HSE AST) is supplied
+--   by the caller; the embedder instantiates it for Atmo (see
+--   'Embedder.ModCache').
 module ReWire.HSE.Cache
       ( Cache
       , LoadPath

@@ -2,7 +2,7 @@
 -- EXPECT-ERROR: Main.Frob Bool
 -- Multi-method (data-dictionary) class instances compile, but a
 -- single-method class has a newtype dictionary whose class type survives
--- to the Crust typechecker, so this instance is still rejected.
+-- into Eidos, so this instance is still rejected (by the Eidos lint).
 {-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Monad (iter, Dev)

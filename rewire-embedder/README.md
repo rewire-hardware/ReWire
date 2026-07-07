@@ -88,6 +88,6 @@ To load an output theory file, you'll have to add it to a directory with a ROOT 
 
 Watch this spot. We will include and maintain a ReWire Embedder Style Guide here soon.
 Some short notes in the meantime:
-- design your device using either `Dev` w/`iter` or `StateDev` w/`iterSt` definitions from rewire-user's Monads module
+- design your device using either `Dev` w/`iter` or `StateDev` w/`iterSt` definitions from rewire-user's `ReWire.Monad` module
 - whenever a rewire-user function uses type-level arithmetic (e.g. the vector append operator), add an explicit type annotation for the embedder to carry into Isabelle
 - on the left-hand-side of functions, avoid combining guards with pattern matching

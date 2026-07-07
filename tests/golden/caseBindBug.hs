@@ -1,12 +1,11 @@
--- Regression for a purify "might pause" false positive. A bind whose
--- left-hand side pauses (here `lift (...) >>= emit`, where `emit` signals),
--- sitting directly in a `case` arm and referencing a `where`/`let`-bound
--- monadic action (`toggle`), was fused into the match discriminant by
--- liftLambdas (its operands hidden behind MatchPatVars) and so went
--- unrecognized by normalizeBind's `dstBind`. The pausing LHS then survived to
--- purify, which rejected it with "the left-hand side of this bind (RVar) might
--- pause". liftLambdas now leaves such binds syntactic so normalizeBind can
--- normalize them.
+-- Regression for a retired-pipeline "might pause" false positive: a bind
+-- whose left-hand side pauses (here `lift (...) >>= emit`, where `emit`
+-- signals), sitting directly in a `case` arm and referencing a
+-- `where`/`let`-bound monadic action (`toggle`), was mis-fused during
+-- lambda lifting and rejected by purification with "the left-hand side of
+-- this bind (RVar) might pause". Kept as a shape test for case-headed
+-- reactive binds (a pausing bind LHS now compiles by splicing the callee's
+-- block graph; see Eidos.Procify).
 import ReWire hiding (Bit)
 
 data Bit = C | S

@@ -2,22 +2,55 @@
 
 ## 2.8 (2026-07)
 
+* New GHC front end: `rwc` now compiles ReWire programs with an in-process
+  GHC session (parse, rename, typecheck, and desugar over the whole module
+  graph), translating the resulting Core to the new Eidos IR. Programs are
+  typechecked by GHC itself, with GHC's error messages, and type classes
+  are now supported: instance methods compile to ordinary
+  dictionary-passing definitions that specialization and partial
+  evaluation eliminate (single-method classes, whose dictionaries are
+  newtypes, are not yet supported). The haskell-src-exts front end is
+  retired from `rwc`; the embedder (`rwe`) still uses it. The typelits
+  solver plugins are linked into `rwc` and enabled without any dynamic
+  loading, and the package databases `rwc` was built against are baked in
+  and self-discovered at run time (`RWC_PACKAGE_PATH` overrides; running
+  under `stack exec` works as before), so an installed `rwc` normally
+  needs neither stack nor the checkout's environment at run time.
+* The Crust IR and its monad-transformer purification pass have been
+  replaced by Eidos (`ReWire.Eidos.*`), a new typed functional IR
+  specified in `doc/eidos.md`, with a textual format (`.eir`, dumped
+  beside the output by `--eidos`). The reactive fragment is now compiled
+  to an explicit process calculus -- state cells and labeled blocks with
+  pause/goto/halt terminators -- and folded directly to Hyle; recursion
+  not guarded by `signal` is rejected with a source-located error. Source
+  variable names still survive into the generated HDL, interpreter traces
+  are bit-for-bit unchanged from the previous pipeline, and the largest
+  tests compile roughly 20x faster end-to-end.
+* Sequential FSM composition: a reactive computation may now appear on the
+  left-hand side of a bind (e.g. `x <- subMachine i; ...`), running a
+  sub-state-machine to completion and continuing with its result; the
+  sub-machine's states are spliced into the caller per call site.
+  Recursion must still reach itself in tail position (a computation that
+  re-enters itself through a bind's left-hand side would need an unbounded
+  resumption stack and is rejected), and a NOINLINE reactive definition
+  may only be called in tail position.
+* New `rwc --no-halt` flag: statically reject a device that can halt
+  (post-halt outputs are unspecified; a rejected device must pause forever
+  instead).
 * The `rewire-core` library has been split into three packages: `rewire-frontend`
-  (the haskell-src-exts front end `ReWire.HSE.*`, the Crust IR and its
-  transformations `ReWire.Crust.*`, and the pass orchestration), `rewire-backend`
+  (the GHC driver and Core-to-Eidos bridge `ReWire.GHC.*`, the Eidos IR and
+  its passes `ReWire.Eidos.*`, and the pass orchestration), `rewire-backend`
   (the Hyle bit-level IR `ReWire.Hyle.*` and the Verilog/VHDL/Cryptol RTL
   backends), and `rewire-base` (the shared base utilities: source annotations,
   diagnostics, config, bit vectors, and pretty-printing). The dependency order is
   `rewire-base` <- `rewire-backend` <- `rewire-frontend`.
   `ReWire.Annotation`/`ReWire.Error` were first decoupled from haskell-src-exts
   (the source annotation is a native span; the HSE conversion now lives in
-  `ReWire.HSE.SrcLoc`), so only `rewire-frontend` depends on haskell-src-exts.
+  `ReWire.HSE.SrcLoc`), and the `ReWire.HSE.*` modules now live in
+  `rewire-embedder`, the only package that still depends on haskell-src-exts.
   `rewire-embedder` no longer depends on the Hyle backend, building against just
   `rewire-base` and `rewire-frontend`. Every package now builds with
-  `-Wunused-packages`. Module names and the `rwc`/`rwe` interfaces are unchanged.
-* Removed the `Match` expression and `MatchPat` pattern language from the Crust
-  IR: `Case` (with its binders) is now carried through purification into the
-  Hyle backend, so source variable names survive into the generated HDL.
+  `-Wunused-packages`. The `rwc`/`rwe` command-line interfaces are unchanged.
 * Error reporting overhaul. Diagnostics from `rwc` and `rwe` now show the
   offending source line with a caret underline beneath the exact span
   (`file:line:col:`, then the source line, then `^^^`) rather than

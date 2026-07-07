@@ -211,7 +211,7 @@ The linter checks a program in one of four cumulative modes:
   is still open here: specialization eliminates polymorphism, not functions
   — first-orderization is the partial evaluator's job, which runs after it.
   Builtin-named definitions (`rwPrim*`) are exempt: they are the builtins'
-  type assumptions riding to the retained pipeline as polymorphic signature
+  type assumptions riding to the Eidos-to-Hyle fold as polymorphic signature
   carriers (error-stub bodies, never referenced as variables — references
   become `Prim` occurrences at the bridge), and they check in poly mode
   until an Eidos-level builtin signature table replaces them.

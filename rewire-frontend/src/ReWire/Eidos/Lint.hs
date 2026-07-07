@@ -982,9 +982,9 @@ checkClosed an = go
                   Arrow _ t1 t2 -> go t1 >> go t2
                   _             -> pure ()
 
--- | The list type constructor applied to an element type. The bridge is
---   not yet landed, so both the Crust convention (@[_]@) and the source
---   spelling (@[]@) are accepted here.
+-- | The list type constructor applied to an element type. Both the
+--   bridge's spelling (@[_]@) and the source spelling (@[]@, for
+--   hand-written Eidos) are accepted here.
 dstListTy :: Ty -> Maybe Ty
 dstListTy = \ case
       TyApp _ (TyCon _ c) et | c == "[_]" || c == "[]" -> Just et

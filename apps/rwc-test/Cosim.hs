@@ -6,7 +6,7 @@
 --   "golden yaml" test, so agreement here anchors every backend to that golden.
 --
 --   The inputs and output traces are read and written with the same `yaml`
---   package rewire-core uses to read inputs (--interpret/--testbench) and write
+--   package rwc uses to read inputs (--interpret/--testbench) and write
 --   the .yaml golden: inputs are per-cycle name->number maps, outputs are
 --   per-cycle name->hex-string maps. A per-cycle map (rather than a positional
 --   list) makes trace comparison robust to wire ordering, matching the
