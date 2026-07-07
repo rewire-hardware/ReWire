@@ -104,7 +104,7 @@ splitStart s = case T.breakOnEnd "." s of
       ("", occ) -> ("Main", T.unpack occ)
       (m, occ)  -> (T.unpack $ T.dropEnd 1 m, T.unpack occ)
 
--- | Crust names for constructors.
+-- | Eidos names for constructors.
 conName :: DataCon -> Text
 conName dc
       | dc == trueDataCon  = "True"
@@ -129,7 +129,7 @@ tyConKey tc = ( maybe "?" (moduleNameString . moduleName) $ nameModule_maybe $ t
               , getOccString $ tyConName tc )
 
 -- | External tycons mapped by (defining module, occurrence) to
---   (Crust name, number of leading type args to drop).
+--   (Eidos name, number of leading type args to drop).
 tyConTable :: [((String, String), (Text, Int))]
 tyConTable =
       [ (("Data.Vector.Generic.Sized.Internal", "Vector"),   ("Vec", 1))    -- drop the unsized-vector arg
@@ -142,9 +142,9 @@ tyConTable =
       , (("GHC.Internal.Data.Either", "Either"),             (eitherTyName, 0))
       ]
 
--- | Base combinators supported via synthesized (INLINE) Crust definitions
---   (see "ReWire.GHC.Vocab"); outer key: defining module; inner:
---   occurrence -> Crust name.
+-- | Base combinators supported via synthesized (INLINE) Eidos definitions
+--   (see 'bridgeBaseVocab' in "ReWire.GHC.ToEidos"); outer key: defining
+--   module; inner: occurrence -> Eidos name.
 vocabTable :: [(Text, [(Text, Text)])]
 vocabTable =
       [ ("GHC.Internal.Base",       [ ("$", "GHC.Internal.Base.$"), (".", "GHC.Internal.Base.."), ("id", "GHC.Internal.Base.id") ])

@@ -230,7 +230,7 @@ eidosToHyle conf p0 = do
       let Program datas defns procs _top = liftJoins p0
       pr <- case procs of
             [pr] -> pure pr
-            _    -> failAt noAnn $ "hyle-m: expected exactly one process, got " <> showt (length procs)
+            _    -> failAt noAnn $ "expected exactly one process, got " <> showt (length procs)
       (p, s) <- flip runStateT s0 $ do
             let pures = filter emit defns
                 env   = Env { envCtors   = Map.fromList [ (dataName d, [ c | DataCon _ c _ <- dataCons d ]) | d <- datas ]
@@ -265,7 +265,7 @@ buildNameMap = fst . foldl' step (mempty, mempty)
                   in (IM.insert (idUniq $ defnId d) nm m, Map.insert occ (i + 1) used)
 
 globalName :: MonadError AstError m => Env -> Annote -> Id -> TM m A.GId
-globalName env an x = maybe (failAt an $ "hyle-m: unknown global: " <> idOcc x) pure
+globalName env an x = maybe (failAt an $ "unknown global: " <> idOcc x) pure
       $ IM.lookup (idUniq x) $ envTops env
 
 ---
@@ -423,7 +423,7 @@ transExp env sc e = case e of
                   let eargs = [ a | EArg a <- args ]
                   sz <- sizeOf env ("applied Var " <> idOcc x) an' $ typeOf e
                   case IM.lookup (idUniq x) $ scMap sc of
-                        Just _  -> failAt an' $ "hyle-m: unsupported application of a local variable: " <> idOcc x
+                        Just _  -> failAt an' $ "unsupported application of a local variable: " <> idOcc x
                         Nothing -> A.Call an' sz <$> globalName env an' x <*> mapM (transExp env sc) eargs
             (Lam an' p b, EArg a : rest) ->
                   transExp env sc $ Let an' (NonRec p a) $ foldl' (App an') b rest
@@ -436,7 +436,7 @@ transExp env sc e = case e of
             (Case can _ cd ccb calts, args) ->
                   transExp env sc $ Case can (typeOf e) cd ccb
                         [ Alt aan c xs $ foldl' (App can) b args | Alt aan c xs b <- calts ]
-            _                         -> failInternal (ann e) $ "hyle-m: encountered ill-formed application:\n" <> prettyPrint (Ann.unAnn e)
+            _                         -> failInternal (ann e) $ "encountered ill-formed application:\n" <> prettyPrint (Ann.unAnn e)
       Prim an _ b     -> transBuiltin env sc an (typeOf e) an (b, [])
       Var an x        -> case IM.lookup (idUniq x) $ scMap sc of
             Just atom -> pure atom
@@ -467,11 +467,11 @@ transExp env sc e = case e of
                         let (sc', nm) = bindLocal an sc x $ A.sizeOf rhs'
                         body' <- transExp env sc' body
                         pure $ A.Let an (A.sizeOf body') nm rhs' body'
-      Let an (Rec {}) _  -> failAt an "hyle-m: unsupported recursive local binding."
-      Let an (Join {}) _ -> failInternal an "hyle-m: join point survived lifting (rwc bug)."
-      Jump an _ _        -> failInternal an "hyle-m: jump survived lifting (rwc bug)."
-      Lam an _ _         -> failAt an "hyle-m: unsupported lambda expression."
-      _                  -> failAt (ann e) $ "hyle-m: unsupported expression: " <> prettyPrint (Ann.unAnn e)
+      Let an (Rec {}) _  -> failAt an "unsupported recursive local binding."
+      Let an (Join {}) _ -> failInternal an "join point survived lifting (rwc bug)."
+      Jump an _ _        -> failInternal an "jump survived lifting (rwc bug)."
+      Lam an _ _         -> failAt an "unsupported lambda expression."
+      _                  -> failAt (ann e) $ "unsupported expression: " <> prettyPrint (Ann.unAnn e)
       where ctorRep :: MonadError AstError m => Annote -> Ty -> (A.Value, A.Size) -> A.Size -> TM m (BV, BV)
             ctorRep an t (v, w) szArgs = do
                   sz <- sizeOf env "ctorRep" an t
@@ -493,7 +493,7 @@ caseChain env sc an sz discTy datom alts transBody = case alts of
       rest                           -> go rest Nothing
       where go :: [(Annote, AltCon, [Id], body)] -> Maybe A.Exp -> TM m A.Exp
             go [] (Just els) = pure els
-            go []  Nothing   = failInternal an "hyle-m: encountered an empty case."
+            go []  Nothing   = failInternal an "encountered an empty case."
             go [a] Nothing   = altExp a Nothing
             go (a : rest) mels = altExp a . Just =<< go rest mels
 
@@ -513,7 +513,7 @@ caseChain env sc an sz discTy datom alts transBody = case alts of
                         LitAlt i   -> do
                               szT <- sizeOf env "caseChain" aan discTy
                               pure ([ A.Prim aan 1 A.Eq [datom, A.Lit aan $ bitVec (fromIntegral szT) i] ], [])
-                        DefaultAlt -> failInternal aan "hyle-m: default alternative not first."
+                        DefaultAlt -> failInternal aan "default alternative not first."
                   (sc', binds') <- pure $ foldl' (\ (s, acc) (x, slc) ->
                               let (s', nm) = bindLocal aan s x (A.sizeOf slc) in (s', acc <> [(nm, slc)]))
                         (sc, []) binds
@@ -680,7 +680,7 @@ transBuiltin env sc an' t' an theExp = case theExp of
                         let sc' = sc { scMap = IM.insert (idUniq p) (A.Var an'' (A.sizeOf arg') x) $ scMap sc }
                         b' <- transExp env sc' b
                         pure $ A.Let an'' (A.sizeOf b') x arg' b'
-                  _ -> failAt an'' "hyle-m: unsupported function argument to a built-in vector operation."
+                  _ -> failAt an'' "unsupported function argument to a built-in vector operation."
 
             subElems :: Annote -> Exp -> Integer -> Natural -> TM m A.Exp
             subElems an'' arg i nElems = do
@@ -810,7 +810,7 @@ toPrim b sz w = case b of
                   A.Var {} -> A.Slice an (w - 1) 1 a
                   A.Lit {} -> A.Slice an (w - 1) 1 a
                   _        -> A.Let an 1 x a $ A.Slice an (w - 1) 1 $ A.Var an w x
-            else Left "hyle-m: MSBit of a zero-width value."
+            else Left "MSBit of a zero-width value."
       _           -> Nothing
       where bin :: A.Op -> Maybe (Annote -> A.Name -> [A.Exp] -> Either Text A.Exp)
             bin op = Just $ \ an _ -> two an $ \ a b' -> pure $ A.Prim an sz op [a, b']
@@ -827,12 +827,12 @@ toPrim b sz w = case b of
             two :: Annote -> (A.Exp -> A.Exp -> Either Text A.Exp) -> [A.Exp] -> Either Text A.Exp
             two an k = \ case
                   [a, b'] -> k a b'
-                  es      -> Left $ "hyle-m: primitive arity mismatch at " <> showt an <> " (expected 2, got " <> showt (length es) <> ")."
+                  es      -> Left $ "primitive arity mismatch at " <> showt an <> " (expected 2, got " <> showt (length es) <> ")."
 
             one :: Annote -> (A.Exp -> Either Text A.Exp) -> [A.Exp] -> Either Text A.Exp
             one an k = \ case
                   [a] -> k a
-                  es  -> Left $ "hyle-m: primitive arity mismatch at " <> showt an <> " (expected 1, got " <> showt (length es) <> ")."
+                  es  -> Left $ "primitive arity mismatch at " <> showt an <> " (expected 1, got " <> showt (length es) <> ")."
 
 resize :: (MonadError AstError m, MonadState S m) => Annote -> A.Size -> A.Exp -> m A.Exp
 resize an sz a
@@ -996,7 +996,7 @@ buildPause :: MonadError AstError m => Layout -> Annote -> A.Exp -> Uniq -> [A.E
 buildPause lo an o tgt args cells = do
       tagv <- case [ v | (u, v, _) <- loTargets lo, u == tgt ] of
             [v] -> pure v
-            _   -> failInternal an "hyle-m: pause to an unknown label (rwc bug)."
+            _   -> failInternal an "pause to an unknown label (rwc bug)."
       let padW  = fromIntegral (loRecW lo) - fromIntegral (loPTagW lo) - fromIntegral (loOutW lo) - fromIntegral (loRW lo) - fromIntegral (loCellsW lo) :: Integer
           rPadW = fromIntegral (loRPayW lo) - fromIntegral (sum $ map A.sizeOf args) :: Integer
       pure $ A.cat $ [ A.Lit an $ bitVec (fromIntegral $ loPTagW lo) (1 :: Integer) | loPTagW lo > 0 ]
@@ -1009,7 +1009,7 @@ buildPause lo an o tgt args cells = do
 -- | The step record for a halt: @halted=Done | pad | A-tag | pad | answer | cells@.
 buildHalt :: MonadError AstError m => Layout -> Annote -> Ty -> A.Exp -> [A.Exp] -> TM m A.Exp
 buildHalt lo an aty a cells = do
-      (tagv, _) <- maybe (failInternal an "hyle-m: halt at an unknown answer type (rwc bug).") pure
+      (tagv, _) <- maybe (failInternal an "halt at an unknown answer type (rwc bug).") pure
             $ Map.lookup (prettyPrint $ Ann.unAnn aty) $ loHalts lo
       let padW  = fromIntegral (loRecW lo) - fromIntegral (loPTagW lo) - fromIntegral (loAW lo) - fromIntegral (loCellsW lo) :: Integer
           aPadW = fromIntegral (loAPayW lo) - fromIntegral (A.sizeOf a) :: Integer
@@ -1065,7 +1065,7 @@ transProc conf env pr pureDefns = do
                                     body <- goCmds lo blockGid sc' cells rest term
                                     pure $ A.Let an (A.sizeOf body) nm e' body
                   (CmdGet _ x c : rest) -> \ term -> do
-                        atom <- maybe (failInternal (procAnnote pr) "hyle-m: get from an unknown cell (rwc bug).") pure
+                        atom <- maybe (failInternal (procAnnote pr) "get from an unknown cell (rwc bug).") pure
                               $ Map.lookup c cells
                         goCmds lo blockGid (sc { scMap = IM.insert (idUniq x) atom $ scMap sc }) cells rest term
                   (CmdPut an c e : rest) -> \ term -> do
@@ -1115,7 +1115,7 @@ transProc conf env pr pureDefns = do
                       gidMap = IM.fromList [ (idUniq l, blockGid l) | (l, _) <- procBlocks pr ]
                       call (u, _, szs) = A.Call an (loRecW lo) (IM.findWithDefault "" u gidMap) $ argSlices szs <> [i] <> cellSlices
                   body <- case loTargets lo of
-                        []  -> failInternal an "hyle-m: a process with no pause targets (rwc bug)."
+                        []  -> failInternal an "a process with no pause targets (rwc bug)."
                         tgts -> pure $ foldr (\ t@(_, v, _) acc ->
                                           A.If an (loRecW lo) (A.Prim an 1 A.Eq [tag, A.Lit an $ bitVec (fromIntegral $ loRTagW lo) v]) (call t) acc)
                                     (call $ last tgts) (init tgts)

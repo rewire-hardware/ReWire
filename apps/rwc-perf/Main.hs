@@ -160,9 +160,9 @@ genDefChain n = unlines $
 -- | A reactive loop with a chain of n conditional signal points followed by
 --   one unconditional signal (so the recursion is guarded and the program
 --   valid). Each conditional pause splits the continuation, so this stresses
---   normalizeBind's case-commuting, purify's state minting, and ToHyle's
---   dispatch construction -- the chained-conditional shape behind the
---   historical whenchain divergence.
+--   the reactive A-normalization (Eidos.ANF), procify's per-continuation
+--   state minting, and ToHyle's dispatch construction -- the
+--   chained-conditional shape behind the historical whenchain divergence.
 genWhenChain :: Int -> String
 genWhenChain n = unlines $
       [ "import ReWire"
