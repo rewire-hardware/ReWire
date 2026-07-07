@@ -7,3 +7,6 @@ comp : [8] -> [8]
 comp x = ys @ (0 : [1])
   where
     ys = [ x + i | i <- [1, 2] ]
+
+rec : [8] -> [8]
+rec x = if x == 0 then 0 else rec (x - 1)
