@@ -31,6 +31,7 @@ module ReWire.GHC.Session (loadCore, dumpCore) where
 import ReWire.Annotation (Annote, noAnn, srcAnnote)
 import ReWire.Config (Config, loadPath, start, verbose, pDebug)
 import ReWire.Error (AstError, MonadError, failAt, warnAt)
+import ReWire.GHC.PackagePath (bakedPackagePath)
 
 import Control.Exception (try, SomeException)
 import Control.Lens ((^.))
@@ -43,7 +44,7 @@ import Data.IORef (IORef, newIORef, readIORef, modifyIORef')
 import Data.List (partition, isSuffixOf)
 import Data.Text (Text)
 import System.Directory (doesDirectoryExist)
-import System.FilePath (takeDirectory, isAbsolute, (</>))
+import System.FilePath (takeDirectory, isAbsolute, splitSearchPath, (</>))
 
 import qualified Data.Text    as T
 import qualified Data.Text.IO as T
@@ -166,16 +167,20 @@ loadCore conf fp = do
 --   not for the typechecker plugins (those are linked in; see
 --   'typelitsPlugins') but for the interface files of rewire-user's
 --   library dependencies (monad-resumption, vector-sized, ...), which the
---   session must resolve while compiling the loadpath sources. Under
---   `stack run`/`stack exec` (the documented invocation), stack sets
---   GHC_PACKAGE_PATH and there is nothing to do. For an installed rwc:
---   honor an explicit RWC_PACKAGE_PATH, or fall back to asking `stack
---   path --ghc-package-path` — run from inside the ReWire checkout rwc
---   was built from, not the caller's directory: the system loadpath entry
---   (the data directory's rewire-user/src) lives in that checkout, and
---   anchoring there keeps stack from resolving the caller's enclosing (or
---   the global) stack project, whose databases lack rewire-user's
---   dependencies.
+--   session must resolve while compiling the loadpath sources. The chain:
+--
+--   1. GHC_PACKAGE_PATH already set (`stack run`/`stack exec`, the
+--      documented invocation): nothing to do.
+--   2. An explicit RWC_PACKAGE_PATH: honored verbatim.
+--   3. The path baked in at build time ('bakedPackagePath'), if every
+--      database in it still exists — the common installed-rwc case, no
+--      stack needed at run time.
+--   4. Ask `stack path --ghc-package-path` — run from inside the ReWire
+--      checkout rwc was built from, not the caller's directory: the
+--      system loadpath entry (the data directory's rewire-user/src) lives
+--      in that checkout, and anchoring there keeps stack from resolving
+--      the caller's enclosing (or the global) stack project, whose
+--      databases lack rewire-user's dependencies.
 discoverPackageDBs :: MonadIO m => Config -> m ()
 discoverPackageDBs conf = liftIO (lookupEnv "GHC_PACKAGE_PATH") >>= \ case
       Just _  -> pure ()
@@ -183,20 +188,34 @@ discoverPackageDBs conf = liftIO (lookupEnv "GHC_PACKAGE_PATH") >>= \ case
             Just p  -> do
                   pDebug conf $ "GHC session: using RWC_PACKAGE_PATH: " <> T.pack p
                   liftIO $ setEnv "GHC_PACKAGE_PATH" p
-            Nothing -> do
-                  anchor <- liftIO $ firstExisting $ uncurry (<>)
-                        $ partition (("rewire-user" </> "src") `isSuffixOf`)
-                        $ filter isAbsolute $ conf^.loadPath
-                  pDebug conf $ "GHC session: `stack path` anchor: " <> T.pack (show anchor)
-                  r <- liftIO $ try $ readCreateProcess ((proc "stack" ["path", "--ghc-package-path"]) { cwd = anchor }) ""
-                  case r of
-                        Right (strip -> p) | not (null p) -> do
-                              pDebug conf $ "GHC session: package path from `stack path`: " <> T.pack p
-                              liftIO $ setEnv "GHC_PACKAGE_PATH" p
-                        Right _                  -> hint
-                        Left (_ :: SomeException) -> hint
+            Nothing -> liftIO validBakedPath >>= \ case
+                  Just p  -> do
+                        pDebug conf $ "GHC session: using the baked-in package path: " <> T.pack p
+                        liftIO $ setEnv "GHC_PACKAGE_PATH" p
+                  Nothing -> do
+                        anchor <- liftIO $ firstExisting $ uncurry (<>)
+                              $ partition (("rewire-user" </> "src") `isSuffixOf`)
+                              $ filter isAbsolute $ conf^.loadPath
+                        pDebug conf $ "GHC session: `stack path` anchor: " <> T.pack (show anchor)
+                        r <- liftIO $ try $ readCreateProcess ((proc "stack" ["path", "--ghc-package-path"]) { cwd = anchor }) ""
+                        case r of
+                              Right (strip -> p) | not (null p) -> do
+                                    pDebug conf $ "GHC session: package path from `stack path`: " <> T.pack p
+                                    liftIO $ setEnv "GHC_PACKAGE_PATH" p
+                              Right _                  -> hint
+                              Left (_ :: SomeException) -> hint
       where hint :: MonadIO m => m ()
-            hint = pDebug conf "GHC session: no package databases found (GHC_PACKAGE_PATH and RWC_PACKAGE_PATH unset, `stack path` unavailable); module resolution will likely fail. Run rwc under `stack exec`, or set RWC_PACKAGE_PATH to the ghc package path rwc was built with."
+            hint = pDebug conf "GHC session: no package databases found (GHC_PACKAGE_PATH and RWC_PACKAGE_PATH unset, the build-time package databases are gone, and `stack path` is unavailable); module resolution will likely fail. Run rwc under `stack exec`, or set RWC_PACKAGE_PATH to the ghc package path rwc was built with."
+
+            -- The build-time package path, provided every database in it
+            -- still exists (else it is stale: the snapshot or checkout
+            -- moved or was garbage-collected since the build).
+            validBakedPath :: IO (Maybe FilePath)
+            validBakedPath = case bakedPackagePath of
+                  Nothing -> pure Nothing
+                  Just p  -> do
+                        ok <- and <$> mapM doesDirectoryExist (splitSearchPath p)
+                        pure $ if ok then Just p else Nothing
 
             -- The first extant candidate (the loadpath's system entry may
             -- not exist for an unusual installation; fall back to the

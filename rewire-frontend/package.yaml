@@ -50,6 +50,7 @@ dependencies:
 - megaparsec ^>= 9.7
 - mtl ^>= 2.3
 - process ^>= 1.6
+- template-haskell ^>= 2.22
 - text ^>= 2.1
 - unordered-containers ^>= 0.2
 - yaml ^>= 0.11
