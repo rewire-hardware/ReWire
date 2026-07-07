@@ -42,6 +42,9 @@ dependencies:
 - filepath ^>= 1.5
 - ghc ^>= 9.10
 - ghc-paths ^>= 0.1
+- ghc-typelits-extra ^>= 0.4
+- ghc-typelits-knownnat ^>= 0.7
+- ghc-typelits-natnormalise ^>= 0.7
 - hashable ^>= 1.5
 - lens ^>= 5.3
 - megaparsec ^>= 9.7
