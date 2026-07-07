@@ -56,13 +56,15 @@ import GHC
       , ParsedModule (..), ModSummary (..)
       , DynFlags (..), GhcLink (..)
       , mgModSummaries
-      , moduleName, moduleNameString, mkModuleName
+      , moduleName, moduleNameString
       )
 import GHC.Core (CoreBind, Bind (..))
 import GHC.Data.Bag (bagToList)
 import GHC.Data.FastString (unpackFS)
 import GHC.Driver.Backend (noBackend)
-import GHC.Driver.Monad (pushLogHookM)
+import GHC.Driver.Env (HscEnv (..))
+import GHC.Driver.Monad (pushLogHookM, modifySession)
+import GHC.Driver.Plugins (Plugins (..), StaticPlugin (..), PluginWithArgs (..))
 import GHC.Driver.Session (updOptLevel)
 import GHC.Hs (HsModule (..), GhcPs, IE (..), LIE, IEWrappedName (..), noExtField)
 import GHC.Hs.ImpExp (ieNames)
@@ -80,6 +82,10 @@ import GHC.Unit.Module.ModGuts (ModGuts (..))
 import GHC.Utils.Logger (LogAction)
 import GHC.Utils.Outputable (showSDocUnsafe, vcat, ppr)
 import GHC.Utils.Panic (handleGhcException)
+
+import qualified GHC.TypeLits.Extra.Solver
+import qualified GHC.TypeLits.KnownNat.Solver
+import qualified GHC.TypeLits.Normalise
 
 -- | A diagnostic collected from GHC's log action: is-error, location, rendered text.
 type Diag = (Bool, Annote, Text)
@@ -109,12 +115,13 @@ loadCore conf fp = do
       pDebug conf $ "GHC session: libdir: " <> T.pack libdir
       discoverPackageDBs conf
       diags <- liftIO $ newIORef ([] :: [Diag])
-      -- GhcExceptions (panics, usage errors like a missing plugin package
-      -- when GHC_PACKAGE_PATH is unset) are IO exceptions, not SourceErrors.
+      -- GhcExceptions (panics, usage errors) are IO exceptions, not
+      -- SourceErrors.
       r     <- liftIO $ handleGhcException (pure . Left . (noAnn,) . ("ghc-frontend: " <>) . T.pack . show)
                   $ runGhc (Just libdir) $ handleSourceError (pure . Left . renderSourceError) $ do
             df0 <- getSessionDynFlags
             setSessionDynFlags $ configure conf fp df0
+            modifySession $ \ h -> h { hsc_plugins = (hsc_plugins h) { staticPlugins = typelitsPlugins } }
             pushLogHookM $ const $ logHook diags
             t   <- guessTarget fp Nothing Nothing
             setTargets [t]
@@ -155,9 +162,12 @@ loadCore conf fp = do
             dMsg :: Diag -> Text
             dMsg (_, _, m) = m
 
--- | The GHC session needs the package databases rwc was built against
---   (for rewire-user's library dependencies and the typechecker plugins).
---   Under `stack run`/`stack exec` (the documented invocation), stack sets
+-- | The GHC session needs the package databases rwc was built against —
+--   not for the typechecker plugins (those are linked in; see
+--   'typelitsPlugins') but for the interface files of rewire-user's
+--   library dependencies (monad-resumption, vector-sized, ...), which the
+--   session must resolve while compiling the loadpath sources. Under
+--   `stack run`/`stack exec` (the documented invocation), stack sets
 --   GHC_PACKAGE_PATH and there is nothing to do. For an installed rwc:
 --   honor an explicit RWC_PACKAGE_PATH, or fall back to asking `stack
 --   path --ghc-package-path` — run from inside the ReWire checkout rwc
@@ -165,7 +175,7 @@ loadCore conf fp = do
 --   (the data directory's rewire-user/src) lives in that checkout, and
 --   anchoring there keeps stack from resolving the caller's enclosing (or
 --   the global) stack project, whose databases lack rewire-user's
---   dependencies and the typechecker plugins.
+--   dependencies.
 discoverPackageDBs :: MonadIO m => Config -> m ()
 discoverPackageDBs conf = liftIO (lookupEnv "GHC_PACKAGE_PATH") >>= \ case
       Just _  -> pure ()
@@ -202,24 +212,30 @@ discoverPackageDBs conf = liftIO (lookupEnv "GHC_PACKAGE_PATH") >>= \ case
 
 -- | DynFlags for the ReWire session: no code generation, no optimization
 --   (-O0 keeps the reactive class selectors recognizable and the extern
---   descriptor literals local), loadpath as import paths, and the three
---   typelits typechecker plugins (which must be listed here: per-module
---   OPTIONS_GHC -fplugin pragmas are not honored on the API typecheckModule
---   path). The target's own directory heads the import paths, mirroring the
---   HSE loader's search order (Cache.hs: the importing module's directory
---   comes before the loadpath).
+--   descriptor literals local), and loadpath as import paths. The target's
+--   own directory heads the import paths, mirroring the HSE loader's
+--   search order (Cache.hs: the importing module's directory comes before
+--   the loadpath).
 configure :: Config -> FilePath -> DynFlags -> DynFlags
 configure conf fp df = (updOptLevel 0 df)
       { backend        = noBackend
       , ghcLink        = NoLink
       , importPaths    = takeDirectory fp : conf^.loadPath <> importPaths df
-      , pluginModNames = map mkModuleName
-            [ "GHC.TypeLits.Normalise"
-            , "GHC.TypeLits.KnownNat.Solver"
-            , "GHC.TypeLits.Extra.Solver"
-            ]
       , reductionDepth = mkIntWithInf 1000
       }
+
+-- | The three typelits solver plugins, injected statically: they are
+--   linked into rwc as ordinary library dependencies, so enabling them
+--   needs no package database and no dynamic object loading at run time
+--   (both of which -fplugin/pluginModNames would require, version-matched
+--   to the ghc rwc links). Static plugins apply to every module the
+--   session compiles, on both the load and the API typecheckModule paths.
+typelitsPlugins :: [StaticPlugin]
+typelitsPlugins = map (\ p -> StaticPlugin $ PluginWithArgs p [])
+      [ GHC.TypeLits.Normalise.plugin
+      , GHC.TypeLits.KnownNat.Solver.plugin
+      , GHC.TypeLits.Extra.Solver.plugin
+      ]
 
 -- | Rewrite the parsed module so the program survives the desugarer's
 --   export-driven dead-code elimination (see the module comment):

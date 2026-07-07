@@ -29,6 +29,15 @@ dependencies:
 
 library:
   source-dirs: src
+  # The typelits solver plugins, for GHC builds of this package. (rwc
+  # doesn't read these flags: its GHC session injects the same plugins
+  # statically -- see ReWire.GHC.Session -- so the library sources must
+  # not carry per-module -fplugin pragmas, which would make the session
+  # dynamically load the plugins from a package database.)
+  ghc-options:
+  - -fplugin=GHC.TypeLits.Normalise
+  - -fplugin=GHC.TypeLits.KnownNat.Solver
+  - -fplugin=GHC.TypeLits.Extra.Solver
   dependencies:
   - mtl
   - monad-resumption
