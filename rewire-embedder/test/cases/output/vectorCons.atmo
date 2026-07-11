@@ -143,6 +143,8 @@ module
    |-> error "Prim: rwPrimError"
   rwPrimExtern :: ([(String, Integer)] -> (String -> (String -> ([(String, Integer)] -> ([(String, Integer)] -> (String -> (a -> (String -> a))))))))
   _ _ _ _ _ _ f _ |-> error "Prim: rwPrimExtern"
+  rwPrimCryptol :: (String -> (String -> (a -> a)))
+  _ _ f |-> error "Prim: rwPrimCryptol"
   rwPrimBind :: ((m a) -> (((a -> (m b))) -> (m b)))
    |-> error "Prim: rwPrimBind"
   rwPrimReturn :: (a -> (m a))
