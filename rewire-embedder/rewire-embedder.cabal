@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           rewire-embedder
-version:        2.7
+version:        2.8
 synopsis:       A ReWire-to-Isabelle embedder
 description:    For verification using the ReWire hardware description language
 category:       Language
@@ -64,8 +64,8 @@ library
     , lens ==5.3.*
     , mtl ==2.3.*
     , prettyprinter ==1.7.*
-    , rewire-base >=2.7
-    , rewire-frontend >=2.7
+    , rewire-base >=2.8
+    , rewire-frontend >=2.8
     , text ==2.1.*
     , unordered-containers ==0.2.*
   default-language: Haskell2010

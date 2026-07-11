@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           rewire-base
-version:        2.7
+version:        2.8
 synopsis:       A Haskell-to-Verilog/VHDL compiler, shared base utilities
 description:    The shared foundation for the ReWire compiler. Source annotations (ReWire.Annotation), bit vectors, the Config and Flags records, diagnostics (ReWire.Error), pretty-printing, and the SYB, Unbound, and Orphans glue. Consumed by rewire-backend and rewire-frontend.
 category:       Language

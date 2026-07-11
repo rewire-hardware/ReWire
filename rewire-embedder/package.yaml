@@ -1,5 +1,5 @@
 name:         rewire-embedder
-version:      2.7
+version:      2.8
 synopsis:     A ReWire-to-Isabelle embedder
 description:  For verification using the ReWire hardware description language
 license:      BSD3
@@ -35,8 +35,8 @@ extra-source-files:
 - README.md
 
 dependencies:
-- rewire-frontend >= 2.7
-- rewire-base >= 2.7
+- rewire-frontend >= 2.8
+- rewire-base >= 2.8
 - base ^>= 4.20
 - containers ^>= 0.7
 - deepseq ^>= 1.5

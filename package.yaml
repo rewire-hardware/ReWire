@@ -1,5 +1,5 @@
 name:         rewire
-version:      2.7
+version:      2.8
 synopsis:     A Haskell-to-Verilog compiler
 description:  A compiler for a subset of Haskell to Verilog and VHDL.
 license:      BSD3

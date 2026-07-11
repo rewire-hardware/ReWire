@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.8 (2026-07)
 
 * The `rewire-core` library has been split into three packages: `rewire-frontend`
   (the haskell-src-exts front end `ReWire.HSE.*`, the Crust IR and its

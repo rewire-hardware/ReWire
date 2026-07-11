@@ -1,5 +1,5 @@
 name:         rewire-backend
-version:      2.7
+version:      2.8
 synopsis:     "A Haskell-to-Verilog/VHDL compiler, the Hyle backend"
 description:  "The ReWire backend. The Hyle bit-level IR, its checker, optimizer, interpreter, and parser, and the Verilog, VHDL, and Cryptol RTL backends. Builds on rewire-base for shared utilities."
 license:      BSD3
@@ -34,7 +34,7 @@ extra-source-files:
 - vhdl/rw_helpers.vhdl
 
 dependencies:
-- rewire-base >= 2.7
+- rewire-base >= 2.8
 - base ^>= 4.20
 - ghc-boot ^>= 9.10
 - hashable ^>= 1.5
