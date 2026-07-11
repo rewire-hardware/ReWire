@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.8 (2026-07)
+## Unreleased
 
 * New GHC front end: `rwc` now compiles ReWire programs with an in-process
   GHC session (parse, rename, typecheck, and desugar over the whole module
@@ -57,6 +57,9 @@
   constant or variable indices, and the scalar, slicing, and enumeration
   primitives; local function bindings, records, enums, and recursive
   (stateful) Cryptol are rejected with located errors.
+
+## 2.8 (2026-07)
+
 * The `rewire-core` library has been split into three packages: `rewire-frontend`
   (the GHC driver and Core-to-Eidos bridge `ReWire.GHC.*`, the Eidos IR and
   its passes `ReWire.Eidos.*`, and the pass orchestration), `rewire-backend`
