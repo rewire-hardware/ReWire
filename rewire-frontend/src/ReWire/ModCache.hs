@@ -15,12 +15,12 @@ import ReWire.Eidos.ToHyle (eidosToHyle)
 import ReWire.GHC.Session (loadCore)
 import ReWire.GHC.ToEidos (toEidos)
 import ReWire.Error (AstError, MonadError, Warning (..), failAt, warnAt)
-import ReWire.Pass (printHeader, verb')
+import ReWire.Pass (pass, verb')
 import ReWire.Pretty (prettyPrint, showt)
 import ReWire.Unbound (runFreshMT, FreshMT)
 
 import Control.Lens ((^.))
-import Control.Monad (when)
+import Control.Monad (when, (>=>))
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State.Strict (MonadState)
 import Data.Maybe (fromMaybe)
@@ -46,40 +46,44 @@ type LoadPath = [FilePath]
 runCache :: (MonadIO m, MonadError AstError m) => FreshMT m a -> m a
 runCache = runFreshMT
 
--- Pass 1 is the front end: GHC (parse/typecheck/desugar over the whole
--- home module graph) followed by the Core-to-Eidos bridge; pass 2 is the
--- Eidos-to-Hyle fold (-d 2 dumps the Hyle IR; --eidos dumps the Eidos IR).
+-- The numbered pass pipeline: run rwc -v to see the bracketed pass numbers;
+-- -d N dumps the IR after pass N. Pass 1 is the front end: GHC
+-- (parse/typecheck/desugar over the whole home module graph) followed by
+-- the Core-to-Eidos bridge. Passes 2-8 are the Eidos passes (doc/eidos.md)
+-- and pass 9 is the Eidos-to-Hyle fold; the Hyle-level passes (10-11) run
+-- in ReWire.FrontEnd, numbered after these so -d numbering is uniform.
 getDevice :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> FreshMT m Hyle.Program
 getDevice conf fp = do
-      gutss          <- loadCore conf fp
-      -- The front half runs through the Eidos IR (doc/eidos.md): bridge
-      -- Core to Eidos, lint it (poly mode), specialize away polymorphism,
-      -- inline INLINE-annotated definitions, lint again (mono mode),
-      -- neuter externs (before the partial evaluator, always), partially
-      -- evaluate to the synthable/dictionary-free fixpoint, lint once
-      -- more, and dump the .eir beside the output under --eidos.
-      -- --debug-lint adds a lint after the remaining Eidos passes.
-      eir <- toEidos conf gutss
+      eir <- passEidos 1 "GHC front end and Core-to-Eidos bridge."
+            (loadCore conf >=> toEidos conf) fp
       Eidos.lint Eidos.LintPoly eir
-      eirSpec <- verb "Specializing polymorphic definitions (eidos)." eir
-            >>= Eidos.specialize specDepth
+      -- The front half of the Eidos pipeline: specialize away
+      -- polymorphism, inline INLINE-annotated definitions, neuter externs
+      -- (before the partial evaluator, always), and partially evaluate to
+      -- the synthable/dictionary-free fixpoint. The standing lints run
+      -- between passes (poly mode after the bridge, then mono mode);
+      -- --debug-lint adds a lint after the remaining Eidos passes.
+      eirSpec <- passEidos 2 "Specializing polymorphic definitions (eidos)."
+            (Eidos.specialize specDepth) eir
       lintDebug Eidos.LintMono eirSpec
-      eirInl <- verb "Inlining INLINE-annotated definitions (eidos)." eirSpec
-            >>= Eidos.inlineAnnotated
+      eirInl <- passEidos 3 "Inlining INLINE-annotated definitions (eidos)."
+            Eidos.inlineAnnotated eirSpec
       Eidos.lint Eidos.LintMono eirInl
-      (eirExt, ws) <- verb "Extracting extern models (eidos)." eirInl
-            >>= Eidos.neuterExterns
-      mapM_ (\ (Warning a m') -> warnAt conf a m') ws
+      eirExt <- passEidos 4 "Extracting extern models (eidos)."
+            neuterExterns eirInl
       lintDebug Eidos.LintMono eirExt
-      eirPE <- verb "Partial evaluation (eidos)." eirExt
-            >>= Eidos.simplify (conf^.C.depth)
+      eirPE <- passEidos 5 "Partial evaluation (eidos)."
+            (Eidos.simplify (conf^.C.depth)) eirExt
       Eidos.lint Eidos.LintMono eirPE
       -- The machine half: normalize the reactive fragment to ANF,
       -- procify it, clean the block graph, and check the machine rules.
-      eirANF <- verb "Normalizing to ANF (eidos)." eirPE >>= Eidos.normalize
+      eirANF <- passEidos 6 "Normalizing to ANF (eidos)."
+            Eidos.normalize eirPE
       Eidos.lint Eidos.LintMonoANF eirANF
-      pr0 <- verb "Procifying (eidos)." eirANF >>= Eidos.procify
-      let eirPE' = pr0 { Eidos.progProcs = map Eidos.optimizeProc $ Eidos.progProcs pr0 }
+      pr0 <- passEidos 7 "Procifying (eidos)."
+            Eidos.procify eirANF
+      eirPE' <- passEidos 8 "Cleaning the machine block graph (eidos)."
+            (pure . optimizeProcs) pr0
       mapM_ (Eidos.lintProc eirPE') $ Eidos.progProcs eirPE'
       mapM_ (flip verb () . Eidos.machineSummary) $ Eidos.progProcs eirPE'
       -- The strict reachable-halt check (--no-halt): every block is
@@ -97,20 +101,23 @@ getDevice conf fp = do
             "no process was constructed for the device root (rwc bug)."
       -- The fold owns the lowering: Eidos straight to Hyle
       -- (ReWire.Eidos.ToHyle).
-      p <- verb ("[" <> showt nFinal <> "] Translating to Hyle.") ()
-            >> eidosToHyle conf eirPE'
+      pass conf 9 "Translating to Hyle." renderHyle (eidosToHyle conf) eirPE'
 
-      when ((conf^.C.dump) nFinal) $ liftIO $ do
-            printHeader $ "[" <> showt nFinal <> "] Hyle"
-            T.putStrLn $ prettyPrint p
-            when (conf^.C.verbose) $ do
-                  T.putStrLn "\n## Show hyle:\n"
-                  T.putStrLn $ showt $ unAnn p
+      where passEidos :: MonadIO n => Natural -> Text -> (a -> n Eidos.Program) -> a -> n Eidos.Program
+            passEidos n name = pass conf n name prettyProgram
 
-      pure p
+            neuterExterns :: (MonadError AstError m', MonadIO m') => Eidos.Program -> m' Eidos.Program
+            neuterExterns p = do
+                  (p', ws) <- Eidos.neuterExterns p
+                  mapM_ (\ (Warning a m') -> warnAt conf a m') ws
+                  pure p'
 
-      where nFinal :: Natural
-            nFinal = 2 -- Pass 1 is the GHC front end + Core-to-Eidos bridge.
+            optimizeProcs :: Eidos.Program -> Eidos.Program
+            optimizeProcs pr = pr { Eidos.progProcs = map Eidos.optimizeProc $ Eidos.progProcs pr }
+
+            renderHyle :: Hyle.Program -> Text
+            renderHyle p = prettyPrint p
+                  <> (if conf^.C.verbose then "\n\n## Show hyle:\n\n" <> showt (unAnn p) else mempty)
 
             -- The bound on the type-specialization fixpoint: at least the
             -- historical bound of 10; --depth raises it (e.g. for deep

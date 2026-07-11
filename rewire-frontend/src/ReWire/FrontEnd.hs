@@ -13,6 +13,7 @@ import ReWire.Hyle.Interp (Ins, run)
 import ReWire.Hyle.Parse (parseHyle)
 import ReWire.Hyle.Syntax (Program, progDevice)
 import ReWire.ModCache (runCache, getDevice, LoadPath)
+import ReWire.Pass (pass)
 import ReWire.Pretty (Pretty, prettyPrint, fastPrint, showt)
 
 import qualified ReWire.Config           as Config
@@ -55,19 +56,24 @@ compileFile conf filename = do
                   RWCore  -> parseHyle filename
                   s       -> failAt noAnn $ "Not a supported source language: " <> pack (show s)
 
+            -- The Hyle-level passes are numbered after ReWire.ModCache's 1-9
+            -- (which -d/-v also address, but which only run for Haskell
+            -- source), so the -d numbering is uniform across --from-core.
             compile :: (MonadFail m, MonadError AstError m, MonadIO m) => Program -> m ()
             compile a = do
                   when (conf^.testbench && (conf^.target) `notElem` [VHDL, Verilog]) $
                         warnAt conf noAnn "--testbench: no testbench generated (only the Verilog and VHDL targets support testbench generation)."
-                  verb "Partially evaluating/reducing hyle IR. If this is taking too long, consider disabling with --rtl-opt=0."
-                  p <- Hyle.check $ Hyle.optimize (conf^.rtlOpt) a
+                  p <- pass conf 10 "Partially evaluating/reducing the Hyle IR (if this is slow, consider --rtl-opt=0)." prettyPrint
+                        (Hyle.check . Hyle.optimize (conf^.rtlOpt)) a
+                  let inline = pass conf 11 "Inlining Hyle definitions." prettyPrint
+                        (Hyle.check . Hyle.inline (conf^.Config.flatten))
                   case conf^.target of
                         VHDL      -> do
-                              p' <- Hyle.check $ Hyle.inline (conf^.Config.flatten) p
+                              p' <- inline p
                               HyleH.compileProgram conf p' >>= writeOutput
                               writeTestbench $ HyleH.testbench conf $ progDevice p'
                         Verilog   -> do
-                              p' <- Hyle.check $ Hyle.inline (conf^.Config.flatten) p
+                              p' <- inline p
                               HyleV.compileProgram conf p' >>= writeOutput
                               writeTestbench $ HyleV.testbench conf $ progDevice p'
                         Cryptol   -> HyleCry.compileProgram conf p >>= writeOutput
