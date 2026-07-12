@@ -201,58 +201,65 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (0 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (0 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component main_first2 is
-      port (arg0 : in std_logic_vector (15 downto 0);
-            res : out std_logic_vector (23 downto 0));
+      component main_first2 is
+            port (s0 : in std_logic_vector (15 downto 0);
+                  res : out std_logic_vector (23 downto 0));
       end component;
-      signal \__st0\ : std_logic_vector (15 downto 0) := std_logic_vector'(B"0000000000000001");
+      -- state registers
+      -- __st0: 16 bits, init 0x1
+      signal \__st0\ : std_logic_vector (15 downto 0) := std_logic_vector'(X"0001");
       signal \__st0_next\ : std_logic_vector (15 downto 0);
-      signal zi0 : std_logic_vector (7 downto 0);
-      signal zi1 : std_logic_vector (7 downto 0);
-      signal zi2 : std_logic_vector (7 downto 0);
-      signal zi3 : std_logic_vector (15 downto 0);
+      signal r0 : std_logic_vector (7 downto 0);
+      signal r1 : std_logic_vector (7 downto 0);
+      signal za : std_logic_vector (7 downto 0);
+      signal s01 : std_logic_vector (15 downto 0);
       signal main_first2_out : std_logic_vector (23 downto 0);
-      signal \main_first2_outR1\ : std_logic_vector (23 downto 0);
+      signal main_first2_out_r1 : std_logic_vector (23 downto 0);
       signal zres : std_logic_vector (23 downto 0);
 begin
-zi0 <= \__st0\(15 downto 8);
-      zi1 <= rw_resize(rw_shiftr(\__st0\, rw_repl(128, std_logic_vector'(B"0"))), 8);
-      zi2 <= rw_add(zi0, zi1);
-      zi3 <= (zi1 & zi2);
-      inst : main_first2 port map (zi3, main_first2_out);
-      \instR1\ : main_first2 port map (\__st0\, \main_first2_outR1\);
-      zres <= rw_cond(rw_not(\__in0\), main_first2_out, \main_first2_outR1\);
+      -- combinational logic
+      r0 <= \__st0\(15 downto 8);
+      r1 <= rw_resize(rw_shiftr(\__st0\, rw_repl(128, std_logic_vector'(B"0"))), 8);
+      za <= rw_add(r0, r1);
+      s01 <= (r1 & za);
+      first2_i : main_first2 port map (s01, main_first2_out);
+      first2_i_r1 : main_first2 port map (\__st0\, main_first2_out_r1);
+      zres <= rw_cond(rw_not(\__in0\), main_first2_out, main_first2_out_r1);
       \__st0_next\ <= zres(15 downto 0);
+      -- outputs
       \__out0\ <= zres(23 downto 16);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
-                  \__st0\ <= std_logic_vector'(B"0000000000000001");
+            if rst = std_logic_vector'(B"1") then
+                  \__st0\ <= std_logic_vector'(X"0001");
             elsif rising_edge(clk(0)) then
                   \__st0\ <= \__st0_next\;
             end if;
       end process;
 end architecture;
 
+-- main.first2
+-- block '$L.Main.first2' of process main
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity main_first2 is
-port (arg0 : in std_logic_vector (15 downto 0);
-      res : out std_logic_vector (23 downto 0));
+      port (s0 : in std_logic_vector (15 downto 0);
+            res : out std_logic_vector (23 downto 0));
 end entity;
 
 architecture rtl of main_first2 is
-signal zi0 : std_logic_vector (7 downto 0);
+      signal r0 : std_logic_vector (7 downto 0);
 begin
-zi0 <= arg0(15 downto 8);
-      res <= (zi0 & arg0);
+      r0 <= s0(15 downto 8);
+      res <= (r0 & s0);
 end architecture;

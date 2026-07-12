@@ -201,36 +201,43 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (7 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (7 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component main_loop is
-      port (arg0 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (16 downto 0));
+      component main_loop is
+            port (s0 : in std_logic_vector (7 downto 0);
+                  res : out std_logic_vector (16 downto 0));
       end component;
+      -- state registers
+      -- __resumption_tag: 1 bits, init 0x1
+      --   states: 0=$ds 1=i2
+      -- __st0: 8 bits, init 0x0
       signal \__resumption_tag\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__resumption_tag_next\ : std_logic_vector (0 downto 0);
-      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
+      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(X"00");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
       signal main_loop_out : std_logic_vector (16 downto 0);
-      signal \main_loop_outR1\ : std_logic_vector (16 downto 0);
+      signal main_loop_out_r1 : std_logic_vector (16 downto 0);
       signal zres : std_logic_vector (16 downto 0);
 begin
-inst : main_loop port map (\__st0\, main_loop_out);
-      \instR1\ : main_loop port map (\__in0\, \main_loop_outR1\);
-      zres <= rw_cond(rw_not(\__resumption_tag\), main_loop_out, \main_loop_outR1\);
+      -- combinational logic
+      loop_i : main_loop port map (\__st0\, main_loop_out);
+      loop_i_r1 : main_loop port map (\__in0\, main_loop_out_r1);
+      zres <= rw_cond(rw_not(\__resumption_tag\), main_loop_out, main_loop_out_r1);
       \__resumption_tag_next\ <= zres(8 downto 8);
       \__st0_next\ <= zres(7 downto 0);
+      -- outputs
       \__out0\ <= zres(16 downto 9);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
+            if rst = std_logic_vector'(B"1") then
                   \__resumption_tag\ <= std_logic_vector'(B"1");
-                  \__st0\ <= std_logic_vector'(B"00000000");
+                  \__st0\ <= std_logic_vector'(X"00");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
                   \__st0\ <= \__st0_next\;
@@ -238,45 +245,44 @@ inst : main_loop port map (\__st0\, main_loop_out);
       end process;
 end architecture;
 
+-- main.incr
+-- block '$L.Main.incr' of process main
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity main_incr is
-port (arg0 : in std_logic_vector (7 downto 0);
-      res : out std_logic_vector (16 downto 0));
+      port (s0 : in std_logic_vector (7 downto 0);
+            res : out std_logic_vector (16 downto 0));
 end entity;
 
 architecture rtl of main_incr is
-
 begin
-res <= (std_logic_vector'(B"000000100") & arg0);
+      res <= (std_logic_vector'(B"000000100") & s0);
 end architecture;
 
+-- main.loop
+-- block '$L.Main.loop' of process main
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity main_loop is
-port (arg0 : in std_logic_vector (7 downto 0);
-      res : out std_logic_vector (16 downto 0));
+      port (s0 : in std_logic_vector (7 downto 0);
+            res : out std_logic_vector (16 downto 0));
 end entity;
 
 architecture rtl of main_loop is
-component main_incr is
-      port (arg0 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (16 downto 0));
+      component main_incr is
+            port (s0 : in std_logic_vector (7 downto 0);
+                  res : out std_logic_vector (16 downto 0));
       end component;
-      signal zi0 : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (0 downto 0);
-      signal zi2 : std_logic_vector (0 downto 0);
+      signal zt0 : std_logic_vector (0 downto 0);
+      signal za1 : std_logic_vector (0 downto 0);
       signal main_incr_out : std_logic_vector (16 downto 0);
-      signal \main_incr_outR1\ : std_logic_vector (16 downto 0);
 begin
-zi0 <= rw_resize(arg0, 1);
-      zi1 <= zi0;
-      zi2 <= rw_not(zi1);
-      inst : main_incr port map (arg0, main_incr_out);
-      \instR1\ : main_incr port map (arg0, \main_incr_outR1\);
-      res <= rw_cond(rw_not(zi2), main_incr_out, \main_incr_outR1\);
+      zt0 <= rw_resize(s0, 1);
+      za1 <= rw_not(zt0);
+      incr_i : main_incr port map (s0, main_incr_out);
+      res <= rw_cond(rw_not(za1), main_incr_out, main_incr_out);
 end architecture;

@@ -2,696 +2,363 @@ module top_level (input logic [0:0] clk,
   input logic [0:0] rst,
   input logic [16:0] __in0,
   output logic [14:0] __out0);
+  logic [87:0] main_getIns2_out;
+  logic [16:0] Main_inputs_out;
+  logic [87:0] main_getIns2_outR1;
+  logic [5:0] Main_pc_out;
+  logic [5:0] Main_pc_outR1;
+  logic [14:0] Main_outputs_out;
+  logic [14:0] Main_outputs_outR1;
+  logic [14:0] Main_outputs_outR2;
+  logic [87:0] main_getPC2_out;
+  logic [87:0] main_getPC_out;
+  logic [87:0] Zres;
+  // state registers
+  // __resumption_tag: 3 bits, init 0x4
+  //   states: 0=i 1=i3 2=i4 3=i5 4=i8
+  // __st0: 70 bits, init 0x0
   logic [2:0] __resumption_tag;
   logic [2:0] __resumption_tag_next;
   logic [69:0] __st0;
   logic [69:0] __st0_next;
-  logic [7:0] zi2;
-  logic [7:0] zi3;
-  logic [7:0] zi4;
-  logic [7:0] zi5;
-  logic [5:0] zi6;
-  logic [14:0] zi7;
-  logic [69:0] zi8;
-  logic [69:0] zi9;
-  logic [87:0] main_getins2_out;
-  logic [7:0] zi11;
-  logic [7:0] zi12;
-  logic [7:0] zi13;
-  logic [7:0] zi14;
-  logic [5:0] zi15;
-  logic [14:0] zi16;
-  logic [69:0] zi17;
-  logic [69:0] zi18;
-  logic [16:0] main_inputs_out;
-  logic [16:0] zi19;
-  logic [7:0] zi20;
-  logic [7:0] zi21;
-  logic [7:0] zi22;
-  logic [7:0] zi23;
-  logic [7:0] zi24;
-  logic [5:0] zi25;
-  logic [16:0] zi26;
-  logic [14:0] zi27;
-  logic [69:0] zi28;
-  logic [69:0] zi29;
-  logic [87:0] main_getins2_outR1;
-  logic [7:0] zi31;
-  logic [7:0] zi32;
-  logic [7:0] zi33;
-  logic [7:0] zi34;
-  logic [5:0] zi35;
-  logic [14:0] zi36;
-  logic [69:0] zi37;
-  logic [69:0] zi38;
-  logic [5:0] main_pc_out;
-  logic [5:0] zi39;
-  logic [5:0] zi40;
-  logic [7:0] zi41;
-  logic [7:0] zi42;
-  logic [7:0] zi43;
-  logic [7:0] zi44;
-  logic [16:0] zi45;
-  logic [14:0] zi46;
-  logic [69:0] zi47;
-  logic [69:0] zi48;
-  logic [5:0] main_pc_outR1;
-  logic [5:0] zi49;
-  logic [14:0] main_outputs_out;
-  logic [14:0] zi50;
-  logic [0:0] zi51;
-  logic [7:0] zi52;
-  logic [14:0] zi53;
-  logic [14:0] zi54;
-  logic [7:0] zi55;
-  logic [7:0] zi56;
-  logic [7:0] zi57;
-  logic [7:0] zi58;
-  logic [5:0] zi59;
-  logic [16:0] zi60;
-  logic [69:0] zi61;
-  logic [69:0] zi62;
-  logic [14:0] main_outputs_outR1;
-  logic [14:0] zi63;
-  logic [5:0] zi64;
-  logic [7:0] zi65;
-  logic [14:0] zi66;
-  logic [14:0] zi67;
-  logic [7:0] zi68;
-  logic [7:0] zi69;
-  logic [7:0] zi70;
-  logic [7:0] zi71;
-  logic [5:0] zi72;
-  logic [16:0] zi73;
-  logic [69:0] zi74;
-  logic [69:0] zi75;
-  logic [14:0] main_outputs_outR2;
-  logic [14:0] zi76;
-  logic [7:0] zi78;
-  logic [7:0] zi79;
-  logic [7:0] zi80;
-  logic [7:0] zi81;
-  logic [5:0] zi82;
-  logic [14:0] zi83;
-  logic [69:0] zi84;
-  logic [69:0] zi85;
-  logic [87:0] main_getpc2_out;
-  logic [7:0] zi87;
-  logic [7:0] zi88;
-  logic [7:0] zi89;
-  logic [7:0] zi90;
-  logic [5:0] zi91;
-  logic [14:0] zi92;
-  logic [69:0] zi93;
-  logic [69:0] zi94;
-  logic [87:0] main_getpc_out;
-  logic [87:0] zres;
-  assign zi2 = __st0[69:62];
-  assign zi3 = __st0[61:54];
-  assign zi4 = __st0[53:46];
-  assign zi5 = __st0[45:38];
-  assign zi6 = __st0[37:32];
-  assign zi7 = __st0[14:0];
-  assign zi8 = {zi2, zi3, zi4, zi5, zi6, __in0, zi7};
-  assign zi9 = zi8;
-  main_getIns2  inst (zi9, main_getins2_out);
-  assign zi11 = __st0[69:62];
-  assign zi12 = __st0[61:54];
-  assign zi13 = __st0[53:46];
-  assign zi14 = __st0[45:38];
-  assign zi15 = __st0[37:32];
-  assign zi16 = __st0[14:0];
-  assign zi17 = {zi11, zi12, zi13, zi14, zi15, __in0, zi16};
-  assign zi18 = zi17;
-  Main_inputs  instR1 (zi18, main_inputs_out);
-  assign zi19 = main_inputs_out;
-  assign zi20 = zi19[7:0];
-  assign zi21 = zi20;
-  assign zi22 = zi18[61:54];
-  assign zi23 = zi18[53:46];
-  assign zi24 = zi18[45:38];
-  assign zi25 = zi18[37:32];
-  assign zi26 = zi18[31:15];
-  assign zi27 = zi18[14:0];
-  assign zi28 = {zi21, zi22, zi23, zi24, zi25, zi26, zi27};
-  assign zi29 = zi28;
-  main_getIns2  instR2 (zi29, main_getins2_outR1);
-  assign zi31 = __st0[69:62];
-  assign zi32 = __st0[61:54];
-  assign zi33 = __st0[53:46];
-  assign zi34 = __st0[45:38];
-  assign zi35 = __st0[37:32];
-  assign zi36 = __st0[14:0];
-  assign zi37 = {zi31, zi32, zi33, zi34, zi35, __in0, zi36};
-  assign zi38 = zi37;
-  Main_pc  instR3 (zi38, main_pc_out);
-  assign zi39 = main_pc_out;
-  assign zi40 = zi39 + 6'h1;
-  assign zi41 = zi38[69:62];
-  assign zi42 = zi38[61:54];
-  assign zi43 = zi38[53:46];
-  assign zi44 = zi38[45:38];
-  assign zi45 = zi38[31:15];
-  assign zi46 = zi38[14:0];
-  assign zi47 = {zi41, zi42, zi43, zi44, zi40, zi45, zi46};
-  assign zi48 = zi47;
-  Main_pc  instR4 (zi48, main_pc_outR1);
-  assign zi49 = main_pc_outR1;
-  Main_outputs  instR5 (zi48, main_outputs_out);
-  assign zi50 = main_outputs_out;
-  assign zi51 = zi50[14];
-  assign zi52 = zi50[7:0];
-  assign zi53 = {zi51, zi49, zi52};
-  assign zi54 = zi53;
-  assign zi55 = zi48[69:62];
-  assign zi56 = zi48[61:54];
-  assign zi57 = zi48[53:46];
-  assign zi58 = zi48[45:38];
-  assign zi59 = zi48[37:32];
-  assign zi60 = zi48[31:15];
-  assign zi61 = {zi55, zi56, zi57, zi58, zi59, zi60, zi54};
-  assign zi62 = zi61;
-  Main_outputs  instR6 (zi62, main_outputs_outR1);
-  assign zi63 = main_outputs_outR1;
-  assign zi64 = zi63[13:8];
-  assign zi65 = zi63[7:0];
-  assign zi66 = {1'h0, zi64, zi65};
-  assign zi67 = zi66;
-  assign zi68 = zi62[69:62];
-  assign zi69 = zi62[61:54];
-  assign zi70 = zi62[53:46];
-  assign zi71 = zi62[45:38];
-  assign zi72 = zi62[37:32];
-  assign zi73 = zi62[31:15];
-  assign zi74 = {zi68, zi69, zi70, zi71, zi72, zi73, zi67};
-  assign zi75 = zi74;
-  Main_outputs  instR7 (zi75, main_outputs_outR2);
-  assign zi76 = main_outputs_outR2;
-  assign zi78 = __st0[69:62];
-  assign zi79 = __st0[61:54];
-  assign zi80 = __st0[53:46];
-  assign zi81 = __st0[45:38];
-  assign zi82 = __st0[37:32];
-  assign zi83 = __st0[14:0];
-  assign zi84 = {zi78, zi79, zi80, zi81, zi82, __in0, zi83};
-  assign zi85 = zi84;
-  main_getPC2  instR8 (zi85, main_getpc2_out);
-  assign zi87 = __st0[69:62];
-  assign zi88 = __st0[61:54];
-  assign zi89 = __st0[53:46];
-  assign zi90 = __st0[45:38];
-  assign zi91 = __st0[37:32];
-  assign zi92 = __st0[14:0];
-  assign zi93 = {zi87, zi88, zi89, zi90, zi91, __in0, zi92};
-  assign zi94 = zi93;
-  main_getPC  instR9 (zi94, main_getpc_out);
-  assign zres = (__resumption_tag == 3'h0) ? main_getins2_out : ((__resumption_tag == 3'h1) ? main_getins2_outR1 : ((__resumption_tag == 3'h2) ? {zi76, 3'h1, zi75} : ((__resumption_tag == 3'h3) ? main_getpc2_out : main_getpc_out)));
-  assign __resumption_tag_next = zres[72:70];
-  assign __st0_next = zres[69:0];
-  assign __out0 = zres[87:73];
-  initial {__resumption_tag, __st0} = {1'h1, {7'h48{1'h0}}};
+  // combinational logic
+  wire [7:0] r0 = __st0[69:62];
+  wire [7:0] r1 = __st0[61:54];
+  wire [7:0] r2 = __st0[53:46];
+  wire [7:0] r3 = __st0[45:38];
+  wire [5:0] pc = __st0[37:32];
+  wire [14:0] outputs = __st0[14:0];
+  wire [69:0] Za = {r0, r1, r2, r3, pc, __in0, outputs};
+  main_getIns2  getIns2_i (Za, main_getIns2_out);
+  Main_inputs  inputs_i (Za, Main_inputs_out);
+  wire [7:0] Zds2 = Main_inputs_out[7:0];
+  wire [7:0] r1R1 = Za[61:54];
+  wire [7:0] r2R1 = Za[53:46];
+  wire [7:0] r3R1 = Za[45:38];
+  wire [5:0] pcR1 = Za[37:32];
+  wire [16:0] inputs = Za[31:15];
+  wire [14:0] outputsR1 = Za[14:0];
+  wire [69:0] ZaR1 = {Zds2, r1R1, r2R1, r3R1, pcR1, inputs, outputsR1};
+  main_getIns2  getIns2_iR1 (ZaR1, main_getIns2_outR1);
+  Main_pc  pc_i (Za, Main_pc_out);
+  wire [5:0] a = Main_pc_out + 6'h1;
+  wire [7:0] r0R1 = Za[69:62];
+  wire [69:0] ZaR2 = {r0R1, r1R1, r2R1, r3R1, a, inputs, outputsR1};
+  Main_pc  pc_iR1 (ZaR2, Main_pc_outR1);
+  Main_outputs  outputs_i (ZaR2, Main_outputs_out);
+  wire [0:0] weOut = Main_outputs_out[14];
+  wire [7:0] dataOut = Main_outputs_out[7:0];
+  wire [14:0] ZaR3 = {weOut, Main_pc_outR1, dataOut};
+  wire [7:0] r0R2 = ZaR2[69:62];
+  wire [7:0] r1R2 = ZaR2[61:54];
+  wire [7:0] r2R2 = ZaR2[53:46];
+  wire [7:0] r3R2 = ZaR2[45:38];
+  wire [5:0] pcR2 = ZaR2[37:32];
+  wire [16:0] inputsR1 = ZaR2[31:15];
+  wire [69:0] ZaR4 = {r0R2, r1R2, r2R2, r3R2, pcR2, inputsR1, ZaR3};
+  Main_outputs  outputs_iR1 (ZaR4, Main_outputs_outR1);
+  wire [5:0] addrOut = Main_outputs_outR1[13:8];
+  wire [7:0] dataOutR1 = Main_outputs_outR1[7:0];
+  wire [14:0] ZaR5 = {1'h0, addrOut, dataOutR1};
+  wire [7:0] r0R3 = ZaR4[69:62];
+  wire [7:0] r1R3 = ZaR4[61:54];
+  wire [7:0] r2R3 = ZaR4[53:46];
+  wire [7:0] r3R3 = ZaR4[45:38];
+  wire [5:0] pcR3 = ZaR4[37:32];
+  wire [16:0] inputsR2 = ZaR4[31:15];
+  wire [69:0] ZaR6 = {r0R3, r1R3, r2R3, r3R3, pcR3, inputsR2, ZaR5};
+  Main_outputs  outputs_iR2 (ZaR6, Main_outputs_outR2);
+  main_getPC2  getPC2_i (Za, main_getPC2_out);
+  main_getPC  getPC_i (Za, main_getPC_out);
+  localparam [2:0] ST_I = 3'h0;
+  localparam [2:0] ST_I3 = 3'h1;
+  localparam [2:0] ST_I4 = 3'h2;
+  localparam [2:0] ST_I5 = 3'h3;
+  localparam [2:0] ST_I8 = 3'h4;
+  always_comb case (__resumption_tag)
+    ST_I: Zres = main_getIns2_out;
+    ST_I3: Zres = main_getIns2_outR1;
+    ST_I4: Zres = {Main_outputs_outR2, 3'h1, ZaR6};
+    ST_I5: Zres = main_getPC2_out;
+    default: Zres = main_getPC_out;
+  endcase
+  assign __resumption_tag_next = Zres[72:70];
+  assign __st0_next = Zres[69:0];
+  // outputs
+  assign __out0 = Zres[87:73];
+  // state register update
+  initial __resumption_tag = 3'h4;
+  initial __st0 = {7'h46{1'h0}};
   always @ (posedge clk or posedge rst) begin
     if (rst == 1'h1) begin
-      {__resumption_tag, __st0} <= {1'h1, {7'h48{1'h0}}};
+      __resumption_tag <= 3'h4;
+      __st0 <= {7'h46{1'h0}};
     end else begin
-      {__resumption_tag, __st0} <= {__resumption_tag_next, __st0_next};
+      __resumption_tag <= __resumption_tag_next;
+      __st0 <= __st0_next;
     end
   end
 endmodule
 
-module main_getPC (input logic [69:0] arg0,
+// main.getPC
+// block '$L.Main.getPC' of process main
+module main_getPC (input logic [69:0] s0,
   output logic [87:0] res);
-  logic [5:0] main_pc_out;
-  logic [5:0] zi0;
-  logic [14:0] main_outputs_out;
-  logic [14:0] zi1;
-  logic [0:0] zi2;
-  logic [7:0] zi3;
-  logic [14:0] zi4;
-  logic [14:0] zi5;
-  logic [7:0] zi6;
-  logic [7:0] zi7;
-  logic [7:0] zi8;
-  logic [7:0] zi9;
-  logic [5:0] zi10;
-  logic [16:0] zi11;
-  logic [69:0] zi12;
-  logic [69:0] zi13;
-  logic [14:0] main_outputs_outR1;
-  logic [14:0] zi14;
-  logic [5:0] zi15;
-  logic [7:0] zi16;
-  logic [14:0] zi17;
-  logic [14:0] zi18;
-  logic [7:0] zi19;
-  logic [7:0] zi20;
-  logic [7:0] zi21;
-  logic [7:0] zi22;
-  logic [5:0] zi23;
-  logic [16:0] zi24;
-  logic [69:0] zi25;
-  logic [69:0] zi26;
-  logic [14:0] main_outputs_outR2;
-  logic [14:0] zi27;
-  Main_pc  inst (arg0, main_pc_out);
-  assign zi0 = main_pc_out;
-  Main_outputs  instR1 (arg0, main_outputs_out);
-  assign zi1 = main_outputs_out;
-  assign zi2 = zi1[14];
-  assign zi3 = zi1[7:0];
-  assign zi4 = {zi2, zi0, zi3};
-  assign zi5 = zi4;
-  assign zi6 = arg0[69:62];
-  assign zi7 = arg0[61:54];
-  assign zi8 = arg0[53:46];
-  assign zi9 = arg0[45:38];
-  assign zi10 = arg0[37:32];
-  assign zi11 = arg0[31:15];
-  assign zi12 = {zi6, zi7, zi8, zi9, zi10, zi11, zi5};
-  assign zi13 = zi12;
-  Main_outputs  instR2 (zi13, main_outputs_outR1);
-  assign zi14 = main_outputs_outR1;
-  assign zi15 = zi14[13:8];
-  assign zi16 = zi14[7:0];
-  assign zi17 = {1'h0, zi15, zi16};
-  assign zi18 = zi17;
-  assign zi19 = zi13[69:62];
-  assign zi20 = zi13[61:54];
-  assign zi21 = zi13[53:46];
-  assign zi22 = zi13[45:38];
-  assign zi23 = zi13[37:32];
-  assign zi24 = zi13[31:15];
-  assign zi25 = {zi19, zi20, zi21, zi22, zi23, zi24, zi18};
-  assign zi26 = zi25;
-  Main_outputs  instR3 (zi26, main_outputs_outR2);
-  assign zi27 = main_outputs_outR2;
-  assign res = {zi27, 3'h0, zi26};
+  logic [5:0] Main_pc_out;
+  logic [14:0] Main_outputs_out;
+  logic [14:0] Main_outputs_outR1;
+  logic [14:0] Main_outputs_outR2;
+  Main_pc  pc_i (s0, Main_pc_out);
+  Main_outputs  outputs_i (s0, Main_outputs_out);
+  wire [0:0] weOut = Main_outputs_out[14];
+  wire [7:0] dataOut = Main_outputs_out[7:0];
+  wire [14:0] Za = {weOut, Main_pc_out, dataOut};
+  wire [7:0] r0 = s0[69:62];
+  wire [7:0] r1 = s0[61:54];
+  wire [7:0] r2 = s0[53:46];
+  wire [7:0] r3 = s0[45:38];
+  wire [5:0] pc = s0[37:32];
+  wire [16:0] inputs = s0[31:15];
+  wire [69:0] ZaR1 = {r0, r1, r2, r3, pc, inputs, Za};
+  Main_outputs  outputs_iR1 (ZaR1, Main_outputs_outR1);
+  wire [5:0] addrOut = Main_outputs_outR1[13:8];
+  wire [7:0] dataOutR1 = Main_outputs_outR1[7:0];
+  wire [14:0] ZaR2 = {1'h0, addrOut, dataOutR1};
+  wire [7:0] r0R1 = ZaR1[69:62];
+  wire [7:0] r1R1 = ZaR1[61:54];
+  wire [7:0] r2R1 = ZaR1[53:46];
+  wire [7:0] r3R1 = ZaR1[45:38];
+  wire [5:0] pcR1 = ZaR1[37:32];
+  wire [16:0] inputsR1 = ZaR1[31:15];
+  wire [69:0] ZaR3 = {r0R1, r1R1, r2R1, r3R1, pcR1, inputsR1, ZaR2};
+  Main_outputs  outputs_iR2 (ZaR3, Main_outputs_outR2);
+  assign res = {Main_outputs_outR2, 3'h0, ZaR3};
 endmodule
 
-module main_putPC (input logic [5:0] arg0,
-  input logic [69:0] arg1,
+// main.putPC
+// block '$L.Main.putPC' of process main
+module main_putPC (input logic [5:0] a,
+  input logic [69:0] s0,
   output logic [87:0] res);
-  logic [7:0] zi0;
-  logic [7:0] zi1;
-  logic [7:0] zi2;
-  logic [7:0] zi3;
-  logic [16:0] zi4;
-  logic [14:0] zi5;
-  logic [69:0] zi6;
-  logic [69:0] zi7;
-  logic [87:0] main_getpc_out;
-  assign zi0 = arg1[69:62];
-  assign zi1 = arg1[61:54];
-  assign zi2 = arg1[53:46];
-  assign zi3 = arg1[45:38];
-  assign zi4 = arg1[31:15];
-  assign zi5 = arg1[14:0];
-  assign zi6 = {zi0, zi1, zi2, zi3, arg0, zi4, zi5};
-  assign zi7 = zi6;
-  main_getPC  inst (zi7, main_getpc_out);
-  assign res = main_getpc_out;
+  logic [87:0] main_getPC_out;
+  wire [7:0] r0 = s0[69:62];
+  wire [7:0] r1 = s0[61:54];
+  wire [7:0] r2 = s0[53:46];
+  wire [7:0] r3 = s0[45:38];
+  wire [16:0] inputs = s0[31:15];
+  wire [14:0] outputs = s0[14:0];
+  wire [69:0] Za = {r0, r1, r2, r3, a, inputs, outputs};
+  main_getPC  getPC_i (Za, main_getPC_out);
+  assign res = main_getPC_out;
 endmodule
 
-module main_getPC2 (input logic [69:0] arg0,
+// main.getPC2
+// block '$L.Main.getPC2' of process main
+module main_getPC2 (input logic [69:0] s0,
   output logic [87:0] res);
-  logic [5:0] main_pc_out;
-  logic [5:0] zi0;
-  logic [87:0] main_putpc_out;
-  Main_pc  inst (arg0, main_pc_out);
-  assign zi0 = main_pc_out;
-  main_putPC  instR1 (zi0 + 6'h1, arg0, main_putpc_out);
-  assign res = main_putpc_out;
+  logic [5:0] Main_pc_out;
+  logic [87:0] main_putPC_out;
+  Main_pc  pc_i (s0, Main_pc_out);
+  main_putPC  putPC_i (Main_pc_out + 6'h1, s0, main_putPC_out);
+  assign res = main_putPC_out;
 endmodule
 
-module main_putReg (input logic [1:0] arg0,
-  input logic [7:0] arg1,
-  input logic [69:0] arg2,
+// main.putReg
+// block '$L.Main.putReg' of process main
+module main_putReg (input logic [1:0] Zds,
+  input logic [7:0] b,
+  input logic [69:0] s0,
   output logic [87:0] res);
-  logic [7:0] zi0;
-  logic [7:0] zi1;
-  logic [7:0] zi2;
-  logic [5:0] zi3;
-  logic [16:0] zi4;
-  logic [14:0] zi5;
-  logic [69:0] zi6;
-  logic [69:0] zi7;
-  logic [87:0] main_getpc2_out;
-  logic [7:0] zi8;
-  logic [7:0] zi9;
-  logic [7:0] zi10;
-  logic [5:0] zi11;
-  logic [16:0] zi12;
-  logic [14:0] zi13;
-  logic [69:0] zi14;
-  logic [69:0] zi15;
-  logic [87:0] main_getpc2_outR1;
-  logic [7:0] zi16;
-  logic [7:0] zi17;
-  logic [7:0] zi18;
-  logic [5:0] zi19;
-  logic [16:0] zi20;
-  logic [14:0] zi21;
-  logic [69:0] zi22;
-  logic [69:0] zi23;
-  logic [87:0] main_getpc2_outR2;
-  logic [7:0] zi24;
-  logic [7:0] zi25;
-  logic [7:0] zi26;
-  logic [5:0] zi27;
-  logic [16:0] zi28;
-  logic [14:0] zi29;
-  logic [69:0] zi30;
-  logic [69:0] zi31;
-  logic [87:0] main_getpc2_outR3;
-  assign zi0 = arg2[61:54];
-  assign zi1 = arg2[53:46];
-  assign zi2 = arg2[45:38];
-  assign zi3 = arg2[37:32];
-  assign zi4 = arg2[31:15];
-  assign zi5 = arg2[14:0];
-  assign zi6 = {arg1, zi0, zi1, zi2, zi3, zi4, zi5};
-  assign zi7 = zi6;
-  main_getPC2  inst (zi7, main_getpc2_out);
-  assign zi8 = arg2[69:62];
-  assign zi9 = arg2[53:46];
-  assign zi10 = arg2[45:38];
-  assign zi11 = arg2[37:32];
-  assign zi12 = arg2[31:15];
-  assign zi13 = arg2[14:0];
-  assign zi14 = {zi8, arg1, zi9, zi10, zi11, zi12, zi13};
-  assign zi15 = zi14;
-  main_getPC2  instR1 (zi15, main_getpc2_outR1);
-  assign zi16 = arg2[69:62];
-  assign zi17 = arg2[61:54];
-  assign zi18 = arg2[45:38];
-  assign zi19 = arg2[37:32];
-  assign zi20 = arg2[31:15];
-  assign zi21 = arg2[14:0];
-  assign zi22 = {zi16, zi17, arg1, zi18, zi19, zi20, zi21};
-  assign zi23 = zi22;
-  main_getPC2  instR2 (zi23, main_getpc2_outR2);
-  assign zi24 = arg2[69:62];
-  assign zi25 = arg2[61:54];
-  assign zi26 = arg2[53:46];
-  assign zi27 = arg2[37:32];
-  assign zi28 = arg2[31:15];
-  assign zi29 = arg2[14:0];
-  assign zi30 = {zi24, zi25, zi26, arg1, zi27, zi28, zi29};
-  assign zi31 = zi30;
-  main_getPC2  instR3 (zi31, main_getpc2_outR3);
-  assign res = (arg0 == 2'h0) ? main_getpc2_out : ((arg0 == 2'h1) ? main_getpc2_outR1 : ((arg0 == 2'h2) ? main_getpc2_outR2 : main_getpc2_outR3));
+  logic [87:0] main_getPC2_out;
+  logic [87:0] main_getPC2_outR1;
+  logic [87:0] main_getPC2_outR2;
+  logic [87:0] main_getPC2_outR3;
+  wire [7:0] r1 = s0[61:54];
+  wire [7:0] r2 = s0[53:46];
+  wire [7:0] r3 = s0[45:38];
+  wire [5:0] pc = s0[37:32];
+  wire [16:0] inputs = s0[31:15];
+  wire [14:0] outputs = s0[14:0];
+  wire [69:0] Za = {b, r1, r2, r3, pc, inputs, outputs};
+  main_getPC2  getPC2_i (Za, main_getPC2_out);
+  wire [7:0] r0 = s0[69:62];
+  wire [69:0] ZaR1 = {r0, b, r2, r3, pc, inputs, outputs};
+  main_getPC2  getPC2_iR1 (ZaR1, main_getPC2_outR1);
+  wire [69:0] ZaR2 = {r0, r1, b, r3, pc, inputs, outputs};
+  main_getPC2  getPC2_iR2 (ZaR2, main_getPC2_outR2);
+  wire [69:0] ZaR3 = {r0, r1, r2, b, pc, inputs, outputs};
+  main_getPC2  getPC2_iR3 (ZaR3, main_getPC2_outR3);
+  always_comb case (Zds)
+    2'h0: res = main_getPC2_out;
+    2'h1: res = main_getPC2_outR1;
+    2'h2: res = main_getPC2_outR2;
+    default: res = main_getPC2_outR3;
+  endcase
 endmodule
 
-module main_getReg (input logic [1:0] arg0,
-  input logic [7:0] arg1,
-  input logic [1:0] arg2,
-  input logic [69:0] arg3,
+// main.getReg
+// block '$L.Main.getReg' of process main
+module main_getReg (input logic [1:0] rd,
+  input logic [7:0] a,
+  input logic [1:0] Zds,
+  input logic [69:0] s0,
   output logic [87:0] res);
-  logic [7:0] main_r0_out;
-  logic [7:0] zi0;
-  logic [87:0] main_putreg_out;
-  logic [7:0] main_r1_out;
-  logic [7:0] zi1;
-  logic [87:0] main_putreg_outR1;
-  logic [7:0] main_r2_out;
-  logic [7:0] zi2;
-  logic [87:0] main_putreg_outR2;
-  logic [7:0] main_r3_out;
-  logic [7:0] zi3;
-  logic [87:0] main_putreg_outR3;
-  Main_r0  inst (arg3, main_r0_out);
-  assign zi0 = main_r0_out;
-  main_putReg  instR1 (arg0, ~(arg1 & zi0), arg3, main_putreg_out);
-  Main_r1  instR2 (arg3, main_r1_out);
-  assign zi1 = main_r1_out;
-  main_putReg  instR3 (arg0, ~(arg1 & zi1), arg3, main_putreg_outR1);
-  Main_r2  instR4 (arg3, main_r2_out);
-  assign zi2 = main_r2_out;
-  main_putReg  instR5 (arg0, ~(arg1 & zi2), arg3, main_putreg_outR2);
-  Main_r3  instR6 (arg3, main_r3_out);
-  assign zi3 = main_r3_out;
-  main_putReg  instR7 (arg0, ~(arg1 & zi3), arg3, main_putreg_outR3);
-  assign res = (arg2 == 2'h0) ? main_putreg_out : ((arg2 == 2'h1) ? main_putreg_outR1 : ((arg2 == 2'h2) ? main_putreg_outR2 : main_putreg_outR3));
+  logic [7:0] Main_r0_out;
+  logic [87:0] main_putReg_out;
+  logic [7:0] Main_r1_out;
+  logic [87:0] main_putReg_outR1;
+  logic [7:0] Main_r2_out;
+  logic [87:0] main_putReg_outR2;
+  logic [7:0] Main_r3_out;
+  logic [87:0] main_putReg_outR3;
+  Main_r0  r0_i (s0, Main_r0_out);
+  main_putReg  putReg_i (rd, ~(a & Main_r0_out), s0, main_putReg_out);
+  Main_r1  r1_i (s0, Main_r1_out);
+  main_putReg  putReg_iR1 (rd, ~(a & Main_r1_out), s0, main_putReg_outR1);
+  Main_r2  r2_i (s0, Main_r2_out);
+  main_putReg  putReg_iR2 (rd, ~(a & Main_r2_out), s0, main_putReg_outR2);
+  Main_r3  r3_i (s0, Main_r3_out);
+  main_putReg  putReg_iR3 (rd, ~(a & Main_r3_out), s0, main_putReg_outR3);
+  always_comb case (Zds)
+    2'h0: res = main_putReg_out;
+    2'h1: res = main_putReg_outR1;
+    2'h2: res = main_putReg_outR2;
+    default: res = main_putReg_outR3;
+  endcase
 endmodule
 
-module main_getIns2 (input logic [69:0] arg0,
+// main.getIns2
+// block '$L.Main.getIns2' of process main
+module main_getIns2 (input logic [69:0] s0,
   output logic [87:0] res);
-  logic [16:0] main_inputs_out;
-  logic [16:0] zi0;
-  logic [8:0] zi1;
-  logic [8:0] zi2;
-  logic [87:0] main_getpc2_out;
-  logic [5:0] zi3;
-  logic [14:0] main_outputs_out;
-  logic [14:0] zi4;
-  logic [0:0] zi5;
-  logic [7:0] zi6;
-  logic [14:0] zi7;
-  logic [14:0] zi8;
-  logic [7:0] zi9;
-  logic [7:0] zi10;
-  logic [7:0] zi11;
-  logic [7:0] zi12;
-  logic [5:0] zi13;
-  logic [16:0] zi14;
-  logic [69:0] zi15;
-  logic [69:0] zi16;
-  logic [14:0] main_outputs_outR1;
-  logic [14:0] zi17;
-  logic [5:0] zi18;
-  logic [7:0] zi19;
-  logic [14:0] zi20;
-  logic [14:0] zi21;
-  logic [7:0] zi22;
-  logic [7:0] zi23;
-  logic [7:0] zi24;
-  logic [7:0] zi25;
-  logic [5:0] zi26;
-  logic [16:0] zi27;
-  logic [69:0] zi28;
-  logic [69:0] zi29;
-  logic [14:0] main_outputs_outR2;
-  logic [14:0] zi30;
-  logic [5:0] zi31;
-  logic [7:0] main_r0_out;
-  logic [7:0] zi32;
-  logic [14:0] main_outputs_outR3;
-  logic [14:0] zi33;
-  logic [0:0] zi34;
-  logic [7:0] zi35;
-  logic [14:0] zi36;
-  logic [14:0] zi37;
-  logic [7:0] zi38;
-  logic [7:0] zi39;
-  logic [7:0] zi40;
-  logic [7:0] zi41;
-  logic [5:0] zi42;
-  logic [16:0] zi43;
-  logic [69:0] zi44;
-  logic [69:0] zi45;
-  logic [14:0] main_outputs_outR4;
-  logic [14:0] zi46;
-  logic [0:0] zi47;
-  logic [5:0] zi48;
-  logic [14:0] zi49;
-  logic [14:0] zi50;
-  logic [7:0] zi51;
-  logic [7:0] zi52;
-  logic [7:0] zi53;
-  logic [7:0] zi54;
-  logic [5:0] zi55;
-  logic [16:0] zi56;
-  logic [69:0] zi57;
-  logic [69:0] zi58;
-  logic [14:0] main_outputs_outR5;
-  logic [14:0] zi59;
-  logic [5:0] zi60;
-  logic [7:0] zi61;
-  logic [14:0] zi62;
-  logic [14:0] zi63;
-  logic [7:0] zi64;
-  logic [7:0] zi65;
-  logic [7:0] zi66;
-  logic [7:0] zi67;
-  logic [5:0] zi68;
-  logic [16:0] zi69;
-  logic [69:0] zi70;
-  logic [69:0] zi71;
-  logic [14:0] main_outputs_outR6;
-  logic [14:0] zi72;
-  logic [1:0] zi73;
-  logic [1:0] zi74;
-  logic [1:0] zi75;
-  logic [7:0] main_r0_outR1;
-  logic [7:0] zi76;
-  logic [87:0] main_getreg_out;
-  logic [7:0] main_r1_out;
-  logic [7:0] zi77;
-  logic [87:0] main_getreg_outR1;
-  logic [7:0] main_r2_out;
-  logic [7:0] zi78;
-  logic [87:0] main_getreg_outR2;
-  logic [7:0] main_r3_out;
-  logic [7:0] zi79;
-  logic [87:0] main_getreg_outR3;
-  logic [5:0] zi80;
-  logic [7:0] main_r0_outR2;
-  logic [7:0] zi81;
-  logic [0:0] zi82;
-  logic [87:0] main_putpc_out;
-  logic [87:0] main_getpc2_outR1;
-  Main_inputs  inst (arg0, main_inputs_out);
-  assign zi0 = main_inputs_out;
-  assign zi1 = zi0[16:8];
-  assign zi2 = zi1;
-  main_getPC2  instR1 (arg0, main_getpc2_out);
-  assign zi3 = zi2[5:0];
-  Main_outputs  instR2 (arg0, main_outputs_out);
-  assign zi4 = main_outputs_out;
-  assign zi5 = zi4[14];
-  assign zi6 = zi4[7:0];
-  assign zi7 = {zi5, zi3, zi6};
-  assign zi8 = zi7;
-  assign zi9 = arg0[69:62];
-  assign zi10 = arg0[61:54];
-  assign zi11 = arg0[53:46];
-  assign zi12 = arg0[45:38];
-  assign zi13 = arg0[37:32];
-  assign zi14 = arg0[31:15];
-  assign zi15 = {zi9, zi10, zi11, zi12, zi13, zi14, zi8};
-  assign zi16 = zi15;
-  Main_outputs  instR3 (zi16, main_outputs_outR1);
-  assign zi17 = main_outputs_outR1;
-  assign zi18 = zi17[13:8];
-  assign zi19 = zi17[7:0];
-  assign zi20 = {1'h0, zi18, zi19};
-  assign zi21 = zi20;
-  assign zi22 = zi16[69:62];
-  assign zi23 = zi16[61:54];
-  assign zi24 = zi16[53:46];
-  assign zi25 = zi16[45:38];
-  assign zi26 = zi16[37:32];
-  assign zi27 = zi16[31:15];
-  assign zi28 = {zi22, zi23, zi24, zi25, zi26, zi27, zi21};
-  assign zi29 = zi28;
-  Main_outputs  instR4 (zi29, main_outputs_outR2);
-  assign zi30 = main_outputs_outR2;
-  assign zi31 = zi2[5:0];
-  Main_r0  instR5 (arg0, main_r0_out);
-  assign zi32 = main_r0_out;
-  Main_outputs  instR6 (arg0, main_outputs_outR3);
-  assign zi33 = main_outputs_outR3;
-  assign zi34 = zi33[14];
-  assign zi35 = zi33[7:0];
-  assign zi36 = {zi34, zi31, zi35};
-  assign zi37 = zi36;
-  assign zi38 = arg0[69:62];
-  assign zi39 = arg0[61:54];
-  assign zi40 = arg0[53:46];
-  assign zi41 = arg0[45:38];
-  assign zi42 = arg0[37:32];
-  assign zi43 = arg0[31:15];
-  assign zi44 = {zi38, zi39, zi40, zi41, zi42, zi43, zi37};
-  assign zi45 = zi44;
-  Main_outputs  instR7 (zi45, main_outputs_outR4);
-  assign zi46 = main_outputs_outR4;
-  assign zi47 = zi46[14];
-  assign zi48 = zi46[13:8];
-  assign zi49 = {zi47, zi48, zi32};
-  assign zi50 = zi49;
-  assign zi51 = zi45[69:62];
-  assign zi52 = zi45[61:54];
-  assign zi53 = zi45[53:46];
-  assign zi54 = zi45[45:38];
-  assign zi55 = zi45[37:32];
-  assign zi56 = zi45[31:15];
-  assign zi57 = {zi51, zi52, zi53, zi54, zi55, zi56, zi50};
-  assign zi58 = zi57;
-  Main_outputs  instR8 (zi58, main_outputs_outR5);
-  assign zi59 = main_outputs_outR5;
-  assign zi60 = zi59[13:8];
-  assign zi61 = zi59[7:0];
-  assign zi62 = {1'h1, zi60, zi61};
-  assign zi63 = zi62;
-  assign zi64 = zi58[69:62];
-  assign zi65 = zi58[61:54];
-  assign zi66 = zi58[53:46];
-  assign zi67 = zi58[45:38];
-  assign zi68 = zi58[37:32];
-  assign zi69 = zi58[31:15];
-  assign zi70 = {zi64, zi65, zi66, zi67, zi68, zi69, zi63};
-  assign zi71 = zi70;
-  Main_outputs  instR9 (zi71, main_outputs_outR6);
-  assign zi72 = main_outputs_outR6;
-  assign zi73 = zi2[5:4];
-  assign zi74 = zi2[3:2];
-  assign zi75 = zi2[1:0];
-  Main_r0  instR10 (arg0, main_r0_outR1);
-  assign zi76 = main_r0_outR1;
-  main_getReg  instR11 (zi73, zi76, zi75, arg0, main_getreg_out);
-  Main_r1  instR12 (arg0, main_r1_out);
-  assign zi77 = main_r1_out;
-  main_getReg  instR13 (zi73, zi77, zi75, arg0, main_getreg_outR1);
-  Main_r2  instR14 (arg0, main_r2_out);
-  assign zi78 = main_r2_out;
-  main_getReg  instR15 (zi73, zi78, zi75, arg0, main_getreg_outR2);
-  Main_r3  instR16 (arg0, main_r3_out);
-  assign zi79 = main_r3_out;
-  main_getReg  instR17 (zi73, zi79, zi75, arg0, main_getreg_outR3);
-  assign zi80 = zi2[5:0];
-  Main_r0  instR18 (arg0, main_r0_outR2);
-  assign zi81 = main_r0_outR2;
-  assign zi82 = zi81 == 8'h0;
-  main_putPC  instR19 (zi80, arg0, main_putpc_out);
-  main_getPC2  instR20 (arg0, main_getpc2_outR1);
-  assign res = (zi2[8:6] == 3'h0) ? main_getpc2_out : ((zi2[8:6] == 3'h1) ? {zi30, 3'h2, zi29} : ((zi2[8:6] == 3'h2) ? {zi72, 3'h3, zi71} : ((zi2[8:6] == 3'h3) ? ((zi74 == 2'h0) ? main_getreg_out : ((zi74 == 2'h1) ? main_getreg_outR1 : ((zi74 == 2'h2) ? main_getreg_outR2 : main_getreg_outR3))) : ((~zi82) ? main_putpc_out : main_getpc2_outR1))));
+  logic [16:0] Main_inputs_out;
+  logic [87:0] main_getPC2_out;
+  logic [14:0] Main_outputs_out;
+  logic [14:0] Main_outputs_outR1;
+  logic [14:0] Main_outputs_outR2;
+  logic [7:0] Main_r0_out;
+  logic [14:0] Main_outputs_outR3;
+  logic [14:0] Main_outputs_outR4;
+  logic [87:0] main_getReg_out;
+  logic [7:0] Main_r1_out;
+  logic [87:0] main_getReg_outR1;
+  logic [7:0] Main_r2_out;
+  logic [87:0] main_getReg_outR2;
+  logic [7:0] Main_r3_out;
+  logic [87:0] main_getReg_outR3;
+  logic [87:0] main_putPC_out;
+  Main_inputs  inputs_i (s0, Main_inputs_out);
+  wire [8:0] Zds1 = Main_inputs_out[16:8];
+  main_getPC2  getPC2_i (s0, main_getPC2_out);
+  wire [5:0] a = Zds1[5:0];
+  Main_outputs  outputs_i (s0, Main_outputs_out);
+  wire [0:0] weOut = Main_outputs_out[14];
+  wire [7:0] dataOut = Main_outputs_out[7:0];
+  wire [14:0] Za = {weOut, a, dataOut};
+  wire [7:0] r0 = s0[69:62];
+  wire [7:0] r1 = s0[61:54];
+  wire [7:0] r2 = s0[53:46];
+  wire [7:0] r3 = s0[45:38];
+  wire [5:0] pc = s0[37:32];
+  wire [16:0] inputs = s0[31:15];
+  wire [69:0] ZaR1 = {r0, r1, r2, r3, pc, inputs, Za};
+  Main_outputs  outputs_iR1 (ZaR1, Main_outputs_outR1);
+  wire [5:0] addrOut = Main_outputs_outR1[13:8];
+  wire [7:0] dataOutR1 = Main_outputs_outR1[7:0];
+  wire [14:0] ZaR2 = {1'h0, addrOut, dataOutR1};
+  wire [7:0] r0R1 = ZaR1[69:62];
+  wire [7:0] r1R1 = ZaR1[61:54];
+  wire [7:0] r2R1 = ZaR1[53:46];
+  wire [7:0] r3R1 = ZaR1[45:38];
+  wire [5:0] pcR1 = ZaR1[37:32];
+  wire [16:0] inputsR1 = ZaR1[31:15];
+  wire [69:0] ZaR3 = {r0R1, r1R1, r2R1, r3R1, pcR1, inputsR1, ZaR2};
+  Main_outputs  outputs_iR2 (ZaR3, Main_outputs_outR2);
+  Main_r0  r0_i (s0, Main_r0_out);
+  wire [0:0] weOutR1 = Main_outputs_outR1[14];
+  wire [14:0] ZaR4 = {weOutR1, addrOut, Main_r0_out};
+  wire [69:0] ZaR5 = {r0R1, r1R1, r2R1, r3R1, pcR1, inputsR1, ZaR4};
+  Main_outputs  outputs_iR3 (ZaR5, Main_outputs_outR3);
+  wire [5:0] addrOutR1 = Main_outputs_outR3[13:8];
+  wire [7:0] dataOutR2 = Main_outputs_outR3[7:0];
+  wire [14:0] ZaR6 = {1'h1, addrOutR1, dataOutR2};
+  wire [7:0] r0R2 = ZaR5[69:62];
+  wire [7:0] r1R2 = ZaR5[61:54];
+  wire [7:0] r2R2 = ZaR5[53:46];
+  wire [7:0] r3R2 = ZaR5[45:38];
+  wire [5:0] pcR2 = ZaR5[37:32];
+  wire [16:0] inputsR2 = ZaR5[31:15];
+  wire [69:0] ZaR7 = {r0R2, r1R2, r2R2, r3R2, pcR2, inputsR2, ZaR6};
+  Main_outputs  outputs_iR4 (ZaR7, Main_outputs_outR4);
+  wire [1:0] rd = Zds1[5:4];
+  wire [1:0] r1R3 = Zds1[3:2];
+  wire [1:0] r2R3 = Zds1[1:0];
+  main_getReg  getReg_i (rd, Main_r0_out, r2R3, s0, main_getReg_out);
+  Main_r1  r1_i (s0, Main_r1_out);
+  main_getReg  getReg_iR1 (rd, Main_r1_out, r2R3, s0, main_getReg_outR1);
+  Main_r2  r2_i (s0, Main_r2_out);
+  main_getReg  getReg_iR2 (rd, Main_r2_out, r2R3, s0, main_getReg_outR2);
+  Main_r3  r3_i (s0, Main_r3_out);
+  main_getReg  getReg_iR3 (rd, Main_r3_out, r2R3, s0, main_getReg_outR3);
+  wire [0:0] ZaR8 = Main_r0_out == 8'h0;
+  main_putPC  putPC_i (a, s0, main_putPC_out);
+  wire [2:0] scrut = Zds1[8:6];
+  always_comb case (scrut)
+    3'h0: res = main_getPC2_out;
+    3'h1: res = {Main_outputs_outR2, 3'h2, ZaR3};
+    3'h2: res = {Main_outputs_outR4, 3'h3, ZaR7};
+    3'h3: res = (r1R3 == 2'h0) ? main_getReg_out :
+      ((r1R3 == 2'h1) ? main_getReg_outR1 :
+        ((r1R3 == 2'h2) ? main_getReg_outR2 : main_getReg_outR3));
+    default: res = (~ZaR8) ? main_putPC_out : main_getPC2_out;
+  endcase
 endmodule
 
-module Main_outputs (input logic [69:0] arg0,
+// Main.outputs
+module Main_outputs (input logic [69:0] Zds,
   output logic [14:0] res);
-  logic [14:0] zds7;
-  assign zds7 = arg0[14:0];
-  assign res = zds7;
+  wire [14:0] Zds7 = Zds[14:0];
+  assign res = Zds7;
 endmodule
 
-module Main_inputs (input logic [69:0] arg0,
+// Main.inputs
+module Main_inputs (input logic [69:0] Zds,
   output logic [16:0] res);
-  logic [16:0] zds6;
-  assign zds6 = arg0[31:15];
-  assign res = zds6;
+  wire [16:0] Zds6 = Zds[31:15];
+  assign res = Zds6;
 endmodule
 
-module Main_pc (input logic [69:0] arg0,
+// Main.pc
+module Main_pc (input logic [69:0] Zds,
   output logic [5:0] res);
-  logic [5:0] zds5;
-  assign zds5 = arg0[37:32];
-  assign res = zds5;
+  wire [5:0] Zds5 = Zds[37:32];
+  assign res = Zds5;
 endmodule
 
-module Main_r3 (input logic [69:0] arg0,
+// Main.r3
+module Main_r3 (input logic [69:0] Zds,
   output logic [7:0] res);
-  logic [7:0] zds4;
-  assign zds4 = arg0[45:38];
-  assign res = zds4;
+  wire [7:0] Zds4 = Zds[45:38];
+  assign res = Zds4;
 endmodule
 
-module Main_r2 (input logic [69:0] arg0,
+// Main.r2
+module Main_r2 (input logic [69:0] Zds,
   output logic [7:0] res);
-  logic [7:0] zds3;
-  assign zds3 = arg0[53:46];
-  assign res = zds3;
+  wire [7:0] Zds3 = Zds[53:46];
+  assign res = Zds3;
 endmodule
 
-module Main_r1 (input logic [69:0] arg0,
+// Main.r1
+module Main_r1 (input logic [69:0] Zds,
   output logic [7:0] res);
-  logic [7:0] zds2;
-  assign zds2 = arg0[61:54];
-  assign res = zds2;
+  wire [7:0] Zds2 = Zds[61:54];
+  assign res = Zds2;
 endmodule
 
-module Main_r0 (input logic [69:0] arg0,
+// Main.r0
+module Main_r0 (input logic [69:0] Zds,
   output logic [7:0] res);
-  logic [7:0] zds1;
-  assign zds1 = arg0[69:62];
-  assign res = zds1;
+  wire [7:0] Zds1 = Zds[69:62];
+  assign res = Zds1;
 endmodule

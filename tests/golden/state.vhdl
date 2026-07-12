@@ -201,27 +201,30 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (0 downto 0);
-      \__out0\ : out std_logic_vector (0 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (0 downto 0);
+            \__out0\ : out std_logic_vector (0 downto 0));
 end entity;
 
 architecture rtl of top_level is
-signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
+      -- state registers
+      -- __st0: 1 bits, init 0x0
+      signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal zi0 : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (0 downto 0);
+      signal zt1 : std_logic_vector (0 downto 0);
       signal zres : std_logic_vector (1 downto 0);
 begin
-zi0 <= rw_xor(\__in0\, \__st0\);
-      zi1 <= zi0;
-      zres <= (\__st0\ & zi1);
+      -- combinational logic
+      zt1 <= rw_xor(\__in0\, \__st0\);
+      zres <= (\__st0\ & zt1);
       \__st0_next\ <= zres(0 downto 0);
+      -- outputs
       \__out0\ <= zres(1 downto 1);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
+            if rst = std_logic_vector'(B"1") then
                   \__st0\ <= std_logic_vector'(B"0");
             elsif rising_edge(clk(0)) then
                   \__st0\ <= \__st0_next\;

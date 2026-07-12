@@ -201,36 +201,43 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (3 downto 0);
-      \__out0\ : out std_logic_vector (15 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (3 downto 0);
+            \__out0\ : out std_logic_vector (15 downto 0));
 end entity;
 
 architecture rtl of top_level is
-signal \__st0\ : std_logic_vector (3 downto 0) := std_logic_vector'(B"0000");
+      -- state registers
+      -- __st0: 4 bits, init 0x0
+      -- __st1: 8 bits, init 0x3
+      -- __st2: 16 bits, init 0x5
+      signal \__st0\ : std_logic_vector (3 downto 0) := std_logic_vector'(X"0");
       signal \__st0_next\ : std_logic_vector (3 downto 0);
-      signal \__st1\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000011");
+      signal \__st1\ : std_logic_vector (7 downto 0) := std_logic_vector'(X"03");
       signal \__st1_next\ : std_logic_vector (7 downto 0);
-      signal \__st2\ : std_logic_vector (15 downto 0) := std_logic_vector'(B"0000000000000101");
+      signal \__st2\ : std_logic_vector (15 downto 0) := std_logic_vector'(X"0005");
       signal \__st2_next\ : std_logic_vector (15 downto 0);
-      signal zi4 : std_logic_vector (7 downto 0);
-      signal zi5 : std_logic_vector (15 downto 0);
+      signal s11 : std_logic_vector (7 downto 0);
+      signal s21 : std_logic_vector (15 downto 0);
       signal zres : std_logic_vector (43 downto 0);
 begin
-zi4 <= rw_add(rw_resize(\__st0\, 8), \__st1\);
-      zi5 <= rw_add(rw_resize(\__st1\, 16), \__st2\);
-      zres <= (rw_add(rw_resize(\__st0\, 16), \__st2\) & \__in0\ & zi4 & zi5);
+      -- combinational logic
+      s11 <= rw_add(rw_resize(\__st0\, 8), \__st1\);
+      s21 <= rw_add(rw_resize(\__st1\, 16), \__st2\);
+      zres <= (rw_add(rw_resize(\__st0\, 16), \__st2\) & \__in0\ & s11 & s21);
       \__st0_next\ <= zres(27 downto 24);
       \__st1_next\ <= zres(23 downto 16);
       \__st2_next\ <= zres(15 downto 0);
+      -- outputs
       \__out0\ <= zres(43 downto 28);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
-                  \__st0\ <= std_logic_vector'(B"0000");
-                  \__st1\ <= std_logic_vector'(B"00000011");
-                  \__st2\ <= std_logic_vector'(B"0000000000000101");
+            if rst = std_logic_vector'(B"1") then
+                  \__st0\ <= std_logic_vector'(X"0");
+                  \__st1\ <= std_logic_vector'(X"03");
+                  \__st2\ <= std_logic_vector'(X"0005");
             elsif rising_edge(clk(0)) then
                   \__st0\ <= \__st0_next\;
                   \__st1\ <= \__st1_next\;

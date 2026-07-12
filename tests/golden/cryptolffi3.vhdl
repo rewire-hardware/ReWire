@@ -201,33 +201,40 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (\__in0\ : in std_logic_vector (1 downto 0);
-      \__in1\ : in std_logic_vector (7 downto 0);
-      \__in2\ : in std_logic_vector (7 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (\__in0\ : in std_logic_vector (1 downto 0);
+            \__in1\ : in std_logic_vector (7 downto 0);
+            \__in2\ : in std_logic_vector (7 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-signal zi5 : std_logic_vector (7 downto 0);
-      signal zi6 : std_logic_vector (15 downto 0);
-      signal zi8 : std_logic_vector (7 downto 0);
-      signal zi9 : std_logic_vector (7 downto 0);
-      signal zi10 : std_logic_vector (7 downto 0);
-      signal zi15 : std_logic_vector (7 downto 0);
-      signal zi16 : std_logic_vector (7 downto 0);
-      signal zi17 : std_logic_vector (9 downto 0);
-      signal zi18 : std_logic_vector (7 downto 0);
-      signal zres : std_logic_vector (7 downto 0);
+      signal \v$1\ : std_logic_vector (7 downto 0);
+      signal \q$4740\ : std_logic_vector (15 downto 0);
+      signal \c$$4747\ : std_logic_vector (7 downto 0);
+      signal zeta1 : std_logic_vector (7 downto 0);
+      signal zeta0 : std_logic_vector (7 downto 0);
+      signal zeta2 : std_logic_vector (7 downto 0);
+      signal \v$1_r1\ : std_logic_vector (7 downto 0);
+      signal \o$0\ : std_logic_vector (9 downto 0);
+      signal za : std_logic_vector (7 downto 0);
 begin
-zi5 <= rw_add(\__in1\, \__in2\);
-      zi6 <= (zi5 & \__in1\);
-      zi8 <= (rw_add(\__in1\(3 downto 0), rw_cond(rw_eq(\__in1\(7 downto 4), std_logic_vector'(B"1111")), std_logic_vector'(B"0001"), std_logic_vector'(B"0000"))) & rw_add(\__in1\(7 downto 4), std_logic_vector'(B"0001")));
-      zi9 <= rw_xor(rw_xor(zi6(15 downto 8), zi6(7 downto 0)), (zi8(3 downto 0) & zi8(7 downto 4)));
-      zi10 <= (\__in1\(0 downto 0) & \__in1\(1 downto 1) & \__in1\(2 downto 2) & \__in1\(3 downto 3) & \__in1\(4 downto 4) & \__in1\(5 downto 5) & \__in1\(6 downto 6) & \__in1\(7 downto 7));
-      zi15 <= rw_sub(\__in2\, zi10);
-      zi16 <= rw_xor(zi9, zi15);
-      zi17 <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"00")), std_logic_vector'(B"0000000000"), rw_cond(rw_eq(\__in0\, std_logic_vector'(B"01")), std_logic_vector'(B"0100000000"), (std_logic_vector'(B"10") & zi16)));
-      zi18 <= rw_cond(rw_eq(zi17(9 downto 8), std_logic_vector'(B"00")), rw_add(zi9, zi15), rw_cond(rw_eq(zi17(9 downto 8), std_logic_vector'(B"01")), rw_sub(zi9, zi15), rw_cond(rw_eq(zi17(9 downto 8), std_logic_vector'(B"10")), zi17(7 downto 0), std_logic_vector'(B"00000000"))));
-      zres <= zi18;
-      \__out0\ <= zres;
+      -- combinational logic
+      \v$1\ <= rw_add(\__in1\, \__in2\);
+      \q$4740\ <= (\v$1\ & \__in1\);
+      \c$$4747\ <= (rw_add(\__in1\(3 downto 0), rw_cond(rw_eq(\__in1\(7 downto 4), std_logic_vector'(X"f")), std_logic_vector'(X"1"), std_logic_vector'(X"0"))) & rw_add(\__in1\(7 downto 4), std_logic_vector'(X"1")));
+      zeta1 <= rw_xor(rw_xor(\q$4740\(15 downto 8), \q$4740\(7 downto 0)), (\c$$4747\(3 downto 0) & \c$$4747\(7 downto 4)));
+      zeta0 <= (\__in1\(0 downto 0) & \__in1\(1 downto 1) & \__in1\(2 downto 2) & \__in1\(3 downto 3) & \__in1\(4 downto 4) & \__in1\(5 downto 5) & \__in1\(6 downto 6) & \__in1\(7 downto 7));
+      zeta2 <= rw_sub(\__in2\, zeta0);
+      \v$1_r1\ <= rw_xor(zeta1, zeta2);
+      with \__in0\ select \o$0\ <=
+            std_logic_vector'(B"0000000000") when "00",
+            std_logic_vector'(B"0100000000") when "01",
+            (std_logic_vector'(B"10") & \v$1_r1\) when others;
+      with \o$0\(9 downto 8) select za <=
+            rw_add(zeta1, zeta2) when "00",
+            rw_sub(zeta1, zeta2) when "01",
+            \o$0\(7 downto 0) when "10",
+            std_logic_vector'(X"00") when others;
+      -- outputs
+      \__out0\ <= za;
 end architecture;

@@ -201,32 +201,39 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (0 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (0 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-signal \__resumption_tag\ : std_logic_vector (8 downto 0) := std_logic_vector'(B"100000000");
+      -- state registers
+      -- __resumption_tag: 9 bits, init 0x100
+      --   states: 0=$ds 1=i
+      -- __st0: 8 bits, init 0x0
+      signal \__resumption_tag\ : std_logic_vector (8 downto 0) := std_logic_vector'(B"100000000");
       signal \__resumption_tag_next\ : std_logic_vector (8 downto 0);
-      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
+      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(X"00");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal zi2 : std_logic_vector (7 downto 0);
-      signal zi4 : std_logic_vector (7 downto 0);
+      signal s : std_logic_vector (7 downto 0);
+      signal s01 : std_logic_vector (7 downto 0);
       signal zres : std_logic_vector (24 downto 0);
 begin
-zi2 <= \__resumption_tag\(7 downto 0);
-      zi4 <= rw_add(zi2, std_logic_vector'(B"00000001"));
-      zres <= rw_cond(rw_not(\__resumption_tag\(8 downto 8)), std_logic_vector'(B"0000000010000000000000000"), rw_cond(rw_not(\__in0\), (rw_add(zi2, zi2) & std_logic_vector'(B"000000000") & zi4), (zi4 & std_logic_vector'(B"1") & zi4 & zi4)));
+      -- combinational logic
+      s <= \__resumption_tag\(7 downto 0);
+      s01 <= rw_add(s, std_logic_vector'(X"01"));
+      zres <= rw_cond(rw_not(\__resumption_tag\(8 downto 8)), std_logic_vector'(B"0000000010000000000000000"), rw_cond(rw_not(\__in0\), (rw_add(s, s) & std_logic_vector'(B"000000000") & s01), (s01 & std_logic_vector'(B"1") & s01 & s01)));
       \__resumption_tag_next\ <= zres(16 downto 8);
       \__st0_next\ <= zres(7 downto 0);
+      -- outputs
       \__out0\ <= zres(24 downto 17);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
+            if rst = std_logic_vector'(B"1") then
                   \__resumption_tag\ <= std_logic_vector'(B"100000000");
-                  \__st0\ <= std_logic_vector'(B"00000000");
+                  \__st0\ <= std_logic_vector'(X"00");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
                   \__st0\ <= \__st0_next\;

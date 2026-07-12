@@ -201,37 +201,39 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (0 downto 0);
-      \__out0\ : out std_logic_vector (0 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (0 downto 0);
+            \__out0\ : out std_logic_vector (0 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component \Main_zookus\ is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            res : out std_logic_vector (0 downto 0));
+      component \Main_zookus\ is
+            port (x : in std_logic_vector (0 downto 0);
+                  res : out std_logic_vector (0 downto 0));
       end component;
+      -- state registers
+      -- __resumption_tag: 2 bits, init 0x2
+      --   states: 0=b2 1=b
       signal \__resumption_tag\ : std_logic_vector (1 downto 0) := std_logic_vector'(B"10");
       signal \__resumption_tag_next\ : std_logic_vector (1 downto 0);
-      signal zi0 : std_logic_vector (0 downto 0);
+      signal a : std_logic_vector (0 downto 0);
       signal main_zookus_out : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (0 downto 0);
-      signal \main_zookus_outR1\ : std_logic_vector (0 downto 0);
-      signal zi2 : std_logic_vector (0 downto 0);
+      signal main_zookus_out_r1 : std_logic_vector (0 downto 0);
       signal zres : std_logic_vector (2 downto 0);
 begin
-zi0 <= \__resumption_tag\(0 downto 0);
-      inst : \Main_zookus\ port map (zi0, main_zookus_out);
-      zi1 <= main_zookus_out;
-      \instR1\ : \Main_zookus\ port map (zi1, \main_zookus_outR1\);
-      zi2 <= \main_zookus_outR1\;
-      zres <= rw_cond(rw_not(\__resumption_tag\(1 downto 1)), (zi2 & std_logic_vector'(B"0") & zi0), std_logic_vector'(B"000"));
+      -- combinational logic
+      a <= \__resumption_tag\(0 downto 0);
+      zookus_i : \Main_zookus\ port map (a, main_zookus_out);
+      zookus_i_r1 : \Main_zookus\ port map (main_zookus_out, main_zookus_out_r1);
+      zres <= rw_cond(rw_not(\__resumption_tag\(1 downto 1)), (main_zookus_out_r1 & std_logic_vector'(B"0") & a), std_logic_vector'(B"000"));
       \__resumption_tag_next\ <= zres(1 downto 0);
+      -- outputs
       \__out0\ <= zres(2 downto 2);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
+            if rst = std_logic_vector'(B"1") then
                   \__resumption_tag\ <= std_logic_vector'(B"10");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
@@ -239,17 +241,17 @@ zi0 <= \__resumption_tag\(0 downto 0);
       end process;
 end architecture;
 
+-- Main.zookus
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity \Main_zookus\ is
-port (arg0 : in std_logic_vector (0 downto 0);
-      res : out std_logic_vector (0 downto 0));
+      port (x : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (0 downto 0));
 end entity;
 
 architecture rtl of \Main_zookus\ is
-
 begin
-res <= arg0;
+      res <= x;
 end architecture;

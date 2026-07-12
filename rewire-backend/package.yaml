@@ -36,6 +36,7 @@ extra-source-files:
 dependencies:
 - rewire-base >= 2.8
 - base ^>= 4.20
+- containers ^>= 0.7
 - ghc-boot ^>= 9.10
 - hashable ^>= 1.5
 - lens ^>= 5.3

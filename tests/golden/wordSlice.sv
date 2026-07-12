@@ -1,12 +1,9 @@
 module top_level (input logic [15:0] __in0,
   output logic [7:0] __out0);
-  logic [0:0] zi0;
-  logic [0:0] zi1;
-  logic [7:0] zi2;
-  logic [7:0] zres;
-  assign zi0 = __in0[15];
-  assign zi1 = zi0 ? __in0[8] : 1'h0;
-  assign zi2 = (~zi1) ? __in0[15:8] : __in0[7:0];
-  assign zres = zi2;
-  assign __out0 = zres;
+  // combinational logic
+  wire [0:0] Zt1 = __in0[15];
+  wire [0:0] Zt2 = Zt1 ? __in0[8] : 1'h0;
+  wire [7:0] Za = (~Zt2) ? __in0[15:8] : __in0[7:0];
+  // outputs
+  assign __out0 = Za;
 endmodule

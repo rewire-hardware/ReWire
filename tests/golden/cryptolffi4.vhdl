@@ -201,45 +201,46 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (\__in0\ : in std_logic_vector (7 downto 0);
-      \__in1\ : in std_logic_vector (7 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (\__in0\ : in std_logic_vector (7 downto 0);
+            \__in1\ : in std_logic_vector (7 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component \cry$hof$8__8_inc$1\ is
-      port (arg0 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (7 downto 0));
+      component \cry$hof$8__8_inc$1\ is
+            port (\v$0\ : in std_logic_vector (7 downto 0);
+                  res : out std_logic_vector (7 downto 0));
       end component;
       signal \cry$hof$8_8_inc$1_out\ : std_logic_vector (7 downto 0);
-      signal \cry$hof$8_8_inc$1_outR1\ : std_logic_vector (7 downto 0);
-      signal zi5 : std_logic_vector (0 downto 0);
-      signal zi6 : std_logic_vector (7 downto 0);
-      signal \cry$hof$8_8_inc$1_outR2\ : std_logic_vector (7 downto 0);
-      signal zi7 : std_logic_vector (7 downto 0);
-      signal zres : std_logic_vector (7 downto 0);
+      signal \cry$hof$8_8_inc$1_out_r1\ : std_logic_vector (7 downto 0);
+      signal zeta0 : std_logic_vector (0 downto 0);
+      signal zeta1 : std_logic_vector (7 downto 0);
+      signal \cry$hof$8_8_inc$1_out_r2\ : std_logic_vector (7 downto 0);
+      signal za : std_logic_vector (7 downto 0);
 begin
-inst : \cry$hof$8__8_inc$1\ port map (\__in1\, \cry$hof$8_8_inc$1_out\);
-      \instR1\ : \cry$hof$8__8_inc$1\ port map (\cry$hof$8_8_inc$1_out\, \cry$hof$8_8_inc$1_outR1\);
-      zi5 <= rw_eq(\__in0\, \__in1\);
-      zi6 <= rw_mul(\__in0\, rw_mul(\__in0\, rw_mul(\__in0\, rw_mul(\__in0\, rw_mul(\__in0\, std_logic_vector'(B"00000001"))))));
-      \instR2\ : \cry$hof$8__8_inc$1\ port map (zi6, \cry$hof$8_8_inc$1_outR2\);
-      zi7 <= rw_add(rw_add(rw_add(rw_add(rw_add(\__in1\, \__in0\), \__in0\), rw_add(rw_add(\cry$hof$8_8_inc$1_outR1\, rw_mul(rw_mul(\__in1\, std_logic_vector'(B"00000010")), std_logic_vector'(B"00000010"))), \__in1\)), rw_add(\__in0\, \__in1\)), rw_cond(zi5, \cry$hof$8_8_inc$1_outR2\, rw_not(zi6)));
-      zres <= zi7;
-      \__out0\ <= zres;
+      -- combinational logic
+      \inc$1_i\ : \cry$hof$8__8_inc$1\ port map (\__in1\, \cry$hof$8_8_inc$1_out\);
+      \inc$1_i_r1\ : \cry$hof$8__8_inc$1\ port map (\cry$hof$8_8_inc$1_out\, \cry$hof$8_8_inc$1_out_r1\);
+      zeta0 <= rw_eq(\__in0\, \__in1\);
+      zeta1 <= rw_mul(\__in0\, rw_mul(\__in0\, rw_mul(\__in0\, rw_mul(\__in0\, rw_mul(\__in0\, std_logic_vector'(X"01"))))));
+      \inc$1_i_r2\ : \cry$hof$8__8_inc$1\ port map (zeta1, \cry$hof$8_8_inc$1_out_r2\);
+      za <= rw_add(rw_add(rw_add(rw_add(rw_add(\__in1\, \__in0\), \__in0\), rw_add(rw_add(\cry$hof$8_8_inc$1_out_r1\, rw_mul(rw_mul(\__in1\, std_logic_vector'(X"02")), std_logic_vector'(X"02"))), \__in1\)), rw_add(\__in0\, \__in1\)), rw_cond(zeta0, \cry$hof$8_8_inc$1_out_r2\, rw_not(zeta1)));
+      -- outputs
+      \__out0\ <= za;
 end architecture;
 
+-- cry$hof$8_8.inc$1
+-- also: cry$pick$Bit_8_8.inc$0
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity \cry$hof$8__8_inc$1\ is
-port (arg0 : in std_logic_vector (7 downto 0);
-      res : out std_logic_vector (7 downto 0));
+      port (\v$0\ : in std_logic_vector (7 downto 0);
+            res : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of \cry$hof$8__8_inc$1\ is
-
 begin
-res <= rw_add(arg0, std_logic_vector'(B"00000001"));
+      res <= rw_add(\v$0\, std_logic_vector'(X"01"));
 end architecture;

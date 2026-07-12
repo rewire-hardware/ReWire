@@ -201,42 +201,53 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (0 downto 0);
-      \__out0\ : out std_logic_vector (0 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (0 downto 0);
+            \__out0\ : out std_logic_vector (0 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component main_y is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            arg1 : in std_logic_vector (0 downto 0);
-            arg2 : in std_logic_vector (0 downto 0);
-            arg3 : in std_logic_vector (0 downto 0);
-            res : out std_logic_vector (5 downto 0));
+      component main_y is
+            port (x : in std_logic_vector (0 downto 0);
+                  y : in std_logic_vector (0 downto 0);
+                  s0 : in std_logic_vector (0 downto 0);
+                  s1 : in std_logic_vector (0 downto 0);
+                  res : out std_logic_vector (5 downto 0));
       end component;
+      -- state registers
+      -- __resumption_tag: 3 bits, init 0x4
+      --   states: 0=z 1=y 2=x
+      -- __st0: 1 bits, init 0x0
+      -- __st1: 1 bits, init 0x1
       signal \__resumption_tag\ : std_logic_vector (2 downto 0) := std_logic_vector'(B"100");
       signal \__resumption_tag_next\ : std_logic_vector (2 downto 0);
       signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
       signal \__st1\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st1_next\ : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (0 downto 0);
+      signal y : std_logic_vector (0 downto 0);
       signal main_y_out : std_logic_vector (5 downto 0);
-      signal \main_y_outR1\ : std_logic_vector (5 downto 0);
+      signal main_y_out_r1 : std_logic_vector (5 downto 0);
       signal zres : std_logic_vector (5 downto 0);
 begin
-zi1 <= \__resumption_tag\(0 downto 0);
-      inst : main_y port map (\__resumption_tag\(0 downto 0), \__in0\, \__st0\, \__st1\, main_y_out);
-      \instR1\ : main_y port map (\__in0\, \__st0\, \__st0\, \__st1\, \main_y_outR1\);
-      zres <= rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"00")), (std_logic_vector'(B"0100") & \__st0\ & zi1), rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"01")), main_y_out, rw_cond(rw_not(\__in0\), \main_y_outR1\, (std_logic_vector'(B"001") & \__in0\ & \__st0\ & \__st1\))));
+      -- combinational logic
+      y <= \__resumption_tag\(0 downto 0);
+      y_i : main_y port map (\__resumption_tag\(0 downto 0), \__in0\, \__st0\, \__st1\, main_y_out);
+      y_i_r1 : main_y port map (\__in0\, \__st0\, \__st0\, \__st1\, main_y_out_r1);
+      with \__resumption_tag\(2 downto 1) select zres <=
+            (std_logic_vector'(X"4") & \__st0\ & y) when "00",
+            main_y_out when "01",
+            rw_cond(rw_not(\__in0\), main_y_out_r1, (std_logic_vector'(B"001") & \__in0\ & \__st0\ & \__st1\)) when others;
       \__resumption_tag_next\ <= zres(4 downto 2);
       \__st0_next\ <= zres(1 downto 1);
       \__st1_next\ <= zres(0 downto 0);
+      -- outputs
       \__out0\ <= zres(5 downto 5);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
+            if rst = std_logic_vector'(B"1") then
                   \__resumption_tag\ <= std_logic_vector'(B"100");
                   \__st0\ <= std_logic_vector'(B"0");
                   \__st1\ <= std_logic_vector'(B"1");
@@ -248,25 +259,27 @@ zi1 <= \__resumption_tag\(0 downto 0);
       end process;
 end architecture;
 
+-- main.y
+-- block '$L.y' of process main (state 1)
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity main_y is
-port (arg0 : in std_logic_vector (0 downto 0);
-      arg1 : in std_logic_vector (0 downto 0);
-      arg2 : in std_logic_vector (0 downto 0);
-      arg3 : in std_logic_vector (0 downto 0);
-      res : out std_logic_vector (5 downto 0));
+      port (x : in std_logic_vector (0 downto 0);
+            y : in std_logic_vector (0 downto 0);
+            s0 : in std_logic_vector (0 downto 0);
+            s1 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (5 downto 0));
 end entity;
 
 architecture rtl of main_y is
-signal za : std_logic_vector (0 downto 0);
-      signal \zaR1\ : std_logic_vector (0 downto 0);
+      signal za : std_logic_vector (0 downto 0);
+      signal za_r1 : std_logic_vector (0 downto 0);
       signal za1 : std_logic_vector (0 downto 0);
 begin
-za <= rw_cond(arg0, arg0, std_logic_vector'(B"0"));
-      \zaR1\ <= rw_cond(rw_not(arg1), za, arg0);
-      za1 <= rw_cond(\zaR1\, arg1, std_logic_vector'(B"0"));
-      res <= (za1 & std_logic_vector'(B"00") & arg1 & arg2 & arg3);
+      za <= rw_cond(x, x, std_logic_vector'(B"0"));
+      za_r1 <= rw_cond(rw_not(y), za, x);
+      za1 <= rw_cond(za_r1, y, std_logic_vector'(B"0"));
+      res <= (za1 & std_logic_vector'(B"00") & y & s0 & s1);
 end architecture;

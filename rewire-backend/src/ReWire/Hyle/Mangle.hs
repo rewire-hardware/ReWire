@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Hyle.Mangle (mangle, mangleFresh, mangleMod, pickFresh, seedNames, svReserved) where
+module ReWire.Hyle.Mangle (mangle, mangleFresh, mangleMod, pickFresh, seedNames, stripFreshTag, svReserved) where
 
 import ReWire.Pretty (showt)
 
 import GHC.Utils.Encoding (zEncodeString)   -- this is from the ghc package
-import Data.Char (isAlphaNum)
+import Data.Char (isAlphaNum, isDigit)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
 import Data.Maybe (fromMaybe)
@@ -44,6 +44,25 @@ mangleFresh x = if isRtlId x' then x' else mangle x'
 
             x' :: Text
             x' = subTick $ subDollar $ subDots x
+
+-- | Strip the freshening suffixes stacked onto a name by the Hyle inliner
+--   (@$i<digits>@) and the fold-time instance hoist (@$h<digits>@),
+--   recovering the original base for display. Suffix groups stack (deep
+--   inline chains re-freshen already-freshened names, and hoisting re-lets
+--   inliner names), so stripping repeats; a name that is nothing but suffix
+--   (e.g. a bare legacy @$i0@) is kept unstripped rather than emptied.
+stripFreshTag :: Text -> Text
+stripFreshTag x = maybe x stripFreshTag $ stripOne x
+      where stripOne :: Text -> Maybe Text
+            stripOne t
+                  | T.null digits = Nothing
+                  | otherwise     = case (T.stripSuffix "$i" pre, T.stripSuffix "$h" pre) of
+                        (Just base, _) | not (T.null base) -> Just base
+                        (_, Just base) | not (T.null base) -> Just base
+                        _                                  -> Nothing
+                  where pre, digits :: Text
+                        pre    = T.dropWhileEnd isDigit t
+                        digits = T.takeWhileEnd isDigit t
 
 -- | Module names need to be de-conflicted because they aren't immediately
 --   freshened.

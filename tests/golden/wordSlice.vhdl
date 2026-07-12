@@ -201,19 +201,19 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (\__in0\ : in std_logic_vector (15 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (\__in0\ : in std_logic_vector (15 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-signal zi0 : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (0 downto 0);
-      signal zi2 : std_logic_vector (7 downto 0);
-      signal zres : std_logic_vector (7 downto 0);
+      signal zt1 : std_logic_vector (0 downto 0);
+      signal zt2 : std_logic_vector (0 downto 0);
+      signal za : std_logic_vector (7 downto 0);
 begin
-zi0 <= \__in0\(15 downto 15);
-      zi1 <= rw_cond(zi0, \__in0\(8 downto 8), std_logic_vector'(B"0"));
-      zi2 <= rw_cond(rw_not(zi1), \__in0\(15 downto 8), \__in0\(7 downto 0));
-      zres <= zi2;
-      \__out0\ <= zres;
+      -- combinational logic
+      zt1 <= \__in0\(15 downto 15);
+      zt2 <= rw_cond(zt1, \__in0\(8 downto 8), std_logic_vector'(B"0"));
+      za <= rw_cond(rw_not(zt2), \__in0\(15 downto 8), \__in0\(7 downto 0));
+      -- outputs
+      \__out0\ <= za;
 end architecture;

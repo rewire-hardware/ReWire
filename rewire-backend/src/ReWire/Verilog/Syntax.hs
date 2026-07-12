@@ -2,11 +2,12 @@
 {-# LANGUAGE Safe #-}
 module ReWire.Verilog.Syntax where
 
-import ReWire.Pretty (empty, text, squote, Pretty (..), parens, (<+>), vsep, hsep, semi, colon, punctuate, comma, nest, Doc, braces, brackets, hcat)
+import ReWire.Pretty (empty, text, squote, Pretty (..), parens, (<+>), vsep, hsep, semi, colon, punctuate, comma, nest, Doc, braces, brackets, hcat, line, softline)
 import ReWire.BitVector (BV (..), showHex', width, ones, zeros)
 import qualified ReWire.BitVector as BV
 
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.List (intersperse)
 import Numeric.Natural (Natural)
 
@@ -22,23 +23,35 @@ type Index = Int
 type Value = Integer
 
 data Module = Module
-      { modName    :: Name
-      , modPorts   :: [Port]
-      , modSignals :: [Signal]
-      , modStmt    :: [Stmt]
+      { modName     :: Name
+      , modComments :: ![Text] -- ^ Header comment lines, printed above the module keyword.
+      , modPorts    :: [Port]
+      , modSignals  :: [Signal]
+      , modStmt     :: [Stmt]
       }
       deriving (Eq, Show)
 
 instance Pretty Module where
-      pretty (Module n ps sigs stmt) = vsep
-            [ nest 2 ( vsep
-                         ([ text "module" <+> text n <+> parens (vsep $ punctuate comma $ map pretty ps) <> semi ]
-                         <> map ((<> semi) . pretty) sigs
-                         <> map pretty stmt
-                         )
-                     )
-            , text "endmodule"
-            ]
+      pretty (Module n cmts ps sigs stmt) = vsep $
+            map ppComment cmts
+            <> [ nest 2 ( vsep
+                            ([ text "module" <+> text n <+> parens (vsep $ punctuate comma $ map pretty ps) <> semi ]
+                            <> map ((<> semi) . pretty) sigs
+                            <> map pretty stmt
+                            )
+                        )
+               , text "endmodule"
+               ]
+
+ppComment :: Text -> Doc an
+ppComment c = text "//" <+> text (sanitizeComment c)
+
+-- | Newlines in comment text would push the remainder into code position.
+sanitizeComment :: Text -> Text
+sanitizeComment = T.map $ \ case
+      '\n' -> ' '
+      '\r' -> ' '
+      c    -> c
 
 data Port = Input  Signal -- can't be reg
           | InOut  Signal -- can't be reg
@@ -76,12 +89,18 @@ sigName = \ case
       Reg   _ n _ -> n
 
 data Stmt = Always [Sensitivity] Stmt
+          | AlwaysComb Stmt
           | Initial Stmt
           | IfElse Exp Stmt Stmt
           | If Exp Stmt
+          | Case Exp [(Exp, Stmt)] Stmt -- ^ Scrutinee, case items, default item.
           | Assign LVal Exp
           | SeqAssign LVal Exp
           | ParAssign LVal Exp
+          | WireAssign Size Name Exp    -- ^ Net declaration assignment: wire [n-1:0] x = e;
+          | Decl Signal                 -- ^ A signal declaration in statement position.
+          | LocalParam Size Name BV
+          | Comment Text
           | Block [Stmt]
           | Instantiate Name Name [(Name, Exp)] [(Name, Exp)] -- Exp for convenience, should be LVal?
           -- Procedural statements for testbenches.
@@ -93,12 +112,22 @@ data Stmt = Always [Sensitivity] Stmt
 instance Pretty Stmt where
       pretty = \ case
             Always sens stmt         -> text "always" <+> text "@" <+> parens (hsep $ punctuate (text " or") $ map pretty sens) <+> pretty stmt
+            AlwaysComb stmt          -> text "always_comb" <+> pretty stmt
             Initial stmt             -> text "initial" <+> pretty stmt
             IfElse c thn els         -> text "if" <+> parens (pretty c) <+> pretty thn <+> text "else" <+> pretty els
             If c thn                 -> text "if" <+> parens (pretty c) <+> pretty thn
+            Case c items dflt        -> vsep
+                  [ nest 2 $ vsep $ (text "case" <+> parens (pretty c))
+                                  : map ppItem items <> [text "default:" <+> pretty dflt]
+                  , text "endcase"
+                  ]
             Assign lv v              -> text "assign" <+> pretty lv <+> text "="  <+> pretty v <> semi
             SeqAssign lv v           ->                   pretty lv <+> text "="  <+> pretty v <> semi
             ParAssign lv v           ->                   pretty lv <+> text "<=" <+> pretty v <> semi
+            WireAssign sz n v        -> text "wire" <> ppDims [sz] <+> text n <+> text "=" <+> pretty v <> semi
+            Decl sig                 -> pretty sig <> semi
+            LocalParam sz n v        -> text "localparam" <> ppDims [sz] <+> text n <+> text "=" <+> pretty (LitBits v) <> semi
+            Comment c                -> ppComment c
             Block stmts              -> vsep [nest 2 $ vsep (text "begin" : map pretty stmts), text "end"]
             Delay n                  -> text "#" <> pretty (toInteger n) <> semi
             Display fmt args         -> text "$display(\"" <> text fmt <> text "\"" <> hcat (map ((comma <+>) . pretty) args) <> text ")" <> semi
@@ -111,6 +140,9 @@ instance Pretty Stmt where
 
                         params :: [(Name, Exp)] -> Doc an
                         params = parens . hsep . punctuate comma . map param
+
+ppItem :: (Exp, Stmt) -> Doc an
+ppItem (l, s) = pretty l <> colon <+> pretty s
 
 data Sensitivity = Pos Name | Neg Name
       deriving (Eq, Show)
@@ -160,7 +192,11 @@ data Exp = Add Exp Exp
          | Unsigned Exp -- ^ > $unsigned(e)
          | LitBits BV
          | LVal LVal
-      deriving (Eq, Ord, Show)
+      -- N.B.: deliberately no Ord, and Eq only for shape tests -- the bv
+      -- package's BV Eq is width-blind (bitVec 4 0 == bitVec 8 0), so any
+      -- instance derived through 'LitBits' is too. Never key a map on
+      -- this type; use the emitters' width-exact 'expKey' instead.
+      deriving (Eq, Show)
 
 class Parenless a where
       parenless :: a -> Bool
@@ -222,11 +258,15 @@ instance Pretty Exp where
             Gt a b          -> ppBinOp a ">"   b
             LtEq a b        -> ppBinOp a "<="  b
             GtEq a b        -> ppBinOp a ">="  b
+            -- | A chained conditional lays out vertically, one arm per line
+            --   (layout only: parenthesization is exactly the single-line
+            --   form's).
+            Cond e1 e2 e3@Cond {} -> mparens e1 <+> text "?" <+> mparens e2 <+> colon <> nest 2 (line <> mparens e3)
             Cond e1 e2 e3   -> mparens e1 <+> text "?" <+> mparens e2 <+> colon <+> mparens e3
             Signed e        -> text "$signed" <> parens (pretty e)
             Unsigned e      -> text "$unsigned" <> parens (pretty e)
             Concat [e]      -> pretty e
-            Concat es       -> braces $ hsep $ punctuate comma $ map pretty es
+            Concat es       -> braces $ ppCommaList $ map pretty es
             Repl e1 e2      -> braces $ pretty e1 <> braces (pretty e2)
             WCast sz e      -> pretty sz <> text "'" <> parens (pretty e)
             LitBits bv | width bv == 0 -> text "0'h0"
@@ -253,14 +293,20 @@ data LVal = Element Name Index
           | Range Name Index Index
           | Name Name
           | LVals [LVal]
-      deriving (Eq, Ord, Show)
+      deriving (Eq, Show)
 
 instance Pretty LVal where
       pretty = \ case
             Element x i -> pretty x <> brackets (pretty i)
             Range x i j -> pretty x <> brackets (pretty j <> colon <> pretty i)
             Name x      -> text x
-            LVals lvs   -> braces $ hsep $ punctuate comma $ map pretty lvs
+            LVals lvs   -> braces $ ppCommaList $ map pretty lvs
+
+-- | A comma-separated list; long lists (> 4 elements) may wrap at the page
+--   width (each separator is a softline, giving line-filling behavior).
+ppCommaList :: [Doc an] -> Doc an
+ppCommaList ds | length ds > 4 = nest 2 $ hcat $ punctuate (comma <> softline) ds
+               | otherwise     = hsep $ punctuate comma ds
 
 cat :: [Exp] -> Exp
 cat = (\ case
