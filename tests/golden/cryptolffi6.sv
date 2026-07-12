@@ -1,0 +1,45 @@
+module top_level (input logic [7:0] __in0,
+  input logic [7:0] __in1,
+  output logic [7:0] __out0);
+  logic [7:0] zi2;
+  logic [7:0] zi3;
+  logic [15:0] slice_in;
+  logic [8:0] slice_inR1;
+  logic [15:0] zi4;
+  logic [15:0] slice_inR2;
+  logic [16:0] slice_inR3;
+  logic [9:0] slice_inR4;
+  logic [15:0] slice_inR5;
+  logic [16:0] slice_inR6;
+  logic [9:0] slice_inR7;
+  logic [15:0] slice_inR8;
+  logic [16:0] slice_inR9;
+  logic [9:0] slice_inR10;
+  logic [15:0] slice_inR11;
+  logic [16:0] slice_inR12;
+  logic [9:0] slice_inR13;
+  logic [15:0] slice_inR14;
+  logic [7:0] zi5;
+  logic [7:0] zres;
+  assign zi2 = (8'hfb == 8'h0) ? __in0 : (__in0 % 8'hfb);
+  assign zi3 = (8'hfb == 8'h0) ? __in1 : (__in1 % 8'hfb);
+  assign slice_in = (16'hfb == 16'h0) ? ({8'h0, zi2} * {8'h0, zi2}) : (({8'h0, zi2} * {8'h0, zi2}) % 16'hfb);
+  assign slice_inR1 = (9'hfb == 9'h0) ? ({1'h0, slice_in[7:0]} + {1'h0, zi3}) : (({1'h0, slice_in[7:0]} + {1'h0, zi3}) % 9'hfb);
+  assign zi4 = {__in0, __in1};
+  assign slice_inR2 = (16'h101 == 16'h0) ? zi4 : (zi4 % 16'h101);
+  assign slice_inR3 = (17'h101 == 17'h0) ? (17'h0 * {8'h0, slice_inR2[8:0]}) : ((17'h0 * {8'h0, slice_inR2[8:0]}) % 17'h101);
+  assign slice_inR4 = (10'h101 == 10'h0) ? ({1'h0, slice_inR3[8:0]} + 10'h1) : (({1'h0, slice_inR3[8:0]} + 10'h1) % 10'h101);
+  assign slice_inR5 = (16'h101 == 16'h0) ? zi4 : (zi4 % 16'h101);
+  assign slice_inR6 = (17'h101 == 17'h0) ? ({8'h0, slice_inR4[8:0]} * {8'h0, slice_inR5[8:0]}) : (({8'h0, slice_inR4[8:0]} * {8'h0, slice_inR5[8:0]}) % 17'h101);
+  assign slice_inR7 = (10'h101 == 10'h0) ? ({1'h0, slice_inR6[8:0]} + 10'h2) : (({1'h0, slice_inR6[8:0]} + 10'h2) % 10'h101);
+  assign slice_inR8 = (16'h101 == 16'h0) ? zi4 : (zi4 % 16'h101);
+  assign slice_inR9 = (17'h101 == 17'h0) ? ({8'h0, slice_inR7[8:0]} * {8'h0, slice_inR8[8:0]}) : (({8'h0, slice_inR7[8:0]} * {8'h0, slice_inR8[8:0]}) % 17'h101);
+  assign slice_inR10 = (10'h101 == 10'h0) ? ({1'h0, slice_inR9[8:0]} + 10'h3) : (({1'h0, slice_inR9[8:0]} + 10'h3) % 10'h101);
+  assign slice_inR11 = (16'h101 == 16'h0) ? zi4 : (zi4 % 16'h101);
+  assign slice_inR12 = (17'h101 == 17'h0) ? ({8'h0, slice_inR10[8:0]} * {8'h0, slice_inR11[8:0]}) : (({8'h0, slice_inR10[8:0]} * {8'h0, slice_inR11[8:0]}) % 17'h101);
+  assign slice_inR13 = (10'h101 == 10'h0) ? ({1'h0, slice_inR12[8:0]} + 10'h4) : (({1'h0, slice_inR12[8:0]} + 10'h4) % 10'h101);
+  assign slice_inR14 = {7'h0, slice_inR13[8:0]};
+  assign zi5 = slice_inR1[7:0] + slice_inR14[7:0];
+  assign zres = zi5;
+  assign __out0 = zres;
+endmodule
