@@ -19,16 +19,24 @@
 --   'S.withDeclGroups' interface, whose name map recovers each
 --   primitive clone's instantiation types.
 --
---   Supported fragment: first-order functions over Bit, words, vectors,
---   tuples, records, newtypes, and enums (case expressions); if-then-else;
---   local value bindings; comprehensions and folds (unrolled); the scalar
---   and slicing primitives. Records and enums are interior-only: the
---   entry point's type must still be words/vectors/tuples (the rwc side
---   has no Cryptol-record counterpart). Enum values are laid out
---   tag#pad#args with the tag at the most-significant end and the tag
---   width nbits(#constructors) -- the same convention the Eidos fold
---   uses for ReWire ADTs. Local function bindings and recursion are
---   rejected with (it is hoped) actionable messages.
+--   Supported fragment: combinational functions over Bit, words,
+--   vectors, tuples, records, newtypes, enums (case expressions), and
+--   @Z n@ (modular arithmetic). if-then-else; local value and function
+--   bindings; higher-order functions applied to statically known
+--   functions; comprehensions, folds, and scans (unrolled); recursive
+--   finite comprehensions (the message-schedule/key-schedule/CBC idiom,
+--   unrolled element-wise); type-indexed recursion (unrolled per
+--   instantiation); the scalar, slicing, sequence, indexing, rotate,
+--   update, and polynomial (pmult/pdiv/pmod, constant divisor)
+--   primitives. Records, enums, and @Z n@ are interior-only: the entry
+--   point's type must be words/vectors/tuples (the rwc side has no
+--   counterpart). Enum values are laid out tag#pad#args with the tag at
+--   the most-significant end and the tag width nbits(#constructors) --
+--   the same convention the Eidos fold uses for ReWire ADTs.
+--   error/undefined become a zero poison constant and trace the
+--   identity, both with warnings. Value recursion, infinite streams,
+--   floating point, and Integer/Rational at runtime are rejected with
+--   (it is hoped) actionable messages.
 module ReWire.Cryptol.Translate (translate) where
 
 import ReWire.Annotation (noAnn)
