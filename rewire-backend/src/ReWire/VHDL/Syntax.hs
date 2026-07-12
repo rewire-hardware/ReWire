@@ -179,7 +179,7 @@ data Exp = Lit !BV
          | Cat ![Exp]
          | FunCall !Name ![Exp]
          | Num !Natural
-      deriving (Eq, Show)
+      deriving (Eq, Ord, Show)
 
 instance Pretty Exp where
       pretty = \ case

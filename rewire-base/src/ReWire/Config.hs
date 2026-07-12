@@ -13,6 +13,7 @@ module ReWire.Config
       , noWarn, wError
       , start, top, loadPath, cycles, depth, dump, source, rtlOpt, eidos, noHalt, debugLint
       , testbench
+      , stableNames, noLocators
       , pDebug
       ) where
 
@@ -69,6 +70,8 @@ data Config = Config
       , _testbench    :: Bool
       , _noWarn       :: Bool -- ^ -w: suppress warnings.
       , _wError       :: Bool -- ^ -Werror: warnings are fatal.
+      , _stableNames  :: Bool -- ^ --stable-names: fully-uniquified (less readable, edit-stable) generated names.
+      , _noLocators   :: Bool -- ^ --no-locators: no source-locator or provenance comments in output.
       }
 
 makeLenses ''Config
@@ -100,6 +103,8 @@ defaultConfig = Config
       , _testbench    = False
       , _noWarn       = False
       , _wError       = False
+      , _stableNames  = False
+      , _noLocators   = False
       }
 
 -- | The default value of the inputsFile field: when the user hasn't named an
@@ -177,6 +182,8 @@ interpret = foldM interp defaultConfig
                   FlagNoHalt                      -> pure $ noHalt .~ True $ c
                   FlagDebugLint                   -> pure $ debugLint .~ True $ c
                   FlagRtlOpt n                    -> readNat "--rtl-opt" n >>= \ v -> pure $ rtlOpt .~ v $ c
+                  FlagStableNames                 -> pure $ stableNames .~ True $ c
+                  FlagNoLocators                  -> pure $ noLocators .~ True $ c
                   FlagNoWarn                      -> pure $ noWarn .~ True $ c
                   FlagW "error"                   -> pure $ wError .~ True $ c
                   FlagW w                         -> Left $ "Unknown warning option: -W" <> pack w

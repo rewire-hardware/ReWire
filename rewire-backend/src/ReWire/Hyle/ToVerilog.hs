@@ -22,7 +22,7 @@ import ReWire.Annotation (Annote, Annotated (ann))
 import ReWire.BitVector (BV, width, bitVec, zeros, ones, lsb1, szBitRep)
 import ReWire.Config (Config, ResetFlag (..))
 import ReWire.Hyle.Interp (Ins, subRange, inputValue, yamlPrefixes)
-import ReWire.Hyle.Mangle (mangleFresh, mangleMod)
+import ReWire.Hyle.Mangle (mangleFresh, mangleMod, pickFresh, seedNames, svReserved)
 import ReWire.Error (failAt, failInternal, AstError, MonadError)
 import ReWire.Hyle.Syntax as M
 import ReWire.Pretty (showt)
@@ -50,12 +50,19 @@ type LEnv = HashMap M.Name V.Exp
 -- | Extern declarations, by name.
 type XEnv = HashMap M.Name Extern
 
+-- | A fresh signal/instance name: mangled, dodging Verilog keywords, and
+--   suffixed out of the way of every name already issued or seeded as
+--   ambient (ports and registers are emitted verbatim and never pass
+--   through here -- see the 'seedNames' calls).
 fresh :: MonadState SigInfo m => Text -> m V.Name
 fresh s = do
-      let s' = T.toLower $ mangleFresh s
-      ctr <- gets $ fromMaybe 0 . Map.lookup s' . fst
-      modify' $ first $ Map.insert s' $ ctr + 1
-      pure $ s' <> (if ctr > 0 then "R" <> showt ctr else mempty)
+      used <- gets fst
+      let (n, used') = pickFresh "R" used $ dodge $ T.toLower $ mangleFresh s
+      modify' $ first $ const used'
+      pure n
+      where dodge :: Text -> Text
+            dodge n | svReserved n = n <> "_"
+                    | otherwise    = n
 
 newWire :: MonadState SigInfo m => M.Size -> Text -> m V.Name
 newWire sz n = do
@@ -73,7 +80,7 @@ compileProgram conf (M.Program exts ds dev) = do
 
 compileDefn :: forall m. MonadError AstError m => XEnv -> M.Defn -> m V.Module
 compileDefn xenv (M.Defn _ g (M.Sig _ argSzs _) ps body) = do
-      ((e, stmts), (_, sigs)) <- flip runStateT (mempty, []) $ compileExp xenv lenv body
+      ((e, stmts), (_, sigs)) <- flip runStateT (seedNames ambient, []) $ compileExp xenv lenv body
       pure $ V.Module (mangleMod g) (inputs <> outputs) sigs
            $ stmts <> [ Assign (V.Name "res") e | sizeOf body > 0 ]
       where -- Zero-width parameters and results are erased (doc/hyle.md,
@@ -83,6 +90,9 @@ compileDefn xenv (M.Defn _ g (M.Sig _ argSzs _) ps body) = do
 
             argNames :: [Text]
             argNames = zipWith (\ _ i -> "arg" <> showt (i :: Int)) live [0 ..]
+
+            ambient :: [Text]
+            ambient = argNames <> [ "res" | sizeOf body > 0 ]
 
             lenv :: LEnv
             lenv = Map.fromList $ [ (x, V.nil) | (x, 0) <- zip ps argSzs ]
@@ -100,7 +110,7 @@ compileDevice conf xenv (M.Device an top ins outs regs insts body) = do
       -- gets no register process, so the registers hold their initial
       -- values (the flags smoke tests exercise this combination; the user
       -- owns the consequences).
-      (stmts, (_, sigs)) <- flip runStateT (mempty, []) $ do
+      (stmts, (_, sigs)) <- flip runStateT (seedNames ambient, []) $ do
             instWires <- Map.fromList . concat <$> mapM instOutWires insts
             (letStmts, lenv) <- foldStmts (ambientEnv instWires) body
             instStmts <- concat <$> mapM (compileInst instWires lenv) insts
@@ -121,6 +131,13 @@ compileDevice conf xenv (M.Device an top ins outs regs insts body) = do
 
             liveRegs :: [M.Register]
             liveRegs = [ r | r@(M.Register _ _ sz _) <- regs, sz > 0 ]
+
+            -- | Names emitted verbatim (ports, registers): the fresh-name
+            --   supply must avoid them.
+            ambient :: [Text]
+            ambient = catMaybes [mclk, mrst]
+                   <> map fst (live ins) <> map fst (live outs)
+                   <> concat [ [x, x <> "_next"] | M.Register _ x _ _ <- liveRegs ]
 
             regSigs :: [Signal]
             regSigs = concat [ [mkSignal (x, sz), mkSignal (x <> "_next", sz)] | M.Register _ x sz _ <- liveRegs ]
