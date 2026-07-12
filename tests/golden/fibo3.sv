@@ -9,17 +9,17 @@ module top_level (input logic [0:0] clk,
   logic [7:0] zi1;
   logic [7:0] zi2;
   logic [15:0] zi3;
-  logic [23:0] main_$l_main_first14$294_out;
-  logic [23:0] main_$l_main_first14$294_outR1;
+  logic [23:0] main_first2_out;
+  logic [23:0] main_first2_outR1;
   logic [23:0] zres;
   assign zi0 = __st0[15:8];
   assign slice_in = __st0 >> {8'h80{1'h0}};
   assign zi1 = slice_in[7:0];
   assign zi2 = zi0 + zi1;
   assign zi3 = {zi1, zi2};
-  main_$L_Main_first14$294  inst (zi3, main_$l_main_first14$294_out);
-  main_$L_Main_first14$294  instR1 (__st0, main_$l_main_first14$294_outR1);
-  assign zres = (__in0 == 1'h0) ? main_$l_main_first14$294_out : main_$l_main_first14$294_outR1;
+  main_first2  inst (zi3, main_first2_out);
+  main_first2  instR1 (__st0, main_first2_outR1);
+  assign zres = (~__in0) ? main_first2_out : main_first2_outR1;
   assign __st0_next = zres[15:0];
   assign __out0 = zres[23:16];
   initial __st0 = 16'h1;
@@ -32,7 +32,7 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module main_$L_Main_first14$294 (input logic [15:0] arg0,
+module main_first2 (input logic [15:0] arg0,
   output logic [23:0] res);
   logic [7:0] zi0;
   assign zi0 = arg0[15:8];

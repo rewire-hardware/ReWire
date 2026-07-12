@@ -214,8 +214,8 @@ component mymod is
             x : in std_logic_vector (15 downto 0);
             \out\ : out std_logic_vector (7 downto 0));
       end component;
-      signal zx1_out : std_logic_vector (7 downto 0);
+      signal \mymod$x1_out\ : std_logic_vector (7 downto 0);
 begin
-zx1 : mymod port map (clk => clk, rst => rst, x => \__in0\, \out\ => zx1_out);
-      \__out0\ <= zx1_out;
+\mymod$x1\ : mymod port map (clk => clk, rst => rst, x => \__in0\, \out\ => \mymod$x1_out\);
+      \__out0\ <= \mymod$x1_out\;
 end architecture;

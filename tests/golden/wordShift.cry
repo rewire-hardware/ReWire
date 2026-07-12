@@ -18,32 +18,32 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [8] -> [8]
-rw_main__dispatch x0 = rw_main__L__x4_284 x0
+rw_main__dispatch x0 = rw_main__x2 x0
 
-// main.$L.$x4$284
-rw_main__L__x4_284 : [8] -> [8]
-rw_main__L__x4_284 x0 = rw_main__L_Main_loop3_282 x0
+// main.$x2
+rw_main__x2 : [8] -> [8]
+rw_main__x2 x0 = rw_main_loop x0
 
-// main.$L.$x5$286
-rw_main__L__x5_286 : [8] -> [8]
-rw_main__L__x5_286 x0 = x0
+// main.$x3
+rw_main__x3 : [8] -> [8]
+rw_main__x3 x0 = x0
 
-// main.$L.Main.loop3$282
-rw_main__L_Main_loop3_282 : [8] -> [8]
-rw_main__L_Main_loop3_282 x0 = rw_main__L__x5_286 s1
+// main.loop
+rw_main_loop : [8] -> [8]
+rw_main_loop x0 = rw_main__x3 s1
   where
     s0 : [8]
-    s0 = rw_Main_myRotr_s1 x0
+    s0 = rw_Main_myRotr_s77b1e4f4 x0
     s1 : [8]
-    s1 = rw_Main_myArithRotr_s1 s0
+    s1 = rw_Main_myArithRotr_s8a0159e s0
 
-// Main.myRotr$s1
-rw_Main_myRotr_s1 : [8] -> [8]
-rw_Main_myRotr_s1 x0 = (x0 << 0x05) || (x0 >> 0x03)
+// Main.myRotr$s77b1e4f4
+rw_Main_myRotr_s77b1e4f4 : [8] -> [8]
+rw_Main_myRotr_s77b1e4f4 x0 = (x0 << 0x05) || (x0 >> 0x03)
 
-// Main.myArithRotr$s1
-rw_Main_myArithRotr_s1 : [8] -> [8]
-rw_Main_myArithRotr_s1 x0 = (x0 << 0x03) || (x0 >>$ 0x05)
+// Main.myArithRotr$s8a0159e
+rw_Main_myArithRotr_s8a0159e : [8] -> [8]
+rw_Main_myArithRotr_s8a0159e x0 = (x0 << 0x03) || (x0 >>$ 0x05)
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [8]

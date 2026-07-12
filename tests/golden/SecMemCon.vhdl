@@ -220,6 +220,10 @@ component \Main_ack__reg\ is
       port (arg0 : in std_logic_vector (76 downto 0);
             res : out std_logic_vector (31 downto 0));
       end component;
+      component \Main_memLookup_$fail1\ is
+      port (arg0 : in std_logic_vector (127 downto 0);
+            res : out std_logic_vector (31 downto 0));
+      end component;
       component \Main_memTweak\ is
       port (arg0 : in std_logic_vector (9 downto 0);
             arg1 : in std_logic_vector (31 downto 0);
@@ -231,20 +235,16 @@ component \Main_ack__reg\ is
             arg1 : in std_logic_vector (9 downto 0);
             res : out std_logic_vector (9 downto 0));
       end component;
-      component \ZLL_Main_memLookup_fail1\ is
-      port (arg0 : in std_logic_vector (127 downto 0);
-            res : out std_logic_vector (31 downto 0));
+      component \main___unused2\ is
+      port (arg0 : in std_logic_vector (204 downto 0);
+            res : out std_logic_vector (240 downto 0));
       end component;
-      component \main_$L_Main_get__addr__reg115$998\ is
+      component \main_get__addr__reg4\ is
       port (arg0 : in std_logic_vector (204 downto 0);
             arg1 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (240 downto 0));
       end component;
-      component \main_$L_Main_set__ack__reg$s131$882\ is
-      port (arg0 : in std_logic_vector (204 downto 0);
-            res : out std_logic_vector (240 downto 0));
-      end component;
-      component \main_$L___unused14$858\ is
+      component \main_set__ack__reg$sMain__S__Main__Bit\ is
       port (arg0 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (240 downto 0));
       end component;
@@ -378,7 +378,7 @@ component \Main_ack__reg\ is
       signal zi120 : std_logic_vector (76 downto 0);
       signal zi121 : std_logic_vector (204 downto 0);
       signal zi122 : std_logic_vector (204 downto 0);
-      signal \main_$l__unused14$858_out\ : std_logic_vector (240 downto 0);
+      signal \main__unused2_out\ : std_logic_vector (240 downto 0);
       signal zi125 : std_logic_vector (1 downto 0);
       signal zi126 : std_logic_vector (9 downto 0);
       signal zi127 : std_logic_vector (31 downto 0);
@@ -398,7 +398,7 @@ component \Main_ack__reg\ is
       signal zi142 : std_logic_vector (127 downto 0);
       signal zi143 : std_logic_vector (204 downto 0);
       signal zi144 : std_logic_vector (204 downto 0);
-      signal \main_$l_main_set_ack_reg$s131$882_out\ : std_logic_vector (240 downto 0);
+      signal \main_set_ack_reg$smain_s_main_bit_out\ : std_logic_vector (240 downto 0);
       signal \main_addr_reg_outR1\ : std_logic_vector (9 downto 0);
       signal zi148 : std_logic_vector (9 downto 0);
       signal zi151 : std_logic_vector (0 downto 0);
@@ -415,14 +415,14 @@ component \Main_ack__reg\ is
       signal zi162 : std_logic_vector (31 downto 0);
       signal zi163 : std_logic_vector (31 downto 0);
       signal zi164 : std_logic_vector (31 downto 0);
-      signal zll_main_memlookup_fail1_out : std_logic_vector (31 downto 0);
-      signal \zll_main_memlookup_fail1_outR1\ : std_logic_vector (31 downto 0);
-      signal \zll_main_memlookup_fail1_outR2\ : std_logic_vector (31 downto 0);
-      signal \zll_main_memlookup_fail1_outR3\ : std_logic_vector (31 downto 0);
-      signal \zll_main_memlookup_fail1_outR4\ : std_logic_vector (31 downto 0);
-      signal \zll_main_memlookup_fail1_outR5\ : std_logic_vector (31 downto 0);
-      signal \zll_main_memlookup_fail1_outR6\ : std_logic_vector (31 downto 0);
-      signal \zll_main_memlookup_fail1_outR7\ : std_logic_vector (31 downto 0);
+      signal \main_memlookup_$fail1_out\ : std_logic_vector (31 downto 0);
+      signal \main_memlookup_$fail1_outR1\ : std_logic_vector (31 downto 0);
+      signal \main_memlookup_$fail1_outR2\ : std_logic_vector (31 downto 0);
+      signal \main_memlookup_$fail1_outR3\ : std_logic_vector (31 downto 0);
+      signal \main_memlookup_$fail1_outR4\ : std_logic_vector (31 downto 0);
+      signal \main_memlookup_$fail1_outR5\ : std_logic_vector (31 downto 0);
+      signal \main_memlookup_$fail1_outR6\ : std_logic_vector (31 downto 0);
+      signal \main_memlookup_$fail1_outR7\ : std_logic_vector (31 downto 0);
       signal zi165 : std_logic_vector (31 downto 0);
       signal zi167 : std_logic_vector (1 downto 0);
       signal zi168 : std_logic_vector (9 downto 0);
@@ -432,7 +432,7 @@ component \Main_ack__reg\ is
       signal zi172 : std_logic_vector (76 downto 0);
       signal zi173 : std_logic_vector (204 downto 0);
       signal zi174 : std_logic_vector (204 downto 0);
-      signal \main_$l_main_set_ack_reg$s131$882_outR1\ : std_logic_vector (240 downto 0);
+      signal \main_set_ack_reg$smain_s_main_bit_outR1\ : std_logic_vector (240 downto 0);
       signal \main_addr_reg_outR2\ : std_logic_vector (9 downto 0);
       signal zi178 : std_logic_vector (9 downto 0);
       signal conn : std_logic_vector (31 downto 0);
@@ -460,9 +460,9 @@ component \Main_ack__reg\ is
       signal zi201 : std_logic_vector (76 downto 0);
       signal zi202 : std_logic_vector (204 downto 0);
       signal zi203 : std_logic_vector (204 downto 0);
-      signal \main_$l_main_get_addr_reg115$998_out\ : std_logic_vector (240 downto 0);
+      signal main_get_addr_reg4_out : std_logic_vector (240 downto 0);
       signal zi204 : std_logic_vector (204 downto 0);
-      signal \main_$l_main_get_addr_reg115$998_outR1\ : std_logic_vector (240 downto 0);
+      signal \main_get_addr_reg4_outR1\ : std_logic_vector (240 downto 0);
       signal zres : std_logic_vector (240 downto 0);
 begin
 zi2 <= \__in0\(13 downto 4);
@@ -589,7 +589,7 @@ zi2 <= \__in0\(13 downto 4);
       zi120 <= zi119;
       zi121 <= (zi120 & zi114);
       zi122 <= zi121;
-      \instR6\ : \main_$L___unused14$858\ port map (zi122, \main_$l__unused14$858_out\);
+      \instR6\ : \main___unused2\ port map (zi122, \main__unused2_out\);
       zi125 <= \__st0\(76 downto 75);
       zi126 <= \__st0\(74 downto 65);
       zi127 <= \__st0\(64 downto 33);
@@ -609,7 +609,7 @@ zi2 <= \__in0\(13 downto 4);
       zi142 <= main_memtweak_out;
       zi143 <= (zi140 & zi142);
       zi144 <= zi143;
-      \instR9\ : \main_$L_Main_set__ack__reg$s131$882\ port map (zi144, \main_$l_main_set_ack_reg$s131$882_out\);
+      \instR9\ : \main_set__ack__reg$sMain__S__Main__Bit\ port map (zi144, \main_set_ack_reg$smain_s_main_bit_out\);
       \instR10\ : \Main_addr__reg\ port map (\__st0\, \main_addr_reg_outR1\);
       zi148 <= \main_addr_reg_outR1\;
       zi151 <= zi148(9 downto 9);
@@ -626,15 +626,15 @@ zi2 <= \__in0\(13 downto 4);
       zi162 <= \__st1\(95 downto 64);
       zi163 <= \__st1\(63 downto 32);
       zi164 <= \__st1\(31 downto 0);
-      \instR11\ : \ZLL_Main_memLookup_fail1\ port map (\__st1\, zll_main_memlookup_fail1_out);
-      \instR12\ : \ZLL_Main_memLookup_fail1\ port map (\__st1\, \zll_main_memlookup_fail1_outR1\);
-      \instR13\ : \ZLL_Main_memLookup_fail1\ port map (\__st1\, \zll_main_memlookup_fail1_outR2\);
-      \instR14\ : \ZLL_Main_memLookup_fail1\ port map (\__st1\, \zll_main_memlookup_fail1_outR3\);
-      \instR15\ : \ZLL_Main_memLookup_fail1\ port map (\__st1\, \zll_main_memlookup_fail1_outR4\);
-      \instR16\ : \ZLL_Main_memLookup_fail1\ port map (\__st1\, \zll_main_memlookup_fail1_outR5\);
-      \instR17\ : \ZLL_Main_memLookup_fail1\ port map (\__st1\, \zll_main_memlookup_fail1_outR6\);
-      \instR18\ : \ZLL_Main_memLookup_fail1\ port map (\__st1\, \zll_main_memlookup_fail1_outR7\);
-      zi165 <= rw_cond(rw_eq(zi151, std_logic_vector'(B"0")), rw_cond(rw_eq(zi152, std_logic_vector'(B"0")), rw_cond(rw_eq(zi153, std_logic_vector'(B"0")), rw_cond(rw_eq(zi154, std_logic_vector'(B"0")), rw_cond(rw_eq(zi155, std_logic_vector'(B"0")), rw_cond(rw_eq(zi156, std_logic_vector'(B"0")), rw_cond(rw_eq(zi157, std_logic_vector'(B"0")), rw_cond(rw_eq(zi158, std_logic_vector'(B"0")), rw_cond(rw_eq(zi159, std_logic_vector'(B"0")), rw_cond(rw_eq(zi160, std_logic_vector'(B"0")), zi161, zi162), rw_cond(rw_eq(zi160, std_logic_vector'(B"0")), zi163, zi164)), zll_main_memlookup_fail1_out), \zll_main_memlookup_fail1_outR1\), \zll_main_memlookup_fail1_outR2\), \zll_main_memlookup_fail1_outR3\), \zll_main_memlookup_fail1_outR4\), \zll_main_memlookup_fail1_outR5\), \zll_main_memlookup_fail1_outR6\), \zll_main_memlookup_fail1_outR7\);
+      \instR11\ : \Main_memLookup_$fail1\ port map (\__st1\, \main_memlookup_$fail1_out\);
+      \instR12\ : \Main_memLookup_$fail1\ port map (\__st1\, \main_memlookup_$fail1_outR1\);
+      \instR13\ : \Main_memLookup_$fail1\ port map (\__st1\, \main_memlookup_$fail1_outR2\);
+      \instR14\ : \Main_memLookup_$fail1\ port map (\__st1\, \main_memlookup_$fail1_outR3\);
+      \instR15\ : \Main_memLookup_$fail1\ port map (\__st1\, \main_memlookup_$fail1_outR4\);
+      \instR16\ : \Main_memLookup_$fail1\ port map (\__st1\, \main_memlookup_$fail1_outR5\);
+      \instR17\ : \Main_memLookup_$fail1\ port map (\__st1\, \main_memlookup_$fail1_outR6\);
+      \instR18\ : \Main_memLookup_$fail1\ port map (\__st1\, \main_memlookup_$fail1_outR7\);
+      zi165 <= rw_cond(rw_not(zi151), rw_cond(rw_not(zi152), rw_cond(rw_not(zi153), rw_cond(rw_not(zi154), rw_cond(rw_not(zi155), rw_cond(rw_not(zi156), rw_cond(rw_not(zi157), rw_cond(rw_not(zi158), rw_cond(rw_not(zi159), rw_cond(rw_not(zi160), zi161, zi162), rw_cond(rw_not(zi160), zi163, zi164)), \main_memlookup_$fail1_out\), \main_memlookup_$fail1_outR1\), \main_memlookup_$fail1_outR2\), \main_memlookup_$fail1_outR3\), \main_memlookup_$fail1_outR4\), \main_memlookup_$fail1_outR5\), \main_memlookup_$fail1_outR6\), \main_memlookup_$fail1_outR7\);
       zi167 <= \__st0\(76 downto 75);
       zi168 <= \__st0\(74 downto 65);
       zi169 <= \__st0\(64 downto 33);
@@ -643,7 +643,7 @@ zi2 <= \__in0\(13 downto 4);
       zi172 <= zi171;
       zi173 <= (zi172 & \__st1\);
       zi174 <= zi173;
-      \instR19\ : \main_$L_Main_set__ack__reg$s131$882\ port map (zi174, \main_$l_main_set_ack_reg$s131$882_outR1\);
+      \instR19\ : \main_set__ack__reg$sMain__S__Main__Bit\ port map (zi174, \main_set_ack_reg$smain_s_main_bit_outR1\);
       \instR20\ : \Main_addr__reg\ port map (\__st0\, \main_addr_reg_outR2\);
       zi178 <= \main_addr_reg_outR2\;
       conn <= rw_repl(32, std_logic_vector'(B"0"));
@@ -661,7 +661,7 @@ zi2 <= \__in0\(13 downto 4);
       zi191 <= zi178(2 downto 2);
       zi192 <= zi178(1 downto 1);
       zi193 <= zi178(0 downto 0);
-      zi194 <= rw_cond(rw_eq(zi184, std_logic_vector'(B"0")), rw_cond(rw_eq(zi185, std_logic_vector'(B"0")), rw_cond(rw_eq(zi186, std_logic_vector'(B"0")), rw_cond(rw_eq(zi187, std_logic_vector'(B"0")), rw_cond(rw_eq(zi188, std_logic_vector'(B"0")), rw_cond(rw_eq(zi189, std_logic_vector'(B"0")), rw_cond(rw_eq(zi190, std_logic_vector'(B"0")), rw_cond(rw_eq(zi191, std_logic_vector'(B"0")), rw_cond(rw_eq(zi192, std_logic_vector'(B"0")), rw_cond(rw_eq(zi193, std_logic_vector'(B"1")), std_logic_vector'(B"0000000000"), std_logic_vector'(B"1111111111")), rw_cond(rw_eq(zi193, std_logic_vector'(B"0")), std_logic_vector'(B"0000000001"), std_logic_vector'(B"0000000010"))), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111"));
+      zi194 <= rw_cond(rw_not(zi184), rw_cond(rw_not(zi185), rw_cond(rw_not(zi186), rw_cond(rw_not(zi187), rw_cond(rw_not(zi188), rw_cond(rw_not(zi189), rw_cond(rw_not(zi190), rw_cond(rw_not(zi191), rw_cond(rw_not(zi192), rw_cond(zi193, std_logic_vector'(B"0000000000"), std_logic_vector'(B"1111111111")), rw_cond(rw_not(zi193), std_logic_vector'(B"0000000001"), std_logic_vector'(B"0000000010"))), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111"));
       zi195 <= zi183(127 downto 0);
       zi196 <= zi183(204 downto 203);
       zi197 <= zi183(192 downto 161);
@@ -671,10 +671,10 @@ zi2 <= \__in0\(13 downto 4);
       zi201 <= zi200;
       zi202 <= (zi201 & zi195);
       zi203 <= zi202;
-      \instR22\ : \main_$L_Main_get__addr__reg115$998\ port map (zi203, zi203, \main_$l_main_get_addr_reg115$998_out\);
+      \instR22\ : \main_get__addr__reg4\ port map (zi203, zi203, main_get_addr_reg4_out);
       zi204 <= (\__st0\ & \__st1\);
-      \instR23\ : \main_$L_Main_get__addr__reg115$998\ port map (zi204, zi204, \main_$l_main_get_addr_reg115$998_outR1\);
-      zres <= rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"000")), rw_cond(rw_eq(zi7, std_logic_vector'(B"1")), rw_cond(rw_eq(zi9, std_logic_vector'(B"0")), (zi62 & std_logic_vector'(B"001") & zi57), (zi104 & std_logic_vector'(B"010") & zi99)), \main_$l__unused14$858_out\), rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"001")), \main_$l_main_set_ack_reg$s131$882_out\, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"010")), \main_$l_main_set_ack_reg$s131$882_outR1\, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"011")), \main_$l_main_get_addr_reg115$998_out\, \main_$l_main_get_addr_reg115$998_outR1\))));
+      \instR23\ : \main_get__addr__reg4\ port map (zi204, zi204, \main_get_addr_reg4_outR1\);
+      zres <= rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"000")), rw_cond(zi7, rw_cond(rw_not(zi9), (zi62 & std_logic_vector'(B"001") & zi57), (zi104 & std_logic_vector'(B"010") & zi99)), \main__unused2_out\), rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"001")), \main_set_ack_reg$smain_s_main_bit_out\, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"010")), \main_set_ack_reg$smain_s_main_bit_outR1\, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"011")), main_get_addr_reg4_out, \main_get_addr_reg4_outR1\))));
       \__resumption_tag_next\ <= zres(207 downto 205);
       \__st0_next\ <= zres(204 downto 128);
       \__st1_next\ <= zres(127 downto 0);
@@ -697,12 +697,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L___unused14$858\ is
+entity \main___unused2\ is
 port (arg0 : in std_logic_vector (204 downto 0);
       res : out std_logic_vector (240 downto 0));
 end entity;
 
-architecture rtl of \main_$L___unused14$858\ is
+architecture rtl of \main___unused2\ is
 component \Main_ack__reg\ is
       port (arg0 : in std_logic_vector (76 downto 0);
             res : out std_logic_vector (0 downto 0));
@@ -733,13 +733,13 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L_Main_set__ack__reg$s131$882\ is
+entity \main_set__ack__reg$sMain__S__Main__Bit\ is
 port (arg0 : in std_logic_vector (204 downto 0);
       res : out std_logic_vector (240 downto 0));
 end entity;
 
-architecture rtl of \main_$L_Main_set__ack__reg$s131$882\ is
-component \main_$L___unused14$858\ is
+architecture rtl of \main_set__ack__reg$sMain__S__Main__Bit\ is
+component \main___unused2\ is
       port (arg0 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (240 downto 0));
       end component;
@@ -752,7 +752,7 @@ component \main_$L___unused14$858\ is
       signal zi6 : std_logic_vector (76 downto 0);
       signal zi7 : std_logic_vector (204 downto 0);
       signal zi8 : std_logic_vector (204 downto 0);
-      signal \main_$l__unused14$858_out\ : std_logic_vector (240 downto 0);
+      signal \main__unused2_out\ : std_logic_vector (240 downto 0);
 begin
 zi0 <= arg0(127 downto 0);
       zi1 <= arg0(204 downto 203);
@@ -763,21 +763,21 @@ zi0 <= arg0(127 downto 0);
       zi6 <= zi5;
       zi7 <= (zi6 & zi0);
       zi8 <= zi7;
-      inst : \main_$L___unused14$858\ port map (zi8, \main_$l__unused14$858_out\);
-      res <= \main_$l__unused14$858_out\;
+      inst : \main___unused2\ port map (zi8, \main__unused2_out\);
+      res <= \main__unused2_out\;
 end architecture;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L_Main_get__addr__reg115$998\ is
+entity \main_get__addr__reg4\ is
 port (arg0 : in std_logic_vector (204 downto 0);
       arg1 : in std_logic_vector (204 downto 0);
       res : out std_logic_vector (240 downto 0));
 end entity;
 
-architecture rtl of \main_$L_Main_get__addr__reg115$998\ is
+architecture rtl of \main_get__addr__reg4\ is
 component \Main_ack__reg\ is
       port (arg0 : in std_logic_vector (76 downto 0);
             res : out std_logic_vector (0 downto 0));
@@ -831,7 +831,7 @@ zi0 <= arg1(204 downto 128);
       zi10 <= zi2(2 downto 2);
       zi11 <= zi2(1 downto 1);
       zi12 <= zi2(0 downto 0);
-      zi13 <= rw_cond(rw_eq(zi3, std_logic_vector'(B"1")), rw_cond(rw_eq(zi4, std_logic_vector'(B"1")), rw_cond(rw_eq(zi5, std_logic_vector'(B"1")), rw_cond(rw_eq(zi6, std_logic_vector'(B"1")), rw_cond(rw_eq(zi7, std_logic_vector'(B"1")), rw_cond(rw_eq(zi8, std_logic_vector'(B"1")), rw_cond(rw_eq(zi9, std_logic_vector'(B"1")), rw_cond(rw_eq(zi10, std_logic_vector'(B"1")), rw_cond(rw_eq(zi11, std_logic_vector'(B"1")), rw_cond(rw_eq(zi12, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1"));
+      zi13 <= rw_cond(zi3, rw_cond(zi4, rw_cond(zi5, rw_cond(zi6, rw_cond(zi7, rw_cond(zi8, rw_cond(zi9, rw_cond(zi10, rw_cond(zi11, rw_not(zi12), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1"));
       zi14 <= arg1(204 downto 128);
       \instR1\ : \Main_ack__reg\ port map (zi14, main_ack_reg_out);
       zi16 <= main_ack_reg_out;
@@ -845,7 +845,7 @@ zi0 <= arg1(204 downto 128);
       \instR4\ : \Main_data__out__reg\ port map (zi20, \main_data_out_reg_outR1\);
       zi22 <= \main_data_out_reg_outR1\;
       zi23 <= (zi21 & zi22);
-      res <= rw_cond(rw_eq(zi13, std_logic_vector'(B"0")), (zi18 & std_logic_vector'(B"000") & arg1), (zi23 & std_logic_vector'(B"011") & arg0));
+      res <= rw_cond(rw_not(zi13), (zi18 & std_logic_vector'(B"000") & arg1), (zi23 & std_logic_vector'(B"011") & arg0));
 end architecture;
 
 library ieee;
@@ -858,10 +858,10 @@ port (arg0 : in std_logic_vector (76 downto 0);
 end entity;
 
 architecture rtl of \Main_data__out__reg\ is
-signal ds5 : std_logic_vector (31 downto 0);
+signal zds5 : std_logic_vector (31 downto 0);
 begin
-ds5 <= arg0(31 downto 0);
-      res <= ds5;
+zds5 <= arg0(31 downto 0);
+      res <= zds5;
 end architecture;
 
 library ieee;
@@ -874,10 +874,10 @@ port (arg0 : in std_logic_vector (76 downto 0);
 end entity;
 
 architecture rtl of \Main_ack__reg\ is
-signal ds4 : std_logic_vector (0 downto 0);
+signal zds4 : std_logic_vector (0 downto 0);
 begin
-ds4 <= arg0(32 downto 32);
-      res <= ds4;
+zds4 <= arg0(32 downto 32);
+      res <= zds4;
 end architecture;
 
 library ieee;
@@ -890,22 +890,22 @@ port (arg0 : in std_logic_vector (76 downto 0);
 end entity;
 
 architecture rtl of \Main_addr__reg\ is
-signal ds2 : std_logic_vector (9 downto 0);
+signal zds2 : std_logic_vector (9 downto 0);
 begin
-ds2 <= arg0(74 downto 65);
-      res <= ds2;
+zds2 <= arg0(74 downto 65);
+      res <= zds2;
 end architecture;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_memLookup_fail1\ is
+entity \Main_memLookup_$fail1\ is
 port (arg0 : in std_logic_vector (127 downto 0);
       res : out std_logic_vector (31 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_memLookup_fail1\ is
+architecture rtl of \Main_memLookup_$fail1\ is
 
 begin
 res <= rw_repl(32, std_logic_vector'(B"0"));
@@ -923,16 +923,16 @@ port (arg0 : in std_logic_vector (9 downto 0);
 end entity;
 
 architecture rtl of \Main_memTweak\ is
-signal ds1 : std_logic_vector (0 downto 0);
-      signal ds2 : std_logic_vector (0 downto 0);
-      signal ds3 : std_logic_vector (0 downto 0);
-      signal ds4 : std_logic_vector (0 downto 0);
-      signal ds5 : std_logic_vector (0 downto 0);
-      signal ds6 : std_logic_vector (0 downto 0);
-      signal ds7 : std_logic_vector (0 downto 0);
-      signal ds8 : std_logic_vector (0 downto 0);
-      signal ds9 : std_logic_vector (0 downto 0);
-      signal ds10 : std_logic_vector (0 downto 0);
+signal zds1 : std_logic_vector (0 downto 0);
+      signal zds2 : std_logic_vector (0 downto 0);
+      signal zds3 : std_logic_vector (0 downto 0);
+      signal zds4 : std_logic_vector (0 downto 0);
+      signal zds5 : std_logic_vector (0 downto 0);
+      signal zds6 : std_logic_vector (0 downto 0);
+      signal zds7 : std_logic_vector (0 downto 0);
+      signal zds8 : std_logic_vector (0 downto 0);
+      signal zds9 : std_logic_vector (0 downto 0);
+      signal zds10 : std_logic_vector (0 downto 0);
       signal mem1 : std_logic_vector (31 downto 0);
       signal mem2 : std_logic_vector (31 downto 0);
       signal mem3 : std_logic_vector (31 downto 0);
@@ -946,16 +946,16 @@ signal ds1 : std_logic_vector (0 downto 0);
       signal \mem1R2\ : std_logic_vector (31 downto 0);
       signal \mem2R2\ : std_logic_vector (31 downto 0);
 begin
-ds1 <= arg0(9 downto 9);
-      ds2 <= arg0(8 downto 8);
-      ds3 <= arg0(7 downto 7);
-      ds4 <= arg0(6 downto 6);
-      ds5 <= arg0(5 downto 5);
-      ds6 <= arg0(4 downto 4);
-      ds7 <= arg0(3 downto 3);
-      ds8 <= arg0(2 downto 2);
-      ds9 <= arg0(1 downto 1);
-      ds10 <= arg0(0 downto 0);
+zds1 <= arg0(9 downto 9);
+      zds2 <= arg0(8 downto 8);
+      zds3 <= arg0(7 downto 7);
+      zds4 <= arg0(6 downto 6);
+      zds5 <= arg0(5 downto 5);
+      zds6 <= arg0(4 downto 4);
+      zds7 <= arg0(3 downto 3);
+      zds8 <= arg0(2 downto 2);
+      zds9 <= arg0(1 downto 1);
+      zds10 <= arg0(0 downto 0);
       mem1 <= arg2(95 downto 64);
       mem2 <= arg2(63 downto 32);
       mem3 <= arg2(31 downto 0);
@@ -968,7 +968,7 @@ ds1 <= arg0(9 downto 9);
       \mem0R2\ <= arg2(127 downto 96);
       \mem1R2\ <= arg2(95 downto 64);
       \mem2R2\ <= arg2(63 downto 32);
-      res <= rw_cond(rw_eq(ds1, std_logic_vector'(B"0")), rw_cond(rw_eq(ds2, std_logic_vector'(B"0")), rw_cond(rw_eq(ds3, std_logic_vector'(B"0")), rw_cond(rw_eq(ds4, std_logic_vector'(B"0")), rw_cond(rw_eq(ds5, std_logic_vector'(B"0")), rw_cond(rw_eq(ds6, std_logic_vector'(B"0")), rw_cond(rw_eq(ds7, std_logic_vector'(B"0")), rw_cond(rw_eq(ds8, std_logic_vector'(B"0")), rw_cond(rw_eq(ds9, std_logic_vector'(B"0")), rw_cond(rw_eq(ds10, std_logic_vector'(B"0")), (arg1 & mem1 & mem2 & mem3), (mem0 & arg1 & \mem2R1\ & \mem3R1\)), rw_cond(rw_eq(ds10, std_logic_vector'(B"0")), (\mem0R1\ & \mem1R1\ & arg1 & \mem3R2\), (\mem0R2\ & \mem1R2\ & \mem2R2\ & arg1))), rw_repl(128, std_logic_vector'(B"0"))), rw_repl(128, std_logic_vector'(B"0"))), rw_repl(128, std_logic_vector'(B"0"))), rw_repl(128, std_logic_vector'(B"0"))), rw_repl(128, std_logic_vector'(B"0"))), rw_repl(128, std_logic_vector'(B"0"))), rw_repl(128, std_logic_vector'(B"0"))), rw_repl(128, std_logic_vector'(B"0")));
+      res <= rw_cond(rw_not(zds1), rw_cond(rw_not(zds2), rw_cond(rw_not(zds3), rw_cond(rw_not(zds4), rw_cond(rw_not(zds5), rw_cond(rw_not(zds6), rw_cond(rw_not(zds7), rw_cond(rw_not(zds8), rw_cond(rw_not(zds9), rw_cond(rw_not(zds10), (arg1 & mem1 & mem2 & mem3), (mem0 & arg1 & \mem2R1\ & \mem3R1\)), rw_cond(rw_not(zds10), (\mem0R1\ & \mem1R1\ & arg1 & \mem3R2\), (\mem0R2\ & \mem1R2\ & \mem2R2\ & arg1))), rw_repl(128, std_logic_vector'(B"0"))), rw_repl(128, std_logic_vector'(B"0"))), rw_repl(128, std_logic_vector'(B"0"))), rw_repl(128, std_logic_vector'(B"0"))), rw_repl(128, std_logic_vector'(B"0"))), rw_repl(128, std_logic_vector'(B"0"))), rw_repl(128, std_logic_vector'(B"0"))), rw_repl(128, std_logic_vector'(B"0")));
 end architecture;
 
 library ieee;

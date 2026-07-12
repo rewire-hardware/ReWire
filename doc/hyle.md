@@ -663,13 +663,15 @@ extern   ::= "extern" name
              { "output" ident ":" type }
              [ "model" name ]
 
-defn     ::= name ":" "(" [ type { "," type } ] ")" "->" type
-             name { ident } "=" exp
+defn     ::= [ locator ] { docline }
+             name ":" "(" [ type { "," type } ] ")" "->" type
+             [ "noinline" ] name { ident } "=" exp
 
 device   ::= "device" name { devdecl } { stmt }
 devdecl  ::= "input" ident ":" type
            | "output" ident ":" type
-           | "register" ident ":" type "init" lit
+           | [ locator ] "register" ident ":" type "init" lit
+           | "tag" ident "=" nat
            | "instance" ident "of" name [ "<" nat { "," nat } ">" ]
 stmt     ::= "let" ident "=" exp
            | ident ":=" exp                    -- output
@@ -686,12 +688,22 @@ atom     ::= lit | "undef" nat | ident | atom "[" nat "+:" nat "]" | "(" exp ")"
 lit      ::= nat "'" [ "h" { hexdigit } ]      -- e.g. 8'hff ; no digits means zero (0', 8')
 prim     ::= "add" | "sub" | … | "zext" nat | "sext" nat | "trunc" nat | "rep" nat
 ident    ::= [A-Za-z_$][A-Za-z0-9_.$']* | '"' … '"'   -- quoted form for arbitrary names
+locator  ::= "--@" file ":" nat ":" nat "-" nat ":" nat   -- one line
+docline  ::= "--|" text                                   -- to end of line
 ```
 
-Line comments run from `--` to end of line. An extern is sequential iff it
-declares a `clock` or `reset` name. (Annotations are not part of the
-concrete syntax; the parser, `Hyle.Parse`, fills them with file positions.)
-Example:
+Line comments run from `--` to end of line, except for the two metadata
+channels, which round-trip: a `locator` line records a definition's (or
+register's) source span (rwc emits these only under `--locators`; they are
+display metadata, not part of structural equality), and each `docline`
+carries one display-only doc line for the definition it precedes (also not
+part of structural equality). The `noinline` equation prefix exempts the
+definition from backend inlining (including `--flatten`). A `tag` line
+gives a display name for one value of the `__resumption_tag` register
+(display metadata; not part of structural equality). An extern is
+sequential iff it declares a `clock` or `reset` name. (Other annotations
+are not part of the concrete syntax; the parser, `Hyle.Parse`, fills them
+with file positions.) Example:
 
 ```
 -- f computes (x + y) zero-extended, unless x < y.

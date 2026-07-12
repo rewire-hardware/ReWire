@@ -18,15 +18,15 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [208] -> [46] -> [241]
-rw_main__dispatch x0 x1 = if (take`{3} x0) == 0b000 then (rw_main__L__x10_853 x1 (drop`{3} x0)) else (if (take`{3} x0) == 0b001 then (rw_main__L__x20_868 x1 (drop`{3} x0)) else (if (take`{3} x0) == 0b010 then (rw_main__L__x62_926 x1 (drop`{3} x0)) else (if (take`{3} x0) == 0b011 then (rw_main__L__unused101_979 x1 (drop`{3} x0)) else (rw_main__L__x2_842 x1 (drop`{3} x0)))))
+rw_main__dispatch x0 x1 = if (take`{3} x0) == 0b000 then (rw_main__x4 x1 (drop`{3} x0)) else (if (take`{3} x0) == 0b001 then (rw_main__x6 x1 (drop`{3} x0)) else (if (take`{3} x0) == 0b010 then (rw_main__x10 x1 (drop`{3} x0)) else (if (take`{3} x0) == 0b011 then (rw_main__unused22 x1 (drop`{3} x0)) else (rw_main__x x1 (drop`{3} x0)))))
 
-// main.$L.$x10$853
-rw_main__L__x10_853 : [46] -> [205] -> [241]
-rw_main__L__x10_853 x0 x1 = rw_main__L_Main_idle9_851 x0 x1
+// main.$x4
+rw_main__x4 : [46] -> [205] -> [241]
+rw_main__x4 x0 x1 = rw_main_idle x0 x1
 
-// main.$L._unused13$857
-rw_main__L__unused13_857 : [205] -> [205] -> [241]
-rw_main__L__unused13_857 x0 x1 = s4 # (0b000 # x1)
+// main._unused
+rw_main__unused : [205] -> [205] -> [241]
+rw_main__unused x0 x1 = s4 # (0b000 # x1)
   where
     s0 : [77]
     s0 = take`{77} x0
@@ -39,17 +39,17 @@ rw_main__L__unused13_857 x0 x1 = s4 # (0b000 # x1)
     s4 : [33]
     s4 = s2 # s3
 
-// main.$L.Main.connect12$856
-rw_main__L_Main_connect12_856 : [205] -> [205] -> [241]
-rw_main__L_Main_connect12_856 x0 x1 = rw_main__L__unused13_857 x0 x0
+// main.connect
+rw_main_connect : [205] -> [205] -> [241]
+rw_main_connect x0 x1 = rw_main__unused x0 x0
 
-// main.$L._unused14$858
-rw_main__L__unused14_858 : [205] -> [241]
-rw_main__L__unused14_858 x0 = rw_main__L_Main_connect12_856 x0 x0
+// main._unused2
+rw_main__unused2 : [205] -> [241]
+rw_main__unused2 x0 = rw_main_connect x0 x0
 
-// main.$L.x17$862
-rw_main__L_x17_862 : [205] -> [205] -> [241]
-rw_main__L_x17_862 x0 x1 = rw_main__L__unused14_858 s8
+// main.x
+rw_main_x : [205] -> [205] -> [241]
+rw_main_x x0 x1 = rw_main__unused2 s8
   where
     s0 : [128]
     s0 = drop`{77} x0
@@ -70,13 +70,13 @@ rw_main__L_x17_862 x0 x1 = rw_main__L__unused14_858 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_data_out_reg$s116$861
-rw_main__L_Main_set_data_out_reg_s116_861 : [205] -> [241]
-rw_main__L_Main_set_data_out_reg_s116_861 x0 = rw_main__L_x17_862 x0 x0
+// main.set_data_out_reg$sMain_zeroW32
+rw_main_set_data_out_reg_sMain_zeroW32 : [205] -> [241]
+rw_main_set_data_out_reg_sMain_zeroW32 x0 = rw_main_x x0 x0
 
-// main.$L.x19$865
-rw_main__L_x19_865 : [205] -> [205] -> [241]
-rw_main__L_x19_865 x0 x1 = rw_main__L_Main_set_data_out_reg_s116_861 s8
+// main.x2
+rw_main_x2 : [205] -> [205] -> [241]
+rw_main_x2 x0 x1 = rw_main_set_data_out_reg_sMain_zeroW32 s8
   where
     s0 : [128]
     s0 = drop`{77} x0
@@ -97,13 +97,13 @@ rw_main__L_x19_865 x0 x1 = rw_main__L_Main_set_data_out_reg_s116_861 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_ack_reg$s218$864
-rw_main__L_Main_set_ack_reg_s218_864 : [205] -> [241]
-rw_main__L_Main_set_ack_reg_s218_864 x0 = rw_main__L_x19_865 x0 x0
+// main.set_ack_reg$sMain_C_Main_Bit
+rw_main_set_ack_reg_sMain_C_Main_Bit : [205] -> [241]
+rw_main_set_ack_reg_sMain_C_Main_Bit x0 = rw_main_x2 x0 x0
 
-// main.$L.x32$883
-rw_main__L_x32_883 : [205] -> [205] -> [241]
-rw_main__L_x32_883 x0 x1 = rw_main__L__unused14_858 s8
+// main.x3
+rw_main_x3 : [205] -> [205] -> [241]
+rw_main_x3 x0 x1 = rw_main__unused2 s8
   where
     s0 : [128]
     s0 = drop`{77} x0
@@ -124,13 +124,13 @@ rw_main__L_x32_883 x0 x1 = rw_main__L__unused14_858 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_ack_reg$s131$882
-rw_main__L_Main_set_ack_reg_s131_882 : [205] -> [241]
-rw_main__L_Main_set_ack_reg_s131_882 x0 = rw_main__L_x32_883 x0 x0
+// main.set_ack_reg$sMain_S_Main_Bit
+rw_main_set_ack_reg_sMain_S_Main_Bit : [205] -> [241]
+rw_main_set_ack_reg_sMain_S_Main_Bit x0 = rw_main_x3 x0 x0
 
-// main.$L.x34$886
-rw_main__L_x34_886 : [10] -> [32] -> [205] -> [205] -> [241]
-rw_main__L_x34_886 x0 x1 x2 x3 = rw_main__L_Main_set_ack_reg_s131_882 s4
+// main.x4
+rw_main_x4 : [10] -> [32] -> [205] -> [205] -> [241]
+rw_main_x4 x0 x1 x2 x3 = rw_main_set_ack_reg_sMain_S_Main_Bit s4
   where
     s0 : [77]
     s0 = take`{77} x2
@@ -143,53 +143,53 @@ rw_main__L_x34_886 x0 x1 x2 x3 = rw_main__L_Main_set_ack_reg_s131_882 s4
     s4 : [205]
     s4 = s3
 
-// main.$L.Main.setloc33$885
-rw_main__L_Main_setloc33_885 : [10] -> [32] -> [205] -> [241]
-rw_main__L_Main_setloc33_885 x0 x1 x2 = rw_main__L_x34_886 x0 x1 x2 x2
+// main.setloc
+rw_main_setloc : [10] -> [32] -> [205] -> [241]
+rw_main_setloc x0 x1 x2 = rw_main_x4 x0 x1 x2 x2
 
-// main.$L.arm37$890
-rw_main__L_arm37_890 : [10] -> [77] -> [128] -> [205] -> [241]
-rw_main__L_arm37_890 x0 x1 x2 x3 = rw_main__L_Main_setloc33_885 x0 s0 x3
+// main.arm
+rw_main_arm : [10] -> [77] -> [128] -> [205] -> [241]
+rw_main_arm x0 x1 x2 x3 = rw_main_setloc x0 s0 x3
   where
     s0 : [32]
     s0 = rw_Main_data_reg x1
 
-// main.$L.ds36$889
-rw_main__L_ds36_889 : [10] -> [205] -> [205] -> [241]
-rw_main__L_ds36_889 x0 x1 x2 = rw_main__L_arm37_890 x0 s0 s1 x2
+// main.$ds2
+rw_main__ds2 : [10] -> [205] -> [205] -> [241]
+rw_main__ds2 x0 x1 x2 = rw_main_arm x0 s0 s1 x2
   where
     s0 : [77]
     s0 = take`{77} x1
     s1 : [128]
     s1 = drop`{77} x1
 
-// main.$L.Main.get_data_reg35$888
-rw_main__L_Main_get_data_reg35_888 : [10] -> [205] -> [241]
-rw_main__L_Main_get_data_reg35_888 x0 x1 = rw_main__L_ds36_889 x0 x1 x1
+// main.get_data_reg
+rw_main_get_data_reg : [10] -> [205] -> [241]
+rw_main_get_data_reg x0 x1 = rw_main__ds2 x0 x1 x1
 
-// main.$L.arm40$894
-rw_main__L_arm40_894 : [77] -> [128] -> [205] -> [241]
-rw_main__L_arm40_894 x0 x1 x2 = rw_main__L_Main_get_data_reg35_888 s0 x2
+// main.arm2
+rw_main_arm2 : [77] -> [128] -> [205] -> [241]
+rw_main_arm2 x0 x1 x2 = rw_main_get_data_reg s0 x2
   where
     s0 : [10]
     s0 = rw_Main_addr_reg x0
 
-// main.$L.ds39$893
-rw_main__L_ds39_893 : [205] -> [205] -> [241]
-rw_main__L_ds39_893 x0 x1 = rw_main__L_arm40_894 s0 s1 x1
+// main.$ds3
+rw_main__ds3 : [205] -> [205] -> [241]
+rw_main__ds3 x0 x1 = rw_main_arm2 s0 s1 x1
   where
     s0 : [77]
     s0 = take`{77} x0
     s1 : [128]
     s1 = drop`{77} x0
 
-// main.$L.Main.get_addr_reg38$892
-rw_main__L_Main_get_addr_reg38_892 : [205] -> [241]
-rw_main__L_Main_get_addr_reg38_892 x0 = rw_main__L_ds39_893 x0 x0
+// main.get_addr_reg
+rw_main_get_addr_reg : [205] -> [241]
+rw_main_get_addr_reg x0 = rw_main__ds3 x0 x0
 
-// main.$L.x42$897
-rw_main__L_x42_897 : [205] -> [205] -> [241]
-rw_main__L_x42_897 x0 x1 = rw_main__L_Main_get_addr_reg38_892 s8
+// main.x5
+rw_main_x5 : [205] -> [205] -> [241]
+rw_main_x5 x0 x1 = rw_main_get_addr_reg s8
   where
     s0 : [128]
     s0 = drop`{77} x0
@@ -210,17 +210,17 @@ rw_main__L_x42_897 x0 x1 = rw_main__L_Main_get_addr_reg38_892 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_data_out_reg$s141$896
-rw_main__L_Main_set_data_out_reg_s141_896 : [205] -> [241]
-rw_main__L_Main_set_data_out_reg_s141_896 x0 = rw_main__L_x42_897 x0 x0
+// main.set_data_out_reg$sMain_zeroW322
+rw_main_set_data_out_reg_sMain_zeroW322 : [205] -> [241]
+rw_main_set_data_out_reg_sMain_zeroW322 x0 = rw_main_x5 x0 x0
 
-// main.$L.$x20$868
-rw_main__L__x20_868 : [46] -> [205] -> [241]
-rw_main__L__x20_868 x0 x1 = rw_main__L_Main_set_data_out_reg_s141_896 x1
+// main.$x6
+rw_main__x6 : [46] -> [205] -> [241]
+rw_main__x6 x0 x1 = rw_main_set_data_out_reg_sMain_zeroW322 x1
 
-// main.$L._unused45$902
-rw_main__L__unused45_902 : [205] -> [205] -> [241]
-rw_main__L__unused45_902 x0 x1 = s4 # (0b001 # x1)
+// main._unused8
+rw_main__unused8 : [205] -> [205] -> [241]
+rw_main__unused8 x0 x1 = s4 # (0b001 # x1)
   where
     s0 : [77]
     s0 = take`{77} x0
@@ -233,17 +233,17 @@ rw_main__L__unused45_902 x0 x1 = s4 # (0b001 # x1)
     s4 : [33]
     s4 = s2 # s3
 
-// main.$L.Main.connect44$901
-rw_main__L_Main_connect44_901 : [205] -> [205] -> [241]
-rw_main__L_Main_connect44_901 x0 x1 = rw_main__L__unused45_902 x0 x0
+// main.connect3
+rw_main_connect3 : [205] -> [205] -> [241]
+rw_main_connect3 x0 x1 = rw_main__unused8 x0 x0
 
-// main.$L._unused46$903
-rw_main__L__unused46_903 : [205] -> [241]
-rw_main__L__unused46_903 x0 = rw_main__L_Main_connect44_901 x0 x0
+// main._unused9
+rw_main__unused9 : [205] -> [241]
+rw_main__unused9 x0 = rw_main_connect3 x0 x0
 
-// main.$L.x52$910
-rw_main__L_x52_910 : [205] -> [205] -> [241]
-rw_main__L_x52_910 x0 x1 = rw_main__L__unused46_903 s8
+// main.x6
+rw_main_x6 : [205] -> [205] -> [241]
+rw_main_x6 x0 x1 = rw_main__unused9 s8
   where
     s0 : [128]
     s0 = drop`{77} x0
@@ -264,13 +264,13 @@ rw_main__L_x52_910 x0 x1 = rw_main__L__unused46_903 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_data_out_reg$s151$909
-rw_main__L_Main_set_data_out_reg_s151_909 : [205] -> [241]
-rw_main__L_Main_set_data_out_reg_s151_909 x0 = rw_main__L_x52_910 x0 x0
+// main.set_data_out_reg$sMain_zeroW323
+rw_main_set_data_out_reg_sMain_zeroW323 : [205] -> [241]
+rw_main_set_data_out_reg_sMain_zeroW323 x0 = rw_main_x6 x0 x0
 
-// main.$L.x54$913
-rw_main__L_x54_913 : [205] -> [205] -> [241]
-rw_main__L_x54_913 x0 x1 = rw_main__L_Main_set_data_out_reg_s151_909 s8
+// main.x7
+rw_main_x7 : [205] -> [205] -> [241]
+rw_main_x7 x0 x1 = rw_main_set_data_out_reg_sMain_zeroW323 s8
   where
     s0 : [128]
     s0 = drop`{77} x0
@@ -291,13 +291,13 @@ rw_main__L_x54_913 x0 x1 = rw_main__L_Main_set_data_out_reg_s151_909 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_ack_reg$s253$912
-rw_main__L_Main_set_ack_reg_s253_912 : [205] -> [241]
-rw_main__L_Main_set_ack_reg_s253_912 x0 = rw_main__L_x54_913 x0 x0
+// main.set_ack_reg$sMain_C_Main_Bit2
+rw_main_set_ack_reg_sMain_C_Main_Bit2 : [205] -> [241]
+rw_main_set_ack_reg_sMain_C_Main_Bit2 x0 = rw_main_x7 x0 x0
 
-// main.$L.x56$916
-rw_main__L_x56_916 : [2] -> [205] -> [205] -> [241]
-rw_main__L_x56_916 x0 x1 x2 = rw_main__L_Main_set_ack_reg_s253_912 s8
+// main.x8
+rw_main_x8 : [2] -> [205] -> [205] -> [241]
+rw_main_x8 x0 x1 x2 = rw_main_set_ack_reg_sMain_C_Main_Bit2 s8
   where
     s0 : [128]
     s0 = drop`{77} x1
@@ -318,13 +318,13 @@ rw_main__L_x56_916 x0 x1 x2 = rw_main__L_Main_set_ack_reg_s253_912 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_partition_reg55$915
-rw_main__L_Main_set_partition_reg55_915 : [2] -> [205] -> [241]
-rw_main__L_Main_set_partition_reg55_915 x0 x1 = rw_main__L_x56_916 x0 x1 x1
+// main.set_partition_reg
+rw_main_set_partition_reg : [2] -> [205] -> [241]
+rw_main_set_partition_reg x0 x1 = rw_main_x8 x0 x1 x1
 
-// main.$L.x58$919
-rw_main__L_x58_919 : [32] -> [2] -> [205] -> [205] -> [241]
-rw_main__L_x58_919 x0 x1 x2 x3 = rw_main__L_Main_set_partition_reg55_915 x1 s8
+// main.x9
+rw_main_x9 : [32] -> [2] -> [205] -> [205] -> [241]
+rw_main_x9 x0 x1 x2 x3 = rw_main_set_partition_reg x1 s8
   where
     s0 : [128]
     s0 = drop`{77} x2
@@ -345,20 +345,20 @@ rw_main__L_x58_919 x0 x1 x2 x3 = rw_main__L_Main_set_partition_reg55_915 x1 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_data_reg57$918
-rw_main__L_Main_set_data_reg57_918 : [2] -> [32] -> [205] -> [241]
-rw_main__L_Main_set_data_reg57_918 x0 x1 x2 = rw_main__L_x58_919 x1 x0 x2 x2
+// main.set_data_reg
+rw_main_set_data_reg : [2] -> [32] -> [205] -> [241]
+rw_main_set_data_reg x0 x1 x2 = rw_main_x9 x1 x0 x2 x2
 
-// main.$L._unused47$905
-rw_main__L__unused47_905 : [46] -> [2] -> [205] -> [241]
-rw_main__L__unused47_905 x0 x1 x2 = rw_main__L_Main_set_data_reg57_918 x1 s0 x2
+// main._unused10
+rw_main__unused10 : [46] -> [2] -> [205] -> [241]
+rw_main__unused10 x0 x1 x2 = rw_main_set_data_reg x1 s0 x2
   where
     s0 : [32]
     s0 = rw_Main_data_in x0
 
-// main.$L.x60$922
-rw_main__L_x60_922 : [10] -> [46] -> [2] -> [205] -> [205] -> [241]
-rw_main__L_x60_922 x0 x1 x2 x3 x4 = rw_main__L__unused47_905 x1 x2 s8
+// main.x10
+rw_main_x10 : [10] -> [46] -> [2] -> [205] -> [205] -> [241]
+rw_main_x10 x0 x1 x2 x3 x4 = rw_main__unused10 x1 x2 s8
   where
     s0 : [128]
     s0 = drop`{77} x3
@@ -379,20 +379,20 @@ rw_main__L_x60_922 x0 x1 x2 x3 x4 = rw_main__L__unused47_905 x1 x2 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_addr_reg59$921
-rw_main__L_Main_set_addr_reg59_921 : [46] -> [2] -> [10] -> [205] -> [241]
-rw_main__L_Main_set_addr_reg59_921 x0 x1 x2 x3 = rw_main__L_x60_922 x2 x0 x1 x3 x3
+// main.set_addr_reg
+rw_main_set_addr_reg : [46] -> [2] -> [10] -> [205] -> [241]
+rw_main_set_addr_reg x0 x1 x2 x3 = rw_main_x10 x2 x0 x1 x3 x3
 
-// main.$L.arm61$924
-rw_main__L_arm61_924 : [46] -> [10] -> [2] -> [205] -> [241]
-rw_main__L_arm61_924 x0 x1 x2 x3 = rw_main__L_Main_set_addr_reg59_921 x0 x2 s0 x3
+// main.arm3
+rw_main_arm3 : [46] -> [10] -> [2] -> [205] -> [241]
+rw_main_arm3 x0 x1 x2 x3 = rw_main_set_addr_reg x0 x2 s0 x3
   where
     s0 : [10]
     s0 = rw_Main____ x2 x1
 
-// main.$L.x75$943
-rw_main__L_x75_943 : [32] -> [205] -> [205] -> [241]
-rw_main__L_x75_943 x0 x1 x2 = rw_main__L_Main_set_ack_reg_s131_882 s8
+// main.x12
+rw_main_x12 : [32] -> [205] -> [205] -> [241]
+rw_main_x12 x0 x1 x2 = rw_main_set_ack_reg_sMain_S_Main_Bit s8
   where
     s0 : [128]
     s0 = drop`{77} x1
@@ -413,57 +413,57 @@ rw_main__L_x75_943 x0 x1 x2 = rw_main__L_Main_set_ack_reg_s131_882 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_data_out_reg74$942
-rw_main__L_Main_set_data_out_reg74_942 : [32] -> [205] -> [241]
-rw_main__L_Main_set_data_out_reg74_942 x0 x1 = rw_main__L_x75_943 x0 x1 x1
+// main.set_data_out_reg
+rw_main_set_data_out_reg : [32] -> [205] -> [241]
+rw_main_set_data_out_reg x0 x1 = rw_main_x12 x0 x1 x1
 
-// main.$L.arm78$947
-rw_main__L_arm78_947 : [10] -> [77] -> [128] -> [205] -> [241]
-rw_main__L_arm78_947 x0 x1 x2 x3 = rw_main__L_Main_set_data_out_reg74_942 s0 x3
+// main.arm4
+rw_main_arm4 : [10] -> [77] -> [128] -> [205] -> [241]
+rw_main_arm4 x0 x1 x2 x3 = rw_main_set_data_out_reg s0 x3
   where
     s0 : [32]
     s0 = rw_Main_memLookup x0 x2
 
-// main.$L.ds77$946
-rw_main__L_ds77_946 : [10] -> [205] -> [205] -> [241]
-rw_main__L_ds77_946 x0 x1 x2 = rw_main__L_arm78_947 x0 s0 s1 x2
+// main.$ds4
+rw_main__ds4 : [10] -> [205] -> [205] -> [241]
+rw_main__ds4 x0 x1 x2 = rw_main_arm4 x0 s0 s1 x2
   where
     s0 : [77]
     s0 = take`{77} x1
     s1 : [128]
     s1 = drop`{77} x1
 
-// main.$L.Main.getloc76$945
-rw_main__L_Main_getloc76_945 : [10] -> [205] -> [241]
-rw_main__L_Main_getloc76_945 x0 x1 = rw_main__L_ds77_946 x0 x1 x1
+// main.getloc
+rw_main_getloc : [10] -> [205] -> [241]
+rw_main_getloc x0 x1 = rw_main__ds4 x0 x1 x1
 
-// main.$L.arm81$951
-rw_main__L_arm81_951 : [77] -> [128] -> [205] -> [241]
-rw_main__L_arm81_951 x0 x1 x2 = rw_main__L_Main_getloc76_945 s0 x2
+// main.arm5
+rw_main_arm5 : [77] -> [128] -> [205] -> [241]
+rw_main_arm5 x0 x1 x2 = rw_main_getloc s0 x2
   where
     s0 : [10]
     s0 = rw_Main_addr_reg x0
 
-// main.$L.ds80$950
-rw_main__L_ds80_950 : [205] -> [205] -> [241]
-rw_main__L_ds80_950 x0 x1 = rw_main__L_arm81_951 s0 s1 x1
+// main.$ds5
+rw_main__ds5 : [205] -> [205] -> [241]
+rw_main__ds5 x0 x1 = rw_main_arm5 s0 s1 x1
   where
     s0 : [77]
     s0 = take`{77} x0
     s1 : [128]
     s1 = drop`{77} x0
 
-// main.$L.Main.get_addr_reg79$949
-rw_main__L_Main_get_addr_reg79_949 : [205] -> [241]
-rw_main__L_Main_get_addr_reg79_949 x0 = rw_main__L_ds80_950 x0 x0
+// main.get_addr_reg2
+rw_main_get_addr_reg2 : [205] -> [241]
+rw_main_get_addr_reg2 x0 = rw_main__ds5 x0 x0
 
-// main.$L.$x62$926
-rw_main__L__x62_926 : [46] -> [205] -> [241]
-rw_main__L__x62_926 x0 x1 = rw_main__L_Main_get_addr_reg79_949 x1
+// main.$x10
+rw_main__x10 : [46] -> [205] -> [241]
+rw_main__x10 x0 x1 = rw_main_get_addr_reg2 x1
 
-// main.$L._unused84$956
-rw_main__L__unused84_956 : [205] -> [205] -> [241]
-rw_main__L__unused84_956 x0 x1 = s4 # (0b010 # x1)
+// main._unused17
+rw_main__unused17 : [205] -> [205] -> [241]
+rw_main__unused17 x0 x1 = s4 # (0b010 # x1)
   where
     s0 : [77]
     s0 = take`{77} x0
@@ -476,17 +476,17 @@ rw_main__L__unused84_956 x0 x1 = s4 # (0b010 # x1)
     s4 : [33]
     s4 = s2 # s3
 
-// main.$L.Main.connect83$955
-rw_main__L_Main_connect83_955 : [205] -> [205] -> [241]
-rw_main__L_Main_connect83_955 x0 x1 = rw_main__L__unused84_956 x0 x0
+// main.connect5
+rw_main_connect5 : [205] -> [205] -> [241]
+rw_main_connect5 x0 x1 = rw_main__unused17 x0 x0
 
-// main.$L._unused85$957
-rw_main__L__unused85_957 : [205] -> [241]
-rw_main__L__unused85_957 x0 = rw_main__L_Main_connect83_955 x0 x0
+// main._unused18
+rw_main__unused18 : [205] -> [241]
+rw_main__unused18 x0 = rw_main_connect5 x0 x0
 
-// main.$L.x90$963
-rw_main__L_x90_963 : [205] -> [205] -> [241]
-rw_main__L_x90_963 x0 x1 = rw_main__L__unused85_957 s8
+// main.x13
+rw_main_x13 : [205] -> [205] -> [241]
+rw_main_x13 x0 x1 = rw_main__unused18 s8
   where
     s0 : [128]
     s0 = drop`{77} x0
@@ -507,13 +507,13 @@ rw_main__L_x90_963 x0 x1 = rw_main__L__unused85_957 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_data_out_reg$s189$962
-rw_main__L_Main_set_data_out_reg_s189_962 : [205] -> [241]
-rw_main__L_Main_set_data_out_reg_s189_962 x0 = rw_main__L_x90_963 x0 x0
+// main.set_data_out_reg$sMain_zeroW324
+rw_main_set_data_out_reg_sMain_zeroW324 : [205] -> [241]
+rw_main_set_data_out_reg_sMain_zeroW324 x0 = rw_main_x13 x0 x0
 
-// main.$L.x92$966
-rw_main__L_x92_966 : [205] -> [205] -> [241]
-rw_main__L_x92_966 x0 x1 = rw_main__L_Main_set_data_out_reg_s189_962 s8
+// main.x14
+rw_main_x14 : [205] -> [205] -> [241]
+rw_main_x14 x0 x1 = rw_main_set_data_out_reg_sMain_zeroW324 s8
   where
     s0 : [128]
     s0 = drop`{77} x0
@@ -534,13 +534,13 @@ rw_main__L_x92_966 x0 x1 = rw_main__L_Main_set_data_out_reg_s189_962 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_ack_reg$s291$965
-rw_main__L_Main_set_ack_reg_s291_965 : [205] -> [241]
-rw_main__L_Main_set_ack_reg_s291_965 x0 = rw_main__L_x92_966 x0 x0
+// main.set_ack_reg$sMain_C_Main_Bit3
+rw_main_set_ack_reg_sMain_C_Main_Bit3 : [205] -> [241]
+rw_main_set_ack_reg_sMain_C_Main_Bit3 x0 = rw_main_x14 x0 x0
 
-// main.$L.x94$969
-rw_main__L_x94_969 : [2] -> [205] -> [205] -> [241]
-rw_main__L_x94_969 x0 x1 x2 = rw_main__L_Main_set_ack_reg_s291_965 s8
+// main.x15
+rw_main_x15 : [2] -> [205] -> [205] -> [241]
+rw_main_x15 x0 x1 x2 = rw_main_set_ack_reg_sMain_C_Main_Bit3 s8
   where
     s0 : [128]
     s0 = drop`{77} x1
@@ -561,13 +561,13 @@ rw_main__L_x94_969 x0 x1 x2 = rw_main__L_Main_set_ack_reg_s291_965 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_partition_reg93$968
-rw_main__L_Main_set_partition_reg93_968 : [2] -> [205] -> [241]
-rw_main__L_Main_set_partition_reg93_968 x0 x1 = rw_main__L_x94_969 x0 x1 x1
+// main.set_partition_reg2
+rw_main_set_partition_reg2 : [2] -> [205] -> [241]
+rw_main_set_partition_reg2 x0 x1 = rw_main_x15 x0 x1 x1
 
-// main.$L.x96$972
-rw_main__L_x96_972 : [10] -> [2] -> [205] -> [205] -> [241]
-rw_main__L_x96_972 x0 x1 x2 x3 = rw_main__L_Main_set_partition_reg93_968 x1 s8
+// main.x16
+rw_main_x16 : [10] -> [2] -> [205] -> [205] -> [241]
+rw_main_x16 x0 x1 x2 x3 = rw_main_set_partition_reg2 x1 s8
   where
     s0 : [128]
     s0 = drop`{77} x2
@@ -588,27 +588,27 @@ rw_main__L_x96_972 x0 x1 x2 x3 = rw_main__L_Main_set_partition_reg93_968 x1 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_addr_reg95$971
-rw_main__L_Main_set_addr_reg95_971 : [2] -> [10] -> [205] -> [241]
-rw_main__L_Main_set_addr_reg95_971 x0 x1 x2 = rw_main__L_x96_972 x1 x0 x2 x2
+// main.set_addr_reg2
+rw_main_set_addr_reg2 : [2] -> [10] -> [205] -> [241]
+rw_main_set_addr_reg2 x0 x1 x2 = rw_main_x16 x1 x0 x2 x2
 
-// main.$L.arm97$974
-rw_main__L_arm97_974 : [10] -> [2] -> [205] -> [241]
-rw_main__L_arm97_974 x0 x1 x2 = rw_main__L_Main_set_addr_reg95_971 x1 s0 x2
+// main.arm6
+rw_main_arm6 : [10] -> [2] -> [205] -> [241]
+rw_main_arm6 x0 x1 x2 = rw_main_set_addr_reg2 x1 s0 x2
   where
     s0 : [10]
     s0 = rw_Main____ x1 x0
 
-// main.$L.arm98$975
-rw_main__L_arm98_975 : [46] -> [10] -> [2] -> [205] -> [241]
-rw_main__L_arm98_975 x0 x1 x2 x3 = if s0 == 0b0 then (rw_main__L_arm61_924 x0 x1 x2 x3) else (rw_main__L_arm97_974 x1 x2 x3)
+// main.arm7
+rw_main_arm7 : [46] -> [10] -> [2] -> [205] -> [241]
+rw_main_arm7 x0 x1 x2 x3 = if ~ (s0 @ 0) then (rw_main_arm3 x0 x1 x2 x3) else (rw_main_arm6 x1 x2 x3)
   where
     s0 : [1]
     s0 = rw_Main_rnw x0
 
-// main.$L.Main.idle9$851
-rw_main__L_Main_idle9_851 : [46] -> [205] -> [241]
-rw_main__L_Main_idle9_851 x0 x1 = if s2 == 0b1 then (rw_main__L_arm98_975 x0 s0 s1 x1) else (rw_main__L_Main_set_ack_reg_s218_864 x1)
+// main.idle
+rw_main_idle : [46] -> [205] -> [241]
+rw_main_idle x0 x1 = if s2 @ 0 then (rw_main_arm7 x0 s0 s1 x1) else (rw_main_set_ack_reg_sMain_C_Main_Bit x1)
   where
     s0 : [10]
     s0 = rw_Main_addr_in x0
@@ -617,9 +617,9 @@ rw_main__L_Main_idle9_851 x0 x1 = if s2 == 0b1 then (rw_main__L_arm98_975 x0 s0 
     s2 : [1]
     s2 = rw_Main_go x0
 
-// main.$L.arm99$976
-rw_main__L_arm99_976 : [77] -> [128] -> [205] -> [241]
-rw_main__L_arm99_976 x0 x1 x2 = s2 # (0b000 # x2)
+// main.arm8
+rw_main_arm8 : [77] -> [128] -> [205] -> [241]
+rw_main_arm8 x0 x1 x2 = s2 # (0b000 # x2)
   where
     s0 : [1]
     s0 = rw_Main_ack_reg x0
@@ -628,26 +628,26 @@ rw_main__L_arm99_976 x0 x1 x2 = s2 # (0b000 # x2)
     s2 : [33]
     s2 = s0 # s1
 
-// main.$L.ds7$848
-rw_main__L_ds7_848 : [205] -> [205] -> [241]
-rw_main__L_ds7_848 x0 x1 = rw_main__L_arm99_976 s0 s1 x1
+// main.$ds
+rw_main__ds : [205] -> [205] -> [241]
+rw_main__ds x0 x1 = rw_main_arm8 s0 s1 x1
   where
     s0 : [77]
     s0 = take`{77} x0
     s1 : [128]
     s1 = drop`{77} x0
 
-// main.$L.arm100$978
-rw_main__L_arm100_978 : [205] -> [241]
-rw_main__L_arm100_978 x0 = rw_main__L_ds7_848 x0 x0
+// main.arm9
+rw_main_arm9 : [205] -> [241]
+rw_main_arm9 x0 = rw_main__ds x0 x0
 
-// main.$L._unused103$982
-rw_main__L__unused103_982 : [205] -> [241]
-rw_main__L__unused103_982 x0 = rw_main__L_Main_get_addr_reg115_998 x0 x0
+// main._unused23
+rw_main__unused23 : [205] -> [241]
+rw_main__unused23 x0 = rw_main_get_addr_reg4 x0 x0
 
-// main.$L.x107$987
-rw_main__L_x107_987 : [10] -> [205] -> [205] -> [241]
-rw_main__L_x107_987 x0 x1 x2 = rw_main__L__unused103_982 s8
+// main.x17
+rw_main_x17 : [10] -> [205] -> [205] -> [241]
+rw_main_x17 x0 x1 x2 = rw_main__unused23 s8
   where
     s0 : [128]
     s0 = drop`{77} x1
@@ -668,20 +668,20 @@ rw_main__L_x107_987 x0 x1 x2 = rw_main__L__unused103_982 s8
     s8 : [205]
     s8 = s7
 
-// main.$L.Main.set_addr_reg106$986
-rw_main__L_Main_set_addr_reg106_986 : [10] -> [205] -> [241]
-rw_main__L_Main_set_addr_reg106_986 x0 x1 = rw_main__L_x107_987 x0 x1 x1
+// main.set_addr_reg3
+rw_main_set_addr_reg3 : [10] -> [205] -> [241]
+rw_main_set_addr_reg3 x0 x1 = rw_main_x17 x0 x1 x1
 
-// main.$L._unused105$985
-rw_main__L__unused105_985 : [10] -> [205] -> [241]
-rw_main__L__unused105_985 x0 x1 = rw_main__L_Main_set_addr_reg106_986 s0 x1
+// main._unused24
+rw_main__unused24 : [10] -> [205] -> [241]
+rw_main__unused24 x0 x1 = rw_main_set_addr_reg3 s0 x1
   where
     s0 : [10]
     s0 = rw_Main_nextKey x0
 
-// main.$L.x109$990
-rw_main__L_x109_990 : [10] -> [10] -> [205] -> [205] -> [241]
-rw_main__L_x109_990 x0 x1 x2 x3 = rw_main__L__unused105_985 x0 s4
+// main.x18
+rw_main_x18 : [10] -> [10] -> [205] -> [205] -> [241]
+rw_main_x18 x0 x1 x2 x3 = rw_main__unused24 x0 s4
   where
     s0 : [77]
     s0 = take`{77} x2
@@ -694,37 +694,37 @@ rw_main__L_x109_990 x0 x1 x2 x3 = rw_main__L__unused105_985 x0 s4
     s4 : [205]
     s4 = s3
 
-// main.$L.Main.setloc$s1108$989
-rw_main__L_Main_setloc_s1108_989 : [10] -> [10] -> [205] -> [241]
-rw_main__L_Main_setloc_s1108_989 x0 x1 x2 = rw_main__L_x109_990 x0 x1 x2 x2
+// main.setloc$sMain_zeroW32
+rw_main_setloc_sMain_zeroW32 : [10] -> [10] -> [205] -> [241]
+rw_main_setloc_sMain_zeroW32 x0 x1 x2 = rw_main_x18 x0 x1 x2 x2
 
-// main.$L.arm112$994
-rw_main__L_arm112_994 : [77] -> [128] -> [205] -> [241]
-rw_main__L_arm112_994 x0 x1 x2 = rw_main__L_Main_setloc_s1108_989 s0 s0 x2
+// main.arm10
+rw_main_arm10 : [77] -> [128] -> [205] -> [241]
+rw_main_arm10 x0 x1 x2 = rw_main_setloc_sMain_zeroW32 s0 s0 x2
   where
     s0 : [10]
     s0 = rw_Main_addr_reg x0
 
-// main.$L.ds111$993
-rw_main__L_ds111_993 : [205] -> [205] -> [241]
-rw_main__L_ds111_993 x0 x1 = rw_main__L_arm112_994 s0 s1 x1
+// main.$ds6
+rw_main__ds6 : [205] -> [205] -> [241]
+rw_main__ds6 x0 x1 = rw_main_arm10 s0 s1 x1
   where
     s0 : [77]
     s0 = take`{77} x0
     s1 : [128]
     s1 = drop`{77} x0
 
-// main.$L.Main.get_addr_reg110$992
-rw_main__L_Main_get_addr_reg110_992 : [205] -> [241]
-rw_main__L_Main_get_addr_reg110_992 x0 = rw_main__L_ds111_993 x0 x0
+// main.get_addr_reg3
+rw_main_get_addr_reg3 : [205] -> [241]
+rw_main_get_addr_reg3 x0 = rw_main__ds6 x0 x0
 
-// main.$L._unused101$979
-rw_main__L__unused101_979 : [46] -> [205] -> [241]
-rw_main__L__unused101_979 x0 x1 = rw_main__L_Main_get_addr_reg110_992 x1
+// main._unused22
+rw_main__unused22 : [46] -> [205] -> [241]
+rw_main__unused22 x0 x1 = rw_main_get_addr_reg3 x1
 
-// main.$L._unused114$997
-rw_main__L__unused114_997 : [205] -> [205] -> [241]
-rw_main__L__unused114_997 x0 x1 = s4 # (0b011 # x1)
+// main._unused25
+rw_main__unused25 : [205] -> [205] -> [241]
+rw_main__unused25 x0 x1 = s4 # (0b011 # x1)
   where
     s0 : [77]
     s0 = take`{77} x0
@@ -737,44 +737,44 @@ rw_main__L__unused114_997 x0 x1 = s4 # (0b011 # x1)
     s4 : [33]
     s4 = s2 # s3
 
-// main.$L.Main.connect113$996
-rw_main__L_Main_connect113_996 : [205] -> [205] -> [241]
-rw_main__L_Main_connect113_996 x0 x1 = rw_main__L__unused114_997 x0 x0
+// main.connect6
+rw_main_connect6 : [205] -> [205] -> [241]
+rw_main_connect6 x0 x1 = rw_main__unused25 x0 x0
 
-// main.$L.addr6$847
-rw_main__L_addr6_847 : [205] -> [10] -> [205] -> [241]
-rw_main__L_addr6_847 x0 x1 x2 = if s0 == 0b0 then (rw_main__L_arm100_978 x2) else (rw_main__L_Main_connect113_996 x0 x2)
+// main.addr
+rw_main_addr : [205] -> [10] -> [205] -> [241]
+rw_main_addr x0 x1 x2 = if ~ (s0 @ 0) then (rw_main_arm9 x2) else (rw_main_connect6 x0 x2)
   where
     s0 : [1]
     s0 = rw_Main_scrubbing x1
 
-// main.$L.arm117$1000
-rw_main__L_arm117_1000 : [205] -> [77] -> [128] -> [205] -> [241]
-rw_main__L_arm117_1000 x0 x1 x2 x3 = rw_main__L_addr6_847 x0 s0 x3
+// main.arm11
+rw_main_arm11 : [205] -> [77] -> [128] -> [205] -> [241]
+rw_main_arm11 x0 x1 x2 x3 = rw_main_addr x0 s0 x3
   where
     s0 : [10]
     s0 = rw_Main_addr_reg x1
 
-// main.$L.ds116$999
-rw_main__L_ds116_999 : [205] -> [205] -> [205] -> [241]
-rw_main__L_ds116_999 x0 x1 x2 = rw_main__L_arm117_1000 x0 s0 s1 x2
+// main.$ds7
+rw_main__ds7 : [205] -> [205] -> [205] -> [241]
+rw_main__ds7 x0 x1 x2 = rw_main_arm11 x0 s0 s1 x2
   where
     s0 : [77]
     s0 = take`{77} x1
     s1 : [128]
     s1 = drop`{77} x1
 
-// main.$L.Main.get_addr_reg115$998
-rw_main__L_Main_get_addr_reg115_998 : [205] -> [205] -> [241]
-rw_main__L_Main_get_addr_reg115_998 x0 x1 = rw_main__L_ds116_999 x0 x1 x1
+// main.get_addr_reg4
+rw_main_get_addr_reg4 : [205] -> [205] -> [241]
+rw_main_get_addr_reg4 x0 x1 = rw_main__ds7 x0 x1 x1
 
-// main.$L.Main.scrub_ram3$843
-rw_main__L_Main_scrub_ram3_843 : [46] -> [205] -> [241]
-rw_main__L_Main_scrub_ram3_843 x0 x1 = rw_main__L_Main_get_addr_reg115_998 x1 x1
+// main.scrub_ram
+rw_main_scrub_ram : [46] -> [205] -> [241]
+rw_main_scrub_ram x0 x1 = rw_main_get_addr_reg4 x1 x1
 
-// main.$L.$x2$842
-rw_main__L__x2_842 : [46] -> [205] -> [241]
-rw_main__L__x2_842 x0 x1 = rw_main__L_Main_scrub_ram3_843 x0 x1
+// main.$x
+rw_main__x : [46] -> [205] -> [241]
+rw_main__x x0 x1 = rw_main_scrub_ram x0 x1
 
 // Main.mem3
 rw_Main_mem3 : [128] -> [32]
@@ -869,7 +869,7 @@ rw_Main_data_in x0 = s0
 
 // Main.memLookup
 rw_Main_memLookup : [10] -> [128] -> [32]
-rw_Main_memLookup x0 x1 = if s0 == 0b0 then (if s1 == 0b0 then (if s2 == 0b0 then (if s3 == 0b0 then (if s4 == 0b0 then (if s5 == 0b0 then (if s6 == 0b0 then (if s7 == 0b0 then (if s8 == 0b0 then (if s9 == 0b0 then (rw_Main_mem0 x1) else (rw_Main_mem1 x1)) else (if s9 == 0b0 then (rw_Main_mem2 x1) else (rw_Main_mem3 x1))) else (rw__LL_Main_memLookup_fail1 x1)) else (rw__LL_Main_memLookup_fail1 x1)) else (rw__LL_Main_memLookup_fail1 x1)) else (rw__LL_Main_memLookup_fail1 x1)) else (rw__LL_Main_memLookup_fail1 x1)) else (rw__LL_Main_memLookup_fail1 x1)) else (rw__LL_Main_memLookup_fail1 x1)) else (rw__LL_Main_memLookup_fail1 x1)
+rw_Main_memLookup x0 x1 = if ~ (s0 @ 0) then (if ~ (s1 @ 0) then (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (if ~ (s4 @ 0) then (if ~ (s5 @ 0) then (if ~ (s6 @ 0) then (if ~ (s7 @ 0) then (if ~ (s8 @ 0) then (if ~ (s9 @ 0) then (rw_Main_mem0 x1) else (rw_Main_mem1 x1)) else (if ~ (s9 @ 0) then (rw_Main_mem2 x1) else (rw_Main_mem3 x1))) else (rw_Main_memLookup__fail1 x1)) else (rw_Main_memLookup__fail1 x1)) else (rw_Main_memLookup__fail1 x1)) else (rw_Main_memLookup__fail1 x1)) else (rw_Main_memLookup__fail1 x1)) else (rw_Main_memLookup__fail1 x1)) else (rw_Main_memLookup__fail1 x1)) else (rw_Main_memLookup__fail1 x1)
   where
     s0 : [1]
     s0 = take`{1} x0
@@ -892,13 +892,13 @@ rw_Main_memLookup x0 x1 = if s0 == 0b0 then (if s1 == 0b0 then (if s2 == 0b0 the
     s9 : [1]
     s9 = drop`{9} x0
 
-// $LL.Main.memLookup.fail1
-rw__LL_Main_memLookup_fail1 : [128] -> [32]
-rw__LL_Main_memLookup_fail1 x0 = 0x00000000
+// Main.memLookup.$fail1
+rw_Main_memLookup__fail1 : [128] -> [32]
+rw_Main_memLookup__fail1 x0 = 0x00000000
 
 // Main.memTweak
 rw_Main_memTweak : [10] -> [32] -> [128] -> [128]
-rw_Main_memTweak x0 x1 x2 = if s0 == 0b0 then (if s1 == 0b0 then (if s2 == 0b0 then (if s3 == 0b0 then (if s4 == 0b0 then (if s5 == 0b0 then (if s6 == 0b0 then (if s7 == 0b0 then (if s8 == 0b0 then (if s9 == 0b0 then (x1 # (s10 # (s11 # s12))) else (s13 # (x1 # (s14 # s15)))) else (if s9 == 0b0 then (s16 # (s17 # (x1 # s18))) else (s19 # (s20 # (s21 # x1))))) else 0x00000000000000000000000000000000) else 0x00000000000000000000000000000000) else 0x00000000000000000000000000000000) else 0x00000000000000000000000000000000) else 0x00000000000000000000000000000000) else 0x00000000000000000000000000000000) else 0x00000000000000000000000000000000) else 0x00000000000000000000000000000000
+rw_Main_memTweak x0 x1 x2 = if ~ (s0 @ 0) then (if ~ (s1 @ 0) then (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (if ~ (s4 @ 0) then (if ~ (s5 @ 0) then (if ~ (s6 @ 0) then (if ~ (s7 @ 0) then (if ~ (s8 @ 0) then (if ~ (s9 @ 0) then (x1 # (s10 # (s11 # s12))) else (s13 # (x1 # (s14 # s15)))) else (if ~ (s9 @ 0) then (s16 # (s17 # (x1 # s18))) else (s19 # (s20 # (s21 # x1))))) else 0x00000000000000000000000000000000) else 0x00000000000000000000000000000000) else 0x00000000000000000000000000000000) else 0x00000000000000000000000000000000) else 0x00000000000000000000000000000000) else 0x00000000000000000000000000000000) else 0x00000000000000000000000000000000) else 0x00000000000000000000000000000000
   where
     s0 : [1]
     s0 = take`{1} x0
@@ -972,7 +972,7 @@ rw_Main____ x0 x1 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # s9)))))
 
 // Main.nextKey
 rw_Main_nextKey : [10] -> [10]
-rw_Main_nextKey x0 = if s0 == 0b0 then (if s1 == 0b0 then (if s2 == 0b0 then (if s3 == 0b0 then (if s4 == 0b0 then (if s5 == 0b0 then (if s6 == 0b0 then (if s7 == 0b0 then (if s8 == 0b0 then (if s9 == 0b1 then 0b0000000000 else 0b1111111111) else (if s9 == 0b0 then 0b0000000001 else 0b0000000010)) else 0b1111111111) else 0b1111111111) else 0b1111111111) else 0b1111111111) else 0b1111111111) else 0b1111111111) else 0b1111111111) else 0b1111111111
+rw_Main_nextKey x0 = if ~ (s0 @ 0) then (if ~ (s1 @ 0) then (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (if ~ (s4 @ 0) then (if ~ (s5 @ 0) then (if ~ (s6 @ 0) then (if ~ (s7 @ 0) then (if ~ (s8 @ 0) then (if s9 @ 0 then 0b0000000000 else 0b1111111111) else (if ~ (s9 @ 0) then 0b0000000001 else 0b0000000010)) else 0b1111111111) else 0b1111111111) else 0b1111111111) else 0b1111111111) else 0b1111111111) else 0b1111111111) else 0b1111111111) else 0b1111111111
   where
     s0 : [1]
     s0 = take`{1} x0
@@ -997,7 +997,7 @@ rw_Main_nextKey x0 = if s0 == 0b0 then (if s1 == 0b0 then (if s2 == 0b0 then (if
 
 // Main.scrubbing
 rw_Main_scrubbing : [10] -> [1]
-rw_Main_scrubbing x0 = if s0 == 0b1 then (if s1 == 0b1 then (if s2 == 0b1 then (if s3 == 0b1 then (if s4 == 0b1 then (if s5 == 0b1 then (if s6 == 0b1 then (if s7 == 0b1 then (if s8 == 0b1 then (if s9 == 0b1 then 0b0 else 0b1) else 0b1) else 0b1) else 0b1) else 0b1) else 0b1) else 0b1) else 0b1) else 0b1) else 0b1
+rw_Main_scrubbing x0 = if s0 @ 0 then (if s1 @ 0 then (if s2 @ 0 then (if s3 @ 0 then (if s4 @ 0 then (if s5 @ 0 then (if s6 @ 0 then (if s7 @ 0 then (if s8 @ 0 then (~ s9) else 0b1) else 0b1) else 0b1) else 0b1) else 0b1) else 0b1) else 0b1) else 0b1) else 0b1
   where
     s0 : [1]
     s0 = take`{1} x0

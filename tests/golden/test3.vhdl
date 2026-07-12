@@ -208,19 +208,19 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \main_$L_Main_tick3$241\ is
+component main_tick is
       port (arg0 : in std_logic_vector (7 downto 0);
             res : out std_logic_vector (15 downto 0));
       end component;
       signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal \main_$l_main_tick3$241_out\ : std_logic_vector (15 downto 0);
-      signal \main_$l_main_tick3$241_outR1\ : std_logic_vector (15 downto 0);
+      signal main_tick_out : std_logic_vector (15 downto 0);
+      signal \main_tick_outR1\ : std_logic_vector (15 downto 0);
       signal zres : std_logic_vector (15 downto 0);
 begin
-inst : \main_$L_Main_tick3$241\ port map (\__st0\, \main_$l_main_tick3$241_out\);
-      \instR1\ : \main_$L_Main_tick3$241\ port map (\__st0\, \main_$l_main_tick3$241_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), \main_$l_main_tick3$241_out\, \main_$l_main_tick3$241_outR1\);
+inst : main_tick port map (\__st0\, main_tick_out);
+      \instR1\ : main_tick port map (\__st0\, \main_tick_outR1\);
+      zres <= rw_cond(rw_not(\__in0\), main_tick_out, \main_tick_outR1\);
       \__st0_next\ <= zres(7 downto 0);
       \__out0\ <= zres(15 downto 8);
       process (clk, rst)
@@ -237,12 +237,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L_Main_tick3$241\ is
+entity main_tick is
 port (arg0 : in std_logic_vector (7 downto 0);
       res : out std_logic_vector (15 downto 0));
 end entity;
 
-architecture rtl of \main_$L_Main_tick3$241\ is
+architecture rtl of main_tick is
 
 begin
 res <= (arg0 & arg0);

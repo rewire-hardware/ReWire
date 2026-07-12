@@ -1,39 +1,48 @@
+--| state dispatch for process main: 0=$ds 1=i
 main.$dispatch : ([17], [1]) -> [25]
 main.$dispatch disc i =
-      if eq disc[16 +: 1] 1'h0 then main.$L.ds3$250 i disc[0 +: 8]
-            else main.$L.i7$254 disc[8 +: 8] i disc[0 +: 8]
+      if not disc[16 +: 1] then main.$ds i disc[0 +: 8]
+            else main.i disc[8 +: 8] i disc[0 +: 8]
 
-main.$L.ds3$250 : ([1], [8]) -> [25]
-main.$L.ds3$250 ds s0 =
+--| block '$L.$ds' of process main (state 0)
+main.$ds : ([1], [8]) -> [25]
+main.$ds $ds s0 =
       25'h10000
 
-main.$L.n2$249 : ([8], [8]) -> [25]
-main.$L.n2$249 n s0 =
+--| block '$L.n' of process main
+main.n : ([8], [8]) -> [25]
+main.n n s0 =
       add n n # 9'h0 # s0
 
-main.$L._unused8$255 : ([8], [1], [8]) -> [25]
-main.$L._unused8$255 s i s0 =
-      if eq i 1'h0 then main.$L.n2$249 s s0
-            else main.$L.Main.counter5$252 s0
+--| block '$L._unused2' of process main
+main._unused2 : ([8], [1], [8]) -> [25]
+main._unused2 s i s0 =
+      if not i then main.n s s0
+            else main.counter s0
 
-main.$L.i7$254 : ([8], [1], [8]) -> [25]
-main.$L.i7$254 s i s0 =
+--| block '$L.i' of process main (state 1)
+main.i : ([8], [1], [8]) -> [25]
+main.i s i s0 =
       let s01 = add s 8'h1 in
-      main.$L._unused8$255 s i s01
+      main._unused2 s i s01
 
-main.$L.s6$253 : ([8], [8]) -> [25]
-main.$L.s6$253 s s0 =
+--| block '$L.s' of process main
+main.s : ([8], [8]) -> [25]
+main.s s s0 =
       s # 1'h1 # s # s0
 
-main.$L.Main.counter5$252 : ([8]) -> [25]
-main.$L.Main.counter5$252 s0 =
-      main.$L.s6$253 s0 s0
+--| block '$L.Main.counter' of process main
+main.counter : ([8]) -> [25]
+main.counter s0 =
+      main.s s0 s0
 
 device top_level
       input __in0 : [1]
       output __out0 : [8]
       register __resumption_tag : [9] init 9'h100
       register __st0 : [8] init 8'h0
+      tag $ds = 0
+      tag i = 1
       let $res = main.$dispatch (__resumption_tag # __st0) __in0
       __out0 := $res[17 +: 8]
       next __resumption_tag := $res[8 +: 9]

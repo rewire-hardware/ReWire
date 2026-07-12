@@ -215,20 +215,18 @@ component \Main_zookus\ is
       signal \__resumption_tag\ : std_logic_vector (1 downto 0) := std_logic_vector'(B"10");
       signal \__resumption_tag_next\ : std_logic_vector (1 downto 0);
       signal zi0 : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (0 downto 0);
       signal main_zookus_out : std_logic_vector (0 downto 0);
-      signal zi2 : std_logic_vector (0 downto 0);
+      signal zi1 : std_logic_vector (0 downto 0);
       signal \main_zookus_outR1\ : std_logic_vector (0 downto 0);
-      signal zi3 : std_logic_vector (0 downto 0);
+      signal zi2 : std_logic_vector (0 downto 0);
       signal zres : std_logic_vector (2 downto 0);
 begin
 zi0 <= \__resumption_tag\(0 downto 0);
-      zi1 <= rw_cond(rw_eq(zi0, std_logic_vector'(B"1")), std_logic_vector'(B"1"), std_logic_vector'(B"0"));
-      inst : \Main_zookus\ port map (zi1, main_zookus_out);
-      zi2 <= main_zookus_out;
-      \instR1\ : \Main_zookus\ port map (zi2, \main_zookus_outR1\);
-      zi3 <= \main_zookus_outR1\;
-      zres <= rw_cond(rw_eq(\__resumption_tag\(1 downto 1), std_logic_vector'(B"0")), (zi3 & std_logic_vector'(B"0") & zi1), std_logic_vector'(B"000"));
+      inst : \Main_zookus\ port map (zi0, main_zookus_out);
+      zi1 <= main_zookus_out;
+      \instR1\ : \Main_zookus\ port map (zi1, \main_zookus_outR1\);
+      zi2 <= \main_zookus_outR1\;
+      zres <= rw_cond(rw_not(\__resumption_tag\(1 downto 1)), (zi2 & std_logic_vector'(B"0") & zi0), std_logic_vector'(B"000"));
       \__resumption_tag_next\ <= zres(1 downto 0);
       \__out0\ <= zres(2 downto 2);
       process (clk, rst)

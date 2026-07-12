@@ -208,7 +208,7 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \main_$L___unused7$298\ is
+component \main___unused\ is
       port (arg0 : in std_logic_vector (0 downto 0);
             arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (2 downto 0));
@@ -218,18 +218,18 @@ component \main_$L___unused7$298\ is
       signal \__st1\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st1_next\ : std_logic_vector (0 downto 0);
       signal zi3 : std_logic_vector (0 downto 0);
-      signal \main_$l__unused7$298_out\ : std_logic_vector (2 downto 0);
+      signal \main__unused_out\ : std_logic_vector (2 downto 0);
       signal zi4 : std_logic_vector (0 downto 0);
       signal zi5 : std_logic_vector (0 downto 0);
-      signal \main_$l__unused7$298_outR1\ : std_logic_vector (2 downto 0);
+      signal \main__unused_outR1\ : std_logic_vector (2 downto 0);
       signal zres : std_logic_vector (2 downto 0);
 begin
-zi3 <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
-      inst : \main_$L___unused7$298\ port map (\__st0\, \__st1\, \main_$l__unused7$298_out\);
+zi3 <= rw_not(\__in0\);
+      inst : \main___unused\ port map (\__st0\, \__st1\, \main__unused_out\);
       zi4 <= rw_xor(\__st0\, \__st1\);
       zi5 <= zi4;
-      \instR1\ : \main_$L___unused7$298\ port map (\__st1\, zi5, \main_$l__unused7$298_outR1\);
-      zres <= rw_cond(rw_eq(zi3, std_logic_vector'(B"0")), \main_$l__unused7$298_out\, \main_$l__unused7$298_outR1\);
+      \instR1\ : \main___unused\ port map (\__st1\, zi5, \main__unused_outR1\);
+      zres <= rw_cond(rw_not(zi3), \main__unused_out\, \main__unused_outR1\);
       \__st0_next\ <= zres(1 downto 1);
       \__st1_next\ <= zres(0 downto 0);
       \__out0\ <= zres(2 downto 2);
@@ -249,13 +249,13 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L___unused7$298\ is
+entity \main___unused\ is
 port (arg0 : in std_logic_vector (0 downto 0);
       arg1 : in std_logic_vector (0 downto 0);
       res : out std_logic_vector (2 downto 0));
 end entity;
 
-architecture rtl of \main_$L___unused7$298\ is
+architecture rtl of \main___unused\ is
 
 begin
 res <= (arg0 & arg0 & arg1);

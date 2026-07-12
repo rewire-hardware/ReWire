@@ -216,7 +216,7 @@ signal \__resumption_tag\ : std_logic_vector (1 downto 0) := std_logic_vector'(B
       signal zres : std_logic_vector (3 downto 0);
 begin
 zi1 <= \__resumption_tag\(0 downto 0);
-      zres <= rw_cond(rw_eq(\__resumption_tag\(1 downto 1), std_logic_vector'(B"0")), (zi1 & std_logic_vector'(B"0") & zi1 & zi1), std_logic_vector'(B"0000"));
+      zres <= rw_cond(rw_not(\__resumption_tag\(1 downto 1)), (zi1 & std_logic_vector'(B"0") & zi1 & zi1), std_logic_vector'(B"0000"));
       \__resumption_tag_next\ <= zres(2 downto 1);
       \__st0_next\ <= zres(0 downto 0);
       \__out0\ <= zres(3 downto 3);

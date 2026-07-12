@@ -1,77 +1,90 @@
+--| state dispatch for process main: 0=i 1=_unused2 2=$x2
 main.$dispatch : ([1038], [514]) -> [1296]
 main.$dispatch disc i =
-      if eq disc[1036 +: 2] 2'h0 then main.$L.i8$707 disc[1030 +: 6] i disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
-            else if eq disc[1036 +: 2] 2'h1 then main.$L._unused5$704 i disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6] else main.$L.$x35$742 i disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
+      if eq disc[1036 +: 2] 2'h0 then main.i disc[1030 +: 6] i disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
+            else if eq disc[1036 +: 2] 2'h1 then main._unused2 i disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6] else main.$x2 i disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
-main.$L.arm12$711 : ([514], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1296]
-main.$L.arm12$711 i h1 h2 h3 h4 h5 h6 h7 h8 a b c d e f g h s0 s1 s2 s3 =
+--| block '$L.arm' of process main
+main.arm : ([514], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1296]
+main.arm i h1 h2 h3 h4 h5 h6 h7 h8 a b c d e f g h s0 s1 s2 s3 =
       let $a = add a h1 # add b h2 # add c h3 # add d h4 # add e h5 # add f h6 # add g h7 # add h h8 in
-      main.$L.Main.dev3$702 i s0 s1 $a s3
+      main.dev i s0 s1 $a s3
 
-main.$L.ds11$710 : ([514], [32], [32], [32], [32], [32], [32], [32], [32], [256], [256], [512], [256], [6]) -> [1296]
-main.$L.ds11$710 i h1 h2 h3 h4 h5 h6 h7 h8 ds s0 s1 s2 s3 =
-      let a = ds[224 +: 32] in
-      let b = ds[192 +: 32] in
-      let c = ds[160 +: 32] in
-      let d = ds[128 +: 32] in
-      let e = ds[96 +: 32] in
-      let f = ds[64 +: 32] in
-      let g = ds[32 +: 32] in
-      let h = ds[0 +: 32] in
-      main.$L.arm12$711 i h1 h2 h3 h4 h5 h6 h7 h8 a b c d e f g h s0 s1 s2 s3
+--| block '$L.$ds3' of process main
+main.$ds3 : ([514], [32], [32], [32], [32], [32], [32], [32], [32], [256], [256], [512], [256], [6]) -> [1296]
+main.$ds3 i h1 h2 h3 h4 h5 h6 h7 h8 $ds s0 s1 s2 s3 =
+      let a = $ds[224 +: 32] in
+      let b = $ds[192 +: 32] in
+      let c = $ds[160 +: 32] in
+      let d = $ds[128 +: 32] in
+      let e = $ds[96 +: 32] in
+      let f = $ds[64 +: 32] in
+      let g = $ds[32 +: 32] in
+      let h = $ds[0 +: 32] in
+      main.arm i h1 h2 h3 h4 h5 h6 h7 h8 a b c d e f g h s0 s1 s2 s3
 
-main.$L.arm13$713 : ([514], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1296]
-main.$L.arm13$713 i h1 h2 h3 h4 h5 h6 h7 h8 s0 s1 s2 s3 =
-      main.$L.ds11$710 i h1 h2 h3 h4 h5 h6 h7 h8 s0 s0 s1 s2 s3
+--| block '$L.arm2' of process main
+main.arm2 : ([514], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1296]
+main.arm2 i h1 h2 h3 h4 h5 h6 h7 h8 s0 s1 s2 s3 =
+      main.$ds3 i h1 h2 h3 h4 h5 h6 h7 h8 s0 s0 s1 s2 s3
 
-main.$L.ds10$709 : ([514], [256], [256], [512], [256], [6]) -> [1296]
-main.$L.ds10$709 i ds s0 s1 s2 s3 =
-      let h1 = ds[224 +: 32] in
-      let h2 = ds[192 +: 32] in
-      let h3 = ds[160 +: 32] in
-      let h4 = ds[128 +: 32] in
-      let h5 = ds[96 +: 32] in
-      let h6 = ds[64 +: 32] in
-      let h7 = ds[32 +: 32] in
-      let h8 = ds[0 +: 32] in
-      main.$L.arm13$713 i h1 h2 h3 h4 h5 h6 h7 h8 s0 s1 s2 s3
+--| block '$L.$ds2' of process main
+main.$ds2 : ([514], [256], [256], [512], [256], [6]) -> [1296]
+main.$ds2 i $ds s0 s1 s2 s3 =
+      let h1 = $ds[224 +: 32] in
+      let h2 = $ds[192 +: 32] in
+      let h3 = $ds[160 +: 32] in
+      let h4 = $ds[128 +: 32] in
+      let h5 = $ds[96 +: 32] in
+      let h6 = $ds[64 +: 32] in
+      let h7 = $ds[32 +: 32] in
+      let h8 = $ds[0 +: 32] in
+      main.arm2 i h1 h2 h3 h4 h5 h6 h7 h8 s0 s1 s2 s3
 
-main.$L.arm14$715 : ([514], [256], [512], [256], [6]) -> [1296]
-main.$L.arm14$715 i s0 s1 s2 s3 =
-      main.$L.ds10$709 i s2 s0 s1 s2 s3
+--| block '$L.arm3' of process main
+main.arm3 : ([514], [256], [512], [256], [6]) -> [1296]
+main.arm3 i s0 s1 s2 s3 =
+      main.$ds2 i s2 s0 s1 s2 s3
 
-main.$L.i8$707 : ([6], [514], [256], [512], [256], [6]) -> [1296]
-main.$L.i8$707 ctr i s0 s1 s2 s3 =
+--| block '$L.i' of process main (state 0)
+main.i : ([6], [514], [256], [512], [256], [6]) -> [1296]
+main.i ctr i s0 s1 s2 s3 =
       let $a = eq ctr 6'h3f in
-      if eq $a 1'h0 then main.$L.Main.loop6$705 s0 s1 s2 s3
-            else main.$L.arm14$715 i s0 s1 s2 s3
+      if not $a then main.loop s0 s1 s2 s3
+            else main.arm3 i s0 s1 s2 s3
 
-main.$L.ctr7$706 : ([6], [256], [512], [256], [6]) -> [1296]
-main.$L.ctr7$706 ctr s0 s1 s2 s3 =
+--| block '$L.ctr' of process main
+main.ctr : ([6], [256], [512], [256], [6]) -> [1296]
+main.ctr ctr s0 s1 s2 s3 =
       260'h80000000000000000000000000000000000000000000000000000000000000000 # ctr # s0 # s1 # s2 # s3
 
-main.$L._unused16$717 : ([6], [256], [512], [256], [6]) -> [1296]
-main.$L._unused16$717 ctr s0 s1 s2 s3 =
+--| block '$L._unused3' of process main
+main._unused3 : ([6], [256], [512], [256], [6]) -> [1296]
+main._unused3 ctr s0 s1 s2 s3 =
       let $a = Main.incCtr ctr in
-      main.$L.ctr7$706 ctr s0 s1 s2 $a
+      main.ctr ctr s0 s1 s2 $a
 
-main.$L.s19$720 : ([6], [32], [256], [256], [512], [256], [6]) -> [1296]
-main.$L.s19$720 ctr w s s0 s1 s2 s3 =
+--| block '$L.s' of process main
+main.s : ([6], [32], [256], [256], [512], [256], [6]) -> [1296]
+main.s ctr w s s0 s1 s2 s3 =
       let $a = Main.seed ctr in
       let $a1 = Main.step256 $a w s in
-      main.$L._unused16$717 ctr $a1 s1 s2 s3
+      main._unused3 ctr $a1 s1 s2 s3
 
-main.$L.w18$719 : ([6], [32], [256], [512], [256], [6]) -> [1296]
-main.$L.w18$719 ctr w s0 s1 s2 s3 =
-      main.$L.s19$720 ctr w s0 s0 s1 s2 s3
+--| block '$L.w' of process main
+main.w : ([6], [32], [256], [512], [256], [6]) -> [1296]
+main.w ctr w s0 s1 s2 s3 =
+      main.s ctr w s0 s0 s1 s2 s3
 
-main.$L.arm22$724 : ([6], [512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1296]
-main.$L.arm22$724 ctr s w00 a b c d e f g h i j k l m n o s0 s1 s2 s3 =
+--| block '$L.arm4' of process main
+main.arm4 : ([6], [512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1296]
+main.arm4 ctr s w00 a b c d e f g h i j k l m n o s0 s1 s2 s3 =
       let $a = Main.updateSched s in
-      main.$L.w18$719 ctr w00 s0 $a s2 s3
+      main.w ctr w00 s0 $a s2 s3
 
-main.$L.s20$722 : ([6], [512], [256], [512], [256], [6]) -> [1296]
-main.$L.s20$722 ctr s s0 s1 s2 s3 =
+--| block '$L.s2' of process main
+main.s2 : ([6], [512], [256], [512], [256], [6]) -> [1296]
+main.s2 ctr s s0 s1 s2 s3 =
       let w00 = s[480 +: 32] in
       let a = s[448 +: 32] in
       let b = s[416 +: 32] in
@@ -88,75 +101,91 @@ main.$L.s20$722 ctr s s0 s1 s2 s3 =
       let m = s[64 +: 32] in
       let n = s[32 +: 32] in
       let o = s[0 +: 32] in
-      main.$L.arm22$724 ctr s w00 a b c d e f g h i j k l m n o s0 s1 s2 s3
+      main.arm4 ctr s w00 a b c d e f g h i j k l m n o s0 s1 s2 s3
 
-main.$L.ctr15$716 : ([6], [256], [512], [256], [6]) -> [1296]
-main.$L.ctr15$716 ctr s0 s1 s2 s3 =
-      main.$L.s20$722 ctr s1 s0 s1 s2 s3
+--| block '$L.ctr2' of process main
+main.ctr2 : ([6], [256], [512], [256], [6]) -> [1296]
+main.ctr2 ctr s0 s1 s2 s3 =
+      main.s2 ctr s1 s0 s1 s2 s3
 
-main.$L.Main.loop6$705 : ([256], [512], [256], [6]) -> [1296]
-main.$L.Main.loop6$705 s0 s1 s2 s3 =
-      main.$L.ctr15$716 s3 s0 s1 s2 s3
+--| block '$L.Main.loop' of process main
+main.loop : ([256], [512], [256], [6]) -> [1296]
+main.loop s0 s1 s2 s3 =
+      main.ctr2 s3 s0 s1 s2 s3
 
-main.$L._unused5$704 : ([514], [256], [512], [256], [6]) -> [1296]
-main.$L._unused5$704 _unused s0 s1 s2 s3 =
-      main.$L.Main.loop6$705 s0 s1 s2 s3
+--| block '$L._unused2' of process main (state 1)
+main._unused2 : ([514], [256], [512], [256], [6]) -> [1296]
+main._unused2 _unused s0 s1 s2 s3 =
+      main.loop s0 s1 s2 s3
 
-main.$L._unused4$703 : ([256], [512], [256], [6]) -> [1296]
-main.$L._unused4$703 s0 s1 s2 s3 =
+--| block '$L._unused' of process main
+main._unused : ([256], [512], [256], [6]) -> [1296]
+main._unused s0 s1 s2 s3 =
       266'h1000000000000000000000000000000000000000000000000000000000000000040 # s0 # s1 # s2 # s3
 
-main.$L._unused26$730 : ([512], [256], [512], [256], [6]) -> [1296]
-main.$L._unused26$730 hw32 s0 s1 s2 s3 =
-      main.$L._unused4$703 s0 hw32 s2 s3
+--| block '$L._unused7' of process main
+main._unused7 : ([512], [256], [512], [256], [6]) -> [1296]
+main._unused7 hw32 s0 s1 s2 s3 =
+      main._unused s0 hw32 s2 s3
 
-main.$L.hi_125$729 : ([512], [256], [256], [512], [256], [6]) -> [1296]
-main.$L.hi_125$729 hw32 hi_1 s0 s1 s2 s3 =
-      main.$L._unused26$730 hw32 hi_1 s1 s2 s3
+--| block '$L.hi_1' of process main
+main.hi_1 : ([512], [256], [256], [512], [256], [6]) -> [1296]
+main.hi_1 hw32 hi_1 s0 s1 s2 s3 =
+      main._unused7 hw32 hi_1 s1 s2 s3
 
-main.$L._unused24$728 : ([512], [256], [512], [256], [6]) -> [1296]
-main.$L._unused24$728 hw32 s0 s1 s2 s3 =
-      main.$L.hi_125$729 hw32 s2 s0 s1 s2 s3
+--| block '$L._unused6' of process main
+main._unused6 : ([512], [256], [512], [256], [6]) -> [1296]
+main._unused6 hw32 s0 s1 s2 s3 =
+      main.hi_1 hw32 s2 s0 s1 s2 s3
 
-main.$L._unused23$727 : ([512], [256], [512], [256], [6]) -> [1296]
-main.$L._unused23$727 hw32 s0 s1 s2 s3 =
-      main.$L._unused24$728 hw32 s0 s1 s2 6'h0
+--| block '$L._unused5' of process main
+main._unused5 : ([512], [256], [512], [256], [6]) -> [1296]
+main._unused5 hw32 s0 s1 s2 s3 =
+      main._unused6 hw32 s0 s1 s2 6'h0
 
-main.$L.arm27$732 : ([512], [256], [512], [256], [6]) -> [1296]
-main.$L.arm27$732 hw32 s0 s1 s2 s3 =
-      main.$L._unused23$727 hw32 s0 s1 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 s3
+--| block '$L.arm5' of process main
+main.arm5 : ([512], [256], [512], [256], [6]) -> [1296]
+main.arm5 hw32 s0 s1 s2 s3 =
+      main._unused5 hw32 s0 s1 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 s3
 
-main.$L._unused31$736 : ([512], [256], [512], [256], [6]) -> [1296]
-main.$L._unused31$736 hw32 s0 s1 s2 s3 =
-      main.$L._unused26$730 hw32 s0 s1 s2 6'h0
+--| block '$L._unused10' of process main
+main._unused10 : ([512], [256], [512], [256], [6]) -> [1296]
+main._unused10 hw32 s0 s1 s2 s3 =
+      main._unused7 hw32 s0 s1 s2 6'h0
 
-main.$L.hi_130$735 : ([512], [256], [256], [512], [256], [6]) -> [1296]
-main.$L.hi_130$735 hw32 hi_1 s0 s1 s2 s3 =
-      main.$L._unused31$736 hw32 hi_1 s1 s2 s3
+--| block '$L.hi_12' of process main
+main.hi_12 : ([512], [256], [256], [512], [256], [6]) -> [1296]
+main.hi_12 hw32 hi_1 s0 s1 s2 s3 =
+      main._unused10 hw32 hi_1 s1 s2 s3
 
-main.$L.arm33$739 : ([512], [256], [512], [256], [6]) -> [1296]
-main.$L.arm33$739 hw32 s0 s1 s2 s3 =
-      main.$L.hi_130$735 hw32 s2 s0 s1 s2 s3
+--| block '$L.arm6' of process main
+main.arm6 : ([512], [256], [512], [256], [6]) -> [1296]
+main.arm6 hw32 s0 s1 s2 s3 =
+      main.hi_12 hw32 s2 s0 s1 s2 s3
 
-main.$L.$x35$742 : ([514], [256], [512], [256], [6]) -> [1296]
-main.$L.$x35$742 $x s0 s1 s2 s3 =
-      main.$L.Main.dev3$702 $x s0 s1 s2 s3
+--| block '$L.$x2' of process main (state 2)
+main.$x2 : ([514], [256], [512], [256], [6]) -> [1296]
+main.$x2 $x s0 s1 s2 s3 =
+      main.dev $x s0 s1 s2 s3
 
-main.$L.h_n34$740 : ([256], [256], [512], [256], [6]) -> [1296]
-main.$L.h_n34$740 h_n s0 s1 s2 s3 =
+--| block '$L.h_n' of process main
+main.h_n : ([256], [256], [512], [256], [6]) -> [1296]
+main.h_n h_n s0 s1 s2 s3 =
       let $a = 2'h0 # h_n in
       $a # 8'h80 # s0 # s1 # s2 # s3
 
-main.$L.arm36$744 : ([256], [512], [256], [6]) -> [1296]
-main.$L.arm36$744 s0 s1 s2 s3 =
-      main.$L.h_n34$740 s2 s0 s1 s2 s3
+--| block '$L.arm7' of process main
+main.arm7 : ([256], [512], [256], [6]) -> [1296]
+main.arm7 s0 s1 s2 s3 =
+      main.h_n s2 s0 s1 s2 s3
 
-main.$L.Main.dev3$702 : ([514], [256], [512], [256], [6]) -> [1296]
-main.$L.Main.dev3$702 ds s0 s1 s2 s3 =
-      if eq ds[512 +: 2] 2'h0 then (let hw32 = ds[0 +: 512] in
-            main.$L.arm27$732 hw32 s0 s1 s2 s3)
-            else if eq ds[512 +: 2] 2'h1 then (let hw32 = ds[0 +: 512] in
-            main.$L.arm33$739 hw32 s0 s1 s2 s3) else main.$L.arm36$744 s0 s1 s2 s3
+--| block '$L.Main.dev' of process main
+main.dev : ([514], [256], [512], [256], [6]) -> [1296]
+main.dev $ds s0 s1 s2 s3 =
+      if eq $ds[512 +: 2] 2'h0 then (let hw32 = $ds[0 +: 512] in
+            main.arm5 hw32 s0 s1 s2 s3)
+            else if eq $ds[512 +: 2] 2'h1 then (let hw32 = $ds[0 +: 512] in
+            main.arm6 hw32 s0 s1 s2 s3) else main.arm7 s0 s1 s2 s3
 
 Main.ch : ([32], [32], [32]) -> [32]
 Main.ch x y z =
@@ -179,23 +208,23 @@ Main.sigma0 x =
       xor (xor (or (lshr x 32'h7) (shl x 32'h19)) (or (lshr x 32'h12) (shl x 32'he))) (lshr x 32'h3)
 
 Main.updateSched : ([512]) -> [512]
-Main.updateSched ds =
-      let w00 = ds[480 +: 32] in
-      let w01 = ds[448 +: 32] in
-      let w02 = ds[416 +: 32] in
-      let w03 = ds[384 +: 32] in
-      let w04 = ds[352 +: 32] in
-      let w05 = ds[320 +: 32] in
-      let w06 = ds[288 +: 32] in
-      let w07 = ds[256 +: 32] in
-      let w08 = ds[224 +: 32] in
-      let w09 = ds[192 +: 32] in
-      let w10 = ds[160 +: 32] in
-      let w11 = ds[128 +: 32] in
-      let w12 = ds[96 +: 32] in
-      let w13 = ds[64 +: 32] in
-      let w14 = ds[32 +: 32] in
-      let w15 = ds[0 +: 32] in
+Main.updateSched $ds =
+      let w00 = $ds[480 +: 32] in
+      let w01 = $ds[448 +: 32] in
+      let w02 = $ds[416 +: 32] in
+      let w03 = $ds[384 +: 32] in
+      let w04 = $ds[352 +: 32] in
+      let w05 = $ds[320 +: 32] in
+      let w06 = $ds[288 +: 32] in
+      let w07 = $ds[256 +: 32] in
+      let w08 = $ds[224 +: 32] in
+      let w09 = $ds[192 +: 32] in
+      let w10 = $ds[160 +: 32] in
+      let w11 = $ds[128 +: 32] in
+      let w12 = $ds[96 +: 32] in
+      let w13 = $ds[64 +: 32] in
+      let w14 = $ds[32 +: 32] in
+      let w15 = $ds[0 +: 32] in
       w01 # w02 # w03 # w04 # w05 # w06 # w07 # w08 # w09 # w10 # w11 # w12 # w13 # w14 # w15 # add (add (Main.sigma1 w14) w09) (add (Main.sigma0 w01) w00)
 
 Main.bigsigma1 : ([32]) -> [32]
@@ -207,15 +236,15 @@ Main.bigsigma0 x =
       xor (xor (or (lshr x 32'h2) (shl x 32'h1e)) (or (lshr x 32'hd) (shl x 32'h13))) (or (lshr x 32'h16) (shl x 32'ha))
 
 Main.step256 : ([32], [32], [256]) -> [256]
-Main.step256 k w ds =
-      let a = ds[224 +: 32] in
-      let b = ds[192 +: 32] in
-      let c = ds[160 +: 32] in
-      let d = ds[128 +: 32] in
-      let e = ds[96 +: 32] in
-      let f = ds[64 +: 32] in
-      let g = ds[32 +: 32] in
-      let h = ds[0 +: 32] in
+Main.step256 k w $ds =
+      let a = $ds[224 +: 32] in
+      let b = $ds[192 +: 32] in
+      let c = $ds[160 +: 32] in
+      let d = $ds[128 +: 32] in
+      let e = $ds[96 +: 32] in
+      let f = $ds[64 +: 32] in
+      let g = $ds[32 +: 32] in
+      let h = $ds[0 +: 32] in
       let t1 = add h (add (add (Main.bigsigma1 e) (Main.ch e f g)) (add k w)) in
       add t1 (add (Main.bigsigma0 a) (Main.maj a b c)) # a # b # c # add d t1 # e # f # g
 
@@ -234,6 +263,9 @@ device top_level
       register __st4 : [224] init 224'h0
       register __st5 : [32] init 32'h0
       register __st6 : [6] init 6'h0
+      tag i = 0
+      tag _unused2 = 1
+      tag $x2 = 2
       let $res = main.$dispatch (__resumption_tag # __st0 # __st1 # __st2 # __st3 # __st4 # __st5 # __st6) __in0
       __out0 := $res[1038 +: 258]
       next __resumption_tag := $res[1030 +: 8]

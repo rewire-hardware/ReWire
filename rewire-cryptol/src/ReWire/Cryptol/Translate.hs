@@ -308,7 +308,7 @@ transDecl env (d, e) = do
           types          = foldr (\ (x, t) -> Map.insert x (T.tMono t)) (teTypes env) params
           env'           = env { teScope = scope <> teScope env, teTypes = types }
       body' <- transExp env' (map (uncurry (A.Var noAnn) . swap2) etas) body
-      pure $ A.Defn noAnn gid sig (pnames <> map fst etas) body'
+      pure $ A.Defn noAnn gid sig (pnames <> map fst etas) body' False (A.Blind [])
       where peel :: T.Expr -> ([(N.Name, T.Type)], T.Expr)
             peel = \ case
                   T.ELocated _ e'  -> peel e'

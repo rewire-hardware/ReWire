@@ -4,12 +4,12 @@ module top_level (input logic [0:0] clk,
   output logic [0:0] __out0);
   logic [0:0] __st0;
   logic [0:0] __st0_next;
-  logic [1:0] main_$l__unused3$295_out;
-  logic [1:0] main_$l__unused3$295_outR1;
+  logic [1:0] main__unused_out;
+  logic [1:0] main__unused_outR1;
   logic [1:0] zres;
-  main_$L___unused3$295  inst (__st0, __st0, main_$l__unused3$295_out);
-  main_$L___unused3$295  instR1 (__st0, 1'h0, main_$l__unused3$295_outR1);
-  assign zres = (__in0 == 1'h0) ? ((__st0 == 1'h0) ? main_$l__unused3$295_out : main_$l__unused3$295_outR1) : 2'h2;
+  main___unused  inst (__st0, __st0, main__unused_out);
+  main___unused  instR1 (__st0, 1'h0, main__unused_outR1);
+  assign zres = (~__in0) ? ((~__st0) ? main__unused_out : main__unused_outR1) : 2'h2;
   assign __st0_next = zres[0];
   assign __out0 = zres[1];
   initial __st0 = 1'h1;
@@ -22,18 +22,18 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module main_$L___unused4$296 (input logic [0:0] arg0,
+module main___unused2 (input logic [0:0] arg0,
   input logic [0:0] arg1,
   output logic [1:0] res);
   assign res = {arg0, arg1};
 endmodule
 
-module main_$L___unused3$295 (input logic [0:0] arg0,
+module main___unused (input logic [0:0] arg0,
   input logic [0:0] arg1,
   output logic [1:0] res);
-  logic [1:0] main_$l__unused4$296_out;
-  logic [1:0] main_$l__unused4$296_outR1;
-  main_$L___unused4$296  inst (arg0, 1'h1, main_$l__unused4$296_out);
-  main_$L___unused4$296  instR1 (arg0, arg1, main_$l__unused4$296_outR1);
-  assign res = (arg0 == 1'h0) ? main_$l__unused4$296_out : main_$l__unused4$296_outR1;
+  logic [1:0] main__unused2_out;
+  logic [1:0] main__unused2_outR1;
+  main___unused2  inst (arg0, 1'h1, main__unused2_out);
+  main___unused2  instR1 (arg0, arg1, main__unused2_outR1);
+  assign res = (~arg0) ? main__unused2_out : main__unused2_outR1;
 endmodule

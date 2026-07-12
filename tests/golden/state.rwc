@@ -1,29 +1,35 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([1], [1]) -> [2]
 main.$dispatch disc i =
-      main.$L.$x4$282 i disc
+      main.$x2 i disc
 
-main.$L.$x4$282 : ([1], [1]) -> [2]
-main.$L.$x4$282 $x s0 =
-      main.$L.Main.stateAction6$285 $x s0
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([1], [1]) -> [2]
+main.$x2 $x s0 =
+      main.stateAction $x s0
 
-main.$L.$x5$284 : ([1], [1]) -> [2]
-main.$L.$x5$284 $x s0 =
+--| block '$L.$x3' of process main
+main.$x3 : ([1], [1]) -> [2]
+main.$x3 $x s0 =
       $x # s0
 
-main.$L.s7$286 : ([1], [1], [1]) -> [2]
-main.$L.s7$286 i s s0 =
+--| block '$L.s' of process main
+main.s : ([1], [1], [1]) -> [2]
+main.s i s s0 =
       let s01 = (let $t1 = xor i s in
       $t1) in
-      main.$L.$x5$284 s s01
+      main.$x3 s s01
 
-main.$L.Main.stateAction6$285 : ([1], [1]) -> [2]
-main.$L.Main.stateAction6$285 i s0 =
-      main.$L.s7$286 i s0 s0
+--| block '$L.Main.stateAction' of process main
+main.stateAction : ([1], [1]) -> [2]
+main.stateAction i s0 =
+      main.s i s0 s0
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
       register __st0 : [1] init 1'h0
+      tag $x2 = 0
       let $res = main.$dispatch __st0 __in0
       __out0 := $res[1 +: 1]
       next __st0 := $res[0 +: 1]

@@ -1,37 +1,45 @@
+--| state dispatch for process main: 0=b
 main.$dispatch : ([8], [1]) -> [16]
 main.$dispatch disc i =
-      main.$L.b2$271 i disc
+      main.b i disc
 
-main.$L.n4$273 : ([8], [8]) -> [16]
-main.$L.n4$273 n s0 =
+--| block '$L.n' of process main
+main.n : ([8], [8]) -> [16]
+main.n n s0 =
       let $a = Main.incW8 n in
-      main.$L.Main.go1$270 $a
+      main.go $a
 
-main.$L.arm5$275 : ([8]) -> [16]
-main.$L.arm5$275 s0 =
-      main.$L.n4$273 s0 s0
+--| block '$L.arm' of process main
+main.arm : ([8]) -> [16]
+main.arm s0 =
+      main.n s0 s0
 
-main.$L.n6$276 : ([8], [8]) -> [16]
-main.$L.n6$276 n s0 =
+--| block '$L.n2' of process main
+main.n2 : ([8], [8]) -> [16]
+main.n2 n s0 =
       let $a = Main.rolW8 n in
-      main.$L.Main.go1$270 $a
+      main.go $a
 
-main.$L.arm7$278 : ([8]) -> [16]
-main.$L.arm7$278 s0 =
-      main.$L.n6$276 s0 s0
+--| block '$L.arm2' of process main
+main.arm2 : ([8]) -> [16]
+main.arm2 s0 =
+      main.n2 s0 s0
 
-main.$L.b2$271 : ([1], [8]) -> [16]
-main.$L.b2$271 b s0 =
-      if eq b 1'h0 then main.$L.arm5$275 s0
-            else main.$L.arm7$278 s0
+--| block '$L.b' of process main (state 0)
+main.b : ([1], [8]) -> [16]
+main.b b s0 =
+      if not b then main.arm s0
+            else main.arm2 s0
 
-main.$L.$x8$280 : ([8], [8]) -> [16]
-main.$L.$x8$280 $x s0 =
+--| block '$L.$x' of process main
+main.$x : ([8], [8]) -> [16]
+main.$x $x s0 =
       $x # s0
 
-main.$L.Main.go1$270 : ([8]) -> [16]
-main.$L.Main.go1$270 s0 =
-      main.$L.$x8$280 s0 s0
+--| block '$L.Main.go' of process main
+main.go : ([8]) -> [16]
+main.go s0 =
+      main.$x s0 s0
 
 Main.incW8 : ([8]) -> [8]
 Main.incW8 n =
@@ -49,6 +57,7 @@ device top_level
       input __in0 : [1]
       output __out0 : [8]
       register __st0 : [8] init 8'h0
+      tag b = 0
       let $res = main.$dispatch __st0 __in0
       __out0 := $res[8 +: 8]
       next __st0 := $res[0 +: 8]

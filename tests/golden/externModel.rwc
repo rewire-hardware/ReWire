@@ -21,16 +21,19 @@ extern xorW32
       output p2 : [32]
       model Main.xorModel
 
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([32]) -> [32]
 main.$dispatch i =
-      main.$L.$x4$301 i
+      main.$x2 i
 
-main.$L.$x4$301 : ([32]) -> [32]
-main.$L.$x4$301 $x =
-      main.$L.ReWire.Monad.iter$1$s23$299 $x
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([32]) -> [32]
+main.$x2 $x =
+      main.iter$W32$W32$sMain_f $x
 
-main.$L.ReWire.Monad.iter$1$s23$299 : ([32]) -> [32]
-main.$L.ReWire.Monad.iter$1$s23$299 i =
+--| block '$L.ReWire.Monad.iter$W32$W32$sMain_f' of process main
+main.iter$W32$W32$sMain_f : ([32]) -> [32]
+main.iter$W32$W32$sMain_f i =
       let $a = Main.f i in
       $a
 
@@ -73,5 +76,6 @@ Main.f x =
 device top_level
       input __in0 : [32]
       output __out0 : [32]
+      tag $x2 = 0
       let $res = main.$dispatch __in0
       __out0 := $res

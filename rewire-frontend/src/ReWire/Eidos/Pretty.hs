@@ -264,7 +264,9 @@ ppAttrs attr orig = maybe [] (pure . ppAttr) attr <> maybe [] (pure . ppOrigin) 
                   NoInline -> text "noinline"
 
             ppOrigin :: SpecOrigin -> Doc an
-            ppOrigin (SpecOrigin f ts) = text "from" <+> ppOcc f <+> parens (hsep $ punctuate comma $ map ppTy ts)
+            ppOrigin = \ case
+                  SpecOrigin f ts -> text "from" <+> ppOcc f <+> parens (hsep $ punctuate comma $ map ppTy ts)
+                  BakeOrigin f    -> text "baked" <+> ppOcc f
 
 -- | @data T kind { C1 :: sig1; ... }@.
 ppDataDefn :: DataDefn -> Doc an

@@ -70,7 +70,7 @@ procify p@(Program datas defns procs top)
       | (TyCon _ "ReacT", [ti, to, _, _]) <- flattenTyApp $ sigTy $ idSig top
       , [] <- fst (flattenArrow $ sigTy $ idSig top) = do
             let cells = stackCells $ maxStack [ typeOf $ defnBody d | d <- reactives ]
-            pr <- evalStateT (compileRoot ti to cells) $ PSt (nextUniq p) [] mempty 1 mempty
+            pr <- evalStateT (compileRoot ti to cells) $ PSt (nextUniq p) [] mempty mempty mempty
             pure $ Program datas defns (procs <> [pr]) top
       | otherwise = pure p
       where dmap :: IM.IntMap Defn
@@ -311,7 +311,7 @@ data PSt = PSt
       { stSupply :: !Uniq
       , stBlocks :: ![(Id, Block)]
       , stMemo   :: !(Map.HashMap (Uniq, Uniq) Id)
-      , stOrd    :: !Int
+      , stOrds   :: !(Map.HashMap Text Int) -- ^ Per-source-name label ordinals.
       , stActive :: !IS.IntSet -- ^ Definitions whose splice is in progress.
       }
 
@@ -330,8 +330,8 @@ freshId t occ = do
 
 freshLabel :: Monad m => Text -> [Ty] -> Ty -> PM m Id
 freshLabel src ptys ot = do
-      i <- gets stOrd
-      modify $ \ st -> st { stOrd = i + 1 }
+      i <- gets $ Map.findWithDefault 1 src . stOrds
+      modify $ \ st -> st { stOrds = Map.insert src (i + 1) $ stOrds st }
       u <- freshU
       pure $ Id (blockLabel src i) u $ monoSig $ foldr (Arrow (ann ot)) ot ptys
 

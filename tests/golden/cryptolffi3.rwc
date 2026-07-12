@@ -1,105 +1,113 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([18]) -> [8]
 main.$dispatch i =
-      main.$L.$x4$274 i
+      main.$x2 i
 
-main.$L.$x4$274 : ([18]) -> [8]
-main.$L.$x4$274 $x =
-      main.$L.ReWire.Monad.iter$1$s23$272 $x
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([18]) -> [8]
+main.$x2 $x =
+      main.iter$W2W8W8$W8$sMain_go $x
 
-main.$L.ReWire.Monad.iter$1$s23$272 : ([18]) -> [8]
-main.$L.ReWire.Monad.iter$1$s23$272 i =
+--| block '$L.ReWire.Monad.iter$W2W8W8$W8$sMain_go' of process main
+main.iter$W2W8W8$W8$sMain_go : ([18]) -> [8]
+main.iter$W2W8W8$W8$sMain_go i =
       let $a = Main.go i in
       $a
 
 Main.alu : ([2], [8], [8]) -> [8]
 Main.alu $eta0 $eta1 $eta2 =
-      cry$alu$0 $eta0 $eta1 $eta2
+      cry$alu$2_8_8_8 $eta0 $eta1 $eta2
 
 Main.recmix : ([8], [8]) -> [8]
 Main.recmix $eta0 $eta1 =
-      cry$recmix$1 $eta0 $eta1
+      cry$recmix$8_8_8 $eta0 $eta1
 
 Main.both : ([8], [8]) -> [8]
 Main.both $eta0 $eta1 =
-      cry$both$2 $eta0 $eta1
+      cry$both$8_8_8 $eta0 $eta1
 
 Main.cguard : ([8]) -> [8]
 Main.cguard $eta0 =
-      cry$cguard$3 $eta0
+      cry$cguard$8_8 $eta0
 
 Main.go : ([18]) -> [8]
-Main.go ds =
-      let s = ds[16 +: 2] in
-      let a = ds[8 +: 8] in
-      let b = ds[0 +: 8] in
+Main.go $ds =
+      let s = $ds[16 +: 2] in
+      let a = $ds[8 +: 8] in
+      let b = $ds[0 +: 8] in
       Main.alu s (Main.recmix a b) (Main.both (Main.cguard a) b)
 
-cry$alu$0.decode$0 : ([2], [8]) -> [10]
-cry$alu$0.decode$0 s$0 v$1 =
+cry$alu$2_8_8_8.decode$0 : ([2], [8]) -> [10]
+cry$alu$2_8_8_8.decode$0 s$0 v$1 =
       if eq s$0 2'h0 then 10'h0
             else if eq s$0 2'h1 then 10'h100 else 2'h2 # v$1
 
-cry$alu$0.eval$1 : ([10], [8], [8]) -> [8]
-cry$alu$0.eval$1 o$0 a$1 b$2 =
+cry$alu$2_8_8_8.eval$1 : ([10], [8], [8]) -> [8]
+cry$alu$2_8_8_8.eval$1 o$0 a$1 b$2 =
       if eq o$0[8 +: 2] 2'h0 then add a$1 b$2
             else if eq o$0[8 +: 2] 2'h1 then sub a$1 b$2 else if eq o$0[8 +: 2] 2'h2 then o$0[0 +: 8] else 8'h0
 
-cry$alu$0 : ([2], [8], [8]) -> [8]
-cry$alu$0 s$0 a$1 b$2 =
-      cry$alu$0.eval$1 (cry$alu$0.decode$0 s$0 (xor a$1 b$2)) a$1 b$2
+--| cryptol cry/cryrec.cry::alu at [2] -> [8] -> [8] -> [8]
+cry$alu$2_8_8_8 : ([2], [8], [8]) -> [8]
+cry$alu$2_8_8_8 s$0 a$1 b$2 =
+      cry$alu$2_8_8_8.eval$1 (cry$alu$2_8_8_8.decode$0 s$0 (xor a$1 b$2)) a$1 b$2
 
-cry$recmix$1.bump$0 : ([8]) -> [8]
-cry$recmix$1.bump$0 c$0 =
+cry$recmix$8_8_8.bump$0 : ([8]) -> [8]
+cry$recmix$8_8_8.bump$0 c$0 =
       add c$0[4 +: 4] (if eq c$0[0 +: 4] 4'hf then 4'h1
             else 4'h0) # add c$0[0 +: 4] 4'h1
 
-cry$recmix$1.mkPair$1 : ([8], [8]) -> [16]
-cry$recmix$1.mkPair$1 a$0 b$1 =
+cry$recmix$8_8_8.mkPair$1 : ([8], [8]) -> [16]
+cry$recmix$8_8_8.mkPair$1 a$0 b$1 =
       a$0 # b$1
 
-cry$recmix$1.swapP$2 : ([16]) -> [16]
-cry$recmix$1.swapP$2 p$0 =
+cry$recmix$8_8_8.swapP$2 : ([16]) -> [16]
+cry$recmix$8_8_8.swapP$2 p$0 =
       p$0[0 +: 8] # p$0[8 +: 8]
 
-cry$recmix$1.setL$3 : ([16], [8]) -> [16]
-cry$recmix$1.setL$3 p$0 v$1 =
+cry$recmix$8_8_8.setL$3 : ([16], [8]) -> [16]
+cry$recmix$8_8_8.setL$3 p$0 v$1 =
       v$1 # p$0[0 +: 8]
 
-cry$recmix$1 : ([8], [8]) -> [8]
-cry$recmix$1 x$0 y$1 =
-      let p$4743 = cry$recmix$1.mkPair$1 x$0 y$1 in
-      let q$4740 = cry$recmix$1.setL$3 (cry$recmix$1.swapP$2 p$4743) (add x$0 y$1) in
-      let c'$4747 = cry$recmix$1.bump$0 (x$0[0 +: 4] # x$0[4 +: 4]) in
+--| cryptol cry/cryrec.cry::recmix at [8] -> [8] -> [8]
+cry$recmix$8_8_8 : ([8], [8]) -> [8]
+cry$recmix$8_8_8 x$0 y$1 =
+      let p$4743 = cry$recmix$8_8_8.mkPair$1 x$0 y$1 in
+      let q$4740 = cry$recmix$8_8_8.setL$3 (cry$recmix$8_8_8.swapP$2 p$4743) (add x$0 y$1) in
+      let c'$4747 = cry$recmix$8_8_8.bump$0 (x$0[0 +: 4] # x$0[4 +: 4]) in
       xor (xor q$4740[8 +: 8] q$4740[0 +: 8]) (c'$4747[0 +: 4] # c'$4747[4 +: 4])
 
-cry$both$2.swap2$0 : ([16]) -> [16]
-cry$both$2.swap2$0 __p1$0 =
+cry$both$8_8_8.swap2$0 : ([16]) -> [16]
+cry$both$8_8_8.swap2$0 __p1$0 =
       let b$4742 = __p1$0[0 +: 8] in
       let a$4743 = __p1$0[8 +: 8] in
       b$4742 # a$4743
 
-cry$both$2 : ([8], [8]) -> [8]
-cry$both$2 x$0 y$1 =
-      let r$4740 = cry$both$2.swap2$0 (x$0 # y$1) in
+--| cryptol cry/cryrec.cry::both at [8] -> [8] -> [8]
+cry$both$8_8_8 : ([8], [8]) -> [8]
+cry$both$8_8_8 x$0 y$1 =
+      let r$4740 = cry$both$8_8_8.swap2$0 (x$0 # y$1) in
       sub r$4740[8 +: 8] r$4740[0 +: 8]
 
-cry$cguard$3.cg.n...1.$0 : ([8]) -> [8]
-cry$cguard$3.cg.n...1.$0 xs$0 =
+cry$cguard$8_8.cg.n...1.$0 : ([8]) -> [8]
+cry$cguard$8_8.cg.n...1.$0 xs$0 =
       xs$0[0 +: 1] # xs$0[1 +: 1] # xs$0[2 +: 1] # xs$0[3 +: 1] # xs$0[4 +: 1] # xs$0[5 +: 1] # xs$0[6 +: 1] # xs$0[7 +: 1]
 
-cry$cguard$3.cg$1 : ([8]) -> [8]
-cry$cguard$3.cg$1 $eta0 =
-      cry$cguard$3.cg.n...1.$0 $eta0
+cry$cguard$8_8.cg$1 : ([8]) -> [8]
+cry$cguard$8_8.cg$1 $eta0 =
+      cry$cguard$8_8.cg.n...1.$0 $eta0
 
-cry$cguard$3 : ([8]) -> [8]
-cry$cguard$3 x$0 =
-      cry$cguard$3.cg$1 x$0
+--| cryptol cry/cryrec.cry::cguard at [8] -> [8]
+cry$cguard$8_8 : ([8]) -> [8]
+cry$cguard$8_8 x$0 =
+      cry$cguard$8_8.cg$1 x$0
 
 device top_level
       input __in0 : [2]
       input __in1 : [8]
       input __in2 : [8]
       output __out0 : [8]
+      tag $x2 = 0
       let $in = __in0 # __in1 # __in2
       let $res = main.$dispatch $in
       __out0 := $res

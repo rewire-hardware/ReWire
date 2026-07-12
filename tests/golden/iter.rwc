@@ -1,23 +1,26 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([1]) -> [1]
 main.$dispatch i =
-      main.$L.$x4$246 i
+      main.$x2 i
 
-main.$L.$x4$246 : ([1]) -> [1]
-main.$L.$x4$246 $x =
-      main.$L.ReWire.Monad.iter$1$s23$244 $x
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([1]) -> [1]
+main.$x2 $x =
+      main.iter$Bool$Bool$sMain_f $x
 
-main.$L.ReWire.Monad.iter$1$s23$244 : ([1]) -> [1]
-main.$L.ReWire.Monad.iter$1$s23$244 i =
+--| block '$L.ReWire.Monad.iter$Bool$Bool$sMain_f' of process main
+main.iter$Bool$Bool$sMain_f : ([1]) -> [1]
+main.iter$Bool$Bool$sMain_f i =
       let $a = Main.f i in
       $a
 
 Main.f : ([1]) -> [1]
 Main.f b =
-      if eq b 1'h1 then 1'h0
-            else 1'h1
+      not b
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
+      tag $x2 = 0
       let $res = main.$dispatch __in0
       __out0 := $res

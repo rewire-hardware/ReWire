@@ -1,24 +1,29 @@
+--| state dispatch for process main: 0=$ds
 main.$dispatch : ([16]) -> [24]
 main.$dispatch disc =
-      main.$L.ds3$245 disc[8 +: 8] disc[0 +: 8]
+      main.$ds disc[8 +: 8] disc[0 +: 8]
 
-main.$L.ds3$245 : ([8], [8]) -> [24]
-main.$L.ds3$245 n s0 =
+--| block '$L.$ds' of process main (state 0)
+main.$ds : ([8], [8]) -> [24]
+main.$ds n s0 =
       let s01 = add n 8'h1 in
-      main.$L.Main.go1$243 s01
+      main.go s01
 
-main.$L.n2$244 : ([8], [8]) -> [24]
-main.$L.n2$244 n s0 =
+--| block '$L.n' of process main
+main.n : ([8], [8]) -> [24]
+main.n n s0 =
       n # n # s0
 
-main.$L.Main.go1$243 : ([8]) -> [24]
-main.$L.Main.go1$243 s0 =
-      main.$L.n2$244 s0 s0
+--| block '$L.Main.go' of process main
+main.go : ([8]) -> [24]
+main.go s0 =
+      main.n s0 s0
 
 device top_level
       output __out0 : [8]
       register __resumption_tag : [8] init 8'h0
       register __st0 : [8] init 8'h0
+      tag $ds = 0
       let $in = __resumption_tag # __st0
       let $res = main.$dispatch $in
       __out0 := $res[16 +: 8]

@@ -1,13 +1,16 @@
+--| state dispatch for process main: 0=$x
 main.$dispatch : ([8]) -> [32]
 main.$dispatch i =
-      main.$L.$x2$710 i
+      main.$x i
 
-main.$L.$x2$710 : ([8]) -> [32]
-main.$L.$x2$710 $x =
-      main.$L.Main.dev1$708 $x
+--| block '$L.$x' of process main (state 0)
+main.$x : ([8]) -> [32]
+main.$x $x =
+      main.dev $x
 
-main.$L.Main.dev1$708 : ([8]) -> [32]
-main.$L.Main.dev1$708 a =
+--| block '$L.Main.dev' of process main
+main.dev : ([8]) -> [32]
+main.dev a =
       let b = Main.x2 a in
       let $a = (let $a2 = (let $a2 = trunc 1 (lshr a 128'h7) in
       $a2) in
@@ -90,6 +93,7 @@ device top_level
       output __out1 : [8]
       output __out2 : [8]
       output __out3 : [8]
+      tag $x = 0
       let $res = main.$dispatch __in0
       __out0 := $res[24 +: 8]
       __out1 := $res[16 +: 8]

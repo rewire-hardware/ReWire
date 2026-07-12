@@ -33,7 +33,7 @@ import ReWire.Config (Config, start)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Eidos.PrimBasis (addPrims)
 import ReWire.Eidos.Types (flattenArrow, flattenTyApp)
-import ReWire.GHC.Recognize (uKey, spanAnnote, varAnnote, isPrimModule, isPrimVar, homeishMod, qualName, conName, tupleName, splitStart, erasedArg, erasedEv, userPred, tyConModule, tyConKey, tyConTable, vocabTable)
+import ReWire.GHC.Recognize (uKey, spanAnnote, varAnnote, isPrimModule, isPrimVar, homeishMod, qualName, conName, tupleName, splitStart, localOcc, erasedArg, erasedEv, userPred, tyConModule, tyConKey, tyConTable, vocabTable)
 
 import qualified ReWire.Builtins     as B
 import qualified ReWire.Eidos.Syntax as E
@@ -361,7 +361,7 @@ bridgeExp ctx an e = case e of
             | erasedEv (varType v) -> bridgeExp ctx an body
             | otherwise            -> do
                   t     <- bridgeTy (ctxTyVars ctx) an $ expandTypeSynonyms $ varType v
-                  x     <- freshId (pack $ getOccString v) $ E.monoSig t
+                  x     <- freshId (localOcc v) $ E.monoSig t
                   body' <- bridgeExp (bindLocal v x ctx) an body
                   pure $ E.Lam an x body'
 
@@ -372,7 +372,7 @@ bridgeExp ctx an e = case e of
             | JoinPoint n <- idJoinPointHood v -> bridgeJoin ctx an v n r body
             | otherwise                 -> do
                   t     <- bridgeTy (ctxTyVars ctx) an $ expandTypeSynonyms $ varType v
-                  x     <- freshId (pack $ getOccString v) $ E.monoSig t
+                  x     <- freshId (localOcc v) $ E.monoSig t
                   r'    <- bridgeExp ctx an r
                   body' <- bridgeExp (bindLocal v x ctx) an body
                   pure $ E.Let an (E.NonRec x r') body'
@@ -383,7 +383,7 @@ bridgeExp ctx an e = case e of
             | otherwise -> do
                   xs <- mapM (\ (v, _) -> do
                               t <- bridgeTy (ctxTyVars ctx) an $ expandTypeSynonyms $ varType v
-                              freshId (pack $ getOccString v) $ E.monoSig t)
+                              freshId (localOcc v) $ E.monoSig t)
                         bs
                   let ctx' = foldr (\ ((v, _), x) -> bindLocal v x) ctx $ zip bs xs
                   rs <- mapM (bridgeExp ctx' an . snd) bs
@@ -407,11 +407,11 @@ bridgeJoin ctx an v n rhs body = do
             $ failAt an "ghc-frontend: unsupported type- or evidence-binding join point."
       params <- mapM (\ pv -> do
                   t <- bridgeTy (ctxTyVars ctx) an $ expandTypeSynonyms $ varType pv
-                  freshId (pack $ getOccString pv) $ E.monoSig t)
+                  freshId (localOcc pv) $ E.monoSig t)
             vs
       resT   <- bridgeTy (ctxTyVars ctx) an $ expandTypeSynonyms $ exprType jbody
       let jt = foldr (E.Arrow an . E.sigTy . E.idSig) resT params
-      jx     <- freshId (pack $ getOccString v) $ E.monoSig jt
+      jx     <- freshId (localOcc v) $ E.monoSig jt
       let j    = E.JoinId jx $ length params
           ctxJ = bindJoin v j ctx
           ctxP = foldr (\ (pv, x) -> bindLocal pv x) ctxJ $ zip vs params
@@ -693,7 +693,7 @@ bridgeCase ctx an scrut b ty alts = do
             -- Zero-alt case: the scrutinee is bottom (e.g. patError).
             [] -> pure $ mkErrorE an resTy "Pattern match failure: non-exhaustive patterns in case"
             _  -> do
-                  cb    <- freshId (pack $ getOccString b) $ E.monoSig scrutTy
+                  cb    <- freshId (localOcc b) $ E.monoSig scrutTy
                   let ctx' = bindLocal b cb ctx
                   alts' <- mapM (bridgeAlt ctx') alts
                   pure $ E.Case an resTy scrut' cb alts'
@@ -715,7 +715,7 @@ bridgeCase ctx an scrut b ty alts = do
                               $ failAt an $ "ghc-frontend: constructor field arity mismatch in case alternative: " <> conName dc
                               <> " (" <> pack (show (length flds)) <> " binders, " <> pack (show (length fieldTs)) <> " fields)."
                         fieldTs' <- lift $ mapM (bridgeTy (ctxTyVars ctx') an . expandTypeSynonyms) fieldTs
-                        xs       <- zipWithM (\ pv t -> freshId (pack $ getOccString pv) $ E.monoSig t) flds fieldTs'
+                        xs       <- zipWithM (\ pv t -> freshId (localOcc pv) $ E.monoSig t) flds fieldTs'
                         let ctx'' = foldr (\ (pv, x) -> bindLocal pv x) ctx' $ zip flds xs
                         E.Alt an (E.DataAlt $ conName dc) xs <$> bridgeExp ctx'' an rhs
 

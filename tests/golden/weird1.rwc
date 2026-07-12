@@ -1,13 +1,16 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([2], [1]) -> [3]
 main.$dispatch disc i =
-      main.$L.$x5$239 i disc
+      main.$x2 i disc
 
-main.$L.$x5$239 : ([1], [2]) -> [3]
-main.$L.$x5$239 $x s0 =
-      main.$L.Main.repl4$237 $x s0
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([1], [2]) -> [3]
+main.$x2 $x s0 =
+      main.repl $x s0
 
-main.$L.Main.repl4$237 : ([1], [2]) -> [3]
-main.$L.Main.repl4$237 ds s0 =
+--| block '$L.Main.repl' of process main
+main.repl : ([1], [2]) -> [3]
+main.repl $ds s0 =
       1'h0 # s0
 
 device top_level
@@ -15,6 +18,7 @@ device top_level
       output __out0 : [1]
       register __st0 : [1] init 1'h0
       register __st1 : [1] init 1'h0
+      tag $x2 = 0
       let $res = main.$dispatch (__st0 # __st1) __in0
       __out0 := $res[2 +: 1]
       next __st0 := $res[1 +: 1]

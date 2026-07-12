@@ -17,14 +17,15 @@ module ReWire.Hyle.Syntax
       , ExternKind (..), Extern (..), externResultSize
       , Register (..), Instance (..), Stmt (..), Device (..)
       , Program (..)
+      , Blind (..)
       , nil, isNil, cat, gather
       , reservedWords
       ) where
 
-import ReWire.Annotation (Annote, Annotated (ann), noAnn)
+import ReWire.Annotation (Annote, Annotated (ann), noAnn, annProv, Provenance (..), Span (..), Blind (..))
 import ReWire.BitVector (BV (..), width, showHex')
 import ReWire.Orphans ()
-import ReWire.Pretty (text, Pretty (pretty), Doc, vsep, hsep, nest, parens, brackets, punctuate, dquotes, squote, align, (<+>), TextShow, FromGeneric (..), comma, hcat)
+import ReWire.Pretty (text, Pretty (pretty), Doc, vsep, hsep, nest, parens, brackets, punctuate, dquotes, squote, align, (<+>), TextShow (showt), FromGeneric (..), comma, hcat)
 
 import qualified ReWire.BitVector as BV
 
@@ -228,11 +229,13 @@ instance SizeAnnotated Sig where
       sizeOf (Sig _ _ s) = s
 
 data Defn = Defn
-      { defnAnnote :: Annote
-      , defnName   :: !GId
-      , defnSig    :: !Sig
-      , defnParams :: ![Name] -- ^ Same length as the Sig's argument list.
-      , defnBody   :: !Exp
+      { defnAnnote   :: Annote
+      , defnName     :: !GId
+      , defnSig      :: !Sig
+      , defnParams   :: ![Name] -- ^ Same length as the Sig's argument list.
+      , defnBody     :: !Exp
+      , defnNoInline :: !Bool           -- ^ Exempt from backend inlining (including --flatten); a real attribute, visible to Eq.
+      , defnDoc      :: !(Blind [Text]) -- ^ Display-only doc lines ('--|'); invisible to Eq/Ord/Hashable.
       }
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric Defn
@@ -240,7 +243,7 @@ data Defn = Defn
 instance Hashable Defn
 
 instance SizeAnnotated Defn where
-      sizeOf (Defn _ _ (Sig _ _ s) _ _) = s
+      sizeOf (Defn _ _ (Sig _ _ s) _ _ _ _) = s
 
 instance Annotated Defn where
       ann = defnAnnote
@@ -329,6 +332,7 @@ data Device = Device
       , devRegisters :: ![Register]
       , devInstances :: ![Instance]
       , devBody      :: ![Stmt]
+      , devTags      :: !(Blind [(Text, Integer)]) -- ^ Display names for the '__resumption_tag' register's values; invisible to Eq/Ord/Hashable.
       }
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric Device
@@ -352,7 +356,8 @@ instance Hashable Program
 --- Pretty printing (the concrete syntax; see doc/hyle.md, section 10).
 ---
 
--- | Keywords and operator names: these print quoted when used as identifiers.
+-- | Keywords and operator names: rejected as bare identifiers by the
+--   parser, and printed quoted when used as identifiers.
 reservedWords :: HashSet Text
 reservedWords = Set.fromList $
       [ "let", "in", "if", "then", "else", "undef"
@@ -364,13 +369,22 @@ reservedWords = Set.fromList $
                       , RedAnd, RedOr, RedXOr, ZExt 0, SExt 0, Trunc 0, Rep 0
                       ]
 
--- | True for names that can print bare: an identifier-class name that isn't
---   reserved. Everything else prints in double quotes.
+-- | Soft keywords, added after the format was in the wild: the parser
+--   still accepts them as bare identifiers (files written before they
+--   existed must keep parsing, and their clause positions are
+--   unambiguous), but the printer quotes them so new output can't be
+--   misread.
+softKeywords :: HashSet Text
+softKeywords = Set.fromList ["noinline", "tag"]
+
+-- | True for names that can print bare: an identifier-class name that
+--   isn't a (soft) keyword. Everything else prints in double quotes.
 bareName :: Name -> Bool
 bareName x = case T.uncons x of
       Just (c, cs) -> (isAlpha c || c `elem` ("_$" :: String))
                    && T.all (\ c' -> isAlphaNum c' || c' `elem` ("_.$'" :: String)) cs
                    && not (x `Set.member` reservedWords)
+                   && not (x `Set.member` softKeywords)
       Nothing      -> False
 
 ppName :: Name -> Doc an
@@ -391,6 +405,21 @@ ppLit bv | width bv == 0 = text "0'"
 
 ppPort :: (Name, Size) -> Doc an
 ppPort (x, sz) = ppName x <+> text ":" <+> ppTy sz
+
+-- | Provenance comment: one '--@ file:l:c-l:c' line when the annotation
+--   carries a source span (re-parsed to the same span by Hyle.Parse; rwc
+--   only emits these in .rwc output under --locators).
+ppSpan :: Annote -> [Doc an]
+ppSpan a = case annProv a of
+      FromSource (Span f (l1, c1) (l2, c2)) ->
+            [ text $ "--@ " <> T.pack f <> ":" <> showt l1 <> ":" <> showt c1
+                                        <> "-" <> showt l2 <> ":" <> showt c2 ]
+      _ -> []
+
+-- | Doc comments: one '--| <text>' line per doc entry (entries are split at
+--   newlines so every printed line carries the marker and re-parses).
+ppDocs :: Blind [Text] -> [Doc an]
+ppDocs (Blind docs) = map (\ d -> text $ "--| " <> d) $ concatMap T.lines docs
 
 -- | Expression at top (let/if) level.
 ppExp :: Exp -> Doc an
@@ -454,10 +483,12 @@ instance Pretty Sig where
       pretty (Sig _ args res) = parens (hsep $ punctuate comma $ map ppTy args) <+> text "->" <+> ppTy res
 
 instance Pretty Defn where
-      pretty (Defn _ n sig ps e) = vsep
-            [ ppName n <+> text ":" <+> pretty sig
-            , nest 6 $ vsep [ hsep (ppName n : map ppName ps) <+> text "=", align $ ppExp e ]
-            ]
+      pretty (Defn a n sig ps e ni docs) = vsep $
+            ppSpan a
+            <> ppDocs docs
+            <> [ ppName n <+> text ":" <+> pretty sig
+               , nest 6 $ vsep [ hsep ([ text "noinline" | ni ] <> (ppName n : map ppName ps)) <+> text "=", align $ ppExp e ]
+               ]
 
 instance Pretty ExternKind where
       pretty = \ case
@@ -479,7 +510,8 @@ instance Pretty Extern where
             <> maybe [] (\ g -> [text "model" <+> ppName g]) m
 
 instance Pretty Register where
-      pretty (Register _ x sz bv) = text "register" <+> ppName x <+> text ":" <+> ppTy sz <+> text "init" <+> ppLit bv
+      pretty (Register a x sz bv) = vsep $ ppSpan a
+            <> [ text "register" <+> ppName x <+> text ":" <+> ppTy sz <+> text "init" <+> ppLit bv ]
 
 instance Pretty Instance where
       pretty (Instance _ x ex cs) = text "instance" <+> ppName x <+> text "of" <+> ppName ex <> ppGenerics cs
@@ -492,13 +524,16 @@ instance Pretty Stmt where
             SInstIn _ x p e -> nest 6 $ ppName x <> text "." <> ppName p <+> text ":=" <+> ppExp e
 
 instance Pretty Device where
-      pretty (Device _ n ins outs regs insts body) = nest 6 $ vsep $
+      pretty (Device _ n ins outs regs insts body (Blind tags)) = nest 6 $ vsep $
             [ text "device" <+> ppName n ]
             <> map (\ p -> text "input" <+> ppPort p) ins
             <> map (\ p -> text "output" <+> ppPort p) outs
             <> map pretty regs
+            <> map ppTag tags
             <> map pretty insts
             <> map pretty body
+            where ppTag :: (Text, Integer) -> Doc an
+                  ppTag (x, v) = text "tag" <+> ppName x <+> text "=" <+> pretty v
 
 instance Pretty Program where
       pretty (Program exts ds dev) = vsep $ intersperse (text "") $

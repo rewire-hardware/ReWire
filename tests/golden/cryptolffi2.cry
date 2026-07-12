@@ -18,62 +18,62 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [16] -> [20]
-rw_main__dispatch x0 = rw_main__L__x4_260 x0
+rw_main__dispatch x0 = rw_main__x2 x0
 
-// main.$L.$x4$260
-rw_main__L__x4_260 : [16] -> [20]
-rw_main__L__x4_260 x0 = rw_main__L_ReWire_Monad_iter_1_s23_258 x0
+// main.$x2
+rw_main__x2 : [16] -> [20]
+rw_main__x2 x0 = rw_main_iter_W16_W16W4_sMain_go x0
 
-// main.$L.ReWire.Monad.iter$1$s23$258
-rw_main__L_ReWire_Monad_iter_1_s23_258 : [16] -> [20]
-rw_main__L_ReWire_Monad_iter_1_s23_258 x0 = s0
+// main.iter$W16$W16W4$sMain_go
+rw_main_iter_W16_W16W4_sMain_go : [16] -> [20]
+rw_main_iter_W16_W16W4_sMain_go x0 = s0
   where
     s0 : [20]
     s0 = rw_Main_go x0
 
 // Main.crysub
 rw_Main_crysub : [16] -> [16]
-rw_Main_crysub x0 = rw_cry_bytemap_0 x0
+rw_Main_crysub x0 = rw_cry_bytemap_16_16 x0
 
 // Main.cryflip16
 rw_Main_cryflip16 : [16] -> [16]
-rw_Main_cryflip16 x0 = rw_cry_flipHalves_1 x0
+rw_Main_cryflip16 x0 = rw_cry_flipHalves_16_16 x0
 
 // Main.cryflip4
 rw_Main_cryflip4 : [4] -> [4]
-rw_Main_cryflip4 x0 = rw_cry_flipHalves_2 x0
+rw_Main_cryflip4 x0 = rw_cry_flipHalves_4_4 x0
 
 // Main.cryxor
 rw_Main_cryxor : [16] -> [4]
-rw_Main_cryxor x0 = rw_cry_xorWord_3 x0
+rw_Main_cryxor x0 = rw_cry_xorWord_16_4 x0
 
 // Main.go
 rw_Main_go : [16] -> [20]
 rw_Main_go x0 = (rw_Main_cryflip16 (rw_Main_crysub x0)) # (rw_Main_cryflip4 (rw_Main_cryxor x0))
 
-// cry$bytemap$0.subst$1
-rw_cry_bytemap_0_subst_1 : [4] -> [4]
-rw_cry_bytemap_0_subst_1 x0 = take`{4} (0xe4d12fb83a6c5907 << ((rw'resize`{6} x0) * 0b000100))
+// cry$bytemap$16_16.subst$1
+rw_cry_bytemap_16_16_subst_1 : [4] -> [4]
+rw_cry_bytemap_16_16_subst_1 x0 = take`{4} (0xe4d12fb83a6c5907 << ((rw'resize`{6} x0) * 0b000100))
 
-// cry$bytemap$0
-rw_cry_bytemap_0 : [16] -> [16]
-rw_cry_bytemap_0 x0 = (rw_cry_bytemap_0_subst_1 (take`{4} x0)) # ((rw_cry_bytemap_0_subst_1 (take`{4} (drop`{4} x0))) # ((rw_cry_bytemap_0_subst_1 (take`{4} (drop`{8} x0))) # (rw_cry_bytemap_0_subst_1 (drop`{12} x0))))
+// cry$bytemap$16_16
+rw_cry_bytemap_16_16 : [16] -> [16]
+rw_cry_bytemap_16_16 x0 = (rw_cry_bytemap_16_16_subst_1 (take`{4} x0)) # ((rw_cry_bytemap_16_16_subst_1 (take`{4} (drop`{4} x0))) # ((rw_cry_bytemap_16_16_subst_1 (take`{4} (drop`{8} x0))) # (rw_cry_bytemap_16_16_subst_1 (drop`{12} x0))))
 
-// cry$flipHalves$1
-rw_cry_flipHalves_1 : [16] -> [16]
-rw_cry_flipHalves_1 x0 = (drop`{8} x0) # (take`{8} x0)
+// cry$flipHalves$16_16
+rw_cry_flipHalves_16_16 : [16] -> [16]
+rw_cry_flipHalves_16_16 x0 = (drop`{8} x0) # (take`{8} x0)
 
-// cry$flipHalves$2
-rw_cry_flipHalves_2 : [4] -> [4]
-rw_cry_flipHalves_2 x0 = (drop`{2} x0) # (take`{2} x0)
+// cry$flipHalves$4_4
+rw_cry_flipHalves_4_4 : [4] -> [4]
+rw_cry_flipHalves_4_4 x0 = (drop`{2} x0) # (take`{2} x0)
 
-// cry$xorWord$3.xorAll$0
-rw_cry_xorWord_3_xorAll_0 : [16] -> [4]
-rw_cry_xorWord_3_xorAll_0 x0 = (((0x0 ^ (take`{4} x0)) ^ (take`{4} (drop`{4} x0))) ^ (take`{4} (drop`{8} x0))) ^ (drop`{12} x0)
+// cry$xorWord$16_4.xorAll$0
+rw_cry_xorWord_16_4_xorAll_0 : [16] -> [4]
+rw_cry_xorWord_16_4_xorAll_0 x0 = (((0x0 ^ (take`{4} x0)) ^ (take`{4} (drop`{4} x0))) ^ (take`{4} (drop`{8} x0))) ^ (drop`{12} x0)
 
-// cry$xorWord$3
-rw_cry_xorWord_3 : [16] -> [4]
-rw_cry_xorWord_3 x0 = rw_cry_xorWord_3_xorAll_0 x0
+// cry$xorWord$16_4
+rw_cry_xorWord_16_4 : [16] -> [4]
+rw_cry_xorWord_16_4 x0 = rw_cry_xorWord_16_4_xorAll_0 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [16] -> [20]

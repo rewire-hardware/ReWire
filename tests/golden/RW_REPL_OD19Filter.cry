@@ -24,152 +24,152 @@ parameter
 
 // main.$dispatch
 rw_main__dispatch : [39] -> [33] -> [41]
-rw_main__dispatch x0 x1 = rw_main__L__x6_358 x1 x0
+rw_main__dispatch x0 x1 = rw_main__x2 x1 x0
 
-// main.$L.$x6$358
-rw_main__L__x6_358 : [33] -> [39] -> [41]
-rw_main__L__x6_358 x0 x1 = rw_main__L_Main_repl4_355 x0 x1
+// main.$x2
+rw_main__x2 : [33] -> [39] -> [41]
+rw_main__x2 x0 x1 = rw_main_repl x0 x1
 
-// main.$L._unused8$360
-rw_main__L__unused8_360 : [39] -> [41]
-rw_main__L__unused8_360 x0 = 0b10 # x0
+// main._unused
+rw_main__unused : [39] -> [41]
+rw_main__unused x0 = 0b10 # x0
 
-// main.$L.arm11$363
-rw_main__L_arm11_363 : [32] -> [7] -> [39] -> [41]
-rw_main__L_arm11_363 x0 x1 x2 = rw_main__L__unused8_360 s1
+// main.arm
+rw_main_arm : [32] -> [7] -> [39] -> [41]
+rw_main_arm x0 x1 x2 = rw_main__unused s1
   where
     s0 : [7]
     s0 = rw_OD19_ProgramCounter_incPC x1
     s1 : [39]
     s1 = x0 # s0
 
-// main.$L.ds10$362
-rw_main__L_ds10_362 : [39] -> [39] -> [41]
-rw_main__L_ds10_362 x0 x1 = rw_main__L_arm11_363 s0 s1 x1
+// main.$ds2
+rw_main__ds2 : [39] -> [39] -> [41]
+rw_main__ds2 x0 x1 = rw_main_arm s0 s1 x1
   where
     s0 : [32]
     s0 = take`{32} x0
     s1 : [7]
     s1 = drop`{32} x0
 
-// main.$L.Main.nextPC9$361
-rw_main__L_Main_nextPC9_361 : [39] -> [41]
-rw_main__L_Main_nextPC9_361 x0 = rw_main__L_ds10_362 x0 x0
+// main.nextPC
+rw_main_nextPC : [39] -> [41]
+rw_main_nextPC x0 = rw_main__ds2 x0 x0
 
-// main.$L.arm21$376
-rw_main__L_arm21_376 : [32] -> [32] -> [7] -> [39] -> [41]
-rw_main__L_arm21_376 x0 x1 x2 x3 = rw_main__L_Main_nextPC9_361 s0
+// main.arm3
+rw_main_arm3 : [32] -> [32] -> [7] -> [39] -> [41]
+rw_main_arm3 x0 x1 x2 x3 = rw_main_nextPC s0
   where
     s0 : [39]
     s0 = x0 # x2
 
-// main.$L.ds20$375
-rw_main__L_ds20_375 : [32] -> [39] -> [39] -> [41]
-rw_main__L_ds20_375 x0 x1 x2 = rw_main__L_arm21_376 x0 s0 s1 x2
+// main.$ds4
+rw_main__ds4 : [32] -> [39] -> [39] -> [41]
+rw_main__ds4 x0 x1 x2 = rw_main_arm3 x0 s0 s1 x2
   where
     s0 : [32]
     s0 = take`{32} x1
     s1 : [7]
     s1 = drop`{32} x1
 
-// main.$L.Main.putReg19$374
-rw_main__L_Main_putReg19_374 : [32] -> [39] -> [41]
-rw_main__L_Main_putReg19_374 x0 x1 = rw_main__L_ds20_375 x0 x1 x1
+// main.putReg
+rw_main_putReg : [32] -> [39] -> [41]
+rw_main_putReg x0 x1 = rw_main__ds4 x0 x1 x1
 
-// main.$L.r23$380
-rw_main__L_r23_380 : [32] -> [32] -> [39] -> [41]
-rw_main__L_r23_380 x0 x1 x2 = s1 # x2
+// main.r
+rw_main_r : [32] -> [32] -> [39] -> [41]
+rw_main_r x0 x1 x2 = s1 # x2
   where
     s0 : [1]
     s0 = rw_Main_test1 x0 x1
     s1 : [2]
     s1 = 0b0 # s0
 
-// main.$L.ds25$382
-rw_main__L_ds25_382 : [32] -> [39] -> [39] -> [41]
-rw_main__L_ds25_382 x0 x1 x2 = rw_main__L_r23_380 x0 s0 x2
+// main.$ds5
+rw_main__ds5 : [32] -> [39] -> [39] -> [41]
+rw_main__ds5 x0 x1 x2 = rw_main_r x0 s0 x2
   where
     s0 : [32]
     s0 = take`{32} x1
 
-// main.$L.Main.getReg24$381
-rw_main__L_Main_getReg24_381 : [32] -> [39] -> [41]
-rw_main__L_Main_getReg24_381 x0 x1 = rw_main__L_ds25_382 x0 x1 x1
+// main.getReg
+rw_main_getReg : [32] -> [39] -> [41]
+rw_main_getReg x0 x1 = rw_main__ds5 x0 x1 x1
 
-// main.$L.r41$405
-rw_main__L_r41_405 : [32] -> [32] -> [39] -> [41]
-rw_main__L_r41_405 x0 x1 x2 = s1 # x2
+// main.r3
+rw_main_r3 : [32] -> [32] -> [39] -> [41]
+rw_main_r3 x0 x1 x2 = s1 # x2
   where
     s0 : [1]
     s0 = rw_Main_test2 x0 x1
     s1 : [2]
     s1 = 0b0 # s0
 
-// main.$L.ds43$407
-rw_main__L_ds43_407 : [32] -> [39] -> [39] -> [41]
-rw_main__L_ds43_407 x0 x1 x2 = rw_main__L_r41_405 x0 s0 x2
+// main.$ds9
+rw_main__ds9 : [32] -> [39] -> [39] -> [41]
+rw_main__ds9 x0 x1 x2 = rw_main_r3 x0 s0 x2
   where
     s0 : [32]
     s0 = take`{32} x1
 
-// main.$L.Main.getReg42$406
-rw_main__L_Main_getReg42_406 : [32] -> [39] -> [41]
-rw_main__L_Main_getReg42_406 x0 x1 = rw_main__L_ds43_407 x0 x1 x1
+// main.getReg3
+rw_main_getReg3 : [32] -> [39] -> [41]
+rw_main_getReg3 x0 x1 = rw_main__ds9 x0 x1 x1
 
-// main.$L.r45$411
-rw_main__L_r45_411 : [32] -> [32] -> [39] -> [41]
-rw_main__L_r45_411 x0 x1 x2 = s1 # x2
+// main.r4
+rw_main_r4 : [32] -> [32] -> [39] -> [41]
+rw_main_r4 x0 x1 x2 = s1 # x2
   where
     s0 : [1]
     s0 = rw_Main_test3 x0 x1
     s1 : [2]
     s1 = 0b0 # s0
 
-// main.$L.ds47$413
-rw_main__L_ds47_413 : [32] -> [39] -> [39] -> [41]
-rw_main__L_ds47_413 x0 x1 x2 = rw_main__L_r45_411 x0 s0 x2
+// main.$ds10
+rw_main__ds10 : [32] -> [39] -> [39] -> [41]
+rw_main__ds10 x0 x1 x2 = rw_main_r4 x0 s0 x2
   where
     s0 : [32]
     s0 = take`{32} x1
 
-// main.$L.Main.getReg46$412
-rw_main__L_Main_getReg46_412 : [32] -> [39] -> [41]
-rw_main__L_Main_getReg46_412 x0 x1 = rw_main__L_ds47_413 x0 x1 x1
+// main.getReg4
+rw_main_getReg4 : [32] -> [39] -> [41]
+rw_main_getReg4 x0 x1 = rw_main__ds10 x0 x1 x1
 
-// main.$L.r49$417
-rw_main__L_r49_417 : [32] -> [32] -> [39] -> [41]
-rw_main__L_r49_417 x0 x1 x2 = s1 # x2
+// main.r5
+rw_main_r5 : [32] -> [32] -> [39] -> [41]
+rw_main_r5 x0 x1 x2 = s1 # x2
   where
     s0 : [1]
     s0 = rw_Main_test4 x0 x1
     s1 : [2]
     s1 = 0b0 # s0
 
-// main.$L.ds51$419
-rw_main__L_ds51_419 : [32] -> [39] -> [39] -> [41]
-rw_main__L_ds51_419 x0 x1 x2 = rw_main__L_r49_417 x0 s0 x2
+// main.$ds11
+rw_main__ds11 : [32] -> [39] -> [39] -> [41]
+rw_main__ds11 x0 x1 x2 = rw_main_r5 x0 s0 x2
   where
     s0 : [32]
     s0 = take`{32} x1
 
-// main.$L.Main.getReg50$418
-rw_main__L_Main_getReg50_418 : [32] -> [39] -> [41]
-rw_main__L_Main_getReg50_418 x0 x1 = rw_main__L_ds51_419 x0 x1 x1
+// main.getReg5
+rw_main_getReg5 : [32] -> [39] -> [41]
+rw_main_getReg5 x0 x1 = rw_main__ds11 x0 x1 x1
 
-// main.$L.ds5$356
-rw_main__L_ds5_356 : [32] -> [39] -> [39] -> [41]
-rw_main__L_ds5_356 x0 x1 x2 = if s0 == 0b0000000 then (rw_main__L_Main_putReg19_374 x0 x2) else (if s0 == 0b0000001 then (rw_main__L_Main_getReg24_381 x0 x2) else (if s0 == 0b0000010 then (rw_main__L_Main_putReg19_374 x0 x2) else (if s0 == 0b0000011 then (rw_main__L_Main_getReg24_381 x0 x2) else (if s0 == 0b0000100 then (rw_main__L_Main_getReg42_406 x0 x2) else (if s0 == 0b0000101 then (rw_main__L_Main_getReg46_412 x0 x2) else (if s0 == 0b0000110 then (rw_main__L_Main_getReg50_418 x0 x2) else (rw_main__L_Main_nextPC9_361 x2)))))))
+// main.$ds
+rw_main__ds : [32] -> [39] -> [39] -> [41]
+rw_main__ds x0 x1 x2 = if s0 == 0b0000000 then (rw_main_putReg x0 x2) else (if s0 == 0b0000001 then (rw_main_getReg x0 x2) else (if s0 == 0b0000010 then (rw_main_putReg x0 x2) else (if s0 == 0b0000011 then (rw_main_getReg x0 x2) else (if s0 == 0b0000100 then (rw_main_getReg3 x0 x2) else (if s0 == 0b0000101 then (rw_main_getReg4 x0 x2) else (if s0 == 0b0000110 then (rw_main_getReg5 x0 x2) else (rw_main_nextPC x2)))))))
   where
     s0 : [7]
     s0 = drop`{32} x1
 
-// main.$L.arm52$422
-rw_main__L_arm52_422 : [32] -> [39] -> [41]
-rw_main__L_arm52_422 x0 x1 = rw_main__L_ds5_356 x0 x1 x1
+// main.arm6
+rw_main_arm6 : [32] -> [39] -> [41]
+rw_main_arm6 x0 x1 = rw_main__ds x0 x1 x1
 
-// main.$L.Main.repl4$355
-rw_main__L_Main_repl4_355 : [33] -> [39] -> [41]
-rw_main__L_Main_repl4_355 x0 x1 = if (take`{1} x0) == 0b0 then (rw_main__L_arm52_422 s0 x1) else (0b10 # x1)
+// main.repl
+rw_main_repl : [33] -> [39] -> [41]
+rw_main_repl x0 x1 = if ~ ((take`{1} x0) @ 0) then (rw_main_arm6 s0 x1) else (0b10 # x1)
   where
     s0 : [32]
     s0 = drop`{1} x0

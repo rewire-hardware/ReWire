@@ -96,7 +96,7 @@ compileProgram conf (M.Program exts ds dev) = do
             xenv = Map.fromList $ map (\ e -> (extName e, e)) exts
 
 compileDefn :: forall m. MonadError AstError m => Config -> XEnv -> M.Defn -> m H.Unit
-compileDefn conf xenv (M.Defn _ g (M.Sig _ argSzs _) ps body) = do
+compileDefn conf xenv (M.Defn _ g (M.Sig _ argSzs _) ps body _ _) = do
       ((e, stmts), ts) <- flip runStateT (ts0 $ argNames <> [ "res" | sizeOf body > 0 ]) $ compileExp xenv lenv body
       pure $ H.Unit (mangleMod g) (unitPackages conf)
                     (map (\ (pn, sz) -> H.Port pn H.In sz) (zip argNames $ map snd live) <> [ H.Port "res" H.Out (sizeOf body) | sizeOf body > 0 ])
@@ -115,7 +115,7 @@ compileDefn conf xenv (M.Defn _ g (M.Sig _ argSzs _) ps body) = do
                               <> zip (map fst live) (map H.Var argNames)
 
 compileDevice :: forall m. MonadError AstError m => Config -> XEnv -> M.Device -> m H.Unit
-compileDevice conf xenv (M.Device an top ins outs regs insts body) = do
+compileDevice conf xenv (M.Device an top ins outs regs insts body _) = do
       (stmts, ts) <- flip runStateT (ts0 ambient) $ do
             instWires <- Map.fromList . concat <$> mapM instOutWires insts
             (letStmts, lenv) <- foldStmts (ambientEnv instWires) body

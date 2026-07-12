@@ -242,7 +242,7 @@ component \Main_add\ is
       port (arg0 : in std_logic_vector (1023 downto 0);
             res : out std_logic_vector (1023 downto 0));
       end component;
-      component \main_$L___unused5$840\ is
+      component main_arm2 is
       port (arg0 : in std_logic_vector (1023 downto 0);
             res : out std_logic_vector (2047 downto 0));
       end component;
@@ -454,8 +454,8 @@ component \Main_add\ is
       signal \main_swapix4_outR30\ : std_logic_vector (31 downto 0);
       signal \main_swapix4_outR31\ : std_logic_vector (31 downto 0);
       signal zi6 : std_logic_vector (1023 downto 0);
-      signal \main_$l__unused5$840_out\ : std_logic_vector (2047 downto 0);
-      signal \main_$l__unused5$840_outR1\ : std_logic_vector (2047 downto 0);
+      signal main_arm2_out : std_logic_vector (2047 downto 0);
+      signal \main_arm2_outR1\ : std_logic_vector (2047 downto 0);
       signal zres : std_logic_vector (2047 downto 0);
 begin
 inst : \Main_add\ port map (\__st0\, main_add_out);
@@ -664,9 +664,9 @@ inst : \Main_add\ port map (\__st0\, main_add_out);
       \instR194\ : \Main_swapix4\ port map (zi5, std_logic_vector'(B"11110"), \main_swapix4_outR30\);
       \instR195\ : \Main_swapix4\ port map (zi5, std_logic_vector'(B"11111"), \main_swapix4_outR31\);
       zi6 <= (main_swapix4_out & \main_swapix4_outR1\ & \main_swapix4_outR2\ & \main_swapix4_outR3\ & \main_swapix4_outR4\ & \main_swapix4_outR5\ & \main_swapix4_outR6\ & \main_swapix4_outR7\ & \main_swapix4_outR8\ & \main_swapix4_outR9\ & \main_swapix4_outR10\ & \main_swapix4_outR11\ & \main_swapix4_outR12\ & \main_swapix4_outR13\ & \main_swapix4_outR14\ & \main_swapix4_outR15\ & \main_swapix4_outR16\ & \main_swapix4_outR17\ & \main_swapix4_outR18\ & \main_swapix4_outR19\ & \main_swapix4_outR20\ & \main_swapix4_outR21\ & \main_swapix4_outR22\ & \main_swapix4_outR23\ & \main_swapix4_outR24\ & \main_swapix4_outR25\ & \main_swapix4_outR26\ & \main_swapix4_outR27\ & \main_swapix4_outR28\ & \main_swapix4_outR29\ & \main_swapix4_outR30\ & \main_swapix4_outR31\);
-      \instR196\ : \main_$L___unused5$840\ port map (zi6, \main_$l__unused5$840_out\);
-      \instR197\ : \main_$L___unused5$840\ port map (\__st0\, \main_$l__unused5$840_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), \main_$l__unused5$840_out\, \main_$l__unused5$840_outR1\);
+      \instR196\ : main_arm2 port map (zi6, main_arm2_out);
+      \instR197\ : main_arm2 port map (\__st0\, \main_arm2_outR1\);
+      zres <= rw_cond(rw_not(\__in0\), main_arm2_out, \main_arm2_outR1\);
       \__st0_next\ <= zres(1023 downto 0);
       \__out0\ <= zres(2047 downto 1024);
       process (clk, rst)
@@ -683,12 +683,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L___unused5$840\ is
+entity main_arm2 is
 port (arg0 : in std_logic_vector (1023 downto 0);
       res : out std_logic_vector (2047 downto 0));
 end entity;
 
-architecture rtl of \main_$L___unused5$840\ is
+architecture rtl of main_arm2 is
 
 begin
 res <= (arg0 & arg0);
@@ -728,7 +728,7 @@ component \Main_explode5\ is
       signal main_explode5_out : std_logic_vector (4 downto 0);
       signal zi0 : std_logic_vector (4 downto 0);
       signal zi1 : std_logic_vector (0 downto 0);
-      signal ds : std_logic_vector (32 downto 0);
+      signal zds : std_logic_vector (32 downto 0);
       signal w0 : std_logic_vector (31 downto 0);
       signal \w0R1\ : std_logic_vector (31 downto 0);
       signal h : std_logic_vector (0 downto 0);
@@ -737,12 +737,12 @@ begin
 inst : \Main_explode5\ port map (arg2, main_explode5_out);
       zi0 <= main_explode5_out;
       zi1 <= zi0(4 downto 4);
-      ds <= (zi1 & rw_resize(rw_shiftr(arg1, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(arg2, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
-      w0 <= ds(31 downto 0);
+      zds <= (zi1 & rw_resize(rw_shiftr(arg1, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(arg2, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
+      w0 <= zds(31 downto 0);
       \w0R1\ <= w0;
-      h <= ds(32 downto 32);
+      h <= zds(32 downto 32);
       zt0 <= h;
-      res <= rw_cond(rw_eq(zt0, std_logic_vector'(B"0")), rw_or(rw_shiftl(\w0R1\, arg0), rw_shiftr(\w0R1\, rw_sub(std_logic_vector'(B"00000000000000000000000000100000"), arg0))), \w0R1\);
+      res <= rw_cond(rw_not(zt0), rw_or(rw_shiftl(\w0R1\, arg0), rw_shiftr(\w0R1\, rw_sub(std_logic_vector'(B"00000000000000000000000000100000"), arg0))), \w0R1\);
 end architecture;
 
 library ieee;
@@ -771,7 +771,7 @@ component \Main_explode5\ is
       signal zi7 : std_logic_vector (0 downto 0);
       signal zi8 : std_logic_vector (0 downto 0);
       signal zi9 : std_logic_vector (0 downto 0);
-      signal ds : std_logic_vector (64 downto 0);
+      signal zds : std_logic_vector (64 downto 0);
       signal v0 : std_logic_vector (31 downto 0);
       signal \v0R1\ : std_logic_vector (31 downto 0);
       signal h : std_logic_vector (0 downto 0);
@@ -789,13 +789,13 @@ inst : \Main_explode5\ port map (arg1, main_explode5_out);
       zi7 <= zi0(0 downto 0);
       zi8 <= zi7;
       zi9 <= zi0(4 downto 4);
-      ds <= (zi9 & rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"0") & zi2 & zi4 & zi6 & zi8), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32) & rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"1") & zi2 & zi4 & zi6 & zi8), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
-      v0 <= ds(63 downto 32);
+      zds <= (zi9 & rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"0") & zi2 & zi4 & zi6 & zi8), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32) & rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"1") & zi2 & zi4 & zi6 & zi8), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
+      v0 <= zds(63 downto 32);
       \v0R1\ <= v0;
-      h <= ds(64 downto 64);
+      h <= zds(64 downto 64);
       zt0 <= h;
-      v1 <= ds(31 downto 0);
-      res <= rw_cond(rw_eq(zt0, std_logic_vector'(B"0")), \v0R1\, rw_add(\v0R1\, v1));
+      v1 <= zds(31 downto 0);
+      res <= rw_cond(rw_not(zt0), \v0R1\, rw_add(\v0R1\, v1));
 end architecture;
 
 library ieee;
@@ -897,7 +897,7 @@ component \Main_explode5\ is
             res : out std_logic_vector (4 downto 0));
       end component;
       signal main_explode5_out : std_logic_vector (4 downto 0);
-      signal ds : std_logic_vector (4 downto 0);
+      signal zds : std_logic_vector (4 downto 0);
       signal b1 : std_logic_vector (0 downto 0);
       signal \b1R1\ : std_logic_vector (0 downto 0);
       signal b2 : std_logic_vector (0 downto 0);
@@ -914,22 +914,22 @@ component \Main_explode5\ is
       signal zt3 : std_logic_vector (0 downto 0);
 begin
 inst : \Main_explode5\ port map (arg1, main_explode5_out);
-      ds <= main_explode5_out;
-      b1 <= ds(4 downto 4);
+      zds <= main_explode5_out;
+      b1 <= zds(4 downto 4);
       \b1R1\ <= b1;
-      b2 <= ds(3 downto 3);
+      b2 <= zds(3 downto 3);
       \b2R1\ <= b2;
-      k <= ds(2 downto 2);
+      k <= zds(2 downto 2);
       \kR1\ <= k;
-      l <= ds(1 downto 1);
+      l <= zds(1 downto 1);
       \lR1\ <= l;
-      m <= ds(0 downto 0);
+      m <= zds(0 downto 0);
       \mR1\ <= m;
-      zt0 <= rw_cond(rw_eq(\b1R1\, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
-      zt1 <= rw_cond(rw_eq(zt0, std_logic_vector'(B"1")), \b2R1\, std_logic_vector'(B"0"));
-      zt2 <= rw_cond(rw_eq(\b1R1\, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
-      zt3 <= rw_cond(rw_eq(zt2, std_logic_vector'(B"1")), rw_cond(rw_eq(\b2R1\, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1")), std_logic_vector'(B"0"));
-      res <= rw_cond(rw_eq(zt1, std_logic_vector'(B"0")), rw_cond(rw_eq(zt3, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"01") & \kR1\ & \lR1\ & \mR1\), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"00") & \kR1\ & \lR1\ & \mR1\), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
+      zt0 <= rw_not(\b1R1\);
+      zt1 <= rw_cond(zt0, \b2R1\, std_logic_vector'(B"0"));
+      zt2 <= rw_not(\b1R1\);
+      zt3 <= rw_cond(zt2, rw_not(\b2R1\), std_logic_vector'(B"0"));
+      res <= rw_cond(rw_not(zt1), rw_cond(rw_not(zt3), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"01") & \kR1\ & \lR1\ & \mR1\), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"00") & \kR1\ & \lR1\ & \mR1\), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
 end architecture;
 
 library ieee;
@@ -948,7 +948,7 @@ component \Main_explode5\ is
             res : out std_logic_vector (4 downto 0));
       end component;
       signal main_explode5_out : std_logic_vector (4 downto 0);
-      signal ds : std_logic_vector (4 downto 0);
+      signal zds : std_logic_vector (4 downto 0);
       signal b1 : std_logic_vector (0 downto 0);
       signal \b1R1\ : std_logic_vector (0 downto 0);
       signal j : std_logic_vector (0 downto 0);
@@ -963,20 +963,20 @@ component \Main_explode5\ is
       signal zt1 : std_logic_vector (0 downto 0);
 begin
 inst : \Main_explode5\ port map (arg1, main_explode5_out);
-      ds <= main_explode5_out;
-      b1 <= ds(4 downto 4);
+      zds <= main_explode5_out;
+      b1 <= zds(4 downto 4);
       \b1R1\ <= b1;
-      j <= ds(3 downto 3);
+      j <= zds(3 downto 3);
       \jR1\ <= j;
-      k <= ds(2 downto 2);
+      k <= zds(2 downto 2);
       \kR1\ <= k;
-      b2 <= ds(1 downto 1);
+      b2 <= zds(1 downto 1);
       \b2R1\ <= b2;
-      m <= ds(0 downto 0);
+      m <= zds(0 downto 0);
       \mR1\ <= m;
-      zt0 <= rw_cond(rw_eq(\b1R1\, std_logic_vector'(B"1")), rw_cond(rw_eq(\b2R1\, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1")), std_logic_vector'(B"0"));
-      zt1 <= rw_cond(rw_eq(\b1R1\, std_logic_vector'(B"1")), \b2R1\, std_logic_vector'(B"0"));
-      res <= rw_cond(rw_eq(zt0, std_logic_vector'(B"0")), rw_cond(rw_eq(zt1, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"1") & \jR1\ & \kR1\ & std_logic_vector'(B"0") & \mR1\), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"1") & \jR1\ & \kR1\ & std_logic_vector'(B"1") & \mR1\), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
+      zt0 <= rw_cond(\b1R1\, rw_not(\b2R1\), std_logic_vector'(B"0"));
+      zt1 <= rw_cond(\b1R1\, \b2R1\, std_logic_vector'(B"0"));
+      res <= rw_cond(rw_not(zt0), rw_cond(rw_not(zt1), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"1") & \jR1\ & \kR1\ & std_logic_vector'(B"0") & \mR1\), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"1") & \jR1\ & \kR1\ & std_logic_vector'(B"1") & \mR1\), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
 end architecture;
 
 library ieee;
@@ -995,7 +995,7 @@ component \Main_explode5\ is
             res : out std_logic_vector (4 downto 0));
       end component;
       signal main_explode5_out : std_logic_vector (4 downto 0);
-      signal ds : std_logic_vector (4 downto 0);
+      signal zds : std_logic_vector (4 downto 0);
       signal b1 : std_logic_vector (0 downto 0);
       signal \b1R1\ : std_logic_vector (0 downto 0);
       signal j : std_logic_vector (0 downto 0);
@@ -1012,22 +1012,22 @@ component \Main_explode5\ is
       signal zt3 : std_logic_vector (0 downto 0);
 begin
 inst : \Main_explode5\ port map (arg1, main_explode5_out);
-      ds <= main_explode5_out;
-      b1 <= ds(4 downto 4);
+      zds <= main_explode5_out;
+      b1 <= zds(4 downto 4);
       \b1R1\ <= b1;
-      j <= ds(3 downto 3);
+      j <= zds(3 downto 3);
       \jR1\ <= j;
-      b2 <= ds(2 downto 2);
+      b2 <= zds(2 downto 2);
       \b2R1\ <= b2;
-      l <= ds(1 downto 1);
+      l <= zds(1 downto 1);
       \lR1\ <= l;
-      m <= ds(0 downto 0);
+      m <= zds(0 downto 0);
       \mR1\ <= m;
-      zt0 <= rw_cond(rw_eq(\b1R1\, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
-      zt1 <= rw_cond(rw_eq(zt0, std_logic_vector'(B"1")), rw_cond(rw_eq(\b2R1\, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1")), std_logic_vector'(B"0"));
-      zt2 <= rw_cond(rw_eq(\b1R1\, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
-      zt3 <= rw_cond(rw_eq(zt2, std_logic_vector'(B"1")), \b2R1\, std_logic_vector'(B"0"));
-      res <= rw_cond(rw_eq(zt1, std_logic_vector'(B"0")), rw_cond(rw_eq(zt3, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"0") & \jR1\ & std_logic_vector'(B"0") & \lR1\ & \mR1\), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"0") & \jR1\ & std_logic_vector'(B"1") & \lR1\ & \mR1\), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
+      zt0 <= rw_not(\b1R1\);
+      zt1 <= rw_cond(zt0, rw_not(\b2R1\), std_logic_vector'(B"0"));
+      zt2 <= rw_not(\b1R1\);
+      zt3 <= rw_cond(zt2, \b2R1\, std_logic_vector'(B"0"));
+      res <= rw_cond(rw_not(zt1), rw_cond(rw_not(zt3), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"0") & \jR1\ & std_logic_vector'(B"0") & \lR1\ & \mR1\), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"0") & \jR1\ & std_logic_vector'(B"1") & \lR1\ & \mR1\), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
 end architecture;
 
 library ieee;
@@ -1046,7 +1046,7 @@ component \Main_explode5\ is
             res : out std_logic_vector (4 downto 0));
       end component;
       signal main_explode5_out : std_logic_vector (4 downto 0);
-      signal ds : std_logic_vector (4 downto 0);
+      signal zds : std_logic_vector (4 downto 0);
       signal b1 : std_logic_vector (0 downto 0);
       signal \b1R1\ : std_logic_vector (0 downto 0);
       signal j : std_logic_vector (0 downto 0);
@@ -1061,20 +1061,20 @@ component \Main_explode5\ is
       signal zt1 : std_logic_vector (0 downto 0);
 begin
 inst : \Main_explode5\ port map (arg1, main_explode5_out);
-      ds <= main_explode5_out;
-      b1 <= ds(4 downto 4);
+      zds <= main_explode5_out;
+      b1 <= zds(4 downto 4);
       \b1R1\ <= b1;
-      j <= ds(3 downto 3);
+      j <= zds(3 downto 3);
       \jR1\ <= j;
-      k <= ds(2 downto 2);
+      k <= zds(2 downto 2);
       \kR1\ <= k;
-      l <= ds(1 downto 1);
+      l <= zds(1 downto 1);
       \lR1\ <= l;
-      b2 <= ds(0 downto 0);
+      b2 <= zds(0 downto 0);
       \b2R1\ <= b2;
-      zt0 <= rw_cond(rw_eq(\b1R1\, std_logic_vector'(B"1")), rw_cond(rw_eq(\b2R1\, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1")), std_logic_vector'(B"0"));
-      zt1 <= rw_cond(rw_eq(\b1R1\, std_logic_vector'(B"1")), \b2R1\, std_logic_vector'(B"0"));
-      res <= rw_cond(rw_eq(zt0, std_logic_vector'(B"0")), rw_cond(rw_eq(zt1, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"1") & \jR1\ & \kR1\ & \lR1\ & std_logic_vector'(B"0")), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"1") & \jR1\ & \kR1\ & \lR1\ & std_logic_vector'(B"1")), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
+      zt0 <= rw_cond(\b1R1\, rw_not(\b2R1\), std_logic_vector'(B"0"));
+      zt1 <= rw_cond(\b1R1\, \b2R1\, std_logic_vector'(B"0"));
+      res <= rw_cond(rw_not(zt0), rw_cond(rw_not(zt1), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"1") & \jR1\ & \kR1\ & \lR1\ & std_logic_vector'(B"0")), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"1") & \jR1\ & \kR1\ & \lR1\ & std_logic_vector'(B"1")), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
 end architecture;
 
 library ieee;
@@ -1093,7 +1093,7 @@ component \Main_explode5\ is
             res : out std_logic_vector (4 downto 0));
       end component;
       signal main_explode5_out : std_logic_vector (4 downto 0);
-      signal ds : std_logic_vector (4 downto 0);
+      signal zds : std_logic_vector (4 downto 0);
       signal j : std_logic_vector (0 downto 0);
       signal \jR1\ : std_logic_vector (0 downto 0);
       signal k : std_logic_vector (0 downto 0);
@@ -1108,20 +1108,20 @@ component \Main_explode5\ is
       signal zt1 : std_logic_vector (0 downto 0);
 begin
 inst : \Main_explode5\ port map (arg1, main_explode5_out);
-      ds <= main_explode5_out;
-      j <= ds(3 downto 3);
+      zds <= main_explode5_out;
+      j <= zds(3 downto 3);
       \jR1\ <= j;
-      k <= ds(2 downto 2);
+      k <= zds(2 downto 2);
       \kR1\ <= k;
-      l <= ds(1 downto 1);
+      l <= zds(1 downto 1);
       \lR1\ <= l;
-      m <= ds(0 downto 0);
+      m <= zds(0 downto 0);
       \mR1\ <= m;
       i1 <= (std_logic_vector'(B"1") & \jR1\ & \kR1\ & \lR1\ & \mR1\);
-      h <= ds(4 downto 4);
+      h <= zds(4 downto 4);
       zt0 <= h;
-      zt1 <= rw_cond(rw_eq(zt0, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
-      res <= rw_cond(rw_eq(zt1, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(i1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_xor(rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"0") & \jR1\ & \kR1\ & \lR1\ & \mR1\), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(i1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)));
+      zt1 <= rw_not(zt0);
+      res <= rw_cond(rw_not(zt1), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(i1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_xor(rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"0") & \jR1\ & \kR1\ & \lR1\ & \mR1\), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(i1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)));
 end architecture;
 
 library ieee;

@@ -120,7 +120,7 @@ evalExp env = go
                         go (Map.insert x v rho) e2
 
             apply :: Defn -> [BV] -> m BV
-            apply (Defn _ _ _ ps body) vs = go (Map.fromList $ zip ps vs) body
+            apply (Defn _ _ _ ps body _ _) vs = go (Map.fromList $ zip ps vs) body
 
 slice :: Index -> Size -> BV -> BV
 slice i k x | k == 0    = BV.nil
