@@ -1,0 +1,12 @@
+# Interpreter stimulus for cryptolffi7.
+#
+# Device: combinational; ReacT input W 8, output mix over cry/crymods.cry
+# (a submodule bump plus a functor-instantiated scale-by-3).
+- __in0: 0
+- __in0: 1
+- __in0: 50
+- __in0: 255
+- __in0: 85
+- __in0: 128
+- __in0: 200
+- __in0: 17

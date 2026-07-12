@@ -1,0 +1,25 @@
+// Module-system coverage: a submodule and a parameterized (functor)
+// submodule instantiation, both resolved by Cryptol before translation.
+module crymods where
+
+submodule Helpers where
+  bump : [8] -> [8]
+  bump x = x + 1
+
+submodule Scaler where
+  parameter
+    type n : #
+    type constraint (fin n, n >= 1)
+    k : [n]
+  scale : [n] -> [n]
+  scale x = x * k
+
+submodule ByThree = submodule Scaler where
+  type n = 8
+  k = 3
+
+import submodule Helpers
+import submodule ByThree as B
+
+mix : [8] -> [8]
+mix x = B::scale (bump x) + bump (B::scale x)
