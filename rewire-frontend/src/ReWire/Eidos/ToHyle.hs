@@ -293,6 +293,10 @@ compileCryptols conf p = case uses of
                   (ec, out, err) <- liftIO $ readCreateProcessWithExitCode (proc rwcry [path, T.unpack n, T.unpack cty, T.unpack entry]) ""
                   case ec of
                         ExitSuccess   -> do
+                              -- rwcry writes any compile-time warnings to
+                              -- stderr, one per "warning: " line; surface
+                              -- them through rwc's warning machinery.
+                              mapM_ (warnAt conf an) [ w | l <- T.lines $ T.pack err, Just w <- [T.stripPrefix "warning: " l] ]
                               ds' <- parseHyleDefns (T.pack out) path
                               pure (Map.insert (f, n, tyKey t) entry memo, ds <> ds')
                         ExitFailure _ -> failAt an $ case T.strip $ T.pack err of

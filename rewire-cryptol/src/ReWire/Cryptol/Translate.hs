@@ -65,7 +65,9 @@ import Data.Graph (stronglyConnComp, SCC (..))
 import Data.HashMap.Strict (HashMap)
 import Data.List (genericLength)
 import Data.Text (Text)
+import System.Environment (lookupEnv)
 import System.FilePath (takeDirectory)
+import Text.Read (readMaybe)
 
 import qualified Data.ByteString     as BS
 import qualified Data.HashMap.Strict as HM
@@ -75,14 +77,17 @@ import qualified Data.Text           as T
 -- | Translate function @fn@ from Cryptol module @file@, at the
 --   monomorphic Cryptol type @ty@, to a self-contained set of Hyle
 --   definitions whose entry point is named @entry@ (helpers are prefixed
---   with it). Left is a (possibly multi-line, source-located) diagnostic.
-translate :: FilePath -> Text -> Text -> Text -> IO (Either Text [A.Defn])
-translate file fn ty entry = either bail id <$> (try go :: IO (Either SomeException (Either Text [A.Defn])))
-      where bail :: SomeException -> Either Text [A.Defn]
+--   with it), plus any compile-time warnings (e.g. an @error@ compiled to
+--   a poison constant). Left is a (possibly multi-line, source-located)
+--   diagnostic.
+translate :: FilePath -> Text -> Text -> Text -> IO (Either Text ([A.Defn], [Text]))
+translate file fn ty entry = either bail id <$> (try go :: IO (Either SomeException (Either Text ([A.Defn], [Text]))))
+      where bail :: SomeException -> Either Text ([A.Defn], [Text])
             bail e = Left $ "cryptol: " <> T.pack (show e) <> "\n(is z3 on the PATH?)"
 
-            go :: IO (Either Text [A.Defn])
+            go :: IO (Either Text ([A.Defn], [Text]))
             go = do
+                  maxNodes <- maybe defaultMaxNodes id . (>>= readMaybe) <$> lookupEnv "RWC_CRY_MAX_NODES"
                   env0 <- M.initialModuleEnv
                   let env = env0 { ME.meSearchPath = takeDirectory file : ME.meSearchPath env0 }
                   SMT.withSolver (pure ()) (TI.defaultSolverConfig $ ME.meSearchPath env) $ \ solver -> runExceptT $ do
@@ -106,7 +111,12 @@ translate file fn ty entry = either bail id <$> (try go :: IO (Either SomeExcept
                                                             $ S.withDeclGroups (ME.allDeclGroups env2)
                                                             $ S.specializeExpr texpr) env2
                         let (body, dgs, nmap) = spec
-                        liftEither $ transClosure entry body dgs nmap $ ME.loadedNominalTypes env2
+                        liftEither $ transClosure entry body dgs nmap (ME.loadedNominalTypes env2) maxNodes
+
+            -- Generous: comfortably fits an AES round or SHA schedule,
+            -- but bounds a runaway unrolling.
+            defaultMaxNodes :: Integer
+            defaultMaxNodes = 2000000
 
 ---
 --- The specialized closure to Hyle definitions.
@@ -130,8 +140,13 @@ data TEnv = TEnv
 --   enum's (tagged).
 type ConDef = Either T.StructCon T.EnumCon
 
-transClosure :: Text -> T.Expr -> [T.DeclGroup] -> Map.Map N.Name (TM.TypesMap N.Name) -> Map.Map N.Name T.NominalType -> Either Text [A.Defn]
-transClosure entry body dgs nmap noms = do
+-- | The node-count ceiling: unrolling (comprehensions x recursion x
+--   folds) can explode, so a translation past this many Hyle nodes fails
+--   with an actionable message rather than hanging a downstream tool.
+--   Generous by default; raise it with @RWC_CRY_MAX_NODES@ (passed in as
+--   the bound, so 0 disables it).
+transClosure :: Text -> T.Expr -> [T.DeclGroup] -> Map.Map N.Name (TM.TypesMap N.Name) -> Map.Map N.Name T.NominalType -> Integer -> Either Text ([A.Defn], [Text])
+transClosure entry body dgs nmap noms maxNodes = do
       decls <- orderDecls dgs
       entryName <- case spine body of
             (T.EVar x, _, _) -> pure x
@@ -165,7 +180,14 @@ transClosure entry body dgs nmap noms = do
                      , teFuns  = HM.fromList [ (N.nameUnique $ T.dName d, (env, e)) | (d, e) <- inls ]
                      , teInts  = mempty
                      }
-      mapM (transDecl env . snd) fits
+      defns <- mapM (transDecl env . snd) fits
+      let nodes = sum $ map (nodeCount . A.defnBody) defns
+      unless (maxNodes <= 0 || nodes <= maxNodes)
+            $ Left $ "cryptol: the translation of " <> entry <> " is very large ("
+                  <> showt nodes <> " nodes, over the " <> showt maxNodes
+                  <> "-node limit): an unrolled comprehension, fold, or recursion may be too big to realize."
+                  <> " Raise RWC_CRY_MAX_NODES to allow it."
+      pure (defns, warnUses prims decls)
       where isPrim :: T.DeclDef -> Bool
             isPrim = \ case
                   T.DPrim -> True
@@ -688,6 +710,32 @@ varRefs = \ case
       A.Let _ _ _ rhs b  -> varRefs rhs <> varRefs b
       _                  -> []
 
+-- | The number of nodes in a translated expression (the size governor's
+--   metric).
+nodeCount :: A.Exp -> Integer
+nodeCount = \ case
+      A.Cat _ l r        -> 1 + nodeCount l + nodeCount r
+      A.Slice _ _ _ e    -> 1 + nodeCount e
+      A.Prim _ _ _ es    -> 1 + sum (map nodeCount es)
+      A.Call _ _ _ es    -> 1 + sum (map nodeCount es)
+      A.XCall _ _ _ _ es -> 1 + sum (map nodeCount es)
+      A.If _ _ c t f     -> 1 + nodeCount c + nodeCount t + nodeCount f
+      A.Let _ _ _ rhs b  -> 1 + nodeCount rhs + nodeCount b
+      _                  -> 1
+
+-- | Compile-time warnings from a static scan of the specialized
+--   declarations: uses of primitives that translate with a semantic
+--   caveat (error/assert/undefined as a zero poison; trace as identity).
+warnUses :: HashMap Int (Text, [T.Type]) -> [T.Decl] -> [Text]
+warnUses prims decls
+      | hasUse ["error"]          = [w1] <> traceW
+      | otherwise                 = traceW
+      where used   = [ pn | d <- decls, x <- declRefs d, Just (pn, _) <- [HM.lookup (N.nameUnique x) prims] ]
+            hasUse ns = any (`elem` (ns :: [Text])) used
+            traceW = [ "trace/traceVal is ignored (evaluated in hardware, it is the identity on its result)." | hasUse ["trace"] ]
+            w1     = "error/assert/undefined compiled to a zero constant (Hyle has no bottom); "
+                  <> "the result is defined but meaningless where the error would fire."
+
 -- | Count references to a variable (a let-binding may shadow it).
 countVar :: A.Name -> A.Exp -> Int
 countVar x = \ case
@@ -1032,6 +1080,14 @@ transPrim pn tys args = case (pn, tys, args) of
       ("product", [n, el], [a])      -> reduce "product" A.Mul n el a
       ("@", [n, el, _ix], [a, i])    -> index "@" True  n el a i
       ("!", [n, el, _ix], [a, i])    -> index "!" False n el a i
+      -- Hyle is total: there is no bottom. error/assert/undefined (the
+      -- latter two are prelude-defined via error) become a zero "poison"
+      -- constant of the result width; reachability is the user's
+      -- concern, as in synthesized HDL generally. A static scan
+      -- (warnUses) emits a compile-time warning. trace/traceVal are the
+      -- identity on their result.
+      ("error", [a, _n], _)          -> A.Lit noAnn . zeros . fromIntegral <$> tyWidth a
+      ("trace", [_n, _a, _b], [_s, _v, r]) -> pure r
       ("<<<", [n, _ix, el], [a, b])  -> rotate "<<<" True  n el a b
       (">>>", [n, _ix, el], [a, b])  -> rotate ">>>" False n el a b
       ("update",    [n, el, _ix], [xs, i, v]) -> update' "update"    True  n el xs i v

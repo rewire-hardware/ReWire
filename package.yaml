@@ -36,6 +36,7 @@ data-files:
 - tests/negative/*.rwc
 - tests/negative/cry/*.cry
 - tests/warning/*.hs
+- tests/warning/cry/*.cry
 - tests/golden/Mods/*.hs
 - tests/golden/OD19/*.hs
 - tests/golden/Mods/C/*.hs
