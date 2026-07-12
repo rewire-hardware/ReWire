@@ -1,0 +1,44 @@
+main.$dispatch : ([16]) -> [8]
+main.$dispatch i =
+      main.$L.$x4$276 i
+
+main.$L.$x4$276 : ([16]) -> [8]
+main.$L.$x4$276 $x =
+      main.$L.ReWire.Monad.iter$1$s23$274 $x
+
+main.$L.ReWire.Monad.iter$1$s23$274 : ([16]) -> [8]
+main.$L.ReWire.Monad.iter$1$s23$274 i =
+      let $a = Main.go i in
+      $a
+
+Main.zmix : ([8], [8]) -> [8]
+Main.zmix $eta0 $eta1 =
+      cry$zmix$0 $eta0 $eta1
+
+Main.zpoly : ([16]) -> [16]
+Main.zpoly $eta0 =
+      cry$zpoly$1 $eta0
+
+Main.go : ([16]) -> [8]
+Main.go ds =
+      let a = ds[8 +: 8] in
+      let b = ds[0 +: 8] in
+      add (Main.zmix a b) (trunc 8 (Main.zpoly (a # b)))
+
+cry$zmix$0 : ([8], [8]) -> [8]
+cry$zmix$0 a$0 b$1 =
+      let za$4698 = trunc 8 (umod a$0 8'hfb) in
+      let zb$4701 = trunc 8 (umod b$1 8'hfb) in
+      trunc 8 (umod (add (zext 9 (trunc 8 (umod (mul (zext 16 za$4698) (zext 16 za$4698)) 16'hfb))) (zext 9 zb$4701)) 9'hfb)
+
+cry$zpoly$1 : ([16]) -> [16]
+cry$zpoly$1 x$0 =
+      zext 16 (trunc 9 (umod (add (zext 10 (trunc 9 (umod (mul (zext 17 (trunc 9 (umod (add (zext 10 (trunc 9 (umod (mul (zext 17 (trunc 9 (umod (add (zext 10 (trunc 9 (umod (mul (zext 17 (trunc 9 (umod (add (zext 10 (trunc 9 (umod (mul 17'h0 (zext 17 (trunc 9 (umod x$0 16'h101)))) 17'h101))) 10'h1) 10'h101))) (zext 17 (trunc 9 (umod x$0 16'h101)))) 17'h101))) 10'h2) 10'h101))) (zext 17 (trunc 9 (umod x$0 16'h101)))) 17'h101))) 10'h3) 10'h101))) (zext 17 (trunc 9 (umod x$0 16'h101)))) 17'h101))) 10'h4) 10'h101))
+
+device top_level
+      input __in0 : [8]
+      input __in1 : [8]
+      output __out0 : [8]
+      let $in = __in0 # __in1
+      let $res = main.$dispatch $in
+      __out0 := $res

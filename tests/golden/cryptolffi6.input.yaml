@@ -1,0 +1,20 @@
+# Interpreter stimulus for cryptolffi6.
+#
+# Device: combinational; ReacT input (W 8, W 8) = (a, b), output
+# zmix a b + resize (zpoly (a # b)) over Z 251 / Z 257 (cry/cryzw.cry).
+- __in0: 0
+  __in1: 0
+- __in0: 200
+  __in1: 200
+- __in0: 255
+  __in1: 255
+- __in0: 17
+  __in1: 42
+- __in0: 128
+  __in1: 1
+- __in0: 250
+  __in1: 6
+- __in0: 99
+  __in1: 100
+- __in0: 1
+  __in1: 255

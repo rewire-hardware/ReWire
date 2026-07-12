@@ -1,0 +1,10 @@
+module cryzw where
+zmix : [8] -> [8] -> [8]
+zmix a b = fromInteger (fromZ (za * za + zb)) : [8]
+  where za = fromInteger (toInteger a) : Z 251
+        zb = fromInteger (toInteger b) : Z 251
+
+zpoly : [16] -> [16]
+zpoly x = fromInteger (fromZ (foldl step (fromInteger 0) [1, 2, 3, 4 : Z 257]))
+  where step : Z 257 -> Z 257 -> Z 257
+        step acc c = acc * fromInteger (toInteger x) + c
