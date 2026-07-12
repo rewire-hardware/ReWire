@@ -396,8 +396,9 @@ testWarning fn = testCase (takeBaseName fn <> " (expected warning)") $ do
 -- | Compile fixed test programs with flag combinations the golden tests don't
 --   exercise (verbose tracing, pass dumps, alternate signal names, reset/clock
 --   variations, interpreter cycle bounds, VHDL target). These only assert that
---   rwc succeeds; outputs are not compared against goldens. Stdout (verbose
---   trace, IR dumps) is redirected to a log file next to the other outputs.
+--   rwc succeeds; outputs are not compared against goldens. Stdout (the
+--   verbose trace) is redirected to a log file next to the other outputs; the
+--   pass dumps land beside the output file (foo.out.smoke-dumps.<N>.eir/.rwc).
 getSmokeTests :: IO TestTree
 getSmokeTests = do
       dir <- getDataFileName ("tests" </> "golden")
@@ -407,7 +408,7 @@ getSmokeTests = do
                   , "--start", "Main.start", "--top", "smoke_top"
                   , "--inputs", "i0", "--outputs", "o0", "--states", "s0,s1"
                   , "--depth", "4", "--rtl-opt", "2", "--loadpath", "."
-                  , "-d", intercalate "," (map show [1 :: Int .. 25])
+                  , "-d", intercalate "," (map show [1 :: Int .. 25]), "--dump-all"
                   ]
             , smoke dir "onestate.hs" "vhdl"      "vhdl" ["--vhdl", "-p", "ieee.std_logic_1164.all"]
             , smoke dir "fibo1.hs"    "noclock"   "sv"   ["--no-clock", "--no-reset"]

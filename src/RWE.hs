@@ -14,6 +14,7 @@ options =
        , Option ['w'] ["no-warn"]       (NoArg  FlagNoWarn)                        "Suppress warnings."
        , Option ['W'] []                (ReqArg FlagW           "error")           "-Werror: treat warnings as errors."
        , Option ['d'] ["dump"]          (ReqArg FlagDump        "1,2,...")         "Dump the intermediate form of the corresponding pass number (1-13; see -v output)."
+       , Option []    ["dump-all"]      (NoArg  FlagDumpAll)                       "Dump the intermediate form of every pass (see -d)."
        , Option []    ["flatten"]       (NoArg  FlagFlatten)                       "Flatten RTL output into a single module (currently slow, memory-intensive)."
        , Option ['o'] []                (ReqArg FlagO           "filename.vhdl")   "Name for output file."
        , Option []    ["start"]         (ReqArg FlagStart       "name")            "Symbol to use for the definition of the top-level module (default: Main.start)."

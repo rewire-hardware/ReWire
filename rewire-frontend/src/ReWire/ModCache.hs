@@ -8,7 +8,7 @@ module ReWire.ModCache
       , LoadPath
       ) where
 
-import ReWire.Annotation (noAnn, unAnn)
+import ReWire.Annotation (noAnn)
 import ReWire.Config (Config)
 import ReWire.Eidos.Pretty (prettyProgram)
 import ReWire.Eidos.ToHyle (eidosToHyle)
@@ -16,7 +16,7 @@ import ReWire.GHC.Session (loadCore)
 import ReWire.GHC.ToEidos (toEidos)
 import ReWire.Error (AstError, MonadError, Warning (..), failAt, warnAt)
 import ReWire.Pass (pass, verb')
-import ReWire.Pretty (prettyPrint, showt)
+import ReWire.Pretty (prettyPrint)
 import ReWire.Unbound (runFreshMT, FreshMT)
 
 import Control.Lens ((^.))
@@ -47,7 +47,8 @@ runCache :: (MonadIO m, MonadError AstError m) => FreshMT m a -> m a
 runCache = runFreshMT
 
 -- The numbered pass pipeline: run rwc -v to see the bracketed pass numbers;
--- -d N dumps the IR after pass N. Pass 1 is the front end: GHC
+-- -d N (or --dump-all) dumps the IR after pass N to a file beside the
+-- output (e.g., MiniISA.6.eir). Pass 1 is the front end: GHC
 -- (parse/typecheck/desugar over the whole home module graph) followed by
 -- the Core-to-Eidos bridge. Passes 2-8 are the Eidos passes (doc/eidos.md)
 -- and pass 9 is the Eidos-to-Hyle fold; the Hyle-level passes (10-11) run
@@ -101,10 +102,10 @@ getDevice conf fp = do
             "no process was constructed for the device root (rwc bug)."
       -- The fold owns the lowering: Eidos straight to Hyle
       -- (ReWire.Eidos.ToHyle).
-      pass conf 9 "Translating to Hyle." renderHyle (eidosToHyle conf) eirPE'
+      pass conf fp 9 "Translating to Hyle." "rwc" prettyPrint (eidosToHyle conf) eirPE'
 
       where passEidos :: MonadIO n => Natural -> Text -> (a -> n Eidos.Program) -> a -> n Eidos.Program
-            passEidos n name = pass conf n name prettyProgram
+            passEidos n name = pass conf fp n name "eir" prettyProgram
 
             neuterExterns :: (MonadError AstError m', MonadIO m') => Eidos.Program -> m' Eidos.Program
             neuterExterns p = do
@@ -114,10 +115,6 @@ getDevice conf fp = do
 
             optimizeProcs :: Eidos.Program -> Eidos.Program
             optimizeProcs pr = pr { Eidos.progProcs = map Eidos.optimizeProc $ Eidos.progProcs pr }
-
-            renderHyle :: Hyle.Program -> Text
-            renderHyle p = prettyPrint p
-                  <> (if conf^.C.verbose then "\n\n## Show hyle:\n\n" <> showt (unAnn p) else mempty)
 
             -- The bound on the type-specialization fixpoint: at least the
             -- historical bound of 10; --depth raises it (e.g. for deep

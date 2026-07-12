@@ -164,6 +164,7 @@ interpret = foldM interp defaultConfig
                   FlagDump (pack -> d)            -> do
                         ns <- traverse (readNat "-d/--dump") $ map unpack $ splitOn' "," d
                         pure $ over dump (augment ns) c
+                  FlagDumpAll                     -> pure $ dump .~ const True $ c
                   FlagVhdlPkgs (pack -> p)        -> pure $ over vhdlPackages (<> splitOn' "," p) c
                   FlagInputNames (pack -> n)      -> pure $ over inputSigs  (splitOn' "," n <>) c
                   FlagStateNames (pack -> n)      -> pure $ over stateSigs  (splitOn' "," n <>) c

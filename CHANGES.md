@@ -57,6 +57,17 @@
   constant or variable indices, and the scalar, slicing, and enumeration
   primitives; local function bindings, records, enums, and recursive
   (stateful) Cryptol are rejected with located errors.
+* `rwc -d`/`--dump` addresses every pipeline pass again (the front-end
+  rework had left only the Hyle fold dumpable) and now writes each dump to
+  a file beside the output instead of stdout, named for the pass number
+  and the IR's format -- e.g., `MiniISA.6.eir` after pass 6 (Eidos) and
+  `MiniISA.10.rwc` after pass 10 (Hyle). Passes 1-9 are the front
+  end/bridge, the Eidos passes, and the Eidos-to-Hyle fold; 10-11 are the
+  Hyle-level optimizer and inliner (also reachable from `--from-core`);
+  `rwc -v` shows the bracketed pass numbers. The new `--dump-all` flag
+  dumps every pass, and adding `-v` appends the IR's show output to each
+  dump, indented for readability, in a comment -- dumps remain valid
+  `.eir`/`.rwc` syntax.
 
 ## 2.8 (2026-07)
 

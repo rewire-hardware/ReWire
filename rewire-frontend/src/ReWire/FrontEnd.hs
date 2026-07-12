@@ -63,9 +63,9 @@ compileFile conf filename = do
             compile a = do
                   when (conf^.testbench && (conf^.target) `notElem` [VHDL, Verilog]) $
                         warnAt conf noAnn "--testbench: no testbench generated (only the Verilog and VHDL targets support testbench generation)."
-                  p <- pass conf 10 "Partially evaluating/reducing the Hyle IR (if this is slow, consider --rtl-opt=0)." prettyPrint
+                  p <- pass conf filename 10 "Partially evaluating/reducing the Hyle IR (if this is slow, consider --rtl-opt=0)." "rwc" prettyPrint
                         (Hyle.check . Hyle.optimize (conf^.rtlOpt)) a
-                  let inline = pass conf 11 "Inlining Hyle definitions." prettyPrint
+                  let inline = pass conf filename 11 "Inlining Hyle definitions." "rwc" prettyPrint
                         (Hyle.check . Hyle.inline (conf^.Config.flatten))
                   case conf^.target of
                         VHDL      -> do
