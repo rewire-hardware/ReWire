@@ -1,0 +1,9 @@
+module cryerr where
+safeDiv : [8] -> [8] -> [8]
+safeDiv a b = if b == 0 then error "division by zero" else a / b
+
+clampErr : [8] -> [8]
+clampErr x = if x > 200 then undefined else x + 1
+
+traced : [8] -> [8]
+traced x = trace "value" x (x + 1)
