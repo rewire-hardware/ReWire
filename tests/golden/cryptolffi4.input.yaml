@@ -1,0 +1,21 @@
+# Interpreter stimulus for cryptolffi4.
+#
+# Device: combinational; ReacT input (W 8, W 8) = (a, b), output
+# locfn a b + hof b + cu a b + pick (a == b) (pow5 a), all through
+# cry/cryho.cry.
+- __in0: 0
+  __in1: 0
+- __in0: 1
+  __in1: 2
+- __in0: 3
+  __in1: 3
+- __in0: 255
+  __in1: 1
+- __in0: 7
+  __in1: 200
+- __in0: 128
+  __in1: 128
+- __in0: 42
+  __in1: 17
+- __in0: 250
+  __in1: 6
