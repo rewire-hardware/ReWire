@@ -75,9 +75,13 @@
   total) and `trace`/`traceVal` to the identity, each with a
   compile-time warning; an unrolling that exceeds a node budget
   (tunable with `RWC_CRY_MAX_NODES`) fails with an actionable message
-  rather than hanging. Value recursion, infinite streams, floating
-  point, and other unrepresentable or stateful Cryptol are rejected
-  with located errors.
+  rather than hanging. Value recursion, unbounded-demand streams,
+  floating point, and other unrepresentable or stateful Cryptol are
+  rejected with located errors. Submodules, parameterized (functor)
+  submodule instantiations, and qualified names are supported.
+  Documented in `doc/cryptol-ffi.md`; full FIPS-197 AES-128 and
+  FIPS-180-4 SHA-256 specs translate and cosimulate as tests
+  (`tests/integration/aes128.hs`, `tests/golden/sha256ffi.hs`).
 * `rwc -d`/`--dump` addresses every pipeline pass again (the front-end
   rework had left only the Hyle fold dumpable) and now writes each dump to
   a file beside the output instead of stdout, named for the pass number
