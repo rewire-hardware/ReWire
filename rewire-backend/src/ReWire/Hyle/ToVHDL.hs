@@ -22,7 +22,7 @@ import ReWire.Annotation (Annote, Annotated (ann))
 import ReWire.BitVector (BV, width, bitVec, zeros, ones, lsb1)
 import ReWire.Config (Config, ResetFlag (..), vhdlPackages)
 import ReWire.Hyle.Interp (Ins, subRange, inputValue, yamlPrefixes)
-import ReWire.Hyle.Mangle (mangleFresh, mangleMod)
+import ReWire.Hyle.Mangle (mangleFresh, mangleMod, pickFresh, seedNames)
 import ReWire.Error (failAt, failInternal, AstError, MonadError)
 import ReWire.Hyle.Syntax as M
 import ReWire.Hyle.ToVerilog (clockReset)
@@ -56,15 +56,24 @@ data TS = TS
       , tsComps :: !(HashMap Text H.Component)
       }
 
-ts0 :: TS
-ts0 = TS mempty [] mempty
+-- | Initial state, with the ambient names (ports, registers -- emitted
+--   verbatim, never passing through 'fresh') seeded into the used map so
+--   generated names can't collide with them. Seeds are case-folded to match
+--   the case-folding in 'fresh' (VHDL basic identifiers are
+--   case-insensitive).
+ts0 :: [Text] -> TS
+ts0 ambient = TS (seedNames $ map T.toLower ambient) [] mempty
 
+-- | A fresh signal/instance name: mangled, case-folded (the collision
+--   defense for VHDL's case-insensitive namespace), and suffixed out of the
+--   way of every name already issued or seeded (reserved words need no
+--   dodge here -- the pretty-printer escapes them as extended identifiers).
 fresh :: MonadState TS m => Text -> m H.Name
 fresh s = do
-      let s' = T.toLower $ mangleFresh s
-      ctr <- gets $ fromMaybe 0 . Map.lookup s' . tsFresh
-      modify' $ \ ts -> ts { tsFresh = Map.insert s' (ctr + 1) $ tsFresh ts }
-      pure $ s' <> (if ctr > 0 then "R" <> showt ctr else mempty)
+      used <- gets tsFresh
+      let (n, used') = pickFresh "R" used $ T.toLower $ mangleFresh s
+      modify' $ \ ts -> ts { tsFresh = used' }
+      pure n
 
 newWire :: MonadState TS m => M.Size -> Text -> m H.Name
 newWire sz n = do
@@ -88,7 +97,7 @@ compileProgram conf (M.Program exts ds dev) = do
 
 compileDefn :: forall m. MonadError AstError m => Config -> XEnv -> M.Defn -> m H.Unit
 compileDefn conf xenv (M.Defn _ g (M.Sig _ argSzs _) ps body) = do
-      ((e, stmts), ts) <- flip runStateT ts0 $ compileExp xenv lenv body
+      ((e, stmts), ts) <- flip runStateT (ts0 $ argNames <> [ "res" | sizeOf body > 0 ]) $ compileExp xenv lenv body
       pure $ H.Unit (mangleMod g) (unitPackages conf)
                     (map (\ (pn, sz) -> H.Port pn H.In sz) (zip argNames $ map snd live) <> [ H.Port "res" H.Out (sizeOf body) | sizeOf body > 0 ])
                     (components ts) (tsSigs ts)
@@ -107,7 +116,7 @@ compileDefn conf xenv (M.Defn _ g (M.Sig _ argSzs _) ps body) = do
 
 compileDevice :: forall m. MonadError AstError m => Config -> XEnv -> M.Device -> m H.Unit
 compileDevice conf xenv (M.Device an top ins outs regs insts body) = do
-      (stmts, ts) <- flip runStateT ts0 $ do
+      (stmts, ts) <- flip runStateT (ts0 ambient) $ do
             instWires <- Map.fromList . concat <$> mapM instOutWires insts
             (letStmts, lenv) <- foldStmts (ambientEnv instWires) body
             instStmts <- concat <$> mapM (compileInst instWires lenv) insts
@@ -129,6 +138,13 @@ compileDevice conf xenv (M.Device an top ins outs regs insts body) = do
 
             liveRegs :: [M.Register]
             liveRegs = [ r | r@(M.Register _ _ sz _) <- regs, sz > 0 ]
+
+            -- | Names emitted verbatim (ports, registers): the fresh-name
+            --   supply must avoid them.
+            ambient :: [Text]
+            ambient = catMaybes [mclk, mrst]
+                   <> map fst (live ins) <> map fst (live outs)
+                   <> concat [ [x, x <> "_next"] | M.Register _ x _ _ <- liveRegs ]
 
             -- | Register signals carry their initial values; the @_next@
             --   wires carry the per-cycle updates.
