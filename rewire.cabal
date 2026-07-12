@@ -29,6 +29,7 @@ data-files:
     tests/negative/bind-lhs-unbounded.hs
     tests/negative/cryptol-badtype.hs
     tests/negative/cryptol-clocked-extern.hs
+    tests/negative/cryptol-enum-boundary.hs
     tests/negative/cryptol-missing.hs
     tests/negative/cryptol-unknown.hs
     tests/negative/cryptol-unsupported.hs
@@ -111,6 +112,7 @@ data-files:
     tests/golden/caseBindBug.hs
     tests/golden/cryptolffi.hs
     tests/golden/cryptolffi2.hs
+    tests/golden/cryptolffi3.hs
     tests/golden/cubehash.hs
     tests/golden/dependencyGraph.hs
     tests/golden/dissex.hs
@@ -183,6 +185,7 @@ data-files:
     tests/golden/caseBindBug.sv
     tests/golden/cryptolffi.sv
     tests/golden/cryptolffi2.sv
+    tests/golden/cryptolffi3.sv
     tests/golden/cubehash.sv
     tests/golden/dependencyGraph.sv
     tests/golden/dissex.sv
@@ -255,6 +258,7 @@ data-files:
     tests/golden/caseBindBug.rwc
     tests/golden/cryptolffi.rwc
     tests/golden/cryptolffi2.rwc
+    tests/golden/cryptolffi3.rwc
     tests/golden/cubehash.rwc
     tests/golden/dependencyGraph.rwc
     tests/golden/dissex.rwc
@@ -327,6 +331,7 @@ data-files:
     tests/golden/caseBindBug.vhdl
     tests/golden/cryptolffi.vhdl
     tests/golden/cryptolffi2.vhdl
+    tests/golden/cryptolffi3.vhdl
     tests/golden/cubehash.vhdl
     tests/golden/dependencyGraph.vhdl
     tests/golden/dissex.vhdl
@@ -399,6 +404,7 @@ data-files:
     tests/golden/caseBindBug.cry
     tests/golden/cryptolffi.cry
     tests/golden/cryptolffi2.cry
+    tests/golden/cryptolffi3.cry
     tests/golden/cubehash.cry
     tests/golden/dependencyGraph.cry
     tests/golden/dissex.cry
@@ -466,6 +472,7 @@ data-files:
     tests/golden/wordSlice.cry
     tests/golden/zerowidth.cry
     tests/golden/cry/crymix.cry
+    tests/golden/cry/cryrec.cry
     tests/golden/cry/crysbox.cry
     tests/golden/case1.yaml
     tests/golden/case2.yaml
@@ -475,6 +482,8 @@ data-files:
     tests/golden/cryptolffi.yaml
     tests/golden/cryptolffi2.input.yaml
     tests/golden/cryptolffi2.yaml
+    tests/golden/cryptolffi3.input.yaml
+    tests/golden/cryptolffi3.yaml
     tests/golden/cubehash.input.yaml
     tests/golden/cubehash.yaml
     tests/golden/dependencyGraph.input.yaml

@@ -1,0 +1,30 @@
+# Interpreter stimulus for cryptolffi3.
+#
+# Device: combinational; ReacT input (W 2, W 8, W 8) = (s, a, b), output
+# alu s (recmix a b) (both (cguard a) b) over cry/cryrec.cry: s selects
+# the enum arm (0 add, 1 sub, 2/3 pass), a=0xf* exercises the newtype
+# carry in bump, cguard bit-reverses a.
+- __in0: 0
+  __in1: 18
+  __in2: 52
+- __in0: 1
+  __in1: 255
+  __in2: 1
+- __in0: 2
+  __in1: 240
+  __in2: 15
+- __in0: 3
+  __in1: 90
+  __in2: 165
+- __in0: 0
+  __in1: 15
+  __in2: 15
+- __in0: 1
+  __in1: 0
+  __in2: 0
+- __in0: 2
+  __in1: 129
+  __in2: 66
+- __in0: 0
+  __in1: 255
+  __in2: 255
