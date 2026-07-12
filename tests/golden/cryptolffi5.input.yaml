@@ -1,0 +1,20 @@
+# Interpreter stimulus for cryptolffi5.
+#
+# Device: combinational; ReacT input (W 8, W 8) = (a, b), output the
+# mix of cry/cryseq.cry wrappers (see cryptolffi5.hs).
+- __in0: 0
+  __in1: 0
+- __in0: 1
+  __in1: 255
+- __in0: 18
+  __in1: 52
+- __in0: 128
+  __in1: 127
+- __in0: 200
+  __in1: 3
+- __in0: 85
+  __in1: 170
+- __in0: 255
+  __in1: 255
+- __in0: 42
+  __in1: 99
