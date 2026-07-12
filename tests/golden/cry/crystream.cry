@@ -1,0 +1,42 @@
+module crystream where
+
+// take a finite prefix of infFrom
+tk : [8] -> [5][8]
+tk x = take`{5} (infFrom x)
+
+// constant index into iterate
+idx : [8] -> [8]
+idx x = (iterate (\ y -> y * 3 + 1) x) @ 4
+
+// drop then take
+dt : [8] -> [3][8]
+dt x = take`{3} (drop`{2} (infFromThen x (x + 2)))
+
+// repeat
+rep : [8] -> [4][8]
+rep x = take`{4} (repeat x)
+
+// finite zip against an infinite stream
+fz : [4][8] -> [4][8]
+fz xs = [ a + b | a <- xs | b <- infFrom 0 ]
+
+// recursive infinite stream (LFSR-ish), demanded finitely
+lfsr : [8] -> [6][8]
+lfsr seed = take`{6} s
+  where s = [seed] # [ (x << 1) ^ (if x ! 7 then 0x1d else 0) | x <- s ]
+
+// flat-word wrappers for the FFI boundary
+tkw : [8] -> [40]
+tkw x = join (tk x)
+
+dtw : [8] -> [24]
+dtw x = join (dt x)
+
+lfsrw : [8] -> [48]
+lfsrw x = join (lfsr x)
+
+fzw : [32] -> [32]
+fzw x = join (fz (split x))
+
+repw : [8] -> [32]
+repw x = join (take`{4} (repeat x))
