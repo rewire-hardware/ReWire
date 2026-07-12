@@ -1,0 +1,37 @@
+module cryho where
+
+// local function bindings, capturing an outer parameter
+locfn : [8] -> [8] -> [8]
+locfn x y = g (g y)
+  where g z = z + x
+
+// top-level higher-order helper, used with named functions and lambdas
+twice : ([8] -> [8]) -> [8] -> [8]
+twice f x = f (f x)
+
+inc : [8] -> [8]
+inc v = v + 1
+
+hof : [8] -> [8]
+hof x = twice inc x + twice (\ v -> v * 2) x + twice complement x
+
+// curry/uncurry (prelude higher-order definitions)
+cu : [8] -> [8] -> [8]
+cu a b = uncurry addp (a, b)
+  where addp = curry sump
+
+sump : ([8], [8]) -> [8]
+sump (u, v) = u + v
+
+// a function-valued local chosen by a runtime condition
+pick : Bit -> [8] -> [8]
+pick c x = h x
+  where h = if c then inc else complement
+
+// type-indexed recursion: each call at a strictly smaller instantiation
+pow : {e} (fin e) => [8] -> [8]
+pow x | e == 0 => 1
+      | e >  0 => x * pow`{e - 1} x
+
+pow5 : [8] -> [8]
+pow5 x = pow`{5} x
