@@ -1,0 +1,20 @@
+# Interpreter stimulus for cryptolffi9.
+#
+# Device: combinational; ReacT input (W 8, W 8) = (a, b), output a mix of
+# bounded-demand stream results over cry/crystream.cry.
+- __in0: 10
+  __in1: 5
+- __in0: 1
+  __in1: 1
+- __in0: 0
+  __in1: 3
+- __in0: 255
+  __in1: 128
+- __in0: 42
+  __in1: 17
+- __in0: 200
+  __in1: 7
+- __in0: 128
+  __in1: 255
+- __in0: 63
+  __in1: 100

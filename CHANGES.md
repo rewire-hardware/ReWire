@@ -66,7 +66,11 @@
   element-wise), `scanl`, `update`/`updateEnd`, rotates, element shifts,
   `transpose`, carry-less polynomial arithmetic
   (`pmult`/`pdiv`/`pmod`, constant divisor), `lg2`, signed division,
-  and modular arithmetic (`Z n` as a bounded word, interior-only).
+  modular arithmetic (`Z n` as a bounded word, interior-only) including
+  the prime-field inverse (`recip`/`(/.)` via Fermat), and infinite
+  streams with statically bounded demand (`infFrom`, `iterate`,
+  `repeat`, and recursive `[inf]` definitions consumed by a finite
+  `take` or a constant index).
   `error`/`assert`/`undefined` compile to a zero constant (Hyle is
   total) and `trace`/`traceVal` to the identity, each with a
   compile-time warning; an unrolling that exceeds a node budget

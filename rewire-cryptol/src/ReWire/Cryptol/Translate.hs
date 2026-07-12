@@ -72,6 +72,7 @@ import Data.Char (isAlphaNum)
 import Data.Graph (stronglyConnComp, SCC (..))
 import Data.HashMap.Strict (HashMap)
 import Data.List (genericLength)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import System.Environment (lookupEnv)
 import System.FilePath (takeDirectory)
@@ -142,6 +143,8 @@ data TEnv = TEnv
                                                 --   the environment closed over at the binding.
       , teInts  :: HashMap Int Integer          -- ^ Constant Integer-typed binders (unrolled
                                                 --   comprehension indices); see 'intVal'.
+      , teStrms :: HashMap Int (TEnv, T.Expr)   -- ^ Infinite-stream local bindings (a recursive
+                                                --   @[inf]@ definition), demand-unrolled by 'infPrefix'.
       }
 
 -- | A nominal-type constructor: a struct/newtype's (transparent), or an
@@ -187,6 +190,7 @@ transClosure entry body dgs nmap noms maxNodes = do
                      , teDepth = 0
                      , teFuns  = HM.fromList [ (N.nameUnique $ T.dName d, (env, e)) | (d, e) <- inls ]
                      , teInts  = mempty
+                     , teStrms = mempty
                      }
       defns <- mapM (transDecl env . snd) fits
       let nodes = sum $ map (nodeCount . A.defnBody) defns
@@ -333,7 +337,11 @@ transExp env etas e0 = case spine e0 of
                   transCon nt con tys args'
             | Just (envF, rhs) <- HM.lookup (N.nameUnique x) (teFuns env) ->
                   inline env envF rhs args etas
-            | Just (pn, tys') <- HM.lookup (N.nameUnique x) (tePrims env), pn `elem` (["foldl", "foldr", "scanl"] :: [Text]) -> do
+            | Just (pn, tys') <- HM.lookup (N.nameUnique x) (tePrims env)
+            , Just r <- infConsume env pn tys' args -> do
+                  unless (null etas) $ Left $ "cryptol: partial application of " <> pn <> " over an infinite stream cannot cross the Cryptol boundary."
+                  r
+            | Just (pn, tys') <- HM.lookup (N.nameUnique x) (tePrims env), pn `elem` (["foldl", "foldr", "scanl"] :: [Text]), not (any (isInfSeq env) args) -> do
                   unless (null etas) $ Left $ "cryptol: partial application of " <> pn <> " cannot cross the Cryptol boundary."
                   transFold env pn tys' args
             | otherwise -> do
@@ -477,6 +485,30 @@ inline site defn rhs args etas = go (defn { teDepth = teDepth site }) rhs args
                   T.EProofAbs _ e -> skip e
                   e               -> e
 
+-- | Bind an inlinable function's parameters to arguments without
+--   translating the body -- for beta-reducing an applied inf-producing
+--   function (e.g. @iterate f z@) so 'infPrefix' can analyze the residual
+--   stream expression. Value parameters bind translated; function
+--   parameters defer as closures.
+betaBind :: TEnv -> TEnv -> T.Expr -> [T.Expr] -> Either Text (TEnv, T.Expr)
+betaBind site env0 rhs0 args0 = go (env0 { teDepth = teDepth site }) rhs0 args0
+      where go :: TEnv -> T.Expr -> [T.Expr] -> Either Text (TEnv, T.Expr)
+            go env e as = case (skip e, as) of
+                  (T.EAbs x t b, a : as')
+                        | Right _ <- tyWidth t -> do
+                              a' <- transExp site [] a
+                              go (bindAll env [(x, t, a')]) b as'
+                        | otherwise -> go (env { teFuns  = HM.insert (N.nameUnique x) (site, a) $ teFuns env
+                                               , teTypes = Map.insert x (T.tMono t) $ teTypes env }) b as'
+                  (b, []) -> pure (env, b)
+                  _       -> Left "cryptol: an infinite stream produced by a partially applied function is not supported."
+
+            skip :: T.Expr -> T.Expr
+            skip = \ case
+                  T.ELocated _ e  -> skip e
+                  T.EProofAbs _ e -> skip e
+                  e               -> e
+
 -- | A saturated constructor application (arguments already translated).
 --   A struct (newtype) constructor is transparent: the value is its
 --   record argument's bits. An enum constructor builds tag#pad#args: the
@@ -609,10 +641,15 @@ transWhere env etas body dgs = go env $ concatMap items dgs
 
             go :: TEnv -> [Either T.Decl [T.Decl]] -> Either Text A.Exp
             go env' []              = transExp env' etas body
-            go env' (Right c : ds)  = do
-                  (env'', lets) <- recSeqs env' c
-                  rest <- go env'' ds
-                  pure $ foldr (\ (x, rhs) b -> A.Let noAnn (A.sizeOf b) x rhs b) rest lets
+            -- A recursive group of infinite streams is registered for
+            -- demand-driven unrolling (infStream); a recursive group of
+            -- finite sequences is unrolled eagerly (recSeqs).
+            go env' (Right c : ds)
+                  | all isInfDecl c   = go (registerStreams env' c) ds
+                  | otherwise         = do
+                        (env'', lets) <- recSeqs env' c
+                        rest <- go env'' ds
+                        pure $ foldr (\ (x, rhs) b -> A.Let noAnn (A.sizeOf b) x rhs b) rest lets
             go env' (Left d : ds) = case T.dDefinition d of
                   T.DExpr rhs | ([], t) <- flatFun $ T.sType $ T.dSignature d, Right _ <- tyWidth t -> do
                         rhs' <- transExp env' [] rhs
@@ -626,6 +663,23 @@ transWhere env etas body dgs = go env $ concatMap items dgs
                                          , teTypes = Map.insert (T.dName d) (T.dSignature d) $ teTypes env'
                                          } ds
                   _         -> Left "cryptol: unsupported local binding."
+
+            isInfDecl :: T.Decl -> Bool
+            isInfDecl d = case (flatFun $ T.sType $ T.dSignature d, T.dDefinition d) of
+                  (([], t), T.DExpr _) -> case T.tNoUser t of
+                        T.TCon (T.TC T.TCSeq) [n, _] -> case T.tNoUser n of
+                              T.TCon (T.TC T.TCInf) [] -> True
+                              _                        -> False
+                        _ -> False
+                  _ -> False
+
+            -- Register a recursive group of infinite streams for
+            -- demand-driven unrolling, knot-tying the environment so that
+            -- (mutual) self-references resolve back to the group.
+            registerStreams :: TEnv -> [T.Decl] -> TEnv
+            registerStreams e0 c = e1
+                  where e1 = e0 { teStrms = HM.fromList [ (N.nameUnique $ T.dName d, (e1, rhs)) | d <- c, T.DExpr rhs <- [T.dDefinition d] ] <> teStrms e0
+                               , teTypes = Map.fromList [ (T.dName d, T.dSignature d) | d <- c ] <> teTypes e0 }
 
 -- | A cyclic group of local value bindings, each a finite sequence: the
 --   recursive-comprehension idiom (@ys = [iv] # [ f y x | y <- ys | x <-
@@ -781,17 +835,60 @@ substVar x s = go
 --   sources. Arms zip; generators within an arm nest (the last one
 --   fastest), matching Cryptol's semantics.
 transComp :: TEnv -> T.Type -> T.Expr -> [[T.Match]] -> Either Text A.Exp
-transComp env _ety body mss = do
-      arms <- mapM (armIter env) mss
-      let len = case arms of
-            [] -> 0
-            _  -> minimum $ map fst arms
-      parts <- mapM (part arms) [0 .. len - 1]
-      pure $ A.cat parts
+transComp env _ety body mss
+      | any (any matchIsInf) mss = transCompInf env body mss
+      | otherwise = do
+            arms <- mapM (armIter env) mss
+            let len = case arms of
+                  [] -> 0
+                  _  -> minimum $ map fst arms
+            parts <- mapM (part arms) [0 .. len - 1]
+            pure $ A.cat parts
       where part :: [(Integer, Integer -> Either Text [(N.Name, T.Type, A.Exp)])] -> Integer -> Either Text A.Exp
             part arms k = do
                   binds <- concat <$> mapM (($ k) . snd) arms
                   transExp (bindAll env binds) [] body
+
+            matchIsInf :: T.Match -> Bool
+            matchIsInf = \ case
+                  T.From _ _ _ src -> isInfSeq env src
+                  T.Let _          -> False
+
+-- | A comprehension zipping an infinite arm against a finite one (a
+--   finite prefix of an infinite stream is demanded -- the min length is
+--   set by the finite arm(s)). Each infinite arm is a single generator;
+--   its source's prefix is realized once.
+transCompInf :: TEnv -> T.Expr -> [[T.Match]] -> Either Text A.Exp
+transCompInf env body mss = do
+      lens <- concat <$> mapM armLen mss
+      len  <- case lens of
+            [] -> Left "cryptol: a comprehension with only infinite arms has unbounded length; take a finite prefix."
+            _  -> pure $ minimum lens
+      binders <- mapM (armBinder len) mss
+      parts   <- mapM (\ k -> do
+                        binds <- concat <$> mapM ($ k) binders
+                        transExp (bindAll env binds) [] body) [0 .. len - 1]
+      pure $ A.cat parts
+      where -- The finite length contributed by an arm (empty for an
+            -- infinite arm).
+            armLen :: [T.Match] -> Either Text [Integer]
+            armLen ms
+                  | any infFrom ms = pure []
+                  | otherwise      = do
+                        ns <- sequence [ maybe (Left "cryptol: a comprehension source has a non-literal length.") pure $ tyNat l | T.From _ l _ _ <- ms ]
+                        pure [ product ns ]
+
+            infFrom :: T.Match -> Bool
+            infFrom = \ case { T.From _ _ _ src -> isInfSeq env src ; _ -> False }
+
+            armBinder :: Integer -> [T.Match] -> Either Text (Integer -> Either Text [(N.Name, T.Type, A.Exp)])
+            armBinder len ms = case ms of
+                  [T.From x _ et src] | isInfSeq env src -> do
+                        es <- infPrefix env len src
+                        pure $ \ k -> maybe (Left "cryptol: infinite comprehension arm too short (rwcry bug).")
+                                            (pure . pure . (x, et, )) $ lookup k $ zip [0 ..] es
+                  _ | any infFrom ms -> Left "cryptol: an infinite comprehension arm must be a single generator (no let or nested generators)."
+                  _ -> snd <$> armIter env ms
 
 -- | One comprehension arm: its iteration count, and the bindings its
 --   matches produce at iteration @k@.
@@ -968,6 +1065,211 @@ applyFn env f args = case spine f of
             lam env' (T.EAbs x t b) (a : as) = lam (bindAll env' [(x, t, a)]) b as
             lam env' b []                    = transExp env' [] b
             lam env' b as                    = applyFn env' b as
+
+-- | The element type of an infinite (@[inf]a@) sequence expression, or
+--   Nothing if the expression is not an infinite sequence.
+seqInfElem :: TEnv -> T.Expr -> Maybe T.Type
+seqInfElem env e = case T.tNoUser $ T.fastTypeOf (teTypes env) e of
+      T.TCon (T.TC T.TCSeq) [n, el] | isInf n -> Just el
+      _                                       -> Nothing
+      where isInf t = case T.tNoUser t of
+                  T.TCon (T.TC T.TCInf) [] -> True
+                  _                        -> False
+
+isInfSeq :: TEnv -> T.Expr -> Bool
+isInfSeq env = isJust . seqInfElem env
+
+-- | The element type of any sequence type.
+seqElemType :: T.Type -> Maybe T.Type
+seqElemType t = case T.tNoUser t of
+      T.TCon (T.TC T.TCSeq) [_, el] -> Just el
+      _                             -> Nothing
+
+-- | Consumers of an infinite stream that yield a finite result: a demand
+--   bound flows in and 'infPrefix' realizes only that many elements.
+--   @take@{k} and a constant @\@@ are the realizable consumers; a
+--   variable index, reverse index, or bare @drop@/@\@@ of an infinite
+--   stream has unbounded demand and is rejected. Returns Nothing when
+--   this is not an infinite-stream consumer (the normal path handles it).
+infConsume :: TEnv -> Text -> [T.Type] -> [T.Expr] -> Maybe (Either Text A.Exp)
+infConsume env pn ptys args = case (pn, ptys, args) of
+      ("take", [front, _back, _a], [src]) | isInfSeq env src -> Just $ do
+            fr <- maybe (Left "cryptol: take of an infinite stream needs a literal length.") pure $ tyNat front
+            A.cat <$> infPrefix env fr src
+      ("@", [_n, _a, _ix], [src, i]) | isInfSeq env src -> Just $ do
+            iA <- transExp env [] i
+            case litVal iA of
+                  Just j  -> do
+                        es <- infPrefix env (j + 1) src
+                        maybe (Left "cryptol: infinite-stream index out of the demanded prefix (rwcry bug).") pure
+                              $ lookup j $ zip [0 ..] es
+                  Nothing -> Left "cryptol: a variable index into an infinite stream has unbounded demand; use a constant index or take a finite prefix."
+      ("!",  _, src : _) | isInfSeq env src -> Just $ Left "cryptol: an infinite stream cannot be indexed from the end."
+      ("drop", _, [src])   | isInfSeq env src -> Just $ Left "cryptol: drop of an infinite stream is only realizable inside a finite take or index."
+      _ -> Nothing
+
+-- | The first @k@ elements (each a translated element-width expression)
+--   of an infinite -- or, where it bottoms out, finite -- sequence
+--   expression. This is the demand-driven realization of the bounded
+--   fragment of infinite streams: the four stream shapes (infFrom,
+--   infFromThen, and the scanl/comprehension that iterate and repeat
+--   desugar to), append with a finite front, drop, and recursive stream
+--   definitions.
+infPrefix :: TEnv -> Integer -> T.Expr -> Either Text [A.Exp]
+infPrefix env k e
+      | k <= 0    = pure []
+      | otherwise = case spine e of
+            (T.EVar x, _, args)
+                  | Just (envS, rhs) <- HM.lookup (N.nameUnique x) (teStrms env), null args -> infStream env envS x rhs k
+                  | Just (envF, rhs) <- HM.lookup (N.nameUnique x) (teFuns env)  -> betaBind env envF rhs args >>= \ (e', b) -> infPrefix e' k b
+                  | Just (pn, ptys) <- HM.lookup (N.nameUnique x) (tePrims env)  -> infPrim env k pn ptys args
+                  | otherwise -> Left $ "cryptol: unsupported infinite-stream source: " <> I.identText (N.nameIdent x)
+            (T.EComp _ _ body mss, _, []) -> infComp env k body mss
+            (_, _, _) | not (isInfSeq env e) -> finiteElems env k e -- a finite tail
+            _ -> Left $ "cryptol: unsupported infinite-stream expression" <> unsupported e
+
+-- | The first @k@ elements of an infinite-stream primitive application.
+infPrim :: TEnv -> Integer -> Text -> [T.Type] -> [T.Expr] -> Either Text [A.Exp]
+infPrim env k pn ptys args = case (pn, ptys, args) of
+      ("infFrom", [a], [start]) -> do
+            we <- tyWidth a
+            s  <- transExp env [] start
+            pure [ if i == 0 then s else A.Prim noAnn (fromIntegral we) A.Add [s, A.Lit noAnn $ bitVec (fromIntegral we) i] | i <- [0 .. k - 1] ]
+      ("infFromThen", [a], [x, y]) -> do
+            we <- tyWidth a
+            xA <- transExp env [] x
+            yA <- transExp env [] y
+            let w    = fromIntegral we
+                step = A.Prim noAnn w A.Sub [yA, xA]
+            pure [ if i == 0 then xA
+                   else if i == 1 then yA
+                   else A.Prim noAnn w A.Add [xA, A.Prim noAnn w A.Mul [A.Lit noAnn $ bitVec (fromIntegral w) i, step]]
+                 | i <- [0 .. k - 1] ]
+      ("#", [front, _back, _a], [l, r]) -> do
+            m <- maybe (Left "cryptol: (#) with a non-literal front length.") pure $ tyNat front
+            ls <- finiteElems env (min k m) l
+            rs <- if k > m then infPrefix env (k - m) r else pure []
+            pure $ take (fromIntegral k) $ ls <> rs
+      ("drop", [d, _back, _a], [src]) -> do
+            dv <- maybe (Left "cryptol: drop of an infinite stream needs a literal count.") pure $ tyNat d
+            drop (fromIntegral dv) <$> infPrefix env (k + dv) src
+      ("take", [front, _back, _a], [src]) -> do
+            fr <- maybe (Left "cryptol: take needs a literal length.") pure $ tyNat front
+            take (fromIntegral $ min k fr) <$> infPrefix env (min k fr) src
+      ("scanl", [_n, _ta, _tb], [f, z, xs]) -> infScan env k f z xs
+      -- zero : [inf]a -- an infinite run of the zero value (the driver
+      -- iterate's scanl consumes; usually a() with zero width).
+      ("zero", [t], []) -> do
+            el <- maybe (Left "cryptol: zero at a non-sequence infinite type.") pure $ seqElemType t
+            we <- tyWidth el
+            pure $ replicate (fromIntegral k) $ A.Lit noAnn $ zeros $ fromIntegral we
+      _ -> Left $ "cryptol: unsupported infinite-stream primitive: " <> pn
+
+-- | The first @k@ elements of @scanl f z xs@ (the desugaring of
+--   @iterate@): the running accumulators z, f z xs0, f (f z xs0) xs1,
+--   ... let-bound so a reused accumulator does not duplicate.
+infScan :: TEnv -> Integer -> T.Expr -> T.Expr -> T.Expr -> Either Text [A.Exp]
+infScan env k f z xs = do
+      zA  <- transExp env [] z
+      xse <- if k > 1 then take (fromIntegral k - 1) <$> infPrefix env (k - 1) xs else pure []
+      let w    = A.sizeOf zA
+          nm i = "iter$" <> showt (teDepth env) <> "$" <> showt (i :: Integer)
+          env' = env { teDepth = teDepth env + 1 }
+      binds <- goScan env' w nm 0 zA xse
+      let refs = zA : [ A.Var noAnn w (nm i) | (i, _) <- zip [1 ..] xse ]
+      -- Wrap each let around the whole list (they nest); the caller cats
+      -- or selects, so wrap every element in the accumulated binders.
+      pure $ map (wrapLets binds) refs
+      where goScan :: TEnv -> A.Size -> (Integer -> A.Name) -> Integer -> A.Exp -> [A.Exp] -> Either Text [(A.Name, A.Exp)]
+            goScan _ _ _ _ _ []           = pure []
+            goScan e' w nm i acc (x : xs') = do
+                  body <- applyFn e' f [acc, x]
+                  let nm' = nm (i + 1)
+                  ((nm', body) :) <$> goScan e' w nm (i + 1) (A.Var noAnn w nm') xs'
+
+            wrapLets :: [(A.Name, A.Exp)] -> A.Exp -> A.Exp
+            wrapLets bs body = foldr (\ (x, rhs) b -> A.Let noAnn (A.sizeOf b) x rhs b) body bs
+
+-- | The first @k@ elements of an infinite comprehension. Supported: a
+--   single parallel arm of one generator over an infinite (or finite)
+--   source, plus @let@ matches -- the shape @repeat@ and simple maps
+--   over a stream desugar to. Element j binds the generator variable to
+--   element j of its source.
+infComp :: TEnv -> Integer -> T.Expr -> [[T.Match]] -> Either Text [A.Exp]
+infComp env k body mss = case mss of
+      [ms] -> do
+            gens <- mapM genElems ms
+            let lens = [ n | Just n <- map fst gens ]
+                kk   = fromIntegral $ minimum (k : lens)
+            mapM (element gens) [0 .. kk - 1]
+      _ -> Left "cryptol: only a single-arm infinite comprehension is supported (parallel/nested infinite comprehensions are not)."
+      where -- Each match: its length (Nothing = infinite) and a function
+            -- from element index to the bindings it introduces.
+            genElems :: T.Match -> Either Text (Maybe Integer, Integer -> Either Text [(N.Name, T.Type, A.Exp)])
+            genElems = \ case
+                  T.From x _ et src
+                        | isInfSeq env src -> do
+                              es <- infPrefix env k src
+                              pure (Nothing, \ j -> maybe (Left "cryptol: comprehension source too short (rwcry bug).") (pure . pure . (x, et, )) $ lookup j $ zip [0 ..] es)
+                        | otherwise -> do
+                              (n, we) <- seqWidths $ T.fastTypeOf (teTypes env) src
+                              srcA    <- transExp env [] src
+                              pure (Just n, \ j -> pure [ (x, et, elemSlice n we j srcA) ])
+                  T.Let _ -> Left "cryptol: a let in an infinite comprehension is not supported yet."
+
+            element :: [(Maybe Integer, Integer -> Either Text [(N.Name, T.Type, A.Exp)])] -> Integer -> Either Text A.Exp
+            element gens j = do
+                  binds <- concat <$> mapM (($ j) . snd) gens
+                  transExp (bindAll env binds) [] body
+
+-- | The first @k@ elements of a recursive infinite-stream definition
+--   (@s = front # [ f s ... | ... ]@): unroll element by element, each
+--   new element referencing earlier ones through the growing binding of
+--   the stream name; the elements are let-bound in order.
+infStream :: TEnv -> TEnv -> N.Name -> T.Expr -> Integer -> Either Text [A.Exp]
+infStream _siteEnv defEnv sname rhs k = do
+      elemT <- maybe (Left "cryptol: a recursive stream binding is not an infinite sequence (rwcry bug).") pure
+            $ seqInfElem defEnv (T.EVar sname)
+      we    <- tyWidth elemT
+      let nm i = sanitize (I.identText $ N.nameIdent sname) <> "$" <> showt (N.nameUnique sname) <> "$" <> showt (i :: Integer)
+          -- The stream name resolves to the concatenation of the
+          -- per-element variables computed so far (front-padded), so a
+          -- self-reference @s\@(j-d)@ slices out element (j-d).
+          bindStream :: Integer -> TEnv
+          bindStream have = defEnv { teStrms = HM.delete (N.nameUnique sname) $ teStrms defEnv
+                                   , teScope = HM.insert (N.nameUnique sname)
+                                          (A.cat [ A.Var noAnn (fromIntegral we) (nm i) | i <- [0 .. have - 1] ]) (teScope defEnv)
+                                   , teTypes = Map.insert sname (T.tMono $ T.tSeq (T.tNum have) elemT) (teTypes defEnv) }
+      -- Compute elements 0..k-1: element j is the j-th element of the
+      -- RHS evaluated with the stream bound to elements 0..j-1 (so any
+      -- self-reference must be to an earlier, lagged, element).
+      let go :: Integer -> [(A.Name, A.Exp)] -> Either Text [(A.Name, A.Exp)]
+          go j acc
+                | j >= k    = pure $ reverse acc
+                | otherwise = do
+                      es <- infPrefix (bindStream j) (j + 1) rhs
+                      ej <- maybe (Left "cryptol: recursive stream element out of range (rwcry bug).") pure $ lookup j $ zip [0 ..] es
+                      go (j + 1) ((nm j, pev ej) : acc)
+      binds <- go 0 []
+      -- Reject a self-reference that isn't strictly lagged (a cycle):
+      -- element j's rhs must reference only earlier element variables.
+      let names = [ (nm i, i) | i <- [0 .. k - 1] ]
+      mapM_ (checkLag names) $ zip [0 ..] binds
+      let refs = [ A.Var noAnn (fromIntegral we) (nm i) | i <- [0 .. k - 1] ]
+      pure $ map (\ r -> foldr (\ (x, rhs') b -> A.Let noAnn (A.sizeOf b) x rhs' b) r binds) refs
+      where checkLag :: [(A.Name, Integer)] -> (Integer, (A.Name, A.Exp)) -> Either Text ()
+            checkLag names (j, (_, ej)) =
+                  case [ i | r <- varRefs ej, Just i <- [lookup r names], i >= j ] of
+                        (_ : _) -> Left "cryptol: a recursive stream element depends on itself or a later element (an unbounded/ill-founded stream)."
+                        []      -> pure ()
+
+-- | The first @k@ elements of a finite sequence expression (slicing its
+--   translation); fewer if the sequence is shorter than @k@.
+finiteElems :: TEnv -> Integer -> T.Expr -> Either Text [A.Exp]
+finiteElems env k e = do
+      (n, we) <- seqWidths $ T.fastTypeOf (teTypes env) e
+      eA      <- transExp env [] e
+      pure [ elemSlice n we i eA | i <- [0 .. min k n - 1] ]
 
 -- | Element @i@ (from the front -- index 0 is the most significant) of a
 --   sequence of @n@ elements of width @we@.

@@ -1,0 +1,128 @@
+main.$dispatch : ([16]) -> [8]
+main.$dispatch i =
+      main.$L.$x4$284 i
+
+main.$L.$x4$284 : ([16]) -> [8]
+main.$L.$x4$284 $x =
+      main.$L.ReWire.Monad.iter$1$s23$282 $x
+
+main.$L.ReWire.Monad.iter$1$s23$282 : ([16]) -> [8]
+main.$L.ReWire.Monad.iter$1$s23$282 i =
+      let $a = Main.go i in
+      $a
+
+Main.tk : ([8]) -> [40]
+Main.tk $eta0 =
+      cry$tkw$0 $eta0
+
+Main.idx : ([8]) -> [8]
+Main.idx $eta0 =
+      cry$idx$1 $eta0
+
+Main.dt : ([8]) -> [24]
+Main.dt $eta0 =
+      cry$dtw$2 $eta0
+
+Main.lfsr : ([8]) -> [48]
+Main.lfsr $eta0 =
+      cry$lfsrw$3 $eta0
+
+Main.fz : ([32]) -> [32]
+Main.fz $eta0 =
+      cry$fzw$4 $eta0
+
+Main.rep : ([8]) -> [32]
+Main.rep $eta0 =
+      cry$repw$5 $eta0
+
+Main.go : ([16]) -> [8]
+Main.go ds =
+      let a = ds[8 +: 8] in
+      let b = ds[0 +: 8] in
+      add (add (add (add (add (trunc 8 (Main.tk a)) (Main.idx a)) (trunc 8 (Main.dt b))) (trunc 8 (Main.lfsr b))) (trunc 8 (Main.fz (zext 32 a)))) (trunc 8 (Main.rep b))
+
+cry$tkw$0.tk$0 : ([8]) -> [40]
+cry$tkw$0.tk$0 x$0 =
+      x$0 # add x$0 8'h1 # add x$0 8'h2 # add x$0 8'h3 # add x$0 8'h4
+
+cry$tkw$0 : ([8]) -> [40]
+cry$tkw$0 x$0 =
+      cry$tkw$0.tk$0 x$0
+
+cry$idx$1 : ([8]) -> [8]
+cry$idx$1 x$0 =
+      let iter$0$1 = add (mul x$0 8'h3) 8'h1 in
+      let iter$0$2 = add (mul iter$0$1 8'h3) 8'h1 in
+      let iter$0$3 = add (mul iter$0$2 8'h3) 8'h1 in
+      let iter$0$4 = add (mul iter$0$3 8'h3) 8'h1 in
+      iter$0$4
+
+cry$dtw$2.dt$0 : ([8]) -> [24]
+cry$dtw$2.dt$0 x$0 =
+      add x$0 (mul 8'h2 (sub (add x$0 8'h2) x$0)) # add x$0 (mul 8'h3 (sub (add x$0 8'h2) x$0)) # add x$0 (mul 8'h4 (sub (add x$0 8'h2) x$0))
+
+cry$dtw$2 : ([8]) -> [24]
+cry$dtw$2 x$0 =
+      cry$dtw$2.dt$0 x$0
+
+cry$lfsrw$3.lfsr$0 : ([8]) -> [48]
+cry$lfsrw$3.lfsr$0 seed$0 =
+      seed$0 # (let s$4714$1 = xor (shl seed$0 1'h1) (if seed$0[7 +: 1] then 8'h1d
+            else 8'h0) in
+      s$4714$1) # (let s$4714$1 = xor (shl seed$0 1'h1) (if seed$0[7 +: 1] then 8'h1d
+            else 8'h0) in
+      let s$4714$2 = xor (shl s$4714$1 1'h1) (if s$4714$1[7 +: 1] then 8'h1d
+            else 8'h0) in
+      s$4714$2) # (let s$4714$1 = xor (shl seed$0 1'h1) (if seed$0[7 +: 1] then 8'h1d
+            else 8'h0) in
+      let s$4714$2 = xor (shl s$4714$1 1'h1) (if s$4714$1[7 +: 1] then 8'h1d
+            else 8'h0) in
+      let s$4714$3 = xor (shl s$4714$2 1'h1) (if s$4714$2[7 +: 1] then 8'h1d
+            else 8'h0) in
+      s$4714$3) # (let s$4714$1 = xor (shl seed$0 1'h1) (if seed$0[7 +: 1] then 8'h1d
+            else 8'h0) in
+      let s$4714$2 = xor (shl s$4714$1 1'h1) (if s$4714$1[7 +: 1] then 8'h1d
+            else 8'h0) in
+      let s$4714$3 = xor (shl s$4714$2 1'h1) (if s$4714$2[7 +: 1] then 8'h1d
+            else 8'h0) in
+      let s$4714$4 = xor (shl s$4714$3 1'h1) (if s$4714$3[7 +: 1] then 8'h1d
+            else 8'h0) in
+      s$4714$4) # (let s$4714$1 = xor (shl seed$0 1'h1) (if seed$0[7 +: 1] then 8'h1d
+            else 8'h0) in
+      let s$4714$2 = xor (shl s$4714$1 1'h1) (if s$4714$1[7 +: 1] then 8'h1d
+            else 8'h0) in
+      let s$4714$3 = xor (shl s$4714$2 1'h1) (if s$4714$2[7 +: 1] then 8'h1d
+            else 8'h0) in
+      let s$4714$4 = xor (shl s$4714$3 1'h1) (if s$4714$3[7 +: 1] then 8'h1d
+            else 8'h0) in
+      let s$4714$5 = xor (shl s$4714$4 1'h1) (if s$4714$4[7 +: 1] then 8'h1d
+            else 8'h0) in
+      s$4714$5)
+
+cry$lfsrw$3 : ([8]) -> [48]
+cry$lfsrw$3 x$0 =
+      cry$lfsrw$3.lfsr$0 x$0
+
+cry$fzw$4.fz$0 : ([32]) -> [32]
+cry$fzw$4.fz$0 xs$0 =
+      add xs$0[24 +: 8] 8'h0 # add xs$0[16 +: 8] 8'h1 # add xs$0[8 +: 8] 8'h2 # add xs$0[0 +: 8] 8'h3
+
+cry$fzw$4 : ([32]) -> [32]
+cry$fzw$4 x$0 =
+      cry$fzw$4.fz$0 x$0
+
+cry$repw$5.repeat$0 : ([8]) -> [32]
+cry$repw$5.repeat$0 x$0 =
+      x$0 # x$0 # x$0 # x$0
+
+cry$repw$5 : ([8]) -> [32]
+cry$repw$5 x$0 =
+      cry$repw$5.repeat$0 x$0
+
+device top_level
+      input __in0 : [8]
+      input __in1 : [8]
+      output __out0 : [8]
+      let $in = __in0 # __in1
+      let $res = main.$dispatch $in
+      __out0 := $res
