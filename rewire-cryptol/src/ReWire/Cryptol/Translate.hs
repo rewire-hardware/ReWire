@@ -56,10 +56,11 @@ import Cryptol.Utils.PP (pp)
 import Cryptol.Utils.RecordMap (canonicalFields, recordElements)
 
 import Control.Exception (try, SomeException)
-import Control.Monad (unless, foldM, zipWithM)
+import Control.Monad (unless, foldM)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError, liftEither)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isAlphaNum)
+import Data.Graph (stronglyConnComp, SCC (..))
 import Data.HashMap.Strict (HashMap)
 import Data.Text (Text)
 import System.FilePath (takeDirectory)
@@ -116,6 +117,9 @@ data TEnv = TEnv
       , teScope :: HashMap Int A.Exp            -- ^ Local binders.
       , teCons  :: HashMap Int (T.NominalType, ConDef) -- ^ Struct/enum constructors, by name unique.
       , teDepth :: Int                          -- ^ Case-nesting depth (uniquifies scrutinee lets).
+      , teFuns  :: HashMap Int (TEnv, T.Expr)   -- ^ Inlinable bindings (higher-order or otherwise
+                                                --   un-Hyle-able definitions, local functions), with
+                                                --   the environment closed over at the binding.
       }
 
 -- | A nominal-type constructor: a struct/newtype's (transparent), or an
@@ -124,21 +128,29 @@ type ConDef = Either T.StructCon T.EnumCon
 
 transClosure :: Text -> T.Expr -> [T.DeclGroup] -> Map.Map N.Name (TM.TypesMap N.Name) -> Map.Map N.Name T.NominalType -> Either Text [A.Defn]
 transClosure entry body dgs nmap noms = do
-      mapM_ noRec dgs
+      decls <- orderDecls dgs
       entryName <- case spine body of
             (T.EVar x, _, _) -> pure x
             _                -> Left "cryptol: unexpected expression shape after specialization (rwcry bug)."
-      let decls   = concatMap T.groupDecls dgs
-          primSet = HM.fromList [ (N.nameUnique $ T.dName d, ()) | d <- decls, isPrim $ T.dDefinition d ]
+      let primSet = HM.fromList [ (N.nameUnique $ T.dName d, ()) | d <- decls, isPrim $ T.dDefinition d ]
           prims   = HM.fromList [ (N.nameUnique cl, (I.identText $ N.nameIdent orig, tys))
                                 | (orig, tm) <- Map.toList nmap
                                 , (tys, cl)  <- TM.toListTM tm
                                 , N.nameUnique cl `HM.member` primSet
                                 ]
           exprDs  = [ (d, e) | d <- decls, e <- defBody (T.dDefinition d) ]
-      unless (any ((== N.nameUnique entryName) . N.nameUnique . T.dName . fst) exprDs)
+          -- Definitions whose signature fits Hyle become Hyle definitions
+          -- (numbered over the full list, for name stability); the rest
+          -- (higher-order, or otherwise unrepresentable) are inlined at
+          -- their (fully applied) use sites.
+          fits    = [ (i, de) | (i, de@(d, _)) <- zip [0 :: Int ..] exprDs, hyleable d ]
+          inls    = [ de | de@(d, _) <- exprDs, not $ hyleable d ]
+          isEntry x = N.nameUnique x == N.nameUnique entryName
+      unless (any (isEntry . T.dName . fst) exprDs)
             $ Left "cryptol: the requested function is a Cryptol primitive; wrap it in a Cryptol definition."
-      names <- HM.fromList <$> zipWithM (mkName entryName) [0 :: Int ..] exprDs
+      unless (any (isEntry . T.dName . fst . snd) fits)
+            $ Left "cryptol: the requested function's type is not representable at the FFI boundary (words, vectors, and tuples only)."
+      names <- HM.fromList <$> mapM (uncurry $ mkName entryName) fits
       let env = TEnv { tePrims = prims
                      , teDefns = names
                      , teTypes = Map.fromList $ [ (T.dName d, T.dSignature d) | d <- decls ]
@@ -146,18 +158,16 @@ transClosure entry body dgs nmap noms = do
                      , teScope = mempty
                      , teCons  = HM.fromList $ concatMap conEntries $ Map.elems noms
                      , teDepth = 0
+                     , teFuns  = HM.fromList [ (N.nameUnique $ T.dName d, (env, e)) | (d, e) <- inls ]
                      }
-      mapM (transDecl env) exprDs
-      where noRec :: T.DeclGroup -> Either Text ()
-            noRec = \ case
-                  T.Recursive ds -> Left $ "cryptol: recursive definitions are not supported: "
-                        <> T.intercalate ", " (map (I.identText . N.nameIdent . T.dName) ds)
-                  _              -> pure ()
-
-            isPrim :: T.DeclDef -> Bool
+      mapM (transDecl env . snd) fits
+      where isPrim :: T.DeclDef -> Bool
             isPrim = \ case
                   T.DPrim -> True
                   _       -> False
+
+            hyleable :: T.Decl -> Bool
+            hyleable = either (const False) (const True) . sigWidths . T.dSignature
 
             -- A translatable body: an ordinary definition, or a Cryptol
             -- foreign (C FFI) function's Cryptol fallback implementation.
@@ -179,6 +189,63 @@ transClosure entry body dgs nmap noms = do
                   let gid | N.nameUnique (T.dName d) == N.nameUnique entryName = entry
                           | otherwise = entry <> "." <> sanitize (I.identText $ N.nameIdent $ T.dName d) <> "$" <> showt i
                   pure (N.nameUnique $ T.dName d, (gid, A.Sig noAnn aszs rsz))
+
+-- | Flatten declaration groups in dependency order. A recursive group is
+--   re-analyzed after specialization: type-indexed recursion (each call
+--   at a strictly smaller instantiation) arrives as a chain of distinct
+--   clones, so an acyclic group is ordinary code; a genuine cycle (value
+--   recursion) is rejected.
+orderDecls :: [T.DeclGroup] -> Either Text [T.Decl]
+orderDecls = fmap concat . mapM go
+      where go :: T.DeclGroup -> Either Text [T.Decl]
+            go = \ case
+                  T.NonRecursive d -> pure [d]
+                  T.Recursive ds   -> mapM unSCC $ stronglyConnComp
+                        [ (d, N.nameUnique $ T.dName d, filter (`HM.member` us) $ map N.nameUnique $ declRefs d)
+                        | d <- ds ]
+                        where us = HM.fromList [ (N.nameUnique $ T.dName d, ()) | d <- ds ]
+
+            unSCC :: SCC T.Decl -> Either Text T.Decl
+            unSCC = \ case
+                  AcyclicSCC d -> pure d
+                  CyclicSCC ds -> Left $ "cryptol: recursive definitions are not supported: "
+                        <> T.intercalate ", " (map (I.identText . N.nameIdent . T.dName) ds)
+
+-- | Names referenced by a declaration/expression (for the post-
+--   specialization recursion analysis).
+declRefs :: T.Decl -> [N.Name]
+declRefs d = case T.dDefinition d of
+      T.DExpr e             -> refs e
+      T.DForeign _ (Just e) -> refs e
+      _                     -> []
+      where refs :: T.Expr -> [N.Name]
+            refs = \ case
+                  T.EList es _       -> concatMap refs es
+                  T.ETuple es        -> concatMap refs es
+                  T.ERec fs          -> concatMap refs $ recordElements fs
+                  T.ESel e _         -> refs e
+                  T.ESet _ e _ v     -> refs e <> refs v
+                  T.EIf c t f        -> refs c <> refs t <> refs f
+                  T.ECase e as dl    -> refs e <> concatMap altRefs (Map.elems as) <> maybe [] altRefs dl
+                  T.EComp _ _ e mss  -> refs e <> concatMap (concatMap matchRefs) mss
+                  T.EVar x           -> [x]
+                  T.ETAbs _ e        -> refs e
+                  T.ETApp e _        -> refs e
+                  T.EApp f a         -> refs f <> refs a
+                  T.EAbs _ _ e       -> refs e
+                  T.ELocated _ e     -> refs e
+                  T.EProofAbs _ e    -> refs e
+                  T.EProofApp e      -> refs e
+                  T.EWhere e dgs'    -> refs e <> concatMap declRefs (concatMap T.groupDecls dgs')
+                  T.EPropGuards gs _ -> concatMap (refs . snd) gs
+
+            altRefs :: T.CaseAlt -> [N.Name]
+            altRefs (T.CaseAlt _ e) = refs e
+
+            matchRefs :: T.Match -> [N.Name]
+            matchRefs = \ case
+                  T.From _ _ _ e -> refs e
+                  T.Let d'       -> declRefs d'
 
 -- | Translate one definition: peel its lambdas into parameters; a
 --   point-free definition (fewer lambdas than its type has arguments)
@@ -209,9 +276,10 @@ transDecl env (d, e) = do
             swap2 :: (a, b) -> (b, a)
             swap2 (a, b) = (b, a)
 
--- | Translate an expression; @etas@ are extra (already-translated)
---   arguments to append to the outermost application (the eta-expansion
---   of a point-free definition).
+-- | Translate an expression; @etas@ are pending (already-translated)
+--   arguments applied to it: the eta-expansion of a point-free
+--   definition, or arguments awaiting a function-valued subexpression
+--   (they thread through lambdas, ifs, wheres, and cases).
 transExp :: TEnv -> [A.Exp] -> T.Expr -> Either Text A.Exp
 transExp env etas e0 = case spine e0 of
       (T.EVar x, tys, args)
@@ -219,6 +287,8 @@ transExp env etas e0 = case spine e0 of
                   unless (null etas) $ Left "cryptol: partial application of a constructor cannot cross the Cryptol boundary."
                   args' <- mapM (transExp env []) args
                   transCon nt con tys args'
+            | Just (envF, rhs) <- HM.lookup (N.nameUnique x) (teFuns env) ->
+                  inline env envF rhs args etas
             | Just (pn, tys') <- HM.lookup (N.nameUnique x) (tePrims env), pn `elem` (["foldl", "foldr"] :: [Text]) -> do
                   unless (null etas) $ Left $ "cryptol: partial application of " <> pn <> " cannot cross the Cryptol boundary."
                   transFold env pn tys' args
@@ -226,24 +296,26 @@ transExp env etas e0 = case spine e0 of
                   args' <- (<> etas) <$> mapM (transExp env []) args
                   apply env x args'
       (e, _, _ : _)              -> Left $ "cryptol: unsupported application head" <> unsupported e
-      (e, _, []) | not (null etas) -> Left $ "cryptol: unsupported point-free definition shape" <> unsupported e
       (e, _, [])  -> case e of
+            T.EAbs x t b
+                  | a : as <- etas -> transExp (bindAll env [(x, t, a)]) as b
+                  | otherwise      -> Left "cryptol: a lambda in argument or result position cannot cross the Cryptol boundary (define it as a named function)."
+            T.EIf c t f    -> do
+                  c' <- transExp env [] c
+                  t' <- transExp env etas t
+                  f' <- transExp env etas f
+                  pure $ A.If noAnn (A.sizeOf t') c' t' f'
+            T.EWhere e' ds -> transWhere env etas e' ds
+            T.ECase scrut alts dflt -> transCase env etas scrut alts dflt
+            _ | not (null etas) -> Left $ "cryptol: cannot apply a value as a function" <> unsupported e
             T.ETuple es    -> A.cat <$> mapM (transExp env []) es
             T.EList es _   -> A.cat <$> mapM (transExp env []) es
             T.ERec fs      -> A.cat <$> mapM (transExp env []) (recordElements fs)
-            T.EIf c t f    -> do
-                  c' <- transExp env [] c
-                  t' <- transExp env [] t
-                  f' <- transExp env [] f
-                  pure $ A.If noAnn (A.sizeOf t') c' t' f'
             T.ESel e' sel  -> do
                   a'  <- transExp env [] e'
                   sel' env e' a' sel
             T.ESet ty e' sel v -> transSet env ty e' sel v
-            T.ECase scrut alts dflt -> transCase env scrut alts dflt
-            T.EWhere e' ds -> transWhere env e' ds
             T.EComp _ ety body mss -> transComp env ety body mss
-            T.EAbs {}      -> Left "cryptol: a lambda in argument or result position cannot cross the Cryptol boundary (define it as a named function)."
             _              -> Left $ "cryptol: unsupported expression" <> unsupported e
       where sel' :: TEnv -> T.Expr -> A.Exp -> T.Selector -> Either Text A.Exp
             sel' env' scrut a' = \ case
@@ -266,6 +338,34 @@ transExp env etas e0 = case spine e0 of
 
 unsupported :: T.Expr -> Text
 unsupported e = ": " <> T.pack (show $ pp e)
+
+-- | Inline an inlinable binding at a use site: parameters with
+--   Hyle-representable types bind to their translated arguments; the
+--   rest (function-valued or otherwise unrepresentable arguments) are
+--   deferred -- recorded against the call-site environment and
+--   re-translated at their own use sites. The body translates in the
+--   binding's captured environment, at the call site's case-nesting
+--   depth (capture along nesting is the only kind possible).
+inline :: TEnv -> TEnv -> T.Expr -> [T.Expr] -> [A.Exp] -> Either Text A.Exp
+inline site defn rhs args etas = go (defn { teDepth = teDepth site }) rhs args
+      where go :: TEnv -> T.Expr -> [T.Expr] -> Either Text A.Exp
+            go env e as = case (skip e, as) of
+                  (T.EAbs x t b, a : as')
+                        | Right _ <- tyWidth t -> do
+                              a' <- transExp site [] a
+                              go (bindAll env [(x, t, a')]) b as'
+                        | otherwise -> go (env { teFuns  = HM.insert (N.nameUnique x) (site, a) $ teFuns env
+                                               , teTypes = Map.insert x (T.tMono t) $ teTypes env }) b as'
+                  (b, [])         -> transExp env etas b
+                  (b, _)          -> do
+                        as' <- mapM (transExp site []) as
+                        transExp env (as' <> etas) b
+
+            skip :: T.Expr -> T.Expr
+            skip = \ case
+                  T.ELocated _ e  -> skip e
+                  T.EProofAbs _ e -> skip e
+                  e               -> e
 
 -- | A saturated constructor application (arguments already translated).
 --   A struct (newtype) constructor is transparent: the value is its
@@ -301,8 +401,8 @@ transCon nt con tys args = case con of
 --   alternative's binders are bound to slices of the payload. The
 --   default alternative (if any) is the final else and may bind the
 --   whole scrutinee.
-transCase :: TEnv -> T.Expr -> Map.Map I.Ident T.CaseAlt -> Maybe T.CaseAlt -> Either Text A.Exp
-transCase env scrut alts dflt = do
+transCase :: TEnv -> [A.Exp] -> T.Expr -> Map.Map I.Ident T.CaseAlt -> Maybe T.CaseAlt -> Either Text A.Exp
+transCase env etas scrut alts dflt = do
       st        <- exprTy env scrut
       nt <- case T.tNoUser st of
             T.TNominal nt' _ -> pure nt'
@@ -330,13 +430,13 @@ transCase env scrut alts dflt = do
                   let offs  = drop 1 $ scanr (+) 0 ws
                       binds = [ (x, t, A.Slice noAnn (fromIntegral off) (fromIntegral w) sv)
                               | ((x, t), w, off) <- zip3 bs ws offs ]
-                  transExp (bindAll env' binds) [] rhs
+                  transExp (bindAll env' binds) etas rhs
 
             -- The default alternative may bind the scrutinee itself.
             dfltAlt :: TEnv -> A.Exp -> T.CaseAlt -> Either Text A.Exp
             dfltAlt env' sv (T.CaseAlt bs rhs) = case bs of
-                  []       -> transExp env' [] rhs
-                  [(x, t)] -> transExp (bindAll env' [(x, t, sv)]) [] rhs
+                  []       -> transExp env' etas rhs
+                  [(x, t)] -> transExp (bindAll env' [(x, t, sv)]) etas rhs
                   _        -> Left "cryptol: unexpected default case-alternative shape (rwcry bug)."
 
             ifChain :: A.Size -> A.Exp -> [(Integer, A.Exp)] -> Maybe A.Exp -> Either Text A.Exp
@@ -379,23 +479,18 @@ transSet env ty e sel v = do
                   <> [ v' ]
                   <> [ A.Slice noAnn 0 (fromIntegral off) e' | off > 0 ]
 
--- | Local bindings: monomorphic value bindings become Hyle lets;
---   local functions (which may capture) are not supported yet.
-transWhere :: TEnv -> T.Expr -> [T.DeclGroup] -> Either Text A.Exp
-transWhere env body dgs = do
-      mapM_ noRec dgs
-      go env $ concatMap T.groupDecls dgs
-      where noRec :: T.DeclGroup -> Either Text ()
-            noRec = \ case
-                  T.Recursive ds -> Left $ "cryptol: recursive local definitions are not supported: "
-                        <> T.intercalate ", " (map (I.identText . N.nameIdent . T.dName) ds)
-                  _              -> pure ()
-
-            go :: TEnv -> [T.Decl] -> Either Text A.Exp
-            go env' []       = transExp env' [] body
+-- | Local bindings: representable monomorphic value bindings become
+--   Hyle lets; local functions (and unrepresentable local values, e.g.
+--   Integer-typed intermediates) are recorded with the environment they
+--   close over and inlined at their use sites.
+transWhere :: TEnv -> [A.Exp] -> T.Expr -> [T.DeclGroup] -> Either Text A.Exp
+transWhere env etas body dgs = do
+      decls <- orderDecls dgs
+      go env decls
+      where go :: TEnv -> [T.Decl] -> Either Text A.Exp
+            go env' []       = transExp env' etas body
             go env' (d : ds) = case T.dDefinition d of
-                  T.DExpr rhs | ([], t) <- flatFun $ T.sType $ T.dSignature d -> do
-                        _    <- tyWidth t -- representable check
+                  T.DExpr rhs | ([], t) <- flatFun $ T.sType $ T.dSignature d, Right _ <- tyWidth t -> do
                         rhs' <- transExp env' [] rhs
                         let x  = sanitize (I.identText $ N.nameIdent $ T.dName d) <> "$" <> showt (N.nameUnique $ T.dName d)
                             sz = A.sizeOf rhs'
@@ -403,7 +498,9 @@ transWhere env body dgs = do
                                         , teTypes = Map.insert (T.dName d) (T.dSignature d) $ teTypes env'
                                         } ds
                         pure $ A.Let noAnn (A.sizeOf rest) x rhs' rest
-                  T.DExpr _ -> Left "cryptol: local function bindings are not supported yet (lift the function to the top level of the Cryptol module)."
+                  T.DExpr rhs -> go env' { teFuns  = HM.insert (N.nameUnique $ T.dName d) (env', rhs) $ teFuns env'
+                                         , teTypes = Map.insert (T.dName d) (T.dSignature d) $ teTypes env'
+                                         } ds
                   _         -> Left "cryptol: unsupported local binding."
 
 -- | A comprehension, fully unrolled: the lengths are concrete after
@@ -530,6 +627,8 @@ apply env x args
             if length args == length aszs
                   then pure $ A.Call noAnn rsz g args
                   else Left $ "cryptol: partial application of " <> I.identText (N.nameIdent x) <> " cannot cross the Cryptol boundary."
+      | Just (envF, rhs) <- HM.lookup u $ teFuns env =
+            transExp (envF { teDepth = teDepth env }) args rhs
       | Just v <- HM.lookup u $ teScope env =
             if null args
                   then pure v

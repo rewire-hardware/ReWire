@@ -113,6 +113,7 @@ data-files:
     tests/golden/cryptolffi.hs
     tests/golden/cryptolffi2.hs
     tests/golden/cryptolffi3.hs
+    tests/golden/cryptolffi4.hs
     tests/golden/cubehash.hs
     tests/golden/dependencyGraph.hs
     tests/golden/dissex.hs
@@ -186,6 +187,7 @@ data-files:
     tests/golden/cryptolffi.sv
     tests/golden/cryptolffi2.sv
     tests/golden/cryptolffi3.sv
+    tests/golden/cryptolffi4.sv
     tests/golden/cubehash.sv
     tests/golden/dependencyGraph.sv
     tests/golden/dissex.sv
@@ -259,6 +261,7 @@ data-files:
     tests/golden/cryptolffi.rwc
     tests/golden/cryptolffi2.rwc
     tests/golden/cryptolffi3.rwc
+    tests/golden/cryptolffi4.rwc
     tests/golden/cubehash.rwc
     tests/golden/dependencyGraph.rwc
     tests/golden/dissex.rwc
@@ -332,6 +335,7 @@ data-files:
     tests/golden/cryptolffi.vhdl
     tests/golden/cryptolffi2.vhdl
     tests/golden/cryptolffi3.vhdl
+    tests/golden/cryptolffi4.vhdl
     tests/golden/cubehash.vhdl
     tests/golden/dependencyGraph.vhdl
     tests/golden/dissex.vhdl
@@ -405,6 +409,7 @@ data-files:
     tests/golden/cryptolffi.cry
     tests/golden/cryptolffi2.cry
     tests/golden/cryptolffi3.cry
+    tests/golden/cryptolffi4.cry
     tests/golden/cubehash.cry
     tests/golden/dependencyGraph.cry
     tests/golden/dissex.cry
@@ -471,6 +476,7 @@ data-files:
     tests/golden/wordShift.cry
     tests/golden/wordSlice.cry
     tests/golden/zerowidth.cry
+    tests/golden/cry/cryho.cry
     tests/golden/cry/crymix.cry
     tests/golden/cry/cryrec.cry
     tests/golden/cry/crysbox.cry
@@ -484,6 +490,8 @@ data-files:
     tests/golden/cryptolffi2.yaml
     tests/golden/cryptolffi3.input.yaml
     tests/golden/cryptolffi3.yaml
+    tests/golden/cryptolffi4.input.yaml
+    tests/golden/cryptolffi4.yaml
     tests/golden/cubehash.input.yaml
     tests/golden/cubehash.yaml
     tests/golden/dependencyGraph.input.yaml

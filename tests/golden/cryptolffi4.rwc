@@ -1,0 +1,125 @@
+main.$dispatch : ([16]) -> [8]
+main.$dispatch i =
+      main.$L.$x4$275 i
+
+main.$L.$x4$275 : ([16]) -> [8]
+main.$L.$x4$275 $x =
+      main.$L.ReWire.Monad.iter$1$s23$273 $x
+
+main.$L.ReWire.Monad.iter$1$s23$273 : ([16]) -> [8]
+main.$L.ReWire.Monad.iter$1$s23$273 i =
+      let $a = Main.go i in
+      $a
+
+Main.locfn : ([8], [8]) -> [8]
+Main.locfn $eta0 $eta1 =
+      cry$locfn$0 $eta0 $eta1
+
+Main.hof : ([8]) -> [8]
+Main.hof $eta0 =
+      cry$hof$1 $eta0
+
+Main.cu : ([8], [8]) -> [8]
+Main.cu $eta0 $eta1 =
+      cry$cu$2 $eta0 $eta1
+
+Main.pick : ([1], [8]) -> [8]
+Main.pick $eta0 $eta1 =
+      cry$pick$3 $eta0 $eta1
+
+Main.pow5 : ([8]) -> [8]
+Main.pow5 $eta0 =
+      cry$pow5$4 $eta0
+
+Main.go : ([16]) -> [8]
+Main.go ds =
+      let a = ds[8 +: 8] in
+      let b = ds[0 +: 8] in
+      add (add (add (Main.locfn a b) (Main.hof b)) (Main.cu a b)) (Main.pick (eq a b) (Main.pow5 a))
+
+cry$locfn$0 : ([8], [8]) -> [8]
+cry$locfn$0 x$0 y$1 =
+      add (add y$1 x$0) x$0
+
+cry$hof$1.inc$1 : ([8]) -> [8]
+cry$hof$1.inc$1 v$0 =
+      add v$0 8'h1
+
+cry$hof$1 : ([8]) -> [8]
+cry$hof$1 x$0 =
+      add (add (cry$hof$1.inc$1 (cry$hof$1.inc$1 x$0)) (mul (mul x$0 8'h2) 8'h2)) (not (not x$0))
+
+cry$cu$2.sump$2 : ([16]) -> [8]
+cry$cu$2.sump$2 __p0$0 =
+      let v$4728 = __p0$0[0 +: 8] in
+      let u$4727 = __p0$0[8 +: 8] in
+      add u$4727 v$4728
+
+cry$cu$2 : ([8], [8]) -> [8]
+cry$cu$2 a$0 b$1 =
+      cry$cu$2.sump$2 (a$0 # b$1)
+
+cry$pick$3 : ([1], [8]) -> [8]
+cry$pick$3 c$0 x$1 =
+      if c$0 then cry$hof$1.inc$1 x$1
+            else not x$1
+
+cry$pow5$4.pow.e....0.$0 : ([8]) -> [8]
+cry$pow5$4.pow.e....0.$0 x$0 =
+      8'h1
+
+cry$pow5$4.pow$1 : ([8]) -> [8]
+cry$pow5$4.pow$1 $eta0 =
+      cry$pow5$4.pow.e....0.$0 $eta0
+
+cry$pow5$4.pow.e...0.$2 : ([8]) -> [8]
+cry$pow5$4.pow.e...0.$2 x$0 =
+      mul x$0 (cry$pow5$4.pow$1 x$0)
+
+cry$pow5$4.pow$3 : ([8]) -> [8]
+cry$pow5$4.pow$3 $eta0 =
+      cry$pow5$4.pow.e...0.$2 $eta0
+
+cry$pow5$4.pow.e...0.$4 : ([8]) -> [8]
+cry$pow5$4.pow.e...0.$4 x$0 =
+      mul x$0 (cry$pow5$4.pow$3 x$0)
+
+cry$pow5$4.pow$5 : ([8]) -> [8]
+cry$pow5$4.pow$5 $eta0 =
+      cry$pow5$4.pow.e...0.$4 $eta0
+
+cry$pow5$4.pow.e...0.$6 : ([8]) -> [8]
+cry$pow5$4.pow.e...0.$6 x$0 =
+      mul x$0 (cry$pow5$4.pow$5 x$0)
+
+cry$pow5$4.pow$7 : ([8]) -> [8]
+cry$pow5$4.pow$7 $eta0 =
+      cry$pow5$4.pow.e...0.$6 $eta0
+
+cry$pow5$4.pow.e...0.$8 : ([8]) -> [8]
+cry$pow5$4.pow.e...0.$8 x$0 =
+      mul x$0 (cry$pow5$4.pow$7 x$0)
+
+cry$pow5$4.pow$9 : ([8]) -> [8]
+cry$pow5$4.pow$9 $eta0 =
+      cry$pow5$4.pow.e...0.$8 $eta0
+
+cry$pow5$4.pow.e...0.$10 : ([8]) -> [8]
+cry$pow5$4.pow.e...0.$10 x$0 =
+      mul x$0 (cry$pow5$4.pow$9 x$0)
+
+cry$pow5$4.pow$11 : ([8]) -> [8]
+cry$pow5$4.pow$11 $eta0 =
+      cry$pow5$4.pow.e...0.$10 $eta0
+
+cry$pow5$4 : ([8]) -> [8]
+cry$pow5$4 x$0 =
+      cry$pow5$4.pow$11 x$0
+
+device top_level
+      input __in0 : [8]
+      input __in1 : [8]
+      output __out0 : [8]
+      let $in = __in0 # __in1
+      let $res = main.$dispatch $in
+      __out0 := $res
