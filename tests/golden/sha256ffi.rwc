@@ -1,0 +1,192 @@
+main.$dispatch : ([512]) -> [256]
+main.$dispatch i =
+      main.$L.$x4$252 i
+
+main.$L.$x4$252 : ([512]) -> [256]
+main.$L.$x4$252 $x =
+      main.$L.ReWire.Monad.iter$1$s23$250 $x
+
+main.$L.ReWire.Monad.iter$1$s23$250 : ([512]) -> [256]
+main.$L.ReWire.Monad.iter$1$s23$250 i =
+      let $a = Main.sha256Block i in
+      $a
+
+Main.sha256Block : ([512]) -> [256]
+Main.sha256Block $eta0 =
+      cry$sha256Block$0 $eta0
+
+cry$sha256Block$0.ch$0 : ([32], [32], [32]) -> [32]
+cry$sha256Block$0.ch$0 x$0 y$1 z$2 =
+      xor (and x$0 y$1) (and (not x$0) z$2)
+
+cry$sha256Block$0.maj$1 : ([32], [32], [32]) -> [32]
+cry$sha256Block$0.maj$1 x$0 y$1 z$2 =
+      xor (xor (and x$0 y$1) (and x$0 z$2)) (and y$1 z$2)
+
+cry$sha256Block$0.bsig0$2 : ([32]) -> [32]
+cry$sha256Block$0.bsig0$2 x$0 =
+      xor (xor (x$0[0 +: 2] # x$0[2 +: 30]) (x$0[0 +: 13] # x$0[13 +: 19])) (x$0[0 +: 22] # x$0[22 +: 10])
+
+cry$sha256Block$0.bsig1$3 : ([32]) -> [32]
+cry$sha256Block$0.bsig1$3 x$0 =
+      xor (xor (x$0[0 +: 6] # x$0[6 +: 26]) (x$0[0 +: 11] # x$0[11 +: 21])) (x$0[0 +: 25] # x$0[25 +: 7])
+
+cry$sha256Block$0.round$4 : ([256], [32], [32]) -> [256]
+cry$sha256Block$0.round$4 __p0$0 $eta1 $eta2 =
+      let h$4742 = __p0$0[0 +: 32] in
+      let g$4754 = __p0$0[32 +: 32] in
+      let f$4753 = __p0$0[64 +: 32] in
+      let e$4749 = __p0$0[96 +: 32] in
+      let d$4764 = __p0$0[128 +: 32] in
+      let c$4763 = __p0$0[160 +: 32] in
+      let b$4762 = __p0$0[192 +: 32] in
+      let a$4760 = __p0$0[224 +: 32] in
+      let t1$4741 = add (add (add (add h$4742 (cry$sha256Block$0.bsig1$3 e$4749)) (cry$sha256Block$0.ch$0 e$4749 f$4753 g$4754)) $eta1) $eta2 in
+      let t2$4755 = add (cry$sha256Block$0.bsig0$2 a$4760) (cry$sha256Block$0.maj$1 a$4760 b$4762 c$4763) in
+      add t1$4741 t2$4755 # a$4760 # b$4762 # c$4763 # add d$4764 t1$4741 # e$4749 # f$4753 # g$4754
+
+cry$sha256Block$0.ssig0$5 : ([32]) -> [32]
+cry$sha256Block$0.ssig0$5 x$0 =
+      xor (xor (x$0[0 +: 7] # x$0[7 +: 25]) (x$0[0 +: 18] # x$0[18 +: 14])) (lshr x$0 2'h3)
+
+cry$sha256Block$0.ssig1$6 : ([32]) -> [32]
+cry$sha256Block$0.ssig1$6 x$0 =
+      xor (xor (x$0[0 +: 17] # x$0[17 +: 15]) (x$0[0 +: 19] # x$0[19 +: 13])) (lshr x$0 4'ha)
+
+cry$sha256Block$0 : ([512]) -> [256]
+cry$sha256Block$0 block$0 =
+      let ws$4830$9 = block$0[192 +: 32] in
+      let ws$4830$8 = block$0[224 +: 32] in
+      let ws$4830$7 = block$0[256 +: 32] in
+      let ws$4830$6 = block$0[288 +: 32] in
+      let ws$4830$5 = block$0[320 +: 32] in
+      let ws$4830$4 = block$0[352 +: 32] in
+      let ws$4830$3 = block$0[384 +: 32] in
+      let ws$4830$2 = block$0[416 +: 32] in
+      let ws$4830$15 = block$0[0 +: 32] in
+      let ws$4830$14 = block$0[32 +: 32] in
+      let ws$4830$13 = block$0[64 +: 32] in
+      let ws$4830$12 = block$0[96 +: 32] in
+      let ws$4830$11 = block$0[128 +: 32] in
+      let ws$4830$10 = block$0[160 +: 32] in
+      let ws$4830$1 = block$0[448 +: 32] in
+      let ws$4830$17 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$15) ws$4830$10) (cry$sha256Block$0.ssig0$5 ws$4830$2)) ws$4830$1 in
+      let ws$4830$19 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$17) ws$4830$12) (cry$sha256Block$0.ssig0$5 ws$4830$4)) ws$4830$3 in
+      let ws$4830$21 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$19) ws$4830$14) (cry$sha256Block$0.ssig0$5 ws$4830$6)) ws$4830$5 in
+      let ws$4830$0 = block$0[480 +: 32] in
+      let ws$4830$16 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$14) ws$4830$9) (cry$sha256Block$0.ssig0$5 ws$4830$1)) ws$4830$0 in
+      let ws$4830$18 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$16) ws$4830$11) (cry$sha256Block$0.ssig0$5 ws$4830$3)) ws$4830$2 in
+      let ws$4830$20 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$18) ws$4830$13) (cry$sha256Block$0.ssig0$5 ws$4830$5)) ws$4830$4 in
+      let ws$4830$22 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$20) ws$4830$15) (cry$sha256Block$0.ssig0$5 ws$4830$7)) ws$4830$6 in
+      let ws$4830$24 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$22) ws$4830$17) (cry$sha256Block$0.ssig0$5 ws$4830$9)) ws$4830$8 in
+      let ws$4830$26 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$24) ws$4830$19) (cry$sha256Block$0.ssig0$5 ws$4830$11)) ws$4830$10 in
+      let ws$4830$28 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$26) ws$4830$21) (cry$sha256Block$0.ssig0$5 ws$4830$13)) ws$4830$12 in
+      let ws$4830$23 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$21) ws$4830$16) (cry$sha256Block$0.ssig0$5 ws$4830$8)) ws$4830$7 in
+      let ws$4830$25 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$23) ws$4830$18) (cry$sha256Block$0.ssig0$5 ws$4830$10)) ws$4830$9 in
+      let ws$4830$27 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$25) ws$4830$20) (cry$sha256Block$0.ssig0$5 ws$4830$12)) ws$4830$11 in
+      let ws$4830$29 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$27) ws$4830$22) (cry$sha256Block$0.ssig0$5 ws$4830$14)) ws$4830$13 in
+      let ws$4830$30 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$28) ws$4830$23) (cry$sha256Block$0.ssig0$5 ws$4830$15)) ws$4830$14 in
+      let ws$4830$31 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$29) ws$4830$24) (cry$sha256Block$0.ssig0$5 ws$4830$16)) ws$4830$15 in
+      let ws$4830$33 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$31) ws$4830$26) (cry$sha256Block$0.ssig0$5 ws$4830$18)) ws$4830$17 in
+      let ws$4830$35 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$33) ws$4830$28) (cry$sha256Block$0.ssig0$5 ws$4830$20)) ws$4830$19 in
+      let ws$4830$37 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$35) ws$4830$30) (cry$sha256Block$0.ssig0$5 ws$4830$22)) ws$4830$21 in
+      let ws$4830$32 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$30) ws$4830$25) (cry$sha256Block$0.ssig0$5 ws$4830$17)) ws$4830$16 in
+      let ws$4830$34 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$32) ws$4830$27) (cry$sha256Block$0.ssig0$5 ws$4830$19)) ws$4830$18 in
+      let ws$4830$36 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$34) ws$4830$29) (cry$sha256Block$0.ssig0$5 ws$4830$21)) ws$4830$20 in
+      let ws$4830$38 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$36) ws$4830$31) (cry$sha256Block$0.ssig0$5 ws$4830$23)) ws$4830$22 in
+      let ws$4830$40 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$38) ws$4830$33) (cry$sha256Block$0.ssig0$5 ws$4830$25)) ws$4830$24 in
+      let ws$4830$42 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$40) ws$4830$35) (cry$sha256Block$0.ssig0$5 ws$4830$27)) ws$4830$26 in
+      let ws$4830$44 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$42) ws$4830$37) (cry$sha256Block$0.ssig0$5 ws$4830$29)) ws$4830$28 in
+      let ws$4830$39 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$37) ws$4830$32) (cry$sha256Block$0.ssig0$5 ws$4830$24)) ws$4830$23 in
+      let ws$4830$41 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$39) ws$4830$34) (cry$sha256Block$0.ssig0$5 ws$4830$26)) ws$4830$25 in
+      let ws$4830$43 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$41) ws$4830$36) (cry$sha256Block$0.ssig0$5 ws$4830$28)) ws$4830$27 in
+      let ws$4830$45 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$43) ws$4830$38) (cry$sha256Block$0.ssig0$5 ws$4830$30)) ws$4830$29 in
+      let ws$4830$46 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$44) ws$4830$39) (cry$sha256Block$0.ssig0$5 ws$4830$31)) ws$4830$30 in
+      let ws$4830$47 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$45) ws$4830$40) (cry$sha256Block$0.ssig0$5 ws$4830$32)) ws$4830$31 in
+      let ws$4830$49 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$47) ws$4830$42) (cry$sha256Block$0.ssig0$5 ws$4830$34)) ws$4830$33 in
+      let ws$4830$51 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$49) ws$4830$44) (cry$sha256Block$0.ssig0$5 ws$4830$36)) ws$4830$35 in
+      let ws$4830$53 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$51) ws$4830$46) (cry$sha256Block$0.ssig0$5 ws$4830$38)) ws$4830$37 in
+      let ws$4830$48 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$46) ws$4830$41) (cry$sha256Block$0.ssig0$5 ws$4830$33)) ws$4830$32 in
+      let ws$4830$50 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$48) ws$4830$43) (cry$sha256Block$0.ssig0$5 ws$4830$35)) ws$4830$34 in
+      let ws$4830$52 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$50) ws$4830$45) (cry$sha256Block$0.ssig0$5 ws$4830$37)) ws$4830$36 in
+      let ws$4830$54 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$52) ws$4830$47) (cry$sha256Block$0.ssig0$5 ws$4830$39)) ws$4830$38 in
+      let ws$4830$56 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$54) ws$4830$49) (cry$sha256Block$0.ssig0$5 ws$4830$41)) ws$4830$40 in
+      let ws$4830$58 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$56) ws$4830$51) (cry$sha256Block$0.ssig0$5 ws$4830$43)) ws$4830$42 in
+      let ws$4830$60 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$58) ws$4830$53) (cry$sha256Block$0.ssig0$5 ws$4830$45)) ws$4830$44 in
+      let ws$4830$55 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$53) ws$4830$48) (cry$sha256Block$0.ssig0$5 ws$4830$40)) ws$4830$39 in
+      let ws$4830$57 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$55) ws$4830$50) (cry$sha256Block$0.ssig0$5 ws$4830$42)) ws$4830$41 in
+      let ws$4830$59 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$57) ws$4830$52) (cry$sha256Block$0.ssig0$5 ws$4830$44)) ws$4830$43 in
+      let ws$4830$61 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$59) ws$4830$54) (cry$sha256Block$0.ssig0$5 ws$4830$46)) ws$4830$45 in
+      let ws$4830$62 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$60) ws$4830$55) (cry$sha256Block$0.ssig0$5 ws$4830$47)) ws$4830$46 in
+      let ws$4830$63 = add (add (add (cry$sha256Block$0.ssig1$6 ws$4830$61) ws$4830$56) (cry$sha256Block$0.ssig0$5 ws$4830$48)) ws$4830$47 in
+      let states$4729$1 = cry$sha256Block$0.round$4 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 32'h428a2f98 ws$4830$0 in
+      let states$4729$2 = cry$sha256Block$0.round$4 states$4729$1 32'h71374491 ws$4830$1 in
+      let states$4729$3 = cry$sha256Block$0.round$4 states$4729$2 32'hb5c0fbcf ws$4830$2 in
+      let states$4729$4 = cry$sha256Block$0.round$4 states$4729$3 32'he9b5dba5 ws$4830$3 in
+      let states$4729$5 = cry$sha256Block$0.round$4 states$4729$4 32'h3956c25b ws$4830$4 in
+      let states$4729$6 = cry$sha256Block$0.round$4 states$4729$5 32'h59f111f1 ws$4830$5 in
+      let states$4729$7 = cry$sha256Block$0.round$4 states$4729$6 32'h923f82a4 ws$4830$6 in
+      let states$4729$8 = cry$sha256Block$0.round$4 states$4729$7 32'hab1c5ed5 ws$4830$7 in
+      let states$4729$9 = cry$sha256Block$0.round$4 states$4729$8 32'hd807aa98 ws$4830$8 in
+      let states$4729$10 = cry$sha256Block$0.round$4 states$4729$9 32'h12835b01 ws$4830$9 in
+      let states$4729$11 = cry$sha256Block$0.round$4 states$4729$10 32'h243185be ws$4830$10 in
+      let states$4729$12 = cry$sha256Block$0.round$4 states$4729$11 32'h550c7dc3 ws$4830$11 in
+      let states$4729$13 = cry$sha256Block$0.round$4 states$4729$12 32'h72be5d74 ws$4830$12 in
+      let states$4729$14 = cry$sha256Block$0.round$4 states$4729$13 32'h80deb1fe ws$4830$13 in
+      let states$4729$15 = cry$sha256Block$0.round$4 states$4729$14 32'h9bdc06a7 ws$4830$14 in
+      let states$4729$16 = cry$sha256Block$0.round$4 states$4729$15 32'hc19bf174 ws$4830$15 in
+      let states$4729$17 = cry$sha256Block$0.round$4 states$4729$16 32'he49b69c1 ws$4830$16 in
+      let states$4729$18 = cry$sha256Block$0.round$4 states$4729$17 32'hefbe4786 ws$4830$17 in
+      let states$4729$19 = cry$sha256Block$0.round$4 states$4729$18 32'hfc19dc6 ws$4830$18 in
+      let states$4729$20 = cry$sha256Block$0.round$4 states$4729$19 32'h240ca1cc ws$4830$19 in
+      let states$4729$21 = cry$sha256Block$0.round$4 states$4729$20 32'h2de92c6f ws$4830$20 in
+      let states$4729$22 = cry$sha256Block$0.round$4 states$4729$21 32'h4a7484aa ws$4830$21 in
+      let states$4729$23 = cry$sha256Block$0.round$4 states$4729$22 32'h5cb0a9dc ws$4830$22 in
+      let states$4729$24 = cry$sha256Block$0.round$4 states$4729$23 32'h76f988da ws$4830$23 in
+      let states$4729$25 = cry$sha256Block$0.round$4 states$4729$24 32'h983e5152 ws$4830$24 in
+      let states$4729$26 = cry$sha256Block$0.round$4 states$4729$25 32'ha831c66d ws$4830$25 in
+      let states$4729$27 = cry$sha256Block$0.round$4 states$4729$26 32'hb00327c8 ws$4830$26 in
+      let states$4729$28 = cry$sha256Block$0.round$4 states$4729$27 32'hbf597fc7 ws$4830$27 in
+      let states$4729$29 = cry$sha256Block$0.round$4 states$4729$28 32'hc6e00bf3 ws$4830$28 in
+      let states$4729$30 = cry$sha256Block$0.round$4 states$4729$29 32'hd5a79147 ws$4830$29 in
+      let states$4729$31 = cry$sha256Block$0.round$4 states$4729$30 32'h6ca6351 ws$4830$30 in
+      let states$4729$32 = cry$sha256Block$0.round$4 states$4729$31 32'h14292967 ws$4830$31 in
+      let states$4729$33 = cry$sha256Block$0.round$4 states$4729$32 32'h27b70a85 ws$4830$32 in
+      let states$4729$34 = cry$sha256Block$0.round$4 states$4729$33 32'h2e1b2138 ws$4830$33 in
+      let states$4729$35 = cry$sha256Block$0.round$4 states$4729$34 32'h4d2c6dfc ws$4830$34 in
+      let states$4729$36 = cry$sha256Block$0.round$4 states$4729$35 32'h53380d13 ws$4830$35 in
+      let states$4729$37 = cry$sha256Block$0.round$4 states$4729$36 32'h650a7354 ws$4830$36 in
+      let states$4729$38 = cry$sha256Block$0.round$4 states$4729$37 32'h766a0abb ws$4830$37 in
+      let states$4729$39 = cry$sha256Block$0.round$4 states$4729$38 32'h81c2c92e ws$4830$38 in
+      let states$4729$40 = cry$sha256Block$0.round$4 states$4729$39 32'h92722c85 ws$4830$39 in
+      let states$4729$41 = cry$sha256Block$0.round$4 states$4729$40 32'ha2bfe8a1 ws$4830$40 in
+      let states$4729$42 = cry$sha256Block$0.round$4 states$4729$41 32'ha81a664b ws$4830$41 in
+      let states$4729$43 = cry$sha256Block$0.round$4 states$4729$42 32'hc24b8b70 ws$4830$42 in
+      let states$4729$44 = cry$sha256Block$0.round$4 states$4729$43 32'hc76c51a3 ws$4830$43 in
+      let states$4729$45 = cry$sha256Block$0.round$4 states$4729$44 32'hd192e819 ws$4830$44 in
+      let states$4729$46 = cry$sha256Block$0.round$4 states$4729$45 32'hd6990624 ws$4830$45 in
+      let states$4729$47 = cry$sha256Block$0.round$4 states$4729$46 32'hf40e3585 ws$4830$46 in
+      let states$4729$48 = cry$sha256Block$0.round$4 states$4729$47 32'h106aa070 ws$4830$47 in
+      let states$4729$49 = cry$sha256Block$0.round$4 states$4729$48 32'h19a4c116 ws$4830$48 in
+      let states$4729$50 = cry$sha256Block$0.round$4 states$4729$49 32'h1e376c08 ws$4830$49 in
+      let states$4729$51 = cry$sha256Block$0.round$4 states$4729$50 32'h2748774c ws$4830$50 in
+      let states$4729$52 = cry$sha256Block$0.round$4 states$4729$51 32'h34b0bcb5 ws$4830$51 in
+      let states$4729$53 = cry$sha256Block$0.round$4 states$4729$52 32'h391c0cb3 ws$4830$52 in
+      let states$4729$54 = cry$sha256Block$0.round$4 states$4729$53 32'h4ed8aa4a ws$4830$53 in
+      let states$4729$55 = cry$sha256Block$0.round$4 states$4729$54 32'h5b9cca4f ws$4830$54 in
+      let states$4729$56 = cry$sha256Block$0.round$4 states$4729$55 32'h682e6ff3 ws$4830$55 in
+      let states$4729$57 = cry$sha256Block$0.round$4 states$4729$56 32'h748f82ee ws$4830$56 in
+      let states$4729$58 = cry$sha256Block$0.round$4 states$4729$57 32'h78a5636f ws$4830$57 in
+      let states$4729$59 = cry$sha256Block$0.round$4 states$4729$58 32'h84c87814 ws$4830$58 in
+      let states$4729$60 = cry$sha256Block$0.round$4 states$4729$59 32'h8cc70208 ws$4830$59 in
+      let states$4729$61 = cry$sha256Block$0.round$4 states$4729$60 32'h90befffa ws$4830$60 in
+      let states$4729$62 = cry$sha256Block$0.round$4 states$4729$61 32'ha4506ceb ws$4830$61 in
+      let states$4729$63 = cry$sha256Block$0.round$4 states$4729$62 32'hbef9a3f7 ws$4830$62 in
+      let states$4729$64 = cry$sha256Block$0.round$4 states$4729$63 32'hc67178f2 ws$4830$63 in
+      add states$4729$64[224 +: 32] 32'h6a09e667 # add states$4729$64[192 +: 32] 32'hbb67ae85 # add states$4729$64[160 +: 32] 32'h3c6ef372 # add states$4729$64[128 +: 32] 32'ha54ff53a # add states$4729$64[96 +: 32] 32'h510e527f # add states$4729$64[64 +: 32] 32'h9b05688c # add states$4729$64[32 +: 32] 32'h1f83d9ab # add states$4729$64[0 +: 32] 32'h5be0cd19
+
+device top_level
+      input __in0 : [512]
+      output __out0 : [256]
+      let $res = main.$dispatch __in0
+      __out0 := $res

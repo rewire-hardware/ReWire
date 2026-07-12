@@ -159,6 +159,7 @@ data-files:
     tests/golden/SecMemCon.hs
     tests/golden/Sha256.hs
     tests/golden/Sha256_2.hs
+    tests/golden/sha256ffi.hs
     tests/golden/signalFirst.hs
     tests/golden/sigNothing.hs
     tests/golden/state.hs
@@ -235,6 +236,7 @@ data-files:
     tests/golden/SecMemCon.sv
     tests/golden/Sha256.sv
     tests/golden/Sha256_2.sv
+    tests/golden/sha256ffi.sv
     tests/golden/signalFirst.sv
     tests/golden/sigNothing.sv
     tests/golden/state.sv
@@ -311,6 +313,7 @@ data-files:
     tests/golden/SecMemCon.rwc
     tests/golden/Sha256.rwc
     tests/golden/Sha256_2.rwc
+    tests/golden/sha256ffi.rwc
     tests/golden/signalFirst.rwc
     tests/golden/sigNothing.rwc
     tests/golden/state.rwc
@@ -387,6 +390,7 @@ data-files:
     tests/golden/SecMemCon.vhdl
     tests/golden/Sha256.vhdl
     tests/golden/Sha256_2.vhdl
+    tests/golden/sha256ffi.vhdl
     tests/golden/signalFirst.vhdl
     tests/golden/sigNothing.vhdl
     tests/golden/state.vhdl
@@ -462,6 +466,7 @@ data-files:
     tests/golden/SecMemCon.cry
     tests/golden/Sha256.cry
     tests/golden/Sha256_2.cry
+    tests/golden/sha256ffi.cry
     tests/golden/signalFirst.cry
     tests/golden/sigNothing.cry
     tests/golden/state.cry
@@ -495,6 +500,7 @@ data-files:
     tests/golden/cry/crysbox.cry
     tests/golden/cry/cryseq.cry
     tests/golden/cry/cryzw.cry
+    tests/golden/cry/sha256.cry
     tests/golden/case1.yaml
     tests/golden/case2.yaml
     tests/golden/caseBindBug.input.yaml
@@ -580,6 +586,8 @@ data-files:
     tests/golden/SecMemCon.yaml
     tests/golden/Sha256.input.yaml
     tests/golden/Sha256.yaml
+    tests/golden/sha256ffi.input.yaml
+    tests/golden/sha256ffi.yaml
     tests/golden/signalFirst.input.yaml
     tests/golden/signalFirst.yaml
     tests/golden/sigNothing.input.yaml
