@@ -1,32 +1,40 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([1024], [1]) -> [2048]
 main.$dispatch disc i =
-      main.$L.$x7$843 i disc
+      main.$x2 i disc
 
-main.$L.$x7$843 : ([1], [1024]) -> [2048]
-main.$L.$x7$843 $x s0 =
-      main.$L.Main.nopipeline4$839 $x s0
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([1], [1024]) -> [2048]
+main.$x2 $x s0 =
+      main.nopipeline $x s0
 
-main.$L.x6$841 : ([1024], [1024]) -> [2048]
-main.$L.x6$841 x s0 =
+--| block '$L.x2' of process main
+main.x2 : ([1024], [1024]) -> [2048]
+main.x2 x s0 =
       x # s0
 
-main.$L._unused5$840 : ([1024]) -> [2048]
-main.$L._unused5$840 s0 =
-      main.$L.x6$841 s0 s0
-
-main.$L.x8$845 : ([1024], [1024]) -> [2048]
-main.$L.x8$845 x s0 =
+--| block '$L.x3' of process main
+main.x3 : ([1024], [1024]) -> [2048]
+main.x3 x s0 =
       let $a = Main.round x in
-      main.$L._unused5$840 $a
+      main.arm2 $a
 
-main.$L.arm9$847 : ([1024]) -> [2048]
-main.$L.arm9$847 s0 =
-      main.$L.x8$845 s0 s0
+--| block '$L.arm' of process main
+main.arm : ([1024]) -> [2048]
+main.arm s0 =
+      main.x3 s0 s0
 
-main.$L.Main.nopipeline4$839 : ([1], [1024]) -> [2048]
-main.$L.Main.nopipeline4$839 ds s0 =
-      if eq ds 1'h0 then main.$L.arm9$847 s0
-            else main.$L._unused5$840 s0
+--| block '$L.arm2' of process main
+--| also: main._unused
+main.arm2 : ([1024]) -> [2048]
+main.arm2 s0 =
+      main.x2 s0 s0
+
+--| block '$L.Main.nopipeline' of process main
+main.nopipeline : ([1], [1024]) -> [2048]
+main.nopipeline $ds s0 =
+      if not $ds then main.arm s0
+            else main.arm2 s0
 
 Main.explode5 : ([5]) -> [5]
 Main.explode5 w5 =
@@ -40,37 +48,37 @@ Main.rotaccess s f32 =
 
 Main.rot : ([32], [1024], [5]) -> [32]
 Main.rot rc s f32 =
-      let ds = Main.rotaccess s f32 in
-      let w0 = (let w0 = ds[0 +: 32] in
+      let $ds = Main.rotaccess s f32 in
+      let w0 = (let w0 = $ds[0 +: 32] in
       w0) in
-      let $t0 = (let h = ds[32 +: 1] in
+      let $t0 = (let h = $ds[32 +: 1] in
       h) in
-      if eq $t0 1'h0 then or (shl w0 rc) (lshr w0 (sub 32'h20 rc))
+      if not $t0 then or (shl w0 rc) (lshr w0 (sub 32'h20 rc))
             else w0
 
 Main.accesses : ([1024], [5]) -> [65]
 Main.accesses s f32 =
-      let ds = Main.explode5 f32 in
-      let j = (let j = ds[3 +: 1] in
+      let $ds = Main.explode5 f32 in
+      let j = (let j = $ds[3 +: 1] in
       j) in
-      let k = (let k = ds[2 +: 1] in
+      let k = (let k = $ds[2 +: 1] in
       k) in
-      let l = (let l = ds[1 +: 1] in
+      let l = (let l = $ds[1 +: 1] in
       l) in
-      let m = (let m = ds[0 +: 1] in
+      let m = (let m = $ds[0 +: 1] in
       m) in
-      (let h = ds[4 +: 1] in
+      (let h = $ds[4 +: 1] in
       h) # trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h0 # j # k # l # m))) 128'h1) 128'h20)) # trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # l # m))) 128'h1) 128'h20))
 
 Main.addix : ([1024], [5]) -> [32]
 Main.addix s f32 =
-      let ds = Main.accesses s f32 in
-      let v0 = (let v0 = ds[32 +: 32] in
+      let $ds = Main.accesses s f32 in
+      let v0 = (let v0 = $ds[32 +: 32] in
       v0) in
-      let $t0 = (let h = ds[64 +: 1] in
+      let $t0 = (let h = $ds[64 +: 1] in
       h) in
-      if eq $t0 1'h0 then v0
-            else add v0 (let v1 = ds[0 +: 32] in
+      if not $t0 then v0
+            else add v0 (let v1 = $ds[0 +: 32] in
             v1)
 
 Main.add : ([1024]) -> [1024]
@@ -79,27 +87,24 @@ Main.add s =
 
 Main.swapix1 : ([1024], [5]) -> [32]
 Main.swapix1 s f32 =
-      let ds = Main.explode5 f32 in
-      let b1 = (let b1 = ds[4 +: 1] in
+      let $ds = Main.explode5 f32 in
+      let b1 = (let b1 = $ds[4 +: 1] in
       b1) in
-      let b2 = (let b2 = ds[3 +: 1] in
+      let b2 = (let b2 = $ds[3 +: 1] in
       b2) in
-      let k = (let k = ds[2 +: 1] in
+      let k = (let k = $ds[2 +: 1] in
       k) in
-      let l = (let l = ds[1 +: 1] in
+      let l = (let l = $ds[1 +: 1] in
       l) in
-      let m = (let m = ds[0 +: 1] in
+      let m = (let m = $ds[0 +: 1] in
       m) in
-      let $t1 = (let $t0 = (if eq b1 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t0 1'h1 then b2
+      let $t1 = (let $t0 = not b1 in
+      if $t0 then b2
             else 1'h0) in
-      if eq $t1 1'h0 then (let $t3 = (let $t2 = (if eq b1 1'h1 then 1'h0
-                  else 1'h1) in
-            if eq $t2 1'h1 then (if eq b2 1'h1 then 1'h0
-                        else 1'h1)
+      if not $t1 then (let $t3 = (let $t2 = not b1 in
+            if $t2 then not b2
                   else 1'h0) in
-            if eq $t3 1'h0 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
+            if not $t3 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
                   else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (2'h1 # k # l # m))) 128'h1) 128'h20)))
             else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (2'h0 # k # l # m))) 128'h1) 128'h20))
 
@@ -109,23 +114,22 @@ Main.swap1 s =
 
 Main.swapix2 : ([1024], [5]) -> [32]
 Main.swapix2 s f32 =
-      let ds = Main.explode5 f32 in
-      let b1 = (let b1 = ds[4 +: 1] in
+      let $ds = Main.explode5 f32 in
+      let b1 = (let b1 = $ds[4 +: 1] in
       b1) in
-      let j = (let j = ds[3 +: 1] in
+      let j = (let j = $ds[3 +: 1] in
       j) in
-      let k = (let k = ds[2 +: 1] in
+      let k = (let k = $ds[2 +: 1] in
       k) in
-      let b2 = (let b2 = ds[1 +: 1] in
+      let b2 = (let b2 = $ds[1 +: 1] in
       b2) in
-      let m = (let m = ds[0 +: 1] in
+      let m = (let m = $ds[0 +: 1] in
       m) in
-      let $t0 = (if eq b1 1'h1 then (if eq b2 1'h1 then 1'h0
-                  else 1'h1)
+      let $t0 = (if b1 then not b2
             else 1'h0) in
-      if eq $t0 1'h0 then (let $t1 = (if eq b1 1'h1 then b2
+      if not $t0 then (let $t1 = (if b1 then b2
                   else 1'h0) in
-            if eq $t1 1'h0 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
+            if not $t1 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
                   else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # 1'h0 # m))) 128'h1) 128'h20)))
             else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # 1'h1 # m))) 128'h1) 128'h20))
 
@@ -135,27 +139,24 @@ Main.swap2 s =
 
 Main.swapix3 : ([1024], [5]) -> [32]
 Main.swapix3 s f32 =
-      let ds = Main.explode5 f32 in
-      let b1 = (let b1 = ds[4 +: 1] in
+      let $ds = Main.explode5 f32 in
+      let b1 = (let b1 = $ds[4 +: 1] in
       b1) in
-      let j = (let j = ds[3 +: 1] in
+      let j = (let j = $ds[3 +: 1] in
       j) in
-      let b2 = (let b2 = ds[2 +: 1] in
+      let b2 = (let b2 = $ds[2 +: 1] in
       b2) in
-      let l = (let l = ds[1 +: 1] in
+      let l = (let l = $ds[1 +: 1] in
       l) in
-      let m = (let m = ds[0 +: 1] in
+      let m = (let m = $ds[0 +: 1] in
       m) in
-      let $t1 = (let $t0 = (if eq b1 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t0 1'h1 then (if eq b2 1'h1 then 1'h0
-                  else 1'h1)
+      let $t1 = (let $t0 = not b1 in
+      if $t0 then not b2
             else 1'h0) in
-      if eq $t1 1'h0 then (let $t3 = (let $t2 = (if eq b1 1'h1 then 1'h0
-                  else 1'h1) in
-            if eq $t2 1'h1 then b2
+      if not $t1 then (let $t3 = (let $t2 = not b1 in
+            if $t2 then b2
                   else 1'h0) in
-            if eq $t3 1'h0 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
+            if not $t3 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
                   else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h0 # j # 1'h0 # l # m))) 128'h1) 128'h20)))
             else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h0 # j # 1'h1 # l # m))) 128'h1) 128'h20))
 
@@ -165,23 +166,22 @@ Main.swap3 s =
 
 Main.swapix4 : ([1024], [5]) -> [32]
 Main.swapix4 s f32 =
-      let ds = Main.explode5 f32 in
-      let b1 = (let b1 = ds[4 +: 1] in
+      let $ds = Main.explode5 f32 in
+      let b1 = (let b1 = $ds[4 +: 1] in
       b1) in
-      let j = (let j = ds[3 +: 1] in
+      let j = (let j = $ds[3 +: 1] in
       j) in
-      let k = (let k = ds[2 +: 1] in
+      let k = (let k = $ds[2 +: 1] in
       k) in
-      let l = (let l = ds[1 +: 1] in
+      let l = (let l = $ds[1 +: 1] in
       l) in
-      let b2 = (let b2 = ds[0 +: 1] in
+      let b2 = (let b2 = $ds[0 +: 1] in
       b2) in
-      let $t0 = (if eq b1 1'h1 then (if eq b2 1'h1 then 1'h0
-                  else 1'h1)
+      let $t0 = (if b1 then not b2
             else 1'h0) in
-      if eq $t0 1'h0 then (let $t1 = (if eq b1 1'h1 then b2
+      if not $t0 then (let $t1 = (if b1 then b2
                   else 1'h0) in
-            if eq $t1 1'h0 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
+            if not $t1 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
                   else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # l # 1'h0))) 128'h1) 128'h20)))
             else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # l # 1'h1))) 128'h1) 128'h20))
 
@@ -191,21 +191,20 @@ Main.swap4 s =
 
 Main.xorix : ([1024], [5]) -> [32]
 Main.xorix s f32 =
-      let ds = Main.explode5 f32 in
-      let j = (let j = ds[3 +: 1] in
+      let $ds = Main.explode5 f32 in
+      let j = (let j = $ds[3 +: 1] in
       j) in
-      let k = (let k = ds[2 +: 1] in
+      let k = (let k = $ds[2 +: 1] in
       k) in
-      let l = (let l = ds[1 +: 1] in
+      let l = (let l = $ds[1 +: 1] in
       l) in
-      let m = (let m = ds[0 +: 1] in
+      let m = (let m = $ds[0 +: 1] in
       m) in
       let i1 = 1'h1 # j # k # l # m in
-      let $t1 = (let $t0 = (let h = ds[4 +: 1] in
+      let $t1 = (let $t0 = (let h = $ds[4 +: 1] in
       h) in
-      if eq $t0 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t1 1'h0 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 i1)) 128'h1) 128'h20))
+      not $t0) in
+      if not $t1 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 i1)) 128'h1) 128'h20))
             else xor (trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h0 # j # k # l # m))) 128'h1) 128'h20))) (trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 i1)) 128'h1) 128'h20)))
 
 Main.xor : ([1024]) -> [1024]
@@ -214,20 +213,23 @@ Main.xor s =
 
 Main.round : ([1024]) -> [1024]
 Main.round x =
-      Main.swap4 (Main.xor (Main.swap3 (Main.rotate$s1 (Main.add (Main.swap2 (Main.xor (Main.swap1 (Main.rotate$s2 (Main.add x)))))))))
+      Main.swap4 (Main.xor (Main.swap3 (Main.rotate$s576d2c1d (Main.add (Main.swap2 (Main.xor (Main.swap1 (Main.rotate$sbaca246a (Main.add x)))))))))
 
-Main.rotate$s1 : ([1024]) -> [1024]
-Main.rotate$s1 s =
+--| partially applied from 'Main.rotate'
+Main.rotate$s576d2c1d : ([1024]) -> [1024]
+Main.rotate$s576d2c1d s =
       Main.rot 32'hb s 5'h0 # Main.rot 32'hb s 5'h1 # Main.rot 32'hb s 5'h2 # Main.rot 32'hb s 5'h3 # Main.rot 32'hb s 5'h4 # Main.rot 32'hb s 5'h5 # Main.rot 32'hb s 5'h6 # Main.rot 32'hb s 5'h7 # Main.rot 32'hb s 5'h8 # Main.rot 32'hb s 5'h9 # Main.rot 32'hb s 5'ha # Main.rot 32'hb s 5'hb # Main.rot 32'hb s 5'hc # Main.rot 32'hb s 5'hd # Main.rot 32'hb s 5'he # Main.rot 32'hb s 5'hf # Main.rot 32'hb s 5'h10 # Main.rot 32'hb s 5'h11 # Main.rot 32'hb s 5'h12 # Main.rot 32'hb s 5'h13 # Main.rot 32'hb s 5'h14 # Main.rot 32'hb s 5'h15 # Main.rot 32'hb s 5'h16 # Main.rot 32'hb s 5'h17 # Main.rot 32'hb s 5'h18 # Main.rot 32'hb s 5'h19 # Main.rot 32'hb s 5'h1a # Main.rot 32'hb s 5'h1b # Main.rot 32'hb s 5'h1c # Main.rot 32'hb s 5'h1d # Main.rot 32'hb s 5'h1e # Main.rot 32'hb s 5'h1f
 
-Main.rotate$s2 : ([1024]) -> [1024]
-Main.rotate$s2 s =
+--| partially applied from 'Main.rotate'
+Main.rotate$sbaca246a : ([1024]) -> [1024]
+Main.rotate$sbaca246a s =
       Main.rot 32'h7 s 5'h0 # Main.rot 32'h7 s 5'h1 # Main.rot 32'h7 s 5'h2 # Main.rot 32'h7 s 5'h3 # Main.rot 32'h7 s 5'h4 # Main.rot 32'h7 s 5'h5 # Main.rot 32'h7 s 5'h6 # Main.rot 32'h7 s 5'h7 # Main.rot 32'h7 s 5'h8 # Main.rot 32'h7 s 5'h9 # Main.rot 32'h7 s 5'ha # Main.rot 32'h7 s 5'hb # Main.rot 32'h7 s 5'hc # Main.rot 32'h7 s 5'hd # Main.rot 32'h7 s 5'he # Main.rot 32'h7 s 5'hf # Main.rot 32'h7 s 5'h10 # Main.rot 32'h7 s 5'h11 # Main.rot 32'h7 s 5'h12 # Main.rot 32'h7 s 5'h13 # Main.rot 32'h7 s 5'h14 # Main.rot 32'h7 s 5'h15 # Main.rot 32'h7 s 5'h16 # Main.rot 32'h7 s 5'h17 # Main.rot 32'h7 s 5'h18 # Main.rot 32'h7 s 5'h19 # Main.rot 32'h7 s 5'h1a # Main.rot 32'h7 s 5'h1b # Main.rot 32'h7 s 5'h1c # Main.rot 32'h7 s 5'h1d # Main.rot 32'h7 s 5'h1e # Main.rot 32'h7 s 5'h1f
 
 device top_level
       input __in0 : [1]
       output __out0 : [1024]
       register __st0 : [1024] init 1024'h2000000001000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+      tag $x2 = 0
       let $res = main.$dispatch __st0 __in0
       __out0 := $res[1024 +: 1024]
       next __st0 := $res[0 +: 1024]

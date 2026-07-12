@@ -6,8 +6,8 @@ module ReWire.FrontEnd
       , compileFile
       ) where
 
-import ReWire.Annotation (noAnn)
-import ReWire.Config (Config, Language (..), getOutFile, target, cycles, inputsFile, defaultInputsFile, source, rtlOpt, testbench, pDebug, loadPath)
+import ReWire.Annotation (noAnn, unAnn)
+import ReWire.Config (Config, Language (..), getOutFile, target, cycles, inputsFile, defaultInputsFile, source, rtlOpt, testbench, pDebug, loadPath, locators, noLocators)
 import ReWire.Error (MonadError, AstError, runSyntaxError, failAt, warnAt, printError, relocatingNoLocTo, filePath)
 import ReWire.Hyle.Interp (Ins, run)
 import ReWire.Hyle.Parse (parseHyle)
@@ -77,7 +77,14 @@ compileFile conf filename = do
                               HyleV.compileProgram conf p' >>= writeOutput
                               writeTestbench $ HyleV.testbench conf $ progDevice p'
                         Cryptol   -> HyleCry.compileProgram conf p >>= writeOutput
-                        RWCore    -> writeOutput p
+                        -- The .rwc output only carries source locators
+                        -- ('--@' lines) under --locators (and not under
+                        -- --no-locators, which wins): spans can embed
+                        -- absolute paths, which would destabilize golden
+                        -- files. Doc ('--|') and 'tag' lines are path-free
+                        -- and not gated.
+                        RWCore    | conf^.locators && not (conf^.noLocators) -> writeOutput p
+                                  | otherwise                                -> writeOutput $ scrubSpans p
                         Interpret -> do
                               ips  <- loadInputs
                               verb $ "Interpreting hyle: running for " <> showt (length ips) <> " cycles."
@@ -122,6 +129,12 @@ compileFile conf filename = do
 
             verb :: MonadIO m => Text -> m ()
             verb = pDebug conf
+
+-- | Strip all provenance from the program's annotations (a generic sweep;
+--   Hyle types derive Data) so the printed .rwc carries no '--@' locator
+--   lines.
+scrubSpans :: Program -> Program
+scrubSpans = unAnn
 
 -- | The number of cycles to interpret/simulate: the explicit --cycles value if
 --   the user gave one, otherwise the larger of 10 or the number of inputs

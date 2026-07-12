@@ -1,56 +1,59 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([16]) -> [8]
 main.$dispatch i =
-      main.$L.$x4$279 i
+      main.$x2 i
 
-main.$L.$x4$279 : ([16]) -> [8]
-main.$L.$x4$279 $x =
-      main.$L.ReWire.Monad.iter$1$s23$277 $x
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([16]) -> [8]
+main.$x2 $x =
+      main.iter$W8W8$W8$sMain_go $x
 
-main.$L.ReWire.Monad.iter$1$s23$277 : ([16]) -> [8]
-main.$L.ReWire.Monad.iter$1$s23$277 i =
+--| block '$L.ReWire.Monad.iter$W8W8$W8$sMain_go' of process main
+main.iter$W8W8$W8$sMain_go : ([16]) -> [8]
+main.iter$W8W8$W8$sMain_go i =
       let $a = Main.go i in
       $a
 
 Main.schedw : ([8], [8]) -> [8]
 Main.schedw $eta0 $eta1 =
-      cry$schedw$0 $eta0 $eta1
+      cry$schedw$8_8_8 $eta0 $eta1
 
 Main.keyw : ([8], [8]) -> [8]
 Main.keyw $eta0 $eta1 =
-      cry$keyw$1 $eta0 $eta1
+      cry$keyw$8_8_8 $eta0 $eta1
 
 Main.cbcw : ([8], [8]) -> [8]
 Main.cbcw $eta0 $eta1 =
-      cry$cbcw$2 $eta0 $eta1
+      cry$cbcw$8_8_8 $eta0 $eta1
 
 Main.updw : ([8], [8]) -> [8]
 Main.updw $eta0 $eta1 =
-      cry$updw$3 $eta0 $eta1
+      cry$updw$8_8_8 $eta0 $eta1
 
 Main.scansw : ([8], [8]) -> [8]
 Main.scansw $eta0 $eta1 =
-      cry$scansw$4 $eta0 $eta1
+      cry$scansw$8_8_8 $eta0 $eta1
 
 Main.sdivs : ([8], [8]) -> [8]
 Main.sdivs $eta0 $eta1 =
-      cry$sdivs$5 $eta0 $eta1
+      cry$sdivs$8_8_8 $eta0 $eta1
 
 Main.crc : ([8]) -> [8]
 Main.crc $eta0 =
-      cry$crc$6 $eta0
+      cry$crc$8_8 $eta0
 
 Main.tspw : ([8]) -> [8]
 Main.tspw $eta0 =
-      cry$tspw$7 $eta0
+      cry$tspw$8_8 $eta0
 
 Main.go : ([16]) -> [8]
-Main.go ds =
-      let a = ds[8 +: 8] in
-      let b = ds[0 +: 8] in
+Main.go $ds =
+      let a = $ds[8 +: 8] in
+      let b = $ds[0 +: 8] in
       xor (add (add (add (add (add (add (Main.schedw a b) (Main.keyw a b)) (Main.cbcw a b)) (Main.updw a b)) (Main.scansw a b)) (Main.sdivs a b)) (Main.crc a)) (add (Main.tspw b) 8'h38)
 
-cry$schedw$0.sched$0 : ([64]) -> [16]
-cry$schedw$0.sched$0 m$0 =
+cry$schedw$8_8_8.sched$0 : ([64]) -> [16]
+cry$schedw$8_8_8.sched$0 m$0 =
       let ws$4734$3 = m$0[0 +: 16] in
       let ws$4734$5 = xor (m$0[32 +: 13] # m$0[45 +: 3]) (add (add (m$0[0 +: 2] # m$0[2 +: 14]) (lshr ws$4734$3 1'h1)) 16'h5) in
       let ws$4734$7 = xor (m$0[0 +: 13] # m$0[13 +: 3]) (add (add (ws$4734$5[0 +: 2] # ws$4734$5[2 +: 14]) (lshr ws$4734$5 1'h1)) 16'h7) in
@@ -58,12 +61,13 @@ cry$schedw$0.sched$0 m$0 =
       let ws$4734$11 = xor (ws$4734$7[0 +: 13] # ws$4734$7[13 +: 3]) (add (add (ws$4734$9[0 +: 2] # ws$4734$9[2 +: 14]) (lshr ws$4734$9 1'h1)) 16'hb) in
       ws$4734$11
 
-cry$schedw$0 : ([8], [8]) -> [8]
-cry$schedw$0 a$0 b$1 =
-      (cry$schedw$0.sched$0 (a$0 # b$1 # b$1 # a$0 # add a$0 8'h1 # b$1 # a$0 # add b$1 8'h1))[0 +: 8]
+--| cryptol cry/cryseq.cry::schedw at [8] -> [8] -> [8]
+cry$schedw$8_8_8 : ([8], [8]) -> [8]
+cry$schedw$8_8_8 a$0 b$1 =
+      (cry$schedw$8_8_8.sched$0 (a$0 # b$1 # b$1 # a$0 # add a$0 8'h1 # b$1 # a$0 # add b$1 8'h1))[0 +: 8]
 
-cry$keyw$1.keyexp$0 : ([16]) -> [8]
-cry$keyw$1.keyexp$0 k$0 =
+cry$keyw$8_8_8.keyexp$0 : ([16]) -> [8]
+cry$keyw$8_8_8.keyexp$0 k$0 =
       let ws$4733$1 = k$0[0 +: 8] in
       let ws$4733$0 = k$0[8 +: 8] in
       let ws$4733$2 = xor ws$4733$0 (add ws$4733$1 8'h2) in
@@ -72,38 +76,41 @@ cry$keyw$1.keyexp$0 k$0 =
       let ws$4733$5 = xor ws$4733$3 (add ws$4733$4 8'h5) in
       ws$4733$5
 
-cry$keyw$1 : ([8], [8]) -> [8]
-cry$keyw$1 a$0 b$1 =
-      cry$keyw$1.keyexp$0 (a$0 # b$1)
+--| cryptol cry/cryseq.cry::keyw at [8] -> [8] -> [8]
+cry$keyw$8_8_8 : ([8], [8]) -> [8]
+cry$keyw$8_8_8 a$0 b$1 =
+      cry$keyw$8_8_8.keyexp$0 (a$0 # b$1)
 
-cry$cbcw$2.last$0 : ([32]) -> [8]
-cry$cbcw$2.last$0 xs$0 =
+cry$cbcw$8_8_8.last$0 : ([32]) -> [8]
+cry$cbcw$8_8_8.last$0 xs$0 =
       xs$0[0 +: 8]
 
-cry$cbcw$2.cbc$1 : ([24], [8]) -> [8]
-cry$cbcw$2.cbc$1 pts$0 iv$1 =
+cry$cbcw$8_8_8.cbc$1 : ([24], [8]) -> [8]
+cry$cbcw$8_8_8.cbc$1 pts$0 iv$1 =
       let cts$4735$1 = add (xor pts$0[16 +: 8] iv$1) 8'h1 in
       let cts$4735$2 = add (xor pts$0[8 +: 8] cts$4735$1) 8'h1 in
       let cts$4735$3 = add (xor pts$0[0 +: 8] cts$4735$2) 8'h1 in
-      cry$cbcw$2.last$0 (iv$1 # cts$4735$1 # cts$4735$2 # cts$4735$3)
+      cry$cbcw$8_8_8.last$0 (iv$1 # cts$4735$1 # cts$4735$2 # cts$4735$3)
 
-cry$cbcw$2 : ([8], [8]) -> [8]
-cry$cbcw$2 a$0 b$1 =
-      cry$cbcw$2.cbc$1 (a$0 # b$1 # add a$0 b$1) (xor a$0 b$1)
+--| cryptol cry/cryseq.cry::cbcw at [8] -> [8] -> [8]
+cry$cbcw$8_8_8 : ([8], [8]) -> [8]
+cry$cbcw$8_8_8 a$0 b$1 =
+      cry$cbcw$8_8_8.cbc$1 (a$0 # b$1 # add a$0 b$1) (xor a$0 b$1)
 
-cry$updw$3.upd$0 : ([32], [2], [8]) -> [8]
-cry$updw$3.upd$0 xs$0 i$1 v$2 =
+cry$updw$8_8_8.upd$0 : ([32], [2], [8]) -> [8]
+cry$updw$8_8_8.upd$0 xs$0 i$1 v$2 =
       xor (xor (xor (xor 8'h0 (if eq i$1 2'h0 then v$2
             else xs$0[24 +: 8])) (if eq i$1 2'h1 then v$2
             else xs$0[16 +: 8])) (add v$2 8'h1)) (if eq i$1 2'h3 then v$2
             else xs$0[0 +: 8])
 
-cry$updw$3 : ([8], [8]) -> [8]
-cry$updw$3 a$0 b$1 =
-      cry$updw$3.upd$0 (a$0 # b$1 # add a$0 b$1 # sub a$0 b$1) b$1[0 +: 2] (xor a$0 b$1)
+--| cryptol cry/cryseq.cry::updw at [8] -> [8] -> [8]
+cry$updw$8_8_8 : ([8], [8]) -> [8]
+cry$updw$8_8_8 a$0 b$1 =
+      cry$updw$8_8_8.upd$0 (a$0 # b$1 # add a$0 b$1 # sub a$0 b$1) b$1[0 +: 2] (xor a$0 b$1)
 
-cry$scansw$4.scans$0 : ([32]) -> [8]
-cry$scansw$4.scans$0 xs$0 =
+cry$scansw$8_8_8.scans$0 : ([32]) -> [8]
+cry$scansw$8_8_8.scans$0 xs$0 =
       xor (xor (xor (xor (xor 8'h0 (let fold$0$1 = add 8'h1 xs$0[24 +: 8] in
       let fold$0$2 = add fold$0$1 xs$0[16 +: 8] in
       let fold$0$3 = add fold$0$2 xs$0[8 +: 8] in
@@ -126,12 +133,14 @@ cry$scansw$4.scans$0 xs$0 =
       let fold$0$4 = add fold$0$3 xs$0[0 +: 8] in
       8'h1 # fold$0$1 # fold$0$2 # fold$0$3 # fold$0$4)[0 +: 8]
 
-cry$scansw$4 : ([8], [8]) -> [8]
-cry$scansw$4 a$0 b$1 =
-      cry$scansw$4.scans$0 (a$0 # b$1 # add a$0 b$1 # xor a$0 b$1)
+--| cryptol cry/cryseq.cry::scansw at [8] -> [8] -> [8]
+cry$scansw$8_8_8 : ([8], [8]) -> [8]
+cry$scansw$8_8_8 a$0 b$1 =
+      cry$scansw$8_8_8.scans$0 (a$0 # b$1 # add a$0 b$1 # xor a$0 b$1)
 
-cry$sdivs$5 : ([8], [8]) -> [8]
-cry$sdivs$5 a$0 b$1 =
+--| cryptol cry/cryseq.cry::sdivs at [8] -> [8] -> [8]
+cry$sdivs$8_8_8 : ([8], [8]) -> [8]
+cry$sdivs$8_8_8 a$0 b$1 =
       let nz$4733 = (if eq b$1 8'h0 then 8'h1
             else b$1) in
       add (add (if xor (slt a$0 8'h0) (slt nz$4733 8'h0) then sub 8'h0 (udiv (if slt a$0 8'h0 then sub 8'h0 a$0
@@ -147,18 +156,21 @@ cry$sdivs$5 a$0 b$1 =
                   else nz$4733))) (if ule b$1 8'h1 then 8'h0
             else if ule b$1 8'h2 then 8'h1 else if ule b$1 8'h4 then 8'h2 else if ule b$1 8'h8 then 8'h3 else if ule b$1 8'h10 then 8'h4 else if ule b$1 8'h20 then 8'h5 else if ule b$1 8'h40 then 8'h6 else if ule b$1 8'h80 then 8'h7 else 8'h8)
 
-cry$crc$6 : ([8]) -> [8]
-cry$crc$6 d$0 =
+--| cryptol cry/cryseq.cry::crc at [8] -> [8]
+cry$crc$8_8 : ([8]) -> [8]
+cry$crc$8_8 d$0 =
       xor (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[7 +: 1] 1'h0) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[14 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[12 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[11 +: 1] 1'h0) 1'h0) 1'h0) 1'h0) # xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[6 +: 1] (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[14 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[13 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[11 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[10 +: 1] 1'h0) 1'h0) 1'h0) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[14 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) # xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[5 +: 1] (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[13 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[12 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[10 +: 1] 1'h0) 1'h0) 1'h0) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[14 +: 1] 1'h0) 1'h0) 1'h0) 1'h0))) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[9 +: 1] 1'h0) 1'h0) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[14 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[13 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) # xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[4 +: 1] (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[12 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[11 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[9 +: 1] 1'h0) 1'h0) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[14 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[13 +: 1] 1'h0) 1'h0) 1'h0) 1'h0))) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[8 +: 1] 1'h0) 1'h0) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[13 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[12 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) # xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[3 +: 1] (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[11 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[10 +: 1] 1'h0) 1'h0) 1'h0) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[14 +: 1] 1'h0) 1'h0) 1'h0) 1'h0))) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[8 +: 1] 1'h0) 1'h0) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[13 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[12 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) # xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[2 +: 1] (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[10 +: 1] 1'h0) 1'h0) 1'h0) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[14 +: 1] 1'h0) 1'h0) 1'h0) 1'h0))) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[9 +: 1] 1'h0) 1'h0) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[14 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[13 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) # xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[1 +: 1] (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[9 +: 1] 1'h0) 1'h0) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[14 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[13 +: 1] 1'h0) 1'h0) 1'h0) 1'h0))) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[8 +: 1] 1'h0) 1'h0) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[13 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[12 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) # xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[0 +: 1] (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[8 +: 1] 1'h0) 1'h0) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[13 +: 1] 1'h0) 1'h0) 1'h0) 1'h0)) (xor (xor (xor (xor (xor (7'h0 # d$0) (xor (6'h0 # d$0 # 1'h0) (xor 15'h0 (xor (4'h0 # d$0 # 3'h0) (xor (3'h0 # d$0 # 4'h0) 15'h0)))))[12 +: 1] 1'h0) 1'h0) 1'h0) 1'h0))) (2'h0 # xor (xor d$0[7 +: 1] 1'h0) 1'h0 # xor (xor d$0[6 +: 1] 1'h0) (xor (xor d$0[7 +: 1] 1'h0) 1'h0) # xor (xor d$0[5 +: 1] (xor (xor d$0[7 +: 1] 1'h0) 1'h0)) (xor (xor d$0[6 +: 1] 1'h0) (xor (xor d$0[7 +: 1] 1'h0) 1'h0)) # xor (xor d$0[4 +: 1] (xor (xor d$0[6 +: 1] 1'h0) (xor (xor d$0[7 +: 1] 1'h0) 1'h0))) (xor (xor d$0[5 +: 1] (xor (xor d$0[7 +: 1] 1'h0) 1'h0)) (xor (xor d$0[6 +: 1] 1'h0) (xor (xor d$0[7 +: 1] 1'h0) 1'h0))) # xor (xor d$0[3 +: 1] (xor (xor d$0[5 +: 1] (xor (xor d$0[7 +: 1] 1'h0) 1'h0)) (xor (xor d$0[6 +: 1] 1'h0) (xor (xor d$0[7 +: 1] 1'h0) 1'h0)))) (xor (xor d$0[4 +: 1] (xor (xor d$0[6 +: 1] 1'h0) (xor (xor d$0[7 +: 1] 1'h0) 1'h0))) (xor (xor d$0[5 +: 1] (xor (xor d$0[7 +: 1] 1'h0) 1'h0)) (xor (xor d$0[6 +: 1] 1'h0) (xor (xor d$0[7 +: 1] 1'h0) 1'h0)))) # xor (xor d$0[2 +: 1] (xor (xor d$0[4 +: 1] (xor (xor d$0[6 +: 1] 1'h0) (xor (xor d$0[7 +: 1] 1'h0) 1'h0))) (xor (xor d$0[5 +: 1] (xor (xor d$0[7 +: 1] 1'h0) 1'h0)) (xor (xor d$0[6 +: 1] 1'h0) (xor (xor d$0[7 +: 1] 1'h0) 1'h0))))) (xor (xor d$0[3 +: 1] (xor (xor d$0[5 +: 1] (xor (xor d$0[7 +: 1] 1'h0) 1'h0)) (xor (xor d$0[6 +: 1] 1'h0) (xor (xor d$0[7 +: 1] 1'h0) 1'h0)))) (xor (xor d$0[4 +: 1] (xor (xor d$0[6 +: 1] 1'h0) (xor (xor d$0[7 +: 1] 1'h0) 1'h0))) (xor (xor d$0[5 +: 1] (xor (xor d$0[7 +: 1] 1'h0) 1'h0)) (xor (xor d$0[6 +: 1] 1'h0) (xor (xor d$0[7 +: 1] 1'h0) 1'h0))))))
 
-cry$tspw$7 : ([8]) -> [8]
-cry$tspw$7 x$0 =
+--| cryptol cry/cryseq.cry::tspw at [8] -> [8]
+cry$tspw$8_8 : ([8]) -> [8]
+cry$tspw$8_8 x$0 =
       x$0[7 +: 1] # x$0[3 +: 1] # x$0[6 +: 1] # x$0[2 +: 1] # x$0[5 +: 1] # x$0[1 +: 1] # x$0[4 +: 1] # x$0[0 +: 1]
 
 device top_level
       input __in0 : [8]
       input __in1 : [8]
       output __out0 : [8]
+      tag $x2 = 0
       let $in = __in0 # __in1
       let $res = main.$dispatch $in
       __out0 := $res

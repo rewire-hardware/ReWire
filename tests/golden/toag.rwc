@@ -1,31 +1,38 @@
+--| state dispatch for process main: 0=z 1=y 2=x
 main.$dispatch : ([3], [1]) -> [4]
 main.$dispatch disc i =
-      if eq disc[1 +: 2] 2'h0 then main.$L.z4$238 i
-            else if eq disc[1 +: 2] 2'h1 then main.$L.y3$237 disc[0 +: 1] i else main.$L.x2$236 i
+      if eq disc[1 +: 2] 2'h0 then main.z i
+            else if eq disc[1 +: 2] 2'h1 then main.y disc[0 +: 1] i else main.x i
 
-main.$L.z4$238 : ([1]) -> [4]
-main.$L.z4$238 z =
+--| block '$L.z' of process main (state 0)
+main.z : ([1]) -> [4]
+main.z z =
       4'h4
 
-main.$L.y3$237 : ([1], [1]) -> [4]
-main.$L.y3$237 x y =
-      let $a = (if eq y 1'h0 then (let $a = (if eq x 1'h1 then x
+--| block '$L.y' of process main (state 1)
+main.y : ([1], [1]) -> [4]
+main.y x y =
+      let $a = (if not y then (let $a = (if x then x
                   else 1'h0) in
             $a)
             else x) in
-      let $a1 = (if eq $a 1'h1 then y
+      let $a1 = (if $a then y
             else 1'h0) in
       $a1 # 3'h0
 
-main.$L.x2$236 : ([1]) -> [4]
-main.$L.x2$236 x =
-      if eq x 1'h0 then x # 2'h1 # x
+--| block '$L.x' of process main (state 2)
+main.x : ([1]) -> [4]
+main.x x =
+      if not x then x # 2'h1 # x
             else 3'h1 # x
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
       register __resumption_tag : [3] init 3'h4
+      tag z = 0
+      tag y = 1
+      tag x = 2
       let $res = main.$dispatch __resumption_tag __in0
       __out0 := $res[3 +: 1]
       next __resumption_tag := $res[0 +: 3]

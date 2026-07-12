@@ -1,31 +1,38 @@
+--| state dispatch for process main: 0=_unused2
 main.$dispatch : ([8], [1]) -> [16]
 main.$dispatch disc i =
-      main.$L._unused4$246 i disc
+      main._unused2 i disc
 
-main.$L._unused4$246 : ([1], [8]) -> [16]
-main.$L._unused4$246 _unused s0 =
-      main.$L.Main.grunt5$248 s0
+--| block '$L._unused2' of process main (state 0)
+main._unused2 : ([1], [8]) -> [16]
+main._unused2 _unused s0 =
+      main.grunt s0
 
-main.$L.x3$245 : ([8], [8]) -> [16]
-main.$L.x3$245 x s0 =
+--| block '$L.x' of process main
+main.x : ([8], [8]) -> [16]
+main.x x s0 =
       x # s0
 
-main.$L._unused2$244 : ([8]) -> [16]
-main.$L._unused2$244 s0 =
-      main.$L.x3$245 s0 s0
+--| block '$L._unused' of process main
+main._unused : ([8]) -> [16]
+main._unused s0 =
+      main.x s0 s0
 
-main.$L.$x6$250 : ([8], [8]) -> [16]
-main.$L.$x6$250 $x s0 =
-      main.$L._unused2$244 $x
+--| block '$L.$x' of process main
+main.$x : ([8], [8]) -> [16]
+main.$x $x s0 =
+      main._unused $x
 
-main.$L.Main.grunt5$248 : ([8]) -> [16]
-main.$L.Main.grunt5$248 s0 =
-      main.$L.$x6$250 s0 s0
+--| block '$L.Main.grunt' of process main
+main.grunt : ([8]) -> [16]
+main.grunt s0 =
+      main.$x s0 s0
 
 device top_level
       input __in0 : [1]
       output __out0 : [8]
       register __st0 : [8] init 8'h0
+      tag _unused2 = 0
       let $res = main.$dispatch __st0 __in0
       __out0 := $res[8 +: 8]
       next __st0 := $res[0 +: 8]

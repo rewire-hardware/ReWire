@@ -16,15 +16,16 @@
 --     is explicit here (Clash's LiftNonRep): a multi-use *function-typed*
 --     let cannot stay (it is not representable), so it is lifted to a
 --     top-level definition over its captured locals, named with the
---     retired lift's @$LL.@ prefix (the retained duplicate-merge pass
---     matches on it). Top-level references are never unfolded — the
---     function hierarchy is preserved; higher-orderness dies by argument
---     baking, not call inlining.
+--     @$LL.@ compiler-lifted prefix (display-only: the machine fold
+--     strips it when naming the Hyle definition). Top-level references
+--     are never unfolded — the function hierarchy is preserved;
+--     higher-orderness dies by argument baking, not call inlining.
 --
 --   * 'specialize' on values (the retired value-argument specializer):
 --     a call to a top-level definition with *closed* arguments (free
 --     variables all top-level) bakes those arguments into a memoized
---     clone named @f$s<i>@. Self-calls in the clone still reference the
+--     clone named from the baked-argument canon ('originTag').
+--     Self-calls in the clone still reference the
 --     origin — the memo closes recursive loops. Memo keys are
 --     alpha-canonical: arguments are renumbered from a disjoint unique
 --     supply and printed. Baking is also how non-representable scalar
@@ -41,19 +42,23 @@ module ReWire.Eidos.Simplify (simplify, purge, reduceProgram, reduceExp, SimpT, 
 import ReWire.Annotation (Annote, noAnn)
 import ReWire.Builtins (builtins)
 import ReWire.Error (AstError, MonadError, failAt)
+import ReWire.Eidos.Naming (originTag)
 import ReWire.Eidos.Pretty ()
 import ReWire.Eidos.Subst (nextUniq, instantiateDefn, refreshDefn, refreshExp, substVars, substVarsRefreshing, occCounts, freeUniqs)
 import ReWire.Eidos.Syntax
 import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, hasArrow, synthable)
-import ReWire.Pretty (prettyPrint, showt)
+import ReWire.Pretty (prettyPrint)
 
 import Control.Monad ((>=>))
 import Control.Monad.State.Strict (StateT, evalStateT, evalState, runStateT, get, put, gets, modify, lift)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
 import Data.List (sortOn)
-import Data.Maybe (isNothing, mapMaybe)
+import Data.Char (isDigit)
+import Data.Maybe (fromMaybe, isNothing, mapMaybe)
 import Data.Text (Text, intercalate)
+
+import qualified Data.Text as T
 import Numeric.Natural (Natural)
 
 import qualified Data.HashMap.Strict as Map
@@ -62,21 +67,19 @@ import qualified Data.IntMap.Strict  as IM
 import qualified Data.IntSet         as IS
 
 -- | Simplifier state: the unique supply, definitions minted this phase
---   (lifted functions and specializations, drained into the program), the
---   persistent specialization memo, and per-origin counters for clone
---   naming.
+--   (lifted functions and specializations, drained into the program), and
+--   the persistent specialization memo.
 data SimpSt = SimpSt
       { stSupply :: !Uniq
       , stNew    :: ![Defn]
       , stMemo   :: !(HashMap (Uniq, Text) Defn)
-      , stCnt    :: !(IM.IntMap Int)
       }
 
 type SimpT m = StateT SimpSt m
 
 -- | Run a simplifier action with a supply seeded above the program.
 runSimpT :: Monad m => Program -> SimpT m a -> m a
-runSimpT p m = evalStateT m $ SimpSt (nextUniq p) [] mempty mempty
+runSimpT p m = evalStateT m $ SimpSt (nextUniq p) [] mempty
 
 -- | Run a Subst primitive on the simplifier's supply.
 supplied :: Monad m => StateT Uniq m a -> SimpT m a
@@ -482,9 +485,15 @@ specialize (Program datas defns0 procs top) = do
             -- signature's arrow spine.
             mkSpec :: Defn -> [Maybe Exp] -> SimpT m Defn
             mkSpec d bs = do
-                  i  <- gets $ (+ 1) . IM.findWithDefault 0 (idUniq $ defnId d) . stCnt
-                  modify $ \ st -> st { stCnt = IM.insert (idUniq $ defnId d) i $ stCnt st }
-                  dr <- supplied $ instantiateDefn (idOcc (defnId d) <> "$s" <> showt i) [] d
+                  -- The clone's display name carries a stable tag derived
+                  -- from the baked-argument canon (usually its hash --
+                  -- values render long), not a discovery counter: baking
+                  -- the same arguments always yields the same name. The
+                  -- canon's uniques are scrubbed first -- free (top-level)
+                  -- references print as occ#uniq, and uniques shift on
+                  -- unrelated edits (the memo key keeps them; only the
+                  -- display name must not).
+                  dr <- supplied $ instantiateDefn (idOcc (defnId d) <> "$s" <> originTag [scrubUniqs $ canonKey bs]) [] d
                   let an          = defnAnnote dr
                       ps          = defnParams dr
                       bs'         = bs <> repeat Nothing
@@ -496,7 +505,8 @@ specialize (Program datas defns0 procs top) = do
                                     <> drop (length ps) doms
                       x'          = (defnId dr) { idSig = Sig [] $ foldr (Arrow an) res domsKept }
                   body' <- supplied $ substVarsRefreshing baked $ defnBody dr
-                  pure $ Defn an x' keptPs body' (defnAttr d) (defnOrigin d)
+                  pure $ Defn an x' keptPs body' (defnAttr d)
+                       $ Just $ fromMaybe (BakeOrigin $ idOcc $ defnId d) $ defnOrigin d
 
             -- Alpha-canonical text of the baked-argument list: renumber
             -- binders from a disjoint (large negative) supply, then print.
@@ -507,3 +517,11 @@ specialize (Program datas defns0 procs top) = do
 
 canonBase :: Uniq
 canonBase = -1000000000
+
+-- | Strip the @#uniq@ suffixes from rendered names (@Main.f#3 7@ ->
+--   @Main.f 7@): uniques are compile-relative and must not reach display
+--   names.
+scrubUniqs :: Text -> Text
+scrubUniqs t = case T.breakOn "#" t of
+      (a, "") -> a
+      (a, b)  -> a <> scrubUniqs (T.dropWhile isDigit $ T.dropWhile (== '-') $ T.drop 1 b)

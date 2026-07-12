@@ -1,24 +1,29 @@
+--| state dispatch for process main: 0=b
 main.$dispatch : ([8], [1]) -> [16]
 main.$dispatch disc i =
-      main.$L.b2$240 i disc
+      main.b i disc
 
-main.$L.b2$240 : ([1], [8]) -> [16]
-main.$L.b2$240 b s0 =
-      if eq b 1'h0 then main.$L.Main.tick3$241 s0
-            else main.$L.Main.tick3$241 s0
+--| block '$L.b' of process main (state 0)
+main.b : ([1], [8]) -> [16]
+main.b b s0 =
+      if not b then main.tick s0
+            else main.tick s0
 
-main.$L.$x4$243 : ([8], [8]) -> [16]
-main.$L.$x4$243 $x s0 =
+--| block '$L.$x' of process main
+main.$x : ([8], [8]) -> [16]
+main.$x $x s0 =
       $x # s0
 
-main.$L.Main.tick3$241 : ([8]) -> [16]
-main.$L.Main.tick3$241 s0 =
-      main.$L.$x4$243 s0 s0
+--| block '$L.Main.tick' of process main
+main.tick : ([8]) -> [16]
+main.tick s0 =
+      main.$x s0 s0
 
 device top_level
       input __in0 : [1]
       output __out0 : [8]
       register __st0 : [8] init 8'h0
+      tag b = 0
       let $res = main.$dispatch __st0 __in0
       __out0 := $res[8 +: 8]
       next __st0 := $res[0 +: 8]

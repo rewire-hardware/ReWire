@@ -11,7 +11,7 @@ module top_level (input logic [0:0] clk,
   logic [24:0] zres;
   assign zi2 = __resumption_tag[7:0];
   assign zi4 = zi2 + 8'h1;
-  assign zres = (__resumption_tag[8] == 1'h0) ? 25'h10000 : ((__in0 == 1'h0) ? {zi2 + zi2, 9'h0, zi4} : {zi4, 1'h1, zi4, zi4});
+  assign zres = (~__resumption_tag[8]) ? 25'h10000 : ((~__in0) ? {zi2 + zi2, 9'h0, zi4} : {zi4, 1'h1, zi4, zi4});
   assign __resumption_tag_next = zres[16:8];
   assign __st0_next = zres[7:0];
   assign __out0 = zres[24:17];

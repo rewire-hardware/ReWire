@@ -39,7 +39,7 @@ module top_level (input logic [0:0] clk,
   assign zi7 = __st0[23:15];
   assign zi8 = __st0[23:15];
   assign zi9 = __st0[27:24];
-  assign zi10 = {(__in0[9:8] == 2'h0) ? {zi2, 1'h1, zi1, 5'h0, zi1} : ((__in0[9:8] == 2'h1) ? {zi4, zi5, 1'h1, zi3} : ((zi6 == 1'h0) ? {6'h0, zi7} : ((__st0[28] == 1'h0) ? {6'h20, zi8} : {11'h400, zi9}))), __st0};
+  assign zi10 = {(__in0[9:8] == 2'h0) ? {zi2, 1'h1, zi1, 5'h0, zi1} : ((__in0[9:8] == 2'h1) ? {zi4, zi5, 1'h1, zi3} : ((~zi6) ? {6'h0, zi7} : ((~__st0[28]) ? {6'h20, zi8} : {11'h400, zi9}))), __st0};
   assign zi11 = zi10[44:30];
   assign zi12 = zi10[29:0];
   assign slice_in = zi12 >> {8'h80{1'h0}};
@@ -52,7 +52,7 @@ module top_level (input logic [0:0] clk,
   assign zi19 = zi15[3:0];
   assign zi20 = zi15[7:0];
   assign zi21 = zi13[44:15];
-  assign zi22 = {(zi16 == 1'h0) ? {7'h0, zi18} : ((zi15[8] == 1'h0) ? {2'h3, zi17, 5'h0, zi19} : {2'h1, zi17, 1'h1, zi20}), zi21};
+  assign zi22 = {(~zi16) ? {7'h0, zi18} : ((~zi15[8]) ? {2'h3, zi17, 5'h0, zi19} : {2'h1, zi17, 1'h1, zi20}), zi21};
   assign zi23 = zi22[45:30];
   assign zi24 = zi22[29:0];
   assign zres = {zi23, zi24};

@@ -79,7 +79,7 @@ compileProgram conf (M.Program exts ds dev) = do
             xenv = Map.fromList $ map (\ e -> (extName e, e)) exts
 
 compileDefn :: forall m. MonadError AstError m => XEnv -> M.Defn -> m V.Module
-compileDefn xenv (M.Defn _ g (M.Sig _ argSzs _) ps body) = do
+compileDefn xenv (M.Defn _ g (M.Sig _ argSzs _) ps body _ _) = do
       ((e, stmts), (_, sigs)) <- flip runStateT (seedNames ambient, []) $ compileExp xenv lenv body
       pure $ V.Module (mangleMod g) (inputs <> outputs) sigs
            $ stmts <> [ Assign (V.Name "res") e | sizeOf body > 0 ]
@@ -105,7 +105,7 @@ compileDefn xenv (M.Defn _ g (M.Sig _ argSzs _) ps body) = do
             outputs = [ Output $ mkSignal ("res", sizeOf body) | sizeOf body > 0 ]
 
 compileDevice :: forall m. MonadError AstError m => Config -> XEnv -> M.Device -> m V.Module
-compileDevice conf xenv (M.Device an top ins outs regs insts body) = do
+compileDevice conf xenv (M.Device an top ins outs regs insts body _) = do
       -- N.B.: a device with registers but no configured clock (--no-clock)
       -- gets no register process, so the registers hold their initial
       -- values (the flags smoke tests exercise this combination; the user

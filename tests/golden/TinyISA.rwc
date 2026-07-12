@@ -1,10 +1,12 @@
+--| state dispatch for process main: 0=i 1=i3 2=i4 3=i5 4=i8
 main.$dispatch : ([73], [17]) -> [88]
 main.$dispatch disc i =
-      if eq disc[70 +: 3] 3'h0 then main.$L.i15$696 i disc[0 +: 70]
-            else if eq disc[70 +: 3] 3'h1 then main.$L.i58$751 i disc[0 +: 70] else if eq disc[70 +: 3] 3'h2 then main.$L.i87$789 i disc[0 +: 70] else if eq disc[70 +: 3] 3'h3 then main.$L.i117$827 i disc[0 +: 70] else main.$L.i225$970 i disc[0 +: 70]
+      if eq disc[70 +: 3] 3'h0 then main.i i disc[0 +: 70]
+            else if eq disc[70 +: 3] 3'h1 then main.i3 i disc[0 +: 70] else if eq disc[70 +: 3] 3'h2 then main.i4 i disc[0 +: 70] else if eq disc[70 +: 3] 3'h3 then main.i5 i disc[0 +: 70] else main.i8 i disc[0 +: 70]
 
-main.$L.s17$698 : ([17], [70], [70]) -> [88]
-main.$L.s17$698 i s s0 =
+--| block '$L.s2' of process main
+main.s2 : ([17], [70], [70]) -> [88]
+main.s2 i s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -13,31 +15,37 @@ main.$L.s17$698 i s s0 =
       let outputs = s[0 +: 15] in
       let $a = r0 # r1 # r2 # r3 # pc # i # outputs in
       $a) in
-      main.$L.Main.getIns196$933 $a
+      main.getIns2 $a
 
-main.$L.Main.putIns16$697 : ([17], [70]) -> [88]
-main.$L.Main.putIns16$697 i s0 =
-      main.$L.s17$698 i s0 s0
+--| block '$L.Main.putIns' of process main
+main.putIns : ([17], [70]) -> [88]
+main.putIns i s0 =
+      main.s2 i s0 s0
 
-main.$L.i15$696 : ([17], [70]) -> [88]
-main.$L.i15$696 i s0 =
-      main.$L.Main.putIns16$697 i s0
+--| block '$L.i' of process main (state 0)
+main.i : ([17], [70]) -> [88]
+main.i i s0 =
+      main.putIns i s0
 
-main.$L.o14$695 : ([15], [70]) -> [88]
-main.$L.o14$695 o s0 =
+--| block '$L.o' of process main
+main.o : ([15], [70]) -> [88]
+main.o o s0 =
       o # 3'h0 # s0
 
-main.$L.s19$701 : ([70], [70]) -> [88]
-main.$L.s19$701 s s0 =
+--| block '$L.s3' of process main
+main.s3 : ([70], [70]) -> [88]
+main.s3 s s0 =
       let $a = Main.outputs s in
-      main.$L.o14$695 $a s0
+      main.o $a s0
 
-main.$L.Main.getOut18$700 : ([70]) -> [88]
-main.$L.Main.getOut18$700 s0 =
-      main.$L.s19$701 s0 s0
+--| block '$L.Main.getOut' of process main
+main.getOut : ([70]) -> [88]
+main.getOut s0 =
+      main.s3 s0 s0
 
-main.$L.s25$708 : ([15], [70], [70]) -> [88]
-main.$L.s25$708 o s s0 =
+--| block '$L.s4' of process main
+main.s4 : ([15], [70], [70]) -> [88]
+main.s4 o s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -46,31 +54,36 @@ main.$L.s25$708 o s s0 =
       let inputs = s[15 +: 17] in
       let $a = r0 # r1 # r2 # r3 # pc # inputs # o in
       $a) in
-      main.$L.Main.getOut18$700 $a
+      main.getOut $a
 
-main.$L.Main.putOut24$707 : ([15], [70]) -> [88]
-main.$L.Main.putOut24$707 o s0 =
-      main.$L.s25$708 o s0 s0
+--| block '$L.Main.putOut' of process main
+main.putOut : ([15], [70]) -> [88]
+main.putOut o s0 =
+      main.s4 o s0 s0
 
-main.$L.o23$706 : ([15], [70]) -> [88]
-main.$L.o23$706 o s0 =
+--| block '$L.o2' of process main
+main.o2 : ([15], [70]) -> [88]
+main.o2 o s0 =
       let $a = (let addrOut = o[8 +: 6] in
       let dataOut = o[0 +: 8] in
       let $a = 1'h0 # addrOut # dataOut in
       $a) in
-      main.$L.Main.putOut24$707 $a s0
+      main.putOut $a s0
 
-main.$L.s27$711 : ([70], [70]) -> [88]
-main.$L.s27$711 s s0 =
+--| block '$L.s5' of process main
+main.s5 : ([70], [70]) -> [88]
+main.s5 s s0 =
       let $a = Main.outputs s in
-      main.$L.o23$706 $a s0
+      main.o2 $a s0
 
-main.$L.Main.getOut26$710 : ([70]) -> [88]
-main.$L.Main.getOut26$710 s0 =
-      main.$L.s27$711 s0 s0
+--| block '$L.Main.getOut2' of process main
+main.getOut2 : ([70]) -> [88]
+main.getOut2 s0 =
+      main.s5 s0 s0
 
-main.$L.s31$716 : ([15], [70], [70]) -> [88]
-main.$L.s31$716 o s s0 =
+--| block '$L.s6' of process main
+main.s6 : ([15], [70], [70]) -> [88]
+main.s6 o s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -79,40 +92,47 @@ main.$L.s31$716 o s s0 =
       let inputs = s[15 +: 17] in
       let $a = r0 # r1 # r2 # r3 # pc # inputs # o in
       $a) in
-      main.$L.Main.getOut26$710 $a
+      main.getOut2 $a
 
-main.$L.Main.putOut30$715 : ([15], [70]) -> [88]
-main.$L.Main.putOut30$715 o s0 =
-      main.$L.s31$716 o s0 s0
+--| block '$L.Main.putOut2' of process main
+main.putOut2 : ([15], [70]) -> [88]
+main.putOut2 o s0 =
+      main.s6 o s0 s0
 
-main.$L.o29$714 : ([6], [15], [70]) -> [88]
-main.$L.o29$714 a o s0 =
+--| block '$L.o3' of process main
+main.o3 : ([6], [15], [70]) -> [88]
+main.o3 a o s0 =
       let $a = (let weOut = o[14 +: 1] in
       let dataOut = o[0 +: 8] in
       let $a = weOut # a # dataOut in
       $a) in
-      main.$L.Main.putOut30$715 $a s0
+      main.putOut2 $a s0
 
-main.$L.s33$719 : ([6], [70], [70]) -> [88]
-main.$L.s33$719 a s s0 =
+--| block '$L.s7' of process main
+main.s7 : ([6], [70], [70]) -> [88]
+main.s7 a s s0 =
       let $a = Main.outputs s in
-      main.$L.o29$714 a $a s0
+      main.o3 a $a s0
 
-main.$L.Main.getOut32$718 : ([6], [70]) -> [88]
-main.$L.Main.getOut32$718 a s0 =
-      main.$L.s33$719 a s0 s0
+--| block '$L.Main.getOut3' of process main
+main.getOut3 : ([6], [70]) -> [88]
+main.getOut3 a s0 =
+      main.s7 a s0 s0
 
-main.$L.s35$722 : ([70], [70]) -> [88]
-main.$L.s35$722 s s0 =
+--| block '$L.s8' of process main
+main.s8 : ([70], [70]) -> [88]
+main.s8 s s0 =
       let $a = Main.pc s in
-      main.$L.Main.getOut32$718 $a s0
+      main.getOut3 $a s0
 
-main.$L.Main.getPC34$721 : ([70]) -> [88]
-main.$L.Main.getPC34$721 s0 =
-      main.$L.s35$722 s0 s0
+--| block '$L.Main.getPC' of process main
+main.getPC : ([70]) -> [88]
+main.getPC s0 =
+      main.s8 s0 s0
 
-main.$L.s39$727 : ([6], [70], [70]) -> [88]
-main.$L.s39$727 a s s0 =
+--| block '$L.s9' of process main
+main.s9 : ([6], [70], [70]) -> [88]
+main.s9 a s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -121,23 +141,27 @@ main.$L.s39$727 a s s0 =
       let outputs = s[0 +: 15] in
       let $a = r0 # r1 # r2 # r3 # a # inputs # outputs in
       $a) in
-      main.$L.Main.getPC34$721 $a
+      main.getPC $a
 
-main.$L.Main.putPC38$726 : ([6], [70]) -> [88]
-main.$L.Main.putPC38$726 a s0 =
-      main.$L.s39$727 a s0 s0
+--| block '$L.Main.putPC' of process main
+main.putPC : ([6], [70]) -> [88]
+main.putPC a s0 =
+      main.s9 a s0 s0
 
-main.$L.s41$730 : ([70], [70]) -> [88]
-main.$L.s41$730 s s0 =
+--| block '$L.s10' of process main
+main.s10 : ([70], [70]) -> [88]
+main.s10 s s0 =
       let $a = Main.pc s in
-      main.$L.Main.putPC38$726 (add $a 6'h1) s0
+      main.putPC (add $a 6'h1) s0
 
-main.$L.Main.getPC40$729 : ([70]) -> [88]
-main.$L.Main.getPC40$729 s0 =
-      main.$L.s41$730 s0 s0
+--| block '$L.Main.getPC2' of process main
+main.getPC2 : ([70]) -> [88]
+main.getPC2 s0 =
+      main.s10 s0 s0
 
-main.$L.s49$740 : ([8], [70], [70]) -> [88]
-main.$L.s49$740 b s s0 =
+--| block '$L.s11' of process main
+main.s11 : ([8], [70], [70]) -> [88]
+main.s11 b s s0 =
       let $a = (let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
       let r3 = s[38 +: 8] in
@@ -146,28 +170,33 @@ main.$L.s49$740 b s s0 =
       let outputs = s[0 +: 15] in
       let $a = b # r1 # r2 # r3 # pc # inputs # outputs in
       $a) in
-      main.$L.Main.getIns196$933 $a
+      main.getIns2 $a
 
-main.$L.Main.putReg$s148$739 : ([8], [70]) -> [88]
-main.$L.Main.putReg$s148$739 b s0 =
-      main.$L.s49$740 b s0 s0
+--| block '$L.Main.putReg$sMain_R0_Main_Reg' of process main
+main.putReg$sMain_R0_Main_Reg : ([8], [70]) -> [88]
+main.putReg$sMain_R0_Main_Reg b s0 =
+      main.s11 b s0 s0
 
-main.$L.i51$743 : ([17], [70]) -> [88]
-main.$L.i51$743 i s0 =
+--| block '$L.i2' of process main
+main.i2 : ([17], [70]) -> [88]
+main.i2 i s0 =
       let $a = Main.dataIn i in
-      main.$L.Main.putReg$s148$739 $a s0
+      main.putReg$sMain_R0_Main_Reg $a s0
 
-main.$L.s53$745 : ([70], [70]) -> [88]
-main.$L.s53$745 s s0 =
+--| block '$L.s12' of process main
+main.s12 : ([70], [70]) -> [88]
+main.s12 s s0 =
       let $a = Main.inputs s in
-      main.$L.i51$743 $a s0
+      main.i2 $a s0
 
-main.$L.Main.getIns52$744 : ([70]) -> [88]
-main.$L.Main.getIns52$744 s0 =
-      main.$L.s53$745 s0 s0
+--| block '$L.Main.getIns' of process main
+main.getIns : ([70]) -> [88]
+main.getIns s0 =
+      main.s12 s0 s0
 
-main.$L.s60$753 : ([17], [70], [70]) -> [88]
-main.$L.s60$753 i s s0 =
+--| block '$L.s13' of process main
+main.s13 : ([17], [70], [70]) -> [88]
+main.s13 i s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -176,31 +205,37 @@ main.$L.s60$753 i s s0 =
       let outputs = s[0 +: 15] in
       let $a = r0 # r1 # r2 # r3 # pc # i # outputs in
       $a) in
-      main.$L.Main.getIns52$744 $a
+      main.getIns $a
 
-main.$L.Main.putIns59$752 : ([17], [70]) -> [88]
-main.$L.Main.putIns59$752 i s0 =
-      main.$L.s60$753 i s0 s0
+--| block '$L.Main.putIns2' of process main
+main.putIns2 : ([17], [70]) -> [88]
+main.putIns2 i s0 =
+      main.s13 i s0 s0
 
-main.$L.i58$751 : ([17], [70]) -> [88]
-main.$L.i58$751 i s0 =
-      main.$L.Main.putIns59$752 i s0
+--| block '$L.i3' of process main (state 1)
+main.i3 : ([17], [70]) -> [88]
+main.i3 i s0 =
+      main.putIns2 i s0
 
-main.$L.o57$750 : ([15], [70]) -> [88]
-main.$L.o57$750 o s0 =
+--| block '$L.o4' of process main
+main.o4 : ([15], [70]) -> [88]
+main.o4 o s0 =
       o # 3'h1 # s0
 
-main.$L.s62$756 : ([70], [70]) -> [88]
-main.$L.s62$756 s s0 =
+--| block '$L.s14' of process main
+main.s14 : ([70], [70]) -> [88]
+main.s14 s s0 =
       let $a = Main.outputs s in
-      main.$L.o57$750 $a s0
+      main.o4 $a s0
 
-main.$L.Main.getOut61$755 : ([70]) -> [88]
-main.$L.Main.getOut61$755 s0 =
-      main.$L.s62$756 s0 s0
+--| block '$L.Main.getOut4' of process main
+main.getOut4 : ([70]) -> [88]
+main.getOut4 s0 =
+      main.s14 s0 s0
 
-main.$L.s68$763 : ([15], [70], [70]) -> [88]
-main.$L.s68$763 o s s0 =
+--| block '$L.s15' of process main
+main.s15 : ([15], [70], [70]) -> [88]
+main.s15 o s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -209,31 +244,36 @@ main.$L.s68$763 o s s0 =
       let inputs = s[15 +: 17] in
       let $a = r0 # r1 # r2 # r3 # pc # inputs # o in
       $a) in
-      main.$L.Main.getOut61$755 $a
+      main.getOut4 $a
 
-main.$L.Main.putOut67$762 : ([15], [70]) -> [88]
-main.$L.Main.putOut67$762 o s0 =
-      main.$L.s68$763 o s0 s0
+--| block '$L.Main.putOut3' of process main
+main.putOut3 : ([15], [70]) -> [88]
+main.putOut3 o s0 =
+      main.s15 o s0 s0
 
-main.$L.o66$761 : ([15], [70]) -> [88]
-main.$L.o66$761 o s0 =
+--| block '$L.o5' of process main
+main.o5 : ([15], [70]) -> [88]
+main.o5 o s0 =
       let $a = (let addrOut = o[8 +: 6] in
       let dataOut = o[0 +: 8] in
       let $a = 1'h0 # addrOut # dataOut in
       $a) in
-      main.$L.Main.putOut67$762 $a s0
+      main.putOut3 $a s0
 
-main.$L.s70$766 : ([70], [70]) -> [88]
-main.$L.s70$766 s s0 =
+--| block '$L.s16' of process main
+main.s16 : ([70], [70]) -> [88]
+main.s16 s s0 =
       let $a = Main.outputs s in
-      main.$L.o66$761 $a s0
+      main.o5 $a s0
 
-main.$L.Main.getOut69$765 : ([70]) -> [88]
-main.$L.Main.getOut69$765 s0 =
-      main.$L.s70$766 s0 s0
+--| block '$L.Main.getOut5' of process main
+main.getOut5 : ([70]) -> [88]
+main.getOut5 s0 =
+      main.s16 s0 s0
 
-main.$L.s74$771 : ([15], [70], [70]) -> [88]
-main.$L.s74$771 o s s0 =
+--| block '$L.s17' of process main
+main.s17 : ([15], [70], [70]) -> [88]
+main.s17 o s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -242,40 +282,47 @@ main.$L.s74$771 o s s0 =
       let inputs = s[15 +: 17] in
       let $a = r0 # r1 # r2 # r3 # pc # inputs # o in
       $a) in
-      main.$L.Main.getOut69$765 $a
+      main.getOut5 $a
 
-main.$L.Main.putOut73$770 : ([15], [70]) -> [88]
-main.$L.Main.putOut73$770 o s0 =
-      main.$L.s74$771 o s0 s0
+--| block '$L.Main.putOut4' of process main
+main.putOut4 : ([15], [70]) -> [88]
+main.putOut4 o s0 =
+      main.s17 o s0 s0
 
-main.$L.o72$769 : ([6], [15], [70]) -> [88]
-main.$L.o72$769 a o s0 =
+--| block '$L.o6' of process main
+main.o6 : ([6], [15], [70]) -> [88]
+main.o6 a o s0 =
       let $a = (let weOut = o[14 +: 1] in
       let dataOut = o[0 +: 8] in
       let $a = weOut # a # dataOut in
       $a) in
-      main.$L.Main.putOut73$770 $a s0
+      main.putOut4 $a s0
 
-main.$L.s76$774 : ([6], [70], [70]) -> [88]
-main.$L.s76$774 a s s0 =
+--| block '$L.s18' of process main
+main.s18 : ([6], [70], [70]) -> [88]
+main.s18 a s s0 =
       let $a = Main.outputs s in
-      main.$L.o72$769 a $a s0
+      main.o6 a $a s0
 
-main.$L.Main.getOut75$773 : ([6], [70]) -> [88]
-main.$L.Main.getOut75$773 a s0 =
-      main.$L.s76$774 a s0 s0
+--| block '$L.Main.getOut6' of process main
+main.getOut6 : ([6], [70]) -> [88]
+main.getOut6 a s0 =
+      main.s18 a s0 s0
 
-main.$L.s78$777 : ([70], [70]) -> [88]
-main.$L.s78$777 s s0 =
+--| block '$L.s19' of process main
+main.s19 : ([70], [70]) -> [88]
+main.s19 s s0 =
       let $a = Main.pc s in
-      main.$L.Main.getOut75$773 $a s0
+      main.getOut6 $a s0
 
-main.$L.Main.getPC77$776 : ([70]) -> [88]
-main.$L.Main.getPC77$776 s0 =
-      main.$L.s78$777 s0 s0
+--| block '$L.Main.getPC3' of process main
+main.getPC3 : ([70]) -> [88]
+main.getPC3 s0 =
+      main.s19 s0 s0
 
-main.$L.s82$782 : ([6], [70], [70]) -> [88]
-main.$L.s82$782 a s s0 =
+--| block '$L.s20' of process main
+main.s20 : ([6], [70], [70]) -> [88]
+main.s20 a s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -284,23 +331,27 @@ main.$L.s82$782 a s s0 =
       let outputs = s[0 +: 15] in
       let $a = r0 # r1 # r2 # r3 # a # inputs # outputs in
       $a) in
-      main.$L.Main.getPC77$776 $a
+      main.getPC3 $a
 
-main.$L.Main.putPC81$781 : ([6], [70]) -> [88]
-main.$L.Main.putPC81$781 a s0 =
-      main.$L.s82$782 a s0 s0
+--| block '$L.Main.putPC2' of process main
+main.putPC2 : ([6], [70]) -> [88]
+main.putPC2 a s0 =
+      main.s20 a s0 s0
 
-main.$L.s84$785 : ([70], [70]) -> [88]
-main.$L.s84$785 s s0 =
+--| block '$L.s21' of process main
+main.s21 : ([70], [70]) -> [88]
+main.s21 s s0 =
       let $a = Main.pc s in
-      main.$L.Main.putPC81$781 (add $a 6'h1) s0
+      main.putPC2 (add $a 6'h1) s0
 
-main.$L.Main.getPC83$784 : ([70]) -> [88]
-main.$L.Main.getPC83$784 s0 =
-      main.$L.s84$785 s0 s0
+--| block '$L.Main.getPC4' of process main
+main.getPC4 : ([70]) -> [88]
+main.getPC4 s0 =
+      main.s21 s0 s0
 
-main.$L.s89$791 : ([17], [70], [70]) -> [88]
-main.$L.s89$791 i s s0 =
+--| block '$L.s22' of process main
+main.s22 : ([17], [70], [70]) -> [88]
+main.s22 i s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -309,31 +360,37 @@ main.$L.s89$791 i s s0 =
       let outputs = s[0 +: 15] in
       let $a = r0 # r1 # r2 # r3 # pc # i # outputs in
       $a) in
-      main.$L.Main.getPC83$784 $a
+      main.getPC4 $a
 
-main.$L.Main.putIns88$790 : ([17], [70]) -> [88]
-main.$L.Main.putIns88$790 i s0 =
-      main.$L.s89$791 i s0 s0
+--| block '$L.Main.putIns3' of process main
+main.putIns3 : ([17], [70]) -> [88]
+main.putIns3 i s0 =
+      main.s22 i s0 s0
 
-main.$L.i87$789 : ([17], [70]) -> [88]
-main.$L.i87$789 i s0 =
-      main.$L.Main.putIns88$790 i s0
+--| block '$L.i4' of process main (state 2)
+main.i4 : ([17], [70]) -> [88]
+main.i4 i s0 =
+      main.putIns3 i s0
 
-main.$L.o86$788 : ([15], [70]) -> [88]
-main.$L.o86$788 o s0 =
+--| block '$L.o7' of process main
+main.o7 : ([15], [70]) -> [88]
+main.o7 o s0 =
       o # 3'h2 # s0
 
-main.$L.s91$794 : ([70], [70]) -> [88]
-main.$L.s91$794 s s0 =
+--| block '$L.s23' of process main
+main.s23 : ([70], [70]) -> [88]
+main.s23 s s0 =
       let $a = Main.outputs s in
-      main.$L.o86$788 $a s0
+      main.o7 $a s0
 
-main.$L.Main.getOut90$793 : ([70]) -> [88]
-main.$L.Main.getOut90$793 s0 =
-      main.$L.s91$794 s0 s0
+--| block '$L.Main.getOut7' of process main
+main.getOut7 : ([70]) -> [88]
+main.getOut7 s0 =
+      main.s23 s0 s0
 
-main.$L.s96$800 : ([15], [70], [70]) -> [88]
-main.$L.s96$800 o s s0 =
+--| block '$L.s24' of process main
+main.s24 : ([15], [70], [70]) -> [88]
+main.s24 o s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -342,31 +399,36 @@ main.$L.s96$800 o s s0 =
       let inputs = s[15 +: 17] in
       let $a = r0 # r1 # r2 # r3 # pc # inputs # o in
       $a) in
-      main.$L.Main.getOut90$793 $a
+      main.getOut7 $a
 
-main.$L.Main.putOut95$799 : ([15], [70]) -> [88]
-main.$L.Main.putOut95$799 o s0 =
-      main.$L.s96$800 o s0 s0
+--| block '$L.Main.putOut5' of process main
+main.putOut5 : ([15], [70]) -> [88]
+main.putOut5 o s0 =
+      main.s24 o s0 s0
 
-main.$L.o94$798 : ([15], [70]) -> [88]
-main.$L.o94$798 o s0 =
+--| block '$L.o8' of process main
+main.o8 : ([15], [70]) -> [88]
+main.o8 o s0 =
       let $a = (let addrOut = o[8 +: 6] in
       let dataOut = o[0 +: 8] in
       let $a = 1'h0 # addrOut # dataOut in
       $a) in
-      main.$L.Main.putOut95$799 $a s0
+      main.putOut5 $a s0
 
-main.$L.s98$803 : ([70], [70]) -> [88]
-main.$L.s98$803 s s0 =
+--| block '$L.s25' of process main
+main.s25 : ([70], [70]) -> [88]
+main.s25 s s0 =
       let $a = Main.outputs s in
-      main.$L.o94$798 $a s0
+      main.o8 $a s0
 
-main.$L.Main.getOut97$802 : ([70]) -> [88]
-main.$L.Main.getOut97$802 s0 =
-      main.$L.s98$803 s0 s0
+--| block '$L.Main.getOut8' of process main
+main.getOut8 : ([70]) -> [88]
+main.getOut8 s0 =
+      main.s25 s0 s0
 
-main.$L.s102$808 : ([15], [70], [70]) -> [88]
-main.$L.s102$808 o s s0 =
+--| block '$L.s26' of process main
+main.s26 : ([15], [70], [70]) -> [88]
+main.s26 o s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -375,31 +437,36 @@ main.$L.s102$808 o s s0 =
       let inputs = s[15 +: 17] in
       let $a = r0 # r1 # r2 # r3 # pc # inputs # o in
       $a) in
-      main.$L.Main.getOut97$802 $a
+      main.getOut8 $a
 
-main.$L.Main.putOut101$807 : ([15], [70]) -> [88]
-main.$L.Main.putOut101$807 o s0 =
-      main.$L.s102$808 o s0 s0
+--| block '$L.Main.putOut6' of process main
+main.putOut6 : ([15], [70]) -> [88]
+main.putOut6 o s0 =
+      main.s26 o s0 s0
 
-main.$L.o100$806 : ([6], [15], [70]) -> [88]
-main.$L.o100$806 a o s0 =
+--| block '$L.o9' of process main
+main.o9 : ([6], [15], [70]) -> [88]
+main.o9 a o s0 =
       let $a = (let weOut = o[14 +: 1] in
       let dataOut = o[0 +: 8] in
       let $a = weOut # a # dataOut in
       $a) in
-      main.$L.Main.putOut101$807 $a s0
+      main.putOut6 $a s0
 
-main.$L.s104$811 : ([6], [70], [70]) -> [88]
-main.$L.s104$811 a s s0 =
+--| block '$L.s27' of process main
+main.s27 : ([6], [70], [70]) -> [88]
+main.s27 a s s0 =
       let $a = Main.outputs s in
-      main.$L.o100$806 a $a s0
+      main.o9 a $a s0
 
-main.$L.Main.getOut103$810 : ([6], [70]) -> [88]
-main.$L.Main.getOut103$810 a s0 =
-      main.$L.s104$811 a s0 s0
+--| block '$L.Main.getOut9' of process main
+main.getOut9 : ([6], [70]) -> [88]
+main.getOut9 a s0 =
+      main.s27 a s0 s0
 
-main.$L.s119$829 : ([17], [70], [70]) -> [88]
-main.$L.s119$829 i s s0 =
+--| block '$L.s30' of process main
+main.s30 : ([17], [70], [70]) -> [88]
+main.s30 i s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -408,31 +475,37 @@ main.$L.s119$829 i s s0 =
       let outputs = s[0 +: 15] in
       let $a = r0 # r1 # r2 # r3 # pc # i # outputs in
       $a) in
-      main.$L.Main.getPC40$729 $a
+      main.getPC2 $a
 
-main.$L.Main.putIns118$828 : ([17], [70]) -> [88]
-main.$L.Main.putIns118$828 i s0 =
-      main.$L.s119$829 i s0 s0
+--| block '$L.Main.putIns4' of process main
+main.putIns4 : ([17], [70]) -> [88]
+main.putIns4 i s0 =
+      main.s30 i s0 s0
 
-main.$L.i117$827 : ([17], [70]) -> [88]
-main.$L.i117$827 i s0 =
-      main.$L.Main.putIns118$828 i s0
+--| block '$L.i5' of process main (state 3)
+main.i5 : ([17], [70]) -> [88]
+main.i5 i s0 =
+      main.putIns4 i s0
 
-main.$L.o116$826 : ([15], [70]) -> [88]
-main.$L.o116$826 o s0 =
+--| block '$L.o10' of process main
+main.o10 : ([15], [70]) -> [88]
+main.o10 o s0 =
       o # 3'h3 # s0
 
-main.$L.s121$832 : ([70], [70]) -> [88]
-main.$L.s121$832 s s0 =
+--| block '$L.s31' of process main
+main.s31 : ([70], [70]) -> [88]
+main.s31 s s0 =
       let $a = Main.outputs s in
-      main.$L.o116$826 $a s0
+      main.o10 $a s0
 
-main.$L.Main.getOut120$831 : ([70]) -> [88]
-main.$L.Main.getOut120$831 s0 =
-      main.$L.s121$832 s0 s0
+--| block '$L.Main.getOut10' of process main
+main.getOut10 : ([70]) -> [88]
+main.getOut10 s0 =
+      main.s31 s0 s0
 
-main.$L.s128$840 : ([15], [70], [70]) -> [88]
-main.$L.s128$840 o s s0 =
+--| block '$L.s32' of process main
+main.s32 : ([15], [70], [70]) -> [88]
+main.s32 o s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -441,31 +514,36 @@ main.$L.s128$840 o s s0 =
       let inputs = s[15 +: 17] in
       let $a = r0 # r1 # r2 # r3 # pc # inputs # o in
       $a) in
-      main.$L.Main.getOut120$831 $a
+      main.getOut10 $a
 
-main.$L.Main.putOut127$839 : ([15], [70]) -> [88]
-main.$L.Main.putOut127$839 o s0 =
-      main.$L.s128$840 o s0 s0
+--| block '$L.Main.putOut7' of process main
+main.putOut7 : ([15], [70]) -> [88]
+main.putOut7 o s0 =
+      main.s32 o s0 s0
 
-main.$L.o126$838 : ([15], [70]) -> [88]
-main.$L.o126$838 o s0 =
+--| block '$L.o11' of process main
+main.o11 : ([15], [70]) -> [88]
+main.o11 o s0 =
       let $a = (let addrOut = o[8 +: 6] in
       let dataOut = o[0 +: 8] in
       let $a = 1'h1 # addrOut # dataOut in
       $a) in
-      main.$L.Main.putOut127$839 $a s0
+      main.putOut7 $a s0
 
-main.$L.s130$843 : ([70], [70]) -> [88]
-main.$L.s130$843 s s0 =
+--| block '$L.s33' of process main
+main.s33 : ([70], [70]) -> [88]
+main.s33 s s0 =
       let $a = Main.outputs s in
-      main.$L.o126$838 $a s0
+      main.o11 $a s0
 
-main.$L.Main.getOut129$842 : ([70]) -> [88]
-main.$L.Main.getOut129$842 s0 =
-      main.$L.s130$843 s0 s0
+--| block '$L.Main.getOut11' of process main
+main.getOut11 : ([70]) -> [88]
+main.getOut11 s0 =
+      main.s33 s0 s0
 
-main.$L.s134$848 : ([15], [70], [70]) -> [88]
-main.$L.s134$848 o s s0 =
+--| block '$L.s34' of process main
+main.s34 : ([15], [70], [70]) -> [88]
+main.s34 o s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -474,31 +552,36 @@ main.$L.s134$848 o s s0 =
       let inputs = s[15 +: 17] in
       let $a = r0 # r1 # r2 # r3 # pc # inputs # o in
       $a) in
-      main.$L.Main.getOut129$842 $a
+      main.getOut11 $a
 
-main.$L.Main.putOut133$847 : ([15], [70]) -> [88]
-main.$L.Main.putOut133$847 o s0 =
-      main.$L.s134$848 o s0 s0
+--| block '$L.Main.putOut8' of process main
+main.putOut8 : ([15], [70]) -> [88]
+main.putOut8 o s0 =
+      main.s34 o s0 s0
 
-main.$L.o132$846 : ([8], [15], [70]) -> [88]
-main.$L.o132$846 d o s0 =
+--| block '$L.o12' of process main
+main.o12 : ([8], [15], [70]) -> [88]
+main.o12 d o s0 =
       let $a = (let weOut = o[14 +: 1] in
       let addrOut = o[8 +: 6] in
       let $a = weOut # addrOut # d in
       $a) in
-      main.$L.Main.putOut133$847 $a s0
+      main.putOut8 $a s0
 
-main.$L.s136$851 : ([8], [70], [70]) -> [88]
-main.$L.s136$851 d s s0 =
+--| block '$L.s35' of process main
+main.s35 : ([8], [70], [70]) -> [88]
+main.s35 d s s0 =
       let $a = Main.outputs s in
-      main.$L.o132$846 d $a s0
+      main.o12 d $a s0
 
-main.$L.Main.getOut135$850 : ([8], [70]) -> [88]
-main.$L.Main.getOut135$850 d s0 =
-      main.$L.s136$851 d s0 s0
+--| block '$L.Main.getOut12' of process main
+main.getOut12 : ([8], [70]) -> [88]
+main.getOut12 d s0 =
+      main.s35 d s0 s0
 
-main.$L.s140$856 : ([15], [8], [70], [70]) -> [88]
-main.$L.s140$856 o d s s0 =
+--| block '$L.s36' of process main
+main.s36 : ([15], [8], [70], [70]) -> [88]
+main.s36 o d s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -507,40 +590,47 @@ main.$L.s140$856 o d s s0 =
       let inputs = s[15 +: 17] in
       let $a = r0 # r1 # r2 # r3 # pc # inputs # o in
       $a) in
-      main.$L.Main.getOut135$850 d $a
+      main.getOut12 d $a
 
-main.$L.Main.putOut139$855 : ([8], [15], [70]) -> [88]
-main.$L.Main.putOut139$855 d o s0 =
-      main.$L.s140$856 o d s0 s0
+--| block '$L.Main.putOut9' of process main
+main.putOut9 : ([8], [15], [70]) -> [88]
+main.putOut9 d o s0 =
+      main.s36 o d s0 s0
 
-main.$L.o138$854 : ([6], [8], [15], [70]) -> [88]
-main.$L.o138$854 a d o s0 =
+--| block '$L.o13' of process main
+main.o13 : ([6], [8], [15], [70]) -> [88]
+main.o13 a d o s0 =
       let $a = (let weOut = o[14 +: 1] in
       let dataOut = o[0 +: 8] in
       let $a = weOut # a # dataOut in
       $a) in
-      main.$L.Main.putOut139$855 d $a s0
+      main.putOut9 d $a s0
 
-main.$L.s142$859 : ([6], [8], [70], [70]) -> [88]
-main.$L.s142$859 a d s s0 =
+--| block '$L.s37' of process main
+main.s37 : ([6], [8], [70], [70]) -> [88]
+main.s37 a d s s0 =
       let $a = Main.outputs s in
-      main.$L.o138$854 a d $a s0
+      main.o13 a d $a s0
 
-main.$L.Main.getOut141$858 : ([6], [8], [70]) -> [88]
-main.$L.Main.getOut141$858 a d s0 =
-      main.$L.s142$859 a d s0 s0
+--| block '$L.Main.getOut13' of process main
+main.getOut13 : ([6], [8], [70]) -> [88]
+main.getOut13 a d s0 =
+      main.s37 a d s0 s0
 
-main.$L.x144$862 : ([6], [70], [70]) -> [88]
-main.$L.x144$862 a x s0 =
+--| block '$L.x' of process main
+main.x : ([6], [70], [70]) -> [88]
+main.x a x s0 =
       let $a = Main.r0 x in
-      main.$L.Main.getOut141$858 a $a s0
+      main.getOut13 a $a s0
 
-main.$L.Main.getReg$s1143$861 : ([6], [70]) -> [88]
-main.$L.Main.getReg$s1143$861 a s0 =
-      main.$L.x144$862 a s0 s0
+--| block '$L.Main.getReg$sMain_R0_Main_Reg' of process main
+main.getReg$sMain_R0_Main_Reg : ([6], [70]) -> [88]
+main.getReg$sMain_R0_Main_Reg a s0 =
+      main.x a s0 s0
 
-main.$L.s157$878 : ([8], [70], [70]) -> [88]
-main.$L.s157$878 b s s0 =
+--| block '$L.s40' of process main
+main.s40 : ([8], [70], [70]) -> [88]
+main.s40 b s s0 =
       let $a = (let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
       let r3 = s[38 +: 8] in
@@ -549,14 +639,16 @@ main.$L.s157$878 b s s0 =
       let outputs = s[0 +: 15] in
       let $a = b # r1 # r2 # r3 # pc # inputs # outputs in
       $a) in
-      main.$L.Main.getPC40$729 $a
+      main.getPC2 $a
 
-main.$L.arm158$880 : ([8], [70]) -> [88]
-main.$L.arm158$880 b s0 =
-      main.$L.s157$878 b s0 s0
+--| block '$L.arm' of process main
+main.arm : ([8], [70]) -> [88]
+main.arm b s0 =
+      main.s40 b s0 s0
 
-main.$L.s159$881 : ([8], [70], [70]) -> [88]
-main.$L.s159$881 b s s0 =
+--| block '$L.s41' of process main
+main.s41 : ([8], [70], [70]) -> [88]
+main.s41 b s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r2 = s[46 +: 8] in
       let r3 = s[38 +: 8] in
@@ -565,14 +657,16 @@ main.$L.s159$881 b s s0 =
       let outputs = s[0 +: 15] in
       let $a = r0 # b # r2 # r3 # pc # inputs # outputs in
       $a) in
-      main.$L.Main.getPC40$729 $a
+      main.getPC2 $a
 
-main.$L.arm160$883 : ([8], [70]) -> [88]
-main.$L.arm160$883 b s0 =
-      main.$L.s159$881 b s0 s0
+--| block '$L.arm2' of process main
+main.arm2 : ([8], [70]) -> [88]
+main.arm2 b s0 =
+      main.s41 b s0 s0
 
-main.$L.s161$884 : ([8], [70], [70]) -> [88]
-main.$L.s161$884 b s s0 =
+--| block '$L.s42' of process main
+main.s42 : ([8], [70], [70]) -> [88]
+main.s42 b s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r3 = s[38 +: 8] in
@@ -581,14 +675,16 @@ main.$L.s161$884 b s s0 =
       let outputs = s[0 +: 15] in
       let $a = r0 # r1 # b # r3 # pc # inputs # outputs in
       $a) in
-      main.$L.Main.getPC40$729 $a
+      main.getPC2 $a
 
-main.$L.arm162$886 : ([8], [70]) -> [88]
-main.$L.arm162$886 b s0 =
-      main.$L.s161$884 b s0 s0
+--| block '$L.arm3' of process main
+main.arm3 : ([8], [70]) -> [88]
+main.arm3 b s0 =
+      main.s42 b s0 s0
 
-main.$L.s163$887 : ([8], [70], [70]) -> [88]
-main.$L.s163$887 b s s0 =
+--| block '$L.s43' of process main
+main.s43 : ([8], [70], [70]) -> [88]
+main.s43 b s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -597,145 +693,174 @@ main.$L.s163$887 b s s0 =
       let outputs = s[0 +: 15] in
       let $a = r0 # r1 # r2 # b # pc # inputs # outputs in
       $a) in
-      main.$L.Main.getPC40$729 $a
+      main.getPC2 $a
 
-main.$L.arm164$889 : ([8], [70]) -> [88]
-main.$L.arm164$889 b s0 =
-      main.$L.s163$887 b s0 s0
+--| block '$L.arm4' of process main
+main.arm4 : ([8], [70]) -> [88]
+main.arm4 b s0 =
+      main.s43 b s0 s0
 
-main.$L.Main.putReg156$877 : ([2], [8], [70]) -> [88]
-main.$L.Main.putReg156$877 ds b s0 =
-      if eq ds 2'h0 then main.$L.arm158$880 b s0
-            else if eq ds 2'h1 then main.$L.arm160$883 b s0 else if eq ds 2'h2 then main.$L.arm162$886 b s0 else main.$L.arm164$889 b s0
+--| block '$L.Main.putReg' of process main
+main.putReg : ([2], [8], [70]) -> [88]
+main.putReg $ds b s0 =
+      if eq $ds 2'h0 then main.arm b s0
+            else if eq $ds 2'h1 then main.arm2 b s0 else if eq $ds 2'h2 then main.arm3 b s0 else main.arm4 b s0
 
-main.$L.x166$891 : ([2], [8], [70], [70]) -> [88]
-main.$L.x166$891 rd a x s0 =
+--| block '$L.x2' of process main
+main.x2 : ([2], [8], [70], [70]) -> [88]
+main.x2 rd a x s0 =
       let $a = Main.r0 x in
-      main.$L.Main.putReg156$877 rd (not (and a $a)) s0
+      main.putReg rd (not (and a $a)) s0
 
-main.$L.arm167$893 : ([2], [8], [70]) -> [88]
-main.$L.arm167$893 rd a s0 =
-      main.$L.x166$891 rd a s0 s0
+--| block '$L.arm5' of process main
+main.arm5 : ([2], [8], [70]) -> [88]
+main.arm5 rd a s0 =
+      main.x2 rd a s0 s0
 
-main.$L.x168$894 : ([2], [8], [70], [70]) -> [88]
-main.$L.x168$894 rd a x s0 =
+--| block '$L.x3' of process main
+main.x3 : ([2], [8], [70], [70]) -> [88]
+main.x3 rd a x s0 =
       let $a = Main.r1 x in
-      main.$L.Main.putReg156$877 rd (not (and a $a)) s0
+      main.putReg rd (not (and a $a)) s0
 
-main.$L.arm169$896 : ([2], [8], [70]) -> [88]
-main.$L.arm169$896 rd a s0 =
-      main.$L.x168$894 rd a s0 s0
+--| block '$L.arm6' of process main
+main.arm6 : ([2], [8], [70]) -> [88]
+main.arm6 rd a s0 =
+      main.x3 rd a s0 s0
 
-main.$L.x170$897 : ([2], [8], [70], [70]) -> [88]
-main.$L.x170$897 rd a x s0 =
+--| block '$L.x4' of process main
+main.x4 : ([2], [8], [70], [70]) -> [88]
+main.x4 rd a x s0 =
       let $a = Main.r2 x in
-      main.$L.Main.putReg156$877 rd (not (and a $a)) s0
+      main.putReg rd (not (and a $a)) s0
 
-main.$L.arm171$899 : ([2], [8], [70]) -> [88]
-main.$L.arm171$899 rd a s0 =
-      main.$L.x170$897 rd a s0 s0
+--| block '$L.arm7' of process main
+main.arm7 : ([2], [8], [70]) -> [88]
+main.arm7 rd a s0 =
+      main.x4 rd a s0 s0
 
-main.$L.x172$900 : ([2], [8], [70], [70]) -> [88]
-main.$L.x172$900 rd a x s0 =
+--| block '$L.x5' of process main
+main.x5 : ([2], [8], [70], [70]) -> [88]
+main.x5 rd a x s0 =
       let $a = Main.r3 x in
-      main.$L.Main.putReg156$877 rd (not (and a $a)) s0
+      main.putReg rd (not (and a $a)) s0
 
-main.$L.arm173$902 : ([2], [8], [70]) -> [88]
-main.$L.arm173$902 rd a s0 =
-      main.$L.x172$900 rd a s0 s0
+--| block '$L.arm8' of process main
+main.arm8 : ([2], [8], [70]) -> [88]
+main.arm8 rd a s0 =
+      main.x5 rd a s0 s0
 
-main.$L.Main.getReg165$890 : ([2], [8], [2], [70]) -> [88]
-main.$L.Main.getReg165$890 rd a ds s0 =
-      if eq ds 2'h0 then main.$L.arm167$893 rd a s0
-            else if eq ds 2'h1 then main.$L.arm169$896 rd a s0 else if eq ds 2'h2 then main.$L.arm171$899 rd a s0 else main.$L.arm173$902 rd a s0
+--| block '$L.Main.getReg' of process main
+main.getReg : ([2], [8], [2], [70]) -> [88]
+main.getReg rd a $ds s0 =
+      if eq $ds 2'h0 then main.arm5 rd a s0
+            else if eq $ds 2'h1 then main.arm6 rd a s0 else if eq $ds 2'h2 then main.arm7 rd a s0 else main.arm8 rd a s0
 
-main.$L.x175$904 : ([2], [2], [70], [70]) -> [88]
-main.$L.x175$904 rd rb x s0 =
+--| block '$L.x6' of process main
+main.x6 : ([2], [2], [70], [70]) -> [88]
+main.x6 rd rb x s0 =
       let $a = Main.r0 x in
-      main.$L.Main.getReg165$890 rd $a rb s0
+      main.getReg rd $a rb s0
 
-main.$L.arm176$906 : ([2], [2], [70]) -> [88]
-main.$L.arm176$906 rd rb s0 =
-      main.$L.x175$904 rd rb s0 s0
+--| block '$L.arm9' of process main
+main.arm9 : ([2], [2], [70]) -> [88]
+main.arm9 rd rb s0 =
+      main.x6 rd rb s0 s0
 
-main.$L.x177$907 : ([2], [2], [70], [70]) -> [88]
-main.$L.x177$907 rd rb x s0 =
+--| block '$L.x7' of process main
+main.x7 : ([2], [2], [70], [70]) -> [88]
+main.x7 rd rb x s0 =
       let $a = Main.r1 x in
-      main.$L.Main.getReg165$890 rd $a rb s0
+      main.getReg rd $a rb s0
 
-main.$L.arm178$909 : ([2], [2], [70]) -> [88]
-main.$L.arm178$909 rd rb s0 =
-      main.$L.x177$907 rd rb s0 s0
+--| block '$L.arm10' of process main
+main.arm10 : ([2], [2], [70]) -> [88]
+main.arm10 rd rb s0 =
+      main.x7 rd rb s0 s0
 
-main.$L.x179$910 : ([2], [2], [70], [70]) -> [88]
-main.$L.x179$910 rd rb x s0 =
+--| block '$L.x8' of process main
+main.x8 : ([2], [2], [70], [70]) -> [88]
+main.x8 rd rb x s0 =
       let $a = Main.r2 x in
-      main.$L.Main.getReg165$890 rd $a rb s0
+      main.getReg rd $a rb s0
 
-main.$L.arm180$912 : ([2], [2], [70]) -> [88]
-main.$L.arm180$912 rd rb s0 =
-      main.$L.x179$910 rd rb s0 s0
+--| block '$L.arm11' of process main
+main.arm11 : ([2], [2], [70]) -> [88]
+main.arm11 rd rb s0 =
+      main.x8 rd rb s0 s0
 
-main.$L.x181$913 : ([2], [2], [70], [70]) -> [88]
-main.$L.x181$913 rd rb x s0 =
+--| block '$L.x9' of process main
+main.x9 : ([2], [2], [70], [70]) -> [88]
+main.x9 rd rb x s0 =
       let $a = Main.r3 x in
-      main.$L.Main.getReg165$890 rd $a rb s0
+      main.getReg rd $a rb s0
 
-main.$L.arm182$915 : ([2], [2], [70]) -> [88]
-main.$L.arm182$915 rd rb s0 =
-      main.$L.x181$913 rd rb s0 s0
+--| block '$L.arm12' of process main
+main.arm12 : ([2], [2], [70]) -> [88]
+main.arm12 rd rb s0 =
+      main.x9 rd rb s0 s0
 
-main.$L.Main.getReg174$903 : ([2], [2], [2], [70]) -> [88]
-main.$L.Main.getReg174$903 rd rb ds s0 =
-      if eq ds 2'h0 then main.$L.arm176$906 rd rb s0
-            else if eq ds 2'h1 then main.$L.arm178$909 rd rb s0 else if eq ds 2'h2 then main.$L.arm180$912 rd rb s0 else main.$L.arm182$915 rd rb s0
+--| block '$L.Main.getReg2' of process main
+main.getReg2 : ([2], [2], [2], [70]) -> [88]
+main.getReg2 rd rb $ds s0 =
+      if eq $ds 2'h0 then main.arm9 rd rb s0
+            else if eq $ds 2'h1 then main.arm10 rd rb s0 else if eq $ds 2'h2 then main.arm11 rd rb s0 else main.arm12 rd rb s0
 
-main.$L.v185$918 : ([6], [8], [70]) -> [88]
-main.$L.v185$918 a v s0 =
+--| block '$L.v' of process main
+main.v : ([6], [8], [70]) -> [88]
+main.v a v s0 =
       let $a = eq v 8'h0 in
-      if eq $a 1'h0 then main.$L.Main.putPC38$726 a s0
-            else main.$L.Main.getPC40$729 s0
+      if not $a then main.putPC a s0
+            else main.getPC2 s0
 
-main.$L.x193$928 : ([6], [70], [70]) -> [88]
-main.$L.x193$928 a x s0 =
+--| block '$L.x10' of process main
+main.x10 : ([6], [70], [70]) -> [88]
+main.x10 a x s0 =
       let $a = Main.r0 x in
-      main.$L.v185$918 a $a s0
+      main.v a $a s0
 
-main.$L.Main.getReg$s1192$927 : ([6], [70]) -> [88]
-main.$L.Main.getReg$s1192$927 a s0 =
-      main.$L.x193$928 a s0 s0
+--| block '$L.Main.getReg$sMain_R0_Main_Reg2' of process main
+main.getReg$sMain_R0_Main_Reg2 : ([6], [70]) -> [88]
+main.getReg$sMain_R0_Main_Reg2 a s0 =
+      main.x10 a s0 s0
 
-main.$L.s7$688 : ([9], [70], [70]) -> [88]
-main.$L.s7$688 instr s s0 =
-      if eq instr[6 +: 3] 3'h0 then main.$L.Main.getPC40$729 s0
+--| block '$L.s' of process main
+main.s : ([9], [70], [70]) -> [88]
+main.s instr s s0 =
+      if eq instr[6 +: 3] 3'h0 then main.getPC2 s0
             else if eq instr[6 +: 3] 3'h1 then (let a = instr[0 +: 6] in
-            main.$L.Main.getOut103$810 a s0) else if eq instr[6 +: 3] 3'h2 then (let a = instr[0 +: 6] in
-            main.$L.Main.getReg$s1143$861 a s0) else if eq instr[6 +: 3] 3'h3 then (let rd = instr[4 +: 2] in
+            main.getOut9 a s0) else if eq instr[6 +: 3] 3'h2 then (let a = instr[0 +: 6] in
+            main.getReg$sMain_R0_Main_Reg a s0) else if eq instr[6 +: 3] 3'h3 then (let rd = instr[4 +: 2] in
             let r1 = instr[2 +: 2] in
             let r2 = instr[0 +: 2] in
-            main.$L.Main.getReg174$903 rd r2 r1 s0) else let a = instr[0 +: 6] in
-            main.$L.Main.getReg$s1192$927 a s0
+            main.getReg2 rd r2 r1 s0) else let a = instr[0 +: 6] in
+            main.getReg$sMain_R0_Main_Reg2 a s0
 
-main.$L.instr6$687 : ([9], [70]) -> [88]
-main.$L.instr6$687 instr s0 =
-      main.$L.s7$688 instr s0 s0
+--| block '$L.instr' of process main
+main.instr : ([9], [70]) -> [88]
+main.instr instr s0 =
+      main.s instr s0 s0
 
-main.$L.i195$932 : ([17], [70]) -> [88]
-main.$L.i195$932 i s0 =
+--| block '$L.i6' of process main
+main.i6 : ([17], [70]) -> [88]
+main.i6 i s0 =
       let $a = Main.instrIn i in
-      main.$L.instr6$687 $a s0
+      main.instr $a s0
 
-main.$L.s197$934 : ([70], [70]) -> [88]
-main.$L.s197$934 s s0 =
+--| block '$L.s46' of process main
+main.s46 : ([70], [70]) -> [88]
+main.s46 s s0 =
       let $a = Main.inputs s in
-      main.$L.i195$932 $a s0
+      main.i6 $a s0
 
-main.$L.Main.getIns196$933 : ([70]) -> [88]
-main.$L.Main.getIns196$933 s0 =
-      main.$L.s197$934 s0 s0
+--| block '$L.Main.getIns2' of process main
+main.getIns2 : ([70]) -> [88]
+main.getIns2 s0 =
+      main.s46 s0 s0
 
-main.$L.s227$972 : ([17], [70], [70]) -> [88]
-main.$L.s227$972 i s s0 =
+--| block '$L.s54' of process main
+main.s54 : ([17], [70], [70]) -> [88]
+main.s54 i s s0 =
       let $a = (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
@@ -744,66 +869,73 @@ main.$L.s227$972 i s s0 =
       let outputs = s[0 +: 15] in
       let $a = r0 # r1 # r2 # r3 # pc # i # outputs in
       $a) in
-      main.$L.Main.getPC34$721 $a
+      main.getPC $a
 
-main.$L.Main.putIns226$971 : ([17], [70]) -> [88]
-main.$L.Main.putIns226$971 i s0 =
-      main.$L.s227$972 i s0 s0
+--| block '$L.Main.putIns6' of process main
+main.putIns6 : ([17], [70]) -> [88]
+main.putIns6 i s0 =
+      main.s54 i s0 s0
 
-main.$L.i225$970 : ([17], [70]) -> [88]
-main.$L.i225$970 i s0 =
-      main.$L.Main.putIns226$971 i s0
+--| block '$L.i8' of process main (state 4)
+main.i8 : ([17], [70]) -> [88]
+main.i8 i s0 =
+      main.putIns6 i s0
 
 Main.dataIn : ([17]) -> [8]
-Main.dataIn ds =
-      let ds2 = ds[0 +: 8] in
-      ds2
+Main.dataIn $ds =
+      let $ds2 = $ds[0 +: 8] in
+      $ds2
 
 Main.instrIn : ([17]) -> [9]
-Main.instrIn ds =
-      let ds1 = ds[8 +: 9] in
-      ds1
+Main.instrIn $ds =
+      let $ds1 = $ds[8 +: 9] in
+      $ds1
 
 Main.outputs : ([70]) -> [15]
-Main.outputs ds =
-      let ds7 = ds[0 +: 15] in
-      ds7
+Main.outputs $ds =
+      let $ds7 = $ds[0 +: 15] in
+      $ds7
 
 Main.inputs : ([70]) -> [17]
-Main.inputs ds =
-      let ds6 = ds[15 +: 17] in
-      ds6
+Main.inputs $ds =
+      let $ds6 = $ds[15 +: 17] in
+      $ds6
 
 Main.pc : ([70]) -> [6]
-Main.pc ds =
-      let ds5 = ds[32 +: 6] in
-      ds5
+Main.pc $ds =
+      let $ds5 = $ds[32 +: 6] in
+      $ds5
 
 Main.r3 : ([70]) -> [8]
-Main.r3 ds =
-      let ds4 = ds[38 +: 8] in
-      ds4
+Main.r3 $ds =
+      let $ds4 = $ds[38 +: 8] in
+      $ds4
 
 Main.r2 : ([70]) -> [8]
-Main.r2 ds =
-      let ds3 = ds[46 +: 8] in
-      ds3
+Main.r2 $ds =
+      let $ds3 = $ds[46 +: 8] in
+      $ds3
 
 Main.r1 : ([70]) -> [8]
-Main.r1 ds =
-      let ds2 = ds[54 +: 8] in
-      ds2
+Main.r1 $ds =
+      let $ds2 = $ds[54 +: 8] in
+      $ds2
 
 Main.r0 : ([70]) -> [8]
-Main.r0 ds =
-      let ds1 = ds[62 +: 8] in
-      ds1
+Main.r0 $ds =
+      let $ds1 = $ds[62 +: 8] in
+      $ds1
 
 device top_level
       input __in0 : [17]
       output __out0 : [15]
       register __resumption_tag : [3] init 3'h4
       register __st0 : [70] init 70'h0
+      tag i = 0
+      tag i3 = 1
+      tag i4 = 2
+      tag i5 = 3
+      tag i8 = 4
       let $res = main.$dispatch (__resumption_tag # __st0) __in0
       __out0 := $res[73 +: 15]
       next __resumption_tag := $res[70 +: 3]

@@ -10,7 +10,7 @@ module ReWire.GHC.Recognize
       ( uKey
       , spanAnnote, varAnnote
       , isPrimModule, isPrimVar, homeishMod
-      , qualName, conName, tupleName, splitStart
+      , qualName, conName, tupleName, splitStart, localOcc
       , erasedArg, erasedEv, userPred
       , tyConModule, tyConKey, tyConTable
       , vocabTable, maybeTyName, eitherTyName
@@ -18,6 +18,7 @@ module ReWire.GHC.Recognize
 
 import ReWire.Annotation (Annote (MsgAnnote), srcAnnote)
 
+import Data.Char (isDigit)
 import Data.Text (Text, pack)
 
 import qualified Data.Text as T
@@ -32,7 +33,7 @@ import GHC.Core.TyCon (TyCon, tyConName, isClassTyCon)
 import GHC.Core.Type (expandTypeSynonyms, tyConAppTyCon_maybe)
 import GHC.Core.Utils (exprType)
 import GHC.Data.FastString (unpackFS)
-import GHC.Types.Name (getOccString, nameModule_maybe, nameSrcSpan)
+import GHC.Types.Name (getOccString, nameModule_maybe, nameSrcSpan, isSystemName)
 import GHC.Types.SrcLoc (SrcSpan (..), srcSpanFile, srcSpanStartLine, srcSpanStartCol, srcSpanEndLine, srcSpanEndCol)
 import GHC.Types.Unique (getKey)
 import GHC.Types.Var (Var, varName, varUnique)
@@ -82,6 +83,34 @@ homeishMod = \ case
       Nothing -> False
       Just mn -> not (isPrimModule mn) && not (any (`T.isPrefixOf` pack (moduleNameString mn))
             (["GHC.", "Data.", "Control.", "System.", "Foreign.", "Text.", "Unsafe."] :: [Text]))
+
+-- | The display occurrence for a local binder: real source names pass
+--   through; GHC-machine names (system names, plus the desugarer's
+--   ds\/wild\/eta family by occurrence shape -- 'isSystemName' alone
+--   misses some) get the compiler-owned @$@ prefix, so downstream naming
+--   policy knows they are free to rename, merge, or discard rather than
+--   worth preserving as signal names. The shape check defers to a real
+--   source span: a user's own binder named @eta@ or @ds@ keeps its name.
+--   Advisory only: uniqueness never depends on the marker.
+localOcc :: Var -> Text
+localOcc v
+      | "$" `T.isPrefixOf` occ = occ
+      | machine                = "$" <> occ
+      | otherwise              = occ
+      where occ :: Text
+            occ = pack $ getOccString v
+
+            machine :: Bool
+            machine = isSystemName (varName v)
+                   || (T.dropWhileEnd isDigit occ `elem` machineOccs && not fromSource)
+
+            fromSource :: Bool
+            fromSource = case nameSrcSpan $ varName v of
+                  RealSrcSpan {} -> True
+                  _              -> False
+
+            machineOccs :: [Text]
+            machineOccs = ["ds", "wild", "eta", "ipv", "lvl", "fail"]
 
 isPrimVar :: Var -> Bool
 isPrimVar v = "rwPrim" `T.isPrefixOf` pack (getOccString v)

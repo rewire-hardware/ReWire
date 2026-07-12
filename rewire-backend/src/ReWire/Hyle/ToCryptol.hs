@@ -139,7 +139,7 @@ pushBind :: Monad m => Cry.Name -> Size -> Cry.Exp -> TCM m ()
 pushBind n sz e = modify $ \ ts -> ts { tcsBinds = tcsBinds ts <> [Cry.Bind n (Cry.TBits sz) e] }
 
 transDefn :: MonadError AstError m => Env -> Defn -> m Cry.Defn
-transDefn env (Defn an g (Sig _ argSzs res) ps body) = flip evalStateT (TCS 0 [] mempty) $ do
+transDefn env (Defn an g (Sig _ argSzs res) ps body _ _) = flip evalStateT (TCS 0 [] mempty) $ do
       let xs = zipWith (\ i _ -> "x" <> showt i) [0 :: Int ..] ps
       modify $ \ ts -> ts { tcsLocals = Map.fromList $ zip ps xs }
       n     <- defnNm' env an g

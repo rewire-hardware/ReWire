@@ -1,17 +1,21 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([8]) -> [16]
 main.$dispatch i =
-      main.$L.$x4$244 i
+      main.$x2 i
 
-main.$L.$x4$244 : ([8]) -> [16]
-main.$L.$x4$244 $x =
-      main.$L.$x5$246 (xor (zext 16 $x) 16'h1)
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([8]) -> [16]
+main.$x2 $x =
+      main.$x3 (xor (zext 16 $x) 16'h1)
 
-main.$L.$x5$246 : ([16]) -> [16]
-main.$L.$x5$246 $x =
+--| block '$L.$x3' of process main
+main.$x3 : ([16]) -> [16]
+main.$x3 $x =
       $x
 
 device top_level
       input __in0 : [8]
       output __out0 : [16]
+      tag $x2 = 0
       let $res = main.$dispatch __in0
       __out0 := $res

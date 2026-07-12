@@ -1,2417 +1,2859 @@
+--| state dispatch for process main: 0=i2 1=i4 2=i6 3=i7 4=i8
 main.$dispatch : ([88], [10]) -> [106]
 main.$dispatch disc i =
-      if eq disc[85 +: 3] 3'h0 then main.$L.i30$6391 disc[83 +: 1] disc[81 +: 2] i disc[0 +: 81]
-            else if eq disc[85 +: 3] 3'h1 then main.$L.i57$6433 disc[84 +: 1] disc[83 +: 1] disc[81 +: 2] i disc[0 +: 81] else if eq disc[85 +: 3] 3'h2 then main.$L.i81$6467 disc[82 +: 1] disc[81 +: 1] i disc[0 +: 81] else if eq disc[85 +: 3] 3'h3 then main.$L.i105$6501 i disc[0 +: 81] else main.$L.i139$6551 i disc[0 +: 81]
+      if eq disc[85 +: 3] 3'h0 then main.i2 disc[83 +: 1] disc[81 +: 2] i disc[0 +: 81]
+            else if eq disc[85 +: 3] 3'h1 then main.i4 disc[84 +: 1] disc[83 +: 1] disc[81 +: 2] i disc[0 +: 81] else if eq disc[85 +: 3] 3'h2 then main.i6 disc[82 +: 1] disc[81 +: 1] i disc[0 +: 81] else if eq disc[85 +: 3] 3'h3 then main.i7 i disc[0 +: 81] else main.i8 i disc[0 +: 81]
 
-main.$L.s18$6374 : ([8], [81], [81]) -> [106]
-main.$L.s18$6374 x s s0 =
+--| block '$L.s' of process main
+main.s : ([8], [81], [81]) -> [106]
+main.s x s s0 =
       let $a = Main.setR0 s x in
-      main.$L.Main.loop3$6359 $a
+      main.loop $a
 
-main.$L.arm19$6376 : ([8], [81]) -> [106]
-main.$L.arm19$6376 x s0 =
-      main.$L.s18$6374 x s0 s0
+--| block '$L.arm' of process main
+main.arm : ([8], [81]) -> [106]
+main.arm x s0 =
+      main.s x s0 s0
 
-main.$L.s20$6377 : ([8], [81], [81]) -> [106]
-main.$L.s20$6377 x s s0 =
+--| block '$L.s2' of process main
+main.s2 : ([8], [81], [81]) -> [106]
+main.s2 x s s0 =
       let $a = Main.setR1 s x in
-      main.$L.Main.loop3$6359 $a
+      main.loop $a
 
-main.$L.arm21$6379 : ([8], [81]) -> [106]
-main.$L.arm21$6379 x s0 =
-      main.$L.s20$6377 x s0 s0
+--| block '$L.arm2' of process main
+main.arm2 : ([8], [81]) -> [106]
+main.arm2 x s0 =
+      main.s2 x s0 s0
 
-main.$L.s22$6380 : ([8], [81], [81]) -> [106]
-main.$L.s22$6380 x s s0 =
+--| block '$L.s3' of process main
+main.s3 : ([8], [81], [81]) -> [106]
+main.s3 x s s0 =
       let $a = Main.setR2 s x in
-      main.$L.Main.loop3$6359 $a
+      main.loop $a
 
-main.$L.arm23$6382 : ([8], [81]) -> [106]
-main.$L.arm23$6382 x s0 =
-      main.$L.s22$6380 x s0 s0
+--| block '$L.arm3' of process main
+main.arm3 : ([8], [81]) -> [106]
+main.arm3 x s0 =
+      main.s3 x s0 s0
 
-main.$L.s24$6383 : ([8], [81], [81]) -> [106]
-main.$L.s24$6383 x s s0 =
+--| block '$L.s4' of process main
+main.s4 : ([8], [81], [81]) -> [106]
+main.s4 x s s0 =
       let $a = Main.setR3 s x in
-      main.$L.Main.loop3$6359 $a
+      main.loop $a
 
-main.$L.arm25$6385 : ([8], [81]) -> [106]
-main.$L.arm25$6385 x s0 =
-      main.$L.s24$6383 x s0 s0
+--| block '$L.arm4' of process main
+main.arm4 : ([8], [81]) -> [106]
+main.arm4 x s0 =
+      main.s4 x s0 s0
 
-main.$L.x17$6373 : ([2], [8], [81]) -> [106]
-main.$L.x17$6373 r x s0 =
-      if eq r 2'h0 then main.$L.arm19$6376 x s0
-            else if eq r 2'h1 then main.$L.arm21$6379 x s0 else if eq r 2'h2 then main.$L.arm23$6382 x s0 else main.$L.arm25$6385 x s0
+--| block '$L.x' of process main
+main.x : ([2], [8], [81]) -> [106]
+main.x r x s0 =
+      if eq r 2'h0 then main.arm x s0
+            else if eq r 2'h1 then main.arm2 x s0 else if eq r 2'h2 then main.arm3 x s0 else main.arm4 x s0
 
-main.$L.i26$6386 : ([2], [10], [81]) -> [106]
-main.$L.i26$6386 r i s0 =
+--| block '$L.i' of process main
+main.i : ([2], [10], [81]) -> [106]
+main.i r i s0 =
       let $a = Main.dataIn i in
-      main.$L.x17$6373 r $a s0
+      main.x r $a s0
 
-main.$L.s27$6387 : ([2], [81], [81]) -> [106]
-main.$L.s27$6387 r s s0 =
+--| block '$L.s5' of process main
+main.s5 : ([2], [81], [81]) -> [106]
+main.s5 r s s0 =
       let $a = Main.inputs s in
-      main.$L.i26$6386 r $a s0
+      main.i r $a s0
 
-main.$L.arm28$6389 : ([2], [81]) -> [106]
-main.$L.arm28$6389 r s0 =
-      main.$L.s27$6387 r s0 s0
+--| block '$L.arm5' of process main
+main.arm5 : ([2], [81]) -> [106]
+main.arm5 r s0 =
+      main.s5 r s0 s0
 
-main.$L._unused16$6372 : ([1], [2], [81]) -> [106]
-main.$L._unused16$6372 rEn r s0 =
-      if eq rEn 1'h0 then main.$L.Main.loop3$6359 s0
-            else main.$L.arm28$6389 r s0
+--| block '$L._unused9' of process main
+main._unused9 : ([1], [2], [81]) -> [106]
+main._unused9 rEn r s0 =
+      if not rEn then main.loop s0
+            else main.arm5 r s0
 
-main.$L.s31$6392 : ([1], [2], [10], [81], [81]) -> [106]
-main.$L.s31$6392 rEn r i s s0 =
+--| block '$L.s6' of process main
+main.s6 : ([1], [2], [10], [81], [81]) -> [106]
+main.s6 rEn r i s s0 =
       let $a = Main.setInputs s i in
-      main.$L._unused16$6372 rEn r $a
+      main._unused9 rEn r $a
 
-main.$L.i30$6391 : ([1], [2], [10], [81]) -> [106]
-main.$L.i30$6391 rEn r i s0 =
-      main.$L.s31$6392 rEn r i s0 s0
+--| block '$L.i2' of process main (state 0)
+main.i2 : ([1], [2], [10], [81]) -> [106]
+main.i2 rEn r i s0 =
+      main.s6 rEn r i s0 s0
 
-main.$L.o29$6390 : ([1], [2], [18], [81]) -> [106]
-main.$L.o29$6390 rEn r o s0 =
+--| block '$L.o' of process main
+main.o : ([1], [2], [18], [81]) -> [106]
+main.o rEn r o s0 =
       o # 4'h0 # rEn # r # s0
 
-main.$L.s32$6394 : ([1], [2], [81], [81]) -> [106]
-main.$L.s32$6394 rEn r s s0 =
+--| block '$L.s7' of process main
+main.s7 : ([1], [2], [81], [81]) -> [106]
+main.s7 rEn r s s0 =
       let $a = Main.outputs s in
-      main.$L.o29$6390 rEn r $a s0
+      main.o rEn r $a s0
 
-main.$L._unused15$6371 : ([1], [2], [81]) -> [106]
-main.$L._unused15$6371 rEn r s0 =
-      main.$L.s32$6394 rEn r s0 s0
+--| block '$L._unused8' of process main
+main._unused8 : ([1], [2], [81]) -> [106]
+main._unused8 rEn r s0 =
+      main.s7 rEn r s0 s0
 
-main.$L.s34$6397 : ([1], [2], [8], [81], [81]) -> [106]
-main.$L.s34$6397 rEn r pc s s0 =
-      let $a = Main.plusCW8$s1 pc in
+--| block '$L.s8' of process main
+main.s8 : ([1], [2], [8], [81], [81]) -> [106]
+main.s8 rEn r pc s s0 =
+      let $a = Main.plusCW8$sMain_oneW8_False_Bool pc in
       let $a1 = (let y = $a[0 +: 8] in
       y) in
       let $a2 = Main.setPC s $a1 in
-      main.$L._unused15$6371 rEn r $a2
+      main._unused8 rEn r $a2
 
-main.$L.pc33$6396 : ([1], [2], [8], [81]) -> [106]
-main.$L.pc33$6396 rEn r pc s0 =
-      main.$L.s34$6397 rEn r pc s0 s0
+--| block '$L.pc2' of process main
+main.pc2 : ([1], [2], [8], [81]) -> [106]
+main.pc2 rEn r pc s0 =
+      main.s8 rEn r pc s0 s0
 
-main.$L.s35$6399 : ([1], [2], [81], [81]) -> [106]
-main.$L.s35$6399 rEn r s s0 =
+--| block '$L.s9' of process main
+main.s9 : ([1], [2], [81], [81]) -> [106]
+main.s9 rEn r s s0 =
       let $a = Main.pc s in
-      main.$L.pc33$6396 rEn r $a s0
+      main.pc2 rEn r $a s0
 
-main.$L._unused14$6370 : ([1], [2], [81]) -> [106]
-main.$L._unused14$6370 rEn r s0 =
-      main.$L.s35$6399 rEn r s0 s0
+--| block '$L._unused7' of process main
+main._unused7 : ([1], [2], [81]) -> [106]
+main._unused7 rEn r s0 =
+      main.s9 rEn r s0 s0
 
-main.$L.s38$6403 : ([1], [2], [8], [18], [81], [81]) -> [106]
-main.$L.s38$6403 rEn r d o s s0 =
+--| block '$L.s10' of process main
+main.s10 : ([1], [2], [8], [18], [81], [81]) -> [106]
+main.s10 rEn r d o s s0 =
       let $a = Main.setDataOut o d in
       let $a1 = Main.setOutputs s $a in
-      main.$L._unused14$6370 rEn r $a1
+      main._unused7 rEn r $a1
 
-main.$L.o37$6402 : ([1], [2], [8], [18], [81]) -> [106]
-main.$L.o37$6402 rEn r d o s0 =
-      main.$L.s38$6403 rEn r d o s0 s0
+--| block '$L.o2' of process main
+main.o2 : ([1], [2], [8], [18], [81]) -> [106]
+main.o2 rEn r d o s0 =
+      main.s10 rEn r d o s0 s0
 
-main.$L.s39$6405 : ([1], [2], [8], [81], [81]) -> [106]
-main.$L.s39$6405 rEn r d s s0 =
+--| block '$L.s11' of process main
+main.s11 : ([1], [2], [8], [81], [81]) -> [106]
+main.s11 rEn r d s s0 =
       let $a = Main.outputs s in
-      main.$L.o37$6402 rEn r d $a s0
+      main.o2 rEn r d $a s0
 
-main.$L.d36$6401 : ([1], [2], [8], [81]) -> [106]
-main.$L.d36$6401 rEn r d s0 =
-      main.$L.s39$6405 rEn r d s0 s0
+--| block '$L.d' of process main
+main.d : ([1], [2], [8], [81]) -> [106]
+main.d rEn r d s0 =
+      main.s11 rEn r d s0 s0
 
-main.$L.s40$6407 : ([1], [2], [81], [81]) -> [106]
-main.$L.s40$6407 rEn r s s0 =
+--| block '$L.s12' of process main
+main.s12 : ([1], [2], [81], [81]) -> [106]
+main.s12 rEn r s s0 =
       let $a = Main.r0 s in
-      main.$L.d36$6401 rEn r $a s0
+      main.d rEn r $a s0
 
-main.$L.arm41$6409 : ([1], [2], [81]) -> [106]
-main.$L.arm41$6409 rEn r s0 =
-      main.$L.s40$6407 rEn r s0 s0
+--| block '$L.arm6' of process main
+main.arm6 : ([1], [2], [81]) -> [106]
+main.arm6 rEn r s0 =
+      main.s12 rEn r s0 s0
 
-main.$L.s42$6410 : ([1], [2], [81], [81]) -> [106]
-main.$L.s42$6410 rEn r s s0 =
+--| block '$L.s13' of process main
+main.s13 : ([1], [2], [81], [81]) -> [106]
+main.s13 rEn r s s0 =
       let $a = Main.r1 s in
-      main.$L.d36$6401 rEn r $a s0
+      main.d rEn r $a s0
 
-main.$L.arm43$6412 : ([1], [2], [81]) -> [106]
-main.$L.arm43$6412 rEn r s0 =
-      main.$L.s42$6410 rEn r s0 s0
+--| block '$L.arm7' of process main
+main.arm7 : ([1], [2], [81]) -> [106]
+main.arm7 rEn r s0 =
+      main.s13 rEn r s0 s0
 
-main.$L.s44$6413 : ([1], [2], [81], [81]) -> [106]
-main.$L.s44$6413 rEn r s s0 =
+--| block '$L.s14' of process main
+main.s14 : ([1], [2], [81], [81]) -> [106]
+main.s14 rEn r s s0 =
       let $a = Main.r2 s in
-      main.$L.d36$6401 rEn r $a s0
+      main.d rEn r $a s0
 
-main.$L.arm45$6415 : ([1], [2], [81]) -> [106]
-main.$L.arm45$6415 rEn r s0 =
-      main.$L.s44$6413 rEn r s0 s0
+--| block '$L.arm8' of process main
+main.arm8 : ([1], [2], [81]) -> [106]
+main.arm8 rEn r s0 =
+      main.s14 rEn r s0 s0
 
-main.$L.s46$6416 : ([1], [2], [81], [81]) -> [106]
-main.$L.s46$6416 rEn r s s0 =
+--| block '$L.s15' of process main
+main.s15 : ([1], [2], [81], [81]) -> [106]
+main.s15 rEn r s s0 =
       let $a = Main.r3 s in
-      main.$L.d36$6401 rEn r $a s0
+      main.d rEn r $a s0
 
-main.$L.arm47$6418 : ([1], [2], [81]) -> [106]
-main.$L.arm47$6418 rEn r s0 =
-      main.$L.s46$6416 rEn r s0 s0
+--| block '$L.arm9' of process main
+main.arm9 : ([1], [2], [81]) -> [106]
+main.arm9 rEn r s0 =
+      main.s15 rEn r s0 s0
 
-main.$L._unused13$6369 : ([1], [1], [2], [81]) -> [106]
-main.$L._unused13$6369 rEn wEn r s0 =
-      if eq wEn 1'h0 then main.$L._unused14$6370 rEn r s0
-            else if eq r 2'h0 then main.$L.arm41$6409 rEn r s0 else if eq r 2'h1 then main.$L.arm43$6412 rEn r s0 else if eq r 2'h2 then main.$L.arm45$6415 rEn r s0 else main.$L.arm47$6418 rEn r s0
+--| block '$L._unused6' of process main
+main._unused6 : ([1], [1], [2], [81]) -> [106]
+main._unused6 rEn wEn r s0 =
+      if not wEn then main._unused7 rEn r s0
+            else if eq r 2'h0 then main.arm6 rEn r s0 else if eq r 2'h1 then main.arm7 rEn r s0 else if eq r 2'h2 then main.arm8 rEn r s0 else main.arm9 rEn r s0
 
-main.$L.s49$6420 : ([1], [1], [2], [18], [81], [81]) -> [106]
-main.$L.s49$6420 rEn wEn r o s s0 =
+--| block '$L.s16' of process main
+main.s16 : ([1], [1], [2], [18], [81], [81]) -> [106]
+main.s16 rEn wEn r o s s0 =
       let $a = Main.setWeOut o wEn in
       let $a1 = Main.setOutputs s $a in
-      main.$L._unused13$6369 rEn wEn r $a1
+      main._unused6 rEn wEn r $a1
 
-main.$L.o48$6419 : ([1], [1], [2], [18], [81]) -> [106]
-main.$L.o48$6419 rEn wEn r o s0 =
-      main.$L.s49$6420 rEn wEn r o s0 s0
+--| block '$L.o3' of process main
+main.o3 : ([1], [1], [2], [18], [81]) -> [106]
+main.o3 rEn wEn r o s0 =
+      main.s16 rEn wEn r o s0 s0
 
-main.$L.s50$6422 : ([1], [1], [2], [81], [81]) -> [106]
-main.$L.s50$6422 rEn wEn r s s0 =
+--| block '$L.s17' of process main
+main.s17 : ([1], [1], [2], [81], [81]) -> [106]
+main.s17 rEn wEn r s s0 =
       let $a = Main.outputs s in
-      main.$L.o48$6419 rEn wEn r $a s0
+      main.o3 rEn wEn r $a s0
 
-main.$L._unused12$6368 : ([1], [1], [2], [81]) -> [106]
-main.$L._unused12$6368 rEn wEn r s0 =
-      main.$L.s50$6422 rEn wEn r s0 s0
+--| block '$L._unused5' of process main
+main._unused5 : ([1], [1], [2], [81]) -> [106]
+main._unused5 rEn wEn r s0 =
+      main.s17 rEn wEn r s0 s0
 
-main.$L.s52$6425 : ([1], [1], [2], [8], [18], [81], [81]) -> [106]
-main.$L.s52$6425 rEn wEn r a o s s0 =
+--| block '$L.s18' of process main
+main.s18 : ([1], [1], [2], [8], [18], [81], [81]) -> [106]
+main.s18 rEn wEn r a o s s0 =
       let $a = Main.setAddrOut o a in
       let $a1 = Main.setOutputs s $a in
-      main.$L._unused12$6368 rEn wEn r $a1
+      main._unused5 rEn wEn r $a1
 
-main.$L.o51$6424 : ([1], [1], [2], [8], [18], [81]) -> [106]
-main.$L.o51$6424 rEn wEn r a o s0 =
-      main.$L.s52$6425 rEn wEn r a o s0 s0
+--| block '$L.o4' of process main
+main.o4 : ([1], [1], [2], [8], [18], [81]) -> [106]
+main.o4 rEn wEn r a o s0 =
+      main.s18 rEn wEn r a o s0 s0
 
-main.$L.s53$6427 : ([1], [1], [2], [8], [81], [81]) -> [106]
-main.$L.s53$6427 rEn wEn r a s s0 =
+--| block '$L.s19' of process main
+main.s19 : ([1], [1], [2], [8], [81], [81]) -> [106]
+main.s19 rEn wEn r a s s0 =
       let $a = Main.outputs s in
-      main.$L.o51$6424 rEn wEn r a $a s0
+      main.o4 rEn wEn r a $a s0
 
-main.$L.a11$6367 : ([1], [1], [2], [8], [81]) -> [106]
-main.$L.a11$6367 rEn wEn r a s0 =
-      main.$L.s53$6427 rEn wEn r a s0 s0
+--| block '$L.a' of process main
+main.a : ([1], [1], [2], [8], [81]) -> [106]
+main.a rEn wEn r a s0 =
+      main.s19 rEn wEn r a s0 s0
 
-main.$L.i54$6429 : ([1], [1], [2], [10], [81]) -> [106]
-main.$L.i54$6429 rEn wEn r i s0 =
+--| block '$L.i3' of process main
+main.i3 : ([1], [1], [2], [10], [81]) -> [106]
+main.i3 rEn wEn r i s0 =
       let $a = Main.dataIn i in
-      main.$L.a11$6367 rEn wEn r $a s0
+      main.a rEn wEn r $a s0
 
-main.$L.s55$6430 : ([1], [1], [2], [81], [81]) -> [106]
-main.$L.s55$6430 rEn wEn r s s0 =
+--| block '$L.s20' of process main
+main.s20 : ([1], [1], [2], [81], [81]) -> [106]
+main.s20 rEn wEn r s s0 =
       let $a = Main.inputs s in
-      main.$L.i54$6429 rEn wEn r $a s0
+      main.i3 rEn wEn r $a s0
 
-main.$L._unused10$6366 : ([1], [1], [2], [81]) -> [106]
-main.$L._unused10$6366 rEn wEn r s0 =
-      main.$L.s55$6430 rEn wEn r s0 s0
+--| block '$L._unused4' of process main
+main._unused4 : ([1], [1], [2], [81]) -> [106]
+main._unused4 rEn wEn r s0 =
+      main.s20 rEn wEn r s0 s0
 
-main.$L.s58$6434 : ([1], [1], [2], [10], [81], [81]) -> [106]
-main.$L.s58$6434 rEn wEn r i s s0 =
+--| block '$L.s21' of process main
+main.s21 : ([1], [1], [2], [10], [81], [81]) -> [106]
+main.s21 rEn wEn r i s s0 =
       let $a = Main.setInputs s i in
-      main.$L._unused10$6366 rEn wEn r $a
+      main._unused4 rEn wEn r $a
 
-main.$L.i57$6433 : ([1], [1], [2], [10], [81]) -> [106]
-main.$L.i57$6433 rEn wEn r i s0 =
-      main.$L.s58$6434 rEn wEn r i s0 s0
+--| block '$L.i4' of process main (state 1)
+main.i4 : ([1], [1], [2], [10], [81]) -> [106]
+main.i4 rEn wEn r i s0 =
+      main.s21 rEn wEn r i s0 s0
 
-main.$L.o56$6432 : ([1], [1], [2], [18], [81]) -> [106]
-main.$L.o56$6432 rEn wEn r o s0 =
+--| block '$L.o5' of process main
+main.o5 : ([1], [1], [2], [18], [81]) -> [106]
+main.o5 rEn wEn r o s0 =
       o # 3'h1 # rEn # wEn # r # s0
 
-main.$L.s59$6436 : ([1], [1], [2], [81], [81]) -> [106]
-main.$L.s59$6436 rEn wEn r s s0 =
+--| block '$L.s22' of process main
+main.s22 : ([1], [1], [2], [81], [81]) -> [106]
+main.s22 rEn wEn r s s0 =
       let $a = Main.outputs s in
-      main.$L.o56$6432 rEn wEn r $a s0
+      main.o5 rEn wEn r $a s0
 
-main.$L._unused9$6365 : ([1], [1], [2], [81]) -> [106]
-main.$L._unused9$6365 rEn wEn r s0 =
-      main.$L.s59$6436 rEn wEn r s0 s0
+--| block '$L._unused3' of process main
+main._unused3 : ([1], [1], [2], [81]) -> [106]
+main._unused3 rEn wEn r s0 =
+      main.s22 rEn wEn r s0 s0
 
-main.$L.s61$6439 : ([1], [1], [2], [8], [18], [81], [81]) -> [106]
-main.$L.s61$6439 rEn wEn r pc o s s0 =
+--| block '$L.s23' of process main
+main.s23 : ([1], [1], [2], [8], [18], [81], [81]) -> [106]
+main.s23 rEn wEn r pc o s s0 =
       let $a = Main.setAddrOut o pc in
       let $a1 = Main.setOutputs s $a in
-      main.$L._unused9$6365 rEn wEn r $a1
+      main._unused3 rEn wEn r $a1
 
-main.$L.o60$6438 : ([1], [1], [2], [8], [18], [81]) -> [106]
-main.$L.o60$6438 rEn wEn r pc o s0 =
-      main.$L.s61$6439 rEn wEn r pc o s0 s0
+--| block '$L.o6' of process main
+main.o6 : ([1], [1], [2], [8], [18], [81]) -> [106]
+main.o6 rEn wEn r pc o s0 =
+      main.s23 rEn wEn r pc o s0 s0
 
-main.$L.s62$6441 : ([1], [1], [2], [8], [81], [81]) -> [106]
-main.$L.s62$6441 rEn wEn r pc s s0 =
+--| block '$L.s24' of process main
+main.s24 : ([1], [1], [2], [8], [81], [81]) -> [106]
+main.s24 rEn wEn r pc s s0 =
       let $a = Main.outputs s in
-      main.$L.o60$6438 rEn wEn r pc $a s0
+      main.o6 rEn wEn r pc $a s0
 
-main.$L.pc8$6364 : ([1], [1], [2], [8], [81]) -> [106]
-main.$L.pc8$6364 rEn wEn r pc s0 =
-      main.$L.s62$6441 rEn wEn r pc s0 s0
+--| block '$L.pc' of process main
+main.pc : ([1], [1], [2], [8], [81]) -> [106]
+main.pc rEn wEn r pc s0 =
+      main.s24 rEn wEn r pc s0 s0
 
-main.$L.s63$6443 : ([1], [1], [2], [81], [81]) -> [106]
-main.$L.s63$6443 rEn wEn r s s0 =
+--| block '$L.s25' of process main
+main.s25 : ([1], [1], [2], [81], [81]) -> [106]
+main.s25 rEn wEn r s s0 =
       let $a = Main.pc s in
-      main.$L.pc8$6364 rEn wEn r $a s0
+      main.pc rEn wEn r $a s0
 
-main.$L.arm64$6445 : ([1], [1], [1], [1], [81]) -> [106]
-main.$L.arm64$6445 rEn wEn b0 b1 s0 =
+--| block '$L.arm10' of process main
+main.arm10 : ([1], [1], [1], [1], [81]) -> [106]
+main.arm10 rEn wEn b0 b1 s0 =
       let r = Main.mkReg b0 b1 in
-      main.$L.s63$6443 rEn wEn r s0 s0
+      main.s25 rEn wEn r s0 s0
 
-main.$L.s70$6451 : ([8], [81], [81]) -> [106]
-main.$L.s70$6451 v s s0 =
+--| block '$L.s26' of process main
+main.s26 : ([8], [81], [81]) -> [106]
+main.s26 v s s0 =
       let $a = Main.setR0 s v in
-      main.$L.Main.loop3$6359 $a
+      main.loop $a
 
-main.$L.arm71$6453 : ([8], [81]) -> [106]
-main.$L.arm71$6453 v s0 =
-      main.$L.s70$6451 v s0 s0
+--| block '$L.arm11' of process main
+main.arm11 : ([8], [81]) -> [106]
+main.arm11 v s0 =
+      main.s26 v s0 s0
 
-main.$L.s72$6454 : ([8], [81], [81]) -> [106]
-main.$L.s72$6454 v s s0 =
+--| block '$L.s27' of process main
+main.s27 : ([8], [81], [81]) -> [106]
+main.s27 v s s0 =
       let $a = Main.setR1 s v in
-      main.$L.Main.loop3$6359 $a
+      main.loop $a
 
-main.$L.arm73$6456 : ([8], [81]) -> [106]
-main.$L.arm73$6456 v s0 =
-      main.$L.s72$6454 v s0 s0
+--| block '$L.arm12' of process main
+main.arm12 : ([8], [81]) -> [106]
+main.arm12 v s0 =
+      main.s27 v s0 s0
 
-main.$L.s74$6457 : ([8], [81], [81]) -> [106]
-main.$L.s74$6457 v s s0 =
+--| block '$L.s28' of process main
+main.s28 : ([8], [81], [81]) -> [106]
+main.s28 v s s0 =
       let $a = Main.setR2 s v in
-      main.$L.Main.loop3$6359 $a
+      main.loop $a
 
-main.$L.arm75$6459 : ([8], [81]) -> [106]
-main.$L.arm75$6459 v s0 =
-      main.$L.s74$6457 v s0 s0
+--| block '$L.arm13' of process main
+main.arm13 : ([8], [81]) -> [106]
+main.arm13 v s0 =
+      main.s28 v s0 s0
 
-main.$L.s76$6460 : ([8], [81], [81]) -> [106]
-main.$L.s76$6460 v s s0 =
+--| block '$L.s29' of process main
+main.s29 : ([8], [81], [81]) -> [106]
+main.s29 v s s0 =
       let $a = Main.setR3 s v in
-      main.$L.Main.loop3$6359 $a
+      main.loop $a
 
-main.$L.arm77$6462 : ([8], [81]) -> [106]
-main.$L.arm77$6462 v s0 =
-      main.$L.s76$6460 v s0 s0
+--| block '$L.arm14' of process main
+main.arm14 : ([8], [81]) -> [106]
+main.arm14 v s0 =
+      main.s29 v s0 s0
 
-main.$L.v69$6450 : ([1], [1], [8], [81]) -> [106]
-main.$L.v69$6450 rEn wEn v s0 =
+--| block '$L.v' of process main
+main.v : ([1], [1], [8], [81]) -> [106]
+main.v rEn wEn v s0 =
       let $a = Main.mkReg rEn wEn in
-      if eq $a 2'h0 then main.$L.arm71$6453 v s0
-            else if eq $a 2'h1 then main.$L.arm73$6456 v s0 else if eq $a 2'h2 then main.$L.arm75$6459 v s0 else main.$L.arm77$6462 v s0
+      if eq $a 2'h0 then main.arm11 v s0
+            else if eq $a 2'h1 then main.arm12 v s0 else if eq $a 2'h2 then main.arm13 v s0 else main.arm14 v s0
 
-main.$L.i78$6463 : ([1], [1], [10], [81]) -> [106]
-main.$L.i78$6463 rEn wEn i s0 =
+--| block '$L.i5' of process main
+main.i5 : ([1], [1], [10], [81]) -> [106]
+main.i5 rEn wEn i s0 =
       let $a = Main.dataIn i in
-      main.$L.v69$6450 rEn wEn $a s0
+      main.v rEn wEn $a s0
 
-main.$L.s79$6464 : ([1], [1], [81], [81]) -> [106]
-main.$L.s79$6464 rEn wEn s s0 =
+--| block '$L.s30' of process main
+main.s30 : ([1], [1], [81], [81]) -> [106]
+main.s30 rEn wEn s s0 =
       let $a = Main.inputs s in
-      main.$L.i78$6463 rEn wEn $a s0
+      main.i5 rEn wEn $a s0
 
-main.$L._unused68$6449 : ([1], [1], [81]) -> [106]
-main.$L._unused68$6449 rEn wEn s0 =
-      main.$L.s79$6464 rEn wEn s0 s0
+--| block '$L._unused12' of process main
+main._unused12 : ([1], [1], [81]) -> [106]
+main._unused12 rEn wEn s0 =
+      main.s30 rEn wEn s0 s0
 
-main.$L.s82$6468 : ([1], [1], [10], [81], [81]) -> [106]
-main.$L.s82$6468 rEn wEn i s s0 =
+--| block '$L.s31' of process main
+main.s31 : ([1], [1], [10], [81], [81]) -> [106]
+main.s31 rEn wEn i s s0 =
       let $a = Main.setInputs s i in
-      main.$L._unused68$6449 rEn wEn $a
+      main._unused12 rEn wEn $a
 
-main.$L.i81$6467 : ([1], [1], [10], [81]) -> [106]
-main.$L.i81$6467 rEn wEn i s0 =
-      main.$L.s82$6468 rEn wEn i s0 s0
+--| block '$L.i6' of process main (state 2)
+main.i6 : ([1], [1], [10], [81]) -> [106]
+main.i6 rEn wEn i s0 =
+      main.s31 rEn wEn i s0 s0
 
-main.$L.o80$6466 : ([1], [1], [18], [81]) -> [106]
-main.$L.o80$6466 rEn wEn o s0 =
+--| block '$L.o7' of process main
+main.o7 : ([1], [1], [18], [81]) -> [106]
+main.o7 rEn wEn o s0 =
       o # 5'h8 # rEn # wEn # s0
 
-main.$L.s83$6470 : ([1], [1], [81], [81]) -> [106]
-main.$L.s83$6470 rEn wEn s s0 =
+--| block '$L.s32' of process main
+main.s32 : ([1], [1], [81], [81]) -> [106]
+main.s32 rEn wEn s s0 =
       let $a = Main.outputs s in
-      main.$L.o80$6466 rEn wEn $a s0
+      main.o7 rEn wEn $a s0
 
-main.$L._unused67$6448 : ([1], [1], [81]) -> [106]
-main.$L._unused67$6448 rEn wEn s0 =
-      main.$L.s83$6470 rEn wEn s0 s0
+--| block '$L._unused11' of process main
+main._unused11 : ([1], [1], [81]) -> [106]
+main._unused11 rEn wEn s0 =
+      main.s32 rEn wEn s0 s0
 
-main.$L.s85$6473 : ([1], [1], [8], [18], [81], [81]) -> [106]
-main.$L.s85$6473 rEn wEn a o s s0 =
+--| block '$L.s33' of process main
+main.s33 : ([1], [1], [8], [18], [81], [81]) -> [106]
+main.s33 rEn wEn a o s s0 =
       let $a = Main.setAddrOut o a in
       let $a1 = Main.setOutputs s $a in
-      main.$L._unused67$6448 rEn wEn $a1
+      main._unused11 rEn wEn $a1
 
-main.$L.o84$6472 : ([1], [1], [8], [18], [81]) -> [106]
-main.$L.o84$6472 rEn wEn a o s0 =
-      main.$L.s85$6473 rEn wEn a o s0 s0
+--| block '$L.o8' of process main
+main.o8 : ([1], [1], [8], [18], [81]) -> [106]
+main.o8 rEn wEn a o s0 =
+      main.s33 rEn wEn a o s0 s0
 
-main.$L.s86$6475 : ([1], [1], [8], [81], [81]) -> [106]
-main.$L.s86$6475 rEn wEn a s s0 =
+--| block '$L.s34' of process main
+main.s34 : ([1], [1], [8], [81], [81]) -> [106]
+main.s34 rEn wEn a s s0 =
       let $a = Main.outputs s in
-      main.$L.o84$6472 rEn wEn a $a s0
+      main.o8 rEn wEn a $a s0
 
-main.$L._unused66$6447 : ([1], [1], [8], [81]) -> [106]
-main.$L._unused66$6447 rEn wEn a s0 =
-      main.$L.s86$6475 rEn wEn a s0 s0
+--| block '$L._unused10' of process main
+main._unused10 : ([1], [1], [8], [81]) -> [106]
+main._unused10 rEn wEn a s0 =
+      main.s34 rEn wEn a s0 s0
 
-main.$L.s88$6478 : ([1], [1], [8], [18], [81], [81]) -> [106]
-main.$L.s88$6478 rEn wEn a o s s0 =
+--| block '$L.s35' of process main
+main.s35 : ([1], [1], [8], [18], [81], [81]) -> [106]
+main.s35 rEn wEn a o s s0 =
       let $a = Main.setWeOut o 1'h0 in
       let $a1 = Main.setOutputs s $a in
-      main.$L._unused66$6447 rEn wEn a $a1
+      main._unused10 rEn wEn a $a1
 
-main.$L.o87$6477 : ([1], [1], [8], [18], [81]) -> [106]
-main.$L.o87$6477 rEn wEn a o s0 =
-      main.$L.s88$6478 rEn wEn a o s0 s0
+--| block '$L.o9' of process main
+main.o9 : ([1], [1], [8], [18], [81]) -> [106]
+main.o9 rEn wEn a o s0 =
+      main.s35 rEn wEn a o s0 s0
 
-main.$L.s89$6480 : ([1], [1], [8], [81], [81]) -> [106]
-main.$L.s89$6480 rEn wEn a s s0 =
+--| block '$L.s36' of process main
+main.s36 : ([1], [1], [8], [81], [81]) -> [106]
+main.s36 rEn wEn a s s0 =
       let $a = Main.outputs s in
-      main.$L.o87$6477 rEn wEn a $a s0
+      main.o9 rEn wEn a $a s0
 
-main.$L.a65$6446 : ([1], [1], [8], [81]) -> [106]
-main.$L.a65$6446 rEn wEn a s0 =
-      main.$L.s89$6480 rEn wEn a s0 s0
+--| block '$L.a2' of process main
+main.a2 : ([1], [1], [8], [81]) -> [106]
+main.a2 rEn wEn a s0 =
+      main.s36 rEn wEn a s0 s0
 
-main.$L.s90$6482 : ([1], [1], [81], [81]) -> [106]
-main.$L.s90$6482 rEn wEn s s0 =
+--| block '$L.s37' of process main
+main.s37 : ([1], [1], [81], [81]) -> [106]
+main.s37 rEn wEn s s0 =
       let $a = Main.r0 s in
-      main.$L.a65$6446 rEn wEn $a s0
+      main.a2 rEn wEn $a s0
 
-main.$L.arm91$6484 : ([1], [1], [81]) -> [106]
-main.$L.arm91$6484 rEn wEn s0 =
-      main.$L.s90$6482 rEn wEn s0 s0
+--| block '$L.arm15' of process main
+main.arm15 : ([1], [1], [81]) -> [106]
+main.arm15 rEn wEn s0 =
+      main.s37 rEn wEn s0 s0
 
-main.$L.s92$6485 : ([1], [1], [81], [81]) -> [106]
-main.$L.s92$6485 rEn wEn s s0 =
+--| block '$L.s38' of process main
+main.s38 : ([1], [1], [81], [81]) -> [106]
+main.s38 rEn wEn s s0 =
       let $a = Main.r1 s in
-      main.$L.a65$6446 rEn wEn $a s0
+      main.a2 rEn wEn $a s0
 
-main.$L.arm93$6487 : ([1], [1], [81]) -> [106]
-main.$L.arm93$6487 rEn wEn s0 =
-      main.$L.s92$6485 rEn wEn s0 s0
+--| block '$L.arm16' of process main
+main.arm16 : ([1], [1], [81]) -> [106]
+main.arm16 rEn wEn s0 =
+      main.s38 rEn wEn s0 s0
 
-main.$L.s94$6488 : ([1], [1], [81], [81]) -> [106]
-main.$L.s94$6488 rEn wEn s s0 =
+--| block '$L.s39' of process main
+main.s39 : ([1], [1], [81], [81]) -> [106]
+main.s39 rEn wEn s s0 =
       let $a = Main.r2 s in
-      main.$L.a65$6446 rEn wEn $a s0
+      main.a2 rEn wEn $a s0
 
-main.$L.arm95$6490 : ([1], [1], [81]) -> [106]
-main.$L.arm95$6490 rEn wEn s0 =
-      main.$L.s94$6488 rEn wEn s0 s0
+--| block '$L.arm17' of process main
+main.arm17 : ([1], [1], [81]) -> [106]
+main.arm17 rEn wEn s0 =
+      main.s39 rEn wEn s0 s0
 
-main.$L.s96$6491 : ([1], [1], [81], [81]) -> [106]
-main.$L.s96$6491 rEn wEn s s0 =
+--| block '$L.s40' of process main
+main.s40 : ([1], [1], [81], [81]) -> [106]
+main.s40 rEn wEn s s0 =
       let $a = Main.r3 s in
-      main.$L.a65$6446 rEn wEn $a s0
+      main.a2 rEn wEn $a s0
 
-main.$L.arm97$6493 : ([1], [1], [81]) -> [106]
-main.$L.arm97$6493 rEn wEn s0 =
-      main.$L.s96$6491 rEn wEn s0 s0
+--| block '$L.arm18' of process main
+main.arm18 : ([1], [1], [81]) -> [106]
+main.arm18 rEn wEn s0 =
+      main.s40 rEn wEn s0 s0
 
-main.$L.arm98$6494 : ([1], [1], [1], [1], [81]) -> [106]
-main.$L.arm98$6494 rEn wEn b0 b1 s0 =
+--| block '$L.arm19' of process main
+main.arm19 : ([1], [1], [1], [1], [81]) -> [106]
+main.arm19 rEn wEn b0 b1 s0 =
       let $a = Main.mkReg b0 b1 in
-      if eq $a 2'h0 then main.$L.arm91$6484 rEn wEn s0
-            else if eq $a 2'h1 then main.$L.arm93$6487 rEn wEn s0 else if eq $a 2'h2 then main.$L.arm95$6490 rEn wEn s0 else main.$L.arm97$6493 rEn wEn s0
+      if eq $a 2'h0 then main.arm15 rEn wEn s0
+            else if eq $a 2'h1 then main.arm16 rEn wEn s0 else if eq $a 2'h2 then main.arm17 rEn wEn s0 else main.arm18 rEn wEn s0
 
-main.$L.s106$6502 : ([10], [81], [81]) -> [106]
-main.$L.s106$6502 i s s0 =
+--| block '$L.s41' of process main
+main.s41 : ([10], [81], [81]) -> [106]
+main.s41 i s s0 =
       let $a = Main.setInputs s i in
-      main.$L.Main.loop3$6359 $a
+      main.loop $a
 
-main.$L.i105$6501 : ([10], [81]) -> [106]
-main.$L.i105$6501 i s0 =
-      main.$L.s106$6502 i s0 s0
+--| block '$L.i7' of process main (state 3)
+main.i7 : ([10], [81]) -> [106]
+main.i7 i s0 =
+      main.s41 i s0 s0
 
-main.$L.o104$6500 : ([18], [81]) -> [106]
-main.$L.o104$6500 o s0 =
+--| block '$L.o10' of process main
+main.o10 : ([18], [81]) -> [106]
+main.o10 o s0 =
       o # 7'h30 # s0
 
-main.$L.s107$6504 : ([81], [81]) -> [106]
-main.$L.s107$6504 s s0 =
+--| block '$L.s42' of process main
+main.s42 : ([81], [81]) -> [106]
+main.s42 s s0 =
       let $a = Main.outputs s in
-      main.$L.o104$6500 $a s0
+      main.o10 $a s0
 
-main.$L._unused103$6499 : ([81]) -> [106]
-main.$L._unused103$6499 s0 =
-      main.$L.s107$6504 s0 s0
-
-main.$L.s109$6507 : ([8], [18], [81], [81]) -> [106]
-main.$L.s109$6507 a o s s0 =
+--| block '$L.s43' of process main
+main.s43 : ([8], [18], [81], [81]) -> [106]
+main.s43 a o s s0 =
       let $a = Main.setAddrOut o a in
       let $a1 = Main.setOutputs s $a in
-      main.$L._unused103$6499 $a1
+      main.zzz $a1
 
-main.$L.o108$6506 : ([8], [18], [81]) -> [106]
-main.$L.o108$6506 a o s0 =
-      main.$L.s109$6507 a o s0 s0
+--| block '$L.o11' of process main
+main.o11 : ([8], [18], [81]) -> [106]
+main.o11 a o s0 =
+      main.s43 a o s0 s0
 
-main.$L.s110$6509 : ([8], [81], [81]) -> [106]
-main.$L.s110$6509 a s s0 =
+--| block '$L.s44' of process main
+main.s44 : ([8], [81], [81]) -> [106]
+main.s44 a s s0 =
       let $a = Main.outputs s in
-      main.$L.o108$6506 a $a s0
+      main.o11 a $a s0
 
-main.$L._unused102$6498 : ([8], [81]) -> [106]
-main.$L._unused102$6498 a s0 =
-      main.$L.s110$6509 a s0 s0
+--| block '$L._unused14' of process main
+main._unused14 : ([8], [81]) -> [106]
+main._unused14 a s0 =
+      main.s44 a s0 s0
 
-main.$L.s112$6512 : ([8], [8], [18], [81], [81]) -> [106]
-main.$L.s112$6512 a v o s s0 =
+--| block '$L.s45' of process main
+main.s45 : ([8], [8], [18], [81], [81]) -> [106]
+main.s45 a v o s s0 =
       let $a = Main.setDataOut o v in
       let $a1 = Main.setOutputs s $a in
-      main.$L._unused102$6498 a $a1
+      main._unused14 a $a1
 
-main.$L.o111$6511 : ([8], [8], [18], [81]) -> [106]
-main.$L.o111$6511 a v o s0 =
-      main.$L.s112$6512 a v o s0 s0
+--| block '$L.o12' of process main
+main.o12 : ([8], [8], [18], [81]) -> [106]
+main.o12 a v o s0 =
+      main.s45 a v o s0 s0
 
-main.$L.s113$6514 : ([8], [8], [81], [81]) -> [106]
-main.$L.s113$6514 a v s s0 =
+--| block '$L.s46' of process main
+main.s46 : ([8], [8], [81], [81]) -> [106]
+main.s46 a v s s0 =
       let $a = Main.outputs s in
-      main.$L.o111$6511 a v $a s0
+      main.o12 a v $a s0
 
-main.$L._unused101$6497 : ([8], [8], [81]) -> [106]
-main.$L._unused101$6497 a v s0 =
-      main.$L.s113$6514 a v s0 s0
+--| block '$L._unused13' of process main
+main._unused13 : ([8], [8], [81]) -> [106]
+main._unused13 a v s0 =
+      main.s46 a v s0 s0
 
-main.$L.s115$6517 : ([8], [8], [18], [81], [81]) -> [106]
-main.$L.s115$6517 a v o s s0 =
+--| block '$L.s47' of process main
+main.s47 : ([8], [8], [18], [81], [81]) -> [106]
+main.s47 a v o s s0 =
       let $a = Main.setWeOut o 1'h1 in
       let $a1 = Main.setOutputs s $a in
-      main.$L._unused101$6497 a v $a1
+      main._unused13 a v $a1
 
-main.$L.o114$6516 : ([8], [8], [18], [81]) -> [106]
-main.$L.o114$6516 a v o s0 =
-      main.$L.s115$6517 a v o s0 s0
+--| block '$L.o13' of process main
+main.o13 : ([8], [8], [18], [81]) -> [106]
+main.o13 a v o s0 =
+      main.s47 a v o s0 s0
 
-main.$L.s116$6519 : ([8], [8], [81], [81]) -> [106]
-main.$L.s116$6519 a v s s0 =
+--| block '$L.s48' of process main
+main.s48 : ([8], [8], [81], [81]) -> [106]
+main.s48 a v s s0 =
       let $a = Main.outputs s in
-      main.$L.o114$6516 a v $a s0
+      main.o13 a v $a s0
 
-main.$L.v100$6496 : ([8], [8], [81]) -> [106]
-main.$L.v100$6496 a v s0 =
-      main.$L.s116$6519 a v s0 s0
+--| block '$L.v2' of process main
+main.v2 : ([8], [8], [81]) -> [106]
+main.v2 a v s0 =
+      main.s48 a v s0 s0
 
-main.$L.s117$6521 : ([8], [81], [81]) -> [106]
-main.$L.s117$6521 a s s0 =
+--| block '$L.s49' of process main
+main.s49 : ([8], [81], [81]) -> [106]
+main.s49 a s s0 =
       let $a = Main.r0 s in
-      main.$L.v100$6496 a $a s0
+      main.v2 a $a s0
 
-main.$L.arm118$6523 : ([8], [81]) -> [106]
-main.$L.arm118$6523 a s0 =
-      main.$L.s117$6521 a s0 s0
+--| block '$L.arm20' of process main
+main.arm20 : ([8], [81]) -> [106]
+main.arm20 a s0 =
+      main.s49 a s0 s0
 
-main.$L.s119$6524 : ([8], [81], [81]) -> [106]
-main.$L.s119$6524 a s s0 =
+--| block '$L.s50' of process main
+main.s50 : ([8], [81], [81]) -> [106]
+main.s50 a s s0 =
       let $a = Main.r1 s in
-      main.$L.v100$6496 a $a s0
+      main.v2 a $a s0
 
-main.$L.arm120$6526 : ([8], [81]) -> [106]
-main.$L.arm120$6526 a s0 =
-      main.$L.s119$6524 a s0 s0
+--| block '$L.arm21' of process main
+main.arm21 : ([8], [81]) -> [106]
+main.arm21 a s0 =
+      main.s50 a s0 s0
 
-main.$L.s121$6527 : ([8], [81], [81]) -> [106]
-main.$L.s121$6527 a s s0 =
+--| block '$L.s51' of process main
+main.s51 : ([8], [81], [81]) -> [106]
+main.s51 a s s0 =
       let $a = Main.r2 s in
-      main.$L.v100$6496 a $a s0
+      main.v2 a $a s0
 
-main.$L.arm122$6529 : ([8], [81]) -> [106]
-main.$L.arm122$6529 a s0 =
-      main.$L.s121$6527 a s0 s0
+--| block '$L.arm22' of process main
+main.arm22 : ([8], [81]) -> [106]
+main.arm22 a s0 =
+      main.s51 a s0 s0
 
-main.$L.s123$6530 : ([8], [81], [81]) -> [106]
-main.$L.s123$6530 a s s0 =
+--| block '$L.s52' of process main
+main.s52 : ([8], [81], [81]) -> [106]
+main.s52 a s s0 =
       let $a = Main.r3 s in
-      main.$L.v100$6496 a $a s0
+      main.v2 a $a s0
 
-main.$L.arm124$6532 : ([8], [81]) -> [106]
-main.$L.arm124$6532 a s0 =
-      main.$L.s123$6530 a s0 s0
+--| block '$L.arm23' of process main
+main.arm23 : ([8], [81]) -> [106]
+main.arm23 a s0 =
+      main.s52 a s0 s0
 
-main.$L.a99$6495 : ([1], [1], [8], [81]) -> [106]
-main.$L.a99$6495 rEn wEn a s0 =
+--| block '$L.a3' of process main
+main.a3 : ([1], [1], [8], [81]) -> [106]
+main.a3 rEn wEn a s0 =
       let $a = Main.mkReg rEn wEn in
-      if eq $a 2'h0 then main.$L.arm118$6523 a s0
-            else if eq $a 2'h1 then main.$L.arm120$6526 a s0 else if eq $a 2'h2 then main.$L.arm122$6529 a s0 else main.$L.arm124$6532 a s0
+      if eq $a 2'h0 then main.arm20 a s0
+            else if eq $a 2'h1 then main.arm21 a s0 else if eq $a 2'h2 then main.arm22 a s0 else main.arm23 a s0
 
-main.$L.s125$6533 : ([1], [1], [81], [81]) -> [106]
-main.$L.s125$6533 rEn wEn s s0 =
+--| block '$L.s53' of process main
+main.s53 : ([1], [1], [81], [81]) -> [106]
+main.s53 rEn wEn s s0 =
       let $a = Main.r0 s in
-      main.$L.a99$6495 rEn wEn $a s0
+      main.a3 rEn wEn $a s0
 
-main.$L.arm126$6535 : ([1], [1], [81]) -> [106]
-main.$L.arm126$6535 rEn wEn s0 =
-      main.$L.s125$6533 rEn wEn s0 s0
+--| block '$L.arm24' of process main
+main.arm24 : ([1], [1], [81]) -> [106]
+main.arm24 rEn wEn s0 =
+      main.s53 rEn wEn s0 s0
 
-main.$L.s127$6536 : ([1], [1], [81], [81]) -> [106]
-main.$L.s127$6536 rEn wEn s s0 =
+--| block '$L.s54' of process main
+main.s54 : ([1], [1], [81], [81]) -> [106]
+main.s54 rEn wEn s s0 =
       let $a = Main.r1 s in
-      main.$L.a99$6495 rEn wEn $a s0
+      main.a3 rEn wEn $a s0
 
-main.$L.arm128$6538 : ([1], [1], [81]) -> [106]
-main.$L.arm128$6538 rEn wEn s0 =
-      main.$L.s127$6536 rEn wEn s0 s0
+--| block '$L.arm25' of process main
+main.arm25 : ([1], [1], [81]) -> [106]
+main.arm25 rEn wEn s0 =
+      main.s54 rEn wEn s0 s0
 
-main.$L.s129$6539 : ([1], [1], [81], [81]) -> [106]
-main.$L.s129$6539 rEn wEn s s0 =
+--| block '$L.s55' of process main
+main.s55 : ([1], [1], [81], [81]) -> [106]
+main.s55 rEn wEn s s0 =
       let $a = Main.r2 s in
-      main.$L.a99$6495 rEn wEn $a s0
+      main.a3 rEn wEn $a s0
 
-main.$L.arm130$6541 : ([1], [1], [81]) -> [106]
-main.$L.arm130$6541 rEn wEn s0 =
-      main.$L.s129$6539 rEn wEn s0 s0
+--| block '$L.arm26' of process main
+main.arm26 : ([1], [1], [81]) -> [106]
+main.arm26 rEn wEn s0 =
+      main.s55 rEn wEn s0 s0
 
-main.$L.s131$6542 : ([1], [1], [81], [81]) -> [106]
-main.$L.s131$6542 rEn wEn s s0 =
+--| block '$L.s56' of process main
+main.s56 : ([1], [1], [81], [81]) -> [106]
+main.s56 rEn wEn s s0 =
       let $a = Main.r3 s in
-      main.$L.a99$6495 rEn wEn $a s0
+      main.a3 rEn wEn $a s0
 
-main.$L.arm132$6544 : ([1], [1], [81]) -> [106]
-main.$L.arm132$6544 rEn wEn s0 =
-      main.$L.s131$6542 rEn wEn s0 s0
+--| block '$L.arm27' of process main
+main.arm27 : ([1], [1], [81]) -> [106]
+main.arm27 rEn wEn s0 =
+      main.s56 rEn wEn s0 s0
 
-main.$L.arm133$6545 : ([1], [1], [1], [1], [81]) -> [106]
-main.$L.arm133$6545 rEn wEn b0 b1 s0 =
+--| block '$L.arm28' of process main
+main.arm28 : ([1], [1], [1], [1], [81]) -> [106]
+main.arm28 rEn wEn b0 b1 s0 =
       let $a = Main.mkReg b0 b1 in
-      if eq $a 2'h0 then main.$L.arm126$6535 rEn wEn s0
-            else if eq $a 2'h1 then main.$L.arm128$6538 rEn wEn s0 else if eq $a 2'h2 then main.$L.arm130$6541 rEn wEn s0 else main.$L.arm132$6544 rEn wEn s0
+      if eq $a 2'h0 then main.arm24 rEn wEn s0
+            else if eq $a 2'h1 then main.arm25 rEn wEn s0 else if eq $a 2'h2 then main.arm26 rEn wEn s0 else main.arm27 rEn wEn s0
 
-main.$L.s140$6552 : ([10], [81], [81]) -> [106]
-main.$L.s140$6552 i s s0 =
+--| block '$L.s57' of process main
+main.s57 : ([10], [81], [81]) -> [106]
+main.s57 i s s0 =
       let s01 = Main.setInputs s i in
-      main.$L.Main.loop3$6359 s01
+      main.loop s01
 
-main.$L.i139$6551 : ([10], [81]) -> [106]
-main.$L.i139$6551 i s0 =
-      main.$L.s140$6552 i s0 s0
+--| block '$L.i8' of process main (state 4)
+main.i8 : ([10], [81]) -> [106]
+main.i8 i s0 =
+      main.s57 i s0 s0
 
-main.$L.o138$6550 : ([18], [81]) -> [106]
-main.$L.o138$6550 o s0 =
+--| block '$L.o14' of process main
+main.o14 : ([18], [81]) -> [106]
+main.o14 o s0 =
       o # 7'h40 # s0
 
-main.$L._unused137$6549 : ([81]) -> [106]
-main.$L._unused137$6549 s0 =
-      main.$L.o138$6550 (Main.outputs s0) s0
+--| block '$L._unused17' of process main
+main._unused17 : ([81]) -> [106]
+main._unused17 s0 =
+      main.o14 (Main.outputs s0) s0
 
-main.$L.s142$6556 : ([8], [81], [81]) -> [106]
-main.$L.s142$6556 v s s0 =
+--| block '$L.s59' of process main
+main.s59 : ([8], [81], [81]) -> [106]
+main.s59 v s s0 =
       let s01 = Main.setR0 s v in
-      main.$L._unused137$6549 s01
+      main._unused17 s01
 
-main.$L.arm143$6558 : ([8], [81]) -> [106]
-main.$L.arm143$6558 v s0 =
-      main.$L.s142$6556 v s0 s0
+--| block '$L.arm29' of process main
+main.arm29 : ([8], [81]) -> [106]
+main.arm29 v s0 =
+      main.s59 v s0 s0
 
-main.$L.s144$6559 : ([8], [81], [81]) -> [106]
-main.$L.s144$6559 v s s0 =
+--| block '$L.s60' of process main
+main.s60 : ([8], [81], [81]) -> [106]
+main.s60 v s s0 =
       let s01 = Main.setR1 s v in
-      main.$L._unused137$6549 s01
+      main._unused17 s01
 
-main.$L.arm145$6561 : ([8], [81]) -> [106]
-main.$L.arm145$6561 v s0 =
-      main.$L.s144$6559 v s0 s0
+--| block '$L.arm30' of process main
+main.arm30 : ([8], [81]) -> [106]
+main.arm30 v s0 =
+      main.s60 v s0 s0
 
-main.$L.s146$6562 : ([8], [81], [81]) -> [106]
-main.$L.s146$6562 v s s0 =
+--| block '$L.s61' of process main
+main.s61 : ([8], [81], [81]) -> [106]
+main.s61 v s s0 =
       let s01 = Main.setR2 s v in
-      main.$L._unused137$6549 s01
+      main._unused17 s01
 
-main.$L.arm147$6564 : ([8], [81]) -> [106]
-main.$L.arm147$6564 v s0 =
-      main.$L.s146$6562 v s0 s0
+--| block '$L.arm31' of process main
+main.arm31 : ([8], [81]) -> [106]
+main.arm31 v s0 =
+      main.s61 v s0 s0
 
-main.$L.s148$6565 : ([8], [81], [81]) -> [106]
-main.$L.s148$6565 v s s0 =
+--| block '$L.s62' of process main
+main.s62 : ([8], [81], [81]) -> [106]
+main.s62 v s s0 =
       let s01 = Main.setR3 s v in
-      main.$L._unused137$6549 s01
+      main._unused17 s01
 
-main.$L.arm149$6567 : ([8], [81]) -> [106]
-main.$L.arm149$6567 v s0 =
-      main.$L.s148$6565 v s0 s0
+--| block '$L.arm32' of process main
+main.arm32 : ([8], [81]) -> [106]
+main.arm32 v s0 =
+      main.s62 v s0 s0
 
-main.$L._unused136$6548 : ([2], [9], [81]) -> [106]
-main.$L._unused136$6548 rD p s0 =
+--| block '$L._unused16' of process main
+main._unused16 : ([2], [9], [81]) -> [106]
+main._unused16 rD p s0 =
       let v = (let y = p[0 +: 8] in
       y) in
-      if eq rD 2'h0 then main.$L.arm143$6558 v s0
-            else if eq rD 2'h1 then main.$L.arm145$6561 v s0 else if eq rD 2'h2 then main.$L.arm147$6564 v s0 else main.$L.arm149$6567 v s0
+      if eq rD 2'h0 then main.arm29 v s0
+            else if eq rD 2'h1 then main.arm30 v s0 else if eq rD 2'h2 then main.arm31 v s0 else main.arm32 v s0
 
-main.$L.s150$6568 : ([2], [9], [81], [81]) -> [106]
-main.$L.s150$6568 rD p s s0 =
+--| block '$L.s63' of process main
+main.s63 : ([2], [9], [81], [81]) -> [106]
+main.s63 rD p s s0 =
       let s01 = Main.setCFlag s (let x = p[8 +: 1] in
       x) in
-      main.$L._unused136$6548 rD p s01
+      main._unused16 rD p s01
 
-main.$L.vS135$6547 : ([2], [8], [8], [81]) -> [106]
-main.$L.vS135$6547 rD vD vS s0 =
-      let p = Main.plusCW8$s2 vD vS in
-      main.$L.s150$6568 rD p s0 s0
+--| block '$L.vS' of process main
+main.vS : ([2], [8], [8], [81]) -> [106]
+main.vS rD vD vS s0 =
+      let p = Main.plusCW8$sFalse_Bool vD vS in
+      main.s63 rD p s0 s0
 
-main.$L.arm152$6572 : ([2], [8], [81]) -> [106]
-main.$L.arm152$6572 rD vD s0 =
-      main.$L.vS135$6547 rD vD (Main.r0 s0) s0
+--| block '$L.arm33' of process main
+main.arm33 : ([2], [8], [81]) -> [106]
+main.arm33 rD vD s0 =
+      main.vS rD vD (Main.r0 s0) s0
 
-main.$L.arm154$6575 : ([2], [8], [81]) -> [106]
-main.$L.arm154$6575 rD vD s0 =
-      main.$L.vS135$6547 rD vD (Main.r1 s0) s0
+--| block '$L.arm34' of process main
+main.arm34 : ([2], [8], [81]) -> [106]
+main.arm34 rD vD s0 =
+      main.vS rD vD (Main.r1 s0) s0
 
-main.$L.arm156$6578 : ([2], [8], [81]) -> [106]
-main.$L.arm156$6578 rD vD s0 =
-      main.$L.vS135$6547 rD vD (Main.r2 s0) s0
+--| block '$L.arm35' of process main
+main.arm35 : ([2], [8], [81]) -> [106]
+main.arm35 rD vD s0 =
+      main.vS rD vD (Main.r2 s0) s0
 
-main.$L.arm158$6581 : ([2], [8], [81]) -> [106]
-main.$L.arm158$6581 rD vD s0 =
-      main.$L.vS135$6547 rD vD (Main.r3 s0) s0
+--| block '$L.arm36' of process main
+main.arm36 : ([2], [8], [81]) -> [106]
+main.arm36 rD vD s0 =
+      main.vS rD vD (Main.r3 s0) s0
 
-main.$L.vD134$6546 : ([2], [2], [8], [81]) -> [106]
-main.$L.vD134$6546 rD rS vD s0 =
-      if eq rS 2'h0 then main.$L.arm152$6572 rD vD s0
-            else if eq rS 2'h1 then main.$L.arm154$6575 rD vD s0 else if eq rS 2'h2 then main.$L.arm156$6578 rD vD s0 else main.$L.arm158$6581 rD vD s0
+--| block '$L.vD' of process main
+main.vD : ([2], [2], [8], [81]) -> [106]
+main.vD rD rS vD s0 =
+      if eq rS 2'h0 then main.arm33 rD vD s0
+            else if eq rS 2'h1 then main.arm34 rD vD s0 else if eq rS 2'h2 then main.arm35 rD vD s0 else main.arm36 rD vD s0
 
-main.$L.arm160$6584 : ([2], [2], [81]) -> [106]
-main.$L.arm160$6584 rD rS s0 =
-      main.$L.vD134$6546 rD rS (Main.r0 s0) s0
+--| block '$L.arm37' of process main
+main.arm37 : ([2], [2], [81]) -> [106]
+main.arm37 rD rS s0 =
+      main.vD rD rS (Main.r0 s0) s0
 
-main.$L.arm162$6587 : ([2], [2], [81]) -> [106]
-main.$L.arm162$6587 rD rS s0 =
-      main.$L.vD134$6546 rD rS (Main.r1 s0) s0
+--| block '$L.arm38' of process main
+main.arm38 : ([2], [2], [81]) -> [106]
+main.arm38 rD rS s0 =
+      main.vD rD rS (Main.r1 s0) s0
 
-main.$L.arm164$6590 : ([2], [2], [81]) -> [106]
-main.$L.arm164$6590 rD rS s0 =
-      main.$L.vD134$6546 rD rS (Main.r2 s0) s0
+--| block '$L.arm39' of process main
+main.arm39 : ([2], [2], [81]) -> [106]
+main.arm39 rD rS s0 =
+      main.vD rD rS (Main.r2 s0) s0
 
-main.$L.arm166$6593 : ([2], [2], [81]) -> [106]
-main.$L.arm166$6593 rD rS s0 =
-      main.$L.vD134$6546 rD rS (Main.r3 s0) s0
+--| block '$L.arm40' of process main
+main.arm40 : ([2], [2], [81]) -> [106]
+main.arm40 rD rS s0 =
+      main.vD rD rS (Main.r3 s0) s0
 
-main.$L.arm167$6594 : ([1], [1], [1], [1], [81]) -> [106]
-main.$L.arm167$6594 rEn wEn b0 b1 s0 =
+--| block '$L.arm41' of process main
+main.arm41 : ([1], [1], [1], [1], [81]) -> [106]
+main.arm41 rEn wEn b0 b1 s0 =
       let rD = Main.mkReg rEn wEn in
       let $a = Main.mkReg b0 b1 in
-      if eq rD 2'h0 then main.$L.arm160$6584 rD $a s0
-            else if eq rD 2'h1 then main.$L.arm162$6587 rD $a s0 else if eq rD 2'h2 then main.$L.arm164$6590 rD $a s0 else main.$L.arm166$6593 rD $a s0
+      if eq rD 2'h0 then main.arm37 rD $a s0
+            else if eq rD 2'h1 then main.arm38 rD $a s0 else if eq rD 2'h2 then main.arm39 rD $a s0 else main.arm40 rD $a s0
 
-main.$L.cin170$6597 : ([2], [8], [8], [1], [81]) -> [106]
-main.$L.cin170$6597 rD vD vS cin s0 =
+--| block '$L.cin' of process main
+main.cin : ([2], [8], [8], [1], [81]) -> [106]
+main.cin rD vD vS cin s0 =
       let p = Main.plusCW8 vD vS cin in
-      main.$L.s150$6568 rD p s0 s0
+      main.s63 rD p s0 s0
 
-main.$L.vS169$6596 : ([2], [8], [8], [81]) -> [106]
-main.$L.vS169$6596 rD vD vS s0 =
-      main.$L.cin170$6597 rD vD vS (Main.cFlag s0) s0
+--| block '$L.vS2' of process main
+main.vS2 : ([2], [8], [8], [81]) -> [106]
+main.vS2 rD vD vS s0 =
+      main.cin rD vD vS (Main.cFlag s0) s0
 
-main.$L.arm188$6624 : ([2], [8], [81]) -> [106]
-main.$L.arm188$6624 rD vD s0 =
-      main.$L.vS169$6596 rD vD (Main.r0 s0) s0
+--| block '$L.arm46' of process main
+main.arm46 : ([2], [8], [81]) -> [106]
+main.arm46 rD vD s0 =
+      main.vS2 rD vD (Main.r0 s0) s0
 
-main.$L.arm190$6627 : ([2], [8], [81]) -> [106]
-main.$L.arm190$6627 rD vD s0 =
-      main.$L.vS169$6596 rD vD (Main.r1 s0) s0
+--| block '$L.arm47' of process main
+main.arm47 : ([2], [8], [81]) -> [106]
+main.arm47 rD vD s0 =
+      main.vS2 rD vD (Main.r1 s0) s0
 
-main.$L.arm192$6630 : ([2], [8], [81]) -> [106]
-main.$L.arm192$6630 rD vD s0 =
-      main.$L.vS169$6596 rD vD (Main.r2 s0) s0
+--| block '$L.arm48' of process main
+main.arm48 : ([2], [8], [81]) -> [106]
+main.arm48 rD vD s0 =
+      main.vS2 rD vD (Main.r2 s0) s0
 
-main.$L.arm194$6633 : ([2], [8], [81]) -> [106]
-main.$L.arm194$6633 rD vD s0 =
-      main.$L.vS169$6596 rD vD (Main.r3 s0) s0
+--| block '$L.arm49' of process main
+main.arm49 : ([2], [8], [81]) -> [106]
+main.arm49 rD vD s0 =
+      main.vS2 rD vD (Main.r3 s0) s0
 
-main.$L.vD168$6595 : ([2], [2], [8], [81]) -> [106]
-main.$L.vD168$6595 rD rS vD s0 =
-      if eq rS 2'h0 then main.$L.arm188$6624 rD vD s0
-            else if eq rS 2'h1 then main.$L.arm190$6627 rD vD s0 else if eq rS 2'h2 then main.$L.arm192$6630 rD vD s0 else main.$L.arm194$6633 rD vD s0
+--| block '$L.vD2' of process main
+main.vD2 : ([2], [2], [8], [81]) -> [106]
+main.vD2 rD rS vD s0 =
+      if eq rS 2'h0 then main.arm46 rD vD s0
+            else if eq rS 2'h1 then main.arm47 rD vD s0 else if eq rS 2'h2 then main.arm48 rD vD s0 else main.arm49 rD vD s0
 
-main.$L.arm196$6636 : ([2], [2], [81]) -> [106]
-main.$L.arm196$6636 rD rS s0 =
-      main.$L.vD168$6595 rD rS (Main.r0 s0) s0
+--| block '$L.arm50' of process main
+main.arm50 : ([2], [2], [81]) -> [106]
+main.arm50 rD rS s0 =
+      main.vD2 rD rS (Main.r0 s0) s0
 
-main.$L.arm198$6639 : ([2], [2], [81]) -> [106]
-main.$L.arm198$6639 rD rS s0 =
-      main.$L.vD168$6595 rD rS (Main.r1 s0) s0
+--| block '$L.arm51' of process main
+main.arm51 : ([2], [2], [81]) -> [106]
+main.arm51 rD rS s0 =
+      main.vD2 rD rS (Main.r1 s0) s0
 
-main.$L.arm200$6642 : ([2], [2], [81]) -> [106]
-main.$L.arm200$6642 rD rS s0 =
-      main.$L.vD168$6595 rD rS (Main.r2 s0) s0
+--| block '$L.arm52' of process main
+main.arm52 : ([2], [2], [81]) -> [106]
+main.arm52 rD rS s0 =
+      main.vD2 rD rS (Main.r2 s0) s0
 
-main.$L.arm202$6645 : ([2], [2], [81]) -> [106]
-main.$L.arm202$6645 rD rS s0 =
-      main.$L.vD168$6595 rD rS (Main.r3 s0) s0
+--| block '$L.arm53' of process main
+main.arm53 : ([2], [2], [81]) -> [106]
+main.arm53 rD rS s0 =
+      main.vD2 rD rS (Main.r3 s0) s0
 
-main.$L.arm203$6646 : ([1], [1], [1], [1], [81]) -> [106]
-main.$L.arm203$6646 rEn wEn b0 b1 s0 =
+--| block '$L.arm54' of process main
+main.arm54 : ([1], [1], [1], [1], [81]) -> [106]
+main.arm54 rEn wEn b0 b1 s0 =
       let rD = Main.mkReg rEn wEn in
       let $a = Main.mkReg b0 b1 in
-      if eq rD 2'h0 then main.$L.arm196$6636 rD $a s0
-            else if eq rD 2'h1 then main.$L.arm198$6639 rD $a s0 else if eq rD 2'h2 then main.$L.arm200$6642 rD $a s0 else main.$L.arm202$6645 rD $a s0
+      if eq rD 2'h0 then main.arm50 rD $a s0
+            else if eq rD 2'h1 then main.arm51 rD $a s0 else if eq rD 2'h2 then main.arm52 rD $a s0 else main.arm53 rD $a s0
 
-main.$L.vS205$6648 : ([2], [8], [8], [81]) -> [106]
-main.$L.vS205$6648 rD vD vS s0 =
-      let p = Main.minusCW8$s1 vD vS in
-      main.$L.s150$6568 rD p s0 s0
+--| block '$L.vS3' of process main
+main.vS3 : ([2], [8], [8], [81]) -> [106]
+main.vS3 rD vD vS s0 =
+      let p = Main.minusCW8$sFalse_Bool vD vS in
+      main.s63 rD p s0 s0
 
-main.$L.arm222$6673 : ([2], [8], [81]) -> [106]
-main.$L.arm222$6673 rD vD s0 =
-      main.$L.vS205$6648 rD vD (Main.r0 s0) s0
+--| block '$L.arm59' of process main
+main.arm59 : ([2], [8], [81]) -> [106]
+main.arm59 rD vD s0 =
+      main.vS3 rD vD (Main.r0 s0) s0
 
-main.$L.arm224$6676 : ([2], [8], [81]) -> [106]
-main.$L.arm224$6676 rD vD s0 =
-      main.$L.vS205$6648 rD vD (Main.r1 s0) s0
+--| block '$L.arm60' of process main
+main.arm60 : ([2], [8], [81]) -> [106]
+main.arm60 rD vD s0 =
+      main.vS3 rD vD (Main.r1 s0) s0
 
-main.$L.arm226$6679 : ([2], [8], [81]) -> [106]
-main.$L.arm226$6679 rD vD s0 =
-      main.$L.vS205$6648 rD vD (Main.r2 s0) s0
+--| block '$L.arm61' of process main
+main.arm61 : ([2], [8], [81]) -> [106]
+main.arm61 rD vD s0 =
+      main.vS3 rD vD (Main.r2 s0) s0
 
-main.$L.arm228$6682 : ([2], [8], [81]) -> [106]
-main.$L.arm228$6682 rD vD s0 =
-      main.$L.vS205$6648 rD vD (Main.r3 s0) s0
+--| block '$L.arm62' of process main
+main.arm62 : ([2], [8], [81]) -> [106]
+main.arm62 rD vD s0 =
+      main.vS3 rD vD (Main.r3 s0) s0
 
-main.$L.vD204$6647 : ([2], [2], [8], [81]) -> [106]
-main.$L.vD204$6647 rD rS vD s0 =
-      if eq rS 2'h0 then main.$L.arm222$6673 rD vD s0
-            else if eq rS 2'h1 then main.$L.arm224$6676 rD vD s0 else if eq rS 2'h2 then main.$L.arm226$6679 rD vD s0 else main.$L.arm228$6682 rD vD s0
+--| block '$L.vD3' of process main
+main.vD3 : ([2], [2], [8], [81]) -> [106]
+main.vD3 rD rS vD s0 =
+      if eq rS 2'h0 then main.arm59 rD vD s0
+            else if eq rS 2'h1 then main.arm60 rD vD s0 else if eq rS 2'h2 then main.arm61 rD vD s0 else main.arm62 rD vD s0
 
-main.$L.arm230$6685 : ([2], [2], [81]) -> [106]
-main.$L.arm230$6685 rD rS s0 =
-      main.$L.vD204$6647 rD rS (Main.r0 s0) s0
+--| block '$L.arm63' of process main
+main.arm63 : ([2], [2], [81]) -> [106]
+main.arm63 rD rS s0 =
+      main.vD3 rD rS (Main.r0 s0) s0
 
-main.$L.arm232$6688 : ([2], [2], [81]) -> [106]
-main.$L.arm232$6688 rD rS s0 =
-      main.$L.vD204$6647 rD rS (Main.r1 s0) s0
+--| block '$L.arm64' of process main
+main.arm64 : ([2], [2], [81]) -> [106]
+main.arm64 rD rS s0 =
+      main.vD3 rD rS (Main.r1 s0) s0
 
-main.$L.arm234$6691 : ([2], [2], [81]) -> [106]
-main.$L.arm234$6691 rD rS s0 =
-      main.$L.vD204$6647 rD rS (Main.r2 s0) s0
+--| block '$L.arm65' of process main
+main.arm65 : ([2], [2], [81]) -> [106]
+main.arm65 rD rS s0 =
+      main.vD3 rD rS (Main.r2 s0) s0
 
-main.$L.arm236$6694 : ([2], [2], [81]) -> [106]
-main.$L.arm236$6694 rD rS s0 =
-      main.$L.vD204$6647 rD rS (Main.r3 s0) s0
+--| block '$L.arm66' of process main
+main.arm66 : ([2], [2], [81]) -> [106]
+main.arm66 rD rS s0 =
+      main.vD3 rD rS (Main.r3 s0) s0
 
-main.$L.arm237$6695 : ([1], [1], [1], [1], [81]) -> [106]
-main.$L.arm237$6695 rEn wEn b0 b1 s0 =
+--| block '$L.arm67' of process main
+main.arm67 : ([1], [1], [1], [1], [81]) -> [106]
+main.arm67 rEn wEn b0 b1 s0 =
       let rD = Main.mkReg rEn wEn in
       let $a = Main.mkReg b0 b1 in
-      if eq rD 2'h0 then main.$L.arm230$6685 rD $a s0
-            else if eq rD 2'h1 then main.$L.arm232$6688 rD $a s0 else if eq rD 2'h2 then main.$L.arm234$6691 rD $a s0 else main.$L.arm236$6694 rD $a s0
+      if eq rD 2'h0 then main.arm63 rD $a s0
+            else if eq rD 2'h1 then main.arm64 rD $a s0 else if eq rD 2'h2 then main.arm65 rD $a s0 else main.arm66 rD $a s0
 
-main.$L.cin240$6698 : ([2], [8], [8], [1], [81]) -> [106]
-main.$L.cin240$6698 rD vD vS cin s0 =
+--| block '$L.cin2' of process main
+main.cin2 : ([2], [8], [8], [1], [81]) -> [106]
+main.cin2 rD vD vS cin s0 =
       let p = Main.minusCW8 vD vS cin in
-      main.$L.s150$6568 rD p s0 s0
+      main.s63 rD p s0 s0
 
-main.$L.vS239$6697 : ([2], [8], [8], [81]) -> [106]
-main.$L.vS239$6697 rD vD vS s0 =
-      main.$L.cin240$6698 rD vD vS (Main.cFlag s0) s0
+--| block '$L.vS4' of process main
+main.vS4 : ([2], [8], [8], [81]) -> [106]
+main.vS4 rD vD vS s0 =
+      main.cin2 rD vD vS (Main.cFlag s0) s0
 
-main.$L.arm258$6725 : ([2], [8], [81]) -> [106]
-main.$L.arm258$6725 rD vD s0 =
-      main.$L.vS239$6697 rD vD (Main.r0 s0) s0
+--| block '$L.arm72' of process main
+main.arm72 : ([2], [8], [81]) -> [106]
+main.arm72 rD vD s0 =
+      main.vS4 rD vD (Main.r0 s0) s0
 
-main.$L.arm260$6728 : ([2], [8], [81]) -> [106]
-main.$L.arm260$6728 rD vD s0 =
-      main.$L.vS239$6697 rD vD (Main.r1 s0) s0
+--| block '$L.arm73' of process main
+main.arm73 : ([2], [8], [81]) -> [106]
+main.arm73 rD vD s0 =
+      main.vS4 rD vD (Main.r1 s0) s0
 
-main.$L.arm262$6731 : ([2], [8], [81]) -> [106]
-main.$L.arm262$6731 rD vD s0 =
-      main.$L.vS239$6697 rD vD (Main.r2 s0) s0
+--| block '$L.arm74' of process main
+main.arm74 : ([2], [8], [81]) -> [106]
+main.arm74 rD vD s0 =
+      main.vS4 rD vD (Main.r2 s0) s0
 
-main.$L.arm264$6734 : ([2], [8], [81]) -> [106]
-main.$L.arm264$6734 rD vD s0 =
-      main.$L.vS239$6697 rD vD (Main.r3 s0) s0
+--| block '$L.arm75' of process main
+main.arm75 : ([2], [8], [81]) -> [106]
+main.arm75 rD vD s0 =
+      main.vS4 rD vD (Main.r3 s0) s0
 
-main.$L.vD238$6696 : ([2], [2], [8], [81]) -> [106]
-main.$L.vD238$6696 rD rS vD s0 =
-      if eq rS 2'h0 then main.$L.arm258$6725 rD vD s0
-            else if eq rS 2'h1 then main.$L.arm260$6728 rD vD s0 else if eq rS 2'h2 then main.$L.arm262$6731 rD vD s0 else main.$L.arm264$6734 rD vD s0
+--| block '$L.vD4' of process main
+main.vD4 : ([2], [2], [8], [81]) -> [106]
+main.vD4 rD rS vD s0 =
+      if eq rS 2'h0 then main.arm72 rD vD s0
+            else if eq rS 2'h1 then main.arm73 rD vD s0 else if eq rS 2'h2 then main.arm74 rD vD s0 else main.arm75 rD vD s0
 
-main.$L.arm266$6737 : ([2], [2], [81]) -> [106]
-main.$L.arm266$6737 rD rS s0 =
-      main.$L.vD238$6696 rD rS (Main.r0 s0) s0
+--| block '$L.arm76' of process main
+main.arm76 : ([2], [2], [81]) -> [106]
+main.arm76 rD rS s0 =
+      main.vD4 rD rS (Main.r0 s0) s0
 
-main.$L.arm268$6740 : ([2], [2], [81]) -> [106]
-main.$L.arm268$6740 rD rS s0 =
-      main.$L.vD238$6696 rD rS (Main.r1 s0) s0
+--| block '$L.arm77' of process main
+main.arm77 : ([2], [2], [81]) -> [106]
+main.arm77 rD rS s0 =
+      main.vD4 rD rS (Main.r1 s0) s0
 
-main.$L.arm270$6743 : ([2], [2], [81]) -> [106]
-main.$L.arm270$6743 rD rS s0 =
-      main.$L.vD238$6696 rD rS (Main.r2 s0) s0
+--| block '$L.arm78' of process main
+main.arm78 : ([2], [2], [81]) -> [106]
+main.arm78 rD rS s0 =
+      main.vD4 rD rS (Main.r2 s0) s0
 
-main.$L.arm272$6746 : ([2], [2], [81]) -> [106]
-main.$L.arm272$6746 rD rS s0 =
-      main.$L.vD238$6696 rD rS (Main.r3 s0) s0
+--| block '$L.arm79' of process main
+main.arm79 : ([2], [2], [81]) -> [106]
+main.arm79 rD rS s0 =
+      main.vD4 rD rS (Main.r3 s0) s0
 
-main.$L.arm273$6747 : ([1], [1], [1], [1], [81]) -> [106]
-main.$L.arm273$6747 rEn wEn b0 b1 s0 =
+--| block '$L.arm80' of process main
+main.arm80 : ([1], [1], [1], [1], [81]) -> [106]
+main.arm80 rEn wEn b0 b1 s0 =
       let rD = Main.mkReg rEn wEn in
       let $a = Main.mkReg b0 b1 in
-      if eq rD 2'h0 then main.$L.arm266$6737 rD $a s0
-            else if eq rD 2'h1 then main.$L.arm268$6740 rD $a s0 else if eq rD 2'h2 then main.$L.arm270$6743 rD $a s0 else main.$L.arm272$6746 rD $a s0
+      if eq rD 2'h0 then main.arm76 rD $a s0
+            else if eq rD 2'h1 then main.arm77 rD $a s0 else if eq rD 2'h2 then main.arm78 rD $a s0 else main.arm79 rD $a s0
 
-main.$L.s280$6756 : ([8], [81], [81]) -> [106]
-main.$L.s280$6756 x s s0 =
+--| block '$L.zzz' of process main
+--| also: main._unused15
+main.zzz : ([81]) -> [106]
+main.zzz s0 =
+      main.s42 s0 s0
+
+--| block '$L.s121' of process main
+main.s121 : ([8], [81], [81]) -> [106]
+main.s121 x s s0 =
       let $a = Main.setR0 s x in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.arm281$6758 : ([8], [81]) -> [106]
-main.$L.arm281$6758 x s0 =
-      main.$L.s280$6756 x s0 s0
+--| block '$L.arm81' of process main
+main.arm81 : ([8], [81]) -> [106]
+main.arm81 x s0 =
+      main.s121 x s0 s0
 
-main.$L.s282$6759 : ([8], [81], [81]) -> [106]
-main.$L.s282$6759 x s s0 =
+--| block '$L.s122' of process main
+main.s122 : ([8], [81], [81]) -> [106]
+main.s122 x s s0 =
       let $a = Main.setR1 s x in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.arm283$6761 : ([8], [81]) -> [106]
-main.$L.arm283$6761 x s0 =
-      main.$L.s282$6759 x s0 s0
+--| block '$L.arm82' of process main
+main.arm82 : ([8], [81]) -> [106]
+main.arm82 x s0 =
+      main.s122 x s0 s0
 
-main.$L.s284$6762 : ([8], [81], [81]) -> [106]
-main.$L.s284$6762 x s s0 =
+--| block '$L.s123' of process main
+main.s123 : ([8], [81], [81]) -> [106]
+main.s123 x s s0 =
       let $a = Main.setR2 s x in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.arm285$6764 : ([8], [81]) -> [106]
-main.$L.arm285$6764 x s0 =
-      main.$L.s284$6762 x s0 s0
+--| block '$L.arm83' of process main
+main.arm83 : ([8], [81]) -> [106]
+main.arm83 x s0 =
+      main.s123 x s0 s0
 
-main.$L.s286$6765 : ([8], [81], [81]) -> [106]
-main.$L.s286$6765 x s s0 =
+--| block '$L.s124' of process main
+main.s124 : ([8], [81], [81]) -> [106]
+main.s124 x s s0 =
       let $a = Main.setR3 s x in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.arm287$6767 : ([8], [81]) -> [106]
-main.$L.arm287$6767 x s0 =
-      main.$L.s286$6765 x s0 s0
+--| block '$L.arm84' of process main
+main.arm84 : ([8], [81]) -> [106]
+main.arm84 x s0 =
+      main.s124 x s0 s0
 
-main.$L.x274$6748 : ([1], [1], [8], [81]) -> [106]
-main.$L.x274$6748 rEn wEn x s0 =
+--| block '$L.x2' of process main
+main.x2 : ([1], [1], [8], [81]) -> [106]
+main.x2 rEn wEn x s0 =
       let $a = Main.mkReg rEn wEn in
-      if eq $a 2'h0 then main.$L.arm281$6758 x s0
-            else if eq $a 2'h1 then main.$L.arm283$6761 x s0 else if eq $a 2'h2 then main.$L.arm285$6764 x s0 else main.$L.arm287$6767 x s0
+      if eq $a 2'h0 then main.arm81 x s0
+            else if eq $a 2'h1 then main.arm82 x s0 else if eq $a 2'h2 then main.arm83 x s0 else main.arm84 x s0
 
-main.$L.s288$6768 : ([1], [1], [81], [81]) -> [106]
-main.$L.s288$6768 rEn wEn s s0 =
+--| block '$L.s125' of process main
+main.s125 : ([1], [1], [81], [81]) -> [106]
+main.s125 rEn wEn s s0 =
       let $a = Main.r0 s in
-      main.$L.x274$6748 rEn wEn $a s0
+      main.x2 rEn wEn $a s0
 
-main.$L.arm289$6770 : ([1], [1], [81]) -> [106]
-main.$L.arm289$6770 rEn wEn s0 =
-      main.$L.s288$6768 rEn wEn s0 s0
+--| block '$L.arm85' of process main
+main.arm85 : ([1], [1], [81]) -> [106]
+main.arm85 rEn wEn s0 =
+      main.s125 rEn wEn s0 s0
 
-main.$L.s290$6771 : ([1], [1], [81], [81]) -> [106]
-main.$L.s290$6771 rEn wEn s s0 =
+--| block '$L.s126' of process main
+main.s126 : ([1], [1], [81], [81]) -> [106]
+main.s126 rEn wEn s s0 =
       let $a = Main.r1 s in
-      main.$L.x274$6748 rEn wEn $a s0
+      main.x2 rEn wEn $a s0
 
-main.$L.arm291$6773 : ([1], [1], [81]) -> [106]
-main.$L.arm291$6773 rEn wEn s0 =
-      main.$L.s290$6771 rEn wEn s0 s0
+--| block '$L.arm86' of process main
+main.arm86 : ([1], [1], [81]) -> [106]
+main.arm86 rEn wEn s0 =
+      main.s126 rEn wEn s0 s0
 
-main.$L.s292$6774 : ([1], [1], [81], [81]) -> [106]
-main.$L.s292$6774 rEn wEn s s0 =
+--| block '$L.s127' of process main
+main.s127 : ([1], [1], [81], [81]) -> [106]
+main.s127 rEn wEn s s0 =
       let $a = Main.r2 s in
-      main.$L.x274$6748 rEn wEn $a s0
+      main.x2 rEn wEn $a s0
 
-main.$L.arm293$6776 : ([1], [1], [81]) -> [106]
-main.$L.arm293$6776 rEn wEn s0 =
-      main.$L.s292$6774 rEn wEn s0 s0
+--| block '$L.arm87' of process main
+main.arm87 : ([1], [1], [81]) -> [106]
+main.arm87 rEn wEn s0 =
+      main.s127 rEn wEn s0 s0
 
-main.$L.s294$6777 : ([1], [1], [81], [81]) -> [106]
-main.$L.s294$6777 rEn wEn s s0 =
+--| block '$L.s128' of process main
+main.s128 : ([1], [1], [81], [81]) -> [106]
+main.s128 rEn wEn s s0 =
       let $a = Main.r3 s in
-      main.$L.x274$6748 rEn wEn $a s0
+      main.x2 rEn wEn $a s0
 
-main.$L.arm295$6779 : ([1], [1], [81]) -> [106]
-main.$L.arm295$6779 rEn wEn s0 =
-      main.$L.s294$6777 rEn wEn s0 s0
+--| block '$L.arm88' of process main
+main.arm88 : ([1], [1], [81]) -> [106]
+main.arm88 rEn wEn s0 =
+      main.s128 rEn wEn s0 s0
 
-main.$L.arm296$6780 : ([1], [1], [1], [1], [81]) -> [106]
-main.$L.arm296$6780 rEn wEn b0 b1 s0 =
+--| block '$L.arm89' of process main
+main.arm89 : ([1], [1], [1], [1], [81]) -> [106]
+main.arm89 rEn wEn b0 b1 s0 =
       let $a = Main.mkReg b0 b1 in
-      if eq $a 2'h0 then main.$L.arm289$6770 rEn wEn s0
-            else if eq $a 2'h1 then main.$L.arm291$6773 rEn wEn s0 else if eq $a 2'h2 then main.$L.arm293$6776 rEn wEn s0 else main.$L.arm295$6779 rEn wEn s0
+      if eq $a 2'h0 then main.arm85 rEn wEn s0
+            else if eq $a 2'h1 then main.arm86 rEn wEn s0 else if eq $a 2'h2 then main.arm87 rEn wEn s0 else main.arm88 rEn wEn s0
 
-main.$L.s306$6792 : ([8], [81], [81]) -> [106]
-main.$L.s306$6792 vD' s s0 =
+--| block '$L.s131' of process main
+main.s131 : ([8], [81], [81]) -> [106]
+main.s131 vD' s s0 =
       let s01 = Main.setZFlag s (eq vD' 8'h0) in
-      main.$L._unused137$6549 s01
+      main._unused17 s01
 
-main.$L._unused300$6784 : ([8], [81]) -> [106]
-main.$L._unused300$6784 vD' s0 =
-      main.$L.s306$6792 vD' s0 s0
+--| block '$L._unused25' of process main
+main._unused25 : ([8], [81]) -> [106]
+main._unused25 vD' s0 =
+      main.s131 vD' s0 s0
 
-main.$L.s307$6794 : ([8], [81], [81]) -> [106]
-main.$L.s307$6794 vD' s s0 =
+--| block '$L.s132' of process main
+main.s132 : ([8], [81], [81]) -> [106]
+main.s132 vD' s s0 =
       let s01 = Main.setCFlag s 1'h0 in
-      main.$L._unused300$6784 vD' s01
+      main._unused25 vD' s01
 
-main.$L._unused299$6783 : ([8], [81]) -> [106]
-main.$L._unused299$6783 vD' s0 =
-      main.$L.s307$6794 vD' s0 s0
+--| block '$L._unused24' of process main
+main._unused24 : ([8], [81]) -> [106]
+main._unused24 vD' s0 =
+      main.s132 vD' s0 s0
 
-main.$L.s308$6796 : ([8], [81], [81]) -> [106]
-main.$L.s308$6796 vD' s s0 =
+--| block '$L.s133' of process main
+main.s133 : ([8], [81], [81]) -> [106]
+main.s133 vD' s s0 =
       let s01 = Main.setR0 s vD' in
-      main.$L._unused299$6783 vD' s01
+      main._unused24 vD' s01
 
-main.$L.arm309$6798 : ([8], [81]) -> [106]
-main.$L.arm309$6798 vD' s0 =
-      main.$L.s308$6796 vD' s0 s0
+--| block '$L.arm90' of process main
+main.arm90 : ([8], [81]) -> [106]
+main.arm90 vD' s0 =
+      main.s133 vD' s0 s0
 
-main.$L.s310$6799 : ([8], [81], [81]) -> [106]
-main.$L.s310$6799 vD' s s0 =
+--| block '$L.s134' of process main
+main.s134 : ([8], [81], [81]) -> [106]
+main.s134 vD' s s0 =
       let s01 = Main.setR1 s vD' in
-      main.$L._unused299$6783 vD' s01
+      main._unused24 vD' s01
 
-main.$L.arm311$6801 : ([8], [81]) -> [106]
-main.$L.arm311$6801 vD' s0 =
-      main.$L.s310$6799 vD' s0 s0
+--| block '$L.arm91' of process main
+main.arm91 : ([8], [81]) -> [106]
+main.arm91 vD' s0 =
+      main.s134 vD' s0 s0
 
-main.$L.s312$6802 : ([8], [81], [81]) -> [106]
-main.$L.s312$6802 vD' s s0 =
+--| block '$L.s135' of process main
+main.s135 : ([8], [81], [81]) -> [106]
+main.s135 vD' s s0 =
       let s01 = Main.setR2 s vD' in
-      main.$L._unused299$6783 vD' s01
+      main._unused24 vD' s01
 
-main.$L.arm313$6804 : ([8], [81]) -> [106]
-main.$L.arm313$6804 vD' s0 =
-      main.$L.s312$6802 vD' s0 s0
+--| block '$L.arm92' of process main
+main.arm92 : ([8], [81]) -> [106]
+main.arm92 vD' s0 =
+      main.s135 vD' s0 s0
 
-main.$L.s314$6805 : ([8], [81], [81]) -> [106]
-main.$L.s314$6805 vD' s s0 =
+--| block '$L.s136' of process main
+main.s136 : ([8], [81], [81]) -> [106]
+main.s136 vD' s s0 =
       let s01 = Main.setR3 s vD' in
-      main.$L._unused299$6783 vD' s01
+      main._unused24 vD' s01
 
-main.$L.arm315$6807 : ([8], [81]) -> [106]
-main.$L.arm315$6807 vD' s0 =
-      main.$L.s314$6805 vD' s0 s0
+--| block '$L.arm93' of process main
+main.arm93 : ([8], [81]) -> [106]
+main.arm93 vD' s0 =
+      main.s136 vD' s0 s0
 
-main.$L.vS298$6782 : ([2], [8], [8], [81]) -> [106]
-main.$L.vS298$6782 rD vD vS s0 =
+--| block '$L.vS5' of process main
+main.vS5 : ([2], [8], [8], [81]) -> [106]
+main.vS5 rD vD vS s0 =
       let vD' = or vD vS in
-      if eq rD 2'h0 then main.$L.arm309$6798 vD' s0
-            else if eq rD 2'h1 then main.$L.arm311$6801 vD' s0 else if eq rD 2'h2 then main.$L.arm313$6804 vD' s0 else main.$L.arm315$6807 vD' s0
+      if eq rD 2'h0 then main.arm90 vD' s0
+            else if eq rD 2'h1 then main.arm91 vD' s0 else if eq rD 2'h2 then main.arm92 vD' s0 else main.arm93 vD' s0
 
-main.$L.arm317$6810 : ([2], [8], [81]) -> [106]
-main.$L.arm317$6810 rD vD s0 =
-      main.$L.vS298$6782 rD vD (Main.r0 s0) s0
+--| block '$L.arm94' of process main
+main.arm94 : ([2], [8], [81]) -> [106]
+main.arm94 rD vD s0 =
+      main.vS5 rD vD (Main.r0 s0) s0
 
-main.$L.arm319$6813 : ([2], [8], [81]) -> [106]
-main.$L.arm319$6813 rD vD s0 =
-      main.$L.vS298$6782 rD vD (Main.r1 s0) s0
+--| block '$L.arm95' of process main
+main.arm95 : ([2], [8], [81]) -> [106]
+main.arm95 rD vD s0 =
+      main.vS5 rD vD (Main.r1 s0) s0
 
-main.$L.arm321$6816 : ([2], [8], [81]) -> [106]
-main.$L.arm321$6816 rD vD s0 =
-      main.$L.vS298$6782 rD vD (Main.r2 s0) s0
+--| block '$L.arm96' of process main
+main.arm96 : ([2], [8], [81]) -> [106]
+main.arm96 rD vD s0 =
+      main.vS5 rD vD (Main.r2 s0) s0
 
-main.$L.arm323$6819 : ([2], [8], [81]) -> [106]
-main.$L.arm323$6819 rD vD s0 =
-      main.$L.vS298$6782 rD vD (Main.r3 s0) s0
+--| block '$L.arm97' of process main
+main.arm97 : ([2], [8], [81]) -> [106]
+main.arm97 rD vD s0 =
+      main.vS5 rD vD (Main.r3 s0) s0
 
-main.$L.vD297$6781 : ([2], [2], [8], [81]) -> [106]
-main.$L.vD297$6781 rD rS vD s0 =
-      if eq rS 2'h0 then main.$L.arm317$6810 rD vD s0
-            else if eq rS 2'h1 then main.$L.arm319$6813 rD vD s0 else if eq rS 2'h2 then main.$L.arm321$6816 rD vD s0 else main.$L.arm323$6819 rD vD s0
+--| block '$L.vD5' of process main
+main.vD5 : ([2], [2], [8], [81]) -> [106]
+main.vD5 rD rS vD s0 =
+      if eq rS 2'h0 then main.arm94 rD vD s0
+            else if eq rS 2'h1 then main.arm95 rD vD s0 else if eq rS 2'h2 then main.arm96 rD vD s0 else main.arm97 rD vD s0
 
-main.$L.arm325$6822 : ([2], [2], [81]) -> [106]
-main.$L.arm325$6822 rD rS s0 =
-      main.$L.vD297$6781 rD rS (Main.r0 s0) s0
+--| block '$L.arm98' of process main
+main.arm98 : ([2], [2], [81]) -> [106]
+main.arm98 rD rS s0 =
+      main.vD5 rD rS (Main.r0 s0) s0
 
-main.$L.arm327$6825 : ([2], [2], [81]) -> [106]
-main.$L.arm327$6825 rD rS s0 =
-      main.$L.vD297$6781 rD rS (Main.r1 s0) s0
+--| block '$L.arm99' of process main
+main.arm99 : ([2], [2], [81]) -> [106]
+main.arm99 rD rS s0 =
+      main.vD5 rD rS (Main.r1 s0) s0
 
-main.$L.arm329$6828 : ([2], [2], [81]) -> [106]
-main.$L.arm329$6828 rD rS s0 =
-      main.$L.vD297$6781 rD rS (Main.r2 s0) s0
+--| block '$L.arm100' of process main
+main.arm100 : ([2], [2], [81]) -> [106]
+main.arm100 rD rS s0 =
+      main.vD5 rD rS (Main.r2 s0) s0
 
-main.$L.arm331$6831 : ([2], [2], [81]) -> [106]
-main.$L.arm331$6831 rD rS s0 =
-      main.$L.vD297$6781 rD rS (Main.r3 s0) s0
+--| block '$L.arm101' of process main
+main.arm101 : ([2], [2], [81]) -> [106]
+main.arm101 rD rS s0 =
+      main.vD5 rD rS (Main.r3 s0) s0
 
-main.$L.arm332$6832 : ([1], [1], [1], [1], [81]) -> [106]
-main.$L.arm332$6832 rEn wEn b0 b1 s0 =
+--| block '$L.arm102' of process main
+main.arm102 : ([1], [1], [1], [1], [81]) -> [106]
+main.arm102 rEn wEn b0 b1 s0 =
       let rD = Main.mkReg rEn wEn in
       let $a = Main.mkReg b0 b1 in
-      if eq rD 2'h0 then main.$L.arm325$6822 rD $a s0
-            else if eq rD 2'h1 then main.$L.arm327$6825 rD $a s0 else if eq rD 2'h2 then main.$L.arm329$6828 rD $a s0 else main.$L.arm331$6831 rD $a s0
+      if eq rD 2'h0 then main.arm98 rD $a s0
+            else if eq rD 2'h1 then main.arm99 rD $a s0 else if eq rD 2'h2 then main.arm100 rD $a s0 else main.arm101 rD $a s0
 
-main.$L.vS334$6834 : ([2], [8], [8], [81]) -> [106]
-main.$L.vS334$6834 rD vD vS s0 =
+--| block '$L.vS6' of process main
+main.vS6 : ([2], [8], [8], [81]) -> [106]
+main.vS6 rD vD vS s0 =
       let vD' = and vD vS in
-      if eq rD 2'h0 then main.$L.arm309$6798 vD' s0
-            else if eq rD 2'h1 then main.$L.arm311$6801 vD' s0 else if eq rD 2'h2 then main.$L.arm313$6804 vD' s0 else main.$L.arm315$6807 vD' s0
+      if eq rD 2'h0 then main.arm90 vD' s0
+            else if eq rD 2'h1 then main.arm91 vD' s0 else if eq rD 2'h2 then main.arm92 vD' s0 else main.arm93 vD' s0
 
-main.$L.arm353$6862 : ([2], [8], [81]) -> [106]
-main.$L.arm353$6862 rD vD s0 =
-      main.$L.vS334$6834 rD vD (Main.r0 s0) s0
+--| block '$L.arm107' of process main
+main.arm107 : ([2], [8], [81]) -> [106]
+main.arm107 rD vD s0 =
+      main.vS6 rD vD (Main.r0 s0) s0
 
-main.$L.arm355$6865 : ([2], [8], [81]) -> [106]
-main.$L.arm355$6865 rD vD s0 =
-      main.$L.vS334$6834 rD vD (Main.r1 s0) s0
+--| block '$L.arm108' of process main
+main.arm108 : ([2], [8], [81]) -> [106]
+main.arm108 rD vD s0 =
+      main.vS6 rD vD (Main.r1 s0) s0
 
-main.$L.arm357$6868 : ([2], [8], [81]) -> [106]
-main.$L.arm357$6868 rD vD s0 =
-      main.$L.vS334$6834 rD vD (Main.r2 s0) s0
+--| block '$L.arm109' of process main
+main.arm109 : ([2], [8], [81]) -> [106]
+main.arm109 rD vD s0 =
+      main.vS6 rD vD (Main.r2 s0) s0
 
-main.$L.arm359$6871 : ([2], [8], [81]) -> [106]
-main.$L.arm359$6871 rD vD s0 =
-      main.$L.vS334$6834 rD vD (Main.r3 s0) s0
+--| block '$L.arm110' of process main
+main.arm110 : ([2], [8], [81]) -> [106]
+main.arm110 rD vD s0 =
+      main.vS6 rD vD (Main.r3 s0) s0
 
-main.$L.vD333$6833 : ([2], [2], [8], [81]) -> [106]
-main.$L.vD333$6833 rD rS vD s0 =
-      if eq rS 2'h0 then main.$L.arm353$6862 rD vD s0
-            else if eq rS 2'h1 then main.$L.arm355$6865 rD vD s0 else if eq rS 2'h2 then main.$L.arm357$6868 rD vD s0 else main.$L.arm359$6871 rD vD s0
+--| block '$L.vD6' of process main
+main.vD6 : ([2], [2], [8], [81]) -> [106]
+main.vD6 rD rS vD s0 =
+      if eq rS 2'h0 then main.arm107 rD vD s0
+            else if eq rS 2'h1 then main.arm108 rD vD s0 else if eq rS 2'h2 then main.arm109 rD vD s0 else main.arm110 rD vD s0
 
-main.$L.arm361$6874 : ([2], [2], [81]) -> [106]
-main.$L.arm361$6874 rD rS s0 =
-      main.$L.vD333$6833 rD rS (Main.r0 s0) s0
+--| block '$L.arm111' of process main
+main.arm111 : ([2], [2], [81]) -> [106]
+main.arm111 rD rS s0 =
+      main.vD6 rD rS (Main.r0 s0) s0
 
-main.$L.arm363$6877 : ([2], [2], [81]) -> [106]
-main.$L.arm363$6877 rD rS s0 =
-      main.$L.vD333$6833 rD rS (Main.r1 s0) s0
+--| block '$L.arm112' of process main
+main.arm112 : ([2], [2], [81]) -> [106]
+main.arm112 rD rS s0 =
+      main.vD6 rD rS (Main.r1 s0) s0
 
-main.$L.arm365$6880 : ([2], [2], [81]) -> [106]
-main.$L.arm365$6880 rD rS s0 =
-      main.$L.vD333$6833 rD rS (Main.r2 s0) s0
+--| block '$L.arm113' of process main
+main.arm113 : ([2], [2], [81]) -> [106]
+main.arm113 rD rS s0 =
+      main.vD6 rD rS (Main.r2 s0) s0
 
-main.$L.arm367$6883 : ([2], [2], [81]) -> [106]
-main.$L.arm367$6883 rD rS s0 =
-      main.$L.vD333$6833 rD rS (Main.r3 s0) s0
+--| block '$L.arm114' of process main
+main.arm114 : ([2], [2], [81]) -> [106]
+main.arm114 rD rS s0 =
+      main.vD6 rD rS (Main.r3 s0) s0
 
-main.$L.arm368$6884 : ([1], [1], [1], [1], [81]) -> [106]
-main.$L.arm368$6884 rEn wEn b0 b1 s0 =
+--| block '$L.arm115' of process main
+main.arm115 : ([1], [1], [1], [1], [81]) -> [106]
+main.arm115 rEn wEn b0 b1 s0 =
       let rD = Main.mkReg rEn wEn in
       let $a = Main.mkReg b0 b1 in
-      if eq rD 2'h0 then main.$L.arm361$6874 rD $a s0
-            else if eq rD 2'h1 then main.$L.arm363$6877 rD $a s0 else if eq rD 2'h2 then main.$L.arm365$6880 rD $a s0 else main.$L.arm367$6883 rD $a s0
+      if eq rD 2'h0 then main.arm111 rD $a s0
+            else if eq rD 2'h1 then main.arm112 rD $a s0 else if eq rD 2'h2 then main.arm113 rD $a s0 else main.arm114 rD $a s0
 
-main.$L.vS370$6886 : ([2], [8], [8], [81]) -> [106]
-main.$L.vS370$6886 rD vD vS s0 =
+--| block '$L.vS7' of process main
+main.vS7 : ([2], [8], [8], [81]) -> [106]
+main.vS7 rD vD vS s0 =
       let vD' = xor vD vS in
-      if eq rD 2'h0 then main.$L.arm309$6798 vD' s0
-            else if eq rD 2'h1 then main.$L.arm311$6801 vD' s0 else if eq rD 2'h2 then main.$L.arm313$6804 vD' s0 else main.$L.arm315$6807 vD' s0
+      if eq rD 2'h0 then main.arm90 vD' s0
+            else if eq rD 2'h1 then main.arm91 vD' s0 else if eq rD 2'h2 then main.arm92 vD' s0 else main.arm93 vD' s0
 
-main.$L.arm389$6914 : ([2], [8], [81]) -> [106]
-main.$L.arm389$6914 rD vD s0 =
-      main.$L.vS370$6886 rD vD (Main.r0 s0) s0
+--| block '$L.arm120' of process main
+main.arm120 : ([2], [8], [81]) -> [106]
+main.arm120 rD vD s0 =
+      main.vS7 rD vD (Main.r0 s0) s0
 
-main.$L.arm391$6917 : ([2], [8], [81]) -> [106]
-main.$L.arm391$6917 rD vD s0 =
-      main.$L.vS370$6886 rD vD (Main.r1 s0) s0
+--| block '$L.arm121' of process main
+main.arm121 : ([2], [8], [81]) -> [106]
+main.arm121 rD vD s0 =
+      main.vS7 rD vD (Main.r1 s0) s0
 
-main.$L.arm393$6920 : ([2], [8], [81]) -> [106]
-main.$L.arm393$6920 rD vD s0 =
-      main.$L.vS370$6886 rD vD (Main.r2 s0) s0
+--| block '$L.arm122' of process main
+main.arm122 : ([2], [8], [81]) -> [106]
+main.arm122 rD vD s0 =
+      main.vS7 rD vD (Main.r2 s0) s0
 
-main.$L.arm395$6923 : ([2], [8], [81]) -> [106]
-main.$L.arm395$6923 rD vD s0 =
-      main.$L.vS370$6886 rD vD (Main.r3 s0) s0
+--| block '$L.arm123' of process main
+main.arm123 : ([2], [8], [81]) -> [106]
+main.arm123 rD vD s0 =
+      main.vS7 rD vD (Main.r3 s0) s0
 
-main.$L.vD369$6885 : ([2], [2], [8], [81]) -> [106]
-main.$L.vD369$6885 rD rS vD s0 =
-      if eq rS 2'h0 then main.$L.arm389$6914 rD vD s0
-            else if eq rS 2'h1 then main.$L.arm391$6917 rD vD s0 else if eq rS 2'h2 then main.$L.arm393$6920 rD vD s0 else main.$L.arm395$6923 rD vD s0
+--| block '$L.vD7' of process main
+main.vD7 : ([2], [2], [8], [81]) -> [106]
+main.vD7 rD rS vD s0 =
+      if eq rS 2'h0 then main.arm120 rD vD s0
+            else if eq rS 2'h1 then main.arm121 rD vD s0 else if eq rS 2'h2 then main.arm122 rD vD s0 else main.arm123 rD vD s0
 
-main.$L.arm397$6926 : ([2], [2], [81]) -> [106]
-main.$L.arm397$6926 rD rS s0 =
-      main.$L.vD369$6885 rD rS (Main.r0 s0) s0
+--| block '$L.arm124' of process main
+main.arm124 : ([2], [2], [81]) -> [106]
+main.arm124 rD rS s0 =
+      main.vD7 rD rS (Main.r0 s0) s0
 
-main.$L.arm399$6929 : ([2], [2], [81]) -> [106]
-main.$L.arm399$6929 rD rS s0 =
-      main.$L.vD369$6885 rD rS (Main.r1 s0) s0
+--| block '$L.arm125' of process main
+main.arm125 : ([2], [2], [81]) -> [106]
+main.arm125 rD rS s0 =
+      main.vD7 rD rS (Main.r1 s0) s0
 
-main.$L.arm401$6932 : ([2], [2], [81]) -> [106]
-main.$L.arm401$6932 rD rS s0 =
-      main.$L.vD369$6885 rD rS (Main.r2 s0) s0
+--| block '$L.arm126' of process main
+main.arm126 : ([2], [2], [81]) -> [106]
+main.arm126 rD rS s0 =
+      main.vD7 rD rS (Main.r2 s0) s0
 
-main.$L.arm403$6935 : ([2], [2], [81]) -> [106]
-main.$L.arm403$6935 rD rS s0 =
-      main.$L.vD369$6885 rD rS (Main.r3 s0) s0
+--| block '$L.arm127' of process main
+main.arm127 : ([2], [2], [81]) -> [106]
+main.arm127 rD rS s0 =
+      main.vD7 rD rS (Main.r3 s0) s0
 
-main.$L.arm404$6936 : ([1], [1], [1], [1], [81]) -> [106]
-main.$L.arm404$6936 rEn wEn b0 b1 s0 =
+--| block '$L.arm128' of process main
+main.arm128 : ([1], [1], [1], [1], [81]) -> [106]
+main.arm128 rEn wEn b0 b1 s0 =
       let rD = Main.mkReg rEn wEn in
       let $a = Main.mkReg b0 b1 in
-      if eq rD 2'h0 then main.$L.arm397$6926 rD $a s0
-            else if eq rD 2'h1 then main.$L.arm399$6929 rD $a s0 else if eq rD 2'h2 then main.$L.arm401$6932 rD $a s0 else main.$L.arm403$6935 rD $a s0
+      if eq rD 2'h0 then main.arm124 rD $a s0
+            else if eq rD 2'h1 then main.arm125 rD $a s0 else if eq rD 2'h2 then main.arm126 rD $a s0 else main.arm127 rD $a s0
 
-main.$L.s413$6947 : ([9], [81], [81]) -> [106]
-main.$L.s413$6947 p s s0 =
+--| block '$L.s179' of process main
+main.s179 : ([9], [81], [81]) -> [106]
+main.s179 p s s0 =
       let $a = (let y = p[0 +: 8] in
       y) in
       let $a1 = Main.setZFlag s (eq $a 8'h0) in
-      main.$L._unused103$6499 $a1
+      main.zzz $a1
 
-main.$L._unused407$6939 : ([9], [81]) -> [106]
-main.$L._unused407$6939 p s0 =
-      main.$L.s413$6947 p s0 s0
+--| block '$L._unused33' of process main
+main._unused33 : ([9], [81]) -> [106]
+main._unused33 p s0 =
+      main.s179 p s0 s0
 
-main.$L.s414$6949 : ([9], [81], [81]) -> [106]
-main.$L.s414$6949 p s s0 =
+--| block '$L.s180' of process main
+main.s180 : ([9], [81], [81]) -> [106]
+main.s180 p s s0 =
       let $a = (let x = p[8 +: 1] in
       x) in
       let $a1 = Main.setCFlag s $a in
-      main.$L._unused407$6939 p $a1
+      main._unused33 p $a1
 
-main.$L.vS406$6938 : ([8], [8], [81]) -> [106]
-main.$L.vS406$6938 vD vS s0 =
-      let p = Main.minusCW8$s1 vD vS in
-      main.$L.s414$6949 p s0 s0
+--| block '$L.vS8' of process main
+main.vS8 : ([8], [8], [81]) -> [106]
+main.vS8 vD vS s0 =
+      let p = Main.minusCW8$sFalse_Bool vD vS in
+      main.s180 p s0 s0
 
-main.$L.s415$6951 : ([8], [81], [81]) -> [106]
-main.$L.s415$6951 vD s s0 =
+--| block '$L.s181' of process main
+main.s181 : ([8], [81], [81]) -> [106]
+main.s181 vD s s0 =
       let $a = Main.r0 s in
-      main.$L.vS406$6938 vD $a s0
+      main.vS8 vD $a s0
 
-main.$L.arm416$6953 : ([8], [81]) -> [106]
-main.$L.arm416$6953 vD s0 =
-      main.$L.s415$6951 vD s0 s0
+--| block '$L.arm129' of process main
+main.arm129 : ([8], [81]) -> [106]
+main.arm129 vD s0 =
+      main.s181 vD s0 s0
 
-main.$L.s417$6954 : ([8], [81], [81]) -> [106]
-main.$L.s417$6954 vD s s0 =
+--| block '$L.s182' of process main
+main.s182 : ([8], [81], [81]) -> [106]
+main.s182 vD s s0 =
       let $a = Main.r1 s in
-      main.$L.vS406$6938 vD $a s0
+      main.vS8 vD $a s0
 
-main.$L.arm418$6956 : ([8], [81]) -> [106]
-main.$L.arm418$6956 vD s0 =
-      main.$L.s417$6954 vD s0 s0
+--| block '$L.arm130' of process main
+main.arm130 : ([8], [81]) -> [106]
+main.arm130 vD s0 =
+      main.s182 vD s0 s0
 
-main.$L.s419$6957 : ([8], [81], [81]) -> [106]
-main.$L.s419$6957 vD s s0 =
+--| block '$L.s183' of process main
+main.s183 : ([8], [81], [81]) -> [106]
+main.s183 vD s s0 =
       let $a = Main.r2 s in
-      main.$L.vS406$6938 vD $a s0
+      main.vS8 vD $a s0
 
-main.$L.arm420$6959 : ([8], [81]) -> [106]
-main.$L.arm420$6959 vD s0 =
-      main.$L.s419$6957 vD s0 s0
+--| block '$L.arm131' of process main
+main.arm131 : ([8], [81]) -> [106]
+main.arm131 vD s0 =
+      main.s183 vD s0 s0
 
-main.$L.s421$6960 : ([8], [81], [81]) -> [106]
-main.$L.s421$6960 vD s s0 =
+--| block '$L.s184' of process main
+main.s184 : ([8], [81], [81]) -> [106]
+main.s184 vD s s0 =
       let $a = Main.r3 s in
-      main.$L.vS406$6938 vD $a s0
+      main.vS8 vD $a s0
 
-main.$L.arm422$6962 : ([8], [81]) -> [106]
-main.$L.arm422$6962 vD s0 =
-      main.$L.s421$6960 vD s0 s0
+--| block '$L.arm132' of process main
+main.arm132 : ([8], [81]) -> [106]
+main.arm132 vD s0 =
+      main.s184 vD s0 s0
 
-main.$L.vD405$6937 : ([1], [1], [8], [81]) -> [106]
-main.$L.vD405$6937 b0 b1 vD s0 =
+--| block '$L.vD8' of process main
+main.vD8 : ([1], [1], [8], [81]) -> [106]
+main.vD8 b0 b1 vD s0 =
       let $a = Main.mkReg b0 b1 in
-      if eq $a 2'h0 then main.$L.arm416$6953 vD s0
-            else if eq $a 2'h1 then main.$L.arm418$6956 vD s0 else if eq $a 2'h2 then main.$L.arm420$6959 vD s0 else main.$L.arm422$6962 vD s0
+      if eq $a 2'h0 then main.arm129 vD s0
+            else if eq $a 2'h1 then main.arm130 vD s0 else if eq $a 2'h2 then main.arm131 vD s0 else main.arm132 vD s0
 
-main.$L.s423$6963 : ([1], [1], [81], [81]) -> [106]
-main.$L.s423$6963 b0 b1 s s0 =
+--| block '$L.s185' of process main
+main.s185 : ([1], [1], [81], [81]) -> [106]
+main.s185 b0 b1 s s0 =
       let $a = Main.r0 s in
-      main.$L.vD405$6937 b0 b1 $a s0
+      main.vD8 b0 b1 $a s0
 
-main.$L.arm424$6965 : ([1], [1], [81]) -> [106]
-main.$L.arm424$6965 b0 b1 s0 =
-      main.$L.s423$6963 b0 b1 s0 s0
+--| block '$L.arm133' of process main
+main.arm133 : ([1], [1], [81]) -> [106]
+main.arm133 b0 b1 s0 =
+      main.s185 b0 b1 s0 s0
 
-main.$L.s425$6966 : ([1], [1], [81], [81]) -> [106]
-main.$L.s425$6966 b0 b1 s s0 =
+--| block '$L.s186' of process main
+main.s186 : ([1], [1], [81], [81]) -> [106]
+main.s186 b0 b1 s s0 =
       let $a = Main.r1 s in
-      main.$L.vD405$6937 b0 b1 $a s0
+      main.vD8 b0 b1 $a s0
 
-main.$L.arm426$6968 : ([1], [1], [81]) -> [106]
-main.$L.arm426$6968 b0 b1 s0 =
-      main.$L.s425$6966 b0 b1 s0 s0
+--| block '$L.arm134' of process main
+main.arm134 : ([1], [1], [81]) -> [106]
+main.arm134 b0 b1 s0 =
+      main.s186 b0 b1 s0 s0
 
-main.$L.s427$6969 : ([1], [1], [81], [81]) -> [106]
-main.$L.s427$6969 b0 b1 s s0 =
+--| block '$L.s187' of process main
+main.s187 : ([1], [1], [81], [81]) -> [106]
+main.s187 b0 b1 s s0 =
       let $a = Main.r2 s in
-      main.$L.vD405$6937 b0 b1 $a s0
+      main.vD8 b0 b1 $a s0
 
-main.$L.arm428$6971 : ([1], [1], [81]) -> [106]
-main.$L.arm428$6971 b0 b1 s0 =
-      main.$L.s427$6969 b0 b1 s0 s0
+--| block '$L.arm135' of process main
+main.arm135 : ([1], [1], [81]) -> [106]
+main.arm135 b0 b1 s0 =
+      main.s187 b0 b1 s0 s0
 
-main.$L.s429$6972 : ([1], [1], [81], [81]) -> [106]
-main.$L.s429$6972 b0 b1 s s0 =
+--| block '$L.s188' of process main
+main.s188 : ([1], [1], [81], [81]) -> [106]
+main.s188 b0 b1 s s0 =
       let $a = Main.r3 s in
-      main.$L.vD405$6937 b0 b1 $a s0
+      main.vD8 b0 b1 $a s0
 
-main.$L.arm430$6974 : ([1], [1], [81]) -> [106]
-main.$L.arm430$6974 b0 b1 s0 =
-      main.$L.s429$6972 b0 b1 s0 s0
+--| block '$L.arm136' of process main
+main.arm136 : ([1], [1], [81]) -> [106]
+main.arm136 b0 b1 s0 =
+      main.s188 b0 b1 s0 s0
 
-main.$L.arm431$6975 : ([1], [1], [1], [1], [81]) -> [106]
-main.$L.arm431$6975 rEn wEn b0 b1 s0 =
+--| block '$L.arm137' of process main
+main.arm137 : ([1], [1], [1], [1], [81]) -> [106]
+main.arm137 rEn wEn b0 b1 s0 =
       let $a = Main.mkReg rEn wEn in
-      if eq $a 2'h0 then main.$L.arm424$6965 b0 b1 s0
-            else if eq $a 2'h1 then main.$L.arm426$6968 b0 b1 s0 else if eq $a 2'h2 then main.$L.arm428$6971 b0 b1 s0 else main.$L.arm430$6974 b0 b1 s0
+      if eq $a 2'h0 then main.arm133 b0 b1 s0
+            else if eq $a 2'h1 then main.arm134 b0 b1 s0 else if eq $a 2'h2 then main.arm135 b0 b1 s0 else main.arm136 b0 b1 s0
 
-main.$L.s439$6985 : ([8], [81], [81]) -> [106]
-main.$L.s439$6985 pc s s0 =
+--| block '$L.s191' of process main
+main.s191 : ([8], [81], [81]) -> [106]
+main.s191 pc s s0 =
       let $a = Main.setPC s pc in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.pc438$6984 : ([8], [81]) -> [106]
-main.$L.pc438$6984 pc s0 =
-      main.$L.s439$6985 pc s0 s0
+--| block '$L.pc3' of process main
+main.pc3 : ([8], [81]) -> [106]
+main.pc3 pc s0 =
+      main.s191 pc s0 s0
 
-main.$L.s440$6987 : ([81], [81]) -> [106]
-main.$L.s440$6987 s s0 =
+--| block '$L.s192' of process main
+main.s192 : ([81], [81]) -> [106]
+main.s192 s s0 =
       let $a = Main.r0 s in
-      main.$L.pc438$6984 $a s0
+      main.pc3 $a s0
 
-main.$L.arm441$6989 : ([81]) -> [106]
-main.$L.arm441$6989 s0 =
-      main.$L.s440$6987 s0 s0
+--| block '$L.arm138' of process main
+main.arm138 : ([81]) -> [106]
+main.arm138 s0 =
+      main.s192 s0 s0
 
-main.$L.s442$6990 : ([81], [81]) -> [106]
-main.$L.s442$6990 s s0 =
+--| block '$L.s193' of process main
+main.s193 : ([81], [81]) -> [106]
+main.s193 s s0 =
       let $a = Main.r1 s in
-      main.$L.pc438$6984 $a s0
+      main.pc3 $a s0
 
-main.$L.arm443$6992 : ([81]) -> [106]
-main.$L.arm443$6992 s0 =
-      main.$L.s442$6990 s0 s0
+--| block '$L.arm139' of process main
+main.arm139 : ([81]) -> [106]
+main.arm139 s0 =
+      main.s193 s0 s0
 
-main.$L.s444$6993 : ([81], [81]) -> [106]
-main.$L.s444$6993 s s0 =
+--| block '$L.s194' of process main
+main.s194 : ([81], [81]) -> [106]
+main.s194 s s0 =
       let $a = Main.r2 s in
-      main.$L.pc438$6984 $a s0
+      main.pc3 $a s0
 
-main.$L.arm445$6995 : ([81]) -> [106]
-main.$L.arm445$6995 s0 =
-      main.$L.s444$6993 s0 s0
+--| block '$L.arm140' of process main
+main.arm140 : ([81]) -> [106]
+main.arm140 s0 =
+      main.s194 s0 s0
 
-main.$L.s446$6996 : ([81], [81]) -> [106]
-main.$L.s446$6996 s s0 =
+--| block '$L.s195' of process main
+main.s195 : ([81], [81]) -> [106]
+main.s195 s s0 =
       let $a = Main.r3 s in
-      main.$L.pc438$6984 $a s0
+      main.pc3 $a s0
 
-main.$L.arm447$6998 : ([81]) -> [106]
-main.$L.arm447$6998 s0 =
-      main.$L.s446$6996 s0 s0
+--| block '$L.arm141' of process main
+main.arm141 : ([81]) -> [106]
+main.arm141 s0 =
+      main.s195 s0 s0
 
-main.$L.arm448$6999 : ([1], [1], [81]) -> [106]
-main.$L.arm448$6999 b0 b1 s0 =
+--| block '$L.arm142' of process main
+main.arm142 : ([1], [1], [81]) -> [106]
+main.arm142 b0 b1 s0 =
       let $a = Main.mkReg b0 b1 in
-      if eq $a 2'h0 then main.$L.arm441$6989 s0
-            else if eq $a 2'h1 then main.$L.arm443$6992 s0 else if eq $a 2'h2 then main.$L.arm445$6995 s0 else main.$L.arm447$6998 s0
+      if eq $a 2'h0 then main.arm138 s0
+            else if eq $a 2'h1 then main.arm139 s0 else if eq $a 2'h2 then main.arm140 s0 else main.arm141 s0
 
-main.$L.z432$6976 : ([1], [1], [1], [81]) -> [106]
-main.$L.z432$6976 b0 b1 z s0 =
-      if eq z 1'h0 then main.$L._unused103$6499 s0
-            else main.$L.arm448$6999 b0 b1 s0
+--| block '$L.z' of process main
+main.z : ([1], [1], [1], [81]) -> [106]
+main.z b0 b1 z s0 =
+      if not z then main.zzz s0
+            else main.arm142 b0 b1 s0
 
-main.$L.s449$7000 : ([1], [1], [81], [81]) -> [106]
-main.$L.s449$7000 b0 b1 s s0 =
+--| block '$L.s196' of process main
+main.s196 : ([1], [1], [81], [81]) -> [106]
+main.s196 b0 b1 s s0 =
       let $a = Main.zFlag s in
-      main.$L.z432$6976 b0 b1 $a s0
+      main.z b0 b1 $a s0
 
-main.$L.arm450$7002 : ([1], [1], [81]) -> [106]
-main.$L.arm450$7002 b0 b1 s0 =
-      main.$L.s449$7000 b0 b1 s0 s0
+--| block '$L.arm143' of process main
+main.arm143 : ([1], [1], [81]) -> [106]
+main.arm143 b0 b1 s0 =
+      main.s196 b0 b1 s0 s0
 
-main.$L.z451$7003 : ([1], [1], [1], [81]) -> [106]
-main.$L.z451$7003 b0 b1 z s0 =
+--| block '$L.z2' of process main
+main.z2 : ([1], [1], [1], [81]) -> [106]
+main.z2 b0 b1 z s0 =
       let $a = Main.notb z in
-      if eq $a 1'h0 then main.$L._unused103$6499 s0
-            else main.$L.arm448$6999 b0 b1 s0
+      if not $a then main.zzz s0
+            else main.arm142 b0 b1 s0
 
-main.$L.s468$7027 : ([1], [1], [81], [81]) -> [106]
-main.$L.s468$7027 b0 b1 s s0 =
+--| block '$L.s204' of process main
+main.s204 : ([1], [1], [81], [81]) -> [106]
+main.s204 b0 b1 s s0 =
       let $a = Main.zFlag s in
-      main.$L.z451$7003 b0 b1 $a s0
+      main.z2 b0 b1 $a s0
 
-main.$L.arm469$7029 : ([1], [1], [81]) -> [106]
-main.$L.arm469$7029 b0 b1 s0 =
-      main.$L.s468$7027 b0 b1 s0 s0
+--| block '$L.arm149' of process main
+main.arm149 : ([1], [1], [81]) -> [106]
+main.arm149 b0 b1 s0 =
+      main.s204 b0 b1 s0 s0
 
-main.$L.c470$7030 : ([1], [1], [1], [81]) -> [106]
-main.$L.c470$7030 b0 b1 c s0 =
-      if eq c 1'h0 then main.$L._unused103$6499 s0
-            else main.$L.arm448$6999 b0 b1 s0
+--| block '$L.c' of process main
+main.c : ([1], [1], [1], [81]) -> [106]
+main.c b0 b1 c s0 =
+      if not c then main.zzz s0
+            else main.arm142 b0 b1 s0
 
-main.$L.s487$7054 : ([1], [1], [81], [81]) -> [106]
-main.$L.s487$7054 b0 b1 s s0 =
+--| block '$L.s212' of process main
+main.s212 : ([1], [1], [81], [81]) -> [106]
+main.s212 b0 b1 s s0 =
       let $a = Main.cFlag s in
-      main.$L.c470$7030 b0 b1 $a s0
+      main.c b0 b1 $a s0
 
-main.$L.arm488$7056 : ([1], [1], [81]) -> [106]
-main.$L.arm488$7056 b0 b1 s0 =
-      main.$L.s487$7054 b0 b1 s0 s0
+--| block '$L.arm155' of process main
+main.arm155 : ([1], [1], [81]) -> [106]
+main.arm155 b0 b1 s0 =
+      main.s212 b0 b1 s0 s0
 
-main.$L.c489$7057 : ([1], [1], [1], [81]) -> [106]
-main.$L.c489$7057 b0 b1 c s0 =
+--| block '$L.c2' of process main
+main.c2 : ([1], [1], [1], [81]) -> [106]
+main.c2 b0 b1 c s0 =
       let $a = Main.notb c in
-      if eq $a 1'h0 then main.$L._unused103$6499 s0
-            else main.$L.arm448$6999 b0 b1 s0
+      if not $a then main.zzz s0
+            else main.arm142 b0 b1 s0
 
-main.$L.s506$7081 : ([1], [1], [81], [81]) -> [106]
-main.$L.s506$7081 b0 b1 s s0 =
+--| block '$L.s220' of process main
+main.s220 : ([1], [1], [81], [81]) -> [106]
+main.s220 b0 b1 s s0 =
       let $a = Main.cFlag s in
-      main.$L.c489$7057 b0 b1 $a s0
+      main.c2 b0 b1 $a s0
 
-main.$L.arm507$7083 : ([1], [1], [81]) -> [106]
-main.$L.arm507$7083 b0 b1 s0 =
-      main.$L.s506$7081 b0 b1 s0 s0
+--| block '$L.arm161' of process main
+main.arm161 : ([1], [1], [81]) -> [106]
+main.arm161 b0 b1 s0 =
+      main.s220 b0 b1 s0 s0
 
-main.$L.s514$7092 : ([8], [81], [81]) -> [106]
-main.$L.s514$7092 x s s0 =
+--| block '$L.s223' of process main
+main.s223 : ([8], [81], [81]) -> [106]
+main.s223 x s s0 =
       let $a = Main.setPC s x in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.x508$7084 : ([8], [81]) -> [106]
-main.$L.x508$7084 x s0 =
-      main.$L.s514$7092 x s0 s0
+--| block '$L.x3' of process main
+main.x3 : ([8], [81]) -> [106]
+main.x3 x s0 =
+      main.s223 x s0 s0
 
-main.$L.s515$7094 : ([81], [81]) -> [106]
-main.$L.s515$7094 s s0 =
+--| block '$L.s224' of process main
+main.s224 : ([81], [81]) -> [106]
+main.s224 s s0 =
       let $a = Main.r0 s in
-      main.$L.x508$7084 $a s0
+      main.x3 $a s0
 
-main.$L.arm516$7096 : ([81]) -> [106]
-main.$L.arm516$7096 s0 =
-      main.$L.s515$7094 s0 s0
+--| block '$L.arm162' of process main
+main.arm162 : ([81]) -> [106]
+main.arm162 s0 =
+      main.s224 s0 s0
 
-main.$L.s517$7097 : ([81], [81]) -> [106]
-main.$L.s517$7097 s s0 =
+--| block '$L.s225' of process main
+main.s225 : ([81], [81]) -> [106]
+main.s225 s s0 =
       let $a = Main.r1 s in
-      main.$L.x508$7084 $a s0
+      main.x3 $a s0
 
-main.$L.arm518$7099 : ([81]) -> [106]
-main.$L.arm518$7099 s0 =
-      main.$L.s517$7097 s0 s0
+--| block '$L.arm163' of process main
+main.arm163 : ([81]) -> [106]
+main.arm163 s0 =
+      main.s225 s0 s0
 
-main.$L.s519$7100 : ([81], [81]) -> [106]
-main.$L.s519$7100 s s0 =
+--| block '$L.s226' of process main
+main.s226 : ([81], [81]) -> [106]
+main.s226 s s0 =
       let $a = Main.r2 s in
-      main.$L.x508$7084 $a s0
+      main.x3 $a s0
 
-main.$L.arm520$7102 : ([81]) -> [106]
-main.$L.arm520$7102 s0 =
-      main.$L.s519$7100 s0 s0
+--| block '$L.arm164' of process main
+main.arm164 : ([81]) -> [106]
+main.arm164 s0 =
+      main.s226 s0 s0
 
-main.$L.s521$7103 : ([81], [81]) -> [106]
-main.$L.s521$7103 s s0 =
+--| block '$L.s227' of process main
+main.s227 : ([81], [81]) -> [106]
+main.s227 s s0 =
       let $a = Main.r3 s in
-      main.$L.x508$7084 $a s0
+      main.x3 $a s0
 
-main.$L.arm522$7105 : ([81]) -> [106]
-main.$L.arm522$7105 s0 =
-      main.$L.s521$7103 s0 s0
+--| block '$L.arm165' of process main
+main.arm165 : ([81]) -> [106]
+main.arm165 s0 =
+      main.s227 s0 s0
 
-main.$L.arm523$7106 : ([1], [1], [81]) -> [106]
-main.$L.arm523$7106 b0 b1 s0 =
+--| block '$L.arm166' of process main
+main.arm166 : ([1], [1], [81]) -> [106]
+main.arm166 b0 b1 s0 =
       let $a = Main.mkReg b0 b1 in
-      if eq $a 2'h0 then main.$L.arm516$7096 s0
-            else if eq $a 2'h1 then main.$L.arm518$7099 s0 else if eq $a 2'h2 then main.$L.arm520$7102 s0 else main.$L.arm522$7105 s0
+      if eq $a 2'h0 then main.arm162 s0
+            else if eq $a 2'h1 then main.arm163 s0 else if eq $a 2'h2 then main.arm164 s0 else main.arm165 s0
 
-main.$L.s529$7114 : ([1], [81], [81]) -> [106]
-main.$L.s529$7114 b1 s s0 =
+--| block '$L.s230' of process main
+main.s230 : ([1], [81], [81]) -> [106]
+main.s230 b1 s s0 =
       let $a = Main.setIEFlag s b1 in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.arm530$7116 : ([1], [81]) -> [106]
-main.$L.arm530$7116 b1 s0 =
-      main.$L.s529$7114 b1 s0 s0
+--| block '$L.arm167' of process main
+main.arm167 : ([1], [81]) -> [106]
+main.arm167 b1 s0 =
+      main.s230 b1 s0 s0
 
-main.$L.s537$7125 : ([18], [81], [81]) -> [106]
-main.$L.s537$7125 o s s0 =
+--| block '$L.s233' of process main
+main.s233 : ([18], [81], [81]) -> [106]
+main.s233 o s s0 =
       let $a = Main.setIackOut o 1'h1 in
       let $a1 = Main.setOutputs s $a in
-      main.$L._unused103$6499 $a1
+      main.zzz $a1
 
-main.$L.o536$7124 : ([18], [81]) -> [106]
-main.$L.o536$7124 o s0 =
-      main.$L.s537$7125 o s0 s0
+--| block '$L.o30' of process main
+main.o30 : ([18], [81]) -> [106]
+main.o30 o s0 =
+      main.s233 o s0 s0
 
-main.$L.s538$7127 : ([81], [81]) -> [106]
-main.$L.s538$7127 s s0 =
+--| block '$L.s234' of process main
+main.s234 : ([81], [81]) -> [106]
+main.s234 s s0 =
       let $a = Main.outputs s in
-      main.$L.o536$7124 $a s0
+      main.o30 $a s0
 
-main.$L.arm539$7129 : ([81]) -> [106]
-main.$L.arm539$7129 s0 =
-      main.$L.s538$7127 s0 s0
+--| block '$L.arm168' of process main
+main.arm168 : ([81]) -> [106]
+main.arm168 s0 =
+      main.s234 s0 s0
 
-main.$L.s551$7143 : ([1], [81], [81]) -> [106]
-main.$L.s551$7143 c s s0 =
+--| block '$L.s237' of process main
+main.s237 : ([1], [81], [81]) -> [106]
+main.s237 c s s0 =
       let $a = Main.setCFlag s c in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.c545$7135 : ([1], [81]) -> [106]
-main.$L.c545$7135 c s0 =
-      main.$L.s551$7143 c s0 s0
+--| block '$L.c3' of process main
+main.c3 : ([1], [81]) -> [106]
+main.c3 c s0 =
+      main.s237 c s0 s0
 
-main.$L.s552$7145 : ([81], [81]) -> [106]
-main.$L.s552$7145 s s0 =
+--| block '$L.s238' of process main
+main.s238 : ([81], [81]) -> [106]
+main.s238 s s0 =
       let $a = Main.csFlag s in
-      main.$L.c545$7135 $a s0
+      main.c3 $a s0
 
-main.$L._unused544$7134 : ([81]) -> [106]
-main.$L._unused544$7134 s0 =
-      main.$L.s552$7145 s0 s0
+--| block '$L._unused41' of process main
+main._unused41 : ([81]) -> [106]
+main._unused41 s0 =
+      main.s238 s0 s0
 
-main.$L.s553$7147 : ([1], [81], [81]) -> [106]
-main.$L.s553$7147 z s s0 =
+--| block '$L.s239' of process main
+main.s239 : ([1], [81], [81]) -> [106]
+main.s239 z s s0 =
       let $a = Main.setZFlag s z in
-      main.$L._unused544$7134 $a
+      main._unused41 $a
 
-main.$L.z543$7133 : ([1], [81]) -> [106]
-main.$L.z543$7133 z s0 =
-      main.$L.s553$7147 z s0 s0
+--| block '$L.z3' of process main
+main.z3 : ([1], [81]) -> [106]
+main.z3 z s0 =
+      main.s239 z s0 s0
 
-main.$L.s554$7149 : ([81], [81]) -> [106]
-main.$L.s554$7149 s s0 =
+--| block '$L.s240' of process main
+main.s240 : ([81], [81]) -> [106]
+main.s240 s s0 =
       let $a = Main.zsFlag s in
-      main.$L.z543$7133 $a s0
+      main.z3 $a s0
 
-main.$L._unused542$7132 : ([81]) -> [106]
-main.$L._unused542$7132 s0 =
-      main.$L.s554$7149 s0 s0
+--| block '$L._unused40' of process main
+main._unused40 : ([81]) -> [106]
+main._unused40 s0 =
+      main.s240 s0 s0
 
-main.$L.s555$7151 : ([8], [81], [81]) -> [106]
-main.$L.s555$7151 pc s s0 =
+--| block '$L.s241' of process main
+main.s241 : ([8], [81], [81]) -> [106]
+main.s241 pc s s0 =
       let $a = Main.setPC s pc in
-      main.$L._unused542$7132 $a
+      main._unused40 $a
 
-main.$L.pc541$7131 : ([8], [81]) -> [106]
-main.$L.pc541$7131 pc s0 =
-      main.$L.s555$7151 pc s0 s0
+--| block '$L.pc7' of process main
+main.pc7 : ([8], [81]) -> [106]
+main.pc7 pc s0 =
+      main.s241 pc s0 s0
 
-main.$L.s556$7153 : ([81], [81]) -> [106]
-main.$L.s556$7153 s s0 =
+--| block '$L.s242' of process main
+main.s242 : ([81], [81]) -> [106]
+main.s242 s s0 =
       let $a = Main.pcSave s in
-      main.$L.pc541$7131 $a s0
+      main.pc7 $a s0
 
-main.$L._unused540$7130 : ([81]) -> [106]
-main.$L._unused540$7130 s0 =
-      main.$L.s556$7153 s0 s0
+--| block '$L._unused39' of process main
+main._unused39 : ([81]) -> [106]
+main._unused39 s0 =
+      main.s242 s0 s0
 
-main.$L.s557$7155 : ([81], [81]) -> [106]
-main.$L.s557$7155 s s0 =
+--| block '$L.s243' of process main
+main.s243 : ([81], [81]) -> [106]
+main.s243 s s0 =
       let $a = Main.setIEFlag s 1'h1 in
-      main.$L._unused540$7130 $a
+      main._unused39 $a
 
-main.$L.arm558$7157 : ([81]) -> [106]
-main.$L.arm558$7157 s0 =
-      main.$L.s557$7155 s0 s0
+--| block '$L.arm169' of process main
+main.arm169 : ([81]) -> [106]
+main.arm169 s0 =
+      main.s243 s0 s0
 
-main.$L.s565$7166 : ([8], [81], [81]) -> [106]
-main.$L.s565$7166 v s s0 =
+--| block '$L.s246' of process main
+main.s246 : ([8], [81], [81]) -> [106]
+main.s246 v s s0 =
       let $a = Main.setR0 s v in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.arm566$7168 : ([8], [81]) -> [106]
-main.$L.arm566$7168 v s0 =
-      main.$L.s565$7166 v s0 s0
+--| block '$L.arm170' of process main
+main.arm170 : ([8], [81]) -> [106]
+main.arm170 v s0 =
+      main.s246 v s0 s0
 
-main.$L.s567$7169 : ([8], [81], [81]) -> [106]
-main.$L.s567$7169 v s s0 =
+--| block '$L.s247' of process main
+main.s247 : ([8], [81], [81]) -> [106]
+main.s247 v s s0 =
       let $a = Main.setR1 s v in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.arm568$7171 : ([8], [81]) -> [106]
-main.$L.arm568$7171 v s0 =
-      main.$L.s567$7169 v s0 s0
+--| block '$L.arm171' of process main
+main.arm171 : ([8], [81]) -> [106]
+main.arm171 v s0 =
+      main.s247 v s0 s0
 
-main.$L.s569$7172 : ([8], [81], [81]) -> [106]
-main.$L.s569$7172 v s s0 =
+--| block '$L.s248' of process main
+main.s248 : ([8], [81], [81]) -> [106]
+main.s248 v s s0 =
       let $a = Main.setR2 s v in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.arm570$7174 : ([8], [81]) -> [106]
-main.$L.arm570$7174 v s0 =
-      main.$L.s569$7172 v s0 s0
+--| block '$L.arm172' of process main
+main.arm172 : ([8], [81]) -> [106]
+main.arm172 v s0 =
+      main.s248 v s0 s0
 
-main.$L.s571$7175 : ([8], [81], [81]) -> [106]
-main.$L.s571$7175 v s s0 =
+--| block '$L.s249' of process main
+main.s249 : ([8], [81], [81]) -> [106]
+main.s249 v s s0 =
       let $a = Main.setR3 s v in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.arm572$7177 : ([8], [81]) -> [106]
-main.$L.arm572$7177 v s0 =
-      main.$L.s571$7175 v s0 s0
+--| block '$L.arm173' of process main
+main.arm173 : ([8], [81]) -> [106]
+main.arm173 v s0 =
+      main.s249 v s0 s0
 
-main.$L.v559$7158 : ([2], [8], [81]) -> [106]
-main.$L.v559$7158 r v s0 =
+--| block '$L.v3' of process main
+main.v3 : ([2], [8], [81]) -> [106]
+main.v3 r v s0 =
       let v1 = not v in
-      if eq r 2'h0 then main.$L.arm566$7168 v1 s0
-            else if eq r 2'h1 then main.$L.arm568$7171 v1 s0 else if eq r 2'h2 then main.$L.arm570$7174 v1 s0 else main.$L.arm572$7177 v1 s0
+      if eq r 2'h0 then main.arm170 v1 s0
+            else if eq r 2'h1 then main.arm171 v1 s0 else if eq r 2'h2 then main.arm172 v1 s0 else main.arm173 v1 s0
 
-main.$L.s573$7178 : ([2], [81], [81]) -> [106]
-main.$L.s573$7178 r s s0 =
+--| block '$L.s250' of process main
+main.s250 : ([2], [81], [81]) -> [106]
+main.s250 r s s0 =
       let $a = Main.r0 s in
-      main.$L.v559$7158 r $a s0
+      main.v3 r $a s0
 
-main.$L.arm574$7180 : ([2], [81]) -> [106]
-main.$L.arm574$7180 r s0 =
-      main.$L.s573$7178 r s0 s0
+--| block '$L.arm174' of process main
+main.arm174 : ([2], [81]) -> [106]
+main.arm174 r s0 =
+      main.s250 r s0 s0
 
-main.$L.s575$7181 : ([2], [81], [81]) -> [106]
-main.$L.s575$7181 r s s0 =
+--| block '$L.s251' of process main
+main.s251 : ([2], [81], [81]) -> [106]
+main.s251 r s s0 =
       let $a = Main.r1 s in
-      main.$L.v559$7158 r $a s0
+      main.v3 r $a s0
 
-main.$L.arm576$7183 : ([2], [81]) -> [106]
-main.$L.arm576$7183 r s0 =
-      main.$L.s575$7181 r s0 s0
+--| block '$L.arm175' of process main
+main.arm175 : ([2], [81]) -> [106]
+main.arm175 r s0 =
+      main.s251 r s0 s0
 
-main.$L.s577$7184 : ([2], [81], [81]) -> [106]
-main.$L.s577$7184 r s s0 =
+--| block '$L.s252' of process main
+main.s252 : ([2], [81], [81]) -> [106]
+main.s252 r s s0 =
       let $a = Main.r2 s in
-      main.$L.v559$7158 r $a s0
+      main.v3 r $a s0
 
-main.$L.arm578$7186 : ([2], [81]) -> [106]
-main.$L.arm578$7186 r s0 =
-      main.$L.s577$7184 r s0 s0
+--| block '$L.arm176' of process main
+main.arm176 : ([2], [81]) -> [106]
+main.arm176 r s0 =
+      main.s252 r s0 s0
 
-main.$L.s579$7187 : ([2], [81], [81]) -> [106]
-main.$L.s579$7187 r s s0 =
+--| block '$L.s253' of process main
+main.s253 : ([2], [81], [81]) -> [106]
+main.s253 r s s0 =
       let $a = Main.r3 s in
-      main.$L.v559$7158 r $a s0
+      main.v3 r $a s0
 
-main.$L.arm580$7189 : ([2], [81]) -> [106]
-main.$L.arm580$7189 r s0 =
-      main.$L.s579$7187 r s0 s0
+--| block '$L.arm177' of process main
+main.arm177 : ([2], [81]) -> [106]
+main.arm177 r s0 =
+      main.s253 r s0 s0
 
-main.$L.arm581$7190 : ([1], [1], [81]) -> [106]
-main.$L.arm581$7190 b0 b1 s0 =
+--| block '$L.arm178' of process main
+main.arm178 : ([1], [1], [81]) -> [106]
+main.arm178 b0 b1 s0 =
       let r = Main.mkReg b0 b1 in
-      if eq r 2'h0 then main.$L.arm574$7180 r s0
-            else if eq r 2'h1 then main.$L.arm576$7183 r s0 else if eq r 2'h2 then main.$L.arm578$7186 r s0 else main.$L.arm580$7189 r s0
+      if eq r 2'h0 then main.arm174 r s0
+            else if eq r 2'h1 then main.arm175 r s0 else if eq r 2'h2 then main.arm176 r s0 else main.arm177 r s0
 
-main.$L.s587$7198 : ([81], [81]) -> [106]
-main.$L.s587$7198 s s0 =
+--| block '$L.s256' of process main
+main.s256 : ([81], [81]) -> [106]
+main.s256 s s0 =
       let $a = Main.setR0 s 8'h0 in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.arm588$7200 : ([81]) -> [106]
-main.$L.arm588$7200 s0 =
-      main.$L.s587$7198 s0 s0
+--| block '$L.arm179' of process main
+main.arm179 : ([81]) -> [106]
+main.arm179 s0 =
+      main.s256 s0 s0
 
-main.$L.s589$7201 : ([81], [81]) -> [106]
-main.$L.s589$7201 s s0 =
+--| block '$L.s257' of process main
+main.s257 : ([81], [81]) -> [106]
+main.s257 s s0 =
       let $a = Main.setR1 s 8'h0 in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.arm590$7203 : ([81]) -> [106]
-main.$L.arm590$7203 s0 =
-      main.$L.s589$7201 s0 s0
+--| block '$L.arm180' of process main
+main.arm180 : ([81]) -> [106]
+main.arm180 s0 =
+      main.s257 s0 s0
 
-main.$L.s591$7204 : ([81], [81]) -> [106]
-main.$L.s591$7204 s s0 =
+--| block '$L.s258' of process main
+main.s258 : ([81], [81]) -> [106]
+main.s258 s s0 =
       let $a = Main.setR2 s 8'h0 in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.arm592$7206 : ([81]) -> [106]
-main.$L.arm592$7206 s0 =
-      main.$L.s591$7204 s0 s0
+--| block '$L.arm181' of process main
+main.arm181 : ([81]) -> [106]
+main.arm181 s0 =
+      main.s258 s0 s0
 
-main.$L.s593$7207 : ([81], [81]) -> [106]
-main.$L.s593$7207 s s0 =
+--| block '$L.s259' of process main
+main.s259 : ([81], [81]) -> [106]
+main.s259 s s0 =
       let $a = Main.setR3 s 8'h0 in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L.arm594$7209 : ([81]) -> [106]
-main.$L.arm594$7209 s0 =
-      main.$L.s593$7207 s0 s0
+--| block '$L.arm182' of process main
+main.arm182 : ([81]) -> [106]
+main.arm182 s0 =
+      main.s259 s0 s0
 
-main.$L.arm595$7210 : ([1], [1], [81]) -> [106]
-main.$L.arm595$7210 b0 b1 s0 =
+--| block '$L.arm183' of process main
+main.arm183 : ([1], [1], [81]) -> [106]
+main.arm183 b0 b1 s0 =
       let $a = Main.mkReg b0 b1 in
-      if eq $a 2'h0 then main.$L.arm588$7200 s0
-            else if eq $a 2'h1 then main.$L.arm590$7203 s0 else if eq $a 2'h2 then main.$L.arm592$7206 s0 else main.$L.arm594$7209 s0
+      if eq $a 2'h0 then main.arm179 s0
+            else if eq $a 2'h1 then main.arm180 s0 else if eq $a 2'h2 then main.arm181 s0 else main.arm182 s0
 
-main.$L.s604$7221 : ([8], [81], [81]) -> [106]
-main.$L.s604$7221 v' s s0 =
+--| block '$L.s262' of process main
+main.s262 : ([8], [81], [81]) -> [106]
+main.s262 v' s s0 =
       let $a = Main.setZFlag s (eq v' 8'h0) in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L._unused598$7213 : ([8], [81]) -> [106]
-main.$L._unused598$7213 v' s0 =
-      main.$L.s604$7221 v' s0 s0
+--| block '$L._unused45' of process main
+main._unused45 : ([8], [81]) -> [106]
+main._unused45 v' s0 =
+      main.s262 v' s0 s0
 
-main.$L.s605$7223 : ([9], [8], [81], [81]) -> [106]
-main.$L.s605$7223 p v' s s0 =
+--| block '$L.s263' of process main
+main.s263 : ([9], [8], [81], [81]) -> [106]
+main.s263 p v' s s0 =
       let $a = (let x = p[8 +: 1] in
       x) in
       let $a1 = Main.setCFlag s $a in
-      main.$L._unused598$7213 v' $a1
+      main._unused45 v' $a1
 
-main.$L._unused597$7212 : ([9], [8], [81]) -> [106]
-main.$L._unused597$7212 p v' s0 =
-      main.$L.s605$7223 p v' s0 s0
+--| block '$L._unused44' of process main
+main._unused44 : ([9], [8], [81]) -> [106]
+main._unused44 p v' s0 =
+      main.s263 p v' s0 s0
 
-main.$L.s606$7225 : ([9], [8], [81], [81]) -> [106]
-main.$L.s606$7225 p v' s s0 =
+--| block '$L.s264' of process main
+main.s264 : ([9], [8], [81], [81]) -> [106]
+main.s264 p v' s s0 =
       let $a = Main.setR0 s v' in
-      main.$L._unused597$7212 p v' $a
+      main._unused44 p v' $a
 
-main.$L.arm607$7227 : ([9], [8], [81]) -> [106]
-main.$L.arm607$7227 p v' s0 =
-      main.$L.s606$7225 p v' s0 s0
+--| block '$L.arm184' of process main
+main.arm184 : ([9], [8], [81]) -> [106]
+main.arm184 p v' s0 =
+      main.s264 p v' s0 s0
 
-main.$L.s608$7228 : ([9], [8], [81], [81]) -> [106]
-main.$L.s608$7228 p v' s s0 =
+--| block '$L.s265' of process main
+main.s265 : ([9], [8], [81], [81]) -> [106]
+main.s265 p v' s s0 =
       let $a = Main.setR1 s v' in
-      main.$L._unused597$7212 p v' $a
+      main._unused44 p v' $a
 
-main.$L.arm609$7230 : ([9], [8], [81]) -> [106]
-main.$L.arm609$7230 p v' s0 =
-      main.$L.s608$7228 p v' s0 s0
+--| block '$L.arm185' of process main
+main.arm185 : ([9], [8], [81]) -> [106]
+main.arm185 p v' s0 =
+      main.s265 p v' s0 s0
 
-main.$L.s610$7231 : ([9], [8], [81], [81]) -> [106]
-main.$L.s610$7231 p v' s s0 =
+--| block '$L.s266' of process main
+main.s266 : ([9], [8], [81], [81]) -> [106]
+main.s266 p v' s s0 =
       let $a = Main.setR2 s v' in
-      main.$L._unused597$7212 p v' $a
+      main._unused44 p v' $a
 
-main.$L.arm611$7233 : ([9], [8], [81]) -> [106]
-main.$L.arm611$7233 p v' s0 =
-      main.$L.s610$7231 p v' s0 s0
+--| block '$L.arm186' of process main
+main.arm186 : ([9], [8], [81]) -> [106]
+main.arm186 p v' s0 =
+      main.s266 p v' s0 s0
 
-main.$L.s612$7234 : ([9], [8], [81], [81]) -> [106]
-main.$L.s612$7234 p v' s s0 =
+--| block '$L.s267' of process main
+main.s267 : ([9], [8], [81], [81]) -> [106]
+main.s267 p v' s s0 =
       let $a = Main.setR3 s v' in
-      main.$L._unused597$7212 p v' $a
+      main._unused44 p v' $a
 
-main.$L.arm613$7236 : ([9], [8], [81]) -> [106]
-main.$L.arm613$7236 p v' s0 =
-      main.$L.s612$7234 p v' s0 s0
+--| block '$L.arm187' of process main
+main.arm187 : ([9], [8], [81]) -> [106]
+main.arm187 p v' s0 =
+      main.s267 p v' s0 s0
 
-main.$L.v596$7211 : ([2], [8], [81]) -> [106]
-main.$L.v596$7211 r v s0 =
-      let p = Main.plusCW8$s1 v in
+--| block '$L.v4' of process main
+main.v4 : ([2], [8], [81]) -> [106]
+main.v4 r v s0 =
+      let p = Main.plusCW8$sMain_oneW8_False_Bool v in
       let v' = (let y = p[0 +: 8] in
       y) in
-      if eq r 2'h0 then main.$L.arm607$7227 p v' s0
-            else if eq r 2'h1 then main.$L.arm609$7230 p v' s0 else if eq r 2'h2 then main.$L.arm611$7233 p v' s0 else main.$L.arm613$7236 p v' s0
+      if eq r 2'h0 then main.arm184 p v' s0
+            else if eq r 2'h1 then main.arm185 p v' s0 else if eq r 2'h2 then main.arm186 p v' s0 else main.arm187 p v' s0
 
-main.$L.s614$7237 : ([2], [81], [81]) -> [106]
-main.$L.s614$7237 r s s0 =
+--| block '$L.s268' of process main
+main.s268 : ([2], [81], [81]) -> [106]
+main.s268 r s s0 =
       let $a = Main.r0 s in
-      main.$L.v596$7211 r $a s0
+      main.v4 r $a s0
 
-main.$L.arm615$7239 : ([2], [81]) -> [106]
-main.$L.arm615$7239 r s0 =
-      main.$L.s614$7237 r s0 s0
+--| block '$L.arm188' of process main
+main.arm188 : ([2], [81]) -> [106]
+main.arm188 r s0 =
+      main.s268 r s0 s0
 
-main.$L.s616$7240 : ([2], [81], [81]) -> [106]
-main.$L.s616$7240 r s s0 =
+--| block '$L.s269' of process main
+main.s269 : ([2], [81], [81]) -> [106]
+main.s269 r s s0 =
       let $a = Main.r1 s in
-      main.$L.v596$7211 r $a s0
+      main.v4 r $a s0
 
-main.$L.arm617$7242 : ([2], [81]) -> [106]
-main.$L.arm617$7242 r s0 =
-      main.$L.s616$7240 r s0 s0
+--| block '$L.arm189' of process main
+main.arm189 : ([2], [81]) -> [106]
+main.arm189 r s0 =
+      main.s269 r s0 s0
 
-main.$L.s618$7243 : ([2], [81], [81]) -> [106]
-main.$L.s618$7243 r s s0 =
+--| block '$L.s270' of process main
+main.s270 : ([2], [81], [81]) -> [106]
+main.s270 r s s0 =
       let $a = Main.r2 s in
-      main.$L.v596$7211 r $a s0
+      main.v4 r $a s0
 
-main.$L.arm619$7245 : ([2], [81]) -> [106]
-main.$L.arm619$7245 r s0 =
-      main.$L.s618$7243 r s0 s0
+--| block '$L.arm190' of process main
+main.arm190 : ([2], [81]) -> [106]
+main.arm190 r s0 =
+      main.s270 r s0 s0
 
-main.$L.s620$7246 : ([2], [81], [81]) -> [106]
-main.$L.s620$7246 r s s0 =
+--| block '$L.s271' of process main
+main.s271 : ([2], [81], [81]) -> [106]
+main.s271 r s s0 =
       let $a = Main.r3 s in
-      main.$L.v596$7211 r $a s0
+      main.v4 r $a s0
 
-main.$L.arm621$7248 : ([2], [81]) -> [106]
-main.$L.arm621$7248 r s0 =
-      main.$L.s620$7246 r s0 s0
+--| block '$L.arm191' of process main
+main.arm191 : ([2], [81]) -> [106]
+main.arm191 r s0 =
+      main.s271 r s0 s0
 
-main.$L.arm622$7249 : ([1], [1], [81]) -> [106]
-main.$L.arm622$7249 b0 b1 s0 =
+--| block '$L.arm192' of process main
+main.arm192 : ([1], [1], [81]) -> [106]
+main.arm192 b0 b1 s0 =
       let r = Main.mkReg b0 b1 in
-      if eq r 2'h0 then main.$L.arm615$7239 r s0
-            else if eq r 2'h1 then main.$L.arm617$7242 r s0 else if eq r 2'h2 then main.$L.arm619$7245 r s0 else main.$L.arm621$7248 r s0
+      if eq r 2'h0 then main.arm188 r s0
+            else if eq r 2'h1 then main.arm189 r s0 else if eq r 2'h2 then main.arm190 r s0 else main.arm191 r s0
 
-main.$L.v623$7250 : ([2], [8], [81]) -> [106]
-main.$L.v623$7250 r v s0 =
-      let p = Main.minusCW8$s2 v in
+--| block '$L.v5' of process main
+main.v5 : ([2], [8], [81]) -> [106]
+main.v5 r v s0 =
+      let p = Main.minusCW8$sMain_oneW8_False_Bool v in
       let v' = (let y = p[0 +: 8] in
       y) in
-      if eq r 2'h0 then main.$L.arm607$7227 p v' s0
-            else if eq r 2'h1 then main.$L.arm609$7230 p v' s0 else if eq r 2'h2 then main.$L.arm611$7233 p v' s0 else main.$L.arm613$7236 p v' s0
+      if eq r 2'h0 then main.arm184 p v' s0
+            else if eq r 2'h1 then main.arm185 p v' s0 else if eq r 2'h2 then main.arm186 p v' s0 else main.arm187 p v' s0
 
-main.$L.s641$7276 : ([2], [81], [81]) -> [106]
-main.$L.s641$7276 r s s0 =
+--| block '$L.s280' of process main
+main.s280 : ([2], [81], [81]) -> [106]
+main.s280 r s s0 =
       let $a = Main.r0 s in
-      main.$L.v623$7250 r $a s0
+      main.v5 r $a s0
 
-main.$L.arm642$7278 : ([2], [81]) -> [106]
-main.$L.arm642$7278 r s0 =
-      main.$L.s641$7276 r s0 s0
+--| block '$L.arm197' of process main
+main.arm197 : ([2], [81]) -> [106]
+main.arm197 r s0 =
+      main.s280 r s0 s0
 
-main.$L.s643$7279 : ([2], [81], [81]) -> [106]
-main.$L.s643$7279 r s s0 =
+--| block '$L.s281' of process main
+main.s281 : ([2], [81], [81]) -> [106]
+main.s281 r s s0 =
       let $a = Main.r1 s in
-      main.$L.v623$7250 r $a s0
+      main.v5 r $a s0
 
-main.$L.arm644$7281 : ([2], [81]) -> [106]
-main.$L.arm644$7281 r s0 =
-      main.$L.s643$7279 r s0 s0
+--| block '$L.arm198' of process main
+main.arm198 : ([2], [81]) -> [106]
+main.arm198 r s0 =
+      main.s281 r s0 s0
 
-main.$L.s645$7282 : ([2], [81], [81]) -> [106]
-main.$L.s645$7282 r s s0 =
+--| block '$L.s282' of process main
+main.s282 : ([2], [81], [81]) -> [106]
+main.s282 r s s0 =
       let $a = Main.r2 s in
-      main.$L.v623$7250 r $a s0
+      main.v5 r $a s0
 
-main.$L.arm646$7284 : ([2], [81]) -> [106]
-main.$L.arm646$7284 r s0 =
-      main.$L.s645$7282 r s0 s0
+--| block '$L.arm199' of process main
+main.arm199 : ([2], [81]) -> [106]
+main.arm199 r s0 =
+      main.s282 r s0 s0
 
-main.$L.s647$7285 : ([2], [81], [81]) -> [106]
-main.$L.s647$7285 r s s0 =
+--| block '$L.s283' of process main
+main.s283 : ([2], [81], [81]) -> [106]
+main.s283 r s s0 =
       let $a = Main.r3 s in
-      main.$L.v623$7250 r $a s0
+      main.v5 r $a s0
 
-main.$L.arm648$7287 : ([2], [81]) -> [106]
-main.$L.arm648$7287 r s0 =
-      main.$L.s647$7285 r s0 s0
+--| block '$L.arm200' of process main
+main.arm200 : ([2], [81]) -> [106]
+main.arm200 r s0 =
+      main.s283 r s0 s0
 
-main.$L.arm649$7288 : ([1], [1], [81]) -> [106]
-main.$L.arm649$7288 b0 b1 s0 =
+--| block '$L.arm201' of process main
+main.arm201 : ([1], [1], [81]) -> [106]
+main.arm201 b0 b1 s0 =
       let r = Main.mkReg b0 b1 in
-      if eq r 2'h0 then main.$L.arm642$7278 r s0
-            else if eq r 2'h1 then main.$L.arm644$7281 r s0 else if eq r 2'h2 then main.$L.arm646$7284 r s0 else main.$L.arm648$7287 r s0
+      if eq r 2'h0 then main.arm197 r s0
+            else if eq r 2'h1 then main.arm198 r s0 else if eq r 2'h2 then main.arm199 r s0 else main.arm200 r s0
 
-main.$L.v650$7289 : ([2], [8], [81]) -> [106]
-main.$L.v650$7289 r v s0 =
+--| block '$L.v6' of process main
+main.v6 : ([2], [8], [81]) -> [106]
+main.v6 r v s0 =
       let v1 = or (shl v 8'h1) (lshr v 8'h7) in
-      if eq r 2'h0 then main.$L.arm566$7168 v1 s0
-            else if eq r 2'h1 then main.$L.arm568$7171 v1 s0 else if eq r 2'h2 then main.$L.arm570$7174 v1 s0 else main.$L.arm572$7177 v1 s0
+      if eq r 2'h0 then main.arm170 v1 s0
+            else if eq r 2'h1 then main.arm171 v1 s0 else if eq r 2'h2 then main.arm172 v1 s0 else main.arm173 v1 s0
 
-main.$L.s664$7309 : ([2], [81], [81]) -> [106]
-main.$L.s664$7309 r s s0 =
+--| block '$L.s290' of process main
+main.s290 : ([2], [81], [81]) -> [106]
+main.s290 r s s0 =
       let $a = Main.r0 s in
-      main.$L.v650$7289 r $a s0
+      main.v6 r $a s0
 
-main.$L.arm665$7311 : ([2], [81]) -> [106]
-main.$L.arm665$7311 r s0 =
-      main.$L.s664$7309 r s0 s0
+--| block '$L.arm206' of process main
+main.arm206 : ([2], [81]) -> [106]
+main.arm206 r s0 =
+      main.s290 r s0 s0
 
-main.$L.s666$7312 : ([2], [81], [81]) -> [106]
-main.$L.s666$7312 r s s0 =
+--| block '$L.s291' of process main
+main.s291 : ([2], [81], [81]) -> [106]
+main.s291 r s s0 =
       let $a = Main.r1 s in
-      main.$L.v650$7289 r $a s0
+      main.v6 r $a s0
 
-main.$L.arm667$7314 : ([2], [81]) -> [106]
-main.$L.arm667$7314 r s0 =
-      main.$L.s666$7312 r s0 s0
+--| block '$L.arm207' of process main
+main.arm207 : ([2], [81]) -> [106]
+main.arm207 r s0 =
+      main.s291 r s0 s0
 
-main.$L.s668$7315 : ([2], [81], [81]) -> [106]
-main.$L.s668$7315 r s s0 =
+--| block '$L.s292' of process main
+main.s292 : ([2], [81], [81]) -> [106]
+main.s292 r s s0 =
       let $a = Main.r2 s in
-      main.$L.v650$7289 r $a s0
+      main.v6 r $a s0
 
-main.$L.arm669$7317 : ([2], [81]) -> [106]
-main.$L.arm669$7317 r s0 =
-      main.$L.s668$7315 r s0 s0
+--| block '$L.arm208' of process main
+main.arm208 : ([2], [81]) -> [106]
+main.arm208 r s0 =
+      main.s292 r s0 s0
 
-main.$L.s670$7318 : ([2], [81], [81]) -> [106]
-main.$L.s670$7318 r s s0 =
+--| block '$L.s293' of process main
+main.s293 : ([2], [81], [81]) -> [106]
+main.s293 r s s0 =
       let $a = Main.r3 s in
-      main.$L.v650$7289 r $a s0
+      main.v6 r $a s0
 
-main.$L.arm671$7320 : ([2], [81]) -> [106]
-main.$L.arm671$7320 r s0 =
-      main.$L.s670$7318 r s0 s0
+--| block '$L.arm209' of process main
+main.arm209 : ([2], [81]) -> [106]
+main.arm209 r s0 =
+      main.s293 r s0 s0
 
-main.$L.v672$7321 : ([2], [8], [81]) -> [106]
-main.$L.v672$7321 r v s0 =
+--| block '$L.v7' of process main
+main.v7 : ([2], [8], [81]) -> [106]
+main.v7 r v s0 =
       let v1 = or (lshr v 8'h1) (shl v 8'h7) in
-      if eq r 2'h0 then main.$L.arm566$7168 v1 s0
-            else if eq r 2'h1 then main.$L.arm568$7171 v1 s0 else if eq r 2'h2 then main.$L.arm570$7174 v1 s0 else main.$L.arm572$7177 v1 s0
+      if eq r 2'h0 then main.arm170 v1 s0
+            else if eq r 2'h1 then main.arm171 v1 s0 else if eq r 2'h2 then main.arm172 v1 s0 else main.arm173 v1 s0
 
-main.$L.s686$7341 : ([2], [81], [81]) -> [106]
-main.$L.s686$7341 r s s0 =
+--| block '$L.s300' of process main
+main.s300 : ([2], [81], [81]) -> [106]
+main.s300 r s s0 =
       let $a = Main.r0 s in
-      main.$L.v672$7321 r $a s0
+      main.v7 r $a s0
 
-main.$L.arm687$7343 : ([2], [81]) -> [106]
-main.$L.arm687$7343 r s0 =
-      main.$L.s686$7341 r s0 s0
+--| block '$L.arm214' of process main
+main.arm214 : ([2], [81]) -> [106]
+main.arm214 r s0 =
+      main.s300 r s0 s0
 
-main.$L.s688$7344 : ([2], [81], [81]) -> [106]
-main.$L.s688$7344 r s s0 =
+--| block '$L.s301' of process main
+main.s301 : ([2], [81], [81]) -> [106]
+main.s301 r s s0 =
       let $a = Main.r1 s in
-      main.$L.v672$7321 r $a s0
+      main.v7 r $a s0
 
-main.$L.arm689$7346 : ([2], [81]) -> [106]
-main.$L.arm689$7346 r s0 =
-      main.$L.s688$7344 r s0 s0
+--| block '$L.arm215' of process main
+main.arm215 : ([2], [81]) -> [106]
+main.arm215 r s0 =
+      main.s301 r s0 s0
 
-main.$L.s690$7347 : ([2], [81], [81]) -> [106]
-main.$L.s690$7347 r s s0 =
+--| block '$L.s302' of process main
+main.s302 : ([2], [81], [81]) -> [106]
+main.s302 r s s0 =
       let $a = Main.r2 s in
-      main.$L.v672$7321 r $a s0
+      main.v7 r $a s0
 
-main.$L.arm691$7349 : ([2], [81]) -> [106]
-main.$L.arm691$7349 r s0 =
-      main.$L.s690$7347 r s0 s0
+--| block '$L.arm216' of process main
+main.arm216 : ([2], [81]) -> [106]
+main.arm216 r s0 =
+      main.s302 r s0 s0
 
-main.$L.s692$7350 : ([2], [81], [81]) -> [106]
-main.$L.s692$7350 r s s0 =
+--| block '$L.s303' of process main
+main.s303 : ([2], [81], [81]) -> [106]
+main.s303 r s s0 =
       let $a = Main.r3 s in
-      main.$L.v672$7321 r $a s0
+      main.v7 r $a s0
 
-main.$L.arm693$7352 : ([2], [81]) -> [106]
-main.$L.arm693$7352 r s0 =
-      main.$L.s692$7350 r s0 s0
+--| block '$L.arm217' of process main
+main.arm217 : ([2], [81]) -> [106]
+main.arm217 r s0 =
+      main.s303 r s0 s0
 
-main.$L.arm694$7353 : ([1], [1], [1], [81]) -> [106]
-main.$L.arm694$7353 wEn b0 b1 s0 =
+--| block '$L.arm218' of process main
+main.arm218 : ([1], [1], [1], [81]) -> [106]
+main.arm218 wEn b0 b1 s0 =
       let r = Main.mkReg b0 b1 in
-      if eq wEn 1'h0 then (if eq r 2'h0 then main.$L.arm665$7311 r s0
-                  else if eq r 2'h1 then main.$L.arm667$7314 r s0 else if eq r 2'h2 then main.$L.arm669$7317 r s0 else main.$L.arm671$7320 r s0)
-            else if eq r 2'h0 then main.$L.arm687$7343 r s0 else if eq r 2'h1 then main.$L.arm689$7346 r s0 else if eq r 2'h2 then main.$L.arm691$7349 r s0 else main.$L.arm693$7352 r s0
+      if not wEn then (if eq r 2'h0 then main.arm206 r s0
+                  else if eq r 2'h1 then main.arm207 r s0 else if eq r 2'h2 then main.arm208 r s0 else main.arm209 r s0)
+            else if eq r 2'h0 then main.arm214 r s0 else if eq r 2'h1 then main.arm215 r s0 else if eq r 2'h2 then main.arm216 r s0 else main.arm217 r s0
 
-main.$L.v695$7354 : ([1], [1], [2], [8], [81]) -> [106]
-main.$L.v695$7354 rEn wEn r v s0 =
-      let p = (if eq wEn 1'h0 then (let $a = (if eq rEn 1'h0 then (let $a = Main.msbW8 v in
+--| block '$L.v8' of process main
+main.v8 : ([1], [1], [2], [8], [81]) -> [106]
+main.v8 rEn wEn r v s0 =
+      let p = (if not wEn then (let $a = (if not rEn then (let $a = Main.msbW8 v in
                   let $a1 = Main.shlCW8 v $a in
                   $a1)
-                  else let $a = Main.shlCW8$s1 v in
+                  else let $a = Main.shlCW8$sFalse_Bool v in
                   $a) in
             $a)
-            else let $a = (if eq rEn 1'h0 then (let $a = Main.lsbW8 v in
+            else let $a = (if not rEn then (let $a = Main.lsbW8 v in
                   let $a1 = Main.shrCW8 v $a in
                   $a1)
-                  else let $a = Main.shrCW8$s1 v in
+                  else let $a = Main.shrCW8$sFalse_Bool v in
                   $a) in
             $a) in
       let v' = (let y = p[0 +: 8] in
       y) in
-      if eq r 2'h0 then main.$L.arm607$7227 p v' s0
-            else if eq r 2'h1 then main.$L.arm609$7230 p v' s0 else if eq r 2'h2 then main.$L.arm611$7233 p v' s0 else main.$L.arm613$7236 p v' s0
+      if eq r 2'h0 then main.arm184 p v' s0
+            else if eq r 2'h1 then main.arm185 p v' s0 else if eq r 2'h2 then main.arm186 p v' s0 else main.arm187 p v' s0
 
-main.$L.s713$7380 : ([1], [1], [2], [81], [81]) -> [106]
-main.$L.s713$7380 rEn wEn r s s0 =
+--| block '$L.s312' of process main
+main.s312 : ([1], [1], [2], [81], [81]) -> [106]
+main.s312 rEn wEn r s s0 =
       let $a = Main.r0 s in
-      main.$L.v695$7354 rEn wEn r $a s0
+      main.v8 rEn wEn r $a s0
 
-main.$L.arm714$7382 : ([1], [1], [2], [81]) -> [106]
-main.$L.arm714$7382 rEn wEn r s0 =
-      main.$L.s713$7380 rEn wEn r s0 s0
+--| block '$L.arm223' of process main
+main.arm223 : ([1], [1], [2], [81]) -> [106]
+main.arm223 rEn wEn r s0 =
+      main.s312 rEn wEn r s0 s0
 
-main.$L.s715$7383 : ([1], [1], [2], [81], [81]) -> [106]
-main.$L.s715$7383 rEn wEn r s s0 =
+--| block '$L.s313' of process main
+main.s313 : ([1], [1], [2], [81], [81]) -> [106]
+main.s313 rEn wEn r s s0 =
       let $a = Main.r1 s in
-      main.$L.v695$7354 rEn wEn r $a s0
+      main.v8 rEn wEn r $a s0
 
-main.$L.arm716$7385 : ([1], [1], [2], [81]) -> [106]
-main.$L.arm716$7385 rEn wEn r s0 =
-      main.$L.s715$7383 rEn wEn r s0 s0
+--| block '$L.arm224' of process main
+main.arm224 : ([1], [1], [2], [81]) -> [106]
+main.arm224 rEn wEn r s0 =
+      main.s313 rEn wEn r s0 s0
 
-main.$L.s717$7386 : ([1], [1], [2], [81], [81]) -> [106]
-main.$L.s717$7386 rEn wEn r s s0 =
+--| block '$L.s314' of process main
+main.s314 : ([1], [1], [2], [81], [81]) -> [106]
+main.s314 rEn wEn r s s0 =
       let $a = Main.r2 s in
-      main.$L.v695$7354 rEn wEn r $a s0
+      main.v8 rEn wEn r $a s0
 
-main.$L.arm718$7388 : ([1], [1], [2], [81]) -> [106]
-main.$L.arm718$7388 rEn wEn r s0 =
-      main.$L.s717$7386 rEn wEn r s0 s0
+--| block '$L.arm225' of process main
+main.arm225 : ([1], [1], [2], [81]) -> [106]
+main.arm225 rEn wEn r s0 =
+      main.s314 rEn wEn r s0 s0
 
-main.$L.s719$7389 : ([1], [1], [2], [81], [81]) -> [106]
-main.$L.s719$7389 rEn wEn r s s0 =
+--| block '$L.s315' of process main
+main.s315 : ([1], [1], [2], [81], [81]) -> [106]
+main.s315 rEn wEn r s s0 =
       let $a = Main.r3 s in
-      main.$L.v695$7354 rEn wEn r $a s0
+      main.v8 rEn wEn r $a s0
 
-main.$L.arm720$7391 : ([1], [1], [2], [81]) -> [106]
-main.$L.arm720$7391 rEn wEn r s0 =
-      main.$L.s719$7389 rEn wEn r s0 s0
+--| block '$L.arm226' of process main
+main.arm226 : ([1], [1], [2], [81]) -> [106]
+main.arm226 rEn wEn r s0 =
+      main.s315 rEn wEn r s0 s0
 
-main.$L.arm721$7392 : ([1], [1], [1], [1], [81]) -> [106]
-main.$L.arm721$7392 rEn wEn b0 b1 s0 =
+--| block '$L.arm227' of process main
+main.arm227 : ([1], [1], [1], [1], [81]) -> [106]
+main.arm227 rEn wEn b0 b1 s0 =
       let r = Main.mkReg b0 b1 in
-      if eq r 2'h0 then main.$L.arm714$7382 rEn wEn r s0
-            else if eq r 2'h1 then main.$L.arm716$7385 rEn wEn r s0 else if eq r 2'h2 then main.$L.arm718$7388 rEn wEn r s0 else main.$L.arm720$7391 rEn wEn r s0
+      if eq r 2'h0 then main.arm223 rEn wEn r s0
+            else if eq r 2'h1 then main.arm224 rEn wEn r s0 else if eq r 2'h2 then main.arm225 rEn wEn r s0 else main.arm226 rEn wEn r s0
 
-main.$L.fail7$6363 : ([10], [81]) -> [106]
-main.$L.fail7$6363 inp s0 =
+--| block '$L.$fail' of process main
+main.$fail : ([10], [81]) -> [106]
+main.$fail inp s0 =
       let i = Main.dataIn inp in
-      let ds1 = i[6 +: 1] in
-      let ds2 = i[5 +: 1] in
-      let ds3 = i[4 +: 1] in
+      let $ds1 = i[6 +: 1] in
+      let $ds2 = i[5 +: 1] in
+      let $ds3 = i[4 +: 1] in
       let rEn = i[3 +: 1] in
       let wEn = i[2 +: 1] in
       let b0 = i[1 +: 1] in
       let b1 = i[0 +: 1] in
       let $a = i[7 +: 1] in
-      if eq $a 1'h0 then (if eq ds1 1'h0 then (if eq ds2 1'h0 then (if eq ds3 1'h0 then main.$L.arm64$6445 rEn wEn b0 b1 s0
-                              else main.$L.arm98$6494 rEn wEn b0 b1 s0)
-                        else if eq ds3 1'h0 then main.$L.arm133$6545 rEn wEn b0 b1 s0 else main.$L.arm167$6594 rEn wEn b0 b1 s0)
-                  else if eq ds2 1'h0 then (if eq ds3 1'h0 then main.$L.arm203$6646 rEn wEn b0 b1 s0
-                        else main.$L.arm237$6695 rEn wEn b0 b1 s0) else if eq ds3 1'h0 then main.$L.arm273$6747 rEn wEn b0 b1 s0 else main.$L.arm296$6780 rEn wEn b0 b1 s0)
-            else if eq ds1 1'h0 then (if eq ds2 1'h0 then (if eq ds3 1'h0 then main.$L.arm332$6832 rEn wEn b0 b1 s0
-                        else main.$L.arm368$6884 rEn wEn b0 b1 s0)
-                  else if eq ds3 1'h0 then main.$L.arm404$6936 rEn wEn b0 b1 s0 else main.$L.arm431$6975 rEn wEn b0 b1 s0) else if eq ds2 1'h0 then (if eq ds3 1'h0 then (if eq rEn 1'h0 then (if eq wEn 1'h0 then main.$L.arm450$7002 b0 b1 s0
-                              else main.$L.arm469$7029 b0 b1 s0)
-                        else if eq wEn 1'h0 then main.$L.arm488$7056 b0 b1 s0 else main.$L.arm507$7083 b0 b1 s0)
-                  else if eq rEn 1'h0 then (if eq wEn 1'h0 then main.$L.arm523$7106 b0 b1 s0
-                        else if eq b0 1'h0 then main.$L.arm530$7116 b1 s0 else if eq b1 1'h0 then main.$L.arm539$7129 s0 else main.$L.arm558$7157 s0) else if eq wEn 1'h0 then main.$L.arm581$7190 b0 b1 s0 else main.$L.arm595$7210 b0 b1 s0) else if eq ds3 1'h0 then (if eq rEn 1'h0 then (if eq wEn 1'h0 then main.$L.arm622$7249 b0 b1 s0
-                        else main.$L.arm649$7288 b0 b1 s0)
-                  else main.$L.arm694$7353 wEn b0 b1 s0) else main.$L.arm721$7392 rEn wEn b0 b1 s0
+      if not $a then (if not $ds1 then (if not $ds2 then (if not $ds3 then main.arm10 rEn wEn b0 b1 s0
+                              else main.arm19 rEn wEn b0 b1 s0)
+                        else if not $ds3 then main.arm28 rEn wEn b0 b1 s0 else main.arm41 rEn wEn b0 b1 s0)
+                  else if not $ds2 then (if not $ds3 then main.arm54 rEn wEn b0 b1 s0
+                        else main.arm67 rEn wEn b0 b1 s0) else if not $ds3 then main.arm80 rEn wEn b0 b1 s0 else main.arm89 rEn wEn b0 b1 s0)
+            else if not $ds1 then (if not $ds2 then (if not $ds3 then main.arm102 rEn wEn b0 b1 s0
+                        else main.arm115 rEn wEn b0 b1 s0)
+                  else if not $ds3 then main.arm128 rEn wEn b0 b1 s0 else main.arm137 rEn wEn b0 b1 s0) else if not $ds2 then (if not $ds3 then (if not rEn then (if not wEn then main.arm143 b0 b1 s0
+                              else main.arm149 b0 b1 s0)
+                        else if not wEn then main.arm155 b0 b1 s0 else main.arm161 b0 b1 s0)
+                  else if not rEn then (if not wEn then main.arm166 b0 b1 s0
+                        else if not b0 then main.arm167 b1 s0 else if not b1 then main.arm168 s0 else main.arm169 s0) else if not wEn then main.arm178 b0 b1 s0 else main.arm183 b0 b1 s0) else if not $ds3 then (if not rEn then (if not wEn then main.arm192 b0 b1 s0
+                        else main.arm201 b0 b1 s0)
+                  else main.arm218 wEn b0 b1 s0) else main.arm227 rEn wEn b0 b1 s0
 
-main.$L.s733$7406 : ([1], [81], [81]) -> [106]
-main.$L.s733$7406 c s s0 =
+--| block '$L.s318' of process main
+main.s318 : ([1], [81], [81]) -> [106]
+main.s318 c s s0 =
       let $a = Main.setCSave s c in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L._unused727$7398 : ([1], [81]) -> [106]
-main.$L._unused727$7398 c s0 =
-      main.$L.s733$7406 c s0 s0
+--| block '$L._unused57' of process main
+main._unused57 : ([1], [81]) -> [106]
+main._unused57 c s0 =
+      main.s318 c s0 s0
 
-main.$L.s734$7408 : ([1], [1], [81], [81]) -> [106]
-main.$L.s734$7408 z c s s0 =
+--| block '$L.s319' of process main
+main.s319 : ([1], [1], [81], [81]) -> [106]
+main.s319 z c s s0 =
       let $a = Main.setZSave s z in
-      main.$L._unused727$7398 c $a
+      main._unused57 c $a
 
-main.$L._unused726$7397 : ([1], [1], [81]) -> [106]
-main.$L._unused726$7397 z c s0 =
-      main.$L.s734$7408 z c s0 s0
+--| block '$L._unused56' of process main
+main._unused56 : ([1], [1], [81]) -> [106]
+main._unused56 z c s0 =
+      main.s319 z c s0 s0
 
-main.$L.s735$7410 : ([8], [1], [1], [81], [81]) -> [106]
-main.$L.s735$7410 pc z c s s0 =
+--| block '$L.s320' of process main
+main.s320 : ([8], [1], [1], [81], [81]) -> [106]
+main.s320 pc z c s s0 =
       let $a = Main.setPCSave s pc in
-      main.$L._unused726$7397 z c $a
+      main._unused56 z c $a
 
-main.$L.c725$7396 : ([8], [1], [1], [81]) -> [106]
-main.$L.c725$7396 pc z c s0 =
-      main.$L.s735$7410 pc z c s0 s0
+--| block '$L.c4' of process main
+main.c4 : ([8], [1], [1], [81]) -> [106]
+main.c4 pc z c s0 =
+      main.s320 pc z c s0 s0
 
-main.$L.s736$7412 : ([8], [1], [81], [81]) -> [106]
-main.$L.s736$7412 pc z s s0 =
+--| block '$L.s321' of process main
+main.s321 : ([8], [1], [81], [81]) -> [106]
+main.s321 pc z s s0 =
       let $a = Main.cFlag s in
-      main.$L.c725$7396 pc z $a s0
+      main.c4 pc z $a s0
 
-main.$L.z724$7395 : ([8], [1], [81]) -> [106]
-main.$L.z724$7395 pc z s0 =
-      main.$L.s736$7412 pc z s0 s0
+--| block '$L.z4' of process main
+main.z4 : ([8], [1], [81]) -> [106]
+main.z4 pc z s0 =
+      main.s321 pc z s0 s0
 
-main.$L.s737$7414 : ([8], [81], [81]) -> [106]
-main.$L.s737$7414 pc s s0 =
+--| block '$L.s322' of process main
+main.s322 : ([8], [81], [81]) -> [106]
+main.s322 pc s s0 =
       let $a = Main.zFlag s in
-      main.$L.z724$7395 pc $a s0
+      main.z4 pc $a s0
 
-main.$L.pc723$7394 : ([8], [81]) -> [106]
-main.$L.pc723$7394 pc s0 =
-      main.$L.s737$7414 pc s0 s0
+--| block '$L.pc8' of process main
+main.pc8 : ([8], [81]) -> [106]
+main.pc8 pc s0 =
+      main.s322 pc s0 s0
 
-main.$L.s738$7416 : ([81], [81]) -> [106]
-main.$L.s738$7416 s s0 =
+--| block '$L.s323' of process main
+main.s323 : ([81], [81]) -> [106]
+main.s323 s s0 =
       let $a = Main.pc s in
-      main.$L.pc723$7394 $a s0
+      main.pc8 $a s0
 
-main.$L._unused722$7393 : ([81]) -> [106]
-main.$L._unused722$7393 s0 =
-      main.$L.s738$7416 s0 s0
+--| block '$L._unused55' of process main
+main._unused55 : ([81]) -> [106]
+main._unused55 s0 =
+      main.s323 s0 s0
 
-main.$L.s739$7418 : ([81], [81]) -> [106]
-main.$L.s739$7418 s s0 =
+--| block '$L.s324' of process main
+main.s324 : ([81], [81]) -> [106]
+main.s324 s s0 =
       let $a = Main.setIEFlag s 1'h0 in
-      main.$L._unused722$7393 $a
+      main._unused55 $a
 
-main.$L.arm740$7420 : ([81]) -> [106]
-main.$L.arm740$7420 s0 =
-      main.$L.s739$7418 s0 s0
+--| block '$L.arm228' of process main
+main.arm228 : ([81]) -> [106]
+main.arm228 s0 =
+      main.s324 s0 s0
 
-main.$L.arm741$7421 : ([10], [81]) -> [106]
-main.$L.arm741$7421 inp s0 =
+--| block '$L.arm229' of process main
+main.arm229 : ([10], [81]) -> [106]
+main.arm229 inp s0 =
       let $a = Main.intIn inp in
-      if eq $a 1'h1 then main.$L.arm740$7420 s0
-            else main.$L.fail7$6363 inp s0
+      if $a then main.arm228 s0
+            else main.$fail inp s0
 
-main.$L.ie6$6362 : ([10], [1], [81]) -> [106]
-main.$L.ie6$6362 inp ie s0 =
-      if eq ie 1'h1 then main.$L.arm741$7421 inp s0
-            else main.$L.fail7$6363 inp s0
+--| block '$L.ie' of process main
+main.ie : ([10], [1], [81]) -> [106]
+main.ie inp ie s0 =
+      if ie then main.arm229 inp s0
+            else main.$fail inp s0
 
-main.$L.s742$7422 : ([10], [81], [81]) -> [106]
-main.$L.s742$7422 inp s s0 =
+--| block '$L.s325' of process main
+main.s325 : ([10], [81], [81]) -> [106]
+main.s325 inp s s0 =
       let $a = (let ie = s[50 +: 1] in
       ie) in
-      main.$L.ie6$6362 inp $a s0
+      main.ie inp $a s0
 
-main.$L.arm743$7424 : ([10], [81]) -> [106]
-main.$L.arm743$7424 inp s0 =
-      main.$L.s742$7422 inp s0 s0
+--| block '$L.arm230' of process main
+main.arm230 : ([10], [81]) -> [106]
+main.arm230 inp s0 =
+      main.s325 inp s0 s0
 
-main.$L.s751$7434 : ([81], [81]) -> [106]
-main.$L.s751$7434 s s0 =
+--| block '$L.s328' of process main
+main.s328 : ([81], [81]) -> [106]
+main.s328 s s0 =
       let $a = Main.setOutputs s 18'h0 in
-      main.$L._unused103$6499 $a
+      main.zzz $a
 
-main.$L._unused745$7426 : ([81]) -> [106]
-main.$L._unused745$7426 s0 =
-      main.$L.s751$7434 s0 s0
+--| block '$L._unused60' of process main
+main._unused60 : ([81]) -> [106]
+main._unused60 s0 =
+      main.s328 s0 s0
 
-main.$L.s752$7436 : ([81], [81]) -> [106]
-main.$L.s752$7436 s s0 =
+--| block '$L.s329' of process main
+main.s329 : ([81], [81]) -> [106]
+main.s329 s s0 =
       let $a = Main.setZFlag s 1'h0 in
-      main.$L._unused745$7426 $a
+      main._unused60 $a
 
-main.$L._unused744$7425 : ([81]) -> [106]
-main.$L._unused744$7425 s0 =
-      main.$L.s752$7436 s0 s0
+--| block '$L._unused59' of process main
+main._unused59 : ([81]) -> [106]
+main._unused59 s0 =
+      main.s329 s0 s0
 
-main.$L.s753$7438 : ([81], [81]) -> [106]
-main.$L.s753$7438 s s0 =
+--| block '$L.s330' of process main
+main.s330 : ([81], [81]) -> [106]
+main.s330 s s0 =
       let $a = Main.setCFlag s 1'h0 in
-      main.$L._unused744$7425 $a
+      main._unused59 $a
 
-main.$L.arm754$7440 : ([81]) -> [106]
-main.$L.arm754$7440 s0 =
-      main.$L.s753$7438 s0 s0
+--| block '$L.arm231' of process main
+main.arm231 : ([81]) -> [106]
+main.arm231 s0 =
+      main.s330 s0 s0
 
-main.$L.inp4$6360 : ([10], [81]) -> [106]
-main.$L.inp4$6360 inp s0 =
+--| block '$L.inp' of process main
+main.inp : ([10], [81]) -> [106]
+main.inp inp s0 =
       let $a = Main.rstIn inp in
-      if eq $a 1'h0 then main.$L.arm743$7424 inp s0
-            else main.$L.arm754$7440 s0
+      if not $a then main.arm230 inp s0
+            else main.arm231 s0
 
-main.$L.s755$7441 : ([81], [81]) -> [106]
-main.$L.s755$7441 s s0 =
+--| block '$L.s331' of process main
+main.s331 : ([81], [81]) -> [106]
+main.s331 s s0 =
       let $a = Main.inputs s in
-      main.$L.inp4$6360 $a s0
+      main.inp $a s0
 
-main.$L.Main.loop3$6359 : ([81]) -> [106]
-main.$L.Main.loop3$6359 s0 =
-      main.$L.s755$7441 s0 s0
+--| block '$L.Main.loop' of process main
+main.loop : ([81]) -> [106]
+main.loop s0 =
+      main.s331 s0 s0
 
 Main.notb : ([1]) -> [1]
 Main.notb b =
-      if eq b 1'h0 then 1'h1
-            else 1'h0
+      not b
 
 Main.mkReg : ([1], [1]) -> [2]
-Main.mkReg ds ds1 =
-      if eq ds 1'h0 then (if eq ds1 1'h0 then 2'h0
+Main.mkReg $ds $ds1 =
+      if not $ds then (if not $ds1 then 2'h0
                   else 2'h1)
-            else if eq ds1 1'h0 then 2'h2 else 2'h3
+            else if not $ds1 then 2'h2 else 2'h3
 
 Main.outputs : ([81]) -> [18]
-Main.outputs ds =
-      let o = ds[53 +: 18] in
+Main.outputs $ds =
+      let o = $ds[53 +: 18] in
       o
 
 Main.setInputs : ([81], [10]) -> [81]
-Main.setInputs ds i =
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
+Main.setInputs $ds i =
+      let o = $ds[53 +: 18] in
+      let z = $ds[52 +: 1] in
+      let c = $ds[51 +: 1] in
+      let ie = $ds[50 +: 1] in
+      let pc = $ds[42 +: 8] in
+      let zs = $ds[41 +: 1] in
+      let cs = $ds[40 +: 1] in
+      let pcs = $ds[32 +: 8] in
+      let r0 = $ds[24 +: 8] in
+      let r1 = $ds[16 +: 8] in
+      let r2 = $ds[8 +: 8] in
+      let r3 = $ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
 Main.pc : ([81]) -> [8]
-Main.pc ds =
-      let pc = ds[42 +: 8] in
+Main.pc $ds =
+      let pc = $ds[42 +: 8] in
       pc
 
 Main.setPC : ([81], [8]) -> [81]
-Main.setPC ds pc =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
+Main.setPC $ds pc =
+      let i = $ds[71 +: 10] in
+      let o = $ds[53 +: 18] in
+      let z = $ds[52 +: 1] in
+      let c = $ds[51 +: 1] in
+      let ie = $ds[50 +: 1] in
+      let zs = $ds[41 +: 1] in
+      let cs = $ds[40 +: 1] in
+      let pcs = $ds[32 +: 8] in
+      let r0 = $ds[24 +: 8] in
+      let r1 = $ds[16 +: 8] in
+      let r2 = $ds[8 +: 8] in
+      let r3 = $ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
 Main.r0 : ([81]) -> [8]
-Main.r0 ds =
-      let r0 = ds[24 +: 8] in
+Main.r0 $ds =
+      let r0 = $ds[24 +: 8] in
       r0
 
 Main.r1 : ([81]) -> [8]
-Main.r1 ds =
-      let r1 = ds[16 +: 8] in
+Main.r1 $ds =
+      let r1 = $ds[16 +: 8] in
       r1
 
 Main.r2 : ([81]) -> [8]
-Main.r2 ds =
-      let r2 = ds[8 +: 8] in
+Main.r2 $ds =
+      let r2 = $ds[8 +: 8] in
       r2
 
 Main.r3 : ([81]) -> [8]
-Main.r3 ds =
-      let r3 = ds[0 +: 8] in
+Main.r3 $ds =
+      let r3 = $ds[0 +: 8] in
       r3
 
 Main.setR0 : ([81], [8]) -> [81]
-Main.setR0 ds r0 =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
+Main.setR0 $ds r0 =
+      let i = $ds[71 +: 10] in
+      let o = $ds[53 +: 18] in
+      let z = $ds[52 +: 1] in
+      let c = $ds[51 +: 1] in
+      let ie = $ds[50 +: 1] in
+      let pc = $ds[42 +: 8] in
+      let zs = $ds[41 +: 1] in
+      let cs = $ds[40 +: 1] in
+      let pcs = $ds[32 +: 8] in
+      let r1 = $ds[16 +: 8] in
+      let r2 = $ds[8 +: 8] in
+      let r3 = $ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
 Main.setR1 : ([81], [8]) -> [81]
-Main.setR1 ds r1 =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
+Main.setR1 $ds r1 =
+      let i = $ds[71 +: 10] in
+      let o = $ds[53 +: 18] in
+      let z = $ds[52 +: 1] in
+      let c = $ds[51 +: 1] in
+      let ie = $ds[50 +: 1] in
+      let pc = $ds[42 +: 8] in
+      let zs = $ds[41 +: 1] in
+      let cs = $ds[40 +: 1] in
+      let pcs = $ds[32 +: 8] in
+      let r0 = $ds[24 +: 8] in
+      let r2 = $ds[8 +: 8] in
+      let r3 = $ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
 Main.setR2 : ([81], [8]) -> [81]
-Main.setR2 ds r2 =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r3 = ds[0 +: 8] in
+Main.setR2 $ds r2 =
+      let i = $ds[71 +: 10] in
+      let o = $ds[53 +: 18] in
+      let z = $ds[52 +: 1] in
+      let c = $ds[51 +: 1] in
+      let ie = $ds[50 +: 1] in
+      let pc = $ds[42 +: 8] in
+      let zs = $ds[41 +: 1] in
+      let cs = $ds[40 +: 1] in
+      let pcs = $ds[32 +: 8] in
+      let r0 = $ds[24 +: 8] in
+      let r1 = $ds[16 +: 8] in
+      let r3 = $ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
 Main.setR3 : ([81], [8]) -> [81]
-Main.setR3 ds r3 =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
+Main.setR3 $ds r3 =
+      let i = $ds[71 +: 10] in
+      let o = $ds[53 +: 18] in
+      let z = $ds[52 +: 1] in
+      let c = $ds[51 +: 1] in
+      let ie = $ds[50 +: 1] in
+      let pc = $ds[42 +: 8] in
+      let zs = $ds[41 +: 1] in
+      let cs = $ds[40 +: 1] in
+      let pcs = $ds[32 +: 8] in
+      let r0 = $ds[24 +: 8] in
+      let r1 = $ds[16 +: 8] in
+      let r2 = $ds[8 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
 Main.setPCSave : ([81], [8]) -> [81]
-Main.setPCSave ds pcs =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
+Main.setPCSave $ds pcs =
+      let i = $ds[71 +: 10] in
+      let o = $ds[53 +: 18] in
+      let z = $ds[52 +: 1] in
+      let c = $ds[51 +: 1] in
+      let ie = $ds[50 +: 1] in
+      let pc = $ds[42 +: 8] in
+      let zs = $ds[41 +: 1] in
+      let cs = $ds[40 +: 1] in
+      let r0 = $ds[24 +: 8] in
+      let r1 = $ds[16 +: 8] in
+      let r2 = $ds[8 +: 8] in
+      let r3 = $ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
 Main.pcSave : ([81]) -> [8]
-Main.pcSave ds =
-      let pcs = ds[32 +: 8] in
+Main.pcSave $ds =
+      let pcs = $ds[32 +: 8] in
       pcs
 
 Main.zFlag : ([81]) -> [1]
-Main.zFlag ds =
-      let z = ds[52 +: 1] in
+Main.zFlag $ds =
+      let z = $ds[52 +: 1] in
       z
 
 Main.zsFlag : ([81]) -> [1]
-Main.zsFlag ds =
-      let zs = ds[41 +: 1] in
+Main.zsFlag $ds =
+      let zs = $ds[41 +: 1] in
       zs
 
 Main.setZFlag : ([81], [1]) -> [81]
-Main.setZFlag ds z =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
+Main.setZFlag $ds z =
+      let i = $ds[71 +: 10] in
+      let o = $ds[53 +: 18] in
+      let c = $ds[51 +: 1] in
+      let ie = $ds[50 +: 1] in
+      let pc = $ds[42 +: 8] in
+      let zs = $ds[41 +: 1] in
+      let cs = $ds[40 +: 1] in
+      let pcs = $ds[32 +: 8] in
+      let r0 = $ds[24 +: 8] in
+      let r1 = $ds[16 +: 8] in
+      let r2 = $ds[8 +: 8] in
+      let r3 = $ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
 Main.setZSave : ([81], [1]) -> [81]
-Main.setZSave ds zs =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
+Main.setZSave $ds zs =
+      let i = $ds[71 +: 10] in
+      let o = $ds[53 +: 18] in
+      let z = $ds[52 +: 1] in
+      let c = $ds[51 +: 1] in
+      let ie = $ds[50 +: 1] in
+      let pc = $ds[42 +: 8] in
+      let cs = $ds[40 +: 1] in
+      let pcs = $ds[32 +: 8] in
+      let r0 = $ds[24 +: 8] in
+      let r1 = $ds[16 +: 8] in
+      let r2 = $ds[8 +: 8] in
+      let r3 = $ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
 Main.cFlag : ([81]) -> [1]
-Main.cFlag ds =
-      let c = ds[51 +: 1] in
+Main.cFlag $ds =
+      let c = $ds[51 +: 1] in
       c
 
 Main.csFlag : ([81]) -> [1]
-Main.csFlag ds =
-      let cs = ds[40 +: 1] in
+Main.csFlag $ds =
+      let cs = $ds[40 +: 1] in
       cs
 
 Main.setCFlag : ([81], [1]) -> [81]
-Main.setCFlag ds c =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
+Main.setCFlag $ds c =
+      let i = $ds[71 +: 10] in
+      let o = $ds[53 +: 18] in
+      let z = $ds[52 +: 1] in
+      let ie = $ds[50 +: 1] in
+      let pc = $ds[42 +: 8] in
+      let zs = $ds[41 +: 1] in
+      let cs = $ds[40 +: 1] in
+      let pcs = $ds[32 +: 8] in
+      let r0 = $ds[24 +: 8] in
+      let r1 = $ds[16 +: 8] in
+      let r2 = $ds[8 +: 8] in
+      let r3 = $ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
 Main.setCSave : ([81], [1]) -> [81]
-Main.setCSave ds cs =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
+Main.setCSave $ds cs =
+      let i = $ds[71 +: 10] in
+      let o = $ds[53 +: 18] in
+      let z = $ds[52 +: 1] in
+      let c = $ds[51 +: 1] in
+      let ie = $ds[50 +: 1] in
+      let pc = $ds[42 +: 8] in
+      let zs = $ds[41 +: 1] in
+      let pcs = $ds[32 +: 8] in
+      let r0 = $ds[24 +: 8] in
+      let r1 = $ds[16 +: 8] in
+      let r2 = $ds[8 +: 8] in
+      let r3 = $ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
 Main.setIEFlag : ([81], [1]) -> [81]
-Main.setIEFlag ds ie =
-      let i = ds[71 +: 10] in
-      let o = ds[53 +: 18] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
+Main.setIEFlag $ds ie =
+      let i = $ds[71 +: 10] in
+      let o = $ds[53 +: 18] in
+      let z = $ds[52 +: 1] in
+      let c = $ds[51 +: 1] in
+      let pc = $ds[42 +: 8] in
+      let zs = $ds[41 +: 1] in
+      let cs = $ds[40 +: 1] in
+      let pcs = $ds[32 +: 8] in
+      let r0 = $ds[24 +: 8] in
+      let r1 = $ds[16 +: 8] in
+      let r2 = $ds[8 +: 8] in
+      let r3 = $ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
 Main.inputs : ([81]) -> [10]
-Main.inputs ds =
-      let i = ds[71 +: 10] in
+Main.inputs $ds =
+      let i = $ds[71 +: 10] in
       i
 
 Main.setOutputs : ([81], [18]) -> [81]
-Main.setOutputs ds o =
-      let i = ds[71 +: 10] in
-      let z = ds[52 +: 1] in
-      let c = ds[51 +: 1] in
-      let ie = ds[50 +: 1] in
-      let pc = ds[42 +: 8] in
-      let zs = ds[41 +: 1] in
-      let cs = ds[40 +: 1] in
-      let pcs = ds[32 +: 8] in
-      let r0 = ds[24 +: 8] in
-      let r1 = ds[16 +: 8] in
-      let r2 = ds[8 +: 8] in
-      let r3 = ds[0 +: 8] in
+Main.setOutputs $ds o =
+      let i = $ds[71 +: 10] in
+      let z = $ds[52 +: 1] in
+      let c = $ds[51 +: 1] in
+      let ie = $ds[50 +: 1] in
+      let pc = $ds[42 +: 8] in
+      let zs = $ds[41 +: 1] in
+      let cs = $ds[40 +: 1] in
+      let pcs = $ds[32 +: 8] in
+      let r0 = $ds[24 +: 8] in
+      let r1 = $ds[16 +: 8] in
+      let r2 = $ds[8 +: 8] in
+      let r3 = $ds[0 +: 8] in
       i # o # z # c # ie # pc # zs # cs # pcs # r0 # r1 # r2 # r3
 
 Main.setAddrOut : ([18], [8]) -> [18]
-Main.setAddrOut ds a_o =
-      let d_o = ds[2 +: 8] in
-      let we_o = ds[1 +: 1] in
-      let iack_o = ds[0 +: 1] in
+Main.setAddrOut $ds a_o =
+      let d_o = $ds[2 +: 8] in
+      let we_o = $ds[1 +: 1] in
+      let iack_o = $ds[0 +: 1] in
       a_o # d_o # we_o # iack_o
 
 Main.setDataOut : ([18], [8]) -> [18]
-Main.setDataOut ds d_o =
-      let a_o = ds[10 +: 8] in
-      let we_o = ds[1 +: 1] in
-      let iack_o = ds[0 +: 1] in
+Main.setDataOut $ds d_o =
+      let a_o = $ds[10 +: 8] in
+      let we_o = $ds[1 +: 1] in
+      let iack_o = $ds[0 +: 1] in
       a_o # d_o # we_o # iack_o
 
 Main.dataIn : ([10]) -> [8]
-Main.dataIn ds =
-      let d_i = ds[2 +: 8] in
+Main.dataIn $ds =
+      let d_i = $ds[2 +: 8] in
       d_i
 
 Main.setWeOut : ([18], [1]) -> [18]
-Main.setWeOut ds we_o =
-      let a_o = ds[10 +: 8] in
-      let d_o = ds[2 +: 8] in
-      let iack_o = ds[0 +: 1] in
+Main.setWeOut $ds we_o =
+      let a_o = $ds[10 +: 8] in
+      let d_o = $ds[2 +: 8] in
+      let iack_o = $ds[0 +: 1] in
       a_o # d_o # we_o # iack_o
 
 Main.setIackOut : ([18], [1]) -> [18]
-Main.setIackOut ds iack_o =
-      let a_o = ds[10 +: 8] in
-      let d_o = ds[2 +: 8] in
-      let we_o = ds[1 +: 1] in
+Main.setIackOut $ds iack_o =
+      let a_o = $ds[10 +: 8] in
+      let d_o = $ds[2 +: 8] in
+      let we_o = $ds[1 +: 1] in
       a_o # d_o # we_o # iack_o
 
 Main.rstIn : ([10]) -> [1]
-Main.rstIn ds =
-      let r_i = ds[1 +: 1] in
+Main.rstIn $ds =
+      let r_i = $ds[1 +: 1] in
       r_i
 
 Main.intIn : ([10]) -> [1]
-Main.intIn ds =
-      let i_i = ds[0 +: 1] in
+Main.intIn $ds =
+      let i_i = $ds[0 +: 1] in
       i_i
 
 Main.minusCW8 : ([8], [8], [1]) -> [9]
@@ -2440,31 +2882,37 @@ Main.shlCW8 : ([8], [1]) -> [9]
 Main.shlCW8 v cin =
       Main.msbW8 v # or (shl v 8'h1) (zext 8 cin)
 
-Main.plusCW8$s1 : ([8]) -> [9]
-Main.plusCW8$s1 a =
+--| partially applied from 'Main.plusCW8'
+Main.plusCW8$sMain_oneW8_False_Bool : ([8]) -> [9]
+Main.plusCW8$sMain_oneW8_False_Bool a =
       let s = add (add (zext 9 a) 9'h1) 9'h0 in
       s[8 +: 1] # trunc 8 s
 
-Main.minusCW8$s1 : ([8], [8]) -> [9]
-Main.minusCW8$s1 a b =
+--| partially applied from 'Main.minusCW8'
+Main.minusCW8$sFalse_Bool : ([8], [8]) -> [9]
+Main.minusCW8$sFalse_Bool a b =
       let s = sub (sub (zext 9 a) (zext 9 b)) 9'h0 in
       s[8 +: 1] # trunc 8 s
 
-Main.plusCW8$s2 : ([8], [8]) -> [9]
-Main.plusCW8$s2 a b =
+--| partially applied from 'Main.plusCW8'
+Main.plusCW8$sFalse_Bool : ([8], [8]) -> [9]
+Main.plusCW8$sFalse_Bool a b =
       let s = add (add (zext 9 a) (zext 9 b)) 9'h0 in
       s[8 +: 1] # trunc 8 s
 
-Main.shlCW8$s1 : ([8]) -> [9]
-Main.shlCW8$s1 v =
+--| partially applied from 'Main.shlCW8'
+Main.shlCW8$sFalse_Bool : ([8]) -> [9]
+Main.shlCW8$sFalse_Bool v =
       Main.msbW8 v # or (shl v 8'h1) 8'h0
 
-Main.shrCW8$s1 : ([8]) -> [9]
-Main.shrCW8$s1 v =
+--| partially applied from 'Main.shrCW8'
+Main.shrCW8$sFalse_Bool : ([8]) -> [9]
+Main.shrCW8$sFalse_Bool v =
       Main.lsbW8 v # or (lshr v 8'h1) 8'h0
 
-Main.minusCW8$s2 : ([8]) -> [9]
-Main.minusCW8$s2 a =
+--| partially applied from 'Main.minusCW8'
+Main.minusCW8$sMain_oneW8_False_Bool : ([8]) -> [9]
+Main.minusCW8$sMain_oneW8_False_Bool a =
       let s = sub (sub (zext 9 a) 9'h1) 9'h0 in
       s[8 +: 1] # trunc 8 s
 
@@ -2478,6 +2926,11 @@ device top_level
       output __out3 : [1]
       register __resumption_tag : [7] init 7'h30
       register __st0 : [81] init 81'h0
+      tag i2 = 0
+      tag i4 = 1
+      tag i6 = 2
+      tag i7 = 3
+      tag i8 = 4
       let $res = main.$dispatch (__resumption_tag # __st0) (__in0 # __in1 # __in2)
       __out0 := $res[98 +: 8]
       __out1 := $res[90 +: 8]

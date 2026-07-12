@@ -18,45 +18,45 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [28] -> [4] -> [44]
-rw_main__dispatch x0 x1 = rw_main__L__x16_311 x1 (take`{4} x0) (take`{8} (drop`{4} x0)) (drop`{12} x0)
+rw_main__dispatch x0 x1 = rw_main__x2 x1 (take`{4} x0) (take`{8} (drop`{4} x0)) (drop`{12} x0)
 
-// main.$L.$x16$311
-rw_main__L__x16_311 : [4] -> [4] -> [8] -> [16] -> [44]
-rw_main__L__x16_311 x0 x1 x2 x3 = rw_main__L_Main_loop9_303 x0 x1 x2 x3
+// main.$x2
+rw_main__x2 : [4] -> [4] -> [8] -> [16] -> [44]
+rw_main__x2 x0 x1 x2 x3 = rw_main_loop x0 x1 x2 x3
 
-// main.$L._unused15$309
-rw_main__L__unused15_309 : [4] -> [16] -> [4] -> [8] -> [16] -> [44]
-rw_main__L__unused15_309 x0 x1 x2 x3 x4 = ((rw'resize`{16} x0) + x1) # (x2 # (x3 # x4))
+// main._unused6
+rw_main__unused6 : [4] -> [16] -> [4] -> [8] -> [16] -> [44]
+rw_main__unused6 x0 x1 x2 x3 x4 = ((rw'resize`{16} x0) + x1) # (x2 # (x3 # x4))
 
-// main.$L._unused14$308
-rw_main__L__unused14_308 : [4] -> [8] -> [16] -> [4] -> [8] -> [16] -> [44]
-rw_main__L__unused14_308 x0 x1 x2 x3 x4 x5 = rw_main__L__unused15_309 x0 x2 x3 x4 s0
+// main._unused5
+rw_main__unused5 : [4] -> [8] -> [16] -> [4] -> [8] -> [16] -> [44]
+rw_main__unused5 x0 x1 x2 x3 x4 x5 = rw_main__unused6 x0 x2 x3 x4 s0
   where
     s0 : [16]
     s0 = (rw'resize`{16} x1) + x2
 
-// main.$L._unused13$307
-rw_main__L__unused13_307 : [4] -> [8] -> [16] -> [4] -> [8] -> [16] -> [44]
-rw_main__L__unused13_307 x0 x1 x2 x3 x4 x5 = rw_main__L__unused14_308 x0 x1 x2 x3 s0 x5
+// main._unused4
+rw_main__unused4 : [4] -> [8] -> [16] -> [4] -> [8] -> [16] -> [44]
+rw_main__unused4 x0 x1 x2 x3 x4 x5 = rw_main__unused5 x0 x1 x2 x3 s0 x5
   where
     s0 : [8]
     s0 = (rw'resize`{8} x0) + x1
 
-// main.$L.c12$306
-rw_main__L_c12_306 : [4] -> [4] -> [8] -> [16] -> [4] -> [8] -> [16] -> [44]
-rw_main__L_c12_306 x0 x1 x2 x3 x4 x5 x6 = rw_main__L__unused13_307 x1 x2 x3 x0 x5 x6
+// main.c2
+rw_main_c2 : [4] -> [4] -> [8] -> [16] -> [4] -> [8] -> [16] -> [44]
+rw_main_c2 x0 x1 x2 x3 x4 x5 x6 = rw_main__unused4 x1 x2 x3 x0 x5 x6
 
-// main.$L.b11$305
-rw_main__L_b11_305 : [4] -> [4] -> [8] -> [4] -> [8] -> [16] -> [44]
-rw_main__L_b11_305 x0 x1 x2 x3 x4 x5 = rw_main__L_c12_306 x0 x1 x2 x5 x3 x4 x5
+// main.b2
+rw_main_b2 : [4] -> [4] -> [8] -> [4] -> [8] -> [16] -> [44]
+rw_main_b2 x0 x1 x2 x3 x4 x5 = rw_main_c2 x0 x1 x2 x5 x3 x4 x5
 
-// main.$L.a10$304
-rw_main__L_a10_304 : [4] -> [4] -> [4] -> [8] -> [16] -> [44]
-rw_main__L_a10_304 x0 x1 x2 x3 x4 = rw_main__L_b11_305 x0 x1 x3 x2 x3 x4
+// main.a2
+rw_main_a2 : [4] -> [4] -> [4] -> [8] -> [16] -> [44]
+rw_main_a2 x0 x1 x2 x3 x4 = rw_main_b2 x0 x1 x3 x2 x3 x4
 
-// main.$L.Main.loop9$303
-rw_main__L_Main_loop9_303 : [4] -> [4] -> [8] -> [16] -> [44]
-rw_main__L_Main_loop9_303 x0 x1 x2 x3 = rw_main__L_a10_304 x0 x1 x1 x2 x3
+// main.loop
+rw_main_loop : [4] -> [4] -> [8] -> [16] -> [44]
+rw_main_loop x0 x1 x2 x3 = rw_main_a2 x0 x1 x1 x2 x3
 
 // Per-cycle step: outputs # next register values.
 rw_step : [28] -> [4] -> [44]

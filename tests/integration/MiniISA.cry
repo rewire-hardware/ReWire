@@ -18,110 +18,110 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [88] -> [10] -> [106]
-rw_main__dispatch x0 x1 = if (take`{3} x0) == 0b000 then (rw_main__L_i30_6391 (take`{1} (drop`{4} x0)) (take`{2} (drop`{5} x0)) x1 (drop`{7} x0)) else (if (take`{3} x0) == 0b001 then (rw_main__L_i57_6433 (take`{1} (drop`{3} x0)) (take`{1} (drop`{4} x0)) (take`{2} (drop`{5} x0)) x1 (drop`{7} x0)) else (if (take`{3} x0) == 0b010 then (rw_main__L_i81_6467 (take`{1} (drop`{5} x0)) (take`{1} (drop`{6} x0)) x1 (drop`{7} x0)) else (if (take`{3} x0) == 0b011 then (rw_main__L_i105_6501 x1 (drop`{7} x0)) else (rw_main__L_i139_6551 x1 (drop`{7} x0)))))
+rw_main__dispatch x0 x1 = if (take`{3} x0) == 0b000 then (rw_main_i2 (take`{1} (drop`{4} x0)) (take`{2} (drop`{5} x0)) x1 (drop`{7} x0)) else (if (take`{3} x0) == 0b001 then (rw_main_i4 (take`{1} (drop`{3} x0)) (take`{1} (drop`{4} x0)) (take`{2} (drop`{5} x0)) x1 (drop`{7} x0)) else (if (take`{3} x0) == 0b010 then (rw_main_i6 (take`{1} (drop`{5} x0)) (take`{1} (drop`{6} x0)) x1 (drop`{7} x0)) else (if (take`{3} x0) == 0b011 then (rw_main_i7 x1 (drop`{7} x0)) else (rw_main_i8 x1 (drop`{7} x0)))))
 
-// main.$L.s18$6374
-rw_main__L_s18_6374 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s18_6374 x0 x1 x2 = rw_main__L_Main_loop3_6359 s0
+// main.s
+rw_main_s : [8] -> [81] -> [81] -> [106]
+rw_main_s x0 x1 x2 = rw_main_loop s0
   where
     s0 : [81]
     s0 = rw_Main_setR0 x1 x0
 
-// main.$L.arm19$6376
-rw_main__L_arm19_6376 : [8] -> [81] -> [106]
-rw_main__L_arm19_6376 x0 x1 = rw_main__L_s18_6374 x0 x1 x1
+// main.arm
+rw_main_arm : [8] -> [81] -> [106]
+rw_main_arm x0 x1 = rw_main_s x0 x1 x1
 
-// main.$L.s20$6377
-rw_main__L_s20_6377 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s20_6377 x0 x1 x2 = rw_main__L_Main_loop3_6359 s0
+// main.s2
+rw_main_s2 : [8] -> [81] -> [81] -> [106]
+rw_main_s2 x0 x1 x2 = rw_main_loop s0
   where
     s0 : [81]
     s0 = rw_Main_setR1 x1 x0
 
-// main.$L.arm21$6379
-rw_main__L_arm21_6379 : [8] -> [81] -> [106]
-rw_main__L_arm21_6379 x0 x1 = rw_main__L_s20_6377 x0 x1 x1
+// main.arm2
+rw_main_arm2 : [8] -> [81] -> [106]
+rw_main_arm2 x0 x1 = rw_main_s2 x0 x1 x1
 
-// main.$L.s22$6380
-rw_main__L_s22_6380 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s22_6380 x0 x1 x2 = rw_main__L_Main_loop3_6359 s0
+// main.s3
+rw_main_s3 : [8] -> [81] -> [81] -> [106]
+rw_main_s3 x0 x1 x2 = rw_main_loop s0
   where
     s0 : [81]
     s0 = rw_Main_setR2 x1 x0
 
-// main.$L.arm23$6382
-rw_main__L_arm23_6382 : [8] -> [81] -> [106]
-rw_main__L_arm23_6382 x0 x1 = rw_main__L_s22_6380 x0 x1 x1
+// main.arm3
+rw_main_arm3 : [8] -> [81] -> [106]
+rw_main_arm3 x0 x1 = rw_main_s3 x0 x1 x1
 
-// main.$L.s24$6383
-rw_main__L_s24_6383 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s24_6383 x0 x1 x2 = rw_main__L_Main_loop3_6359 s0
+// main.s4
+rw_main_s4 : [8] -> [81] -> [81] -> [106]
+rw_main_s4 x0 x1 x2 = rw_main_loop s0
   where
     s0 : [81]
     s0 = rw_Main_setR3 x1 x0
 
-// main.$L.arm25$6385
-rw_main__L_arm25_6385 : [8] -> [81] -> [106]
-rw_main__L_arm25_6385 x0 x1 = rw_main__L_s24_6383 x0 x1 x1
+// main.arm4
+rw_main_arm4 : [8] -> [81] -> [106]
+rw_main_arm4 x0 x1 = rw_main_s4 x0 x1 x1
 
-// main.$L.x17$6373
-rw_main__L_x17_6373 : [2] -> [8] -> [81] -> [106]
-rw_main__L_x17_6373 x0 x1 x2 = if x0 == 0b00 then (rw_main__L_arm19_6376 x1 x2) else (if x0 == 0b01 then (rw_main__L_arm21_6379 x1 x2) else (if x0 == 0b10 then (rw_main__L_arm23_6382 x1 x2) else (rw_main__L_arm25_6385 x1 x2)))
+// main.x
+rw_main_x : [2] -> [8] -> [81] -> [106]
+rw_main_x x0 x1 x2 = if x0 == 0b00 then (rw_main_arm x1 x2) else (if x0 == 0b01 then (rw_main_arm2 x1 x2) else (if x0 == 0b10 then (rw_main_arm3 x1 x2) else (rw_main_arm4 x1 x2)))
 
-// main.$L.i26$6386
-rw_main__L_i26_6386 : [2] -> [10] -> [81] -> [106]
-rw_main__L_i26_6386 x0 x1 x2 = rw_main__L_x17_6373 x0 s0 x2
+// main.i
+rw_main_i : [2] -> [10] -> [81] -> [106]
+rw_main_i x0 x1 x2 = rw_main_x x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_dataIn x1
 
-// main.$L.s27$6387
-rw_main__L_s27_6387 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s27_6387 x0 x1 x2 = rw_main__L_i26_6386 x0 s0 x2
+// main.s5
+rw_main_s5 : [2] -> [81] -> [81] -> [106]
+rw_main_s5 x0 x1 x2 = rw_main_i x0 s0 x2
   where
     s0 : [10]
     s0 = rw_Main_inputs x1
 
-// main.$L.arm28$6389
-rw_main__L_arm28_6389 : [2] -> [81] -> [106]
-rw_main__L_arm28_6389 x0 x1 = rw_main__L_s27_6387 x0 x1 x1
+// main.arm5
+rw_main_arm5 : [2] -> [81] -> [106]
+rw_main_arm5 x0 x1 = rw_main_s5 x0 x1 x1
 
-// main.$L._unused16$6372
-rw_main__L__unused16_6372 : [1] -> [2] -> [81] -> [106]
-rw_main__L__unused16_6372 x0 x1 x2 = if x0 == 0b0 then (rw_main__L_Main_loop3_6359 x2) else (rw_main__L_arm28_6389 x1 x2)
+// main._unused9
+rw_main__unused9 : [1] -> [2] -> [81] -> [106]
+rw_main__unused9 x0 x1 x2 = if ~ (x0 @ 0) then (rw_main_loop x2) else (rw_main_arm5 x1 x2)
 
-// main.$L.s31$6392
-rw_main__L_s31_6392 : [1] -> [2] -> [10] -> [81] -> [81] -> [106]
-rw_main__L_s31_6392 x0 x1 x2 x3 x4 = rw_main__L__unused16_6372 x0 x1 s0
+// main.s6
+rw_main_s6 : [1] -> [2] -> [10] -> [81] -> [81] -> [106]
+rw_main_s6 x0 x1 x2 x3 x4 = rw_main__unused9 x0 x1 s0
   where
     s0 : [81]
     s0 = rw_Main_setInputs x3 x2
 
-// main.$L.i30$6391
-rw_main__L_i30_6391 : [1] -> [2] -> [10] -> [81] -> [106]
-rw_main__L_i30_6391 x0 x1 x2 x3 = rw_main__L_s31_6392 x0 x1 x2 x3 x3
+// main.i2
+rw_main_i2 : [1] -> [2] -> [10] -> [81] -> [106]
+rw_main_i2 x0 x1 x2 x3 = rw_main_s6 x0 x1 x2 x3 x3
 
-// main.$L.o29$6390
-rw_main__L_o29_6390 : [1] -> [2] -> [18] -> [81] -> [106]
-rw_main__L_o29_6390 x0 x1 x2 x3 = x2 # (0x0 # (x0 # (x1 # x3)))
+// main.o
+rw_main_o : [1] -> [2] -> [18] -> [81] -> [106]
+rw_main_o x0 x1 x2 x3 = x2 # (0x0 # (x0 # (x1 # x3)))
 
-// main.$L.s32$6394
-rw_main__L_s32_6394 : [1] -> [2] -> [81] -> [81] -> [106]
-rw_main__L_s32_6394 x0 x1 x2 x3 = rw_main__L_o29_6390 x0 x1 s0 x3
+// main.s7
+rw_main_s7 : [1] -> [2] -> [81] -> [81] -> [106]
+rw_main_s7 x0 x1 x2 x3 = rw_main_o x0 x1 s0 x3
   where
     s0 : [18]
     s0 = rw_Main_outputs x2
 
-// main.$L._unused15$6371
-rw_main__L__unused15_6371 : [1] -> [2] -> [81] -> [106]
-rw_main__L__unused15_6371 x0 x1 x2 = rw_main__L_s32_6394 x0 x1 x2 x2
+// main._unused8
+rw_main__unused8 : [1] -> [2] -> [81] -> [106]
+rw_main__unused8 x0 x1 x2 = rw_main_s7 x0 x1 x2 x2
 
-// main.$L.s34$6397
-rw_main__L_s34_6397 : [1] -> [2] -> [8] -> [81] -> [81] -> [106]
-rw_main__L_s34_6397 x0 x1 x2 x3 x4 = rw_main__L__unused15_6371 x0 x1 s3
+// main.s8
+rw_main_s8 : [1] -> [2] -> [8] -> [81] -> [81] -> [106]
+rw_main_s8 x0 x1 x2 x3 x4 = rw_main__unused8 x0 x1 s3
   where
     s0 : [9]
-    s0 = rw_Main_plusCW8_s1 x2
+    s0 = rw_Main_plusCW8_sMain_oneW8_False_Bool x2
     s1 : [8]
     s1 = drop`{1} s0
     s2 : [8]
@@ -129,1241 +129,1241 @@ rw_main__L_s34_6397 x0 x1 x2 x3 x4 = rw_main__L__unused15_6371 x0 x1 s3
     s3 : [81]
     s3 = rw_Main_setPC x3 s2
 
-// main.$L.pc33$6396
-rw_main__L_pc33_6396 : [1] -> [2] -> [8] -> [81] -> [106]
-rw_main__L_pc33_6396 x0 x1 x2 x3 = rw_main__L_s34_6397 x0 x1 x2 x3 x3
+// main.pc2
+rw_main_pc2 : [1] -> [2] -> [8] -> [81] -> [106]
+rw_main_pc2 x0 x1 x2 x3 = rw_main_s8 x0 x1 x2 x3 x3
 
-// main.$L.s35$6399
-rw_main__L_s35_6399 : [1] -> [2] -> [81] -> [81] -> [106]
-rw_main__L_s35_6399 x0 x1 x2 x3 = rw_main__L_pc33_6396 x0 x1 s0 x3
+// main.s9
+rw_main_s9 : [1] -> [2] -> [81] -> [81] -> [106]
+rw_main_s9 x0 x1 x2 x3 = rw_main_pc2 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_pc x2
 
-// main.$L._unused14$6370
-rw_main__L__unused14_6370 : [1] -> [2] -> [81] -> [106]
-rw_main__L__unused14_6370 x0 x1 x2 = rw_main__L_s35_6399 x0 x1 x2 x2
+// main._unused7
+rw_main__unused7 : [1] -> [2] -> [81] -> [106]
+rw_main__unused7 x0 x1 x2 = rw_main_s9 x0 x1 x2 x2
 
-// main.$L.s38$6403
-rw_main__L_s38_6403 : [1] -> [2] -> [8] -> [18] -> [81] -> [81] -> [106]
-rw_main__L_s38_6403 x0 x1 x2 x3 x4 x5 = rw_main__L__unused14_6370 x0 x1 s1
+// main.s10
+rw_main_s10 : [1] -> [2] -> [8] -> [18] -> [81] -> [81] -> [106]
+rw_main_s10 x0 x1 x2 x3 x4 x5 = rw_main__unused7 x0 x1 s1
   where
     s0 : [18]
     s0 = rw_Main_setDataOut x3 x2
     s1 : [81]
     s1 = rw_Main_setOutputs x4 s0
 
-// main.$L.o37$6402
-rw_main__L_o37_6402 : [1] -> [2] -> [8] -> [18] -> [81] -> [106]
-rw_main__L_o37_6402 x0 x1 x2 x3 x4 = rw_main__L_s38_6403 x0 x1 x2 x3 x4 x4
+// main.o2
+rw_main_o2 : [1] -> [2] -> [8] -> [18] -> [81] -> [106]
+rw_main_o2 x0 x1 x2 x3 x4 = rw_main_s10 x0 x1 x2 x3 x4 x4
 
-// main.$L.s39$6405
-rw_main__L_s39_6405 : [1] -> [2] -> [8] -> [81] -> [81] -> [106]
-rw_main__L_s39_6405 x0 x1 x2 x3 x4 = rw_main__L_o37_6402 x0 x1 x2 s0 x4
+// main.s11
+rw_main_s11 : [1] -> [2] -> [8] -> [81] -> [81] -> [106]
+rw_main_s11 x0 x1 x2 x3 x4 = rw_main_o2 x0 x1 x2 s0 x4
   where
     s0 : [18]
     s0 = rw_Main_outputs x3
 
-// main.$L.d36$6401
-rw_main__L_d36_6401 : [1] -> [2] -> [8] -> [81] -> [106]
-rw_main__L_d36_6401 x0 x1 x2 x3 = rw_main__L_s39_6405 x0 x1 x2 x3 x3
+// main.d
+rw_main_d : [1] -> [2] -> [8] -> [81] -> [106]
+rw_main_d x0 x1 x2 x3 = rw_main_s11 x0 x1 x2 x3 x3
 
-// main.$L.s40$6407
-rw_main__L_s40_6407 : [1] -> [2] -> [81] -> [81] -> [106]
-rw_main__L_s40_6407 x0 x1 x2 x3 = rw_main__L_d36_6401 x0 x1 s0 x3
+// main.s12
+rw_main_s12 : [1] -> [2] -> [81] -> [81] -> [106]
+rw_main_s12 x0 x1 x2 x3 = rw_main_d x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r0 x2
 
-// main.$L.arm41$6409
-rw_main__L_arm41_6409 : [1] -> [2] -> [81] -> [106]
-rw_main__L_arm41_6409 x0 x1 x2 = rw_main__L_s40_6407 x0 x1 x2 x2
+// main.arm6
+rw_main_arm6 : [1] -> [2] -> [81] -> [106]
+rw_main_arm6 x0 x1 x2 = rw_main_s12 x0 x1 x2 x2
 
-// main.$L.s42$6410
-rw_main__L_s42_6410 : [1] -> [2] -> [81] -> [81] -> [106]
-rw_main__L_s42_6410 x0 x1 x2 x3 = rw_main__L_d36_6401 x0 x1 s0 x3
+// main.s13
+rw_main_s13 : [1] -> [2] -> [81] -> [81] -> [106]
+rw_main_s13 x0 x1 x2 x3 = rw_main_d x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r1 x2
 
-// main.$L.arm43$6412
-rw_main__L_arm43_6412 : [1] -> [2] -> [81] -> [106]
-rw_main__L_arm43_6412 x0 x1 x2 = rw_main__L_s42_6410 x0 x1 x2 x2
+// main.arm7
+rw_main_arm7 : [1] -> [2] -> [81] -> [106]
+rw_main_arm7 x0 x1 x2 = rw_main_s13 x0 x1 x2 x2
 
-// main.$L.s44$6413
-rw_main__L_s44_6413 : [1] -> [2] -> [81] -> [81] -> [106]
-rw_main__L_s44_6413 x0 x1 x2 x3 = rw_main__L_d36_6401 x0 x1 s0 x3
+// main.s14
+rw_main_s14 : [1] -> [2] -> [81] -> [81] -> [106]
+rw_main_s14 x0 x1 x2 x3 = rw_main_d x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r2 x2
 
-// main.$L.arm45$6415
-rw_main__L_arm45_6415 : [1] -> [2] -> [81] -> [106]
-rw_main__L_arm45_6415 x0 x1 x2 = rw_main__L_s44_6413 x0 x1 x2 x2
+// main.arm8
+rw_main_arm8 : [1] -> [2] -> [81] -> [106]
+rw_main_arm8 x0 x1 x2 = rw_main_s14 x0 x1 x2 x2
 
-// main.$L.s46$6416
-rw_main__L_s46_6416 : [1] -> [2] -> [81] -> [81] -> [106]
-rw_main__L_s46_6416 x0 x1 x2 x3 = rw_main__L_d36_6401 x0 x1 s0 x3
+// main.s15
+rw_main_s15 : [1] -> [2] -> [81] -> [81] -> [106]
+rw_main_s15 x0 x1 x2 x3 = rw_main_d x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r3 x2
 
-// main.$L.arm47$6418
-rw_main__L_arm47_6418 : [1] -> [2] -> [81] -> [106]
-rw_main__L_arm47_6418 x0 x1 x2 = rw_main__L_s46_6416 x0 x1 x2 x2
+// main.arm9
+rw_main_arm9 : [1] -> [2] -> [81] -> [106]
+rw_main_arm9 x0 x1 x2 = rw_main_s15 x0 x1 x2 x2
 
-// main.$L._unused13$6369
-rw_main__L__unused13_6369 : [1] -> [1] -> [2] -> [81] -> [106]
-rw_main__L__unused13_6369 x0 x1 x2 x3 = if x1 == 0b0 then (rw_main__L__unused14_6370 x0 x2 x3) else (if x2 == 0b00 then (rw_main__L_arm41_6409 x0 x2 x3) else (if x2 == 0b01 then (rw_main__L_arm43_6412 x0 x2 x3) else (if x2 == 0b10 then (rw_main__L_arm45_6415 x0 x2 x3) else (rw_main__L_arm47_6418 x0 x2 x3))))
+// main._unused6
+rw_main__unused6 : [1] -> [1] -> [2] -> [81] -> [106]
+rw_main__unused6 x0 x1 x2 x3 = if ~ (x1 @ 0) then (rw_main__unused7 x0 x2 x3) else (if x2 == 0b00 then (rw_main_arm6 x0 x2 x3) else (if x2 == 0b01 then (rw_main_arm7 x0 x2 x3) else (if x2 == 0b10 then (rw_main_arm8 x0 x2 x3) else (rw_main_arm9 x0 x2 x3))))
 
-// main.$L.s49$6420
-rw_main__L_s49_6420 : [1] -> [1] -> [2] -> [18] -> [81] -> [81] -> [106]
-rw_main__L_s49_6420 x0 x1 x2 x3 x4 x5 = rw_main__L__unused13_6369 x0 x1 x2 s1
+// main.s16
+rw_main_s16 : [1] -> [1] -> [2] -> [18] -> [81] -> [81] -> [106]
+rw_main_s16 x0 x1 x2 x3 x4 x5 = rw_main__unused6 x0 x1 x2 s1
   where
     s0 : [18]
     s0 = rw_Main_setWeOut x3 x1
     s1 : [81]
     s1 = rw_Main_setOutputs x4 s0
 
-// main.$L.o48$6419
-rw_main__L_o48_6419 : [1] -> [1] -> [2] -> [18] -> [81] -> [106]
-rw_main__L_o48_6419 x0 x1 x2 x3 x4 = rw_main__L_s49_6420 x0 x1 x2 x3 x4 x4
+// main.o3
+rw_main_o3 : [1] -> [1] -> [2] -> [18] -> [81] -> [106]
+rw_main_o3 x0 x1 x2 x3 x4 = rw_main_s16 x0 x1 x2 x3 x4 x4
 
-// main.$L.s50$6422
-rw_main__L_s50_6422 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
-rw_main__L_s50_6422 x0 x1 x2 x3 x4 = rw_main__L_o48_6419 x0 x1 x2 s0 x4
+// main.s17
+rw_main_s17 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
+rw_main_s17 x0 x1 x2 x3 x4 = rw_main_o3 x0 x1 x2 s0 x4
   where
     s0 : [18]
     s0 = rw_Main_outputs x3
 
-// main.$L._unused12$6368
-rw_main__L__unused12_6368 : [1] -> [1] -> [2] -> [81] -> [106]
-rw_main__L__unused12_6368 x0 x1 x2 x3 = rw_main__L_s50_6422 x0 x1 x2 x3 x3
+// main._unused5
+rw_main__unused5 : [1] -> [1] -> [2] -> [81] -> [106]
+rw_main__unused5 x0 x1 x2 x3 = rw_main_s17 x0 x1 x2 x3 x3
 
-// main.$L.s52$6425
-rw_main__L_s52_6425 : [1] -> [1] -> [2] -> [8] -> [18] -> [81] -> [81] -> [106]
-rw_main__L_s52_6425 x0 x1 x2 x3 x4 x5 x6 = rw_main__L__unused12_6368 x0 x1 x2 s1
+// main.s18
+rw_main_s18 : [1] -> [1] -> [2] -> [8] -> [18] -> [81] -> [81] -> [106]
+rw_main_s18 x0 x1 x2 x3 x4 x5 x6 = rw_main__unused5 x0 x1 x2 s1
   where
     s0 : [18]
     s0 = rw_Main_setAddrOut x4 x3
     s1 : [81]
     s1 = rw_Main_setOutputs x5 s0
 
-// main.$L.o51$6424
-rw_main__L_o51_6424 : [1] -> [1] -> [2] -> [8] -> [18] -> [81] -> [106]
-rw_main__L_o51_6424 x0 x1 x2 x3 x4 x5 = rw_main__L_s52_6425 x0 x1 x2 x3 x4 x5 x5
+// main.o4
+rw_main_o4 : [1] -> [1] -> [2] -> [8] -> [18] -> [81] -> [106]
+rw_main_o4 x0 x1 x2 x3 x4 x5 = rw_main_s18 x0 x1 x2 x3 x4 x5 x5
 
-// main.$L.s53$6427
-rw_main__L_s53_6427 : [1] -> [1] -> [2] -> [8] -> [81] -> [81] -> [106]
-rw_main__L_s53_6427 x0 x1 x2 x3 x4 x5 = rw_main__L_o51_6424 x0 x1 x2 x3 s0 x5
+// main.s19
+rw_main_s19 : [1] -> [1] -> [2] -> [8] -> [81] -> [81] -> [106]
+rw_main_s19 x0 x1 x2 x3 x4 x5 = rw_main_o4 x0 x1 x2 x3 s0 x5
   where
     s0 : [18]
     s0 = rw_Main_outputs x4
 
-// main.$L.a11$6367
-rw_main__L_a11_6367 : [1] -> [1] -> [2] -> [8] -> [81] -> [106]
-rw_main__L_a11_6367 x0 x1 x2 x3 x4 = rw_main__L_s53_6427 x0 x1 x2 x3 x4 x4
+// main.a
+rw_main_a : [1] -> [1] -> [2] -> [8] -> [81] -> [106]
+rw_main_a x0 x1 x2 x3 x4 = rw_main_s19 x0 x1 x2 x3 x4 x4
 
-// main.$L.i54$6429
-rw_main__L_i54_6429 : [1] -> [1] -> [2] -> [10] -> [81] -> [106]
-rw_main__L_i54_6429 x0 x1 x2 x3 x4 = rw_main__L_a11_6367 x0 x1 x2 s0 x4
+// main.i3
+rw_main_i3 : [1] -> [1] -> [2] -> [10] -> [81] -> [106]
+rw_main_i3 x0 x1 x2 x3 x4 = rw_main_a x0 x1 x2 s0 x4
   where
     s0 : [8]
     s0 = rw_Main_dataIn x3
 
-// main.$L.s55$6430
-rw_main__L_s55_6430 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
-rw_main__L_s55_6430 x0 x1 x2 x3 x4 = rw_main__L_i54_6429 x0 x1 x2 s0 x4
+// main.s20
+rw_main_s20 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
+rw_main_s20 x0 x1 x2 x3 x4 = rw_main_i3 x0 x1 x2 s0 x4
   where
     s0 : [10]
     s0 = rw_Main_inputs x3
 
-// main.$L._unused10$6366
-rw_main__L__unused10_6366 : [1] -> [1] -> [2] -> [81] -> [106]
-rw_main__L__unused10_6366 x0 x1 x2 x3 = rw_main__L_s55_6430 x0 x1 x2 x3 x3
+// main._unused4
+rw_main__unused4 : [1] -> [1] -> [2] -> [81] -> [106]
+rw_main__unused4 x0 x1 x2 x3 = rw_main_s20 x0 x1 x2 x3 x3
 
-// main.$L.s58$6434
-rw_main__L_s58_6434 : [1] -> [1] -> [2] -> [10] -> [81] -> [81] -> [106]
-rw_main__L_s58_6434 x0 x1 x2 x3 x4 x5 = rw_main__L__unused10_6366 x0 x1 x2 s0
+// main.s21
+rw_main_s21 : [1] -> [1] -> [2] -> [10] -> [81] -> [81] -> [106]
+rw_main_s21 x0 x1 x2 x3 x4 x5 = rw_main__unused4 x0 x1 x2 s0
   where
     s0 : [81]
     s0 = rw_Main_setInputs x4 x3
 
-// main.$L.i57$6433
-rw_main__L_i57_6433 : [1] -> [1] -> [2] -> [10] -> [81] -> [106]
-rw_main__L_i57_6433 x0 x1 x2 x3 x4 = rw_main__L_s58_6434 x0 x1 x2 x3 x4 x4
+// main.i4
+rw_main_i4 : [1] -> [1] -> [2] -> [10] -> [81] -> [106]
+rw_main_i4 x0 x1 x2 x3 x4 = rw_main_s21 x0 x1 x2 x3 x4 x4
 
-// main.$L.o56$6432
-rw_main__L_o56_6432 : [1] -> [1] -> [2] -> [18] -> [81] -> [106]
-rw_main__L_o56_6432 x0 x1 x2 x3 x4 = x3 # (0b001 # (x0 # (x1 # (x2 # x4))))
+// main.o5
+rw_main_o5 : [1] -> [1] -> [2] -> [18] -> [81] -> [106]
+rw_main_o5 x0 x1 x2 x3 x4 = x3 # (0b001 # (x0 # (x1 # (x2 # x4))))
 
-// main.$L.s59$6436
-rw_main__L_s59_6436 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
-rw_main__L_s59_6436 x0 x1 x2 x3 x4 = rw_main__L_o56_6432 x0 x1 x2 s0 x4
+// main.s22
+rw_main_s22 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
+rw_main_s22 x0 x1 x2 x3 x4 = rw_main_o5 x0 x1 x2 s0 x4
   where
     s0 : [18]
     s0 = rw_Main_outputs x3
 
-// main.$L._unused9$6365
-rw_main__L__unused9_6365 : [1] -> [1] -> [2] -> [81] -> [106]
-rw_main__L__unused9_6365 x0 x1 x2 x3 = rw_main__L_s59_6436 x0 x1 x2 x3 x3
+// main._unused3
+rw_main__unused3 : [1] -> [1] -> [2] -> [81] -> [106]
+rw_main__unused3 x0 x1 x2 x3 = rw_main_s22 x0 x1 x2 x3 x3
 
-// main.$L.s61$6439
-rw_main__L_s61_6439 : [1] -> [1] -> [2] -> [8] -> [18] -> [81] -> [81] -> [106]
-rw_main__L_s61_6439 x0 x1 x2 x3 x4 x5 x6 = rw_main__L__unused9_6365 x0 x1 x2 s1
+// main.s23
+rw_main_s23 : [1] -> [1] -> [2] -> [8] -> [18] -> [81] -> [81] -> [106]
+rw_main_s23 x0 x1 x2 x3 x4 x5 x6 = rw_main__unused3 x0 x1 x2 s1
   where
     s0 : [18]
     s0 = rw_Main_setAddrOut x4 x3
     s1 : [81]
     s1 = rw_Main_setOutputs x5 s0
 
-// main.$L.o60$6438
-rw_main__L_o60_6438 : [1] -> [1] -> [2] -> [8] -> [18] -> [81] -> [106]
-rw_main__L_o60_6438 x0 x1 x2 x3 x4 x5 = rw_main__L_s61_6439 x0 x1 x2 x3 x4 x5 x5
+// main.o6
+rw_main_o6 : [1] -> [1] -> [2] -> [8] -> [18] -> [81] -> [106]
+rw_main_o6 x0 x1 x2 x3 x4 x5 = rw_main_s23 x0 x1 x2 x3 x4 x5 x5
 
-// main.$L.s62$6441
-rw_main__L_s62_6441 : [1] -> [1] -> [2] -> [8] -> [81] -> [81] -> [106]
-rw_main__L_s62_6441 x0 x1 x2 x3 x4 x5 = rw_main__L_o60_6438 x0 x1 x2 x3 s0 x5
+// main.s24
+rw_main_s24 : [1] -> [1] -> [2] -> [8] -> [81] -> [81] -> [106]
+rw_main_s24 x0 x1 x2 x3 x4 x5 = rw_main_o6 x0 x1 x2 x3 s0 x5
   where
     s0 : [18]
     s0 = rw_Main_outputs x4
 
-// main.$L.pc8$6364
-rw_main__L_pc8_6364 : [1] -> [1] -> [2] -> [8] -> [81] -> [106]
-rw_main__L_pc8_6364 x0 x1 x2 x3 x4 = rw_main__L_s62_6441 x0 x1 x2 x3 x4 x4
+// main.pc
+rw_main_pc : [1] -> [1] -> [2] -> [8] -> [81] -> [106]
+rw_main_pc x0 x1 x2 x3 x4 = rw_main_s24 x0 x1 x2 x3 x4 x4
 
-// main.$L.s63$6443
-rw_main__L_s63_6443 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
-rw_main__L_s63_6443 x0 x1 x2 x3 x4 = rw_main__L_pc8_6364 x0 x1 x2 s0 x4
+// main.s25
+rw_main_s25 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
+rw_main_s25 x0 x1 x2 x3 x4 = rw_main_pc x0 x1 x2 s0 x4
   where
     s0 : [8]
     s0 = rw_Main_pc x3
 
-// main.$L.arm64$6445
-rw_main__L_arm64_6445 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_arm64_6445 x0 x1 x2 x3 x4 = rw_main__L_s63_6443 x0 x1 s0 x4 x4
+// main.arm10
+rw_main_arm10 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_arm10 x0 x1 x2 x3 x4 = rw_main_s25 x0 x1 s0 x4 x4
   where
     s0 : [2]
     s0 = rw_Main_mkReg x2 x3
 
-// main.$L.s70$6451
-rw_main__L_s70_6451 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s70_6451 x0 x1 x2 = rw_main__L_Main_loop3_6359 s0
+// main.s26
+rw_main_s26 : [8] -> [81] -> [81] -> [106]
+rw_main_s26 x0 x1 x2 = rw_main_loop s0
   where
     s0 : [81]
     s0 = rw_Main_setR0 x1 x0
 
-// main.$L.arm71$6453
-rw_main__L_arm71_6453 : [8] -> [81] -> [106]
-rw_main__L_arm71_6453 x0 x1 = rw_main__L_s70_6451 x0 x1 x1
+// main.arm11
+rw_main_arm11 : [8] -> [81] -> [106]
+rw_main_arm11 x0 x1 = rw_main_s26 x0 x1 x1
 
-// main.$L.s72$6454
-rw_main__L_s72_6454 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s72_6454 x0 x1 x2 = rw_main__L_Main_loop3_6359 s0
+// main.s27
+rw_main_s27 : [8] -> [81] -> [81] -> [106]
+rw_main_s27 x0 x1 x2 = rw_main_loop s0
   where
     s0 : [81]
     s0 = rw_Main_setR1 x1 x0
 
-// main.$L.arm73$6456
-rw_main__L_arm73_6456 : [8] -> [81] -> [106]
-rw_main__L_arm73_6456 x0 x1 = rw_main__L_s72_6454 x0 x1 x1
+// main.arm12
+rw_main_arm12 : [8] -> [81] -> [106]
+rw_main_arm12 x0 x1 = rw_main_s27 x0 x1 x1
 
-// main.$L.s74$6457
-rw_main__L_s74_6457 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s74_6457 x0 x1 x2 = rw_main__L_Main_loop3_6359 s0
+// main.s28
+rw_main_s28 : [8] -> [81] -> [81] -> [106]
+rw_main_s28 x0 x1 x2 = rw_main_loop s0
   where
     s0 : [81]
     s0 = rw_Main_setR2 x1 x0
 
-// main.$L.arm75$6459
-rw_main__L_arm75_6459 : [8] -> [81] -> [106]
-rw_main__L_arm75_6459 x0 x1 = rw_main__L_s74_6457 x0 x1 x1
+// main.arm13
+rw_main_arm13 : [8] -> [81] -> [106]
+rw_main_arm13 x0 x1 = rw_main_s28 x0 x1 x1
 
-// main.$L.s76$6460
-rw_main__L_s76_6460 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s76_6460 x0 x1 x2 = rw_main__L_Main_loop3_6359 s0
+// main.s29
+rw_main_s29 : [8] -> [81] -> [81] -> [106]
+rw_main_s29 x0 x1 x2 = rw_main_loop s0
   where
     s0 : [81]
     s0 = rw_Main_setR3 x1 x0
 
-// main.$L.arm77$6462
-rw_main__L_arm77_6462 : [8] -> [81] -> [106]
-rw_main__L_arm77_6462 x0 x1 = rw_main__L_s76_6460 x0 x1 x1
+// main.arm14
+rw_main_arm14 : [8] -> [81] -> [106]
+rw_main_arm14 x0 x1 = rw_main_s29 x0 x1 x1
 
-// main.$L.v69$6450
-rw_main__L_v69_6450 : [1] -> [1] -> [8] -> [81] -> [106]
-rw_main__L_v69_6450 x0 x1 x2 x3 = if s0 == 0b00 then (rw_main__L_arm71_6453 x2 x3) else (if s0 == 0b01 then (rw_main__L_arm73_6456 x2 x3) else (if s0 == 0b10 then (rw_main__L_arm75_6459 x2 x3) else (rw_main__L_arm77_6462 x2 x3)))
+// main.v
+rw_main_v : [1] -> [1] -> [8] -> [81] -> [106]
+rw_main_v x0 x1 x2 x3 = if s0 == 0b00 then (rw_main_arm11 x2 x3) else (if s0 == 0b01 then (rw_main_arm12 x2 x3) else (if s0 == 0b10 then (rw_main_arm13 x2 x3) else (rw_main_arm14 x2 x3)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
 
-// main.$L.i78$6463
-rw_main__L_i78_6463 : [1] -> [1] -> [10] -> [81] -> [106]
-rw_main__L_i78_6463 x0 x1 x2 x3 = rw_main__L_v69_6450 x0 x1 s0 x3
+// main.i5
+rw_main_i5 : [1] -> [1] -> [10] -> [81] -> [106]
+rw_main_i5 x0 x1 x2 x3 = rw_main_v x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_dataIn x2
 
-// main.$L.s79$6464
-rw_main__L_s79_6464 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s79_6464 x0 x1 x2 x3 = rw_main__L_i78_6463 x0 x1 s0 x3
+// main.s30
+rw_main_s30 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s30 x0 x1 x2 x3 = rw_main_i5 x0 x1 s0 x3
   where
     s0 : [10]
     s0 = rw_Main_inputs x2
 
-// main.$L._unused68$6449
-rw_main__L__unused68_6449 : [1] -> [1] -> [81] -> [106]
-rw_main__L__unused68_6449 x0 x1 x2 = rw_main__L_s79_6464 x0 x1 x2 x2
+// main._unused12
+rw_main__unused12 : [1] -> [1] -> [81] -> [106]
+rw_main__unused12 x0 x1 x2 = rw_main_s30 x0 x1 x2 x2
 
-// main.$L.s82$6468
-rw_main__L_s82_6468 : [1] -> [1] -> [10] -> [81] -> [81] -> [106]
-rw_main__L_s82_6468 x0 x1 x2 x3 x4 = rw_main__L__unused68_6449 x0 x1 s0
+// main.s31
+rw_main_s31 : [1] -> [1] -> [10] -> [81] -> [81] -> [106]
+rw_main_s31 x0 x1 x2 x3 x4 = rw_main__unused12 x0 x1 s0
   where
     s0 : [81]
     s0 = rw_Main_setInputs x3 x2
 
-// main.$L.i81$6467
-rw_main__L_i81_6467 : [1] -> [1] -> [10] -> [81] -> [106]
-rw_main__L_i81_6467 x0 x1 x2 x3 = rw_main__L_s82_6468 x0 x1 x2 x3 x3
+// main.i6
+rw_main_i6 : [1] -> [1] -> [10] -> [81] -> [106]
+rw_main_i6 x0 x1 x2 x3 = rw_main_s31 x0 x1 x2 x3 x3
 
-// main.$L.o80$6466
-rw_main__L_o80_6466 : [1] -> [1] -> [18] -> [81] -> [106]
-rw_main__L_o80_6466 x0 x1 x2 x3 = x2 # (0b01000 # (x0 # (x1 # x3)))
+// main.o7
+rw_main_o7 : [1] -> [1] -> [18] -> [81] -> [106]
+rw_main_o7 x0 x1 x2 x3 = x2 # (0b01000 # (x0 # (x1 # x3)))
 
-// main.$L.s83$6470
-rw_main__L_s83_6470 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s83_6470 x0 x1 x2 x3 = rw_main__L_o80_6466 x0 x1 s0 x3
+// main.s32
+rw_main_s32 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s32 x0 x1 x2 x3 = rw_main_o7 x0 x1 s0 x3
   where
     s0 : [18]
     s0 = rw_Main_outputs x2
 
-// main.$L._unused67$6448
-rw_main__L__unused67_6448 : [1] -> [1] -> [81] -> [106]
-rw_main__L__unused67_6448 x0 x1 x2 = rw_main__L_s83_6470 x0 x1 x2 x2
+// main._unused11
+rw_main__unused11 : [1] -> [1] -> [81] -> [106]
+rw_main__unused11 x0 x1 x2 = rw_main_s32 x0 x1 x2 x2
 
-// main.$L.s85$6473
-rw_main__L_s85_6473 : [1] -> [1] -> [8] -> [18] -> [81] -> [81] -> [106]
-rw_main__L_s85_6473 x0 x1 x2 x3 x4 x5 = rw_main__L__unused67_6448 x0 x1 s1
+// main.s33
+rw_main_s33 : [1] -> [1] -> [8] -> [18] -> [81] -> [81] -> [106]
+rw_main_s33 x0 x1 x2 x3 x4 x5 = rw_main__unused11 x0 x1 s1
   where
     s0 : [18]
     s0 = rw_Main_setAddrOut x3 x2
     s1 : [81]
     s1 = rw_Main_setOutputs x4 s0
 
-// main.$L.o84$6472
-rw_main__L_o84_6472 : [1] -> [1] -> [8] -> [18] -> [81] -> [106]
-rw_main__L_o84_6472 x0 x1 x2 x3 x4 = rw_main__L_s85_6473 x0 x1 x2 x3 x4 x4
+// main.o8
+rw_main_o8 : [1] -> [1] -> [8] -> [18] -> [81] -> [106]
+rw_main_o8 x0 x1 x2 x3 x4 = rw_main_s33 x0 x1 x2 x3 x4 x4
 
-// main.$L.s86$6475
-rw_main__L_s86_6475 : [1] -> [1] -> [8] -> [81] -> [81] -> [106]
-rw_main__L_s86_6475 x0 x1 x2 x3 x4 = rw_main__L_o84_6472 x0 x1 x2 s0 x4
+// main.s34
+rw_main_s34 : [1] -> [1] -> [8] -> [81] -> [81] -> [106]
+rw_main_s34 x0 x1 x2 x3 x4 = rw_main_o8 x0 x1 x2 s0 x4
   where
     s0 : [18]
     s0 = rw_Main_outputs x3
 
-// main.$L._unused66$6447
-rw_main__L__unused66_6447 : [1] -> [1] -> [8] -> [81] -> [106]
-rw_main__L__unused66_6447 x0 x1 x2 x3 = rw_main__L_s86_6475 x0 x1 x2 x3 x3
+// main._unused10
+rw_main__unused10 : [1] -> [1] -> [8] -> [81] -> [106]
+rw_main__unused10 x0 x1 x2 x3 = rw_main_s34 x0 x1 x2 x3 x3
 
-// main.$L.s88$6478
-rw_main__L_s88_6478 : [1] -> [1] -> [8] -> [18] -> [81] -> [81] -> [106]
-rw_main__L_s88_6478 x0 x1 x2 x3 x4 x5 = rw_main__L__unused66_6447 x0 x1 x2 s1
+// main.s35
+rw_main_s35 : [1] -> [1] -> [8] -> [18] -> [81] -> [81] -> [106]
+rw_main_s35 x0 x1 x2 x3 x4 x5 = rw_main__unused10 x0 x1 x2 s1
   where
     s0 : [18]
     s0 = rw_Main_setWeOut x3 0b0
     s1 : [81]
     s1 = rw_Main_setOutputs x4 s0
 
-// main.$L.o87$6477
-rw_main__L_o87_6477 : [1] -> [1] -> [8] -> [18] -> [81] -> [106]
-rw_main__L_o87_6477 x0 x1 x2 x3 x4 = rw_main__L_s88_6478 x0 x1 x2 x3 x4 x4
+// main.o9
+rw_main_o9 : [1] -> [1] -> [8] -> [18] -> [81] -> [106]
+rw_main_o9 x0 x1 x2 x3 x4 = rw_main_s35 x0 x1 x2 x3 x4 x4
 
-// main.$L.s89$6480
-rw_main__L_s89_6480 : [1] -> [1] -> [8] -> [81] -> [81] -> [106]
-rw_main__L_s89_6480 x0 x1 x2 x3 x4 = rw_main__L_o87_6477 x0 x1 x2 s0 x4
+// main.s36
+rw_main_s36 : [1] -> [1] -> [8] -> [81] -> [81] -> [106]
+rw_main_s36 x0 x1 x2 x3 x4 = rw_main_o9 x0 x1 x2 s0 x4
   where
     s0 : [18]
     s0 = rw_Main_outputs x3
 
-// main.$L.a65$6446
-rw_main__L_a65_6446 : [1] -> [1] -> [8] -> [81] -> [106]
-rw_main__L_a65_6446 x0 x1 x2 x3 = rw_main__L_s89_6480 x0 x1 x2 x3 x3
+// main.a2
+rw_main_a2 : [1] -> [1] -> [8] -> [81] -> [106]
+rw_main_a2 x0 x1 x2 x3 = rw_main_s36 x0 x1 x2 x3 x3
 
-// main.$L.s90$6482
-rw_main__L_s90_6482 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s90_6482 x0 x1 x2 x3 = rw_main__L_a65_6446 x0 x1 s0 x3
+// main.s37
+rw_main_s37 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s37 x0 x1 x2 x3 = rw_main_a2 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r0 x2
 
-// main.$L.arm91$6484
-rw_main__L_arm91_6484 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm91_6484 x0 x1 x2 = rw_main__L_s90_6482 x0 x1 x2 x2
+// main.arm15
+rw_main_arm15 : [1] -> [1] -> [81] -> [106]
+rw_main_arm15 x0 x1 x2 = rw_main_s37 x0 x1 x2 x2
 
-// main.$L.s92$6485
-rw_main__L_s92_6485 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s92_6485 x0 x1 x2 x3 = rw_main__L_a65_6446 x0 x1 s0 x3
+// main.s38
+rw_main_s38 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s38 x0 x1 x2 x3 = rw_main_a2 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r1 x2
 
-// main.$L.arm93$6487
-rw_main__L_arm93_6487 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm93_6487 x0 x1 x2 = rw_main__L_s92_6485 x0 x1 x2 x2
+// main.arm16
+rw_main_arm16 : [1] -> [1] -> [81] -> [106]
+rw_main_arm16 x0 x1 x2 = rw_main_s38 x0 x1 x2 x2
 
-// main.$L.s94$6488
-rw_main__L_s94_6488 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s94_6488 x0 x1 x2 x3 = rw_main__L_a65_6446 x0 x1 s0 x3
+// main.s39
+rw_main_s39 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s39 x0 x1 x2 x3 = rw_main_a2 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r2 x2
 
-// main.$L.arm95$6490
-rw_main__L_arm95_6490 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm95_6490 x0 x1 x2 = rw_main__L_s94_6488 x0 x1 x2 x2
+// main.arm17
+rw_main_arm17 : [1] -> [1] -> [81] -> [106]
+rw_main_arm17 x0 x1 x2 = rw_main_s39 x0 x1 x2 x2
 
-// main.$L.s96$6491
-rw_main__L_s96_6491 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s96_6491 x0 x1 x2 x3 = rw_main__L_a65_6446 x0 x1 s0 x3
+// main.s40
+rw_main_s40 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s40 x0 x1 x2 x3 = rw_main_a2 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r3 x2
 
-// main.$L.arm97$6493
-rw_main__L_arm97_6493 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm97_6493 x0 x1 x2 = rw_main__L_s96_6491 x0 x1 x2 x2
+// main.arm18
+rw_main_arm18 : [1] -> [1] -> [81] -> [106]
+rw_main_arm18 x0 x1 x2 = rw_main_s40 x0 x1 x2 x2
 
-// main.$L.arm98$6494
-rw_main__L_arm98_6494 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_arm98_6494 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main__L_arm91_6484 x0 x1 x4) else (if s0 == 0b01 then (rw_main__L_arm93_6487 x0 x1 x4) else (if s0 == 0b10 then (rw_main__L_arm95_6490 x0 x1 x4) else (rw_main__L_arm97_6493 x0 x1 x4)))
+// main.arm19
+rw_main_arm19 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_arm19 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main_arm15 x0 x1 x4) else (if s0 == 0b01 then (rw_main_arm16 x0 x1 x4) else (if s0 == 0b10 then (rw_main_arm17 x0 x1 x4) else (rw_main_arm18 x0 x1 x4)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x2 x3
 
-// main.$L.s106$6502
-rw_main__L_s106_6502 : [10] -> [81] -> [81] -> [106]
-rw_main__L_s106_6502 x0 x1 x2 = rw_main__L_Main_loop3_6359 s0
+// main.s41
+rw_main_s41 : [10] -> [81] -> [81] -> [106]
+rw_main_s41 x0 x1 x2 = rw_main_loop s0
   where
     s0 : [81]
     s0 = rw_Main_setInputs x1 x0
 
-// main.$L.i105$6501
-rw_main__L_i105_6501 : [10] -> [81] -> [106]
-rw_main__L_i105_6501 x0 x1 = rw_main__L_s106_6502 x0 x1 x1
+// main.i7
+rw_main_i7 : [10] -> [81] -> [106]
+rw_main_i7 x0 x1 = rw_main_s41 x0 x1 x1
 
-// main.$L.o104$6500
-rw_main__L_o104_6500 : [18] -> [81] -> [106]
-rw_main__L_o104_6500 x0 x1 = x0 # (0b0110000 # x1)
+// main.o10
+rw_main_o10 : [18] -> [81] -> [106]
+rw_main_o10 x0 x1 = x0 # (0b0110000 # x1)
 
-// main.$L.s107$6504
-rw_main__L_s107_6504 : [81] -> [81] -> [106]
-rw_main__L_s107_6504 x0 x1 = rw_main__L_o104_6500 s0 x1
+// main.s42
+rw_main_s42 : [81] -> [81] -> [106]
+rw_main_s42 x0 x1 = rw_main_o10 s0 x1
   where
     s0 : [18]
     s0 = rw_Main_outputs x0
 
-// main.$L._unused103$6499
-rw_main__L__unused103_6499 : [81] -> [106]
-rw_main__L__unused103_6499 x0 = rw_main__L_s107_6504 x0 x0
-
-// main.$L.s109$6507
-rw_main__L_s109_6507 : [8] -> [18] -> [81] -> [81] -> [106]
-rw_main__L_s109_6507 x0 x1 x2 x3 = rw_main__L__unused103_6499 s1
+// main.s43
+rw_main_s43 : [8] -> [18] -> [81] -> [81] -> [106]
+rw_main_s43 x0 x1 x2 x3 = rw_main_zzz s1
   where
     s0 : [18]
     s0 = rw_Main_setAddrOut x1 x0
     s1 : [81]
     s1 = rw_Main_setOutputs x2 s0
 
-// main.$L.o108$6506
-rw_main__L_o108_6506 : [8] -> [18] -> [81] -> [106]
-rw_main__L_o108_6506 x0 x1 x2 = rw_main__L_s109_6507 x0 x1 x2 x2
+// main.o11
+rw_main_o11 : [8] -> [18] -> [81] -> [106]
+rw_main_o11 x0 x1 x2 = rw_main_s43 x0 x1 x2 x2
 
-// main.$L.s110$6509
-rw_main__L_s110_6509 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s110_6509 x0 x1 x2 = rw_main__L_o108_6506 x0 s0 x2
+// main.s44
+rw_main_s44 : [8] -> [81] -> [81] -> [106]
+rw_main_s44 x0 x1 x2 = rw_main_o11 x0 s0 x2
   where
     s0 : [18]
     s0 = rw_Main_outputs x1
 
-// main.$L._unused102$6498
-rw_main__L__unused102_6498 : [8] -> [81] -> [106]
-rw_main__L__unused102_6498 x0 x1 = rw_main__L_s110_6509 x0 x1 x1
+// main._unused14
+rw_main__unused14 : [8] -> [81] -> [106]
+rw_main__unused14 x0 x1 = rw_main_s44 x0 x1 x1
 
-// main.$L.s112$6512
-rw_main__L_s112_6512 : [8] -> [8] -> [18] -> [81] -> [81] -> [106]
-rw_main__L_s112_6512 x0 x1 x2 x3 x4 = rw_main__L__unused102_6498 x0 s1
+// main.s45
+rw_main_s45 : [8] -> [8] -> [18] -> [81] -> [81] -> [106]
+rw_main_s45 x0 x1 x2 x3 x4 = rw_main__unused14 x0 s1
   where
     s0 : [18]
     s0 = rw_Main_setDataOut x2 x1
     s1 : [81]
     s1 = rw_Main_setOutputs x3 s0
 
-// main.$L.o111$6511
-rw_main__L_o111_6511 : [8] -> [8] -> [18] -> [81] -> [106]
-rw_main__L_o111_6511 x0 x1 x2 x3 = rw_main__L_s112_6512 x0 x1 x2 x3 x3
+// main.o12
+rw_main_o12 : [8] -> [8] -> [18] -> [81] -> [106]
+rw_main_o12 x0 x1 x2 x3 = rw_main_s45 x0 x1 x2 x3 x3
 
-// main.$L.s113$6514
-rw_main__L_s113_6514 : [8] -> [8] -> [81] -> [81] -> [106]
-rw_main__L_s113_6514 x0 x1 x2 x3 = rw_main__L_o111_6511 x0 x1 s0 x3
+// main.s46
+rw_main_s46 : [8] -> [8] -> [81] -> [81] -> [106]
+rw_main_s46 x0 x1 x2 x3 = rw_main_o12 x0 x1 s0 x3
   where
     s0 : [18]
     s0 = rw_Main_outputs x2
 
-// main.$L._unused101$6497
-rw_main__L__unused101_6497 : [8] -> [8] -> [81] -> [106]
-rw_main__L__unused101_6497 x0 x1 x2 = rw_main__L_s113_6514 x0 x1 x2 x2
+// main._unused13
+rw_main__unused13 : [8] -> [8] -> [81] -> [106]
+rw_main__unused13 x0 x1 x2 = rw_main_s46 x0 x1 x2 x2
 
-// main.$L.s115$6517
-rw_main__L_s115_6517 : [8] -> [8] -> [18] -> [81] -> [81] -> [106]
-rw_main__L_s115_6517 x0 x1 x2 x3 x4 = rw_main__L__unused101_6497 x0 x1 s1
+// main.s47
+rw_main_s47 : [8] -> [8] -> [18] -> [81] -> [81] -> [106]
+rw_main_s47 x0 x1 x2 x3 x4 = rw_main__unused13 x0 x1 s1
   where
     s0 : [18]
     s0 = rw_Main_setWeOut x2 0b1
     s1 : [81]
     s1 = rw_Main_setOutputs x3 s0
 
-// main.$L.o114$6516
-rw_main__L_o114_6516 : [8] -> [8] -> [18] -> [81] -> [106]
-rw_main__L_o114_6516 x0 x1 x2 x3 = rw_main__L_s115_6517 x0 x1 x2 x3 x3
+// main.o13
+rw_main_o13 : [8] -> [8] -> [18] -> [81] -> [106]
+rw_main_o13 x0 x1 x2 x3 = rw_main_s47 x0 x1 x2 x3 x3
 
-// main.$L.s116$6519
-rw_main__L_s116_6519 : [8] -> [8] -> [81] -> [81] -> [106]
-rw_main__L_s116_6519 x0 x1 x2 x3 = rw_main__L_o114_6516 x0 x1 s0 x3
+// main.s48
+rw_main_s48 : [8] -> [8] -> [81] -> [81] -> [106]
+rw_main_s48 x0 x1 x2 x3 = rw_main_o13 x0 x1 s0 x3
   where
     s0 : [18]
     s0 = rw_Main_outputs x2
 
-// main.$L.v100$6496
-rw_main__L_v100_6496 : [8] -> [8] -> [81] -> [106]
-rw_main__L_v100_6496 x0 x1 x2 = rw_main__L_s116_6519 x0 x1 x2 x2
+// main.v2
+rw_main_v2 : [8] -> [8] -> [81] -> [106]
+rw_main_v2 x0 x1 x2 = rw_main_s48 x0 x1 x2 x2
 
-// main.$L.s117$6521
-rw_main__L_s117_6521 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s117_6521 x0 x1 x2 = rw_main__L_v100_6496 x0 s0 x2
+// main.s49
+rw_main_s49 : [8] -> [81] -> [81] -> [106]
+rw_main_s49 x0 x1 x2 = rw_main_v2 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r0 x1
 
-// main.$L.arm118$6523
-rw_main__L_arm118_6523 : [8] -> [81] -> [106]
-rw_main__L_arm118_6523 x0 x1 = rw_main__L_s117_6521 x0 x1 x1
+// main.arm20
+rw_main_arm20 : [8] -> [81] -> [106]
+rw_main_arm20 x0 x1 = rw_main_s49 x0 x1 x1
 
-// main.$L.s119$6524
-rw_main__L_s119_6524 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s119_6524 x0 x1 x2 = rw_main__L_v100_6496 x0 s0 x2
+// main.s50
+rw_main_s50 : [8] -> [81] -> [81] -> [106]
+rw_main_s50 x0 x1 x2 = rw_main_v2 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r1 x1
 
-// main.$L.arm120$6526
-rw_main__L_arm120_6526 : [8] -> [81] -> [106]
-rw_main__L_arm120_6526 x0 x1 = rw_main__L_s119_6524 x0 x1 x1
+// main.arm21
+rw_main_arm21 : [8] -> [81] -> [106]
+rw_main_arm21 x0 x1 = rw_main_s50 x0 x1 x1
 
-// main.$L.s121$6527
-rw_main__L_s121_6527 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s121_6527 x0 x1 x2 = rw_main__L_v100_6496 x0 s0 x2
+// main.s51
+rw_main_s51 : [8] -> [81] -> [81] -> [106]
+rw_main_s51 x0 x1 x2 = rw_main_v2 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r2 x1
 
-// main.$L.arm122$6529
-rw_main__L_arm122_6529 : [8] -> [81] -> [106]
-rw_main__L_arm122_6529 x0 x1 = rw_main__L_s121_6527 x0 x1 x1
+// main.arm22
+rw_main_arm22 : [8] -> [81] -> [106]
+rw_main_arm22 x0 x1 = rw_main_s51 x0 x1 x1
 
-// main.$L.s123$6530
-rw_main__L_s123_6530 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s123_6530 x0 x1 x2 = rw_main__L_v100_6496 x0 s0 x2
+// main.s52
+rw_main_s52 : [8] -> [81] -> [81] -> [106]
+rw_main_s52 x0 x1 x2 = rw_main_v2 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r3 x1
 
-// main.$L.arm124$6532
-rw_main__L_arm124_6532 : [8] -> [81] -> [106]
-rw_main__L_arm124_6532 x0 x1 = rw_main__L_s123_6530 x0 x1 x1
+// main.arm23
+rw_main_arm23 : [8] -> [81] -> [106]
+rw_main_arm23 x0 x1 = rw_main_s52 x0 x1 x1
 
-// main.$L.a99$6495
-rw_main__L_a99_6495 : [1] -> [1] -> [8] -> [81] -> [106]
-rw_main__L_a99_6495 x0 x1 x2 x3 = if s0 == 0b00 then (rw_main__L_arm118_6523 x2 x3) else (if s0 == 0b01 then (rw_main__L_arm120_6526 x2 x3) else (if s0 == 0b10 then (rw_main__L_arm122_6529 x2 x3) else (rw_main__L_arm124_6532 x2 x3)))
+// main.a3
+rw_main_a3 : [1] -> [1] -> [8] -> [81] -> [106]
+rw_main_a3 x0 x1 x2 x3 = if s0 == 0b00 then (rw_main_arm20 x2 x3) else (if s0 == 0b01 then (rw_main_arm21 x2 x3) else (if s0 == 0b10 then (rw_main_arm22 x2 x3) else (rw_main_arm23 x2 x3)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
 
-// main.$L.s125$6533
-rw_main__L_s125_6533 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s125_6533 x0 x1 x2 x3 = rw_main__L_a99_6495 x0 x1 s0 x3
+// main.s53
+rw_main_s53 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s53 x0 x1 x2 x3 = rw_main_a3 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r0 x2
 
-// main.$L.arm126$6535
-rw_main__L_arm126_6535 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm126_6535 x0 x1 x2 = rw_main__L_s125_6533 x0 x1 x2 x2
+// main.arm24
+rw_main_arm24 : [1] -> [1] -> [81] -> [106]
+rw_main_arm24 x0 x1 x2 = rw_main_s53 x0 x1 x2 x2
 
-// main.$L.s127$6536
-rw_main__L_s127_6536 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s127_6536 x0 x1 x2 x3 = rw_main__L_a99_6495 x0 x1 s0 x3
+// main.s54
+rw_main_s54 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s54 x0 x1 x2 x3 = rw_main_a3 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r1 x2
 
-// main.$L.arm128$6538
-rw_main__L_arm128_6538 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm128_6538 x0 x1 x2 = rw_main__L_s127_6536 x0 x1 x2 x2
+// main.arm25
+rw_main_arm25 : [1] -> [1] -> [81] -> [106]
+rw_main_arm25 x0 x1 x2 = rw_main_s54 x0 x1 x2 x2
 
-// main.$L.s129$6539
-rw_main__L_s129_6539 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s129_6539 x0 x1 x2 x3 = rw_main__L_a99_6495 x0 x1 s0 x3
+// main.s55
+rw_main_s55 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s55 x0 x1 x2 x3 = rw_main_a3 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r2 x2
 
-// main.$L.arm130$6541
-rw_main__L_arm130_6541 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm130_6541 x0 x1 x2 = rw_main__L_s129_6539 x0 x1 x2 x2
+// main.arm26
+rw_main_arm26 : [1] -> [1] -> [81] -> [106]
+rw_main_arm26 x0 x1 x2 = rw_main_s55 x0 x1 x2 x2
 
-// main.$L.s131$6542
-rw_main__L_s131_6542 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s131_6542 x0 x1 x2 x3 = rw_main__L_a99_6495 x0 x1 s0 x3
+// main.s56
+rw_main_s56 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s56 x0 x1 x2 x3 = rw_main_a3 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r3 x2
 
-// main.$L.arm132$6544
-rw_main__L_arm132_6544 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm132_6544 x0 x1 x2 = rw_main__L_s131_6542 x0 x1 x2 x2
+// main.arm27
+rw_main_arm27 : [1] -> [1] -> [81] -> [106]
+rw_main_arm27 x0 x1 x2 = rw_main_s56 x0 x1 x2 x2
 
-// main.$L.arm133$6545
-rw_main__L_arm133_6545 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_arm133_6545 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main__L_arm126_6535 x0 x1 x4) else (if s0 == 0b01 then (rw_main__L_arm128_6538 x0 x1 x4) else (if s0 == 0b10 then (rw_main__L_arm130_6541 x0 x1 x4) else (rw_main__L_arm132_6544 x0 x1 x4)))
+// main.arm28
+rw_main_arm28 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_arm28 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main_arm24 x0 x1 x4) else (if s0 == 0b01 then (rw_main_arm25 x0 x1 x4) else (if s0 == 0b10 then (rw_main_arm26 x0 x1 x4) else (rw_main_arm27 x0 x1 x4)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x2 x3
 
-// main.$L.s140$6552
-rw_main__L_s140_6552 : [10] -> [81] -> [81] -> [106]
-rw_main__L_s140_6552 x0 x1 x2 = rw_main__L_Main_loop3_6359 s0
+// main.s57
+rw_main_s57 : [10] -> [81] -> [81] -> [106]
+rw_main_s57 x0 x1 x2 = rw_main_loop s0
   where
     s0 : [81]
     s0 = rw_Main_setInputs x1 x0
 
-// main.$L.i139$6551
-rw_main__L_i139_6551 : [10] -> [81] -> [106]
-rw_main__L_i139_6551 x0 x1 = rw_main__L_s140_6552 x0 x1 x1
+// main.i8
+rw_main_i8 : [10] -> [81] -> [106]
+rw_main_i8 x0 x1 = rw_main_s57 x0 x1 x1
 
-// main.$L.o138$6550
-rw_main__L_o138_6550 : [18] -> [81] -> [106]
-rw_main__L_o138_6550 x0 x1 = x0 # (0b1000000 # x1)
+// main.o14
+rw_main_o14 : [18] -> [81] -> [106]
+rw_main_o14 x0 x1 = x0 # (0b1000000 # x1)
 
-// main.$L._unused137$6549
-rw_main__L__unused137_6549 : [81] -> [106]
-rw_main__L__unused137_6549 x0 = rw_main__L_o138_6550 (rw_Main_outputs x0) x0
+// main._unused17
+rw_main__unused17 : [81] -> [106]
+rw_main__unused17 x0 = rw_main_o14 (rw_Main_outputs x0) x0
 
-// main.$L.s142$6556
-rw_main__L_s142_6556 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s142_6556 x0 x1 x2 = rw_main__L__unused137_6549 s0
+// main.s59
+rw_main_s59 : [8] -> [81] -> [81] -> [106]
+rw_main_s59 x0 x1 x2 = rw_main__unused17 s0
   where
     s0 : [81]
     s0 = rw_Main_setR0 x1 x0
 
-// main.$L.arm143$6558
-rw_main__L_arm143_6558 : [8] -> [81] -> [106]
-rw_main__L_arm143_6558 x0 x1 = rw_main__L_s142_6556 x0 x1 x1
+// main.arm29
+rw_main_arm29 : [8] -> [81] -> [106]
+rw_main_arm29 x0 x1 = rw_main_s59 x0 x1 x1
 
-// main.$L.s144$6559
-rw_main__L_s144_6559 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s144_6559 x0 x1 x2 = rw_main__L__unused137_6549 s0
+// main.s60
+rw_main_s60 : [8] -> [81] -> [81] -> [106]
+rw_main_s60 x0 x1 x2 = rw_main__unused17 s0
   where
     s0 : [81]
     s0 = rw_Main_setR1 x1 x0
 
-// main.$L.arm145$6561
-rw_main__L_arm145_6561 : [8] -> [81] -> [106]
-rw_main__L_arm145_6561 x0 x1 = rw_main__L_s144_6559 x0 x1 x1
+// main.arm30
+rw_main_arm30 : [8] -> [81] -> [106]
+rw_main_arm30 x0 x1 = rw_main_s60 x0 x1 x1
 
-// main.$L.s146$6562
-rw_main__L_s146_6562 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s146_6562 x0 x1 x2 = rw_main__L__unused137_6549 s0
+// main.s61
+rw_main_s61 : [8] -> [81] -> [81] -> [106]
+rw_main_s61 x0 x1 x2 = rw_main__unused17 s0
   where
     s0 : [81]
     s0 = rw_Main_setR2 x1 x0
 
-// main.$L.arm147$6564
-rw_main__L_arm147_6564 : [8] -> [81] -> [106]
-rw_main__L_arm147_6564 x0 x1 = rw_main__L_s146_6562 x0 x1 x1
+// main.arm31
+rw_main_arm31 : [8] -> [81] -> [106]
+rw_main_arm31 x0 x1 = rw_main_s61 x0 x1 x1
 
-// main.$L.s148$6565
-rw_main__L_s148_6565 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s148_6565 x0 x1 x2 = rw_main__L__unused137_6549 s0
+// main.s62
+rw_main_s62 : [8] -> [81] -> [81] -> [106]
+rw_main_s62 x0 x1 x2 = rw_main__unused17 s0
   where
     s0 : [81]
     s0 = rw_Main_setR3 x1 x0
 
-// main.$L.arm149$6567
-rw_main__L_arm149_6567 : [8] -> [81] -> [106]
-rw_main__L_arm149_6567 x0 x1 = rw_main__L_s148_6565 x0 x1 x1
+// main.arm32
+rw_main_arm32 : [8] -> [81] -> [106]
+rw_main_arm32 x0 x1 = rw_main_s62 x0 x1 x1
 
-// main.$L._unused136$6548
-rw_main__L__unused136_6548 : [2] -> [9] -> [81] -> [106]
-rw_main__L__unused136_6548 x0 x1 x2 = if x0 == 0b00 then (rw_main__L_arm143_6558 s1 x2) else (if x0 == 0b01 then (rw_main__L_arm145_6561 s1 x2) else (if x0 == 0b10 then (rw_main__L_arm147_6564 s1 x2) else (rw_main__L_arm149_6567 s1 x2)))
+// main._unused16
+rw_main__unused16 : [2] -> [9] -> [81] -> [106]
+rw_main__unused16 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm29 s1 x2) else (if x0 == 0b01 then (rw_main_arm30 s1 x2) else (if x0 == 0b10 then (rw_main_arm31 s1 x2) else (rw_main_arm32 s1 x2)))
   where
     s0 : [8]
     s0 = drop`{1} x1
     s1 : [8]
     s1 = s0
 
-// main.$L.s150$6568
-rw_main__L_s150_6568 : [2] -> [9] -> [81] -> [81] -> [106]
-rw_main__L_s150_6568 x0 x1 x2 x3 = rw_main__L__unused136_6548 x0 x1 s1
+// main.s63
+rw_main_s63 : [2] -> [9] -> [81] -> [81] -> [106]
+rw_main_s63 x0 x1 x2 x3 = rw_main__unused16 x0 x1 s1
   where
     s0 : [1]
     s0 = take`{1} x1
     s1 : [81]
     s1 = rw_Main_setCFlag x2 s0
 
-// main.$L.vS135$6547
-rw_main__L_vS135_6547 : [2] -> [8] -> [8] -> [81] -> [106]
-rw_main__L_vS135_6547 x0 x1 x2 x3 = rw_main__L_s150_6568 x0 s0 x3 x3
+// main.vS
+rw_main_vS : [2] -> [8] -> [8] -> [81] -> [106]
+rw_main_vS x0 x1 x2 x3 = rw_main_s63 x0 s0 x3 x3
   where
     s0 : [9]
-    s0 = rw_Main_plusCW8_s2 x1 x2
+    s0 = rw_Main_plusCW8_sFalse_Bool x1 x2
 
-// main.$L.arm152$6572
-rw_main__L_arm152_6572 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm152_6572 x0 x1 x2 = rw_main__L_vS135_6547 x0 x1 (rw_Main_r0 x2) x2
+// main.arm33
+rw_main_arm33 : [2] -> [8] -> [81] -> [106]
+rw_main_arm33 x0 x1 x2 = rw_main_vS x0 x1 (rw_Main_r0 x2) x2
 
-// main.$L.arm154$6575
-rw_main__L_arm154_6575 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm154_6575 x0 x1 x2 = rw_main__L_vS135_6547 x0 x1 (rw_Main_r1 x2) x2
+// main.arm34
+rw_main_arm34 : [2] -> [8] -> [81] -> [106]
+rw_main_arm34 x0 x1 x2 = rw_main_vS x0 x1 (rw_Main_r1 x2) x2
 
-// main.$L.arm156$6578
-rw_main__L_arm156_6578 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm156_6578 x0 x1 x2 = rw_main__L_vS135_6547 x0 x1 (rw_Main_r2 x2) x2
+// main.arm35
+rw_main_arm35 : [2] -> [8] -> [81] -> [106]
+rw_main_arm35 x0 x1 x2 = rw_main_vS x0 x1 (rw_Main_r2 x2) x2
 
-// main.$L.arm158$6581
-rw_main__L_arm158_6581 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm158_6581 x0 x1 x2 = rw_main__L_vS135_6547 x0 x1 (rw_Main_r3 x2) x2
+// main.arm36
+rw_main_arm36 : [2] -> [8] -> [81] -> [106]
+rw_main_arm36 x0 x1 x2 = rw_main_vS x0 x1 (rw_Main_r3 x2) x2
 
-// main.$L.vD134$6546
-rw_main__L_vD134_6546 : [2] -> [2] -> [8] -> [81] -> [106]
-rw_main__L_vD134_6546 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main__L_arm152_6572 x0 x2 x3) else (if x1 == 0b01 then (rw_main__L_arm154_6575 x0 x2 x3) else (if x1 == 0b10 then (rw_main__L_arm156_6578 x0 x2 x3) else (rw_main__L_arm158_6581 x0 x2 x3)))
+// main.vD
+rw_main_vD : [2] -> [2] -> [8] -> [81] -> [106]
+rw_main_vD x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_arm33 x0 x2 x3) else (if x1 == 0b01 then (rw_main_arm34 x0 x2 x3) else (if x1 == 0b10 then (rw_main_arm35 x0 x2 x3) else (rw_main_arm36 x0 x2 x3)))
 
-// main.$L.arm160$6584
-rw_main__L_arm160_6584 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm160_6584 x0 x1 x2 = rw_main__L_vD134_6546 x0 x1 (rw_Main_r0 x2) x2
+// main.arm37
+rw_main_arm37 : [2] -> [2] -> [81] -> [106]
+rw_main_arm37 x0 x1 x2 = rw_main_vD x0 x1 (rw_Main_r0 x2) x2
 
-// main.$L.arm162$6587
-rw_main__L_arm162_6587 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm162_6587 x0 x1 x2 = rw_main__L_vD134_6546 x0 x1 (rw_Main_r1 x2) x2
+// main.arm38
+rw_main_arm38 : [2] -> [2] -> [81] -> [106]
+rw_main_arm38 x0 x1 x2 = rw_main_vD x0 x1 (rw_Main_r1 x2) x2
 
-// main.$L.arm164$6590
-rw_main__L_arm164_6590 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm164_6590 x0 x1 x2 = rw_main__L_vD134_6546 x0 x1 (rw_Main_r2 x2) x2
+// main.arm39
+rw_main_arm39 : [2] -> [2] -> [81] -> [106]
+rw_main_arm39 x0 x1 x2 = rw_main_vD x0 x1 (rw_Main_r2 x2) x2
 
-// main.$L.arm166$6593
-rw_main__L_arm166_6593 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm166_6593 x0 x1 x2 = rw_main__L_vD134_6546 x0 x1 (rw_Main_r3 x2) x2
+// main.arm40
+rw_main_arm40 : [2] -> [2] -> [81] -> [106]
+rw_main_arm40 x0 x1 x2 = rw_main_vD x0 x1 (rw_Main_r3 x2) x2
 
-// main.$L.arm167$6594
-rw_main__L_arm167_6594 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_arm167_6594 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main__L_arm160_6584 s0 s1 x4) else (if s0 == 0b01 then (rw_main__L_arm162_6587 s0 s1 x4) else (if s0 == 0b10 then (rw_main__L_arm164_6590 s0 s1 x4) else (rw_main__L_arm166_6593 s0 s1 x4)))
+// main.arm41
+rw_main_arm41 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_arm41 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main_arm37 s0 s1 x4) else (if s0 == 0b01 then (rw_main_arm38 s0 s1 x4) else (if s0 == 0b10 then (rw_main_arm39 s0 s1 x4) else (rw_main_arm40 s0 s1 x4)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
     s1 : [2]
     s1 = rw_Main_mkReg x2 x3
 
-// main.$L.cin170$6597
-rw_main__L_cin170_6597 : [2] -> [8] -> [8] -> [1] -> [81] -> [106]
-rw_main__L_cin170_6597 x0 x1 x2 x3 x4 = rw_main__L_s150_6568 x0 s0 x4 x4
+// main.cin
+rw_main_cin : [2] -> [8] -> [8] -> [1] -> [81] -> [106]
+rw_main_cin x0 x1 x2 x3 x4 = rw_main_s63 x0 s0 x4 x4
   where
     s0 : [9]
     s0 = rw_Main_plusCW8 x1 x2 x3
 
-// main.$L.vS169$6596
-rw_main__L_vS169_6596 : [2] -> [8] -> [8] -> [81] -> [106]
-rw_main__L_vS169_6596 x0 x1 x2 x3 = rw_main__L_cin170_6597 x0 x1 x2 (rw_Main_cFlag x3) x3
+// main.vS2
+rw_main_vS2 : [2] -> [8] -> [8] -> [81] -> [106]
+rw_main_vS2 x0 x1 x2 x3 = rw_main_cin x0 x1 x2 (rw_Main_cFlag x3) x3
 
-// main.$L.arm188$6624
-rw_main__L_arm188_6624 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm188_6624 x0 x1 x2 = rw_main__L_vS169_6596 x0 x1 (rw_Main_r0 x2) x2
+// main.arm46
+rw_main_arm46 : [2] -> [8] -> [81] -> [106]
+rw_main_arm46 x0 x1 x2 = rw_main_vS2 x0 x1 (rw_Main_r0 x2) x2
 
-// main.$L.arm190$6627
-rw_main__L_arm190_6627 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm190_6627 x0 x1 x2 = rw_main__L_vS169_6596 x0 x1 (rw_Main_r1 x2) x2
+// main.arm47
+rw_main_arm47 : [2] -> [8] -> [81] -> [106]
+rw_main_arm47 x0 x1 x2 = rw_main_vS2 x0 x1 (rw_Main_r1 x2) x2
 
-// main.$L.arm192$6630
-rw_main__L_arm192_6630 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm192_6630 x0 x1 x2 = rw_main__L_vS169_6596 x0 x1 (rw_Main_r2 x2) x2
+// main.arm48
+rw_main_arm48 : [2] -> [8] -> [81] -> [106]
+rw_main_arm48 x0 x1 x2 = rw_main_vS2 x0 x1 (rw_Main_r2 x2) x2
 
-// main.$L.arm194$6633
-rw_main__L_arm194_6633 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm194_6633 x0 x1 x2 = rw_main__L_vS169_6596 x0 x1 (rw_Main_r3 x2) x2
+// main.arm49
+rw_main_arm49 : [2] -> [8] -> [81] -> [106]
+rw_main_arm49 x0 x1 x2 = rw_main_vS2 x0 x1 (rw_Main_r3 x2) x2
 
-// main.$L.vD168$6595
-rw_main__L_vD168_6595 : [2] -> [2] -> [8] -> [81] -> [106]
-rw_main__L_vD168_6595 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main__L_arm188_6624 x0 x2 x3) else (if x1 == 0b01 then (rw_main__L_arm190_6627 x0 x2 x3) else (if x1 == 0b10 then (rw_main__L_arm192_6630 x0 x2 x3) else (rw_main__L_arm194_6633 x0 x2 x3)))
+// main.vD2
+rw_main_vD2 : [2] -> [2] -> [8] -> [81] -> [106]
+rw_main_vD2 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_arm46 x0 x2 x3) else (if x1 == 0b01 then (rw_main_arm47 x0 x2 x3) else (if x1 == 0b10 then (rw_main_arm48 x0 x2 x3) else (rw_main_arm49 x0 x2 x3)))
 
-// main.$L.arm196$6636
-rw_main__L_arm196_6636 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm196_6636 x0 x1 x2 = rw_main__L_vD168_6595 x0 x1 (rw_Main_r0 x2) x2
+// main.arm50
+rw_main_arm50 : [2] -> [2] -> [81] -> [106]
+rw_main_arm50 x0 x1 x2 = rw_main_vD2 x0 x1 (rw_Main_r0 x2) x2
 
-// main.$L.arm198$6639
-rw_main__L_arm198_6639 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm198_6639 x0 x1 x2 = rw_main__L_vD168_6595 x0 x1 (rw_Main_r1 x2) x2
+// main.arm51
+rw_main_arm51 : [2] -> [2] -> [81] -> [106]
+rw_main_arm51 x0 x1 x2 = rw_main_vD2 x0 x1 (rw_Main_r1 x2) x2
 
-// main.$L.arm200$6642
-rw_main__L_arm200_6642 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm200_6642 x0 x1 x2 = rw_main__L_vD168_6595 x0 x1 (rw_Main_r2 x2) x2
+// main.arm52
+rw_main_arm52 : [2] -> [2] -> [81] -> [106]
+rw_main_arm52 x0 x1 x2 = rw_main_vD2 x0 x1 (rw_Main_r2 x2) x2
 
-// main.$L.arm202$6645
-rw_main__L_arm202_6645 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm202_6645 x0 x1 x2 = rw_main__L_vD168_6595 x0 x1 (rw_Main_r3 x2) x2
+// main.arm53
+rw_main_arm53 : [2] -> [2] -> [81] -> [106]
+rw_main_arm53 x0 x1 x2 = rw_main_vD2 x0 x1 (rw_Main_r3 x2) x2
 
-// main.$L.arm203$6646
-rw_main__L_arm203_6646 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_arm203_6646 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main__L_arm196_6636 s0 s1 x4) else (if s0 == 0b01 then (rw_main__L_arm198_6639 s0 s1 x4) else (if s0 == 0b10 then (rw_main__L_arm200_6642 s0 s1 x4) else (rw_main__L_arm202_6645 s0 s1 x4)))
+// main.arm54
+rw_main_arm54 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_arm54 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main_arm50 s0 s1 x4) else (if s0 == 0b01 then (rw_main_arm51 s0 s1 x4) else (if s0 == 0b10 then (rw_main_arm52 s0 s1 x4) else (rw_main_arm53 s0 s1 x4)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
     s1 : [2]
     s1 = rw_Main_mkReg x2 x3
 
-// main.$L.vS205$6648
-rw_main__L_vS205_6648 : [2] -> [8] -> [8] -> [81] -> [106]
-rw_main__L_vS205_6648 x0 x1 x2 x3 = rw_main__L_s150_6568 x0 s0 x3 x3
+// main.vS3
+rw_main_vS3 : [2] -> [8] -> [8] -> [81] -> [106]
+rw_main_vS3 x0 x1 x2 x3 = rw_main_s63 x0 s0 x3 x3
   where
     s0 : [9]
-    s0 = rw_Main_minusCW8_s1 x1 x2
+    s0 = rw_Main_minusCW8_sFalse_Bool x1 x2
 
-// main.$L.arm222$6673
-rw_main__L_arm222_6673 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm222_6673 x0 x1 x2 = rw_main__L_vS205_6648 x0 x1 (rw_Main_r0 x2) x2
+// main.arm59
+rw_main_arm59 : [2] -> [8] -> [81] -> [106]
+rw_main_arm59 x0 x1 x2 = rw_main_vS3 x0 x1 (rw_Main_r0 x2) x2
 
-// main.$L.arm224$6676
-rw_main__L_arm224_6676 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm224_6676 x0 x1 x2 = rw_main__L_vS205_6648 x0 x1 (rw_Main_r1 x2) x2
+// main.arm60
+rw_main_arm60 : [2] -> [8] -> [81] -> [106]
+rw_main_arm60 x0 x1 x2 = rw_main_vS3 x0 x1 (rw_Main_r1 x2) x2
 
-// main.$L.arm226$6679
-rw_main__L_arm226_6679 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm226_6679 x0 x1 x2 = rw_main__L_vS205_6648 x0 x1 (rw_Main_r2 x2) x2
+// main.arm61
+rw_main_arm61 : [2] -> [8] -> [81] -> [106]
+rw_main_arm61 x0 x1 x2 = rw_main_vS3 x0 x1 (rw_Main_r2 x2) x2
 
-// main.$L.arm228$6682
-rw_main__L_arm228_6682 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm228_6682 x0 x1 x2 = rw_main__L_vS205_6648 x0 x1 (rw_Main_r3 x2) x2
+// main.arm62
+rw_main_arm62 : [2] -> [8] -> [81] -> [106]
+rw_main_arm62 x0 x1 x2 = rw_main_vS3 x0 x1 (rw_Main_r3 x2) x2
 
-// main.$L.vD204$6647
-rw_main__L_vD204_6647 : [2] -> [2] -> [8] -> [81] -> [106]
-rw_main__L_vD204_6647 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main__L_arm222_6673 x0 x2 x3) else (if x1 == 0b01 then (rw_main__L_arm224_6676 x0 x2 x3) else (if x1 == 0b10 then (rw_main__L_arm226_6679 x0 x2 x3) else (rw_main__L_arm228_6682 x0 x2 x3)))
+// main.vD3
+rw_main_vD3 : [2] -> [2] -> [8] -> [81] -> [106]
+rw_main_vD3 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_arm59 x0 x2 x3) else (if x1 == 0b01 then (rw_main_arm60 x0 x2 x3) else (if x1 == 0b10 then (rw_main_arm61 x0 x2 x3) else (rw_main_arm62 x0 x2 x3)))
 
-// main.$L.arm230$6685
-rw_main__L_arm230_6685 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm230_6685 x0 x1 x2 = rw_main__L_vD204_6647 x0 x1 (rw_Main_r0 x2) x2
+// main.arm63
+rw_main_arm63 : [2] -> [2] -> [81] -> [106]
+rw_main_arm63 x0 x1 x2 = rw_main_vD3 x0 x1 (rw_Main_r0 x2) x2
 
-// main.$L.arm232$6688
-rw_main__L_arm232_6688 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm232_6688 x0 x1 x2 = rw_main__L_vD204_6647 x0 x1 (rw_Main_r1 x2) x2
+// main.arm64
+rw_main_arm64 : [2] -> [2] -> [81] -> [106]
+rw_main_arm64 x0 x1 x2 = rw_main_vD3 x0 x1 (rw_Main_r1 x2) x2
 
-// main.$L.arm234$6691
-rw_main__L_arm234_6691 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm234_6691 x0 x1 x2 = rw_main__L_vD204_6647 x0 x1 (rw_Main_r2 x2) x2
+// main.arm65
+rw_main_arm65 : [2] -> [2] -> [81] -> [106]
+rw_main_arm65 x0 x1 x2 = rw_main_vD3 x0 x1 (rw_Main_r2 x2) x2
 
-// main.$L.arm236$6694
-rw_main__L_arm236_6694 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm236_6694 x0 x1 x2 = rw_main__L_vD204_6647 x0 x1 (rw_Main_r3 x2) x2
+// main.arm66
+rw_main_arm66 : [2] -> [2] -> [81] -> [106]
+rw_main_arm66 x0 x1 x2 = rw_main_vD3 x0 x1 (rw_Main_r3 x2) x2
 
-// main.$L.arm237$6695
-rw_main__L_arm237_6695 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_arm237_6695 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main__L_arm230_6685 s0 s1 x4) else (if s0 == 0b01 then (rw_main__L_arm232_6688 s0 s1 x4) else (if s0 == 0b10 then (rw_main__L_arm234_6691 s0 s1 x4) else (rw_main__L_arm236_6694 s0 s1 x4)))
+// main.arm67
+rw_main_arm67 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_arm67 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main_arm63 s0 s1 x4) else (if s0 == 0b01 then (rw_main_arm64 s0 s1 x4) else (if s0 == 0b10 then (rw_main_arm65 s0 s1 x4) else (rw_main_arm66 s0 s1 x4)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
     s1 : [2]
     s1 = rw_Main_mkReg x2 x3
 
-// main.$L.cin240$6698
-rw_main__L_cin240_6698 : [2] -> [8] -> [8] -> [1] -> [81] -> [106]
-rw_main__L_cin240_6698 x0 x1 x2 x3 x4 = rw_main__L_s150_6568 x0 s0 x4 x4
+// main.cin2
+rw_main_cin2 : [2] -> [8] -> [8] -> [1] -> [81] -> [106]
+rw_main_cin2 x0 x1 x2 x3 x4 = rw_main_s63 x0 s0 x4 x4
   where
     s0 : [9]
     s0 = rw_Main_minusCW8 x1 x2 x3
 
-// main.$L.vS239$6697
-rw_main__L_vS239_6697 : [2] -> [8] -> [8] -> [81] -> [106]
-rw_main__L_vS239_6697 x0 x1 x2 x3 = rw_main__L_cin240_6698 x0 x1 x2 (rw_Main_cFlag x3) x3
+// main.vS4
+rw_main_vS4 : [2] -> [8] -> [8] -> [81] -> [106]
+rw_main_vS4 x0 x1 x2 x3 = rw_main_cin2 x0 x1 x2 (rw_Main_cFlag x3) x3
 
-// main.$L.arm258$6725
-rw_main__L_arm258_6725 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm258_6725 x0 x1 x2 = rw_main__L_vS239_6697 x0 x1 (rw_Main_r0 x2) x2
+// main.arm72
+rw_main_arm72 : [2] -> [8] -> [81] -> [106]
+rw_main_arm72 x0 x1 x2 = rw_main_vS4 x0 x1 (rw_Main_r0 x2) x2
 
-// main.$L.arm260$6728
-rw_main__L_arm260_6728 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm260_6728 x0 x1 x2 = rw_main__L_vS239_6697 x0 x1 (rw_Main_r1 x2) x2
+// main.arm73
+rw_main_arm73 : [2] -> [8] -> [81] -> [106]
+rw_main_arm73 x0 x1 x2 = rw_main_vS4 x0 x1 (rw_Main_r1 x2) x2
 
-// main.$L.arm262$6731
-rw_main__L_arm262_6731 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm262_6731 x0 x1 x2 = rw_main__L_vS239_6697 x0 x1 (rw_Main_r2 x2) x2
+// main.arm74
+rw_main_arm74 : [2] -> [8] -> [81] -> [106]
+rw_main_arm74 x0 x1 x2 = rw_main_vS4 x0 x1 (rw_Main_r2 x2) x2
 
-// main.$L.arm264$6734
-rw_main__L_arm264_6734 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm264_6734 x0 x1 x2 = rw_main__L_vS239_6697 x0 x1 (rw_Main_r3 x2) x2
+// main.arm75
+rw_main_arm75 : [2] -> [8] -> [81] -> [106]
+rw_main_arm75 x0 x1 x2 = rw_main_vS4 x0 x1 (rw_Main_r3 x2) x2
 
-// main.$L.vD238$6696
-rw_main__L_vD238_6696 : [2] -> [2] -> [8] -> [81] -> [106]
-rw_main__L_vD238_6696 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main__L_arm258_6725 x0 x2 x3) else (if x1 == 0b01 then (rw_main__L_arm260_6728 x0 x2 x3) else (if x1 == 0b10 then (rw_main__L_arm262_6731 x0 x2 x3) else (rw_main__L_arm264_6734 x0 x2 x3)))
+// main.vD4
+rw_main_vD4 : [2] -> [2] -> [8] -> [81] -> [106]
+rw_main_vD4 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_arm72 x0 x2 x3) else (if x1 == 0b01 then (rw_main_arm73 x0 x2 x3) else (if x1 == 0b10 then (rw_main_arm74 x0 x2 x3) else (rw_main_arm75 x0 x2 x3)))
 
-// main.$L.arm266$6737
-rw_main__L_arm266_6737 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm266_6737 x0 x1 x2 = rw_main__L_vD238_6696 x0 x1 (rw_Main_r0 x2) x2
+// main.arm76
+rw_main_arm76 : [2] -> [2] -> [81] -> [106]
+rw_main_arm76 x0 x1 x2 = rw_main_vD4 x0 x1 (rw_Main_r0 x2) x2
 
-// main.$L.arm268$6740
-rw_main__L_arm268_6740 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm268_6740 x0 x1 x2 = rw_main__L_vD238_6696 x0 x1 (rw_Main_r1 x2) x2
+// main.arm77
+rw_main_arm77 : [2] -> [2] -> [81] -> [106]
+rw_main_arm77 x0 x1 x2 = rw_main_vD4 x0 x1 (rw_Main_r1 x2) x2
 
-// main.$L.arm270$6743
-rw_main__L_arm270_6743 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm270_6743 x0 x1 x2 = rw_main__L_vD238_6696 x0 x1 (rw_Main_r2 x2) x2
+// main.arm78
+rw_main_arm78 : [2] -> [2] -> [81] -> [106]
+rw_main_arm78 x0 x1 x2 = rw_main_vD4 x0 x1 (rw_Main_r2 x2) x2
 
-// main.$L.arm272$6746
-rw_main__L_arm272_6746 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm272_6746 x0 x1 x2 = rw_main__L_vD238_6696 x0 x1 (rw_Main_r3 x2) x2
+// main.arm79
+rw_main_arm79 : [2] -> [2] -> [81] -> [106]
+rw_main_arm79 x0 x1 x2 = rw_main_vD4 x0 x1 (rw_Main_r3 x2) x2
 
-// main.$L.arm273$6747
-rw_main__L_arm273_6747 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_arm273_6747 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main__L_arm266_6737 s0 s1 x4) else (if s0 == 0b01 then (rw_main__L_arm268_6740 s0 s1 x4) else (if s0 == 0b10 then (rw_main__L_arm270_6743 s0 s1 x4) else (rw_main__L_arm272_6746 s0 s1 x4)))
+// main.arm80
+rw_main_arm80 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_arm80 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main_arm76 s0 s1 x4) else (if s0 == 0b01 then (rw_main_arm77 s0 s1 x4) else (if s0 == 0b10 then (rw_main_arm78 s0 s1 x4) else (rw_main_arm79 s0 s1 x4)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
     s1 : [2]
     s1 = rw_Main_mkReg x2 x3
 
-// main.$L.s280$6756
-rw_main__L_s280_6756 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s280_6756 x0 x1 x2 = rw_main__L__unused103_6499 s0
+// main.zzz
+rw_main_zzz : [81] -> [106]
+rw_main_zzz x0 = rw_main_s42 x0 x0
+
+// main.s121
+rw_main_s121 : [8] -> [81] -> [81] -> [106]
+rw_main_s121 x0 x1 x2 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setR0 x1 x0
 
-// main.$L.arm281$6758
-rw_main__L_arm281_6758 : [8] -> [81] -> [106]
-rw_main__L_arm281_6758 x0 x1 = rw_main__L_s280_6756 x0 x1 x1
+// main.arm81
+rw_main_arm81 : [8] -> [81] -> [106]
+rw_main_arm81 x0 x1 = rw_main_s121 x0 x1 x1
 
-// main.$L.s282$6759
-rw_main__L_s282_6759 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s282_6759 x0 x1 x2 = rw_main__L__unused103_6499 s0
+// main.s122
+rw_main_s122 : [8] -> [81] -> [81] -> [106]
+rw_main_s122 x0 x1 x2 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setR1 x1 x0
 
-// main.$L.arm283$6761
-rw_main__L_arm283_6761 : [8] -> [81] -> [106]
-rw_main__L_arm283_6761 x0 x1 = rw_main__L_s282_6759 x0 x1 x1
+// main.arm82
+rw_main_arm82 : [8] -> [81] -> [106]
+rw_main_arm82 x0 x1 = rw_main_s122 x0 x1 x1
 
-// main.$L.s284$6762
-rw_main__L_s284_6762 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s284_6762 x0 x1 x2 = rw_main__L__unused103_6499 s0
+// main.s123
+rw_main_s123 : [8] -> [81] -> [81] -> [106]
+rw_main_s123 x0 x1 x2 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setR2 x1 x0
 
-// main.$L.arm285$6764
-rw_main__L_arm285_6764 : [8] -> [81] -> [106]
-rw_main__L_arm285_6764 x0 x1 = rw_main__L_s284_6762 x0 x1 x1
+// main.arm83
+rw_main_arm83 : [8] -> [81] -> [106]
+rw_main_arm83 x0 x1 = rw_main_s123 x0 x1 x1
 
-// main.$L.s286$6765
-rw_main__L_s286_6765 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s286_6765 x0 x1 x2 = rw_main__L__unused103_6499 s0
+// main.s124
+rw_main_s124 : [8] -> [81] -> [81] -> [106]
+rw_main_s124 x0 x1 x2 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setR3 x1 x0
 
-// main.$L.arm287$6767
-rw_main__L_arm287_6767 : [8] -> [81] -> [106]
-rw_main__L_arm287_6767 x0 x1 = rw_main__L_s286_6765 x0 x1 x1
+// main.arm84
+rw_main_arm84 : [8] -> [81] -> [106]
+rw_main_arm84 x0 x1 = rw_main_s124 x0 x1 x1
 
-// main.$L.x274$6748
-rw_main__L_x274_6748 : [1] -> [1] -> [8] -> [81] -> [106]
-rw_main__L_x274_6748 x0 x1 x2 x3 = if s0 == 0b00 then (rw_main__L_arm281_6758 x2 x3) else (if s0 == 0b01 then (rw_main__L_arm283_6761 x2 x3) else (if s0 == 0b10 then (rw_main__L_arm285_6764 x2 x3) else (rw_main__L_arm287_6767 x2 x3)))
+// main.x2
+rw_main_x2 : [1] -> [1] -> [8] -> [81] -> [106]
+rw_main_x2 x0 x1 x2 x3 = if s0 == 0b00 then (rw_main_arm81 x2 x3) else (if s0 == 0b01 then (rw_main_arm82 x2 x3) else (if s0 == 0b10 then (rw_main_arm83 x2 x3) else (rw_main_arm84 x2 x3)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
 
-// main.$L.s288$6768
-rw_main__L_s288_6768 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s288_6768 x0 x1 x2 x3 = rw_main__L_x274_6748 x0 x1 s0 x3
+// main.s125
+rw_main_s125 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s125 x0 x1 x2 x3 = rw_main_x2 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r0 x2
 
-// main.$L.arm289$6770
-rw_main__L_arm289_6770 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm289_6770 x0 x1 x2 = rw_main__L_s288_6768 x0 x1 x2 x2
+// main.arm85
+rw_main_arm85 : [1] -> [1] -> [81] -> [106]
+rw_main_arm85 x0 x1 x2 = rw_main_s125 x0 x1 x2 x2
 
-// main.$L.s290$6771
-rw_main__L_s290_6771 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s290_6771 x0 x1 x2 x3 = rw_main__L_x274_6748 x0 x1 s0 x3
+// main.s126
+rw_main_s126 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s126 x0 x1 x2 x3 = rw_main_x2 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r1 x2
 
-// main.$L.arm291$6773
-rw_main__L_arm291_6773 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm291_6773 x0 x1 x2 = rw_main__L_s290_6771 x0 x1 x2 x2
+// main.arm86
+rw_main_arm86 : [1] -> [1] -> [81] -> [106]
+rw_main_arm86 x0 x1 x2 = rw_main_s126 x0 x1 x2 x2
 
-// main.$L.s292$6774
-rw_main__L_s292_6774 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s292_6774 x0 x1 x2 x3 = rw_main__L_x274_6748 x0 x1 s0 x3
+// main.s127
+rw_main_s127 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s127 x0 x1 x2 x3 = rw_main_x2 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r2 x2
 
-// main.$L.arm293$6776
-rw_main__L_arm293_6776 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm293_6776 x0 x1 x2 = rw_main__L_s292_6774 x0 x1 x2 x2
+// main.arm87
+rw_main_arm87 : [1] -> [1] -> [81] -> [106]
+rw_main_arm87 x0 x1 x2 = rw_main_s127 x0 x1 x2 x2
 
-// main.$L.s294$6777
-rw_main__L_s294_6777 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s294_6777 x0 x1 x2 x3 = rw_main__L_x274_6748 x0 x1 s0 x3
+// main.s128
+rw_main_s128 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s128 x0 x1 x2 x3 = rw_main_x2 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r3 x2
 
-// main.$L.arm295$6779
-rw_main__L_arm295_6779 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm295_6779 x0 x1 x2 = rw_main__L_s294_6777 x0 x1 x2 x2
+// main.arm88
+rw_main_arm88 : [1] -> [1] -> [81] -> [106]
+rw_main_arm88 x0 x1 x2 = rw_main_s128 x0 x1 x2 x2
 
-// main.$L.arm296$6780
-rw_main__L_arm296_6780 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_arm296_6780 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main__L_arm289_6770 x0 x1 x4) else (if s0 == 0b01 then (rw_main__L_arm291_6773 x0 x1 x4) else (if s0 == 0b10 then (rw_main__L_arm293_6776 x0 x1 x4) else (rw_main__L_arm295_6779 x0 x1 x4)))
+// main.arm89
+rw_main_arm89 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_arm89 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main_arm85 x0 x1 x4) else (if s0 == 0b01 then (rw_main_arm86 x0 x1 x4) else (if s0 == 0b10 then (rw_main_arm87 x0 x1 x4) else (rw_main_arm88 x0 x1 x4)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x2 x3
 
-// main.$L.s306$6792
-rw_main__L_s306_6792 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s306_6792 x0 x1 x2 = rw_main__L__unused137_6549 s0
+// main.s131
+rw_main_s131 : [8] -> [81] -> [81] -> [106]
+rw_main_s131 x0 x1 x2 = rw_main__unused17 s0
   where
     s0 : [81]
     s0 = rw_Main_setZFlag x1 [x0 == 0x00]
 
-// main.$L._unused300$6784
-rw_main__L__unused300_6784 : [8] -> [81] -> [106]
-rw_main__L__unused300_6784 x0 x1 = rw_main__L_s306_6792 x0 x1 x1
+// main._unused25
+rw_main__unused25 : [8] -> [81] -> [106]
+rw_main__unused25 x0 x1 = rw_main_s131 x0 x1 x1
 
-// main.$L.s307$6794
-rw_main__L_s307_6794 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s307_6794 x0 x1 x2 = rw_main__L__unused300_6784 x0 s0
+// main.s132
+rw_main_s132 : [8] -> [81] -> [81] -> [106]
+rw_main_s132 x0 x1 x2 = rw_main__unused25 x0 s0
   where
     s0 : [81]
     s0 = rw_Main_setCFlag x1 0b0
 
-// main.$L._unused299$6783
-rw_main__L__unused299_6783 : [8] -> [81] -> [106]
-rw_main__L__unused299_6783 x0 x1 = rw_main__L_s307_6794 x0 x1 x1
+// main._unused24
+rw_main__unused24 : [8] -> [81] -> [106]
+rw_main__unused24 x0 x1 = rw_main_s132 x0 x1 x1
 
-// main.$L.s308$6796
-rw_main__L_s308_6796 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s308_6796 x0 x1 x2 = rw_main__L__unused299_6783 x0 s0
+// main.s133
+rw_main_s133 : [8] -> [81] -> [81] -> [106]
+rw_main_s133 x0 x1 x2 = rw_main__unused24 x0 s0
   where
     s0 : [81]
     s0 = rw_Main_setR0 x1 x0
 
-// main.$L.arm309$6798
-rw_main__L_arm309_6798 : [8] -> [81] -> [106]
-rw_main__L_arm309_6798 x0 x1 = rw_main__L_s308_6796 x0 x1 x1
+// main.arm90
+rw_main_arm90 : [8] -> [81] -> [106]
+rw_main_arm90 x0 x1 = rw_main_s133 x0 x1 x1
 
-// main.$L.s310$6799
-rw_main__L_s310_6799 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s310_6799 x0 x1 x2 = rw_main__L__unused299_6783 x0 s0
+// main.s134
+rw_main_s134 : [8] -> [81] -> [81] -> [106]
+rw_main_s134 x0 x1 x2 = rw_main__unused24 x0 s0
   where
     s0 : [81]
     s0 = rw_Main_setR1 x1 x0
 
-// main.$L.arm311$6801
-rw_main__L_arm311_6801 : [8] -> [81] -> [106]
-rw_main__L_arm311_6801 x0 x1 = rw_main__L_s310_6799 x0 x1 x1
+// main.arm91
+rw_main_arm91 : [8] -> [81] -> [106]
+rw_main_arm91 x0 x1 = rw_main_s134 x0 x1 x1
 
-// main.$L.s312$6802
-rw_main__L_s312_6802 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s312_6802 x0 x1 x2 = rw_main__L__unused299_6783 x0 s0
+// main.s135
+rw_main_s135 : [8] -> [81] -> [81] -> [106]
+rw_main_s135 x0 x1 x2 = rw_main__unused24 x0 s0
   where
     s0 : [81]
     s0 = rw_Main_setR2 x1 x0
 
-// main.$L.arm313$6804
-rw_main__L_arm313_6804 : [8] -> [81] -> [106]
-rw_main__L_arm313_6804 x0 x1 = rw_main__L_s312_6802 x0 x1 x1
+// main.arm92
+rw_main_arm92 : [8] -> [81] -> [106]
+rw_main_arm92 x0 x1 = rw_main_s135 x0 x1 x1
 
-// main.$L.s314$6805
-rw_main__L_s314_6805 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s314_6805 x0 x1 x2 = rw_main__L__unused299_6783 x0 s0
+// main.s136
+rw_main_s136 : [8] -> [81] -> [81] -> [106]
+rw_main_s136 x0 x1 x2 = rw_main__unused24 x0 s0
   where
     s0 : [81]
     s0 = rw_Main_setR3 x1 x0
 
-// main.$L.arm315$6807
-rw_main__L_arm315_6807 : [8] -> [81] -> [106]
-rw_main__L_arm315_6807 x0 x1 = rw_main__L_s314_6805 x0 x1 x1
+// main.arm93
+rw_main_arm93 : [8] -> [81] -> [106]
+rw_main_arm93 x0 x1 = rw_main_s136 x0 x1 x1
 
-// main.$L.vS298$6782
-rw_main__L_vS298_6782 : [2] -> [8] -> [8] -> [81] -> [106]
-rw_main__L_vS298_6782 x0 x1 x2 x3 = if x0 == 0b00 then (rw_main__L_arm309_6798 s0 x3) else (if x0 == 0b01 then (rw_main__L_arm311_6801 s0 x3) else (if x0 == 0b10 then (rw_main__L_arm313_6804 s0 x3) else (rw_main__L_arm315_6807 s0 x3)))
+// main.vS5
+rw_main_vS5 : [2] -> [8] -> [8] -> [81] -> [106]
+rw_main_vS5 x0 x1 x2 x3 = if x0 == 0b00 then (rw_main_arm90 s0 x3) else (if x0 == 0b01 then (rw_main_arm91 s0 x3) else (if x0 == 0b10 then (rw_main_arm92 s0 x3) else (rw_main_arm93 s0 x3)))
   where
     s0 : [8]
     s0 = x1 || x2
 
-// main.$L.arm317$6810
-rw_main__L_arm317_6810 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm317_6810 x0 x1 x2 = rw_main__L_vS298_6782 x0 x1 (rw_Main_r0 x2) x2
+// main.arm94
+rw_main_arm94 : [2] -> [8] -> [81] -> [106]
+rw_main_arm94 x0 x1 x2 = rw_main_vS5 x0 x1 (rw_Main_r0 x2) x2
 
-// main.$L.arm319$6813
-rw_main__L_arm319_6813 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm319_6813 x0 x1 x2 = rw_main__L_vS298_6782 x0 x1 (rw_Main_r1 x2) x2
+// main.arm95
+rw_main_arm95 : [2] -> [8] -> [81] -> [106]
+rw_main_arm95 x0 x1 x2 = rw_main_vS5 x0 x1 (rw_Main_r1 x2) x2
 
-// main.$L.arm321$6816
-rw_main__L_arm321_6816 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm321_6816 x0 x1 x2 = rw_main__L_vS298_6782 x0 x1 (rw_Main_r2 x2) x2
+// main.arm96
+rw_main_arm96 : [2] -> [8] -> [81] -> [106]
+rw_main_arm96 x0 x1 x2 = rw_main_vS5 x0 x1 (rw_Main_r2 x2) x2
 
-// main.$L.arm323$6819
-rw_main__L_arm323_6819 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm323_6819 x0 x1 x2 = rw_main__L_vS298_6782 x0 x1 (rw_Main_r3 x2) x2
+// main.arm97
+rw_main_arm97 : [2] -> [8] -> [81] -> [106]
+rw_main_arm97 x0 x1 x2 = rw_main_vS5 x0 x1 (rw_Main_r3 x2) x2
 
-// main.$L.vD297$6781
-rw_main__L_vD297_6781 : [2] -> [2] -> [8] -> [81] -> [106]
-rw_main__L_vD297_6781 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main__L_arm317_6810 x0 x2 x3) else (if x1 == 0b01 then (rw_main__L_arm319_6813 x0 x2 x3) else (if x1 == 0b10 then (rw_main__L_arm321_6816 x0 x2 x3) else (rw_main__L_arm323_6819 x0 x2 x3)))
+// main.vD5
+rw_main_vD5 : [2] -> [2] -> [8] -> [81] -> [106]
+rw_main_vD5 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_arm94 x0 x2 x3) else (if x1 == 0b01 then (rw_main_arm95 x0 x2 x3) else (if x1 == 0b10 then (rw_main_arm96 x0 x2 x3) else (rw_main_arm97 x0 x2 x3)))
 
-// main.$L.arm325$6822
-rw_main__L_arm325_6822 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm325_6822 x0 x1 x2 = rw_main__L_vD297_6781 x0 x1 (rw_Main_r0 x2) x2
+// main.arm98
+rw_main_arm98 : [2] -> [2] -> [81] -> [106]
+rw_main_arm98 x0 x1 x2 = rw_main_vD5 x0 x1 (rw_Main_r0 x2) x2
 
-// main.$L.arm327$6825
-rw_main__L_arm327_6825 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm327_6825 x0 x1 x2 = rw_main__L_vD297_6781 x0 x1 (rw_Main_r1 x2) x2
+// main.arm99
+rw_main_arm99 : [2] -> [2] -> [81] -> [106]
+rw_main_arm99 x0 x1 x2 = rw_main_vD5 x0 x1 (rw_Main_r1 x2) x2
 
-// main.$L.arm329$6828
-rw_main__L_arm329_6828 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm329_6828 x0 x1 x2 = rw_main__L_vD297_6781 x0 x1 (rw_Main_r2 x2) x2
+// main.arm100
+rw_main_arm100 : [2] -> [2] -> [81] -> [106]
+rw_main_arm100 x0 x1 x2 = rw_main_vD5 x0 x1 (rw_Main_r2 x2) x2
 
-// main.$L.arm331$6831
-rw_main__L_arm331_6831 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm331_6831 x0 x1 x2 = rw_main__L_vD297_6781 x0 x1 (rw_Main_r3 x2) x2
+// main.arm101
+rw_main_arm101 : [2] -> [2] -> [81] -> [106]
+rw_main_arm101 x0 x1 x2 = rw_main_vD5 x0 x1 (rw_Main_r3 x2) x2
 
-// main.$L.arm332$6832
-rw_main__L_arm332_6832 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_arm332_6832 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main__L_arm325_6822 s0 s1 x4) else (if s0 == 0b01 then (rw_main__L_arm327_6825 s0 s1 x4) else (if s0 == 0b10 then (rw_main__L_arm329_6828 s0 s1 x4) else (rw_main__L_arm331_6831 s0 s1 x4)))
+// main.arm102
+rw_main_arm102 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_arm102 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main_arm98 s0 s1 x4) else (if s0 == 0b01 then (rw_main_arm99 s0 s1 x4) else (if s0 == 0b10 then (rw_main_arm100 s0 s1 x4) else (rw_main_arm101 s0 s1 x4)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
     s1 : [2]
     s1 = rw_Main_mkReg x2 x3
 
-// main.$L.vS334$6834
-rw_main__L_vS334_6834 : [2] -> [8] -> [8] -> [81] -> [106]
-rw_main__L_vS334_6834 x0 x1 x2 x3 = if x0 == 0b00 then (rw_main__L_arm309_6798 s0 x3) else (if x0 == 0b01 then (rw_main__L_arm311_6801 s0 x3) else (if x0 == 0b10 then (rw_main__L_arm313_6804 s0 x3) else (rw_main__L_arm315_6807 s0 x3)))
+// main.vS6
+rw_main_vS6 : [2] -> [8] -> [8] -> [81] -> [106]
+rw_main_vS6 x0 x1 x2 x3 = if x0 == 0b00 then (rw_main_arm90 s0 x3) else (if x0 == 0b01 then (rw_main_arm91 s0 x3) else (if x0 == 0b10 then (rw_main_arm92 s0 x3) else (rw_main_arm93 s0 x3)))
   where
     s0 : [8]
     s0 = x1 && x2
 
-// main.$L.arm353$6862
-rw_main__L_arm353_6862 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm353_6862 x0 x1 x2 = rw_main__L_vS334_6834 x0 x1 (rw_Main_r0 x2) x2
+// main.arm107
+rw_main_arm107 : [2] -> [8] -> [81] -> [106]
+rw_main_arm107 x0 x1 x2 = rw_main_vS6 x0 x1 (rw_Main_r0 x2) x2
 
-// main.$L.arm355$6865
-rw_main__L_arm355_6865 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm355_6865 x0 x1 x2 = rw_main__L_vS334_6834 x0 x1 (rw_Main_r1 x2) x2
+// main.arm108
+rw_main_arm108 : [2] -> [8] -> [81] -> [106]
+rw_main_arm108 x0 x1 x2 = rw_main_vS6 x0 x1 (rw_Main_r1 x2) x2
 
-// main.$L.arm357$6868
-rw_main__L_arm357_6868 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm357_6868 x0 x1 x2 = rw_main__L_vS334_6834 x0 x1 (rw_Main_r2 x2) x2
+// main.arm109
+rw_main_arm109 : [2] -> [8] -> [81] -> [106]
+rw_main_arm109 x0 x1 x2 = rw_main_vS6 x0 x1 (rw_Main_r2 x2) x2
 
-// main.$L.arm359$6871
-rw_main__L_arm359_6871 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm359_6871 x0 x1 x2 = rw_main__L_vS334_6834 x0 x1 (rw_Main_r3 x2) x2
+// main.arm110
+rw_main_arm110 : [2] -> [8] -> [81] -> [106]
+rw_main_arm110 x0 x1 x2 = rw_main_vS6 x0 x1 (rw_Main_r3 x2) x2
 
-// main.$L.vD333$6833
-rw_main__L_vD333_6833 : [2] -> [2] -> [8] -> [81] -> [106]
-rw_main__L_vD333_6833 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main__L_arm353_6862 x0 x2 x3) else (if x1 == 0b01 then (rw_main__L_arm355_6865 x0 x2 x3) else (if x1 == 0b10 then (rw_main__L_arm357_6868 x0 x2 x3) else (rw_main__L_arm359_6871 x0 x2 x3)))
+// main.vD6
+rw_main_vD6 : [2] -> [2] -> [8] -> [81] -> [106]
+rw_main_vD6 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_arm107 x0 x2 x3) else (if x1 == 0b01 then (rw_main_arm108 x0 x2 x3) else (if x1 == 0b10 then (rw_main_arm109 x0 x2 x3) else (rw_main_arm110 x0 x2 x3)))
 
-// main.$L.arm361$6874
-rw_main__L_arm361_6874 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm361_6874 x0 x1 x2 = rw_main__L_vD333_6833 x0 x1 (rw_Main_r0 x2) x2
+// main.arm111
+rw_main_arm111 : [2] -> [2] -> [81] -> [106]
+rw_main_arm111 x0 x1 x2 = rw_main_vD6 x0 x1 (rw_Main_r0 x2) x2
 
-// main.$L.arm363$6877
-rw_main__L_arm363_6877 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm363_6877 x0 x1 x2 = rw_main__L_vD333_6833 x0 x1 (rw_Main_r1 x2) x2
+// main.arm112
+rw_main_arm112 : [2] -> [2] -> [81] -> [106]
+rw_main_arm112 x0 x1 x2 = rw_main_vD6 x0 x1 (rw_Main_r1 x2) x2
 
-// main.$L.arm365$6880
-rw_main__L_arm365_6880 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm365_6880 x0 x1 x2 = rw_main__L_vD333_6833 x0 x1 (rw_Main_r2 x2) x2
+// main.arm113
+rw_main_arm113 : [2] -> [2] -> [81] -> [106]
+rw_main_arm113 x0 x1 x2 = rw_main_vD6 x0 x1 (rw_Main_r2 x2) x2
 
-// main.$L.arm367$6883
-rw_main__L_arm367_6883 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm367_6883 x0 x1 x2 = rw_main__L_vD333_6833 x0 x1 (rw_Main_r3 x2) x2
+// main.arm114
+rw_main_arm114 : [2] -> [2] -> [81] -> [106]
+rw_main_arm114 x0 x1 x2 = rw_main_vD6 x0 x1 (rw_Main_r3 x2) x2
 
-// main.$L.arm368$6884
-rw_main__L_arm368_6884 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_arm368_6884 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main__L_arm361_6874 s0 s1 x4) else (if s0 == 0b01 then (rw_main__L_arm363_6877 s0 s1 x4) else (if s0 == 0b10 then (rw_main__L_arm365_6880 s0 s1 x4) else (rw_main__L_arm367_6883 s0 s1 x4)))
+// main.arm115
+rw_main_arm115 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_arm115 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main_arm111 s0 s1 x4) else (if s0 == 0b01 then (rw_main_arm112 s0 s1 x4) else (if s0 == 0b10 then (rw_main_arm113 s0 s1 x4) else (rw_main_arm114 s0 s1 x4)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
     s1 : [2]
     s1 = rw_Main_mkReg x2 x3
 
-// main.$L.vS370$6886
-rw_main__L_vS370_6886 : [2] -> [8] -> [8] -> [81] -> [106]
-rw_main__L_vS370_6886 x0 x1 x2 x3 = if x0 == 0b00 then (rw_main__L_arm309_6798 s0 x3) else (if x0 == 0b01 then (rw_main__L_arm311_6801 s0 x3) else (if x0 == 0b10 then (rw_main__L_arm313_6804 s0 x3) else (rw_main__L_arm315_6807 s0 x3)))
+// main.vS7
+rw_main_vS7 : [2] -> [8] -> [8] -> [81] -> [106]
+rw_main_vS7 x0 x1 x2 x3 = if x0 == 0b00 then (rw_main_arm90 s0 x3) else (if x0 == 0b01 then (rw_main_arm91 s0 x3) else (if x0 == 0b10 then (rw_main_arm92 s0 x3) else (rw_main_arm93 s0 x3)))
   where
     s0 : [8]
     s0 = x1 ^ x2
 
-// main.$L.arm389$6914
-rw_main__L_arm389_6914 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm389_6914 x0 x1 x2 = rw_main__L_vS370_6886 x0 x1 (rw_Main_r0 x2) x2
+// main.arm120
+rw_main_arm120 : [2] -> [8] -> [81] -> [106]
+rw_main_arm120 x0 x1 x2 = rw_main_vS7 x0 x1 (rw_Main_r0 x2) x2
 
-// main.$L.arm391$6917
-rw_main__L_arm391_6917 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm391_6917 x0 x1 x2 = rw_main__L_vS370_6886 x0 x1 (rw_Main_r1 x2) x2
+// main.arm121
+rw_main_arm121 : [2] -> [8] -> [81] -> [106]
+rw_main_arm121 x0 x1 x2 = rw_main_vS7 x0 x1 (rw_Main_r1 x2) x2
 
-// main.$L.arm393$6920
-rw_main__L_arm393_6920 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm393_6920 x0 x1 x2 = rw_main__L_vS370_6886 x0 x1 (rw_Main_r2 x2) x2
+// main.arm122
+rw_main_arm122 : [2] -> [8] -> [81] -> [106]
+rw_main_arm122 x0 x1 x2 = rw_main_vS7 x0 x1 (rw_Main_r2 x2) x2
 
-// main.$L.arm395$6923
-rw_main__L_arm395_6923 : [2] -> [8] -> [81] -> [106]
-rw_main__L_arm395_6923 x0 x1 x2 = rw_main__L_vS370_6886 x0 x1 (rw_Main_r3 x2) x2
+// main.arm123
+rw_main_arm123 : [2] -> [8] -> [81] -> [106]
+rw_main_arm123 x0 x1 x2 = rw_main_vS7 x0 x1 (rw_Main_r3 x2) x2
 
-// main.$L.vD369$6885
-rw_main__L_vD369_6885 : [2] -> [2] -> [8] -> [81] -> [106]
-rw_main__L_vD369_6885 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main__L_arm389_6914 x0 x2 x3) else (if x1 == 0b01 then (rw_main__L_arm391_6917 x0 x2 x3) else (if x1 == 0b10 then (rw_main__L_arm393_6920 x0 x2 x3) else (rw_main__L_arm395_6923 x0 x2 x3)))
+// main.vD7
+rw_main_vD7 : [2] -> [2] -> [8] -> [81] -> [106]
+rw_main_vD7 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_arm120 x0 x2 x3) else (if x1 == 0b01 then (rw_main_arm121 x0 x2 x3) else (if x1 == 0b10 then (rw_main_arm122 x0 x2 x3) else (rw_main_arm123 x0 x2 x3)))
 
-// main.$L.arm397$6926
-rw_main__L_arm397_6926 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm397_6926 x0 x1 x2 = rw_main__L_vD369_6885 x0 x1 (rw_Main_r0 x2) x2
+// main.arm124
+rw_main_arm124 : [2] -> [2] -> [81] -> [106]
+rw_main_arm124 x0 x1 x2 = rw_main_vD7 x0 x1 (rw_Main_r0 x2) x2
 
-// main.$L.arm399$6929
-rw_main__L_arm399_6929 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm399_6929 x0 x1 x2 = rw_main__L_vD369_6885 x0 x1 (rw_Main_r1 x2) x2
+// main.arm125
+rw_main_arm125 : [2] -> [2] -> [81] -> [106]
+rw_main_arm125 x0 x1 x2 = rw_main_vD7 x0 x1 (rw_Main_r1 x2) x2
 
-// main.$L.arm401$6932
-rw_main__L_arm401_6932 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm401_6932 x0 x1 x2 = rw_main__L_vD369_6885 x0 x1 (rw_Main_r2 x2) x2
+// main.arm126
+rw_main_arm126 : [2] -> [2] -> [81] -> [106]
+rw_main_arm126 x0 x1 x2 = rw_main_vD7 x0 x1 (rw_Main_r2 x2) x2
 
-// main.$L.arm403$6935
-rw_main__L_arm403_6935 : [2] -> [2] -> [81] -> [106]
-rw_main__L_arm403_6935 x0 x1 x2 = rw_main__L_vD369_6885 x0 x1 (rw_Main_r3 x2) x2
+// main.arm127
+rw_main_arm127 : [2] -> [2] -> [81] -> [106]
+rw_main_arm127 x0 x1 x2 = rw_main_vD7 x0 x1 (rw_Main_r3 x2) x2
 
-// main.$L.arm404$6936
-rw_main__L_arm404_6936 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_arm404_6936 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main__L_arm397_6926 s0 s1 x4) else (if s0 == 0b01 then (rw_main__L_arm399_6929 s0 s1 x4) else (if s0 == 0b10 then (rw_main__L_arm401_6932 s0 s1 x4) else (rw_main__L_arm403_6935 s0 s1 x4)))
+// main.arm128
+rw_main_arm128 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_arm128 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main_arm124 s0 s1 x4) else (if s0 == 0b01 then (rw_main_arm125 s0 s1 x4) else (if s0 == 0b10 then (rw_main_arm126 s0 s1 x4) else (rw_main_arm127 s0 s1 x4)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
     s1 : [2]
     s1 = rw_Main_mkReg x2 x3
 
-// main.$L.s413$6947
-rw_main__L_s413_6947 : [9] -> [81] -> [81] -> [106]
-rw_main__L_s413_6947 x0 x1 x2 = rw_main__L__unused103_6499 s2
+// main.s179
+rw_main_s179 : [9] -> [81] -> [81] -> [106]
+rw_main_s179 x0 x1 x2 = rw_main_zzz s2
   where
     s0 : [8]
     s0 = drop`{1} x0
@@ -1372,13 +1372,13 @@ rw_main__L_s413_6947 x0 x1 x2 = rw_main__L__unused103_6499 s2
     s2 : [81]
     s2 = rw_Main_setZFlag x1 [s1 == 0x00]
 
-// main.$L._unused407$6939
-rw_main__L__unused407_6939 : [9] -> [81] -> [106]
-rw_main__L__unused407_6939 x0 x1 = rw_main__L_s413_6947 x0 x1 x1
+// main._unused33
+rw_main__unused33 : [9] -> [81] -> [106]
+rw_main__unused33 x0 x1 = rw_main_s179 x0 x1 x1
 
-// main.$L.s414$6949
-rw_main__L_s414_6949 : [9] -> [81] -> [81] -> [106]
-rw_main__L_s414_6949 x0 x1 x2 = rw_main__L__unused407_6939 x0 s2
+// main.s180
+rw_main_s180 : [9] -> [81] -> [81] -> [106]
+rw_main_s180 x0 x1 x2 = rw_main__unused33 x0 s2
   where
     s0 : [1]
     s0 = take`{1} x0
@@ -1387,584 +1387,584 @@ rw_main__L_s414_6949 x0 x1 x2 = rw_main__L__unused407_6939 x0 s2
     s2 : [81]
     s2 = rw_Main_setCFlag x1 s1
 
-// main.$L.vS406$6938
-rw_main__L_vS406_6938 : [8] -> [8] -> [81] -> [106]
-rw_main__L_vS406_6938 x0 x1 x2 = rw_main__L_s414_6949 s0 x2 x2
+// main.vS8
+rw_main_vS8 : [8] -> [8] -> [81] -> [106]
+rw_main_vS8 x0 x1 x2 = rw_main_s180 s0 x2 x2
   where
     s0 : [9]
-    s0 = rw_Main_minusCW8_s1 x0 x1
+    s0 = rw_Main_minusCW8_sFalse_Bool x0 x1
 
-// main.$L.s415$6951
-rw_main__L_s415_6951 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s415_6951 x0 x1 x2 = rw_main__L_vS406_6938 x0 s0 x2
+// main.s181
+rw_main_s181 : [8] -> [81] -> [81] -> [106]
+rw_main_s181 x0 x1 x2 = rw_main_vS8 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r0 x1
 
-// main.$L.arm416$6953
-rw_main__L_arm416_6953 : [8] -> [81] -> [106]
-rw_main__L_arm416_6953 x0 x1 = rw_main__L_s415_6951 x0 x1 x1
+// main.arm129
+rw_main_arm129 : [8] -> [81] -> [106]
+rw_main_arm129 x0 x1 = rw_main_s181 x0 x1 x1
 
-// main.$L.s417$6954
-rw_main__L_s417_6954 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s417_6954 x0 x1 x2 = rw_main__L_vS406_6938 x0 s0 x2
+// main.s182
+rw_main_s182 : [8] -> [81] -> [81] -> [106]
+rw_main_s182 x0 x1 x2 = rw_main_vS8 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r1 x1
 
-// main.$L.arm418$6956
-rw_main__L_arm418_6956 : [8] -> [81] -> [106]
-rw_main__L_arm418_6956 x0 x1 = rw_main__L_s417_6954 x0 x1 x1
+// main.arm130
+rw_main_arm130 : [8] -> [81] -> [106]
+rw_main_arm130 x0 x1 = rw_main_s182 x0 x1 x1
 
-// main.$L.s419$6957
-rw_main__L_s419_6957 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s419_6957 x0 x1 x2 = rw_main__L_vS406_6938 x0 s0 x2
+// main.s183
+rw_main_s183 : [8] -> [81] -> [81] -> [106]
+rw_main_s183 x0 x1 x2 = rw_main_vS8 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r2 x1
 
-// main.$L.arm420$6959
-rw_main__L_arm420_6959 : [8] -> [81] -> [106]
-rw_main__L_arm420_6959 x0 x1 = rw_main__L_s419_6957 x0 x1 x1
+// main.arm131
+rw_main_arm131 : [8] -> [81] -> [106]
+rw_main_arm131 x0 x1 = rw_main_s183 x0 x1 x1
 
-// main.$L.s421$6960
-rw_main__L_s421_6960 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s421_6960 x0 x1 x2 = rw_main__L_vS406_6938 x0 s0 x2
+// main.s184
+rw_main_s184 : [8] -> [81] -> [81] -> [106]
+rw_main_s184 x0 x1 x2 = rw_main_vS8 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r3 x1
 
-// main.$L.arm422$6962
-rw_main__L_arm422_6962 : [8] -> [81] -> [106]
-rw_main__L_arm422_6962 x0 x1 = rw_main__L_s421_6960 x0 x1 x1
+// main.arm132
+rw_main_arm132 : [8] -> [81] -> [106]
+rw_main_arm132 x0 x1 = rw_main_s184 x0 x1 x1
 
-// main.$L.vD405$6937
-rw_main__L_vD405_6937 : [1] -> [1] -> [8] -> [81] -> [106]
-rw_main__L_vD405_6937 x0 x1 x2 x3 = if s0 == 0b00 then (rw_main__L_arm416_6953 x2 x3) else (if s0 == 0b01 then (rw_main__L_arm418_6956 x2 x3) else (if s0 == 0b10 then (rw_main__L_arm420_6959 x2 x3) else (rw_main__L_arm422_6962 x2 x3)))
+// main.vD8
+rw_main_vD8 : [1] -> [1] -> [8] -> [81] -> [106]
+rw_main_vD8 x0 x1 x2 x3 = if s0 == 0b00 then (rw_main_arm129 x2 x3) else (if s0 == 0b01 then (rw_main_arm130 x2 x3) else (if s0 == 0b10 then (rw_main_arm131 x2 x3) else (rw_main_arm132 x2 x3)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
 
-// main.$L.s423$6963
-rw_main__L_s423_6963 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s423_6963 x0 x1 x2 x3 = rw_main__L_vD405_6937 x0 x1 s0 x3
+// main.s185
+rw_main_s185 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s185 x0 x1 x2 x3 = rw_main_vD8 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r0 x2
 
-// main.$L.arm424$6965
-rw_main__L_arm424_6965 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm424_6965 x0 x1 x2 = rw_main__L_s423_6963 x0 x1 x2 x2
+// main.arm133
+rw_main_arm133 : [1] -> [1] -> [81] -> [106]
+rw_main_arm133 x0 x1 x2 = rw_main_s185 x0 x1 x2 x2
 
-// main.$L.s425$6966
-rw_main__L_s425_6966 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s425_6966 x0 x1 x2 x3 = rw_main__L_vD405_6937 x0 x1 s0 x3
+// main.s186
+rw_main_s186 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s186 x0 x1 x2 x3 = rw_main_vD8 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r1 x2
 
-// main.$L.arm426$6968
-rw_main__L_arm426_6968 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm426_6968 x0 x1 x2 = rw_main__L_s425_6966 x0 x1 x2 x2
+// main.arm134
+rw_main_arm134 : [1] -> [1] -> [81] -> [106]
+rw_main_arm134 x0 x1 x2 = rw_main_s186 x0 x1 x2 x2
 
-// main.$L.s427$6969
-rw_main__L_s427_6969 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s427_6969 x0 x1 x2 x3 = rw_main__L_vD405_6937 x0 x1 s0 x3
+// main.s187
+rw_main_s187 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s187 x0 x1 x2 x3 = rw_main_vD8 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r2 x2
 
-// main.$L.arm428$6971
-rw_main__L_arm428_6971 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm428_6971 x0 x1 x2 = rw_main__L_s427_6969 x0 x1 x2 x2
+// main.arm135
+rw_main_arm135 : [1] -> [1] -> [81] -> [106]
+rw_main_arm135 x0 x1 x2 = rw_main_s187 x0 x1 x2 x2
 
-// main.$L.s429$6972
-rw_main__L_s429_6972 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s429_6972 x0 x1 x2 x3 = rw_main__L_vD405_6937 x0 x1 s0 x3
+// main.s188
+rw_main_s188 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s188 x0 x1 x2 x3 = rw_main_vD8 x0 x1 s0 x3
   where
     s0 : [8]
     s0 = rw_Main_r3 x2
 
-// main.$L.arm430$6974
-rw_main__L_arm430_6974 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm430_6974 x0 x1 x2 = rw_main__L_s429_6972 x0 x1 x2 x2
+// main.arm136
+rw_main_arm136 : [1] -> [1] -> [81] -> [106]
+rw_main_arm136 x0 x1 x2 = rw_main_s188 x0 x1 x2 x2
 
-// main.$L.arm431$6975
-rw_main__L_arm431_6975 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_arm431_6975 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main__L_arm424_6965 x2 x3 x4) else (if s0 == 0b01 then (rw_main__L_arm426_6968 x2 x3 x4) else (if s0 == 0b10 then (rw_main__L_arm428_6971 x2 x3 x4) else (rw_main__L_arm430_6974 x2 x3 x4)))
+// main.arm137
+rw_main_arm137 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_arm137 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main_arm133 x2 x3 x4) else (if s0 == 0b01 then (rw_main_arm134 x2 x3 x4) else (if s0 == 0b10 then (rw_main_arm135 x2 x3 x4) else (rw_main_arm136 x2 x3 x4)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
 
-// main.$L.s439$6985
-rw_main__L_s439_6985 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s439_6985 x0 x1 x2 = rw_main__L__unused103_6499 s0
+// main.s191
+rw_main_s191 : [8] -> [81] -> [81] -> [106]
+rw_main_s191 x0 x1 x2 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setPC x1 x0
 
-// main.$L.pc438$6984
-rw_main__L_pc438_6984 : [8] -> [81] -> [106]
-rw_main__L_pc438_6984 x0 x1 = rw_main__L_s439_6985 x0 x1 x1
+// main.pc3
+rw_main_pc3 : [8] -> [81] -> [106]
+rw_main_pc3 x0 x1 = rw_main_s191 x0 x1 x1
 
-// main.$L.s440$6987
-rw_main__L_s440_6987 : [81] -> [81] -> [106]
-rw_main__L_s440_6987 x0 x1 = rw_main__L_pc438_6984 s0 x1
+// main.s192
+rw_main_s192 : [81] -> [81] -> [106]
+rw_main_s192 x0 x1 = rw_main_pc3 s0 x1
   where
     s0 : [8]
     s0 = rw_Main_r0 x0
 
-// main.$L.arm441$6989
-rw_main__L_arm441_6989 : [81] -> [106]
-rw_main__L_arm441_6989 x0 = rw_main__L_s440_6987 x0 x0
+// main.arm138
+rw_main_arm138 : [81] -> [106]
+rw_main_arm138 x0 = rw_main_s192 x0 x0
 
-// main.$L.s442$6990
-rw_main__L_s442_6990 : [81] -> [81] -> [106]
-rw_main__L_s442_6990 x0 x1 = rw_main__L_pc438_6984 s0 x1
+// main.s193
+rw_main_s193 : [81] -> [81] -> [106]
+rw_main_s193 x0 x1 = rw_main_pc3 s0 x1
   where
     s0 : [8]
     s0 = rw_Main_r1 x0
 
-// main.$L.arm443$6992
-rw_main__L_arm443_6992 : [81] -> [106]
-rw_main__L_arm443_6992 x0 = rw_main__L_s442_6990 x0 x0
+// main.arm139
+rw_main_arm139 : [81] -> [106]
+rw_main_arm139 x0 = rw_main_s193 x0 x0
 
-// main.$L.s444$6993
-rw_main__L_s444_6993 : [81] -> [81] -> [106]
-rw_main__L_s444_6993 x0 x1 = rw_main__L_pc438_6984 s0 x1
+// main.s194
+rw_main_s194 : [81] -> [81] -> [106]
+rw_main_s194 x0 x1 = rw_main_pc3 s0 x1
   where
     s0 : [8]
     s0 = rw_Main_r2 x0
 
-// main.$L.arm445$6995
-rw_main__L_arm445_6995 : [81] -> [106]
-rw_main__L_arm445_6995 x0 = rw_main__L_s444_6993 x0 x0
+// main.arm140
+rw_main_arm140 : [81] -> [106]
+rw_main_arm140 x0 = rw_main_s194 x0 x0
 
-// main.$L.s446$6996
-rw_main__L_s446_6996 : [81] -> [81] -> [106]
-rw_main__L_s446_6996 x0 x1 = rw_main__L_pc438_6984 s0 x1
+// main.s195
+rw_main_s195 : [81] -> [81] -> [106]
+rw_main_s195 x0 x1 = rw_main_pc3 s0 x1
   where
     s0 : [8]
     s0 = rw_Main_r3 x0
 
-// main.$L.arm447$6998
-rw_main__L_arm447_6998 : [81] -> [106]
-rw_main__L_arm447_6998 x0 = rw_main__L_s446_6996 x0 x0
+// main.arm141
+rw_main_arm141 : [81] -> [106]
+rw_main_arm141 x0 = rw_main_s195 x0 x0
 
-// main.$L.arm448$6999
-rw_main__L_arm448_6999 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm448_6999 x0 x1 x2 = if s0 == 0b00 then (rw_main__L_arm441_6989 x2) else (if s0 == 0b01 then (rw_main__L_arm443_6992 x2) else (if s0 == 0b10 then (rw_main__L_arm445_6995 x2) else (rw_main__L_arm447_6998 x2)))
+// main.arm142
+rw_main_arm142 : [1] -> [1] -> [81] -> [106]
+rw_main_arm142 x0 x1 x2 = if s0 == 0b00 then (rw_main_arm138 x2) else (if s0 == 0b01 then (rw_main_arm139 x2) else (if s0 == 0b10 then (rw_main_arm140 x2) else (rw_main_arm141 x2)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
 
-// main.$L.z432$6976
-rw_main__L_z432_6976 : [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_z432_6976 x0 x1 x2 x3 = if x2 == 0b0 then (rw_main__L__unused103_6499 x3) else (rw_main__L_arm448_6999 x0 x1 x3)
+// main.z
+rw_main_z : [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_z x0 x1 x2 x3 = if ~ (x2 @ 0) then (rw_main_zzz x3) else (rw_main_arm142 x0 x1 x3)
 
-// main.$L.s449$7000
-rw_main__L_s449_7000 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s449_7000 x0 x1 x2 x3 = rw_main__L_z432_6976 x0 x1 s0 x3
+// main.s196
+rw_main_s196 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s196 x0 x1 x2 x3 = rw_main_z x0 x1 s0 x3
   where
     s0 : [1]
     s0 = rw_Main_zFlag x2
 
-// main.$L.arm450$7002
-rw_main__L_arm450_7002 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm450_7002 x0 x1 x2 = rw_main__L_s449_7000 x0 x1 x2 x2
+// main.arm143
+rw_main_arm143 : [1] -> [1] -> [81] -> [106]
+rw_main_arm143 x0 x1 x2 = rw_main_s196 x0 x1 x2 x2
 
-// main.$L.z451$7003
-rw_main__L_z451_7003 : [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_z451_7003 x0 x1 x2 x3 = if s0 == 0b0 then (rw_main__L__unused103_6499 x3) else (rw_main__L_arm448_6999 x0 x1 x3)
+// main.z2
+rw_main_z2 : [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_z2 x0 x1 x2 x3 = if ~ (s0 @ 0) then (rw_main_zzz x3) else (rw_main_arm142 x0 x1 x3)
   where
     s0 : [1]
     s0 = rw_Main_notb x2
 
-// main.$L.s468$7027
-rw_main__L_s468_7027 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s468_7027 x0 x1 x2 x3 = rw_main__L_z451_7003 x0 x1 s0 x3
+// main.s204
+rw_main_s204 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s204 x0 x1 x2 x3 = rw_main_z2 x0 x1 s0 x3
   where
     s0 : [1]
     s0 = rw_Main_zFlag x2
 
-// main.$L.arm469$7029
-rw_main__L_arm469_7029 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm469_7029 x0 x1 x2 = rw_main__L_s468_7027 x0 x1 x2 x2
+// main.arm149
+rw_main_arm149 : [1] -> [1] -> [81] -> [106]
+rw_main_arm149 x0 x1 x2 = rw_main_s204 x0 x1 x2 x2
 
-// main.$L.c470$7030
-rw_main__L_c470_7030 : [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_c470_7030 x0 x1 x2 x3 = if x2 == 0b0 then (rw_main__L__unused103_6499 x3) else (rw_main__L_arm448_6999 x0 x1 x3)
+// main.c
+rw_main_c : [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_c x0 x1 x2 x3 = if ~ (x2 @ 0) then (rw_main_zzz x3) else (rw_main_arm142 x0 x1 x3)
 
-// main.$L.s487$7054
-rw_main__L_s487_7054 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s487_7054 x0 x1 x2 x3 = rw_main__L_c470_7030 x0 x1 s0 x3
+// main.s212
+rw_main_s212 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s212 x0 x1 x2 x3 = rw_main_c x0 x1 s0 x3
   where
     s0 : [1]
     s0 = rw_Main_cFlag x2
 
-// main.$L.arm488$7056
-rw_main__L_arm488_7056 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm488_7056 x0 x1 x2 = rw_main__L_s487_7054 x0 x1 x2 x2
+// main.arm155
+rw_main_arm155 : [1] -> [1] -> [81] -> [106]
+rw_main_arm155 x0 x1 x2 = rw_main_s212 x0 x1 x2 x2
 
-// main.$L.c489$7057
-rw_main__L_c489_7057 : [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_c489_7057 x0 x1 x2 x3 = if s0 == 0b0 then (rw_main__L__unused103_6499 x3) else (rw_main__L_arm448_6999 x0 x1 x3)
+// main.c2
+rw_main_c2 : [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_c2 x0 x1 x2 x3 = if ~ (s0 @ 0) then (rw_main_zzz x3) else (rw_main_arm142 x0 x1 x3)
   where
     s0 : [1]
     s0 = rw_Main_notb x2
 
-// main.$L.s506$7081
-rw_main__L_s506_7081 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s506_7081 x0 x1 x2 x3 = rw_main__L_c489_7057 x0 x1 s0 x3
+// main.s220
+rw_main_s220 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s220 x0 x1 x2 x3 = rw_main_c2 x0 x1 s0 x3
   where
     s0 : [1]
     s0 = rw_Main_cFlag x2
 
-// main.$L.arm507$7083
-rw_main__L_arm507_7083 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm507_7083 x0 x1 x2 = rw_main__L_s506_7081 x0 x1 x2 x2
+// main.arm161
+rw_main_arm161 : [1] -> [1] -> [81] -> [106]
+rw_main_arm161 x0 x1 x2 = rw_main_s220 x0 x1 x2 x2
 
-// main.$L.s514$7092
-rw_main__L_s514_7092 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s514_7092 x0 x1 x2 = rw_main__L__unused103_6499 s0
+// main.s223
+rw_main_s223 : [8] -> [81] -> [81] -> [106]
+rw_main_s223 x0 x1 x2 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setPC x1 x0
 
-// main.$L.x508$7084
-rw_main__L_x508_7084 : [8] -> [81] -> [106]
-rw_main__L_x508_7084 x0 x1 = rw_main__L_s514_7092 x0 x1 x1
+// main.x3
+rw_main_x3 : [8] -> [81] -> [106]
+rw_main_x3 x0 x1 = rw_main_s223 x0 x1 x1
 
-// main.$L.s515$7094
-rw_main__L_s515_7094 : [81] -> [81] -> [106]
-rw_main__L_s515_7094 x0 x1 = rw_main__L_x508_7084 s0 x1
+// main.s224
+rw_main_s224 : [81] -> [81] -> [106]
+rw_main_s224 x0 x1 = rw_main_x3 s0 x1
   where
     s0 : [8]
     s0 = rw_Main_r0 x0
 
-// main.$L.arm516$7096
-rw_main__L_arm516_7096 : [81] -> [106]
-rw_main__L_arm516_7096 x0 = rw_main__L_s515_7094 x0 x0
+// main.arm162
+rw_main_arm162 : [81] -> [106]
+rw_main_arm162 x0 = rw_main_s224 x0 x0
 
-// main.$L.s517$7097
-rw_main__L_s517_7097 : [81] -> [81] -> [106]
-rw_main__L_s517_7097 x0 x1 = rw_main__L_x508_7084 s0 x1
+// main.s225
+rw_main_s225 : [81] -> [81] -> [106]
+rw_main_s225 x0 x1 = rw_main_x3 s0 x1
   where
     s0 : [8]
     s0 = rw_Main_r1 x0
 
-// main.$L.arm518$7099
-rw_main__L_arm518_7099 : [81] -> [106]
-rw_main__L_arm518_7099 x0 = rw_main__L_s517_7097 x0 x0
+// main.arm163
+rw_main_arm163 : [81] -> [106]
+rw_main_arm163 x0 = rw_main_s225 x0 x0
 
-// main.$L.s519$7100
-rw_main__L_s519_7100 : [81] -> [81] -> [106]
-rw_main__L_s519_7100 x0 x1 = rw_main__L_x508_7084 s0 x1
+// main.s226
+rw_main_s226 : [81] -> [81] -> [106]
+rw_main_s226 x0 x1 = rw_main_x3 s0 x1
   where
     s0 : [8]
     s0 = rw_Main_r2 x0
 
-// main.$L.arm520$7102
-rw_main__L_arm520_7102 : [81] -> [106]
-rw_main__L_arm520_7102 x0 = rw_main__L_s519_7100 x0 x0
+// main.arm164
+rw_main_arm164 : [81] -> [106]
+rw_main_arm164 x0 = rw_main_s226 x0 x0
 
-// main.$L.s521$7103
-rw_main__L_s521_7103 : [81] -> [81] -> [106]
-rw_main__L_s521_7103 x0 x1 = rw_main__L_x508_7084 s0 x1
+// main.s227
+rw_main_s227 : [81] -> [81] -> [106]
+rw_main_s227 x0 x1 = rw_main_x3 s0 x1
   where
     s0 : [8]
     s0 = rw_Main_r3 x0
 
-// main.$L.arm522$7105
-rw_main__L_arm522_7105 : [81] -> [106]
-rw_main__L_arm522_7105 x0 = rw_main__L_s521_7103 x0 x0
+// main.arm165
+rw_main_arm165 : [81] -> [106]
+rw_main_arm165 x0 = rw_main_s227 x0 x0
 
-// main.$L.arm523$7106
-rw_main__L_arm523_7106 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm523_7106 x0 x1 x2 = if s0 == 0b00 then (rw_main__L_arm516_7096 x2) else (if s0 == 0b01 then (rw_main__L_arm518_7099 x2) else (if s0 == 0b10 then (rw_main__L_arm520_7102 x2) else (rw_main__L_arm522_7105 x2)))
+// main.arm166
+rw_main_arm166 : [1] -> [1] -> [81] -> [106]
+rw_main_arm166 x0 x1 x2 = if s0 == 0b00 then (rw_main_arm162 x2) else (if s0 == 0b01 then (rw_main_arm163 x2) else (if s0 == 0b10 then (rw_main_arm164 x2) else (rw_main_arm165 x2)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
 
-// main.$L.s529$7114
-rw_main__L_s529_7114 : [1] -> [81] -> [81] -> [106]
-rw_main__L_s529_7114 x0 x1 x2 = rw_main__L__unused103_6499 s0
+// main.s230
+rw_main_s230 : [1] -> [81] -> [81] -> [106]
+rw_main_s230 x0 x1 x2 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setIEFlag x1 x0
 
-// main.$L.arm530$7116
-rw_main__L_arm530_7116 : [1] -> [81] -> [106]
-rw_main__L_arm530_7116 x0 x1 = rw_main__L_s529_7114 x0 x1 x1
+// main.arm167
+rw_main_arm167 : [1] -> [81] -> [106]
+rw_main_arm167 x0 x1 = rw_main_s230 x0 x1 x1
 
-// main.$L.s537$7125
-rw_main__L_s537_7125 : [18] -> [81] -> [81] -> [106]
-rw_main__L_s537_7125 x0 x1 x2 = rw_main__L__unused103_6499 s1
+// main.s233
+rw_main_s233 : [18] -> [81] -> [81] -> [106]
+rw_main_s233 x0 x1 x2 = rw_main_zzz s1
   where
     s0 : [18]
     s0 = rw_Main_setIackOut x0 0b1
     s1 : [81]
     s1 = rw_Main_setOutputs x1 s0
 
-// main.$L.o536$7124
-rw_main__L_o536_7124 : [18] -> [81] -> [106]
-rw_main__L_o536_7124 x0 x1 = rw_main__L_s537_7125 x0 x1 x1
+// main.o30
+rw_main_o30 : [18] -> [81] -> [106]
+rw_main_o30 x0 x1 = rw_main_s233 x0 x1 x1
 
-// main.$L.s538$7127
-rw_main__L_s538_7127 : [81] -> [81] -> [106]
-rw_main__L_s538_7127 x0 x1 = rw_main__L_o536_7124 s0 x1
+// main.s234
+rw_main_s234 : [81] -> [81] -> [106]
+rw_main_s234 x0 x1 = rw_main_o30 s0 x1
   where
     s0 : [18]
     s0 = rw_Main_outputs x0
 
-// main.$L.arm539$7129
-rw_main__L_arm539_7129 : [81] -> [106]
-rw_main__L_arm539_7129 x0 = rw_main__L_s538_7127 x0 x0
+// main.arm168
+rw_main_arm168 : [81] -> [106]
+rw_main_arm168 x0 = rw_main_s234 x0 x0
 
-// main.$L.s551$7143
-rw_main__L_s551_7143 : [1] -> [81] -> [81] -> [106]
-rw_main__L_s551_7143 x0 x1 x2 = rw_main__L__unused103_6499 s0
+// main.s237
+rw_main_s237 : [1] -> [81] -> [81] -> [106]
+rw_main_s237 x0 x1 x2 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setCFlag x1 x0
 
-// main.$L.c545$7135
-rw_main__L_c545_7135 : [1] -> [81] -> [106]
-rw_main__L_c545_7135 x0 x1 = rw_main__L_s551_7143 x0 x1 x1
+// main.c3
+rw_main_c3 : [1] -> [81] -> [106]
+rw_main_c3 x0 x1 = rw_main_s237 x0 x1 x1
 
-// main.$L.s552$7145
-rw_main__L_s552_7145 : [81] -> [81] -> [106]
-rw_main__L_s552_7145 x0 x1 = rw_main__L_c545_7135 s0 x1
+// main.s238
+rw_main_s238 : [81] -> [81] -> [106]
+rw_main_s238 x0 x1 = rw_main_c3 s0 x1
   where
     s0 : [1]
     s0 = rw_Main_csFlag x0
 
-// main.$L._unused544$7134
-rw_main__L__unused544_7134 : [81] -> [106]
-rw_main__L__unused544_7134 x0 = rw_main__L_s552_7145 x0 x0
+// main._unused41
+rw_main__unused41 : [81] -> [106]
+rw_main__unused41 x0 = rw_main_s238 x0 x0
 
-// main.$L.s553$7147
-rw_main__L_s553_7147 : [1] -> [81] -> [81] -> [106]
-rw_main__L_s553_7147 x0 x1 x2 = rw_main__L__unused544_7134 s0
+// main.s239
+rw_main_s239 : [1] -> [81] -> [81] -> [106]
+rw_main_s239 x0 x1 x2 = rw_main__unused41 s0
   where
     s0 : [81]
     s0 = rw_Main_setZFlag x1 x0
 
-// main.$L.z543$7133
-rw_main__L_z543_7133 : [1] -> [81] -> [106]
-rw_main__L_z543_7133 x0 x1 = rw_main__L_s553_7147 x0 x1 x1
+// main.z3
+rw_main_z3 : [1] -> [81] -> [106]
+rw_main_z3 x0 x1 = rw_main_s239 x0 x1 x1
 
-// main.$L.s554$7149
-rw_main__L_s554_7149 : [81] -> [81] -> [106]
-rw_main__L_s554_7149 x0 x1 = rw_main__L_z543_7133 s0 x1
+// main.s240
+rw_main_s240 : [81] -> [81] -> [106]
+rw_main_s240 x0 x1 = rw_main_z3 s0 x1
   where
     s0 : [1]
     s0 = rw_Main_zsFlag x0
 
-// main.$L._unused542$7132
-rw_main__L__unused542_7132 : [81] -> [106]
-rw_main__L__unused542_7132 x0 = rw_main__L_s554_7149 x0 x0
+// main._unused40
+rw_main__unused40 : [81] -> [106]
+rw_main__unused40 x0 = rw_main_s240 x0 x0
 
-// main.$L.s555$7151
-rw_main__L_s555_7151 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s555_7151 x0 x1 x2 = rw_main__L__unused542_7132 s0
+// main.s241
+rw_main_s241 : [8] -> [81] -> [81] -> [106]
+rw_main_s241 x0 x1 x2 = rw_main__unused40 s0
   where
     s0 : [81]
     s0 = rw_Main_setPC x1 x0
 
-// main.$L.pc541$7131
-rw_main__L_pc541_7131 : [8] -> [81] -> [106]
-rw_main__L_pc541_7131 x0 x1 = rw_main__L_s555_7151 x0 x1 x1
+// main.pc7
+rw_main_pc7 : [8] -> [81] -> [106]
+rw_main_pc7 x0 x1 = rw_main_s241 x0 x1 x1
 
-// main.$L.s556$7153
-rw_main__L_s556_7153 : [81] -> [81] -> [106]
-rw_main__L_s556_7153 x0 x1 = rw_main__L_pc541_7131 s0 x1
+// main.s242
+rw_main_s242 : [81] -> [81] -> [106]
+rw_main_s242 x0 x1 = rw_main_pc7 s0 x1
   where
     s0 : [8]
     s0 = rw_Main_pcSave x0
 
-// main.$L._unused540$7130
-rw_main__L__unused540_7130 : [81] -> [106]
-rw_main__L__unused540_7130 x0 = rw_main__L_s556_7153 x0 x0
+// main._unused39
+rw_main__unused39 : [81] -> [106]
+rw_main__unused39 x0 = rw_main_s242 x0 x0
 
-// main.$L.s557$7155
-rw_main__L_s557_7155 : [81] -> [81] -> [106]
-rw_main__L_s557_7155 x0 x1 = rw_main__L__unused540_7130 s0
+// main.s243
+rw_main_s243 : [81] -> [81] -> [106]
+rw_main_s243 x0 x1 = rw_main__unused39 s0
   where
     s0 : [81]
     s0 = rw_Main_setIEFlag x0 0b1
 
-// main.$L.arm558$7157
-rw_main__L_arm558_7157 : [81] -> [106]
-rw_main__L_arm558_7157 x0 = rw_main__L_s557_7155 x0 x0
+// main.arm169
+rw_main_arm169 : [81] -> [106]
+rw_main_arm169 x0 = rw_main_s243 x0 x0
 
-// main.$L.s565$7166
-rw_main__L_s565_7166 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s565_7166 x0 x1 x2 = rw_main__L__unused103_6499 s0
+// main.s246
+rw_main_s246 : [8] -> [81] -> [81] -> [106]
+rw_main_s246 x0 x1 x2 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setR0 x1 x0
 
-// main.$L.arm566$7168
-rw_main__L_arm566_7168 : [8] -> [81] -> [106]
-rw_main__L_arm566_7168 x0 x1 = rw_main__L_s565_7166 x0 x1 x1
+// main.arm170
+rw_main_arm170 : [8] -> [81] -> [106]
+rw_main_arm170 x0 x1 = rw_main_s246 x0 x1 x1
 
-// main.$L.s567$7169
-rw_main__L_s567_7169 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s567_7169 x0 x1 x2 = rw_main__L__unused103_6499 s0
+// main.s247
+rw_main_s247 : [8] -> [81] -> [81] -> [106]
+rw_main_s247 x0 x1 x2 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setR1 x1 x0
 
-// main.$L.arm568$7171
-rw_main__L_arm568_7171 : [8] -> [81] -> [106]
-rw_main__L_arm568_7171 x0 x1 = rw_main__L_s567_7169 x0 x1 x1
+// main.arm171
+rw_main_arm171 : [8] -> [81] -> [106]
+rw_main_arm171 x0 x1 = rw_main_s247 x0 x1 x1
 
-// main.$L.s569$7172
-rw_main__L_s569_7172 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s569_7172 x0 x1 x2 = rw_main__L__unused103_6499 s0
+// main.s248
+rw_main_s248 : [8] -> [81] -> [81] -> [106]
+rw_main_s248 x0 x1 x2 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setR2 x1 x0
 
-// main.$L.arm570$7174
-rw_main__L_arm570_7174 : [8] -> [81] -> [106]
-rw_main__L_arm570_7174 x0 x1 = rw_main__L_s569_7172 x0 x1 x1
+// main.arm172
+rw_main_arm172 : [8] -> [81] -> [106]
+rw_main_arm172 x0 x1 = rw_main_s248 x0 x1 x1
 
-// main.$L.s571$7175
-rw_main__L_s571_7175 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s571_7175 x0 x1 x2 = rw_main__L__unused103_6499 s0
+// main.s249
+rw_main_s249 : [8] -> [81] -> [81] -> [106]
+rw_main_s249 x0 x1 x2 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setR3 x1 x0
 
-// main.$L.arm572$7177
-rw_main__L_arm572_7177 : [8] -> [81] -> [106]
-rw_main__L_arm572_7177 x0 x1 = rw_main__L_s571_7175 x0 x1 x1
+// main.arm173
+rw_main_arm173 : [8] -> [81] -> [106]
+rw_main_arm173 x0 x1 = rw_main_s249 x0 x1 x1
 
-// main.$L.v559$7158
-rw_main__L_v559_7158 : [2] -> [8] -> [81] -> [106]
-rw_main__L_v559_7158 x0 x1 x2 = if x0 == 0b00 then (rw_main__L_arm566_7168 s0 x2) else (if x0 == 0b01 then (rw_main__L_arm568_7171 s0 x2) else (if x0 == 0b10 then (rw_main__L_arm570_7174 s0 x2) else (rw_main__L_arm572_7177 s0 x2)))
+// main.v3
+rw_main_v3 : [2] -> [8] -> [81] -> [106]
+rw_main_v3 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm170 s0 x2) else (if x0 == 0b01 then (rw_main_arm171 s0 x2) else (if x0 == 0b10 then (rw_main_arm172 s0 x2) else (rw_main_arm173 s0 x2)))
   where
     s0 : [8]
     s0 = ~ x1
 
-// main.$L.s573$7178
-rw_main__L_s573_7178 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s573_7178 x0 x1 x2 = rw_main__L_v559_7158 x0 s0 x2
+// main.s250
+rw_main_s250 : [2] -> [81] -> [81] -> [106]
+rw_main_s250 x0 x1 x2 = rw_main_v3 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r0 x1
 
-// main.$L.arm574$7180
-rw_main__L_arm574_7180 : [2] -> [81] -> [106]
-rw_main__L_arm574_7180 x0 x1 = rw_main__L_s573_7178 x0 x1 x1
+// main.arm174
+rw_main_arm174 : [2] -> [81] -> [106]
+rw_main_arm174 x0 x1 = rw_main_s250 x0 x1 x1
 
-// main.$L.s575$7181
-rw_main__L_s575_7181 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s575_7181 x0 x1 x2 = rw_main__L_v559_7158 x0 s0 x2
+// main.s251
+rw_main_s251 : [2] -> [81] -> [81] -> [106]
+rw_main_s251 x0 x1 x2 = rw_main_v3 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r1 x1
 
-// main.$L.arm576$7183
-rw_main__L_arm576_7183 : [2] -> [81] -> [106]
-rw_main__L_arm576_7183 x0 x1 = rw_main__L_s575_7181 x0 x1 x1
+// main.arm175
+rw_main_arm175 : [2] -> [81] -> [106]
+rw_main_arm175 x0 x1 = rw_main_s251 x0 x1 x1
 
-// main.$L.s577$7184
-rw_main__L_s577_7184 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s577_7184 x0 x1 x2 = rw_main__L_v559_7158 x0 s0 x2
+// main.s252
+rw_main_s252 : [2] -> [81] -> [81] -> [106]
+rw_main_s252 x0 x1 x2 = rw_main_v3 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r2 x1
 
-// main.$L.arm578$7186
-rw_main__L_arm578_7186 : [2] -> [81] -> [106]
-rw_main__L_arm578_7186 x0 x1 = rw_main__L_s577_7184 x0 x1 x1
+// main.arm176
+rw_main_arm176 : [2] -> [81] -> [106]
+rw_main_arm176 x0 x1 = rw_main_s252 x0 x1 x1
 
-// main.$L.s579$7187
-rw_main__L_s579_7187 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s579_7187 x0 x1 x2 = rw_main__L_v559_7158 x0 s0 x2
+// main.s253
+rw_main_s253 : [2] -> [81] -> [81] -> [106]
+rw_main_s253 x0 x1 x2 = rw_main_v3 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r3 x1
 
-// main.$L.arm580$7189
-rw_main__L_arm580_7189 : [2] -> [81] -> [106]
-rw_main__L_arm580_7189 x0 x1 = rw_main__L_s579_7187 x0 x1 x1
+// main.arm177
+rw_main_arm177 : [2] -> [81] -> [106]
+rw_main_arm177 x0 x1 = rw_main_s253 x0 x1 x1
 
-// main.$L.arm581$7190
-rw_main__L_arm581_7190 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm581_7190 x0 x1 x2 = if s0 == 0b00 then (rw_main__L_arm574_7180 s0 x2) else (if s0 == 0b01 then (rw_main__L_arm576_7183 s0 x2) else (if s0 == 0b10 then (rw_main__L_arm578_7186 s0 x2) else (rw_main__L_arm580_7189 s0 x2)))
+// main.arm178
+rw_main_arm178 : [1] -> [1] -> [81] -> [106]
+rw_main_arm178 x0 x1 x2 = if s0 == 0b00 then (rw_main_arm174 s0 x2) else (if s0 == 0b01 then (rw_main_arm175 s0 x2) else (if s0 == 0b10 then (rw_main_arm176 s0 x2) else (rw_main_arm177 s0 x2)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
 
-// main.$L.s587$7198
-rw_main__L_s587_7198 : [81] -> [81] -> [106]
-rw_main__L_s587_7198 x0 x1 = rw_main__L__unused103_6499 s0
+// main.s256
+rw_main_s256 : [81] -> [81] -> [106]
+rw_main_s256 x0 x1 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setR0 x0 0x00
 
-// main.$L.arm588$7200
-rw_main__L_arm588_7200 : [81] -> [106]
-rw_main__L_arm588_7200 x0 = rw_main__L_s587_7198 x0 x0
+// main.arm179
+rw_main_arm179 : [81] -> [106]
+rw_main_arm179 x0 = rw_main_s256 x0 x0
 
-// main.$L.s589$7201
-rw_main__L_s589_7201 : [81] -> [81] -> [106]
-rw_main__L_s589_7201 x0 x1 = rw_main__L__unused103_6499 s0
+// main.s257
+rw_main_s257 : [81] -> [81] -> [106]
+rw_main_s257 x0 x1 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setR1 x0 0x00
 
-// main.$L.arm590$7203
-rw_main__L_arm590_7203 : [81] -> [106]
-rw_main__L_arm590_7203 x0 = rw_main__L_s589_7201 x0 x0
+// main.arm180
+rw_main_arm180 : [81] -> [106]
+rw_main_arm180 x0 = rw_main_s257 x0 x0
 
-// main.$L.s591$7204
-rw_main__L_s591_7204 : [81] -> [81] -> [106]
-rw_main__L_s591_7204 x0 x1 = rw_main__L__unused103_6499 s0
+// main.s258
+rw_main_s258 : [81] -> [81] -> [106]
+rw_main_s258 x0 x1 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setR2 x0 0x00
 
-// main.$L.arm592$7206
-rw_main__L_arm592_7206 : [81] -> [106]
-rw_main__L_arm592_7206 x0 = rw_main__L_s591_7204 x0 x0
+// main.arm181
+rw_main_arm181 : [81] -> [106]
+rw_main_arm181 x0 = rw_main_s258 x0 x0
 
-// main.$L.s593$7207
-rw_main__L_s593_7207 : [81] -> [81] -> [106]
-rw_main__L_s593_7207 x0 x1 = rw_main__L__unused103_6499 s0
+// main.s259
+rw_main_s259 : [81] -> [81] -> [106]
+rw_main_s259 x0 x1 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setR3 x0 0x00
 
-// main.$L.arm594$7209
-rw_main__L_arm594_7209 : [81] -> [106]
-rw_main__L_arm594_7209 x0 = rw_main__L_s593_7207 x0 x0
+// main.arm182
+rw_main_arm182 : [81] -> [106]
+rw_main_arm182 x0 = rw_main_s259 x0 x0
 
-// main.$L.arm595$7210
-rw_main__L_arm595_7210 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm595_7210 x0 x1 x2 = if s0 == 0b00 then (rw_main__L_arm588_7200 x2) else (if s0 == 0b01 then (rw_main__L_arm590_7203 x2) else (if s0 == 0b10 then (rw_main__L_arm592_7206 x2) else (rw_main__L_arm594_7209 x2)))
+// main.arm183
+rw_main_arm183 : [1] -> [1] -> [81] -> [106]
+rw_main_arm183 x0 x1 x2 = if s0 == 0b00 then (rw_main_arm179 x2) else (if s0 == 0b01 then (rw_main_arm180 x2) else (if s0 == 0b10 then (rw_main_arm181 x2) else (rw_main_arm182 x2)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
 
-// main.$L.s604$7221
-rw_main__L_s604_7221 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s604_7221 x0 x1 x2 = rw_main__L__unused103_6499 s0
+// main.s262
+rw_main_s262 : [8] -> [81] -> [81] -> [106]
+rw_main_s262 x0 x1 x2 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setZFlag x1 [x0 == 0x00]
 
-// main.$L._unused598$7213
-rw_main__L__unused598_7213 : [8] -> [81] -> [106]
-rw_main__L__unused598_7213 x0 x1 = rw_main__L_s604_7221 x0 x1 x1
+// main._unused45
+rw_main__unused45 : [8] -> [81] -> [106]
+rw_main__unused45 x0 x1 = rw_main_s262 x0 x1 x1
 
-// main.$L.s605$7223
-rw_main__L_s605_7223 : [9] -> [8] -> [81] -> [81] -> [106]
-rw_main__L_s605_7223 x0 x1 x2 x3 = rw_main__L__unused598_7213 x1 s2
+// main.s263
+rw_main_s263 : [9] -> [8] -> [81] -> [81] -> [106]
+rw_main_s263 x0 x1 x2 x3 = rw_main__unused45 x1 s2
   where
     s0 : [1]
     s0 = take`{1} x0
@@ -1973,368 +1973,368 @@ rw_main__L_s605_7223 x0 x1 x2 x3 = rw_main__L__unused598_7213 x1 s2
     s2 : [81]
     s2 = rw_Main_setCFlag x2 s1
 
-// main.$L._unused597$7212
-rw_main__L__unused597_7212 : [9] -> [8] -> [81] -> [106]
-rw_main__L__unused597_7212 x0 x1 x2 = rw_main__L_s605_7223 x0 x1 x2 x2
+// main._unused44
+rw_main__unused44 : [9] -> [8] -> [81] -> [106]
+rw_main__unused44 x0 x1 x2 = rw_main_s263 x0 x1 x2 x2
 
-// main.$L.s606$7225
-rw_main__L_s606_7225 : [9] -> [8] -> [81] -> [81] -> [106]
-rw_main__L_s606_7225 x0 x1 x2 x3 = rw_main__L__unused597_7212 x0 x1 s0
+// main.s264
+rw_main_s264 : [9] -> [8] -> [81] -> [81] -> [106]
+rw_main_s264 x0 x1 x2 x3 = rw_main__unused44 x0 x1 s0
   where
     s0 : [81]
     s0 = rw_Main_setR0 x2 x1
 
-// main.$L.arm607$7227
-rw_main__L_arm607_7227 : [9] -> [8] -> [81] -> [106]
-rw_main__L_arm607_7227 x0 x1 x2 = rw_main__L_s606_7225 x0 x1 x2 x2
+// main.arm184
+rw_main_arm184 : [9] -> [8] -> [81] -> [106]
+rw_main_arm184 x0 x1 x2 = rw_main_s264 x0 x1 x2 x2
 
-// main.$L.s608$7228
-rw_main__L_s608_7228 : [9] -> [8] -> [81] -> [81] -> [106]
-rw_main__L_s608_7228 x0 x1 x2 x3 = rw_main__L__unused597_7212 x0 x1 s0
+// main.s265
+rw_main_s265 : [9] -> [8] -> [81] -> [81] -> [106]
+rw_main_s265 x0 x1 x2 x3 = rw_main__unused44 x0 x1 s0
   where
     s0 : [81]
     s0 = rw_Main_setR1 x2 x1
 
-// main.$L.arm609$7230
-rw_main__L_arm609_7230 : [9] -> [8] -> [81] -> [106]
-rw_main__L_arm609_7230 x0 x1 x2 = rw_main__L_s608_7228 x0 x1 x2 x2
+// main.arm185
+rw_main_arm185 : [9] -> [8] -> [81] -> [106]
+rw_main_arm185 x0 x1 x2 = rw_main_s265 x0 x1 x2 x2
 
-// main.$L.s610$7231
-rw_main__L_s610_7231 : [9] -> [8] -> [81] -> [81] -> [106]
-rw_main__L_s610_7231 x0 x1 x2 x3 = rw_main__L__unused597_7212 x0 x1 s0
+// main.s266
+rw_main_s266 : [9] -> [8] -> [81] -> [81] -> [106]
+rw_main_s266 x0 x1 x2 x3 = rw_main__unused44 x0 x1 s0
   where
     s0 : [81]
     s0 = rw_Main_setR2 x2 x1
 
-// main.$L.arm611$7233
-rw_main__L_arm611_7233 : [9] -> [8] -> [81] -> [106]
-rw_main__L_arm611_7233 x0 x1 x2 = rw_main__L_s610_7231 x0 x1 x2 x2
+// main.arm186
+rw_main_arm186 : [9] -> [8] -> [81] -> [106]
+rw_main_arm186 x0 x1 x2 = rw_main_s266 x0 x1 x2 x2
 
-// main.$L.s612$7234
-rw_main__L_s612_7234 : [9] -> [8] -> [81] -> [81] -> [106]
-rw_main__L_s612_7234 x0 x1 x2 x3 = rw_main__L__unused597_7212 x0 x1 s0
+// main.s267
+rw_main_s267 : [9] -> [8] -> [81] -> [81] -> [106]
+rw_main_s267 x0 x1 x2 x3 = rw_main__unused44 x0 x1 s0
   where
     s0 : [81]
     s0 = rw_Main_setR3 x2 x1
 
-// main.$L.arm613$7236
-rw_main__L_arm613_7236 : [9] -> [8] -> [81] -> [106]
-rw_main__L_arm613_7236 x0 x1 x2 = rw_main__L_s612_7234 x0 x1 x2 x2
+// main.arm187
+rw_main_arm187 : [9] -> [8] -> [81] -> [106]
+rw_main_arm187 x0 x1 x2 = rw_main_s267 x0 x1 x2 x2
 
-// main.$L.v596$7211
-rw_main__L_v596_7211 : [2] -> [8] -> [81] -> [106]
-rw_main__L_v596_7211 x0 x1 x2 = if x0 == 0b00 then (rw_main__L_arm607_7227 s0 s2 x2) else (if x0 == 0b01 then (rw_main__L_arm609_7230 s0 s2 x2) else (if x0 == 0b10 then (rw_main__L_arm611_7233 s0 s2 x2) else (rw_main__L_arm613_7236 s0 s2 x2)))
+// main.v4
+rw_main_v4 : [2] -> [8] -> [81] -> [106]
+rw_main_v4 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm184 s0 s2 x2) else (if x0 == 0b01 then (rw_main_arm185 s0 s2 x2) else (if x0 == 0b10 then (rw_main_arm186 s0 s2 x2) else (rw_main_arm187 s0 s2 x2)))
   where
     s0 : [9]
-    s0 = rw_Main_plusCW8_s1 x1
+    s0 = rw_Main_plusCW8_sMain_oneW8_False_Bool x1
     s1 : [8]
     s1 = drop`{1} s0
     s2 : [8]
     s2 = s1
 
-// main.$L.s614$7237
-rw_main__L_s614_7237 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s614_7237 x0 x1 x2 = rw_main__L_v596_7211 x0 s0 x2
+// main.s268
+rw_main_s268 : [2] -> [81] -> [81] -> [106]
+rw_main_s268 x0 x1 x2 = rw_main_v4 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r0 x1
 
-// main.$L.arm615$7239
-rw_main__L_arm615_7239 : [2] -> [81] -> [106]
-rw_main__L_arm615_7239 x0 x1 = rw_main__L_s614_7237 x0 x1 x1
+// main.arm188
+rw_main_arm188 : [2] -> [81] -> [106]
+rw_main_arm188 x0 x1 = rw_main_s268 x0 x1 x1
 
-// main.$L.s616$7240
-rw_main__L_s616_7240 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s616_7240 x0 x1 x2 = rw_main__L_v596_7211 x0 s0 x2
+// main.s269
+rw_main_s269 : [2] -> [81] -> [81] -> [106]
+rw_main_s269 x0 x1 x2 = rw_main_v4 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r1 x1
 
-// main.$L.arm617$7242
-rw_main__L_arm617_7242 : [2] -> [81] -> [106]
-rw_main__L_arm617_7242 x0 x1 = rw_main__L_s616_7240 x0 x1 x1
+// main.arm189
+rw_main_arm189 : [2] -> [81] -> [106]
+rw_main_arm189 x0 x1 = rw_main_s269 x0 x1 x1
 
-// main.$L.s618$7243
-rw_main__L_s618_7243 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s618_7243 x0 x1 x2 = rw_main__L_v596_7211 x0 s0 x2
+// main.s270
+rw_main_s270 : [2] -> [81] -> [81] -> [106]
+rw_main_s270 x0 x1 x2 = rw_main_v4 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r2 x1
 
-// main.$L.arm619$7245
-rw_main__L_arm619_7245 : [2] -> [81] -> [106]
-rw_main__L_arm619_7245 x0 x1 = rw_main__L_s618_7243 x0 x1 x1
+// main.arm190
+rw_main_arm190 : [2] -> [81] -> [106]
+rw_main_arm190 x0 x1 = rw_main_s270 x0 x1 x1
 
-// main.$L.s620$7246
-rw_main__L_s620_7246 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s620_7246 x0 x1 x2 = rw_main__L_v596_7211 x0 s0 x2
+// main.s271
+rw_main_s271 : [2] -> [81] -> [81] -> [106]
+rw_main_s271 x0 x1 x2 = rw_main_v4 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r3 x1
 
-// main.$L.arm621$7248
-rw_main__L_arm621_7248 : [2] -> [81] -> [106]
-rw_main__L_arm621_7248 x0 x1 = rw_main__L_s620_7246 x0 x1 x1
+// main.arm191
+rw_main_arm191 : [2] -> [81] -> [106]
+rw_main_arm191 x0 x1 = rw_main_s271 x0 x1 x1
 
-// main.$L.arm622$7249
-rw_main__L_arm622_7249 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm622_7249 x0 x1 x2 = if s0 == 0b00 then (rw_main__L_arm615_7239 s0 x2) else (if s0 == 0b01 then (rw_main__L_arm617_7242 s0 x2) else (if s0 == 0b10 then (rw_main__L_arm619_7245 s0 x2) else (rw_main__L_arm621_7248 s0 x2)))
+// main.arm192
+rw_main_arm192 : [1] -> [1] -> [81] -> [106]
+rw_main_arm192 x0 x1 x2 = if s0 == 0b00 then (rw_main_arm188 s0 x2) else (if s0 == 0b01 then (rw_main_arm189 s0 x2) else (if s0 == 0b10 then (rw_main_arm190 s0 x2) else (rw_main_arm191 s0 x2)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
 
-// main.$L.v623$7250
-rw_main__L_v623_7250 : [2] -> [8] -> [81] -> [106]
-rw_main__L_v623_7250 x0 x1 x2 = if x0 == 0b00 then (rw_main__L_arm607_7227 s0 s2 x2) else (if x0 == 0b01 then (rw_main__L_arm609_7230 s0 s2 x2) else (if x0 == 0b10 then (rw_main__L_arm611_7233 s0 s2 x2) else (rw_main__L_arm613_7236 s0 s2 x2)))
+// main.v5
+rw_main_v5 : [2] -> [8] -> [81] -> [106]
+rw_main_v5 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm184 s0 s2 x2) else (if x0 == 0b01 then (rw_main_arm185 s0 s2 x2) else (if x0 == 0b10 then (rw_main_arm186 s0 s2 x2) else (rw_main_arm187 s0 s2 x2)))
   where
     s0 : [9]
-    s0 = rw_Main_minusCW8_s2 x1
+    s0 = rw_Main_minusCW8_sMain_oneW8_False_Bool x1
     s1 : [8]
     s1 = drop`{1} s0
     s2 : [8]
     s2 = s1
 
-// main.$L.s641$7276
-rw_main__L_s641_7276 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s641_7276 x0 x1 x2 = rw_main__L_v623_7250 x0 s0 x2
+// main.s280
+rw_main_s280 : [2] -> [81] -> [81] -> [106]
+rw_main_s280 x0 x1 x2 = rw_main_v5 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r0 x1
 
-// main.$L.arm642$7278
-rw_main__L_arm642_7278 : [2] -> [81] -> [106]
-rw_main__L_arm642_7278 x0 x1 = rw_main__L_s641_7276 x0 x1 x1
+// main.arm197
+rw_main_arm197 : [2] -> [81] -> [106]
+rw_main_arm197 x0 x1 = rw_main_s280 x0 x1 x1
 
-// main.$L.s643$7279
-rw_main__L_s643_7279 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s643_7279 x0 x1 x2 = rw_main__L_v623_7250 x0 s0 x2
+// main.s281
+rw_main_s281 : [2] -> [81] -> [81] -> [106]
+rw_main_s281 x0 x1 x2 = rw_main_v5 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r1 x1
 
-// main.$L.arm644$7281
-rw_main__L_arm644_7281 : [2] -> [81] -> [106]
-rw_main__L_arm644_7281 x0 x1 = rw_main__L_s643_7279 x0 x1 x1
+// main.arm198
+rw_main_arm198 : [2] -> [81] -> [106]
+rw_main_arm198 x0 x1 = rw_main_s281 x0 x1 x1
 
-// main.$L.s645$7282
-rw_main__L_s645_7282 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s645_7282 x0 x1 x2 = rw_main__L_v623_7250 x0 s0 x2
+// main.s282
+rw_main_s282 : [2] -> [81] -> [81] -> [106]
+rw_main_s282 x0 x1 x2 = rw_main_v5 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r2 x1
 
-// main.$L.arm646$7284
-rw_main__L_arm646_7284 : [2] -> [81] -> [106]
-rw_main__L_arm646_7284 x0 x1 = rw_main__L_s645_7282 x0 x1 x1
+// main.arm199
+rw_main_arm199 : [2] -> [81] -> [106]
+rw_main_arm199 x0 x1 = rw_main_s282 x0 x1 x1
 
-// main.$L.s647$7285
-rw_main__L_s647_7285 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s647_7285 x0 x1 x2 = rw_main__L_v623_7250 x0 s0 x2
+// main.s283
+rw_main_s283 : [2] -> [81] -> [81] -> [106]
+rw_main_s283 x0 x1 x2 = rw_main_v5 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r3 x1
 
-// main.$L.arm648$7287
-rw_main__L_arm648_7287 : [2] -> [81] -> [106]
-rw_main__L_arm648_7287 x0 x1 = rw_main__L_s647_7285 x0 x1 x1
+// main.arm200
+rw_main_arm200 : [2] -> [81] -> [106]
+rw_main_arm200 x0 x1 = rw_main_s283 x0 x1 x1
 
-// main.$L.arm649$7288
-rw_main__L_arm649_7288 : [1] -> [1] -> [81] -> [106]
-rw_main__L_arm649_7288 x0 x1 x2 = if s0 == 0b00 then (rw_main__L_arm642_7278 s0 x2) else (if s0 == 0b01 then (rw_main__L_arm644_7281 s0 x2) else (if s0 == 0b10 then (rw_main__L_arm646_7284 s0 x2) else (rw_main__L_arm648_7287 s0 x2)))
+// main.arm201
+rw_main_arm201 : [1] -> [1] -> [81] -> [106]
+rw_main_arm201 x0 x1 x2 = if s0 == 0b00 then (rw_main_arm197 s0 x2) else (if s0 == 0b01 then (rw_main_arm198 s0 x2) else (if s0 == 0b10 then (rw_main_arm199 s0 x2) else (rw_main_arm200 s0 x2)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x0 x1
 
-// main.$L.v650$7289
-rw_main__L_v650_7289 : [2] -> [8] -> [81] -> [106]
-rw_main__L_v650_7289 x0 x1 x2 = if x0 == 0b00 then (rw_main__L_arm566_7168 s0 x2) else (if x0 == 0b01 then (rw_main__L_arm568_7171 s0 x2) else (if x0 == 0b10 then (rw_main__L_arm570_7174 s0 x2) else (rw_main__L_arm572_7177 s0 x2)))
+// main.v6
+rw_main_v6 : [2] -> [8] -> [81] -> [106]
+rw_main_v6 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm170 s0 x2) else (if x0 == 0b01 then (rw_main_arm171 s0 x2) else (if x0 == 0b10 then (rw_main_arm172 s0 x2) else (rw_main_arm173 s0 x2)))
   where
     s0 : [8]
     s0 = (x1 << 0x01) || (x1 >> 0x07)
 
-// main.$L.s664$7309
-rw_main__L_s664_7309 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s664_7309 x0 x1 x2 = rw_main__L_v650_7289 x0 s0 x2
+// main.s290
+rw_main_s290 : [2] -> [81] -> [81] -> [106]
+rw_main_s290 x0 x1 x2 = rw_main_v6 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r0 x1
 
-// main.$L.arm665$7311
-rw_main__L_arm665_7311 : [2] -> [81] -> [106]
-rw_main__L_arm665_7311 x0 x1 = rw_main__L_s664_7309 x0 x1 x1
+// main.arm206
+rw_main_arm206 : [2] -> [81] -> [106]
+rw_main_arm206 x0 x1 = rw_main_s290 x0 x1 x1
 
-// main.$L.s666$7312
-rw_main__L_s666_7312 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s666_7312 x0 x1 x2 = rw_main__L_v650_7289 x0 s0 x2
+// main.s291
+rw_main_s291 : [2] -> [81] -> [81] -> [106]
+rw_main_s291 x0 x1 x2 = rw_main_v6 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r1 x1
 
-// main.$L.arm667$7314
-rw_main__L_arm667_7314 : [2] -> [81] -> [106]
-rw_main__L_arm667_7314 x0 x1 = rw_main__L_s666_7312 x0 x1 x1
+// main.arm207
+rw_main_arm207 : [2] -> [81] -> [106]
+rw_main_arm207 x0 x1 = rw_main_s291 x0 x1 x1
 
-// main.$L.s668$7315
-rw_main__L_s668_7315 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s668_7315 x0 x1 x2 = rw_main__L_v650_7289 x0 s0 x2
+// main.s292
+rw_main_s292 : [2] -> [81] -> [81] -> [106]
+rw_main_s292 x0 x1 x2 = rw_main_v6 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r2 x1
 
-// main.$L.arm669$7317
-rw_main__L_arm669_7317 : [2] -> [81] -> [106]
-rw_main__L_arm669_7317 x0 x1 = rw_main__L_s668_7315 x0 x1 x1
+// main.arm208
+rw_main_arm208 : [2] -> [81] -> [106]
+rw_main_arm208 x0 x1 = rw_main_s292 x0 x1 x1
 
-// main.$L.s670$7318
-rw_main__L_s670_7318 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s670_7318 x0 x1 x2 = rw_main__L_v650_7289 x0 s0 x2
+// main.s293
+rw_main_s293 : [2] -> [81] -> [81] -> [106]
+rw_main_s293 x0 x1 x2 = rw_main_v6 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r3 x1
 
-// main.$L.arm671$7320
-rw_main__L_arm671_7320 : [2] -> [81] -> [106]
-rw_main__L_arm671_7320 x0 x1 = rw_main__L_s670_7318 x0 x1 x1
+// main.arm209
+rw_main_arm209 : [2] -> [81] -> [106]
+rw_main_arm209 x0 x1 = rw_main_s293 x0 x1 x1
 
-// main.$L.v672$7321
-rw_main__L_v672_7321 : [2] -> [8] -> [81] -> [106]
-rw_main__L_v672_7321 x0 x1 x2 = if x0 == 0b00 then (rw_main__L_arm566_7168 s0 x2) else (if x0 == 0b01 then (rw_main__L_arm568_7171 s0 x2) else (if x0 == 0b10 then (rw_main__L_arm570_7174 s0 x2) else (rw_main__L_arm572_7177 s0 x2)))
+// main.v7
+rw_main_v7 : [2] -> [8] -> [81] -> [106]
+rw_main_v7 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm170 s0 x2) else (if x0 == 0b01 then (rw_main_arm171 s0 x2) else (if x0 == 0b10 then (rw_main_arm172 s0 x2) else (rw_main_arm173 s0 x2)))
   where
     s0 : [8]
     s0 = (x1 >> 0x01) || (x1 << 0x07)
 
-// main.$L.s686$7341
-rw_main__L_s686_7341 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s686_7341 x0 x1 x2 = rw_main__L_v672_7321 x0 s0 x2
+// main.s300
+rw_main_s300 : [2] -> [81] -> [81] -> [106]
+rw_main_s300 x0 x1 x2 = rw_main_v7 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r0 x1
 
-// main.$L.arm687$7343
-rw_main__L_arm687_7343 : [2] -> [81] -> [106]
-rw_main__L_arm687_7343 x0 x1 = rw_main__L_s686_7341 x0 x1 x1
+// main.arm214
+rw_main_arm214 : [2] -> [81] -> [106]
+rw_main_arm214 x0 x1 = rw_main_s300 x0 x1 x1
 
-// main.$L.s688$7344
-rw_main__L_s688_7344 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s688_7344 x0 x1 x2 = rw_main__L_v672_7321 x0 s0 x2
+// main.s301
+rw_main_s301 : [2] -> [81] -> [81] -> [106]
+rw_main_s301 x0 x1 x2 = rw_main_v7 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r1 x1
 
-// main.$L.arm689$7346
-rw_main__L_arm689_7346 : [2] -> [81] -> [106]
-rw_main__L_arm689_7346 x0 x1 = rw_main__L_s688_7344 x0 x1 x1
+// main.arm215
+rw_main_arm215 : [2] -> [81] -> [106]
+rw_main_arm215 x0 x1 = rw_main_s301 x0 x1 x1
 
-// main.$L.s690$7347
-rw_main__L_s690_7347 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s690_7347 x0 x1 x2 = rw_main__L_v672_7321 x0 s0 x2
+// main.s302
+rw_main_s302 : [2] -> [81] -> [81] -> [106]
+rw_main_s302 x0 x1 x2 = rw_main_v7 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r2 x1
 
-// main.$L.arm691$7349
-rw_main__L_arm691_7349 : [2] -> [81] -> [106]
-rw_main__L_arm691_7349 x0 x1 = rw_main__L_s690_7347 x0 x1 x1
+// main.arm216
+rw_main_arm216 : [2] -> [81] -> [106]
+rw_main_arm216 x0 x1 = rw_main_s302 x0 x1 x1
 
-// main.$L.s692$7350
-rw_main__L_s692_7350 : [2] -> [81] -> [81] -> [106]
-rw_main__L_s692_7350 x0 x1 x2 = rw_main__L_v672_7321 x0 s0 x2
+// main.s303
+rw_main_s303 : [2] -> [81] -> [81] -> [106]
+rw_main_s303 x0 x1 x2 = rw_main_v7 x0 s0 x2
   where
     s0 : [8]
     s0 = rw_Main_r3 x1
 
-// main.$L.arm693$7352
-rw_main__L_arm693_7352 : [2] -> [81] -> [106]
-rw_main__L_arm693_7352 x0 x1 = rw_main__L_s692_7350 x0 x1 x1
+// main.arm217
+rw_main_arm217 : [2] -> [81] -> [106]
+rw_main_arm217 x0 x1 = rw_main_s303 x0 x1 x1
 
-// main.$L.arm694$7353
-rw_main__L_arm694_7353 : [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_arm694_7353 x0 x1 x2 x3 = if x0 == 0b0 then (if s0 == 0b00 then (rw_main__L_arm665_7311 s0 x3) else (if s0 == 0b01 then (rw_main__L_arm667_7314 s0 x3) else (if s0 == 0b10 then (rw_main__L_arm669_7317 s0 x3) else (rw_main__L_arm671_7320 s0 x3)))) else (if s0 == 0b00 then (rw_main__L_arm687_7343 s0 x3) else (if s0 == 0b01 then (rw_main__L_arm689_7346 s0 x3) else (if s0 == 0b10 then (rw_main__L_arm691_7349 s0 x3) else (rw_main__L_arm693_7352 s0 x3))))
+// main.arm218
+rw_main_arm218 : [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_arm218 x0 x1 x2 x3 = if ~ (x0 @ 0) then (if s0 == 0b00 then (rw_main_arm206 s0 x3) else (if s0 == 0b01 then (rw_main_arm207 s0 x3) else (if s0 == 0b10 then (rw_main_arm208 s0 x3) else (rw_main_arm209 s0 x3)))) else (if s0 == 0b00 then (rw_main_arm214 s0 x3) else (if s0 == 0b01 then (rw_main_arm215 s0 x3) else (if s0 == 0b10 then (rw_main_arm216 s0 x3) else (rw_main_arm217 s0 x3))))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x1 x2
 
-// main.$L.v695$7354
-rw_main__L_v695_7354 : [1] -> [1] -> [2] -> [8] -> [81] -> [106]
-rw_main__L_v695_7354 x0 x1 x2 x3 x4 = if x2 == 0b00 then (rw_main__L_arm607_7227 s8 s10 x4) else (if x2 == 0b01 then (rw_main__L_arm609_7230 s8 s10 x4) else (if x2 == 0b10 then (rw_main__L_arm611_7233 s8 s10 x4) else (rw_main__L_arm613_7236 s8 s10 x4)))
+// main.v8
+rw_main_v8 : [1] -> [1] -> [2] -> [8] -> [81] -> [106]
+rw_main_v8 x0 x1 x2 x3 x4 = if x2 == 0b00 then (rw_main_arm184 s8 s10 x4) else (if x2 == 0b01 then (rw_main_arm185 s8 s10 x4) else (if x2 == 0b10 then (rw_main_arm186 s8 s10 x4) else (rw_main_arm187 s8 s10 x4)))
   where
     s0 : [1]
     s0 = rw_Main_msbW8 x3
     s1 : [9]
     s1 = rw_Main_shlCW8 x3 s0
     s2 : [9]
-    s2 = rw_Main_shlCW8_s1 x3
+    s2 = rw_Main_shlCW8_sFalse_Bool x3
     s3 : [9]
-    s3 = if x0 == 0b0 then s1 else s2
+    s3 = if ~ (x0 @ 0) then s1 else s2
     s4 : [1]
     s4 = rw_Main_lsbW8 x3
     s5 : [9]
     s5 = rw_Main_shrCW8 x3 s4
     s6 : [9]
-    s6 = rw_Main_shrCW8_s1 x3
+    s6 = rw_Main_shrCW8_sFalse_Bool x3
     s7 : [9]
-    s7 = if x0 == 0b0 then s5 else s6
+    s7 = if ~ (x0 @ 0) then s5 else s6
     s8 : [9]
-    s8 = if x1 == 0b0 then s3 else s7
+    s8 = if ~ (x1 @ 0) then s3 else s7
     s9 : [8]
     s9 = drop`{1} s8
     s10 : [8]
     s10 = s9
 
-// main.$L.s713$7380
-rw_main__L_s713_7380 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
-rw_main__L_s713_7380 x0 x1 x2 x3 x4 = rw_main__L_v695_7354 x0 x1 x2 s0 x4
+// main.s312
+rw_main_s312 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
+rw_main_s312 x0 x1 x2 x3 x4 = rw_main_v8 x0 x1 x2 s0 x4
   where
     s0 : [8]
     s0 = rw_Main_r0 x3
 
-// main.$L.arm714$7382
-rw_main__L_arm714_7382 : [1] -> [1] -> [2] -> [81] -> [106]
-rw_main__L_arm714_7382 x0 x1 x2 x3 = rw_main__L_s713_7380 x0 x1 x2 x3 x3
+// main.arm223
+rw_main_arm223 : [1] -> [1] -> [2] -> [81] -> [106]
+rw_main_arm223 x0 x1 x2 x3 = rw_main_s312 x0 x1 x2 x3 x3
 
-// main.$L.s715$7383
-rw_main__L_s715_7383 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
-rw_main__L_s715_7383 x0 x1 x2 x3 x4 = rw_main__L_v695_7354 x0 x1 x2 s0 x4
+// main.s313
+rw_main_s313 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
+rw_main_s313 x0 x1 x2 x3 x4 = rw_main_v8 x0 x1 x2 s0 x4
   where
     s0 : [8]
     s0 = rw_Main_r1 x3
 
-// main.$L.arm716$7385
-rw_main__L_arm716_7385 : [1] -> [1] -> [2] -> [81] -> [106]
-rw_main__L_arm716_7385 x0 x1 x2 x3 = rw_main__L_s715_7383 x0 x1 x2 x3 x3
+// main.arm224
+rw_main_arm224 : [1] -> [1] -> [2] -> [81] -> [106]
+rw_main_arm224 x0 x1 x2 x3 = rw_main_s313 x0 x1 x2 x3 x3
 
-// main.$L.s717$7386
-rw_main__L_s717_7386 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
-rw_main__L_s717_7386 x0 x1 x2 x3 x4 = rw_main__L_v695_7354 x0 x1 x2 s0 x4
+// main.s314
+rw_main_s314 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
+rw_main_s314 x0 x1 x2 x3 x4 = rw_main_v8 x0 x1 x2 s0 x4
   where
     s0 : [8]
     s0 = rw_Main_r2 x3
 
-// main.$L.arm718$7388
-rw_main__L_arm718_7388 : [1] -> [1] -> [2] -> [81] -> [106]
-rw_main__L_arm718_7388 x0 x1 x2 x3 = rw_main__L_s717_7386 x0 x1 x2 x3 x3
+// main.arm225
+rw_main_arm225 : [1] -> [1] -> [2] -> [81] -> [106]
+rw_main_arm225 x0 x1 x2 x3 = rw_main_s314 x0 x1 x2 x3 x3
 
-// main.$L.s719$7389
-rw_main__L_s719_7389 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
-rw_main__L_s719_7389 x0 x1 x2 x3 x4 = rw_main__L_v695_7354 x0 x1 x2 s0 x4
+// main.s315
+rw_main_s315 : [1] -> [1] -> [2] -> [81] -> [81] -> [106]
+rw_main_s315 x0 x1 x2 x3 x4 = rw_main_v8 x0 x1 x2 s0 x4
   where
     s0 : [8]
     s0 = rw_Main_r3 x3
 
-// main.$L.arm720$7391
-rw_main__L_arm720_7391 : [1] -> [1] -> [2] -> [81] -> [106]
-rw_main__L_arm720_7391 x0 x1 x2 x3 = rw_main__L_s719_7389 x0 x1 x2 x3 x3
+// main.arm226
+rw_main_arm226 : [1] -> [1] -> [2] -> [81] -> [106]
+rw_main_arm226 x0 x1 x2 x3 = rw_main_s315 x0 x1 x2 x3 x3
 
-// main.$L.arm721$7392
-rw_main__L_arm721_7392 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_arm721_7392 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main__L_arm714_7382 x0 x1 s0 x4) else (if s0 == 0b01 then (rw_main__L_arm716_7385 x0 x1 s0 x4) else (if s0 == 0b10 then (rw_main__L_arm718_7388 x0 x1 s0 x4) else (rw_main__L_arm720_7391 x0 x1 s0 x4)))
+// main.arm227
+rw_main_arm227 : [1] -> [1] -> [1] -> [1] -> [81] -> [106]
+rw_main_arm227 x0 x1 x2 x3 x4 = if s0 == 0b00 then (rw_main_arm223 x0 x1 s0 x4) else (if s0 == 0b01 then (rw_main_arm224 x0 x1 s0 x4) else (if s0 == 0b10 then (rw_main_arm225 x0 x1 s0 x4) else (rw_main_arm226 x0 x1 s0 x4)))
   where
     s0 : [2]
     s0 = rw_Main_mkReg x2 x3
 
-// main.$L.fail7$6363
-rw_main__L_fail7_6363 : [10] -> [81] -> [106]
-rw_main__L_fail7_6363 x0 x1 = if s8 == 0b0 then (if s1 == 0b0 then (if s2 == 0b0 then (if s3 == 0b0 then (rw_main__L_arm64_6445 s4 s5 s6 s7 x1) else (rw_main__L_arm98_6494 s4 s5 s6 s7 x1)) else (if s3 == 0b0 then (rw_main__L_arm133_6545 s4 s5 s6 s7 x1) else (rw_main__L_arm167_6594 s4 s5 s6 s7 x1))) else (if s2 == 0b0 then (if s3 == 0b0 then (rw_main__L_arm203_6646 s4 s5 s6 s7 x1) else (rw_main__L_arm237_6695 s4 s5 s6 s7 x1)) else (if s3 == 0b0 then (rw_main__L_arm273_6747 s4 s5 s6 s7 x1) else (rw_main__L_arm296_6780 s4 s5 s6 s7 x1)))) else (if s1 == 0b0 then (if s2 == 0b0 then (if s3 == 0b0 then (rw_main__L_arm332_6832 s4 s5 s6 s7 x1) else (rw_main__L_arm368_6884 s4 s5 s6 s7 x1)) else (if s3 == 0b0 then (rw_main__L_arm404_6936 s4 s5 s6 s7 x1) else (rw_main__L_arm431_6975 s4 s5 s6 s7 x1))) else (if s2 == 0b0 then (if s3 == 0b0 then (if s4 == 0b0 then (if s5 == 0b0 then (rw_main__L_arm450_7002 s6 s7 x1) else (rw_main__L_arm469_7029 s6 s7 x1)) else (if s5 == 0b0 then (rw_main__L_arm488_7056 s6 s7 x1) else (rw_main__L_arm507_7083 s6 s7 x1))) else (if s4 == 0b0 then (if s5 == 0b0 then (rw_main__L_arm523_7106 s6 s7 x1) else (if s6 == 0b0 then (rw_main__L_arm530_7116 s7 x1) else (if s7 == 0b0 then (rw_main__L_arm539_7129 x1) else (rw_main__L_arm558_7157 x1)))) else (if s5 == 0b0 then (rw_main__L_arm581_7190 s6 s7 x1) else (rw_main__L_arm595_7210 s6 s7 x1)))) else (if s3 == 0b0 then (if s4 == 0b0 then (if s5 == 0b0 then (rw_main__L_arm622_7249 s6 s7 x1) else (rw_main__L_arm649_7288 s6 s7 x1)) else (rw_main__L_arm694_7353 s5 s6 s7 x1)) else (rw_main__L_arm721_7392 s4 s5 s6 s7 x1))))
+// main.$fail
+rw_main__fail : [10] -> [81] -> [106]
+rw_main__fail x0 x1 = if ~ (s8 @ 0) then (if ~ (s1 @ 0) then (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (rw_main_arm10 s4 s5 s6 s7 x1) else (rw_main_arm19 s4 s5 s6 s7 x1)) else (if ~ (s3 @ 0) then (rw_main_arm28 s4 s5 s6 s7 x1) else (rw_main_arm41 s4 s5 s6 s7 x1))) else (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (rw_main_arm54 s4 s5 s6 s7 x1) else (rw_main_arm67 s4 s5 s6 s7 x1)) else (if ~ (s3 @ 0) then (rw_main_arm80 s4 s5 s6 s7 x1) else (rw_main_arm89 s4 s5 s6 s7 x1)))) else (if ~ (s1 @ 0) then (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (rw_main_arm102 s4 s5 s6 s7 x1) else (rw_main_arm115 s4 s5 s6 s7 x1)) else (if ~ (s3 @ 0) then (rw_main_arm128 s4 s5 s6 s7 x1) else (rw_main_arm137 s4 s5 s6 s7 x1))) else (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (if ~ (s4 @ 0) then (if ~ (s5 @ 0) then (rw_main_arm143 s6 s7 x1) else (rw_main_arm149 s6 s7 x1)) else (if ~ (s5 @ 0) then (rw_main_arm155 s6 s7 x1) else (rw_main_arm161 s6 s7 x1))) else (if ~ (s4 @ 0) then (if ~ (s5 @ 0) then (rw_main_arm166 s6 s7 x1) else (if ~ (s6 @ 0) then (rw_main_arm167 s7 x1) else (if ~ (s7 @ 0) then (rw_main_arm168 x1) else (rw_main_arm169 x1)))) else (if ~ (s5 @ 0) then (rw_main_arm178 s6 s7 x1) else (rw_main_arm183 s6 s7 x1)))) else (if ~ (s3 @ 0) then (if ~ (s4 @ 0) then (if ~ (s5 @ 0) then (rw_main_arm192 s6 s7 x1) else (rw_main_arm201 s6 s7 x1)) else (rw_main_arm218 s5 s6 s7 x1)) else (rw_main_arm227 s4 s5 s6 s7 x1))))
   where
     s0 : [8]
     s0 = rw_Main_dataIn x0
@@ -2355,165 +2355,165 @@ rw_main__L_fail7_6363 x0 x1 = if s8 == 0b0 then (if s1 == 0b0 then (if s2 == 0b0
     s8 : [1]
     s8 = take`{1} s0
 
-// main.$L.s733$7406
-rw_main__L_s733_7406 : [1] -> [81] -> [81] -> [106]
-rw_main__L_s733_7406 x0 x1 x2 = rw_main__L__unused103_6499 s0
+// main.s318
+rw_main_s318 : [1] -> [81] -> [81] -> [106]
+rw_main_s318 x0 x1 x2 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setCSave x1 x0
 
-// main.$L._unused727$7398
-rw_main__L__unused727_7398 : [1] -> [81] -> [106]
-rw_main__L__unused727_7398 x0 x1 = rw_main__L_s733_7406 x0 x1 x1
+// main._unused57
+rw_main__unused57 : [1] -> [81] -> [106]
+rw_main__unused57 x0 x1 = rw_main_s318 x0 x1 x1
 
-// main.$L.s734$7408
-rw_main__L_s734_7408 : [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s734_7408 x0 x1 x2 x3 = rw_main__L__unused727_7398 x1 s0
+// main.s319
+rw_main_s319 : [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s319 x0 x1 x2 x3 = rw_main__unused57 x1 s0
   where
     s0 : [81]
     s0 = rw_Main_setZSave x2 x0
 
-// main.$L._unused726$7397
-rw_main__L__unused726_7397 : [1] -> [1] -> [81] -> [106]
-rw_main__L__unused726_7397 x0 x1 x2 = rw_main__L_s734_7408 x0 x1 x2 x2
+// main._unused56
+rw_main__unused56 : [1] -> [1] -> [81] -> [106]
+rw_main__unused56 x0 x1 x2 = rw_main_s319 x0 x1 x2 x2
 
-// main.$L.s735$7410
-rw_main__L_s735_7410 : [8] -> [1] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s735_7410 x0 x1 x2 x3 x4 = rw_main__L__unused726_7397 x1 x2 s0
+// main.s320
+rw_main_s320 : [8] -> [1] -> [1] -> [81] -> [81] -> [106]
+rw_main_s320 x0 x1 x2 x3 x4 = rw_main__unused56 x1 x2 s0
   where
     s0 : [81]
     s0 = rw_Main_setPCSave x3 x0
 
-// main.$L.c725$7396
-rw_main__L_c725_7396 : [8] -> [1] -> [1] -> [81] -> [106]
-rw_main__L_c725_7396 x0 x1 x2 x3 = rw_main__L_s735_7410 x0 x1 x2 x3 x3
+// main.c4
+rw_main_c4 : [8] -> [1] -> [1] -> [81] -> [106]
+rw_main_c4 x0 x1 x2 x3 = rw_main_s320 x0 x1 x2 x3 x3
 
-// main.$L.s736$7412
-rw_main__L_s736_7412 : [8] -> [1] -> [81] -> [81] -> [106]
-rw_main__L_s736_7412 x0 x1 x2 x3 = rw_main__L_c725_7396 x0 x1 s0 x3
+// main.s321
+rw_main_s321 : [8] -> [1] -> [81] -> [81] -> [106]
+rw_main_s321 x0 x1 x2 x3 = rw_main_c4 x0 x1 s0 x3
   where
     s0 : [1]
     s0 = rw_Main_cFlag x2
 
-// main.$L.z724$7395
-rw_main__L_z724_7395 : [8] -> [1] -> [81] -> [106]
-rw_main__L_z724_7395 x0 x1 x2 = rw_main__L_s736_7412 x0 x1 x2 x2
+// main.z4
+rw_main_z4 : [8] -> [1] -> [81] -> [106]
+rw_main_z4 x0 x1 x2 = rw_main_s321 x0 x1 x2 x2
 
-// main.$L.s737$7414
-rw_main__L_s737_7414 : [8] -> [81] -> [81] -> [106]
-rw_main__L_s737_7414 x0 x1 x2 = rw_main__L_z724_7395 x0 s0 x2
+// main.s322
+rw_main_s322 : [8] -> [81] -> [81] -> [106]
+rw_main_s322 x0 x1 x2 = rw_main_z4 x0 s0 x2
   where
     s0 : [1]
     s0 = rw_Main_zFlag x1
 
-// main.$L.pc723$7394
-rw_main__L_pc723_7394 : [8] -> [81] -> [106]
-rw_main__L_pc723_7394 x0 x1 = rw_main__L_s737_7414 x0 x1 x1
+// main.pc8
+rw_main_pc8 : [8] -> [81] -> [106]
+rw_main_pc8 x0 x1 = rw_main_s322 x0 x1 x1
 
-// main.$L.s738$7416
-rw_main__L_s738_7416 : [81] -> [81] -> [106]
-rw_main__L_s738_7416 x0 x1 = rw_main__L_pc723_7394 s0 x1
+// main.s323
+rw_main_s323 : [81] -> [81] -> [106]
+rw_main_s323 x0 x1 = rw_main_pc8 s0 x1
   where
     s0 : [8]
     s0 = rw_Main_pc x0
 
-// main.$L._unused722$7393
-rw_main__L__unused722_7393 : [81] -> [106]
-rw_main__L__unused722_7393 x0 = rw_main__L_s738_7416 x0 x0
+// main._unused55
+rw_main__unused55 : [81] -> [106]
+rw_main__unused55 x0 = rw_main_s323 x0 x0
 
-// main.$L.s739$7418
-rw_main__L_s739_7418 : [81] -> [81] -> [106]
-rw_main__L_s739_7418 x0 x1 = rw_main__L__unused722_7393 s0
+// main.s324
+rw_main_s324 : [81] -> [81] -> [106]
+rw_main_s324 x0 x1 = rw_main__unused55 s0
   where
     s0 : [81]
     s0 = rw_Main_setIEFlag x0 0b0
 
-// main.$L.arm740$7420
-rw_main__L_arm740_7420 : [81] -> [106]
-rw_main__L_arm740_7420 x0 = rw_main__L_s739_7418 x0 x0
+// main.arm228
+rw_main_arm228 : [81] -> [106]
+rw_main_arm228 x0 = rw_main_s324 x0 x0
 
-// main.$L.arm741$7421
-rw_main__L_arm741_7421 : [10] -> [81] -> [106]
-rw_main__L_arm741_7421 x0 x1 = if s0 == 0b1 then (rw_main__L_arm740_7420 x1) else (rw_main__L_fail7_6363 x0 x1)
+// main.arm229
+rw_main_arm229 : [10] -> [81] -> [106]
+rw_main_arm229 x0 x1 = if s0 @ 0 then (rw_main_arm228 x1) else (rw_main__fail x0 x1)
   where
     s0 : [1]
     s0 = rw_Main_intIn x0
 
-// main.$L.ie6$6362
-rw_main__L_ie6_6362 : [10] -> [1] -> [81] -> [106]
-rw_main__L_ie6_6362 x0 x1 x2 = if x1 == 0b1 then (rw_main__L_arm741_7421 x0 x2) else (rw_main__L_fail7_6363 x0 x2)
+// main.ie
+rw_main_ie : [10] -> [1] -> [81] -> [106]
+rw_main_ie x0 x1 x2 = if x1 @ 0 then (rw_main_arm229 x0 x2) else (rw_main__fail x0 x2)
 
-// main.$L.s742$7422
-rw_main__L_s742_7422 : [10] -> [81] -> [81] -> [106]
-rw_main__L_s742_7422 x0 x1 x2 = rw_main__L_ie6_6362 x0 s1 x2
+// main.s325
+rw_main_s325 : [10] -> [81] -> [81] -> [106]
+rw_main_s325 x0 x1 x2 = rw_main_ie x0 s1 x2
   where
     s0 : [1]
     s0 = take`{1} (drop`{30} x1)
     s1 : [1]
     s1 = s0
 
-// main.$L.arm743$7424
-rw_main__L_arm743_7424 : [10] -> [81] -> [106]
-rw_main__L_arm743_7424 x0 x1 = rw_main__L_s742_7422 x0 x1 x1
+// main.arm230
+rw_main_arm230 : [10] -> [81] -> [106]
+rw_main_arm230 x0 x1 = rw_main_s325 x0 x1 x1
 
-// main.$L.s751$7434
-rw_main__L_s751_7434 : [81] -> [81] -> [106]
-rw_main__L_s751_7434 x0 x1 = rw_main__L__unused103_6499 s0
+// main.s328
+rw_main_s328 : [81] -> [81] -> [106]
+rw_main_s328 x0 x1 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setOutputs x0 0b000000000000000000
 
-// main.$L._unused745$7426
-rw_main__L__unused745_7426 : [81] -> [106]
-rw_main__L__unused745_7426 x0 = rw_main__L_s751_7434 x0 x0
+// main._unused60
+rw_main__unused60 : [81] -> [106]
+rw_main__unused60 x0 = rw_main_s328 x0 x0
 
-// main.$L.s752$7436
-rw_main__L_s752_7436 : [81] -> [81] -> [106]
-rw_main__L_s752_7436 x0 x1 = rw_main__L__unused745_7426 s0
+// main.s329
+rw_main_s329 : [81] -> [81] -> [106]
+rw_main_s329 x0 x1 = rw_main__unused60 s0
   where
     s0 : [81]
     s0 = rw_Main_setZFlag x0 0b0
 
-// main.$L._unused744$7425
-rw_main__L__unused744_7425 : [81] -> [106]
-rw_main__L__unused744_7425 x0 = rw_main__L_s752_7436 x0 x0
+// main._unused59
+rw_main__unused59 : [81] -> [106]
+rw_main__unused59 x0 = rw_main_s329 x0 x0
 
-// main.$L.s753$7438
-rw_main__L_s753_7438 : [81] -> [81] -> [106]
-rw_main__L_s753_7438 x0 x1 = rw_main__L__unused744_7425 s0
+// main.s330
+rw_main_s330 : [81] -> [81] -> [106]
+rw_main_s330 x0 x1 = rw_main__unused59 s0
   where
     s0 : [81]
     s0 = rw_Main_setCFlag x0 0b0
 
-// main.$L.arm754$7440
-rw_main__L_arm754_7440 : [81] -> [106]
-rw_main__L_arm754_7440 x0 = rw_main__L_s753_7438 x0 x0
+// main.arm231
+rw_main_arm231 : [81] -> [106]
+rw_main_arm231 x0 = rw_main_s330 x0 x0
 
-// main.$L.inp4$6360
-rw_main__L_inp4_6360 : [10] -> [81] -> [106]
-rw_main__L_inp4_6360 x0 x1 = if s0 == 0b0 then (rw_main__L_arm743_7424 x0 x1) else (rw_main__L_arm754_7440 x1)
+// main.inp
+rw_main_inp : [10] -> [81] -> [106]
+rw_main_inp x0 x1 = if ~ (s0 @ 0) then (rw_main_arm230 x0 x1) else (rw_main_arm231 x1)
   where
     s0 : [1]
     s0 = rw_Main_rstIn x0
 
-// main.$L.s755$7441
-rw_main__L_s755_7441 : [81] -> [81] -> [106]
-rw_main__L_s755_7441 x0 x1 = rw_main__L_inp4_6360 s0 x1
+// main.s331
+rw_main_s331 : [81] -> [81] -> [106]
+rw_main_s331 x0 x1 = rw_main_inp s0 x1
   where
     s0 : [10]
     s0 = rw_Main_inputs x0
 
-// main.$L.Main.loop3$6359
-rw_main__L_Main_loop3_6359 : [81] -> [106]
-rw_main__L_Main_loop3_6359 x0 = rw_main__L_s755_7441 x0 x0
+// main.loop
+rw_main_loop : [81] -> [106]
+rw_main_loop x0 = rw_main_s331 x0 x0
 
 // Main.notb
 rw_Main_notb : [1] -> [1]
-rw_Main_notb x0 = if x0 == 0b0 then 0b1 else 0b0
+rw_Main_notb x0 = ~ x0
 
 // Main.mkReg
 rw_Main_mkReg : [1] -> [1] -> [2]
-rw_Main_mkReg x0 x1 = if x0 == 0b0 then (if x1 == 0b0 then 0b00 else 0b01) else (if x1 == 0b0 then 0b10 else 0b11)
+rw_Main_mkReg x0 x1 = if ~ (x0 @ 0) then (if ~ (x1 @ 0) then 0b00 else 0b01) else (if ~ (x1 @ 0) then 0b10 else 0b11)
 
 // Main.outputs
 rw_Main_outputs : [81] -> [18]
@@ -3071,38 +3071,38 @@ rw_Main_msbW8 x0 = take`{1} x0
 rw_Main_shlCW8 : [8] -> [1] -> [9]
 rw_Main_shlCW8 x0 x1 = (rw_Main_msbW8 x0) # ((x0 << 0x01) || (rw'resize`{8} x1))
 
-// Main.plusCW8$s1
-rw_Main_plusCW8_s1 : [8] -> [9]
-rw_Main_plusCW8_s1 x0 = (take`{1} s0) # (rw'resize`{8} s0)
+// Main.plusCW8$sMain_oneW8_False_Bool
+rw_Main_plusCW8_sMain_oneW8_False_Bool : [8] -> [9]
+rw_Main_plusCW8_sMain_oneW8_False_Bool x0 = (take`{1} s0) # (rw'resize`{8} s0)
   where
     s0 : [9]
     s0 = ((rw'resize`{9} x0) + 0b000000001) + 0b000000000
 
-// Main.minusCW8$s1
-rw_Main_minusCW8_s1 : [8] -> [8] -> [9]
-rw_Main_minusCW8_s1 x0 x1 = (take`{1} s0) # (rw'resize`{8} s0)
+// Main.minusCW8$sFalse_Bool
+rw_Main_minusCW8_sFalse_Bool : [8] -> [8] -> [9]
+rw_Main_minusCW8_sFalse_Bool x0 x1 = (take`{1} s0) # (rw'resize`{8} s0)
   where
     s0 : [9]
     s0 = ((rw'resize`{9} x0) - (rw'resize`{9} x1)) - 0b000000000
 
-// Main.plusCW8$s2
-rw_Main_plusCW8_s2 : [8] -> [8] -> [9]
-rw_Main_plusCW8_s2 x0 x1 = (take`{1} s0) # (rw'resize`{8} s0)
+// Main.plusCW8$sFalse_Bool
+rw_Main_plusCW8_sFalse_Bool : [8] -> [8] -> [9]
+rw_Main_plusCW8_sFalse_Bool x0 x1 = (take`{1} s0) # (rw'resize`{8} s0)
   where
     s0 : [9]
     s0 = ((rw'resize`{9} x0) + (rw'resize`{9} x1)) + 0b000000000
 
-// Main.shlCW8$s1
-rw_Main_shlCW8_s1 : [8] -> [9]
-rw_Main_shlCW8_s1 x0 = (rw_Main_msbW8 x0) # ((x0 << 0x01) || 0x00)
+// Main.shlCW8$sFalse_Bool
+rw_Main_shlCW8_sFalse_Bool : [8] -> [9]
+rw_Main_shlCW8_sFalse_Bool x0 = (rw_Main_msbW8 x0) # ((x0 << 0x01) || 0x00)
 
-// Main.shrCW8$s1
-rw_Main_shrCW8_s1 : [8] -> [9]
-rw_Main_shrCW8_s1 x0 = (rw_Main_lsbW8 x0) # ((x0 >> 0x01) || 0x00)
+// Main.shrCW8$sFalse_Bool
+rw_Main_shrCW8_sFalse_Bool : [8] -> [9]
+rw_Main_shrCW8_sFalse_Bool x0 = (rw_Main_lsbW8 x0) # ((x0 >> 0x01) || 0x00)
 
-// Main.minusCW8$s2
-rw_Main_minusCW8_s2 : [8] -> [9]
-rw_Main_minusCW8_s2 x0 = (take`{1} s0) # (rw'resize`{8} s0)
+// Main.minusCW8$sMain_oneW8_False_Bool
+rw_Main_minusCW8_sMain_oneW8_False_Bool : [8] -> [9]
+rw_Main_minusCW8_sMain_oneW8_False_Bool x0 = (take`{1} s0) # (rw'resize`{8} s0)
   where
     s0 : [9]
     s0 = ((rw'resize`{9} x0) - 0b000000001) - 0b000000000

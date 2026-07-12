@@ -1,33 +1,40 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([1], [1]) -> [2]
 main.$dispatch disc i =
-      main.$L.$x9$345 i disc
+      main.$x2 i disc
 
-main.$L.$x9$345 : ([1], [1]) -> [2]
-main.$L.$x9$345 $x s0 =
-      main.$L.ReWire.Monad.iterSt$1$s26$341 $x s0
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([1], [1]) -> [2]
+main.$x2 $x s0 =
+      main.iterSt$Bool$Bool$Bool$sMain_f $x s0
 
-main.$L._unused8$343 : ([1], [1]) -> [2]
-main.$L._unused8$343 o s0 =
+--| block '$L._unused2' of process main
+main._unused2 : ([1], [1]) -> [2]
+main._unused2 o s0 =
       o # s0
 
-main.$L.arm10$346 : ([1], [1], [1]) -> [2]
-main.$L.arm10$346 o s s0 =
-      main.$L._unused8$343 o s
+--| block '$L.arm' of process main
+main.arm : ([1], [1], [1]) -> [2]
+main.arm o s s0 =
+      main._unused2 o s
 
-main.$L.ds7$342 : ([2], [1]) -> [2]
-main.$L.ds7$342 ds s0 =
-      let o = ds[1 +: 1] in
-      let s = ds[0 +: 1] in
-      main.$L.arm10$346 o s s0
+--| block '$L.$ds2' of process main
+main.$ds2 : ([2], [1]) -> [2]
+main.$ds2 $ds s0 =
+      let o = $ds[1 +: 1] in
+      let s = $ds[0 +: 1] in
+      main.arm o s s0
 
-main.$L.x11$347 : ([1], [1], [1]) -> [2]
-main.$L.x11$347 i x s0 =
+--| block '$L.x' of process main
+main.x : ([1], [1], [1]) -> [2]
+main.x i x s0 =
       let $a = Main.f i x in
-      main.$L.ds7$342 $a s0
+      main.$ds2 $a s0
 
-main.$L.ReWire.Monad.iterSt$1$s26$341 : ([1], [1]) -> [2]
-main.$L.ReWire.Monad.iterSt$1$s26$341 i s0 =
-      main.$L.x11$347 i s0 s0
+--| block '$L.ReWire.Monad.iterSt$Bool$Bool$Bool$sMain_f' of process main
+main.iterSt$Bool$Bool$Bool$sMain_f : ([1], [1]) -> [2]
+main.iterSt$Bool$Bool$Bool$sMain_f i s0 =
+      main.x i s0 s0
 
 Main.f : ([1], [1]) -> [2]
 Main.f i s =
@@ -38,6 +45,7 @@ device top_level
       input __in0 : [1]
       output __out0 : [1]
       register __st0 : [1] init 1'h0
+      tag $x2 = 0
       let $res = main.$dispatch __st0 __in0
       __out0 := $res[1 +: 1]
       next __st0 := $res[0 +: 1]

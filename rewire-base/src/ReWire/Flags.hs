@@ -30,6 +30,7 @@ data Flag = FlagO !String
           | FlagNoHalt
           | FlagRtlOpt !String
           | FlagStableNames
+          | FlagLocators
           | FlagNoLocators
       deriving (Eq, Show, Generic)
 

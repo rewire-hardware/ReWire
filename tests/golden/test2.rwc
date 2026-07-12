@@ -1,27 +1,33 @@
+--| state dispatch for process main: 0=_unused2
 main.$dispatch : ([8], [1]) -> [16]
 main.$dispatch disc i =
-      main.$L._unused4$244 i disc
+      main._unused2 i disc
 
-main.$L._unused4$244 : ([1], [8]) -> [16]
-main.$L._unused4$244 _unused s0 =
-      main.$L.Main.incr1$241 s0
+--| block '$L._unused2' of process main (state 0)
+main._unused2 : ([1], [8]) -> [16]
+main._unused2 _unused s0 =
+      main.incr s0
 
-main.$L._unused3$243 : ([8], [8]) -> [16]
-main.$L._unused3$243 r0 s0 =
+--| block '$L._unused' of process main
+main._unused : ([8], [8]) -> [16]
+main._unused r0 s0 =
       r0 # s0
 
-main.$L.r02$242 : ([8], [8]) -> [16]
-main.$L.r02$242 r0 s0 =
-      main.$L._unused3$243 r0 r0
+--| block '$L.r0' of process main
+main.r0 : ([8], [8]) -> [16]
+main.r0 r0 s0 =
+      main._unused r0 r0
 
-main.$L.Main.incr1$241 : ([8]) -> [16]
-main.$L.Main.incr1$241 s0 =
-      main.$L.r02$242 s0 s0
+--| block '$L.Main.incr' of process main
+main.incr : ([8]) -> [16]
+main.incr s0 =
+      main.r0 s0 s0
 
 device top_level
       input __in0 : [1]
       output __out0 : [8]
       register __st0 : [8] init 8'h0
+      tag _unused2 = 0
       let $res = main.$dispatch __st0 __in0
       __out0 := $res[8 +: 8]
       next __st0 := $res[0 +: 8]

@@ -132,7 +132,7 @@ module top_level (input logic [0:0] clk,
   logic [76:0] zi120;
   logic [204:0] zi121;
   logic [204:0] zi122;
-  logic [240:0] main_$l__unused14$858_out;
+  logic [240:0] main__unused2_out;
   logic [1:0] zi125;
   logic [9:0] zi126;
   logic [31:0] zi127;
@@ -152,7 +152,7 @@ module top_level (input logic [0:0] clk,
   logic [127:0] zi142;
   logic [204:0] zi143;
   logic [204:0] zi144;
-  logic [240:0] main_$l_main_set_ack_reg$s131$882_out;
+  logic [240:0] main_set_ack_reg$smain_s_main_bit_out;
   logic [9:0] main_addr_reg_outR1;
   logic [9:0] zi148;
   logic [0:0] zi151;
@@ -169,14 +169,14 @@ module top_level (input logic [0:0] clk,
   logic [31:0] zi162;
   logic [31:0] zi163;
   logic [31:0] zi164;
-  logic [31:0] zll_main_memlookup_fail1_out;
-  logic [31:0] zll_main_memlookup_fail1_outR1;
-  logic [31:0] zll_main_memlookup_fail1_outR2;
-  logic [31:0] zll_main_memlookup_fail1_outR3;
-  logic [31:0] zll_main_memlookup_fail1_outR4;
-  logic [31:0] zll_main_memlookup_fail1_outR5;
-  logic [31:0] zll_main_memlookup_fail1_outR6;
-  logic [31:0] zll_main_memlookup_fail1_outR7;
+  logic [31:0] main_memlookup_$fail1_out;
+  logic [31:0] main_memlookup_$fail1_outR1;
+  logic [31:0] main_memlookup_$fail1_outR2;
+  logic [31:0] main_memlookup_$fail1_outR3;
+  logic [31:0] main_memlookup_$fail1_outR4;
+  logic [31:0] main_memlookup_$fail1_outR5;
+  logic [31:0] main_memlookup_$fail1_outR6;
+  logic [31:0] main_memlookup_$fail1_outR7;
   logic [31:0] zi165;
   logic [1:0] zi167;
   logic [9:0] zi168;
@@ -186,7 +186,7 @@ module top_level (input logic [0:0] clk,
   logic [76:0] zi172;
   logic [204:0] zi173;
   logic [204:0] zi174;
-  logic [240:0] main_$l_main_set_ack_reg$s131$882_outR1;
+  logic [240:0] main_set_ack_reg$smain_s_main_bit_outR1;
   logic [9:0] main_addr_reg_outR2;
   logic [9:0] zi178;
   logic [127:0] main_memtweak_outR1;
@@ -213,9 +213,9 @@ module top_level (input logic [0:0] clk,
   logic [76:0] zi201;
   logic [204:0] zi202;
   logic [204:0] zi203;
-  logic [240:0] main_$l_main_get_addr_reg115$998_out;
+  logic [240:0] main_get_addr_reg4_out;
   logic [204:0] zi204;
-  logic [240:0] main_$l_main_get_addr_reg115$998_outR1;
+  logic [240:0] main_get_addr_reg4_outR1;
   logic [240:0] zres;
   assign zi2 = __in0[13:4];
   assign zi3 = zi2;
@@ -341,7 +341,7 @@ module top_level (input logic [0:0] clk,
   assign zi120 = zi119;
   assign zi121 = {zi120, zi114};
   assign zi122 = zi121;
-  main_$L___unused14$858  instR6 (zi122, main_$l__unused14$858_out);
+  main___unused2  instR6 (zi122, main__unused2_out);
   assign zi125 = __st0[76:75];
   assign zi126 = __st0[74:65];
   assign zi127 = __st0[64:33];
@@ -361,7 +361,7 @@ module top_level (input logic [0:0] clk,
   assign zi142 = main_memtweak_out;
   assign zi143 = {zi140, zi142};
   assign zi144 = zi143;
-  main_$L_Main_set__ack__reg$s131$882  instR9 (zi144, main_$l_main_set_ack_reg$s131$882_out);
+  main_set__ack__reg$sMain__S__Main__Bit  instR9 (zi144, main_set_ack_reg$smain_s_main_bit_out);
   Main_addr__reg  instR10 (__st0, main_addr_reg_outR1);
   assign zi148 = main_addr_reg_outR1;
   assign zi151 = zi148[9];
@@ -378,15 +378,15 @@ module top_level (input logic [0:0] clk,
   assign zi162 = __st1[95:64];
   assign zi163 = __st1[63:32];
   assign zi164 = __st1[31:0];
-  ZLL_Main_memLookup_fail1  instR11 (__st1, zll_main_memlookup_fail1_out);
-  ZLL_Main_memLookup_fail1  instR12 (__st1, zll_main_memlookup_fail1_outR1);
-  ZLL_Main_memLookup_fail1  instR13 (__st1, zll_main_memlookup_fail1_outR2);
-  ZLL_Main_memLookup_fail1  instR14 (__st1, zll_main_memlookup_fail1_outR3);
-  ZLL_Main_memLookup_fail1  instR15 (__st1, zll_main_memlookup_fail1_outR4);
-  ZLL_Main_memLookup_fail1  instR16 (__st1, zll_main_memlookup_fail1_outR5);
-  ZLL_Main_memLookup_fail1  instR17 (__st1, zll_main_memlookup_fail1_outR6);
-  ZLL_Main_memLookup_fail1  instR18 (__st1, zll_main_memlookup_fail1_outR7);
-  assign zi165 = (zi151 == 1'h0) ? ((zi152 == 1'h0) ? ((zi153 == 1'h0) ? ((zi154 == 1'h0) ? ((zi155 == 1'h0) ? ((zi156 == 1'h0) ? ((zi157 == 1'h0) ? ((zi158 == 1'h0) ? ((zi159 == 1'h0) ? ((zi160 == 1'h0) ? zi161 : zi162) : ((zi160 == 1'h0) ? zi163 : zi164)) : zll_main_memlookup_fail1_out) : zll_main_memlookup_fail1_outR1) : zll_main_memlookup_fail1_outR2) : zll_main_memlookup_fail1_outR3) : zll_main_memlookup_fail1_outR4) : zll_main_memlookup_fail1_outR5) : zll_main_memlookup_fail1_outR6) : zll_main_memlookup_fail1_outR7;
+  Main_memLookup_$fail1  instR11 (__st1, main_memlookup_$fail1_out);
+  Main_memLookup_$fail1  instR12 (__st1, main_memlookup_$fail1_outR1);
+  Main_memLookup_$fail1  instR13 (__st1, main_memlookup_$fail1_outR2);
+  Main_memLookup_$fail1  instR14 (__st1, main_memlookup_$fail1_outR3);
+  Main_memLookup_$fail1  instR15 (__st1, main_memlookup_$fail1_outR4);
+  Main_memLookup_$fail1  instR16 (__st1, main_memlookup_$fail1_outR5);
+  Main_memLookup_$fail1  instR17 (__st1, main_memlookup_$fail1_outR6);
+  Main_memLookup_$fail1  instR18 (__st1, main_memlookup_$fail1_outR7);
+  assign zi165 = (~zi151) ? ((~zi152) ? ((~zi153) ? ((~zi154) ? ((~zi155) ? ((~zi156) ? ((~zi157) ? ((~zi158) ? ((~zi159) ? ((~zi160) ? zi161 : zi162) : ((~zi160) ? zi163 : zi164)) : main_memlookup_$fail1_out) : main_memlookup_$fail1_outR1) : main_memlookup_$fail1_outR2) : main_memlookup_$fail1_outR3) : main_memlookup_$fail1_outR4) : main_memlookup_$fail1_outR5) : main_memlookup_$fail1_outR6) : main_memlookup_$fail1_outR7;
   assign zi167 = __st0[76:75];
   assign zi168 = __st0[74:65];
   assign zi169 = __st0[64:33];
@@ -395,7 +395,7 @@ module top_level (input logic [0:0] clk,
   assign zi172 = zi171;
   assign zi173 = {zi172, __st1};
   assign zi174 = zi173;
-  main_$L_Main_set__ack__reg$s131$882  instR19 (zi174, main_$l_main_set_ack_reg$s131$882_outR1);
+  main_set__ack__reg$sMain__S__Main__Bit  instR19 (zi174, main_set_ack_reg$smain_s_main_bit_outR1);
   Main_addr__reg  instR20 (__st0, main_addr_reg_outR2);
   assign zi178 = main_addr_reg_outR2;
   Main_memTweak  instR21 (zi178, {6'h20{1'h0}}, __st1, main_memtweak_outR1);
@@ -412,7 +412,7 @@ module top_level (input logic [0:0] clk,
   assign zi191 = zi178[2];
   assign zi192 = zi178[1];
   assign zi193 = zi178[0];
-  assign zi194 = (zi184 == 1'h0) ? ((zi185 == 1'h0) ? ((zi186 == 1'h0) ? ((zi187 == 1'h0) ? ((zi188 == 1'h0) ? ((zi189 == 1'h0) ? ((zi190 == 1'h0) ? ((zi191 == 1'h0) ? ((zi192 == 1'h0) ? ((zi193 == 1'h1) ? 10'h0 : 10'h3ff) : ((zi193 == 1'h0) ? 10'h1 : 10'h2)) : 10'h3ff) : 10'h3ff) : 10'h3ff) : 10'h3ff) : 10'h3ff) : 10'h3ff) : 10'h3ff) : 10'h3ff;
+  assign zi194 = (~zi184) ? ((~zi185) ? ((~zi186) ? ((~zi187) ? ((~zi188) ? ((~zi189) ? ((~zi190) ? ((~zi191) ? ((~zi192) ? (zi193 ? 10'h0 : 10'h3ff) : ((~zi193) ? 10'h1 : 10'h2)) : 10'h3ff) : 10'h3ff) : 10'h3ff) : 10'h3ff) : 10'h3ff) : 10'h3ff) : 10'h3ff) : 10'h3ff;
   assign zi195 = zi183[127:0];
   assign zi196 = zi183[204:203];
   assign zi197 = zi183[192:161];
@@ -422,10 +422,10 @@ module top_level (input logic [0:0] clk,
   assign zi201 = zi200;
   assign zi202 = {zi201, zi195};
   assign zi203 = zi202;
-  main_$L_Main_get__addr__reg115$998  instR22 (zi203, zi203, main_$l_main_get_addr_reg115$998_out);
+  main_get__addr__reg4  instR22 (zi203, zi203, main_get_addr_reg4_out);
   assign zi204 = {__st0, __st1};
-  main_$L_Main_get__addr__reg115$998  instR23 (zi204, zi204, main_$l_main_get_addr_reg115$998_outR1);
-  assign zres = (__resumption_tag == 3'h0) ? ((zi7 == 1'h1) ? ((zi9 == 1'h0) ? {zi62, 3'h1, zi57} : {zi104, 3'h2, zi99}) : main_$l__unused14$858_out) : ((__resumption_tag == 3'h1) ? main_$l_main_set_ack_reg$s131$882_out : ((__resumption_tag == 3'h2) ? main_$l_main_set_ack_reg$s131$882_outR1 : ((__resumption_tag == 3'h3) ? main_$l_main_get_addr_reg115$998_out : main_$l_main_get_addr_reg115$998_outR1)));
+  main_get__addr__reg4  instR23 (zi204, zi204, main_get_addr_reg4_outR1);
+  assign zres = (__resumption_tag == 3'h0) ? (zi7 ? ((~zi9) ? {zi62, 3'h1, zi57} : {zi104, 3'h2, zi99}) : main__unused2_out) : ((__resumption_tag == 3'h1) ? main_set_ack_reg$smain_s_main_bit_out : ((__resumption_tag == 3'h2) ? main_set_ack_reg$smain_s_main_bit_outR1 : ((__resumption_tag == 3'h3) ? main_get_addr_reg4_out : main_get_addr_reg4_outR1)));
   assign __resumption_tag_next = zres[207:205];
   assign __st0_next = zres[204:128];
   assign __st1_next = zres[127:0];
@@ -440,7 +440,7 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module main_$L___unused14$858 (input logic [204:0] arg0,
+module main___unused2 (input logic [204:0] arg0,
   output logic [240:0] res);
   logic [76:0] zi0;
   logic [76:0] zi1;
@@ -459,7 +459,7 @@ module main_$L___unused14$858 (input logic [204:0] arg0,
   assign res = {zi4, 3'h0, arg0};
 endmodule
 
-module main_$L_Main_set__ack__reg$s131$882 (input logic [204:0] arg0,
+module main_set__ack__reg$sMain__S__Main__Bit (input logic [204:0] arg0,
   output logic [240:0] res);
   logic [127:0] zi0;
   logic [1:0] zi1;
@@ -470,7 +470,7 @@ module main_$L_Main_set__ack__reg$s131$882 (input logic [204:0] arg0,
   logic [76:0] zi6;
   logic [204:0] zi7;
   logic [204:0] zi8;
-  logic [240:0] main_$l__unused14$858_out;
+  logic [240:0] main__unused2_out;
   assign zi0 = arg0[127:0];
   assign zi1 = arg0[204:203];
   assign zi2 = arg0[202:193];
@@ -480,11 +480,11 @@ module main_$L_Main_set__ack__reg$s131$882 (input logic [204:0] arg0,
   assign zi6 = zi5;
   assign zi7 = {zi6, zi0};
   assign zi8 = zi7;
-  main_$L___unused14$858  inst (zi8, main_$l__unused14$858_out);
-  assign res = main_$l__unused14$858_out;
+  main___unused2  inst (zi8, main__unused2_out);
+  assign res = main__unused2_out;
 endmodule
 
-module main_$L_Main_get__addr__reg115$998 (input logic [204:0] arg0,
+module main_get__addr__reg4 (input logic [204:0] arg0,
   input logic [204:0] arg1,
   output logic [240:0] res);
   logic [76:0] zi0;
@@ -527,7 +527,7 @@ module main_$L_Main_get__addr__reg115$998 (input logic [204:0] arg0,
   assign zi10 = zi2[2];
   assign zi11 = zi2[1];
   assign zi12 = zi2[0];
-  assign zi13 = (zi3 == 1'h1) ? ((zi4 == 1'h1) ? ((zi5 == 1'h1) ? ((zi6 == 1'h1) ? ((zi7 == 1'h1) ? ((zi8 == 1'h1) ? ((zi9 == 1'h1) ? ((zi10 == 1'h1) ? ((zi11 == 1'h1) ? ((zi12 == 1'h1) ? 1'h0 : 1'h1) : 1'h1) : 1'h1) : 1'h1) : 1'h1) : 1'h1) : 1'h1) : 1'h1) : 1'h1) : 1'h1;
+  assign zi13 = zi3 ? (zi4 ? (zi5 ? (zi6 ? (zi7 ? (zi8 ? (zi9 ? (zi10 ? (zi11 ? (~zi12) : 1'h1) : 1'h1) : 1'h1) : 1'h1) : 1'h1) : 1'h1) : 1'h1) : 1'h1) : 1'h1;
   assign zi14 = arg1[204:128];
   Main_ack__reg  instR1 (zi14, main_ack_reg_out);
   assign zi16 = main_ack_reg_out;
@@ -541,31 +541,31 @@ module main_$L_Main_get__addr__reg115$998 (input logic [204:0] arg0,
   Main_data__out__reg  instR4 (zi20, main_data_out_reg_outR1);
   assign zi22 = main_data_out_reg_outR1;
   assign zi23 = {zi21, zi22};
-  assign res = (zi13 == 1'h0) ? {zi18, 3'h0, arg1} : {zi23, 3'h3, arg0};
+  assign res = (~zi13) ? {zi18, 3'h0, arg1} : {zi23, 3'h3, arg0};
 endmodule
 
 module Main_data__out__reg (input logic [76:0] arg0,
   output logic [31:0] res);
-  logic [31:0] ds5;
-  assign ds5 = arg0[31:0];
-  assign res = ds5;
+  logic [31:0] zds5;
+  assign zds5 = arg0[31:0];
+  assign res = zds5;
 endmodule
 
 module Main_ack__reg (input logic [76:0] arg0,
   output logic [0:0] res);
-  logic [0:0] ds4;
-  assign ds4 = arg0[32];
-  assign res = ds4;
+  logic [0:0] zds4;
+  assign zds4 = arg0[32];
+  assign res = zds4;
 endmodule
 
 module Main_addr__reg (input logic [76:0] arg0,
   output logic [9:0] res);
-  logic [9:0] ds2;
-  assign ds2 = arg0[74:65];
-  assign res = ds2;
+  logic [9:0] zds2;
+  assign zds2 = arg0[74:65];
+  assign res = zds2;
 endmodule
 
-module ZLL_Main_memLookup_fail1 (input logic [127:0] arg0,
+module Main_memLookup_$fail1 (input logic [127:0] arg0,
   output logic [31:0] res);
   assign res = {6'h20{1'h0}};
 endmodule
@@ -574,16 +574,16 @@ module Main_memTweak (input logic [9:0] arg0,
   input logic [31:0] arg1,
   input logic [127:0] arg2,
   output logic [127:0] res);
-  logic [0:0] ds1;
-  logic [0:0] ds2;
-  logic [0:0] ds3;
-  logic [0:0] ds4;
-  logic [0:0] ds5;
-  logic [0:0] ds6;
-  logic [0:0] ds7;
-  logic [0:0] ds8;
-  logic [0:0] ds9;
-  logic [0:0] ds10;
+  logic [0:0] zds1;
+  logic [0:0] zds2;
+  logic [0:0] zds3;
+  logic [0:0] zds4;
+  logic [0:0] zds5;
+  logic [0:0] zds6;
+  logic [0:0] zds7;
+  logic [0:0] zds8;
+  logic [0:0] zds9;
+  logic [0:0] zds10;
   logic [31:0] mem1;
   logic [31:0] mem2;
   logic [31:0] mem3;
@@ -596,16 +596,16 @@ module Main_memTweak (input logic [9:0] arg0,
   logic [31:0] mem0R2;
   logic [31:0] mem1R2;
   logic [31:0] mem2R2;
-  assign ds1 = arg0[9];
-  assign ds2 = arg0[8];
-  assign ds3 = arg0[7];
-  assign ds4 = arg0[6];
-  assign ds5 = arg0[5];
-  assign ds6 = arg0[4];
-  assign ds7 = arg0[3];
-  assign ds8 = arg0[2];
-  assign ds9 = arg0[1];
-  assign ds10 = arg0[0];
+  assign zds1 = arg0[9];
+  assign zds2 = arg0[8];
+  assign zds3 = arg0[7];
+  assign zds4 = arg0[6];
+  assign zds5 = arg0[5];
+  assign zds6 = arg0[4];
+  assign zds7 = arg0[3];
+  assign zds8 = arg0[2];
+  assign zds9 = arg0[1];
+  assign zds10 = arg0[0];
   assign mem1 = arg2[95:64];
   assign mem2 = arg2[63:32];
   assign mem3 = arg2[31:0];
@@ -618,7 +618,7 @@ module Main_memTweak (input logic [9:0] arg0,
   assign mem0R2 = arg2[127:96];
   assign mem1R2 = arg2[95:64];
   assign mem2R2 = arg2[63:32];
-  assign res = (ds1 == 1'h0) ? ((ds2 == 1'h0) ? ((ds3 == 1'h0) ? ((ds4 == 1'h0) ? ((ds5 == 1'h0) ? ((ds6 == 1'h0) ? ((ds7 == 1'h0) ? ((ds8 == 1'h0) ? ((ds9 == 1'h0) ? ((ds10 == 1'h0) ? {arg1, mem1, mem2, mem3} : {mem0, arg1, mem2R1, mem3R1}) : ((ds10 == 1'h0) ? {mem0R1, mem1R1, arg1, mem3R2} : {mem0R2, mem1R2, mem2R2, arg1})) : {8'h80{1'h0}}) : {8'h80{1'h0}}) : {8'h80{1'h0}}) : {8'h80{1'h0}}) : {8'h80{1'h0}}) : {8'h80{1'h0}}) : {8'h80{1'h0}}) : {8'h80{1'h0}};
+  assign res = (~zds1) ? ((~zds2) ? ((~zds3) ? ((~zds4) ? ((~zds5) ? ((~zds6) ? ((~zds7) ? ((~zds8) ? ((~zds9) ? ((~zds10) ? {arg1, mem1, mem2, mem3} : {mem0, arg1, mem2R1, mem3R1}) : ((~zds10) ? {mem0R1, mem1R1, arg1, mem3R2} : {mem0R2, mem1R2, mem2R2, arg1})) : {8'h80{1'h0}}) : {8'h80{1'h0}}) : {8'h80{1'h0}}) : {8'h80{1'h0}}) : {8'h80{1'h0}}) : {8'h80{1'h0}}) : {8'h80{1'h0}}) : {8'h80{1'h0}};
 endmodule
 
 module Mainzuzlzazg (input logic [1:0] arg0,

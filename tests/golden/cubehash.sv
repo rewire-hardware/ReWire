@@ -207,8 +207,8 @@ module top_level (input logic [0:0] clk,
   logic [31:0] main_swapix4_outR30;
   logic [31:0] main_swapix4_outR31;
   logic [1023:0] zi6;
-  logic [2047:0] main_$l__unused5$840_out;
-  logic [2047:0] main_$l__unused5$840_outR1;
+  logic [2047:0] main_arm2_out;
+  logic [2047:0] main_arm2_outR1;
   logic [2047:0] zres;
   Main_add  inst (__st0, main_add_out);
   assign zi0 = main_add_out;
@@ -413,9 +413,9 @@ module top_level (input logic [0:0] clk,
   Main_swapix4  instR194 (zi5, 5'h1e, main_swapix4_outR30);
   Main_swapix4  instR195 (zi5, 5'h1f, main_swapix4_outR31);
   assign zi6 = {main_swapix4_out, main_swapix4_outR1, main_swapix4_outR2, main_swapix4_outR3, main_swapix4_outR4, main_swapix4_outR5, main_swapix4_outR6, main_swapix4_outR7, main_swapix4_outR8, main_swapix4_outR9, main_swapix4_outR10, main_swapix4_outR11, main_swapix4_outR12, main_swapix4_outR13, main_swapix4_outR14, main_swapix4_outR15, main_swapix4_outR16, main_swapix4_outR17, main_swapix4_outR18, main_swapix4_outR19, main_swapix4_outR20, main_swapix4_outR21, main_swapix4_outR22, main_swapix4_outR23, main_swapix4_outR24, main_swapix4_outR25, main_swapix4_outR26, main_swapix4_outR27, main_swapix4_outR28, main_swapix4_outR29, main_swapix4_outR30, main_swapix4_outR31};
-  main_$L___unused5$840  instR196 (zi6, main_$l__unused5$840_out);
-  main_$L___unused5$840  instR197 (__st0, main_$l__unused5$840_outR1);
-  assign zres = (__in0 == 1'h0) ? main_$l__unused5$840_out : main_$l__unused5$840_outR1;
+  main_arm2  instR196 (zi6, main_arm2_out);
+  main_arm2  instR197 (__st0, main_arm2_outR1);
+  assign zres = (~__in0) ? main_arm2_out : main_arm2_outR1;
   assign __st0_next = zres[1023:0];
   assign __out0 = zres[2047:1024];
   initial __st0 = {93'h40000000020000001, {10'h3a3{1'h0}}};
@@ -428,7 +428,7 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module main_$L___unused5$840 (input logic [1023:0] arg0,
+module main_arm2 (input logic [1023:0] arg0,
   output logic [2047:0] res);
   assign res = {arg0, arg0};
 endmodule
@@ -456,7 +456,7 @@ module Main_rot (input logic [31:0] arg0,
   logic [4:0] zi0;
   logic [0:0] zi1;
   logic [1023:0] slice_in;
-  logic [32:0] ds;
+  logic [32:0] zds;
   logic [31:0] w0;
   logic [31:0] w0R1;
   logic [0:0] h;
@@ -465,12 +465,12 @@ module Main_rot (input logic [31:0] arg0,
   assign zi0 = main_explode5_out;
   assign zi1 = zi0[4];
   assign slice_in = arg1 >> (((128'h20 - {{7'h7b{1'h0}}, arg2}) - 128'h1) * 128'h20);
-  assign ds = {zi1, slice_in[31:0]};
-  assign w0 = ds[31:0];
+  assign zds = {zi1, slice_in[31:0]};
+  assign w0 = zds[31:0];
   assign w0R1 = w0;
-  assign h = ds[32];
+  assign h = zds[32];
   assign zt0 = h;
-  assign res = (zt0 == 1'h0) ? ((w0R1 << arg0) | (w0R1 >> (32'h20 - arg0))) : w0R1;
+  assign res = (~zt0) ? ((w0R1 << arg0) | (w0R1 >> (32'h20 - arg0))) : w0R1;
 endmodule
 
 module Main_addix (input logic [1023:0] arg0,
@@ -489,7 +489,7 @@ module Main_addix (input logic [1023:0] arg0,
   logic [0:0] zi9;
   logic [1023:0] slice_in;
   logic [1023:0] slice_inR1;
-  logic [64:0] ds;
+  logic [64:0] zds;
   logic [31:0] v0;
   logic [31:0] v0R1;
   logic [0:0] h;
@@ -508,13 +508,13 @@ module Main_addix (input logic [1023:0] arg0,
   assign zi9 = zi0[4];
   assign slice_in = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, {1'h0, zi2, zi4, zi6, zi8}}) - 128'h1) * 128'h20);
   assign slice_inR1 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, {1'h1, zi2, zi4, zi6, zi8}}) - 128'h1) * 128'h20);
-  assign ds = {zi9, slice_in[31:0], slice_inR1[31:0]};
-  assign v0 = ds[63:32];
+  assign zds = {zi9, slice_in[31:0], slice_inR1[31:0]};
+  assign v0 = zds[63:32];
   assign v0R1 = v0;
-  assign h = ds[64];
+  assign h = zds[64];
   assign zt0 = h;
-  assign v1 = ds[31:0];
-  assign res = (zt0 == 1'h0) ? v0R1 : (v0R1 + v1);
+  assign v1 = zds[31:0];
+  assign res = (~zt0) ? v0R1 : (v0R1 + v1);
 endmodule
 
 module Main_add (input logic [1023:0] arg0,
@@ -590,7 +590,7 @@ module Main_swapix1 (input logic [1023:0] arg0,
   input logic [4:0] arg1,
   output logic [31:0] res);
   logic [4:0] main_explode5_out;
-  logic [4:0] ds;
+  logic [4:0] zds;
   logic [0:0] b1;
   logic [0:0] b1R1;
   logic [0:0] b2;
@@ -609,32 +609,32 @@ module Main_swapix1 (input logic [1023:0] arg0,
   logic [1023:0] slice_inR1;
   logic [1023:0] slice_inR2;
   Main_explode5  inst (arg1, main_explode5_out);
-  assign ds = main_explode5_out;
-  assign b1 = ds[4];
+  assign zds = main_explode5_out;
+  assign b1 = zds[4];
   assign b1R1 = b1;
-  assign b2 = ds[3];
+  assign b2 = zds[3];
   assign b2R1 = b2;
-  assign k = ds[2];
+  assign k = zds[2];
   assign kR1 = k;
-  assign l = ds[1];
+  assign l = zds[1];
   assign lR1 = l;
-  assign m = ds[0];
+  assign m = zds[0];
   assign mR1 = m;
-  assign zt0 = (b1R1 == 1'h1) ? 1'h0 : 1'h1;
-  assign zt1 = (zt0 == 1'h1) ? b2R1 : 1'h0;
-  assign zt2 = (b1R1 == 1'h1) ? 1'h0 : 1'h1;
-  assign zt3 = (zt2 == 1'h1) ? ((b2R1 == 1'h1) ? 1'h0 : 1'h1) : 1'h0;
+  assign zt0 = ~b1R1;
+  assign zt1 = zt0 ? b2R1 : 1'h0;
+  assign zt2 = ~b1R1;
+  assign zt3 = zt2 ? (~b2R1) : 1'h0;
   assign slice_in = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, arg1}) - 128'h1) * 128'h20);
   assign slice_inR1 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, {2'h1, kR1, lR1, mR1}}) - 128'h1) * 128'h20);
   assign slice_inR2 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, {2'h0, kR1, lR1, mR1}}) - 128'h1) * 128'h20);
-  assign res = (zt1 == 1'h0) ? ((zt3 == 1'h0) ? slice_in[31:0] : slice_inR1[31:0]) : slice_inR2[31:0];
+  assign res = (~zt1) ? ((~zt3) ? slice_in[31:0] : slice_inR1[31:0]) : slice_inR2[31:0];
 endmodule
 
 module Main_swapix2 (input logic [1023:0] arg0,
   input logic [4:0] arg1,
   output logic [31:0] res);
   logic [4:0] main_explode5_out;
-  logic [4:0] ds;
+  logic [4:0] zds;
   logic [0:0] b1;
   logic [0:0] b1R1;
   logic [0:0] j;
@@ -651,30 +651,30 @@ module Main_swapix2 (input logic [1023:0] arg0,
   logic [1023:0] slice_inR1;
   logic [1023:0] slice_inR2;
   Main_explode5  inst (arg1, main_explode5_out);
-  assign ds = main_explode5_out;
-  assign b1 = ds[4];
+  assign zds = main_explode5_out;
+  assign b1 = zds[4];
   assign b1R1 = b1;
-  assign j = ds[3];
+  assign j = zds[3];
   assign jR1 = j;
-  assign k = ds[2];
+  assign k = zds[2];
   assign kR1 = k;
-  assign b2 = ds[1];
+  assign b2 = zds[1];
   assign b2R1 = b2;
-  assign m = ds[0];
+  assign m = zds[0];
   assign mR1 = m;
-  assign zt0 = (b1R1 == 1'h1) ? ((b2R1 == 1'h1) ? 1'h0 : 1'h1) : 1'h0;
-  assign zt1 = (b1R1 == 1'h1) ? b2R1 : 1'h0;
+  assign zt0 = b1R1 ? (~b2R1) : 1'h0;
+  assign zt1 = b1R1 ? b2R1 : 1'h0;
   assign slice_in = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, arg1}) - 128'h1) * 128'h20);
   assign slice_inR1 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, {1'h1, jR1, kR1, 1'h0, mR1}}) - 128'h1) * 128'h20);
   assign slice_inR2 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, {1'h1, jR1, kR1, 1'h1, mR1}}) - 128'h1) * 128'h20);
-  assign res = (zt0 == 1'h0) ? ((zt1 == 1'h0) ? slice_in[31:0] : slice_inR1[31:0]) : slice_inR2[31:0];
+  assign res = (~zt0) ? ((~zt1) ? slice_in[31:0] : slice_inR1[31:0]) : slice_inR2[31:0];
 endmodule
 
 module Main_swapix3 (input logic [1023:0] arg0,
   input logic [4:0] arg1,
   output logic [31:0] res);
   logic [4:0] main_explode5_out;
-  logic [4:0] ds;
+  logic [4:0] zds;
   logic [0:0] b1;
   logic [0:0] b1R1;
   logic [0:0] j;
@@ -693,32 +693,32 @@ module Main_swapix3 (input logic [1023:0] arg0,
   logic [1023:0] slice_inR1;
   logic [1023:0] slice_inR2;
   Main_explode5  inst (arg1, main_explode5_out);
-  assign ds = main_explode5_out;
-  assign b1 = ds[4];
+  assign zds = main_explode5_out;
+  assign b1 = zds[4];
   assign b1R1 = b1;
-  assign j = ds[3];
+  assign j = zds[3];
   assign jR1 = j;
-  assign b2 = ds[2];
+  assign b2 = zds[2];
   assign b2R1 = b2;
-  assign l = ds[1];
+  assign l = zds[1];
   assign lR1 = l;
-  assign m = ds[0];
+  assign m = zds[0];
   assign mR1 = m;
-  assign zt0 = (b1R1 == 1'h1) ? 1'h0 : 1'h1;
-  assign zt1 = (zt0 == 1'h1) ? ((b2R1 == 1'h1) ? 1'h0 : 1'h1) : 1'h0;
-  assign zt2 = (b1R1 == 1'h1) ? 1'h0 : 1'h1;
-  assign zt3 = (zt2 == 1'h1) ? b2R1 : 1'h0;
+  assign zt0 = ~b1R1;
+  assign zt1 = zt0 ? (~b2R1) : 1'h0;
+  assign zt2 = ~b1R1;
+  assign zt3 = zt2 ? b2R1 : 1'h0;
   assign slice_in = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, arg1}) - 128'h1) * 128'h20);
   assign slice_inR1 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, {1'h0, jR1, 1'h0, lR1, mR1}}) - 128'h1) * 128'h20);
   assign slice_inR2 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, {1'h0, jR1, 1'h1, lR1, mR1}}) - 128'h1) * 128'h20);
-  assign res = (zt1 == 1'h0) ? ((zt3 == 1'h0) ? slice_in[31:0] : slice_inR1[31:0]) : slice_inR2[31:0];
+  assign res = (~zt1) ? ((~zt3) ? slice_in[31:0] : slice_inR1[31:0]) : slice_inR2[31:0];
 endmodule
 
 module Main_swapix4 (input logic [1023:0] arg0,
   input logic [4:0] arg1,
   output logic [31:0] res);
   logic [4:0] main_explode5_out;
-  logic [4:0] ds;
+  logic [4:0] zds;
   logic [0:0] b1;
   logic [0:0] b1R1;
   logic [0:0] j;
@@ -735,30 +735,30 @@ module Main_swapix4 (input logic [1023:0] arg0,
   logic [1023:0] slice_inR1;
   logic [1023:0] slice_inR2;
   Main_explode5  inst (arg1, main_explode5_out);
-  assign ds = main_explode5_out;
-  assign b1 = ds[4];
+  assign zds = main_explode5_out;
+  assign b1 = zds[4];
   assign b1R1 = b1;
-  assign j = ds[3];
+  assign j = zds[3];
   assign jR1 = j;
-  assign k = ds[2];
+  assign k = zds[2];
   assign kR1 = k;
-  assign l = ds[1];
+  assign l = zds[1];
   assign lR1 = l;
-  assign b2 = ds[0];
+  assign b2 = zds[0];
   assign b2R1 = b2;
-  assign zt0 = (b1R1 == 1'h1) ? ((b2R1 == 1'h1) ? 1'h0 : 1'h1) : 1'h0;
-  assign zt1 = (b1R1 == 1'h1) ? b2R1 : 1'h0;
+  assign zt0 = b1R1 ? (~b2R1) : 1'h0;
+  assign zt1 = b1R1 ? b2R1 : 1'h0;
   assign slice_in = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, arg1}) - 128'h1) * 128'h20);
   assign slice_inR1 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, {1'h1, jR1, kR1, lR1, 1'h0}}) - 128'h1) * 128'h20);
   assign slice_inR2 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, {1'h1, jR1, kR1, lR1, 1'h1}}) - 128'h1) * 128'h20);
-  assign res = (zt0 == 1'h0) ? ((zt1 == 1'h0) ? slice_in[31:0] : slice_inR1[31:0]) : slice_inR2[31:0];
+  assign res = (~zt0) ? ((~zt1) ? slice_in[31:0] : slice_inR1[31:0]) : slice_inR2[31:0];
 endmodule
 
 module Main_xorix (input logic [1023:0] arg0,
   input logic [4:0] arg1,
   output logic [31:0] res);
   logic [4:0] main_explode5_out;
-  logic [4:0] ds;
+  logic [4:0] zds;
   logic [0:0] j;
   logic [0:0] jR1;
   logic [0:0] k;
@@ -775,23 +775,23 @@ module Main_xorix (input logic [1023:0] arg0,
   logic [1023:0] slice_inR1;
   logic [1023:0] slice_inR2;
   Main_explode5  inst (arg1, main_explode5_out);
-  assign ds = main_explode5_out;
-  assign j = ds[3];
+  assign zds = main_explode5_out;
+  assign j = zds[3];
   assign jR1 = j;
-  assign k = ds[2];
+  assign k = zds[2];
   assign kR1 = k;
-  assign l = ds[1];
+  assign l = zds[1];
   assign lR1 = l;
-  assign m = ds[0];
+  assign m = zds[0];
   assign mR1 = m;
   assign i1 = {1'h1, jR1, kR1, lR1, mR1};
-  assign h = ds[4];
+  assign h = zds[4];
   assign zt0 = h;
-  assign zt1 = (zt0 == 1'h1) ? 1'h0 : 1'h1;
+  assign zt1 = ~zt0;
   assign slice_in = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, i1}) - 128'h1) * 128'h20);
   assign slice_inR1 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, {1'h0, jR1, kR1, lR1, mR1}}) - 128'h1) * 128'h20);
   assign slice_inR2 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, i1}) - 128'h1) * 128'h20);
-  assign res = (zt1 == 1'h0) ? slice_in[31:0] : (slice_inR1[31:0] ^ slice_inR2[31:0]);
+  assign res = (~zt1) ? slice_in[31:0] : (slice_inR1[31:0] ^ slice_inR2[31:0]);
 endmodule
 
 module Main_xor (input logic [1023:0] arg0,

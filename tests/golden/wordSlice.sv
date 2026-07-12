@@ -5,8 +5,8 @@ module top_level (input logic [15:0] __in0,
   logic [7:0] zi2;
   logic [7:0] zres;
   assign zi0 = __in0[15];
-  assign zi1 = (zi0 == 1'h1) ? __in0[8] : 1'h0;
-  assign zi2 = (zi1 == 1'h0) ? __in0[15:8] : __in0[7:0];
+  assign zi1 = zi0 ? __in0[8] : 1'h0;
+  assign zi2 = (~zi1) ? __in0[15:8] : __in0[7:0];
   assign zres = zi2;
   assign __out0 = zres;
 endmodule

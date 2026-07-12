@@ -1,28 +1,34 @@
+--| state dispatch for process main: 0=x
 main.$dispatch : ([1], [1]) -> [2]
 main.$dispatch disc i =
-      main.$L.x3$252 i disc
+      main.x i disc
 
-main.$L.x3$252 : ([1], [1]) -> [2]
-main.$L.x3$252 x s0 =
-      main.$L.Main.go1$250 s0
+--| block '$L.x' of process main (state 0)
+main.x : ([1], [1]) -> [2]
+main.x x s0 =
+      main.go s0
 
-main.$L._unused2$251 : ([1]) -> [2]
-main.$L._unused2$251 s0 =
+--| block '$L._unused' of process main
+main._unused : ([1]) -> [2]
+main._unused s0 =
       1'h0 # s0
 
-main.$L.rf4$253 : ([1], [1]) -> [2]
-main.$L.rf4$253 rf s0 =
-      if eq rf 1'h0 then main.$L._unused2$251 s0
-            else main.$L._unused2$251 s0
+--| block '$L.rf' of process main
+main.rf : ([1], [1]) -> [2]
+main.rf rf s0 =
+      if not rf then main._unused s0
+            else main._unused s0
 
-main.$L.Main.go1$250 : ([1]) -> [2]
-main.$L.Main.go1$250 s0 =
-      main.$L.rf4$253 s0 s0
+--| block '$L.Main.go' of process main
+main.go : ([1]) -> [2]
+main.go s0 =
+      main.rf s0 s0
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
       register __st0 : [1] init 1'h1
+      tag x = 0
       let $res = main.$dispatch __st0 __in0
       __out0 := $res[1 +: 1]
       next __st0 := $res[0 +: 1]

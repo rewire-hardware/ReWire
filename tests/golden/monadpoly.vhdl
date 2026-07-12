@@ -208,20 +208,20 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \main_$L___unused3$295\ is
+component \main___unused\ is
       port (arg0 : in std_logic_vector (0 downto 0);
             arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (1 downto 0));
       end component;
       signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal \main_$l__unused3$295_out\ : std_logic_vector (1 downto 0);
-      signal \main_$l__unused3$295_outR1\ : std_logic_vector (1 downto 0);
+      signal \main__unused_out\ : std_logic_vector (1 downto 0);
+      signal \main__unused_outR1\ : std_logic_vector (1 downto 0);
       signal zres : std_logic_vector (1 downto 0);
 begin
-inst : \main_$L___unused3$295\ port map (\__st0\, \__st0\, \main_$l__unused3$295_out\);
-      \instR1\ : \main_$L___unused3$295\ port map (\__st0\, std_logic_vector'(B"0"), \main_$l__unused3$295_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), rw_cond(rw_eq(\__st0\, std_logic_vector'(B"0")), \main_$l__unused3$295_out\, \main_$l__unused3$295_outR1\), std_logic_vector'(B"10"));
+inst : \main___unused\ port map (\__st0\, \__st0\, \main__unused_out\);
+      \instR1\ : \main___unused\ port map (\__st0\, std_logic_vector'(B"0"), \main__unused_outR1\);
+      zres <= rw_cond(rw_not(\__in0\), rw_cond(rw_not(\__st0\), \main__unused_out\, \main__unused_outR1\), std_logic_vector'(B"10"));
       \__st0_next\ <= zres(0 downto 0);
       \__out0\ <= zres(1 downto 1);
       process (clk, rst)
@@ -238,13 +238,13 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L___unused4$296\ is
+entity \main___unused2\ is
 port (arg0 : in std_logic_vector (0 downto 0);
       arg1 : in std_logic_vector (0 downto 0);
       res : out std_logic_vector (1 downto 0));
 end entity;
 
-architecture rtl of \main_$L___unused4$296\ is
+architecture rtl of \main___unused2\ is
 
 begin
 res <= (arg0 & arg1);
@@ -254,22 +254,22 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L___unused3$295\ is
+entity \main___unused\ is
 port (arg0 : in std_logic_vector (0 downto 0);
       arg1 : in std_logic_vector (0 downto 0);
       res : out std_logic_vector (1 downto 0));
 end entity;
 
-architecture rtl of \main_$L___unused3$295\ is
-component \main_$L___unused4$296\ is
+architecture rtl of \main___unused\ is
+component \main___unused2\ is
       port (arg0 : in std_logic_vector (0 downto 0);
             arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (1 downto 0));
       end component;
-      signal \main_$l__unused4$296_out\ : std_logic_vector (1 downto 0);
-      signal \main_$l__unused4$296_outR1\ : std_logic_vector (1 downto 0);
+      signal \main__unused2_out\ : std_logic_vector (1 downto 0);
+      signal \main__unused2_outR1\ : std_logic_vector (1 downto 0);
 begin
-inst : \main_$L___unused4$296\ port map (arg0, std_logic_vector'(B"1"), \main_$l__unused4$296_out\);
-      \instR1\ : \main_$L___unused4$296\ port map (arg0, arg1, \main_$l__unused4$296_outR1\);
-      res <= rw_cond(rw_eq(arg0, std_logic_vector'(B"0")), \main_$l__unused4$296_out\, \main_$l__unused4$296_outR1\);
+inst : \main___unused2\ port map (arg0, std_logic_vector'(B"1"), \main__unused2_out\);
+      \instR1\ : \main___unused2\ port map (arg0, arg1, \main__unused2_outR1\);
+      res <= rw_cond(rw_not(arg0), \main__unused2_out\, \main__unused2_outR1\);
 end architecture;

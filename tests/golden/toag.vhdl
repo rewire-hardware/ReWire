@@ -217,10 +217,10 @@ signal \__resumption_tag\ : std_logic_vector (2 downto 0) := std_logic_vector'(B
       signal zres : std_logic_vector (3 downto 0);
 begin
 zi0 <= \__resumption_tag\(0 downto 0);
-      zi1 <= rw_cond(rw_eq(zi0, std_logic_vector'(B"1")), zi0, std_logic_vector'(B"0"));
-      zi2 <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), zi1, zi0);
-      zi3 <= rw_cond(rw_eq(zi2, std_logic_vector'(B"1")), \__in0\, std_logic_vector'(B"0"));
-      zres <= rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"00")), std_logic_vector'(B"0100"), rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"01")), (zi3 & std_logic_vector'(B"000")), rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), (\__in0\ & std_logic_vector'(B"01") & \__in0\), (std_logic_vector'(B"001") & \__in0\))));
+      zi1 <= rw_cond(zi0, zi0, std_logic_vector'(B"0"));
+      zi2 <= rw_cond(rw_not(\__in0\), zi1, zi0);
+      zi3 <= rw_cond(zi2, \__in0\, std_logic_vector'(B"0"));
+      zres <= rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"00")), std_logic_vector'(B"0100"), rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"01")), (zi3 & std_logic_vector'(B"000")), rw_cond(rw_not(\__in0\), (\__in0\ & std_logic_vector'(B"01") & \__in0\), (std_logic_vector'(B"001") & \__in0\))));
       \__resumption_tag_next\ <= zres(2 downto 0);
       \__out0\ <= zres(3 downto 3);
       process (clk, rst)

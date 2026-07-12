@@ -24,14 +24,15 @@ module ReWire.Eidos.ToHyle (eidosToHyle) where
 import ReWire.Annotation (Annote, noAnn, Annotated (ann), Provenance (..), Span (..), annProv)
 import ReWire.BitVector (BV, bitVec, zeros, nbits)
 import ReWire.Builtins (Builtin (..))
-import ReWire.Config (Config, inputSigs, outputSigs, stateSigs, top, loadPath)
+import ReWire.Config (Config, inputSigs, outputSigs, stateSigs, top, loadPath, stableNames)
 import ReWire.Error (failAt, failAtWith, failInternal, warnAt, AstError, MonadError, Warning (..), relocatingTo)
 import ReWire.Eidos.Pretty ()
 import ReWire.Eidos.Syntax
-import ReWire.Eidos.Naming (liftedJoinName)
+import ReWire.Eidos.Naming (liftedJoinName, labelBase, defnBase, originTag)
 import ReWire.Eidos.Subst (nextUniq, freeUniqs, occIds)
 import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, flattenTyApp, evalNat, substTv, higherOrder, fundamental, reacOrStateT)
 import ReWire.Hyle.Interp (evalExp, IEnv (..))
+import ReWire.Hyle.Mangle (pickFresh, seedNames)
 import ReWire.Hyle.Parse (parseHyleDefns)
 import ReWire.Hyle.Transform (hoistInstances)
 import ReWire.Pretty (showt, prettyPrint)
@@ -109,8 +110,10 @@ scope0 = Scope mempty mempty
 
 -- | Bind a local to a readable Hyle name derived from its source name,
 --   disambiguating collisions with a numeric suffix (cf. the retained
---   producer's uniquifyLocals). Source identifiers never begin with '$',
---   so they cannot clash with the generated '$t'/'$in'/'$res' names.
+--   producer's uniquifyLocals). Local names may carry the compiler-owned
+--   @$@ prefix (machine binders marked by the bridge, and the generated
+--   @$t@\/@$in@\/@$res@ names); the numeric suffixing keeps all of them
+--   apart regardless of provenance.
 bindLocal :: Annote -> Scope -> Id -> A.Size -> (Scope, A.Name)
 bindLocal an sc x sz = bindLocalText an sc (idUniq x) (idOcc x) sz
 
@@ -243,13 +246,19 @@ eidosToHyle conf p0 = do
       (cryMap, cryDefns) <- compileCryptols conf p1
       (p, s) <- flip runStateT s0 $ do
             let pures = filter emit defns
+                -- One global namespace (Hyle.Check enforces it over defns
+                -- AND extern module names): the Cryptol fragments' names
+                -- are baked into rwcry's output and extern names are the
+                -- user's, so both seed the used map that pure-defn and
+                -- block naming disambiguate against.
+                (tops, used) = buildNameMap (seedNames $ map A.defnName cryDefns <> mapMaybe externName (query p1)) pures
                 env   = Env { envCtors   = Map.fromList [ (dataName d, [ c | DataCon _ c _ <- dataCons d ]) | d <- datas ]
                             , envCtorSig = Map.fromList [ (c, sig) | d <- datas, DataCon _ c sig <- dataCons d ]
-                            , envTops    = buildNameMap pures
+                            , envTops    = tops
                             , envCry     = cryMap
                             }
             pureDefns <- mapM (transDefn env) pures
-            transProc conf env pr (pureDefns <> cryDefns)
+            transProc conf env used pr (pureDefns <> cryDefns)
       mapM_ (\ (Warning an msg) -> warnAt conf an msg) $ nubOrd $ sWarns s
       pure p
       where -- Primitive-named definitions (undotted; the polymorphic prim
@@ -263,6 +272,14 @@ eidosToHyle conf p0 = do
 
             isPrim :: Text -> Bool
             isPrim = T.all (/= '.')
+
+            -- | The module name of a (saturated, post-inlining) extern
+            --   use: the sixth value argument, mirroring transBuiltin's
+            --   Extern case.
+            externName :: Exp -> Maybe Text
+            externName e = case flattenApp e of
+                  (Prim _ _ Extern, args) | (_ : _ : _ : _ : _ : LitStr _ s : _) <- [ x | EArg x <- args ] -> Just s
+                  _                                                                                        -> Nothing
 
 ---
 --- Cryptol foreign functions.
@@ -289,7 +306,14 @@ compileCryptols conf p = case uses of
             step rwcry (memo, ds) (an, f, n, t) = do
                   path <- resolveCry an f
                   cty  <- either (\ e -> failAt an $ "cryptol: unsupported type at a Cryptol foreign function: " <> e) pure $ cryTy t
-                  let entry = "cry$" <> sanitize n <> "$" <> showt (Map.size memo)
+                  -- The entry name carries the instantiation's monotype
+                  -- ('cry$grev$8_8'), not a discovery counter, so adding
+                  -- an unrelated instantiation doesn't rename this one.
+                  -- Entry names are baked into rwcry's output and can't be
+                  -- disambiguated later; dodge already-issued ones here.
+                  let base  = "cry$" <> sanitize n <> "$" <> originTag [cty]
+                      taken = Set.fromList $ Map.elems memo
+                      entry = dodge taken base
                   (ec, out, err) <- liftIO $ readCreateProcessWithExitCode (proc rwcry [path, T.unpack n, T.unpack cty, T.unpack entry]) ""
                   case ec of
                         ExitSuccess   -> do
@@ -298,7 +322,11 @@ compileCryptols conf p = case uses of
                               -- them through rwc's warning machinery.
                               mapM_ (warnAt conf an) [ w | l <- T.lines $ T.pack err, Just w <- [T.stripPrefix "warning: " l] ]
                               ds' <- parseHyleDefns (T.pack out) path
-                              pure (Map.insert (f, n, tyKey t) entry memo, ds <> ds')
+                              -- The fragment's entry point gets a doc line
+                              -- recording the foreign function it compiles.
+                              let entryDoc = "cryptol " <> f <> "::" <> n <> " at " <> cty
+                                  ds''     = [ if A.defnName d == entry then d { A.defnDoc = A.Blind [entryDoc] } else d | d <- ds' ]
+                              pure (Map.insert (f, n, tyKey t) entry memo, ds <> ds'')
                         ExitFailure _ -> failAt an $ case T.strip $ T.pack err of
                               "" -> "cryptol: the translator (rwcry) failed without a diagnostic."
                               e  -> e
@@ -341,6 +369,14 @@ compileCryptols conf p = case uses of
             sanitize :: Text -> Text
             sanitize = T.map (\ c -> if isAlphaNum c || c `elem` ("_.$'" :: String) then c else '.')
 
+            dodge :: HashSet A.GId -> Text -> Text
+            dodge taken base = go $ base : [ base <> "$" <> showt k | k <- [2 :: Int ..] ]
+                  where go :: [Text] -> Text
+                        go = \ case
+                              c : cs | c `Set.member` taken -> go cs
+                                     | otherwise            -> c
+                              []                            -> base -- unreachable: the candidate list is infinite
+
 -- | A saturated Cryptol foreign-function application: the module file and
 --   function name (literals, after inlining), and the use-site type, read
 --   off the implementation argument (which the neutering pass reduced to
@@ -382,16 +418,19 @@ cryTy t = case flattenArrow t of
                               | c == "()", null args          -> pure "()"
                         _                        -> Left $ prettyPrint (Ann.unAnn t' :: Ty)
 
--- | Hyle names for the top-level definitions: the occurrence text,
---   disambiguated by a numeric suffix in definition order.
-buildNameMap :: [Defn] -> IM.IntMap A.GId
-buildNameMap = fst . foldl' step (mempty, mempty)
+-- | Hyle names for the top-level definitions: the occurrence's display
+--   base (lifted-definition markers stripped), disambiguated by a numeric
+--   suffix in definition order against every name already claimed (the
+--   incoming used map carries names that are not ours to move, e.g. the
+--   entries and helpers of rwcry-generated Cryptol fragments). Returns
+--   the extended used map so the machine fold can name blocks against the
+--   same namespace (Hyle global names are program-unique).
+buildNameMap :: HashMap Text Int -> [Defn] -> (IM.IntMap A.GId, HashMap Text Int)
+buildNameMap used0 = foldl' step (mempty, used0)
       where step :: (IM.IntMap A.GId, HashMap Text Int) -> Defn -> (IM.IntMap A.GId, HashMap Text Int)
             step (m, used) d =
-                  let occ = idOcc $ defnId d
-                      i   = Map.findWithDefault 0 occ used
-                      nm  = if i == 0 then occ else occ <> showt i
-                  in (IM.insert (idUniq $ defnId d) nm m, Map.insert occ (i + 1) used)
+                  let (nm, used') = pickFresh "" used $ defnBase $ idOcc $ defnId d
+                  in (IM.insert (idUniq $ defnId d) nm m, used')
 
 globalName :: MonadError AstError m => Env -> Annote -> Id -> TM m A.GId
 globalName env an x = maybe (failAt an $ "unknown global: " <> idOcc x) pure
@@ -500,8 +539,16 @@ transDefn env d@(Defn an did _ _ _ _) = do
                let sig = A.Sig an ptSzs codSz
                (sc, pnames) <- pure $ bindParams an scope0 (zip ps' ptSzs)
                body'' <- relocatingTo an $ transExp env sc body'
-               pure $ A.Defn an n' sig pnames body''
-      where peelLams :: Exp -> ([Id], Exp)
+               pure $ A.Defn an n' sig pnames body'' (defnAttr d == Just NoInline) (A.Blind $ originDoc $ defnOrigin d)
+      where -- | Provenance of compiler-minted clones, rendered as doc lines.
+            originDoc :: Maybe SpecOrigin -> [Text]
+            originDoc = \ case
+                  Just (SpecOrigin f ts) -> [ "specialized from '" <> f <> "'"
+                                              <> (if null ts then "" else " at " <> T.intercalate ", " (map tyKey ts)) ]
+                  Just (BakeOrigin f)    -> [ "partially applied from '" <> f <> "'" ]
+                  Nothing                -> []
+
+            peelLams :: Exp -> ([Id], Exp)
             peelLams = \ case
                   Lam _ x b -> let (xs, b') = peelLams b in (x : xs, b')
                   e         -> ([], e)
@@ -1158,28 +1205,55 @@ buildHalt lo an aty a cells = do
                   <> [ a ] <> cells
 
 -- | Translate one process into its Hyle definitions and the device.
-transProc :: forall m. MonadError AstError m => Config -> Env -> Proc -> [A.Defn] -> TM m A.Program
-transProc conf env pr pureDefns = do
+transProc :: forall m. MonadError AstError m => Config -> Env -> HashMap Text Int -> Proc -> [A.Defn] -> TM m A.Program
+transProc conf env used0 pr pureDefns = do
       lo <- mkLayout env pr
       let qual n = procName pr <> "." <> n
-          blockGid l = qual $ idOcc l <> "$" <> showt (idUniq l)
+          -- Block definitions are named from their labels' display bases
+          -- ('$L.Main.getIns' -> 'main.getIns'), disambiguated in
+          -- deterministic block order against the whole global namespace
+          -- (pure defns, Cryptol entries, externs, the other blocks);
+          -- dispatch order and tag values key on the labels' uniques, so
+          -- naming is display-only. Under --stable-names the label's
+          -- unique key is appended instead: always collision-free and
+          -- machine-greppable, at the cost of readability.
+          (blockGids, used1)
+                | conf^.stableNames = ( IM.fromList [ (idUniq l, qual $ idOcc l <> "$" <> showt (idUniq l)) | (l, _) <- procBlocks pr ]
+                                      , used0 )
+                | otherwise         = foldl' (\ (m, u) (l, _) ->
+                                          let (nm, u') = pickFresh "" u $ qual $ labelBase $ idOcc l
+                                          in (IM.insert (idUniq l) nm m, u'))
+                                          (mempty, used0) (procBlocks pr)
+          (entryGid, used2)   = pickFresh "" used1 $ qual "$entry"
+          (dispatchGid, _)    = pickFresh "" used2 $ qual "$dispatch"
+          blockGid l = IM.findWithDefault (qual $ idOcc l) (idUniq l) blockGids
+          -- Display names for the resumption-tag values: the pause-target
+          -- blocks' GIds with the process qualification stripped, in tag
+          -- order. Rendered as the device's 'tag' lines and the dispatch
+          -- defn's doc line.
+          stripQual g = fromMaybe g $ T.stripPrefix (procName pr <> ".") g
+          tagDisplay = [ (stripQual $ IM.findWithDefault "" u blockGids, v)
+                       | (u, v, _) <- sortOn (\ (_, v, _) -> v) $ loTargets lo ]
+          blockDoc l = case [ v | (u, v, _) <- loTargets lo, u == idUniq l ] of
+                [v] -> [ "block '" <> idOcc l <> "' of process " <> procName pr <> " (state " <> showt v <> ")" ]
+                _   -> [ "block '" <> idOcc l <> "' of process " <> procName pr ]
 
       inW <- sizeOf env "proc input" (procAnnote pr) $ procInTy pr
 
-      blockDefns <- mapM (\ (l, b) -> transBlock lo (blockGid l) blockGid b) $ procBlocks pr
-      entryDefn  <- transBlock lo (qual "$entry") blockGid $ procEntry pr
-      dispatch   <- dispatchDefn lo (qual "$dispatch") blockGid inW
+      blockDefns <- mapM (\ (l, b) -> transBlock lo (blockGid l) blockGid (blockDoc l) b) $ procBlocks pr
+      entryDefn  <- transBlock lo entryGid blockGid [ "entry block of process " <> procName pr ] $ procEntry pr
+      dispatch   <- dispatchDefn lo dispatchGid blockGid inW tagDisplay
 
       exts <- gets $ sortOn A.extName . Map.elems . sExterns
-      dev  <- mkDeviceM lo inW entryDefn dispatch (blockDefns <> pureDefns) exts
+      dev  <- mkDeviceM lo inW entryDefn dispatch (blockDefns <> pureDefns) exts tagDisplay
 
       hoistInstances $ A.Program exts (dispatch : blockDefns <> pureDefns) dev
       where -- | A block becomes one definition: parameters, then the cells
             --   as trailing parameters; commands become lets; the
             --   terminator builds the step record (pause/halt) or
             --   tail-calls the target block (goto).
-            transBlock :: Layout -> A.GId -> (Id -> A.GId) -> Block -> TM m A.Defn
-            transBlock lo gid blockGid (Block an ps cmds term) = do
+            transBlock :: Layout -> A.GId -> (Id -> A.GId) -> [Text] -> Block -> TM m A.Defn
+            transBlock lo gid blockGid doc (Block an ps cmds term) = do
                   modify $ \ s -> s { sCtr = 0 }
                   pSzs <- mapM (sizeOf env "block param" an . sigTy . idSig) ps
                   let (sc0, pnames)   = bindParams an scope0 (zip ps pSzs)
@@ -1188,7 +1262,7 @@ transProc conf env pr pureDefns = do
                                           (sc0, []) (loCells lo)
                       cellAtoms       = Map.fromList [ (c, A.Var an w nm) | (c, nm, w) <- cellNms ]
                   body <- goCmds lo blockGid sc1 cellAtoms cmds term
-                  pure $ A.Defn an gid (A.Sig an (pSzs <> map snd (loCells lo)) (loRecW lo)) (pnames <> [ nm | (_, nm, _) <- cellNms ]) body
+                  pure $ A.Defn an gid (A.Sig an (pSzs <> map snd (loCells lo)) (loRecW lo)) (pnames <> [ nm | (_, nm, _) <- cellNms ]) body False (A.Blind doc)
 
             goCmds :: Layout -> (Id -> A.GId) -> Scope -> HashMap Text A.Exp -> [Cmd] -> Term -> TM m A.Exp
             goCmds lo blockGid sc cells = \ case
@@ -1239,8 +1313,8 @@ transProc conf env pr pureDefns = do
 
             -- | @dispatch (label-tag | args | cells) i@: an if-chain over
             --   the label tag calling the pause-target blocks.
-            dispatchDefn :: Layout -> A.GId -> (Id -> A.GId) -> A.Size -> TM m A.Defn
-            dispatchDefn lo gid blockGid inW = do
+            dispatchDefn :: Layout -> A.GId -> (Id -> A.GId) -> A.Size -> [(Text, Integer)] -> TM m A.Defn
+            dispatchDefn lo gid blockGid inW tagDisplay = do
                   let an     = procAnnote pr
                       stW    = loRW lo + loCellsW lo
                       disc   = A.Var an stW "disc"
@@ -1257,13 +1331,15 @@ transProc conf env pr pureDefns = do
                         tgts -> pure $ foldr (\ t@(_, v, _) acc ->
                                           A.If an (loRecW lo) (A.Prim an 1 A.Eq [tag, A.Lit an $ bitVec (fromIntegral $ loRTagW lo) v]) (call t) acc)
                                     (call $ last tgts) (init tgts)
-                  pure $ A.Defn an gid (A.Sig an [stW, inW] (loRecW lo)) ["disc", "i"] body
+                  let doc = "state dispatch for process " <> procName pr <> ": "
+                          <> T.unwords [ showt v <> "=" <> x | (x, v) <- tagDisplay ]
+                  pure $ A.Defn an gid (A.Sig an [stW, inW] (loRecW lo)) ["disc", "i"] body False (A.Blind [doc])
 
             -- | Assemble the device: registers (initials by evaluating the
             --   entry definition with zero-filled cells), the dispatch
             --   call, and the output/next-state slice equations.
-            mkDeviceM :: Layout -> A.Size -> A.Defn -> A.Defn -> [A.Defn] -> [A.Extern] -> TM m A.Device
-            mkDeviceM lo inW entryDefn dispatch defns exts = do
+            mkDeviceM :: Layout -> A.Size -> A.Defn -> A.Defn -> [A.Defn] -> [A.Extern] -> [(Text, Integer)] -> TM m A.Device
+            mkDeviceM lo inW entryDefn dispatch defns exts tagDisplay = do
                   let an = procAnnote pr
                   inSzs  <- detupleSizes an $ procInTy pr
                   outSzs <- detupleSizes an $ procOutTy pr
@@ -1296,10 +1372,11 @@ transProc conf env pr pureDefns = do
                       regNames = Set.fromList $ map fst regWires
 
                   pure $ A.Device an (conf^.top) inWires outWires regs []
-                       $  [ A.SLet an "$in" inExp
+                       (  [ A.SLet an "$in" inExp
                           , A.SLet an "$res" $ A.Call an (loRecW lo) (A.defnName dispatch) loopArgs ]
                        <> [ A.SOutput an x $ slice0 an off sz resVar | (x, sz, off) <- layout, x `Set.member` outNames ]
-                       <> [ A.SNext an x $ slice0 an off sz resVar   | (x, sz, off) <- layout, x `Set.member` regNames ]
+                       <> [ A.SNext an x $ slice0 an off sz resVar   | (x, sz, off) <- layout, x `Set.member` regNames ] )
+                       $ A.Blind tagDisplay
                   where sliceBV :: BV -> A.Index -> A.Size -> BV
                         sliceBV bv off sz = bitVec (fromIntegral sz) $ BV.nat bv `div` (2 ^ toInteger off)
 
