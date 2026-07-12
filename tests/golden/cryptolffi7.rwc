@@ -1,0 +1,34 @@
+main.$dispatch : ([8]) -> [8]
+main.$dispatch i =
+      main.$L.$x4$252 i
+
+main.$L.$x4$252 : ([8]) -> [8]
+main.$L.$x4$252 $x =
+      main.$L.ReWire.Monad.iter$1$s23$250 $x
+
+main.$L.ReWire.Monad.iter$1$s23$250 : ([8]) -> [8]
+main.$L.ReWire.Monad.iter$1$s23$250 i =
+      let $a = Main.mix i in
+      $a
+
+Main.mix : ([8]) -> [8]
+Main.mix $eta0 =
+      cry$mix$0 $eta0
+
+cry$mix$0.bump$0 : ([8]) -> [8]
+cry$mix$0.bump$0 x$0 =
+      add x$0 8'h1
+
+cry$mix$0.scale$3 : ([8]) -> [8]
+cry$mix$0.scale$3 x$0 =
+      mul x$0 8'h3
+
+cry$mix$0 : ([8]) -> [8]
+cry$mix$0 x$0 =
+      add (cry$mix$0.scale$3 (cry$mix$0.bump$0 x$0)) (cry$mix$0.bump$0 (cry$mix$0.scale$3 x$0))
+
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      let $res = main.$dispatch __in0
+      __out0 := $res
