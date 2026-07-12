@@ -64,7 +64,7 @@ import Cryptol.Utils.PP (pp)
 import Cryptol.Utils.RecordMap (canonicalFields, recordElements)
 
 import Control.Exception (try, SomeException)
-import Control.Monad (unless)
+import Control.Monad (unless, foldM)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError, liftEither)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bits (testBit)
@@ -735,14 +735,18 @@ nodeCount = \ case
 --   declarations: uses of primitives that translate with a semantic
 --   caveat (error/assert/undefined as a zero poison; trace as identity).
 warnUses :: HashMap Int (Text, [T.Type]) -> [T.Decl] -> [Text]
-warnUses prims decls
-      | hasUse ["error"]          = [w1] <> traceW
-      | otherwise                 = traceW
+warnUses prims decls = concat
+      [ [ errW   | hasUse ["error"] ]
+      , [ traceW | hasUse ["trace"] ]
+      , [ recipW | hasUse ["recip", "/."] ]
+      ]
       where used   = [ pn | d <- decls, x <- declRefs d, Just (pn, _) <- [HM.lookup (N.nameUnique x) prims] ]
             hasUse ns = any (`elem` (ns :: [Text])) used
-            traceW = [ "trace/traceVal is ignored (evaluated in hardware, it is the identity on its result)." | hasUse ["trace"] ]
-            w1     = "error/assert/undefined compiled to a zero constant (Hyle has no bottom); "
+            traceW = "trace/traceVal is ignored (evaluated in hardware, it is the identity on its result)."
+            errW   = "error/assert/undefined compiled to a zero constant (Hyle has no bottom); "
                   <> "the result is defined but meaningless where the error would fire."
+            recipW = "recip/(/.) at Z p unrolls a Fermat inverse (~2*log2(p) modular multiplies); "
+                  <> "for a large modulus this is big -- watch the node budget (RWC_CRY_MAX_NODES)."
 
 -- | Count references to a variable (a let-binding may shadow it).
 countVar :: A.Name -> A.Exp -> Int
@@ -1020,6 +1024,12 @@ transPrim pn tys args = case (pn, tys, args) of
       ("-",      [zN -> Just n], [a, b]) -> zMod n (n + n)   A.Add a $ zNeg n b
       ("*",      [zN -> Just n], [a, b]) -> zMod n (n * n)   A.Mul a b
       ("negate", [zN -> Just n], [a])    -> pure $ zNeg n a
+      -- Field operations at Z p (Cryptol requires p prime): the inverse
+      -- is Fermat's a^(p-2) mod p, square-and-multiply unrolled over the
+      -- constant exponent's bits (~2*log p modular multiplies -- big for
+      -- large p, so warnUses flags it and the size governor bounds it).
+      ("recip", [zN -> Just n], [a])     -> zRecip n a
+      ("/.",    [zN -> Just n], [a, b])  -> zRecip n b >>= zMod n (n * n) A.Mul a
       ("fromInteger", [zN -> Just n], [a]) -> do
             let w = fromIntegral $ nbits $ fromIntegral n
             case litVal a of
@@ -1327,6 +1337,29 @@ transPrim pn tys args = case (pn, tys, args) of
             zNeg n a = let w = fromIntegral $ nbits $ fromIntegral n
                        in A.If noAnn w (A.Prim noAnn 1 A.Eq [a, A.Lit noAnn $ zeros $ fromIntegral w]) a
                               $ A.Prim noAnn w A.Sub [A.Lit noAnn $ bitVec (fromIntegral w) n, a]
+
+            -- The multiplicative inverse in Z p (p prime), a^(p-2) mod p
+            -- by square-and-multiply over the constant exponent's bits.
+            -- The successive squares are let-bound (each is reused by the
+            -- next square and, when the bit is set, by the product);
+            -- the product chain threads as an expression (single-use).
+            zRecip :: Integer -> A.Exp -> Either Text A.Exp
+            zRecip n a = do
+                  let w    = fromIntegral $ nbits $ fromIntegral n
+                      e    = n - 2                            -- p >= 3, so e >= 1
+                      top  = fromIntegral $ nbits (fromIntegral n) - 1 :: Integer -- >= highest set bit of p-2
+                      one  = A.Lit noAnn $ bitVec (fromIntegral w) (1 :: Integer)
+                      bn i = "zr$b$" <> showt (i :: Integer)
+                      bvar i = A.Var noAnn w $ bn i
+                  -- base_0 = a, base_{i+1} = base_i^2 (mod p).
+                  sqs   <- mapM (\ i -> (bn (i + 1), ) <$> zMod n (n * n) A.Mul (bvar i) (bvar i)) [0 .. top - 1]
+                  let lets = (bn 0, a) : sqs
+                  -- product of base_i for each set bit i of the exponent.
+                  result <- foldM (\ acc i -> if testBit e (fromIntegral i)
+                                                    then zMod n (n * n) A.Mul acc (bvar i)
+                                                    else pure acc)
+                                  one [0 .. top]
+                  pure $ foldr (\ (x, rhs) b -> A.Let noAnn (A.sizeOf b) x rhs b) result lets
 
 
 ---
