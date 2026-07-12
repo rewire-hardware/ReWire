@@ -55,6 +55,7 @@ data-files:
 - tests/integration/*.vhdl
 - tests/integration/*.cry
 - tests/integration/*.yaml
+- tests/integration/cry/*.cry
 - tests/eidos/*.eir
 - tests/eidos/negative/*.eir
 - rewire-user/src/*.hs

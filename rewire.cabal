@@ -665,13 +665,21 @@ data-files:
     tests/golden/wordSlice.input.yaml
     tests/golden/wordSlice.yaml
     tests/golden/zerowidth.yaml
+    tests/integration/aes128.hs
     tests/integration/MiniISA.hs
+    tests/integration/aes128.sv
     tests/integration/MiniISA.sv
+    tests/integration/aes128.rwc
     tests/integration/MiniISA.rwc
+    tests/integration/aes128.vhdl
     tests/integration/MiniISA.vhdl
+    tests/integration/aes128.cry
     tests/integration/MiniISA.cry
+    tests/integration/aes128.input.yaml
+    tests/integration/aes128.yaml
     tests/integration/MiniISA.input.yaml
     tests/integration/MiniISA.yaml
+    tests/integration/cry/aes128.cry
     tests/eidos/machine-degen.eir
     tests/eidos/machine-dup-cycle.eir
     tests/eidos/machine-toggle.eir
