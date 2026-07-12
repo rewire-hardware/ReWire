@@ -1,0 +1,6 @@
+module cryfield where
+inv : [8] -> [8]
+inv a = fromInteger (fromZ (recip (fromInteger (toInteger a) : Z 251)))
+
+divz : [8] -> [8] -> [8]
+divz a b = fromInteger (fromZ ((fromInteger (toInteger a) : Z 251) /. (fromInteger (toInteger b) : Z 251)))

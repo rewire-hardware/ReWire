@@ -1,0 +1,22 @@
+# Interpreter stimulus for cryptolffi8.
+#
+# Device: combinational; ReacT input (W 8, W 8) = (a, b), output
+# inv a + divz a b in Z 251 (cry/cryfield.cry). a and b stay in 1..250:
+# recip 0 / division by 0 are undefined in the prime field (Cryptol
+# raises; the Fermat inverse would give 0), so the cosim avoids them.
+- __in0: 1
+  __in1: 1
+- __in0: 2
+  __in1: 3
+- __in0: 7
+  __in1: 5
+- __in0: 250
+  __in1: 250
+- __in0: 100
+  __in1: 7
+- __in0: 128
+  __in1: 64
+- __in0: 17
+  __in1: 42
+- __in0: 200
+  __in1: 199
