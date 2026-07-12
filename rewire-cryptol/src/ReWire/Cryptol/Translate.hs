@@ -914,6 +914,14 @@ applyFn env f args = case spine f of
 elemSlice :: Integer -> Integer -> Integer -> A.Exp -> A.Exp
 elemSlice n we i = A.Slice noAnn (fromIntegral $ (n - 1 - i) * we) (fromIntegral we)
 
+-- | Resize an expression to a target width: zero-extend if wider,
+--   truncate (keeping the low bits) if narrower.
+resize :: A.Size -> A.Exp -> A.Exp
+resize w e
+      | A.sizeOf e == w = e
+      | A.sizeOf e <  w = A.Prim noAnn w (A.ZExt w) [e]
+      | otherwise       = A.Prim noAnn w (A.Trunc w) [e]
+
 -- | A reference, applied: a primitive instance, a translated definition,
 --   or a local.
 apply :: TEnv -> N.Name -> [A.Exp] -> Either Text A.Exp
@@ -943,10 +951,31 @@ transPrim pn tys args = case (pn, tys, args) of
             case wordWidth rep of
                   Just w  -> pure $ A.Lit noAnn $ bitVec (fromIntegral w) val
                   Nothing | isInteger rep -> pure $ intLit val
+                  Nothing | Just n <- zN rep -> pure $ A.Lit noAnn $ bitVec (fromIntegral $ nbits $ fromIntegral n) $ val `mod` n
                   Nothing -> Left $ "cryptol: a numeric literal at an unsupported type: " <> tshow rep
       ("True",  _, [])               -> pure $ A.Lit noAnn $ bitVec 1 (1 :: Integer)
       ("False", _, [])               -> pure $ A.Lit noAnn $ bitVec 1 (0 :: Integer)
       ("zero", [t], [])              -> A.Lit noAnn . zeros . fromIntegral <$> tyWidth t
+      -- Z n (integers mod n): a value in @[nbits n]@; Ring operations
+      -- reduce modulo n (computed at a width wide enough to hold the
+      -- unreduced result). fromInteger reduces a constant; == and the
+      -- comparisons work on the representation directly.
+      ("+",      [zN -> Just n], [a, b]) -> zMod n (n + n)   A.Add a b
+      ("-",      [zN -> Just n], [a, b]) -> zMod n (n + n)   A.Add a $ zNeg n b
+      ("*",      [zN -> Just n], [a, b]) -> zMod n (n * n)   A.Mul a b
+      ("negate", [zN -> Just n], [a])    -> pure $ zNeg n a
+      ("fromInteger", [zN -> Just n], [a]) -> do
+            let w = fromIntegral $ nbits $ fromIntegral n
+            case litVal a of
+                  Just v  -> pure $ A.Lit noAnn $ bitVec (fromIntegral w) $ v `mod` n
+                  -- Reduce a representable Integer argument mod n, at a
+                  -- width wide enough to hold it before reduction.
+                  Nothing -> do
+                        let ww = max (A.sizeOf a) w
+                            r  = A.Prim noAnn ww A.UMod [resize ww a, A.Lit noAnn $ bitVec (fromIntegral ww) n]
+                        pure $ A.Prim noAnn w (A.Trunc w) [r]
+      ("fromZ",  [_n], [a])          -> pure a -- Z n -> Integer, value-preserving
+      ("toInteger", [_t], [a])       -> pure a -- word -> Integer, value-preserving
       ("+", [t], [a, b])             -> wordBin "+" t A.Add a b
       ("-", [t], [a, b])             -> wordBin "-" t A.Sub a b
       ("*", [t], [a, b])             -> wordBin "*" t A.Mul a b
@@ -1012,8 +1041,14 @@ transPrim pn tys args = case (pn, tys, args) of
             pure $ A.cat [ elemSlice (rv * cv) ew (i * cv + j) a | j <- [0 .. cv - 1], i <- [0 .. rv - 1] ]
       ("fromInteger", [t], [a])      -> do
             w <- likeWord "fromInteger" t
-            v <- maybe (Left "cryptol: fromInteger of a non-constant Integer cannot be realized in hardware.") pure $ litVal a
-            pure $ A.Lit noAnn $ bitVec (fromIntegral w) v
+            -- A constant folds to a literal; otherwise resize the
+            -- representable Integer argument (e.g. fromZ of a Z n value,
+            -- whose representation is the underlying word) to the target
+            -- word width -- truncating or zero-extending as Cryptol's
+            -- Integer-to-word conversion does.
+            case litVal a of
+                  Just v  -> pure $ A.Lit noAnn $ bitVec (fromIntegral w) v
+                  Nothing -> pure $ resize w a
       ("lg2", [n], [a])              -> do
             nv <- tyNat' "lg2" n
             let w = fromIntegral nv
@@ -1212,6 +1247,24 @@ transPrim pn tys args = case (pn, tys, args) of
             tyNat' :: Text -> T.Type -> Either Text Integer
             tyNat' nm t = maybe (Left $ "cryptol: (" <> nm <> "): expected a numeric type, got: " <> tshow t) pure $ tyNat t
 
+            -- Modular reduction of a binary Ring op on Z n: widen the
+            -- operands, apply the op at the wider width @cap@ (a bound on
+            -- the unreduced result), reduce modulo n, and narrow back.
+            zMod :: Integer -> Integer -> A.Op -> A.Exp -> A.Exp -> Either Text A.Exp
+            zMod n cap op a b = do
+                  let w  = fromIntegral $ nbits $ fromIntegral n
+                      ww = fromIntegral $ max (fromIntegral w) $ nbits $ fromIntegral cap
+                      up x = A.Prim noAnn ww (A.ZExt ww) [x]
+                      r  = A.Prim noAnn ww A.UMod [A.Prim noAnn ww op [up a, up b], A.Lit noAnn $ bitVec (fromIntegral ww) n]
+                  pure $ A.Prim noAnn w (A.Trunc w) [r]
+
+            -- Negation in Z n: n - a for a /= 0, else 0 (n - a mod n).
+            zNeg :: Integer -> A.Exp -> A.Exp
+            zNeg n a = let w = fromIntegral $ nbits $ fromIntegral n
+                       in A.If noAnn w (A.Prim noAnn 1 A.Eq [a, A.Lit noAnn $ zeros $ fromIntegral w]) a
+                              $ A.Prim noAnn w A.Sub [A.Lit noAnn $ bitVec (fromIntegral w) n, a]
+
+
 ---
 --- Cryptol types to widths.
 ---
@@ -1226,6 +1279,8 @@ tyWidth t = case T.tNoUser t of
       T.TCon (T.TC T.TCSeq) [n, el] -> (*) <$> maybe (Left $ "cryptol: sequence length is not a literal: " <> tshow n) pure (tyNat n)
                                            <*> tyWidth el
       T.TCon (T.TC (T.TCTuple _)) es -> sum <$> mapM tyWidth es
+      T.TCon (T.TC T.TCIntMod) [n] -> maybe (Left $ "cryptol: Z at a non-literal modulus: " <> tshow n)
+                                            (pure . fromIntegral . nbits . fromIntegral) (tyNat n)
       T.TRec fs                     -> sum <$> mapM tyWidth (recordElements fs)
       T.TNominal nt tys             -> do
             su <- paramSubst nt tys
@@ -1283,6 +1338,12 @@ isInteger t = case T.tNoUser t of
 tyNat :: T.Type -> Maybe Integer
 tyNat t = case T.tNoUser t of
       T.TCon (T.TC (T.TCNum n)) [] -> Just n
+      _                            -> Nothing
+
+-- | The modulus of a @Z n@ instance type.
+zN :: T.Type -> Maybe Integer
+zN t = case T.tNoUser t of
+      T.TCon (T.TC T.TCIntMod) [n] -> tyNat n
       _                            -> Nothing
 
 -- | The type of a subexpression, reconstructed from the schemas in scope.
