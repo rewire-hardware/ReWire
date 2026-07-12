@@ -1,40 +1,49 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([28], [4]) -> [44]
 main.$dispatch disc i =
-      main.$L.$x16$311 i disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
+      main.$x2 i disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
 
-main.$L.$x16$311 : ([4], [4], [8], [16]) -> [44]
-main.$L.$x16$311 $x s0 s1 s2 =
-      main.$L.Main.loop9$303 $x s0 s1 s2
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([4], [4], [8], [16]) -> [44]
+main.$x2 $x s0 s1 s2 =
+      main.loop $x s0 s1 s2
 
-main.$L._unused15$309 : ([4], [16], [4], [8], [16]) -> [44]
-main.$L._unused15$309 a c s0 s1 s2 =
+--| block '$L._unused6' of process main
+main._unused6 : ([4], [16], [4], [8], [16]) -> [44]
+main._unused6 a c s0 s1 s2 =
       add (zext 16 a) c # s0 # s1 # s2
 
-main.$L._unused14$308 : ([4], [8], [16], [4], [8], [16]) -> [44]
-main.$L._unused14$308 a b c s0 s1 s2 =
+--| block '$L._unused5' of process main
+main._unused5 : ([4], [8], [16], [4], [8], [16]) -> [44]
+main._unused5 a b c s0 s1 s2 =
       let s21 = add (zext 16 b) c in
-      main.$L._unused15$309 a c s0 s1 s21
+      main._unused6 a c s0 s1 s21
 
-main.$L._unused13$307 : ([4], [8], [16], [4], [8], [16]) -> [44]
-main.$L._unused13$307 a b c s0 s1 s2 =
+--| block '$L._unused4' of process main
+main._unused4 : ([4], [8], [16], [4], [8], [16]) -> [44]
+main._unused4 a b c s0 s1 s2 =
       let s11 = add (zext 8 a) b in
-      main.$L._unused14$308 a b c s0 s11 s2
+      main._unused5 a b c s0 s11 s2
 
-main.$L.c12$306 : ([4], [4], [8], [16], [4], [8], [16]) -> [44]
-main.$L.c12$306 i a b c s0 s1 s2 =
-      main.$L._unused13$307 a b c i s1 s2
+--| block '$L.c2' of process main
+main.c2 : ([4], [4], [8], [16], [4], [8], [16]) -> [44]
+main.c2 i a b c s0 s1 s2 =
+      main._unused4 a b c i s1 s2
 
-main.$L.b11$305 : ([4], [4], [8], [4], [8], [16]) -> [44]
-main.$L.b11$305 i a b s0 s1 s2 =
-      main.$L.c12$306 i a b s2 s0 s1 s2
+--| block '$L.b2' of process main
+main.b2 : ([4], [4], [8], [4], [8], [16]) -> [44]
+main.b2 i a b s0 s1 s2 =
+      main.c2 i a b s2 s0 s1 s2
 
-main.$L.a10$304 : ([4], [4], [4], [8], [16]) -> [44]
-main.$L.a10$304 i a s0 s1 s2 =
-      main.$L.b11$305 i a s1 s0 s1 s2
+--| block '$L.a2' of process main
+main.a2 : ([4], [4], [4], [8], [16]) -> [44]
+main.a2 i a s0 s1 s2 =
+      main.b2 i a s1 s0 s1 s2
 
-main.$L.Main.loop9$303 : ([4], [4], [8], [16]) -> [44]
-main.$L.Main.loop9$303 i s0 s1 s2 =
-      main.$L.a10$304 i s0 s0 s1 s2
+--| block '$L.Main.loop' of process main
+main.loop : ([4], [4], [8], [16]) -> [44]
+main.loop i s0 s1 s2 =
+      main.a2 i s0 s0 s1 s2
 
 device top_level
       input __in0 : [4]
@@ -42,6 +51,7 @@ device top_level
       register __st0 : [4] init 4'h0
       register __st1 : [8] init 8'h3
       register __st2 : [16] init 16'h5
+      tag $x2 = 0
       let $res = main.$dispatch (__st0 # __st1 # __st2) __in0
       __out0 := $res[28 +: 16]
       next __st0 := $res[24 +: 4]

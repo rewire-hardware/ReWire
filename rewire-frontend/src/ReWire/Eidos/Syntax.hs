@@ -203,13 +203,17 @@ data AltCon = DataAlt !DataConId
 data DefnAttr = Inline | NoInline
       deriving (Eq, Ord, Show, Generic, Typeable, Data, NFData, Hashable)
 
--- | Provenance of a specializer-minted definition: the origin definition's
---   display name and the type arguments it was instantiated at. Rides into
---   dumps, error messages, and (stably) generated HDL names.
+-- | Provenance of a compiler-minted definition clone: the origin
+--   definition's display name and — for specializer clones — the type
+--   arguments it was instantiated at ('BakeOrigin' marks the partial
+--   evaluator's value-baked clones, whose baked arguments are terms, not
+--   types). Rides into dumps, error messages, and (stably) generated HDL
+--   names.
 data SpecOrigin = SpecOrigin
       { originName :: !Text
       , originArgs :: ![Ty]
       }
+      | BakeOrigin !Text
       deriving (Eq, Show, Generic, Typeable, Data, NFData, Hashable)
 
 -- | A top-level definition: name (whose signature is the definition's

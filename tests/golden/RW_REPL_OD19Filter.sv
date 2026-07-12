@@ -9,10 +9,10 @@ module top_level (input logic [0:0] clk,
   logic [6:0] __st1;
   logic [6:0] __st1_next;
   logic [38:0] zi0;
-  logic [40:0] main_$l_main_putreg19$374_out;
-  logic [40:0] main_$l_main_getreg24$381_out;
-  logic [40:0] main_$l_main_putreg19$374_outR1;
-  logic [40:0] main_$l_main_getreg24$381_outR1;
+  logic [40:0] main_putreg_out;
+  logic [40:0] main_getreg_out;
+  logic [40:0] main_putreg_outR1;
+  logic [40:0] main_getreg_outR1;
   logic [0:0] extres;
   logic [0:0] zi5;
   logic [1:0] zi6;
@@ -22,13 +22,13 @@ module top_level (input logic [0:0] clk,
   logic [0:0] extresR2;
   logic [0:0] zi11;
   logic [1:0] zi12;
-  logic [40:0] main_$l_main_nextpc9$361_out;
+  logic [40:0] main_nextpc_out;
   logic [40:0] zres;
   assign zi0 = {__st0, __st1};
-  main_$L_Main_putReg19$374  inst (__in1, zi0, main_$l_main_putreg19$374_out);
-  main_$L_Main_getReg24$381  instR1 (__in1, zi0, main_$l_main_getreg24$381_out);
-  main_$L_Main_putReg19$374  instR2 (__in1, zi0, main_$l_main_putreg19$374_outR1);
-  main_$L_Main_getReg24$381  instR3 (__in1, zi0, main_$l_main_getreg24$381_outR1);
+  main_putReg  inst (__in1, zi0, main_putreg_out);
+  main_getReg  instR1 (__in1, zi0, main_getreg_out);
+  main_putReg  instR2 (__in1, zi0, main_putreg_outR1);
+  main_getReg  instR3 (__in1, zi0, main_getreg_outR1);
   test2  instR4 (__in1, __st0, extres[0]);
   assign zi5 = extres;
   assign zi6 = {1'h0, zi5};
@@ -38,8 +38,8 @@ module top_level (input logic [0:0] clk,
   test4  instR6 (__in1, __st0, extresR2[0]);
   assign zi11 = extresR2;
   assign zi12 = {1'h0, zi11};
-  main_$L_Main_nextPC9$361  instR7 (zi0, main_$l_main_nextpc9$361_out);
-  assign zres = (__in0 == 1'h0) ? ((__st1 == 7'h0) ? main_$l_main_putreg19$374_out : ((__st1 == 7'h1) ? main_$l_main_getreg24$381_out : ((__st1 == 7'h2) ? main_$l_main_putreg19$374_outR1 : ((__st1 == 7'h3) ? main_$l_main_getreg24$381_outR1 : ((__st1 == 7'h4) ? {zi6, zi0} : ((__st1 == 7'h5) ? {zi9, zi0} : ((__st1 == 7'h6) ? {zi12, zi0} : main_$l_main_nextpc9$361_out))))))) : {2'h2, zi0};
+  main_nextPC  instR7 (zi0, main_nextpc_out);
+  assign zres = (~__in0) ? ((__st1 == 7'h0) ? main_putreg_out : ((__st1 == 7'h1) ? main_getreg_out : ((__st1 == 7'h2) ? main_putreg_outR1 : ((__st1 == 7'h3) ? main_getreg_outR1 : ((__st1 == 7'h4) ? {zi6, zi0} : ((__st1 == 7'h5) ? {zi9, zi0} : ((__st1 == 7'h6) ? {zi12, zi0} : main_nextpc_out))))))) : {2'h2, zi0};
   assign __st0_next = zres[38:7];
   assign __st1_next = zres[6:0];
   assign __out0 = zres[40];
@@ -54,7 +54,7 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module main_$L_Main_nextPC9$361 (input logic [38:0] arg0,
+module main_nextPC (input logic [38:0] arg0,
   output logic [40:0] res);
   logic [31:0] zi0;
   logic [6:0] zi1;
@@ -67,19 +67,19 @@ module main_$L_Main_nextPC9$361 (input logic [38:0] arg0,
   assign res = {2'h2, zi3};
 endmodule
 
-module main_$L_Main_putReg19$374 (input logic [31:0] arg0,
+module main_putReg (input logic [31:0] arg0,
   input logic [38:0] arg1,
   output logic [40:0] res);
   logic [6:0] zi1;
   logic [38:0] zi2;
-  logic [40:0] main_$l_main_nextpc9$361_out;
+  logic [40:0] main_nextpc_out;
   assign zi1 = arg1[6:0];
   assign zi2 = {arg0, zi1};
-  main_$L_Main_nextPC9$361  inst (zi2, main_$l_main_nextpc9$361_out);
-  assign res = main_$l_main_nextpc9$361_out;
+  main_nextPC  inst (zi2, main_nextpc_out);
+  assign res = main_nextpc_out;
 endmodule
 
-module main_$L_Main_getReg24$381 (input logic [31:0] arg0,
+module main_getReg (input logic [31:0] arg0,
   input logic [38:0] arg1,
   output logic [40:0] res);
   logic [31:0] zi0;

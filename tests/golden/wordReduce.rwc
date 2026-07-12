@@ -1,13 +1,16 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([8]) -> [6]
 main.$dispatch i =
-      main.$L.$x4$273 i
+      main.$x2 i
 
-main.$L.$x4$273 : ([8]) -> [6]
-main.$L.$x4$273 $x =
-      main.$L.ReWire.Monad.iter$1$s23$271 $x
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([8]) -> [6]
+main.$x2 $x =
+      main.iter$W8$W6$sMain_compute $x
 
-main.$L.ReWire.Monad.iter$1$s23$271 : ([8]) -> [6]
-main.$L.ReWire.Monad.iter$1$s23$271 i =
+--| block '$L.ReWire.Monad.iter$W8$W6$sMain_compute' of process main
+main.iter$W8$W6$sMain_compute : ([8]) -> [6]
+main.iter$W8$W6$sMain_compute i =
       let $a = Main.compute i in
       $a
 
@@ -18,5 +21,6 @@ Main.compute w =
 device top_level
       input __in0 : [8]
       output __out0 : [6]
+      tag $x2 = 0
       let $res = main.$dispatch __in0
       __out0 := $res

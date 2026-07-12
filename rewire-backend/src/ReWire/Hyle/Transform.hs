@@ -29,25 +29,33 @@ import qualified ReWire.BitVector as BV
 import Control.Monad.State.Strict (State, StateT, evalState, evalStateT, get, put, gets, modify)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
+import Data.List (sort)
 import Data.Maybe (fromMaybe)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
+import qualified Data.Text           as T
 
 -- | Inline definitions into their call sites: all of them when @flatten@,
 --   otherwise those used at most once. Definitions referenced as extern
---   models are never inlined (the reference is by name). The inlined-away
---   defns are removed by the final purge; a follow-up partialEval fuses the
---   slice/concat plumbing exposed by inlining and drops the argument wires
---   that fusion leaves unused.
+--   models are never inlined (the reference is by name), and neither are
+--   defns marked noinline -- the pin wins over @--flatten@, so a
+--   noinline defn is always findable as a module in the output. The
+--   inlined-away defns are removed by the final purge; a follow-up
+--   partialEval fuses the slice/concat plumbing exposed by inlining and
+--   drops the argument wires that fusion leaves unused.
 inline :: Bool -> Program -> Program
 inline flatten p@(Program exts ds dev) = (partialEval >>> purgeDevLets >>> purgeUnused) $ inlineBy inlinable p
       where inlinable :: GId -> Bool
             inlinable g = not (g `Set.member` models)
+                       && not (g `Set.member` pinned)
                        && (flatten || Map.findWithDefault 0 g uses <= (1 :: Int))
 
             models :: HashSet GId
             models = Set.fromList [ g | e <- exts, Just g <- [extModel e] ]
+
+            pinned :: HashSet GId
+            pinned = Set.fromList [ defnName d | d <- ds, defnNoInline d ]
 
             uses :: HashMap GId Int
             uses = Map.fromListWith (+) $ map (, 1) $ concatMap expCalls
@@ -121,7 +129,7 @@ inlineBy inlinable (Program exts ds dev) = purgeUnused $ Program exts ds' dev'
                         --   freshened parameters. The body is already fully
                         --   inlined (callee-first order).
                         beta :: Annote -> Defn -> [Exp] -> State Int Exp
-                        beta an (Defn _ _ _ ps body) es = do
+                        beta an (Defn _ _ _ ps body _ _) es = do
                               binds <- mapM bind $ zip ps es
                               body' <- freshenExp (Map.fromList $ map fst binds) body
                               pure $ foldr (\ (x, e) b -> Let an (sizeOf b) x e b) body' $ concatMap snd binds
@@ -197,6 +205,8 @@ expCalls = \ case
 
 -- | Drop defns unreachable from the device body (following calls and the
 --   models of called externs) and extern decls that are never referenced.
+--   Not gated on noinline: pinning affects inlining, not liveness, so dead
+--   pinned defns don't accumulate.
 purgeUnused :: Program -> Program
 purgeUnused (Program exts ds dev) = Program exts' ds' dev
       where defnMap :: HashMap GId Defn
@@ -297,6 +307,16 @@ partialEval (Program exts ds dev) = Program exts (map peDefn ds) dev'
                                     -- whenever the divisor is a zero literal.
                                     (UDiv, [_, Lit _ bv]) | nat bv == 0 -> Lit an $ BV.ones $ fromIntegral sz
                                     (UMod, [a, Lit _ bv]) | nat bv == 0 -> a
+                                    -- Boolean-mux peephole (1-bit only:
+                                    -- Hyle widths are load-bearing).
+                                    -- Comparing a 1-bit value to a
+                                    -- 1-bit literal is the value or its
+                                    -- negation; double negation cancels.
+                                    (Eq, [a, Lit _ bv]) | sizeOf a == 1, BV.width bv == 1 ->
+                                          if nat bv == 1 then a else pe binds $ Prim an 1 Not [a]
+                                    (Eq, [Lit _ bv, a]) | sizeOf a == 1, BV.width bv == 1 ->
+                                          if nat bv == 1 then a else pe binds $ Prim an 1 Not [a]
+                                    (Not, [Prim _ _ Not [a]])           -> a
                                     _                                   -> Prim an sz op es'
                   Call an sz g es ->
                         let es' = map (pe binds) es in
@@ -310,10 +330,18 @@ partialEval (Program exts ds dev) = Program exts (map peDefn ds) dev'
                                      , Just _  <- extModel ex
                                      , Right bv <- evalExp env mempty (XCall an sz x cs es') -> Lit an bv
                               _                                                              -> XCall an sz x cs es'
-                  If an sz c t e -> case pe binds c of
-                        Lit _ bv | nat bv /= 0 -> pe binds t
-                                 | otherwise   -> pe binds e
-                        c'                     -> If an sz c' (pe binds t) $ pe binds e
+                  If an sz c t e -> case (pe binds c, pe binds t, pe binds e) of
+                        (Lit _ bv, t', e') -> if nat bv /= 0 then t' else e'
+                        -- Boolean-mux peephole: a 1-bit mux between the
+                        -- two 1-bit literals is the condition or its
+                        -- negation (which re-enters 'pe' so double
+                        -- negations cancel).
+                        (c', t', e')
+                              | sz == 1, sizeOf c' == 1
+                              , Just tv <- litVal t', Just ev <- litVal e'
+                              , BV.width tv == 1, BV.width ev == 1, nat tv /= nat ev ->
+                                    if nat tv == 1 then c' else pe binds $ Prim an 1 Not [c']
+                              | otherwise -> If an sz c' t' e'
                   Let an sz x e1 e2 ->
                         let e1'    = pe binds e1
                             -- Invalidate bindings an inner shadowing let
@@ -420,7 +448,7 @@ purgeZeroWidth (Program exts ds dev) = Program exts (map goDefn $ filter ((> 0) 
             sigs = Map.fromList $ map (\ d -> (defnName d, defnSig d)) ds
 
             goDefn :: Defn -> Defn
-            goDefn (Defn an g (Sig san argSzs res) ps body) = Defn an g (Sig san (filter (> 0) argSzs) res) ps' $ goExp body
+            goDefn (Defn an g (Sig san argSzs res) ps body ni docs) = Defn an g (Sig san (filter (> 0) argSzs) res) ps' (goExp body) ni docs
                   where ps' = [ p | (p, sz) <- zip ps argSzs, sz > 0 ]
 
             dev' :: Device
@@ -451,11 +479,25 @@ purgeZeroWidth (Program exts ds dev) = Program exts (map goDefn $ filter ((> 0) 
                               Nothing               -> Call an sz g $ map goExp es
 
 -- | Redirect calls to definitions with identical signatures and bodies to a
---   single representative. Should be followed by purgeUnused.
+--   single representative. Should be followed by purgeUnused. Defns marked
+--   noinline are name-pinned: they take no part in merging (neither as
+--   survivors nor as redirected losers). Each survivor records the losers
+--   redirected to it with an appended "also: ..." doc line.
 dedupe :: Program -> Program
-dedupe (Program exts ds dev) = Program (map ddExt exts) (map ddDefn ds) dev'
+dedupe (Program exts ds dev) = Program (map ddExt exts) (map (addAlso . ddDefn) ds) dev'
       where ddDefn :: Defn -> Defn
             ddDefn d = d { defnBody = ddExp $ defnBody d }
+
+            -- | Append one doc line to each survivor naming the losers
+            --   redirected to it (sorted; always distinct from the
+            --   survivor by ddMap's construction).
+            addAlso :: Defn -> Defn
+            addAlso d = case Map.lookup (defnName d) losers of
+                  Just ls -> d { defnDoc = Blind $ unBlind (defnDoc d) <> ["also: " <> T.intercalate ", " ls] }
+                  Nothing -> d
+
+            losers :: HashMap GId [GId]
+            losers = sort <$> Map.fromListWith (<>) [ (g', [g]) | (g, g') <- Map.toList ddMap ]
 
             ddExt :: Extern -> Extern
             ddExt e = e { extModel = (\ g -> Map.findWithDefault g g ddMap) <$> extModel e }
@@ -484,12 +526,33 @@ dedupe (Program exts ds dev) = Program (map ddExt exts) (map ddDefn ds) dev'
                   Call an sz g es -> Call an sz (Map.findWithDefault g g ddMap) $ map ddExp es
 
             -- Note: Annote's Eq/Hashable are trivial, so annotations don't
-            -- perturb the keys.
+            -- perturb the keys. noinline defns are excluded on both sides
+            -- (they are name-pinned).
             ddMap :: HashMap GId GId
-            ddMap = foldr (\ (Defn _ g sig ps body) -> maybe id (\ g' -> if g' /= g then Map.insert g g' else id)
-                              $ Map.lookup (sig, ps, body) bodies) mempty ds
+            ddMap = foldr (\ (Defn _ g sig ps body _ _) -> maybe id (\ g' -> if g' /= g then Map.insert g g' else id)
+                              $ Map.lookup (sig, ps, body) bodies) mempty unpinned
                   where bodies :: HashMap (Sig, [Name], Exp) GId
-                        bodies = foldr (\ (Defn _ g sig ps body) -> Map.insert (sig, ps, body) g) mempty ds
+                        bodies = foldr (\ (Defn _ g sig ps body _ _) -> Map.insertWith keepBetter (sig, ps, body) g) mempty unpinned
+
+                        unpinned :: [Defn]
+                        unpinned = filter (not . defnNoInline) ds
+
+            -- | The surviving name for a set of identical defns: prefer
+            --   user-derived names (no '$') over instance names
+            --   ('iter$W8') over compiler-fresh ones ('$'-led); then
+            --   shortest, then lexicographic — a total order independent
+            --   of program order and machine, so the winner never flips
+            --   between compiles.
+            keepBetter :: GId -> GId -> GId
+            keepBetter a b | rank a <= rank b = a
+                           | otherwise        = b
+                  where rank :: GId -> (Int, Int, GId)
+                        rank g = (cls g, T.length g, g)
+
+                        cls :: GId -> Int
+                        cls g | not ("$" `T.isInfixOf` g) = 0
+                              | "$" `T.isPrefixOf` g      = 2
+                              | otherwise                 = 1
 
 ---
 --- Hoisting clocked externs into device instances.
@@ -505,6 +568,9 @@ hoistInstances :: forall m. MonadError AstError m => Program -> m Program
 hoistInstances p@(Program exts ds _)
       | Set.null clocked = pure p
       | otherwise = flip evalStateT (0 :: Int) $ do
+            -- This inlineBy is a correctness transform (clocked-extern
+            -- calls must reach the device body to become instances), so it
+            -- deliberately ignores defnNoInline.
             let Program exts' ds' dev' = inlineBy (`Set.member` clocked) p
             (insts, stmts) <- foldM hoistStmt ([], []) $ devBody dev'
             pure $ Program exts' ds' $ dev' { devInstances = reverse insts, devBody = reverse stmts }
@@ -548,7 +614,9 @@ hoistInstances p@(Program exts ds _)
                   pure $ pfx <> showt i
 
             -- | Flatten an expression's nested lets to device-level lets
-            --   (renamed fresh), then convert its seq-XCalls.
+            --   (renamed fresh, seeded from the source binder and the
+            --   extern's name so the readable base survives the hoist),
+            --   then convert its seq-XCalls.
             hoistStmt :: ([Instance], [Stmt]) -> Stmt -> StateT Int m ([Instance], [Stmt])
             hoistStmt (insts, stmts) stmt = do
                   let (an, rebuild, e) = openStmt stmt
@@ -589,12 +657,12 @@ hoistInstances p@(Program exts ds _)
                         pure (If an' sz c' t' e', i3, s3)
                   Let an' _ x e1 e2 -> do
                         (e1', i1, s1) <- hoistExp an sub acc e1
-                        x' <- freshHoisted "$h"
+                        x' <- freshHoisted $ x <> "$h"
                         hoistExp an (Map.insert x (Var an' (sizeOf e1') x') sub) (i1, SLet an' x' e1' : s1) e2
                   XCall an' sz x cs es
                         | isSeq x -> do
                               (es', i1, s1) <- hoistExps an sub acc es
-                              i  <- freshHoisted "$x"
+                              i  <- freshHoisted $ x <> "$x"
                               case Map.lookup x externs of
                                     Nothing -> failAt an' $ "unknown extern: " <> x
                                     Just e  -> do

@@ -18,34 +18,34 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [6] -> [3] -> [10]
-rw_main__dispatch x0 x1 = if (take`{3} x0) == 0b000 then (rw_main__L__x4_241 x1) else (if (take`{3} x0) == 0b001 then (rw_main__L__unused5_242 (drop`{3} x0) x1) else (if (take`{3} x0) == 0b010 then (rw_main__L__unused6_243 (drop`{3} x0) x1) else (if (take`{3} x0) == 0b011 then (rw_main__L__unused7_244 x1) else (rw_main__L__unused8_245 x1))))
+rw_main__dispatch x0 x1 = if (take`{3} x0) == 0b000 then (rw_main__x2 x1) else (if (take`{3} x0) == 0b001 then (rw_main__unused (drop`{3} x0) x1) else (if (take`{3} x0) == 0b010 then (rw_main__unused2 (drop`{3} x0) x1) else (if (take`{3} x0) == 0b011 then (rw_main__unused3 x1) else (rw_main__unused4 x1))))
 
-// main.$L.$x4$241
-rw_main__L__x4_241 : [3] -> [10]
-rw_main__L__x4_241 x0 = rw_main__L_Main_dev3_239 x0
+// main.$x2
+rw_main__x2 : [3] -> [10]
+rw_main__x2 x0 = rw_main_dev x0
 
-// main.$L._unused5$242
-rw_main__L__unused5_242 : [3] -> [3] -> [10]
-rw_main__L__unused5_242 x0 x1 = s0 # 0b000000
+// main._unused
+rw_main__unused : [3] -> [3] -> [10]
+rw_main__unused x0 x1 = s0 # 0b000000
   where
     s0 : [4]
     s0 = 0b1 # x0
 
-// main.$L._unused6$243
-rw_main__L__unused6_243 : [3] -> [3] -> [10]
-rw_main__L__unused6_243 x0 x1 = 0b0000001 # x0
+// main._unused2
+rw_main__unused2 : [3] -> [3] -> [10]
+rw_main__unused2 x0 x1 = 0b0000001 # x0
 
-// main.$L.Main.dev3$239
-rw_main__L_Main_dev3_239 : [3] -> [10]
-rw_main__L_Main_dev3_239 x0 = 0b0000010 # x0
+// main.dev
+rw_main_dev : [3] -> [10]
+rw_main_dev x0 = 0b0000010 # x0
 
-// main.$L._unused7$244
-rw_main__L__unused7_244 : [3] -> [10]
-rw_main__L__unused7_244 x0 = 0b1000000000
+// main._unused3
+rw_main__unused3 : [3] -> [10]
+rw_main__unused3 x0 = 0b1000000000
 
-// main.$L._unused8$245
-rw_main__L__unused8_245 : [3] -> [10]
-rw_main__L__unused8_245 x0 = 0b0000011000
+// main._unused4
+rw_main__unused4 : [3] -> [10]
+rw_main__unused4 x0 = 0b0000011000
 
 // Per-cycle step: outputs # next register values.
 rw_step : [6] -> [3] -> [10]

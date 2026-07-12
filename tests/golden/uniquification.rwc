@@ -1,13 +1,16 @@
+--| state dispatch for process main: 0=_unused2
 main.$dispatch : ([2]) -> [2]
 main.$dispatch i =
-      main.$L._unused3$230 i
+      main._unused2 i
 
-main.$L._unused3$230 : ([2]) -> [2]
-main.$L._unused3$230 _unused =
+--| block '$L._unused2' of process main (state 0)
+main._unused2 : ([2]) -> [2]
+main._unused2 _unused =
       2'h1
 
 device top_level
       input __in0 : [2]
       output __out0 : [2]
+      tag _unused2 = 0
       let $res = main.$dispatch __in0
       __out0 := $res

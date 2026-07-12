@@ -1,1 +1,2 @@
 device top_level
+      tag _unused2 = 0

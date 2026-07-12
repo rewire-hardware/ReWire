@@ -1,31 +1,38 @@
+--| state dispatch for process main: 0=$x2 1=_unused 2=_unused2 3=_unused3 4=_unused4
 main.$dispatch : ([6], [3]) -> [10]
 main.$dispatch disc i =
-      if eq disc[3 +: 3] 3'h0 then main.$L.$x4$241 i
-            else if eq disc[3 +: 3] 3'h1 then main.$L._unused5$242 disc[0 +: 3] i else if eq disc[3 +: 3] 3'h2 then main.$L._unused6$243 disc[0 +: 3] i else if eq disc[3 +: 3] 3'h3 then main.$L._unused7$244 i else main.$L._unused8$245 i
+      if eq disc[3 +: 3] 3'h0 then main.$x2 i
+            else if eq disc[3 +: 3] 3'h1 then main._unused disc[0 +: 3] i else if eq disc[3 +: 3] 3'h2 then main._unused2 disc[0 +: 3] i else if eq disc[3 +: 3] 3'h3 then main._unused3 i else main._unused4 i
 
-main.$L.$x4$241 : ([3]) -> [10]
-main.$L.$x4$241 $x =
-      main.$L.Main.dev3$239 $x
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([3]) -> [10]
+main.$x2 $x =
+      main.dev $x
 
-main.$L._unused5$242 : ([3], [3]) -> [10]
-main.$L._unused5$242 i _unused =
+--| block '$L._unused' of process main (state 1)
+main._unused : ([3], [3]) -> [10]
+main._unused i _unused =
       let $a = 1'h1 # i in
       $a # 6'h0
 
-main.$L._unused6$243 : ([3], [3]) -> [10]
-main.$L._unused6$243 i _unused =
+--| block '$L._unused2' of process main (state 2)
+main._unused2 : ([3], [3]) -> [10]
+main._unused2 i _unused =
       7'h1 # i
 
-main.$L.Main.dev3$239 : ([3]) -> [10]
-main.$L.Main.dev3$239 i =
+--| block '$L.Main.dev' of process main
+main.dev : ([3]) -> [10]
+main.dev i =
       7'h2 # i
 
-main.$L._unused7$244 : ([3]) -> [10]
-main.$L._unused7$244 _unused =
+--| block '$L._unused3' of process main (state 3)
+main._unused3 : ([3]) -> [10]
+main._unused3 _unused =
       10'h200
 
-main.$L._unused8$245 : ([3]) -> [10]
-main.$L._unused8$245 _unused =
+--| block '$L._unused4' of process main (state 4)
+main._unused4 : ([3]) -> [10]
+main._unused4 _unused =
       10'h18
 
 device top_level
@@ -33,6 +40,11 @@ device top_level
       output __out0 : [1]
       output __out1 : [3]
       register __resumption_tag : [6] init 6'h20
+      tag $x2 = 0
+      tag _unused = 1
+      tag _unused2 = 2
+      tag _unused3 = 3
+      tag _unused4 = 4
       let $res = main.$dispatch __resumption_tag __in0
       __out0 := $res[9 +: 1]
       __out1 := $res[6 +: 3]

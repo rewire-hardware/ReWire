@@ -1,34 +1,39 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([8]) -> [8]
 main.$dispatch i =
-      main.$L.$x4$252 i
+      main.$x2 i
 
-main.$L.$x4$252 : ([8]) -> [8]
-main.$L.$x4$252 $x =
-      main.$L.ReWire.Monad.iter$1$s23$250 $x
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([8]) -> [8]
+main.$x2 $x =
+      main.iter$W8$W8$sMain_mix $x
 
-main.$L.ReWire.Monad.iter$1$s23$250 : ([8]) -> [8]
-main.$L.ReWire.Monad.iter$1$s23$250 i =
+--| block '$L.ReWire.Monad.iter$W8$W8$sMain_mix' of process main
+main.iter$W8$W8$sMain_mix : ([8]) -> [8]
+main.iter$W8$W8$sMain_mix i =
       let $a = Main.mix i in
       $a
 
 Main.mix : ([8]) -> [8]
 Main.mix $eta0 =
-      cry$mix$0 $eta0
+      cry$mix$8_8 $eta0
 
-cry$mix$0.bump$0 : ([8]) -> [8]
-cry$mix$0.bump$0 x$0 =
+cry$mix$8_8.bump$0 : ([8]) -> [8]
+cry$mix$8_8.bump$0 x$0 =
       add x$0 8'h1
 
-cry$mix$0.scale$3 : ([8]) -> [8]
-cry$mix$0.scale$3 x$0 =
+cry$mix$8_8.scale$3 : ([8]) -> [8]
+cry$mix$8_8.scale$3 x$0 =
       mul x$0 8'h3
 
-cry$mix$0 : ([8]) -> [8]
-cry$mix$0 x$0 =
-      add (cry$mix$0.scale$3 (cry$mix$0.bump$0 x$0)) (cry$mix$0.bump$0 (cry$mix$0.scale$3 x$0))
+--| cryptol cry/crymods.cry::mix at [8] -> [8]
+cry$mix$8_8 : ([8]) -> [8]
+cry$mix$8_8 x$0 =
+      add (cry$mix$8_8.scale$3 (cry$mix$8_8.bump$0 x$0)) (cry$mix$8_8.bump$0 (cry$mix$8_8.scale$3 x$0))
 
 device top_level
       input __in0 : [8]
       output __out0 : [8]
+      tag $x2 = 0
       let $res = main.$dispatch __in0
       __out0 := $res

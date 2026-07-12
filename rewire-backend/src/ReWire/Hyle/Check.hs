@@ -75,7 +75,7 @@ checkExtern env (Extern an n gs k ins outs m) = do
 ---
 
 checkDefn :: MonadError AstError m => Env -> Defn -> m ()
-checkDefn env (Defn an n (Sig _ args res) ps body) = do
+checkDefn env (Defn an n (Sig _ args res) ps body _ _) = do
       unless (length ps == length args) $
             failInternal an $ n <> ": parameter count does not match signature"
       checkDistinct an ("parameter of " <> n) ps
@@ -154,7 +154,7 @@ checkExp env = go
 ---
 
 checkDevice :: MonadError AstError m => Env -> Device -> m ()
-checkDevice env (Device an n ins outs regs insts body) = do
+checkDevice env (Device an n ins outs regs insts body _) = do
       checkDistinct an ("local name of device " <> n) locals
       mapM_ checkLocalName locals
       mapM_ checkRegister regs
@@ -239,7 +239,7 @@ checkDevice env (Device an n ins outs regs insts body) = do
 checkRecursion :: forall m. MonadError AstError m => Env -> [Defn] -> m ()
 checkRecursion env = foldM_ visitDefn mempty
       where visitDefn :: HashSet GId -> Defn -> m (HashSet GId)
-            visitDefn done (Defn _ n _ _ body)
+            visitDefn done (Defn _ n _ _ body _ _)
                   | n `Set.member` done = pure done
                   | otherwise           = Set.insert n <$> visitExp (Set.singleton n) done body
 

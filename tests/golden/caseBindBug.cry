@@ -18,42 +18,42 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [1] -> [1] -> [2]
-rw_main__dispatch x0 x1 = rw_main__L__x4_270 x1 x0
+rw_main__dispatch x0 x1 = rw_main__x2 x1 x0
 
-// main.$L.$x4$270
-rw_main__L__x4_270 : [1] -> [1] -> [2]
-rw_main__L__x4_270 x0 x1 = rw_main__L_Main_go3_268 x0 x1
+// main.$x2
+rw_main__x2 : [1] -> [1] -> [2]
+rw_main__x2 x0 x1 = rw_main_go x0 x1
 
-// main.$L._unused7$274
-rw_main__L__unused7_274 : [1] -> [1] -> [2]
-rw_main__L__unused7_274 x0 x1 = x0 # x1
+// main._unused
+rw_main__unused : [1] -> [1] -> [2]
+rw_main__unused x0 x1 = x0 # x1
 
-// main.$L.Main.emit6$273
-rw_main__L_Main_emit6_273 : [1] -> [1] -> [2]
-rw_main__L_Main_emit6_273 x0 x1 = rw_main__L__unused7_274 x0 x0
+// main.emit
+rw_main_emit : [1] -> [1] -> [2]
+rw_main_emit x0 x1 = rw_main__unused x0 x0
 
-// main.$L.arm8$276
-rw_main__L_arm8_276 : [1] -> [2]
-rw_main__L_arm8_276 x0 = rw_main__L_Main_emit6_273 x0 x0
+// main.arm
+rw_main_arm : [1] -> [2]
+rw_main_arm x0 = rw_main_emit x0 x0
 
-// main.$L.x14$285
-rw_main__L_x14_285 : [1] -> [1] -> [2]
-rw_main__L_x14_285 x0 x1 = rw_main__L_arm8_276 s0
+// main.x
+rw_main_x : [1] -> [1] -> [2]
+rw_main_x x0 x1 = rw_main_arm s0
   where
     s0 : [1]
     s0 = rw_Main_notb x0
 
-// main.$L.arm15$287
-rw_main__L_arm15_287 : [1] -> [2]
-rw_main__L_arm15_287 x0 = rw_main__L_x14_285 x0 x0
+// main.arm2
+rw_main_arm2 : [1] -> [2]
+rw_main_arm2 x0 = rw_main_x x0 x0
 
-// main.$L.Main.go3$268
-rw_main__L_Main_go3_268 : [1] -> [1] -> [2]
-rw_main__L_Main_go3_268 x0 x1 = if x0 == 0b0 then (rw_main__L_arm8_276 x1) else (rw_main__L_arm15_287 x1)
+// main.go
+rw_main_go : [1] -> [1] -> [2]
+rw_main_go x0 x1 = if ~ (x0 @ 0) then (rw_main_arm x1) else (rw_main_arm2 x1)
 
 // Main.notb
 rw_Main_notb : [1] -> [1]
-rw_Main_notb x0 = if x0 == 0b0 then 0b1 else 0b0
+rw_Main_notb x0 = ~ x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [1] -> [1] -> [2]

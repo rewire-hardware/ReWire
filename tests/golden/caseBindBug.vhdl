@@ -208,21 +208,21 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \main_$L_arm8$276\ is
+component main_arm is
       port (arg0 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (1 downto 0));
       end component;
       signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal \main_$l_arm8$276_out\ : std_logic_vector (1 downto 0);
+      signal main_arm_out : std_logic_vector (1 downto 0);
       signal zi0 : std_logic_vector (0 downto 0);
-      signal \main_$l_arm8$276_outR1\ : std_logic_vector (1 downto 0);
+      signal \main_arm_outR1\ : std_logic_vector (1 downto 0);
       signal zres : std_logic_vector (1 downto 0);
 begin
-inst : \main_$L_arm8$276\ port map (\__st0\, \main_$l_arm8$276_out\);
-      zi0 <= rw_cond(rw_eq(\__st0\, std_logic_vector'(B"0")), std_logic_vector'(B"1"), std_logic_vector'(B"0"));
-      \instR1\ : \main_$L_arm8$276\ port map (zi0, \main_$l_arm8$276_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), \main_$l_arm8$276_out\, \main_$l_arm8$276_outR1\);
+inst : main_arm port map (\__st0\, main_arm_out);
+      zi0 <= rw_not(\__st0\);
+      \instR1\ : main_arm port map (zi0, \main_arm_outR1\);
+      zres <= rw_cond(rw_not(\__in0\), main_arm_out, \main_arm_outR1\);
       \__st0_next\ <= zres(0 downto 0);
       \__out0\ <= zres(1 downto 1);
       process (clk, rst)
@@ -239,12 +239,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main_$L_arm8$276\ is
+entity main_arm is
 port (arg0 : in std_logic_vector (0 downto 0);
       res : out std_logic_vector (1 downto 0));
 end entity;
 
-architecture rtl of \main_$L_arm8$276\ is
+architecture rtl of main_arm is
 
 begin
 res <= (arg0 & arg0);

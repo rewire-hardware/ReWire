@@ -13,7 +13,7 @@ module ReWire.Config
       , noWarn, wError
       , start, top, loadPath, cycles, depth, dump, source, rtlOpt, eidos, noHalt, debugLint
       , testbench
-      , stableNames, noLocators
+      , stableNames, locators, noLocators
       , pDebug
       ) where
 
@@ -71,6 +71,7 @@ data Config = Config
       , _noWarn       :: Bool -- ^ -w: suppress warnings.
       , _wError       :: Bool -- ^ -Werror: warnings are fatal.
       , _stableNames  :: Bool -- ^ --stable-names: fully-uniquified (less readable, edit-stable) generated names.
+      , _locators     :: Bool -- ^ --locators: source-locator comments in .rwc output (--no-locators wins).
       , _noLocators   :: Bool -- ^ --no-locators: no source-locator or provenance comments in output.
       }
 
@@ -104,6 +105,7 @@ defaultConfig = Config
       , _noWarn       = False
       , _wError       = False
       , _stableNames  = False
+      , _locators     = False
       , _noLocators   = False
       }
 
@@ -183,6 +185,7 @@ interpret = foldM interp defaultConfig
                   FlagDebugLint                   -> pure $ debugLint .~ True $ c
                   FlagRtlOpt n                    -> readNat "--rtl-opt" n >>= \ v -> pure $ rtlOpt .~ v $ c
                   FlagStableNames                 -> pure $ stableNames .~ True $ c
+                  FlagLocators                    -> pure $ locators .~ True $ c
                   FlagNoLocators                  -> pure $ noLocators .~ True $ c
                   FlagNoWarn                      -> pure $ noWarn .~ True $ c
                   FlagW "error"                   -> pure $ wError .~ True $ c

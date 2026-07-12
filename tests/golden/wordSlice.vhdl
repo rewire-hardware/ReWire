@@ -212,8 +212,8 @@ signal zi0 : std_logic_vector (0 downto 0);
       signal zres : std_logic_vector (7 downto 0);
 begin
 zi0 <= \__in0\(15 downto 15);
-      zi1 <= rw_cond(rw_eq(zi0, std_logic_vector'(B"1")), \__in0\(8 downto 8), std_logic_vector'(B"0"));
-      zi2 <= rw_cond(rw_eq(zi1, std_logic_vector'(B"0")), \__in0\(15 downto 8), \__in0\(7 downto 0));
+      zi1 <= rw_cond(zi0, \__in0\(8 downto 8), std_logic_vector'(B"0"));
+      zi2 <= rw_cond(rw_not(zi1), \__in0\(15 downto 8), \__in0\(7 downto 0));
       zres <= zi2;
       \__out0\ <= zres;
 end architecture;

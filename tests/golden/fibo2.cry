@@ -18,19 +18,19 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [17] -> [1] -> [25]
-rw_main__dispatch x0 x1 = if (take`{1} x0) == 0b0 then (rw_main__L_b5_250 (take`{8} (drop`{1} x0)) (drop`{9} x0) x1) else (rw_main__L_b3_248 (drop`{9} x0) x1)
+rw_main__dispatch x0 x1 = if ~ ((take`{1} x0) @ 0) then (rw_main_b2 (take`{8} (drop`{1} x0)) (drop`{9} x0) x1) else (rw_main_b (drop`{9} x0) x1)
 
-// main.$L.b5$250
-rw_main__L_b5_250 : [8] -> [8] -> [1] -> [25]
-rw_main__L_b5_250 x0 x1 x2 = if x2 == 0b0 then (rw_main__L_Main_loop4_249 x1 (x0 + x1)) else (rw_main__L_Main_loop4_249 x0 x1)
+// main.b2
+rw_main_b2 : [8] -> [8] -> [1] -> [25]
+rw_main_b2 x0 x1 x2 = if ~ (x2 @ 0) then (rw_main_loop x1 (x0 + x1)) else (rw_main_loop x0 x1)
 
-// main.$L.Main.loop4$249
-rw_main__L_Main_loop4_249 : [8] -> [8] -> [25]
-rw_main__L_Main_loop4_249 x0 x1 = x0 # (0b0 # (x0 # x1))
+// main.loop
+rw_main_loop : [8] -> [8] -> [25]
+rw_main_loop x0 x1 = x0 # (0b0 # (x0 # x1))
 
-// main.$L.b3$248
-rw_main__L_b3_248 : [8] -> [1] -> [25]
-rw_main__L_b3_248 x0 x1 = if x1 == 0b0 then (rw_main__L_Main_loop4_249 x0 (0x00 + x0)) else (rw_main__L_Main_loop4_249 0x00 x0)
+// main.b
+rw_main_b : [8] -> [1] -> [25]
+rw_main_b x0 x1 = if ~ (x1 @ 0) then (rw_main_loop x0 (0x00 + x0)) else (rw_main_loop 0x00 x0)
 
 // Per-cycle step: outputs # next register values.
 rw_step : [17] -> [1] -> [25]

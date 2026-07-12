@@ -1,32 +1,36 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([16]) -> [8]
 main.$dispatch i =
-      main.$L.$x4$268 i
+      main.$x2 i
 
-main.$L.$x4$268 : ([16]) -> [8]
-main.$L.$x4$268 $x =
-      main.$L.ReWire.Monad.iter$1$s23$266 $x
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([16]) -> [8]
+main.$x2 $x =
+      main.iter$W8W8$W8$sMain_go $x
 
-main.$L.ReWire.Monad.iter$1$s23$266 : ([16]) -> [8]
-main.$L.ReWire.Monad.iter$1$s23$266 i =
+--| block '$L.ReWire.Monad.iter$W8W8$W8$sMain_go' of process main
+main.iter$W8W8$W8$sMain_go : ([16]) -> [8]
+main.iter$W8W8$W8$sMain_go i =
       let $a = Main.go i in
       $a
 
 Main.inv : ([8]) -> [8]
 Main.inv $eta0 =
-      cry$inv$0 $eta0
+      cry$inv$8_8 $eta0
 
 Main.divz : ([8], [8]) -> [8]
 Main.divz $eta0 $eta1 =
-      cry$divz$1 $eta0 $eta1
+      cry$divz$8_8_8 $eta0 $eta1
 
 Main.go : ([16]) -> [8]
-Main.go ds =
-      let a = ds[8 +: 8] in
-      let b = ds[0 +: 8] in
+Main.go $ds =
+      let a = $ds[8 +: 8] in
+      let b = $ds[0 +: 8] in
       add (Main.inv a) (Main.divz a b)
 
-cry$inv$0 : ([8]) -> [8]
-cry$inv$0 a$0 =
+--| cryptol cry/cryfield.cry::inv at [8] -> [8]
+cry$inv$8_8 : ([8]) -> [8]
+cry$inv$8_8 a$0 =
       let zr$b$0 = trunc 8 (umod a$0 8'hfb) in
       let zr$b$1 = trunc 8 (umod (mul (zext 16 zr$b$0) (zext 16 zr$b$0)) 16'hfb) in
       let zr$b$2 = trunc 8 (umod (mul (zext 16 zr$b$1) (zext 16 zr$b$1)) 16'hfb) in
@@ -37,8 +41,9 @@ cry$inv$0 a$0 =
       let zr$b$7 = trunc 8 (umod (mul (zext 16 zr$b$6) (zext 16 zr$b$6)) 16'hfb) in
       trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul 16'h1 (zext 16 zr$b$0)) 16'hfb))) (zext 16 zr$b$3)) 16'hfb))) (zext 16 zr$b$4)) 16'hfb))) (zext 16 zr$b$5)) 16'hfb))) (zext 16 zr$b$6)) 16'hfb))) (zext 16 zr$b$7)) 16'hfb)
 
-cry$divz$1 : ([8], [8]) -> [8]
-cry$divz$1 a$0 b$1 =
+--| cryptol cry/cryfield.cry::divz at [8] -> [8] -> [8]
+cry$divz$8_8_8 : ([8], [8]) -> [8]
+cry$divz$8_8_8 a$0 b$1 =
       trunc 8 (umod (mul (zext 16 (trunc 8 (umod a$0 8'hfb))) (zext 16 (let zr$b$0 = trunc 8 (umod b$1 8'hfb) in
       let zr$b$1 = trunc 8 (umod (mul (zext 16 zr$b$0) (zext 16 zr$b$0)) 16'hfb) in
       let zr$b$2 = trunc 8 (umod (mul (zext 16 zr$b$1) (zext 16 zr$b$1)) 16'hfb) in
@@ -53,6 +58,7 @@ device top_level
       input __in0 : [8]
       input __in1 : [8]
       output __out0 : [8]
+      tag $x2 = 0
       let $in = __in0 # __in1
       let $res = main.$dispatch $in
       __out0 := $res

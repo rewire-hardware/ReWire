@@ -18,22 +18,22 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [16] -> [24]
-rw_main__dispatch x0 = rw_main__L_ds3_245 (take`{8} x0) (drop`{8} x0)
+rw_main__dispatch x0 = rw_main__ds (take`{8} x0) (drop`{8} x0)
 
-// main.$L.ds3$245
-rw_main__L_ds3_245 : [8] -> [8] -> [24]
-rw_main__L_ds3_245 x0 x1 = rw_main__L_Main_go1_243 s0
+// main.$ds
+rw_main__ds : [8] -> [8] -> [24]
+rw_main__ds x0 x1 = rw_main_go s0
   where
     s0 : [8]
     s0 = x0 + 0x01
 
-// main.$L.n2$244
-rw_main__L_n2_244 : [8] -> [8] -> [24]
-rw_main__L_n2_244 x0 x1 = x0 # (x0 # x1)
+// main.n
+rw_main_n : [8] -> [8] -> [24]
+rw_main_n x0 x1 = x0 # (x0 # x1)
 
-// main.$L.Main.go1$243
-rw_main__L_Main_go1_243 : [8] -> [24]
-rw_main__L_Main_go1_243 x0 = rw_main__L_n2_244 x0 x0
+// main.go
+rw_main_go : [8] -> [24]
+rw_main_go x0 = rw_main_n x0 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [16] -> [24]

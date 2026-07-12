@@ -18,11 +18,11 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [1] -> [1]
-rw_main__dispatch x0 = rw_main__L__unused3_271 x0
+rw_main__dispatch x0 = rw_main__unused2 x0
 
-// main.$L._unused3$271
-rw_main__L__unused3_271 : [1] -> [1]
-rw_main__L__unused3_271 x0 = 0b1
+// main._unused2
+rw_main__unused2 : [1] -> [1]
+rw_main__unused2 x0 = 0b1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [1] -> [1]

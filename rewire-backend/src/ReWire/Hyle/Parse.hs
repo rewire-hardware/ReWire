@@ -25,9 +25,10 @@ import Data.HashMap.Strict (HashMap)
 import Data.Text (Text, pack)
 import Data.Void (Void)
 import Numeric.Natural (Natural)
-import Text.Megaparsec (Parsec, ParseErrorBundle, many, try, (<|>), (<?>), manyTill, parse, between, sepBy, sepBy1, notFollowedBy, optional, satisfy, eof, empty, getSourcePos, attachSourcePos, errorOffset, bundleErrors, bundlePosState, parseErrorTextPretty)
+import Text.Megaparsec (Parsec, ParseErrorBundle, many, try, (<|>), (<?>), manyTill, parse, between, sepBy, sepBy1, notFollowedBy, option, optional, satisfy, eof, empty, chunk, oneOf, takeWhileP, getSourcePos, attachSourcePos, errorOffset, bundleErrors, bundlePosState, parseErrorTextPretty)
 import Text.Megaparsec.Char (char, space1)
 import Text.Megaparsec.Pos (SourcePos (..), unPos)
+import Text.Read (readMaybe)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
@@ -109,13 +110,16 @@ ty = brackets decimal <?> "type"
 
 defn :: Parser Defn
 defn = do
-      n   <- name
-      sig <- colon *> (Sig noAnn <$> parens (ty `sepBy` comma) <*> (arrow *> ty))
-      n'  <- name
+      an   <- option noAnn spanLine
+      docs <- many docLine
+      n    <- name
+      sig  <- colon *> (Sig noAnn <$> parens (ty `sepBy` comma) <*> (arrow *> ty))
+      ni   <- option False $ True <$ keyword "noinline"
+      n'   <- name
       unless (n == n') $ fail "definition name does not match its signature"
-      ps  <- many name
-      e   <- equals *> expr
-      pure $ Defn noAnn n sig ps e
+      ps   <- many name
+      e    <- equals *> expr
+      pure $ Defn an n sig ps e ni $ Blind docs
       <?> "definition"
 
 device :: Parser Device
@@ -125,17 +129,24 @@ device = do
       ins   <- many $ try $ keyword "input"  *> port
       outs  <- many $ try $ keyword "output" *> port
       regs  <- many $ try register
+      tags  <- many $ try tagLine
       insts <- many $ try inst
       body  <- many stmt
-      pure $ Device noAnn n ins outs regs insts body
+      pure $ Device noAnn n ins outs regs insts body $ Blind tags
       <?> "device declaration"
 
 register :: Parser Register
 register = do
+      an      <- option noAnn spanLine
       keyword "register"
       (x, sz) <- port
       bv      <- keyword "init" *> lit
-      pure $ Register noAnn x sz bv
+      pure $ Register an x sz bv
+
+-- | A display name for one of the '__resumption_tag' register's values:
+--   @tag \<name\> = \<value\>@.
+tagLine :: Parser (Name, Integer)
+tagLine = (,) <$> (keyword "tag" *> name) <*> (equals *> decimal)
 
 inst :: Parser Instance
 inst = withSpan $ do
@@ -260,14 +271,61 @@ lit = do
 --- Lexing.
 ---
 
+-- | Skips plain '--' line comments, but not the metadata channels '--|'
+--   (doc lines) and '--@' (source locators), which are parsed as lexemes at
+--   declaration boundaries ('docLine', 'spanLine').
 space :: Parser ()
-space = L.space (void space1) (L.skipLineComment "--") empty
+space = L.space (void space1) lineComment empty
+      where lineComment :: Parser ()
+            lineComment = try (chunk "--" <* notFollowedBy (oneOf ("|@" :: String)))
+                        *> void (takeWhileP (Just "character") (/= '\n'))
 
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme space
 
 symbol :: Text -> Parser Text
 symbol = L.symbol space
+
+-- | A '--@ file:l:c-l:c' source-locator comment, parsed into a 'FromSource'
+--   annotation that the printer re-renders byte-identically. The file part
+--   may itself contain colons, so the four position fields are split off
+--   from the right.
+spanLine :: Parser Annote
+spanLine = lexeme $ do
+      void $ chunk "--@"
+      void $ optional $ char ' '
+      txt <- takeWhileP (Just "character") (/= '\n')
+      maybe (fail $ "malformed source locator (expected file:line:col-line:col): " <> T.unpack txt) pure
+            $ parseSpan txt
+      where parseSpan :: Text -> Maybe Annote
+            parseSpan txt = do
+                  (rest1, c2) <- breakOnLast ':' txt
+                  (rest2, cl) <- breakOnLast ':' rest1
+                  (f, l1)     <- breakOnLast ':' rest2
+                  (c1, l2)    <- breakOnFirst '-' cl
+                  srcAnnote (T.unpack f) <$> ((,) <$> readInt l1 <*> readInt c1)
+                                         <*> ((,) <$> readInt l2 <*> readInt c2)
+
+            breakOnLast :: Char -> Text -> Maybe (Text, Text)
+            breakOnLast c t = case T.breakOnEnd (T.singleton c) t of
+                  (pre, post) | not (T.null pre) -> Just (T.dropEnd 1 pre, post)
+                  _                              -> Nothing
+
+            breakOnFirst :: Char -> Text -> Maybe (Text, Text)
+            breakOnFirst c t = case T.breakOn (T.singleton c) t of
+                  (pre, T.stripPrefix (T.singleton c) -> Just post) -> Just (pre, post)
+                  _                                                 -> Nothing
+
+            readInt :: Text -> Maybe Int
+            readInt = readMaybe . T.unpack
+
+-- | A '--| <text>' doc-comment line (the text after "--| ", raw, to the end
+--   of the line).
+docLine :: Parser Text
+docLine = lexeme $ do
+      void $ chunk "--|"
+      void $ optional $ char ' '
+      takeWhileP (Just "character") (/= '\n')
 
 -- | Run a parser that builds a node from an annotation, supplying it the source
 --   span the parser consumed so the node carries a real source location.
@@ -339,17 +397,17 @@ elabProgram (Program exts ds dev) = do
                          (Map.fromList $ map (\ e -> (extName e, e)) exts)
 
 elabDefn :: MonadError AstError m => SigEnv -> Defn -> m Defn
-elabDefn env (Defn an n sig@(Sig _ argSzs _) ps body) = do
+elabDefn env (Defn an n sig@(Sig _ argSzs _) ps body ni docs) = do
       unless (length ps == length argSzs) $
             failAt an $ n <> ": parameter count does not match signature"
       body' <- elabExp env (Map.fromList $ zip ps argSzs) body
-      pure $ Defn an n sig ps body'
+      pure $ Defn an n sig ps body' ni docs
 
 elabDevice :: MonadError AstError m => SigEnv -> Device -> m Device
-elabDevice env (Device an n ins outs regs insts body) = do
+elabDevice env (Device an n ins outs regs insts body tags) = do
       g0    <- foldM instOuts (Map.fromList $ ins <> map (\ (Register _ x sz _) -> (x, sz)) regs) insts
       body' <- snd <$> foldM elabStmt (g0, []) body
-      pure $ Device an n ins outs regs insts $ reverse body'
+      pure $ Device an n ins outs regs insts (reverse body') tags
       where instOuts :: MonadError AstError m => VarEnv -> Instance -> m VarEnv
             instOuts g (Instance an' x ex _) = case Map.lookup ex $ envExterns env of
                   Just e  -> pure $ foldr (\ (p, sz) -> Map.insert (x <> "." <> p) sz) g $ extOutputs e

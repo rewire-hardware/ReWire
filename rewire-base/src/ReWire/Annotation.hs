@@ -1,5 +1,6 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE LambdaCase #-}
@@ -12,6 +13,7 @@ module ReWire.Annotation
       , Span (..)
       , Annotation (..)
       , Annotated (..)
+      , Blind (..)
       , srcAnnote
       , primSpan, annProv, annContext
       , noAnn, unAnn
@@ -124,6 +126,28 @@ instance Alpha Annote where
 
 instance Hashable Annote where
       hashWithSalt s _ = s
+
+-- | Display metadata invisible to equality, ordering, and hashing: wrapping
+--   a field in 'Blind' keeps doc lines and tag tables from perturbing dedupe
+--   keys, memo keys, or the optimizer's fixpoint test (the same convention as
+--   'Annote' itself, for metadata that isn't an annotation).
+newtype Blind a = Blind { unBlind :: a }
+      deriving (Show, Generic, Typeable, Data)
+
+instance Eq (Blind a) where
+      _ == _ = True
+
+instance Ord (Blind a) where
+      compare _ _ = EQ
+
+instance Hashable (Blind a) where
+      hashWithSalt s _ = s
+
+instance NFData a => NFData (Blind a) where
+      rnf (Blind a) = rnf a
+
+instance Show a => TextShow (Blind a) where
+      showb = fromString . show
 
 instance NFData Span where
       rnf (Span f a b) = rnf f `seq` rnf a `seq` rnf b

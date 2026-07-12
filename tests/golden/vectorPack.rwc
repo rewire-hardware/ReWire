@@ -1,37 +1,41 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([128]) -> [128]
 main.$dispatch i =
-      main.$L.$x4$944 i
+      main.$x2 i
 
-main.$L.$x4$944 : ([128]) -> [128]
-main.$L.$x4$944 $x =
-      main.$L.Main.loop3$942 $x
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([128]) -> [128]
+main.$x2 $x =
+      main.loop $x
 
-main.$L.$x5$946 : ([128]) -> [128]
-main.$L.$x5$946 $x =
+--| block '$L.$x3' of process main
+main.$x3 : ([128]) -> [128]
+main.$x3 $x =
       $x
 
-main.$L.Main.loop3$942 : ([128]) -> [128]
-main.$L.Main.loop3$942 i =
+--| block '$L.Main.loop' of process main
+main.loop : ([128]) -> [128]
+main.loop i =
       let $a = Main.compute i in
-      main.$L.$x5$946 $a
+      main.$x3 $a
 
 Main.compute : ([128]) -> [128]
-Main.compute ds =
-      let v = ds[64 +: 64] in
-      let w = ds[0 +: 64] in
-      let ds1 = trunc 8 (lshr v 128'h38) # trunc 8 (lshr v 128'h28) # trunc 8 (lshr v 128'h18) # trunc 8 (lshr v 128'h8) # trunc 8 (lshr w 128'h38) # trunc 8 (lshr w 128'h28) # trunc 8 (lshr w 128'h18) # trunc 8 (lshr w 128'h8) # trunc 8 (lshr v 128'h30) # trunc 8 (lshr v 128'h20) # trunc 8 (lshr v 128'h10) # trunc 8 (lshr v 128'h0) # trunc 8 (lshr w 128'h30) # trunc 8 (lshr w 128'h20) # trunc 8 (lshr w 128'h10) # trunc 8 (lshr w 128'h0) in
-      let lo = (let lo = ds1[64 +: 64] in
+Main.compute $ds =
+      let v = $ds[64 +: 64] in
+      let w = $ds[0 +: 64] in
+      let $ds1 = trunc 8 (lshr v 128'h38) # trunc 8 (lshr v 128'h28) # trunc 8 (lshr v 128'h18) # trunc 8 (lshr v 128'h8) # trunc 8 (lshr w 128'h38) # trunc 8 (lshr w 128'h28) # trunc 8 (lshr w 128'h18) # trunc 8 (lshr w 128'h8) # trunc 8 (lshr v 128'h30) # trunc 8 (lshr v 128'h20) # trunc 8 (lshr v 128'h10) # trunc 8 (lshr v 128'h0) # trunc 8 (lshr w 128'h30) # trunc 8 (lshr w 128'h20) # trunc 8 (lshr w 128'h10) # trunc 8 (lshr w 128'h0) in
+      let lo = (let lo = $ds1[64 +: 64] in
       lo) in
-      let hi = (let hi = ds1[0 +: 64] in
+      let hi = (let hi = $ds1[0 +: 64] in
       hi) in
-      let ds2 = trunc 8 (lshr hi 128'h38) # trunc 8 (lshr hi 128'h28) # trunc 8 (lshr hi 128'h18) # trunc 8 (lshr hi 128'h8) # trunc 8 (lshr lo 128'h38) # trunc 8 (lshr lo 128'h28) # trunc 8 (lshr lo 128'h18) # trunc 8 (lshr lo 128'h8) # trunc 8 (lshr hi 128'h30) # trunc 8 (lshr hi 128'h20) # trunc 8 (lshr hi 128'h10) # trunc 8 (lshr hi 128'h0) # trunc 8 (lshr lo 128'h30) # trunc 8 (lshr lo 128'h20) # trunc 8 (lshr lo 128'h10) # trunc 8 (lshr lo 128'h0) in
-      let lo' = (let lo' = ds2[64 +: 64] in
+      let $ds2 = trunc 8 (lshr hi 128'h38) # trunc 8 (lshr hi 128'h28) # trunc 8 (lshr hi 128'h18) # trunc 8 (lshr hi 128'h8) # trunc 8 (lshr lo 128'h38) # trunc 8 (lshr lo 128'h28) # trunc 8 (lshr lo 128'h18) # trunc 8 (lshr lo 128'h8) # trunc 8 (lshr hi 128'h30) # trunc 8 (lshr hi 128'h20) # trunc 8 (lshr hi 128'h10) # trunc 8 (lshr hi 128'h0) # trunc 8 (lshr lo 128'h30) # trunc 8 (lshr lo 128'h20) # trunc 8 (lshr lo 128'h10) # trunc 8 (lshr lo 128'h0) in
+      let lo' = (let lo' = $ds2[64 +: 64] in
       lo') in
-      let hi' = (let hi' = ds2[0 +: 64] in
+      let hi' = (let hi' = $ds2[0 +: 64] in
       hi') in
-      let ds3 = trunc 8 (lshr lo' 128'h38) # trunc 8 (lshr hi' 128'h38) # trunc 8 (lshr lo' 128'h30) # trunc 8 (lshr hi' 128'h30) # trunc 8 (lshr lo' 128'h28) # trunc 8 (lshr hi' 128'h28) # trunc 8 (lshr lo' 128'h20) # trunc 8 (lshr hi' 128'h20) # trunc 8 (lshr lo' 128'h18) # trunc 8 (lshr hi' 128'h18) # trunc 8 (lshr lo' 128'h10) # trunc 8 (lshr hi' 128'h10) # trunc 8 (lshr lo' 128'h8) # trunc 8 (lshr hi' 128'h8) # trunc 8 (lshr lo' 128'h0) # trunc 8 (lshr hi' 128'h0) in
-      (let v' = ds3[64 +: 64] in
-      v') # (let w' = ds3[0 +: 64] in
+      let $ds3 = trunc 8 (lshr lo' 128'h38) # trunc 8 (lshr hi' 128'h38) # trunc 8 (lshr lo' 128'h30) # trunc 8 (lshr hi' 128'h30) # trunc 8 (lshr lo' 128'h28) # trunc 8 (lshr hi' 128'h28) # trunc 8 (lshr lo' 128'h20) # trunc 8 (lshr hi' 128'h20) # trunc 8 (lshr lo' 128'h18) # trunc 8 (lshr hi' 128'h18) # trunc 8 (lshr lo' 128'h10) # trunc 8 (lshr hi' 128'h10) # trunc 8 (lshr lo' 128'h8) # trunc 8 (lshr hi' 128'h8) # trunc 8 (lshr lo' 128'h0) # trunc 8 (lshr hi' 128'h0) in
+      (let v' = $ds3[64 +: 64] in
+      v') # (let w' = $ds3[0 +: 64] in
       w')
 
 device top_level
@@ -39,6 +43,7 @@ device top_level
       input __in1 : [64]
       output __out0 : [64]
       output __out1 : [64]
+      tag $x2 = 0
       let $in = __in0 # __in1
       let $res = main.$dispatch $in
       __out0 := $res[64 +: 64]

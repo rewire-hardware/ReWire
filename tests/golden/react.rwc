@@ -1,23 +1,27 @@
+--| state dispatch for process main: 0=$x
 main.$dispatch : ([1]) -> [1]
 main.$dispatch i =
-      main.$L.$x3$230 i
+      main.$x i
 
-main.$L.$x3$230 : ([1]) -> [1]
-main.$L.$x3$230 $x =
-      main.$L.Main.loop2$228 $x
+--| block '$L.$x' of process main (state 0)
+main.$x : ([1]) -> [1]
+main.$x $x =
+      main.loop $x
 
-main.$L.$x4$232 : ([1]) -> [1]
-main.$L.$x4$232 $x =
+--| block '$L.$x2' of process main
+main.$x2 : ([1]) -> [1]
+main.$x2 $x =
       $x
 
-main.$L.Main.loop2$228 : ([1]) -> [1]
-main.$L.Main.loop2$228 i =
-      let $a = (if eq i 1'h1 then 1'h0
-            else 1'h1) in
-      main.$L.$x4$232 $a
+--| block '$L.Main.loop' of process main
+main.loop : ([1]) -> [1]
+main.loop i =
+      let $a = not i in
+      main.$x2 $a
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
+      tag $x = 0
       let $res = main.$dispatch __in0
       __out0 := $res

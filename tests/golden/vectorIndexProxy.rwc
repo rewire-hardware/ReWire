@@ -1,25 +1,30 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([1056]) -> [64]
 main.$dispatch i =
-      main.$L.$x4$276 i
+      main.$x2 i
 
-main.$L.$x4$276 : ([1056]) -> [64]
-main.$L.$x4$276 $x =
-      main.$L.Main.loop3$274 $x
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([1056]) -> [64]
+main.$x2 $x =
+      main.loop $x
 
-main.$L.$x5$278 : ([64]) -> [64]
-main.$L.$x5$278 $x =
+--| block '$L.$x3' of process main
+main.$x3 : ([64]) -> [64]
+main.$x3 $x =
       $x
 
-main.$L.arm6$279 : ([1024], [32]) -> [64]
-main.$L.arm6$279 v w =
+--| block '$L.arm' of process main
+main.arm : ([1024], [32]) -> [64]
+main.arm v w =
       let $a = Main.compute v w in
-      main.$L.$x5$278 $a
+      main.$x3 $a
 
-main.$L.Main.loop3$274 : ([1056]) -> [64]
-main.$L.Main.loop3$274 ds =
-      let v = ds[32 +: 1024] in
-      let w = ds[0 +: 32] in
-      main.$L.arm6$279 v w
+--| block '$L.Main.loop' of process main
+main.loop : ([1056]) -> [64]
+main.loop $ds =
+      let v = $ds[32 +: 1024] in
+      let w = $ds[0 +: 32] in
+      main.arm v w
 
 Main.compute : ([1024], [32]) -> [64]
 Main.compute v w =
@@ -29,6 +34,7 @@ device top_level
       input __in0 : [1024]
       input __in1 : [32]
       output __out0 : [64]
+      tag $x2 = 0
       let $in = __in0 # __in1
       let $res = main.$dispatch $in
       __out0 := $res

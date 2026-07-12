@@ -1,45 +1,50 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([16]) -> [8]
 main.$dispatch i =
-      main.$L.$x4$263 i
+      main.$x2 i
 
-main.$L.$x4$263 : ([16]) -> [8]
-main.$L.$x4$263 $x =
-      main.$L.ReWire.Monad.iter$1$s23$261 $x
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([16]) -> [8]
+main.$x2 $x =
+      main.iter$W8W8$W8$sMain_go $x
 
-main.$L.ReWire.Monad.iter$1$s23$261 : ([16]) -> [8]
-main.$L.ReWire.Monad.iter$1$s23$261 i =
+--| block '$L.ReWire.Monad.iter$W8W8$W8$sMain_go' of process main
+main.iter$W8W8$W8$sMain_go : ([16]) -> [8]
+main.iter$W8W8$W8$sMain_go i =
       let $a = Main.go i in
       $a
 
 Main.crystep : ([8], [8]) -> [8]
 Main.crystep $eta0 $eta1 =
-      cry$step$0 $eta0 $eta1
+      cry$step$8_8_8 $eta0 $eta1
 
 Main.go : ([16]) -> [8]
-Main.go ds =
-      let m = ds[8 +: 8] in
-      let x = ds[0 +: 8] in
+Main.go $ds =
+      let m = $ds[8 +: 8] in
+      let x = $ds[0 +: 8] in
       Main.crystep m x
 
-cry$step$0.nibswap$0 : ([8]) -> [8]
-cry$step$0.nibswap$0 x$0 =
+cry$step$8_8_8.nibswap$0 : ([8]) -> [8]
+cry$step$8_8_8.nibswap$0 x$0 =
       let hi$4700 = x$0[4 +: 4] in
       let lo$4698 = x$0[0 +: 4] in
       lo$4698 # hi$4700
 
-cry$step$0.clamp$1 : ([8], [8]) -> [8]
-cry$step$0.clamp$1 m$0 x$1 =
+cry$step$8_8_8.clamp$1 : ([8], [8]) -> [8]
+cry$step$8_8_8.clamp$1 m$0 x$1 =
       if ugt x$1 m$0 then m$0
             else x$1
 
-cry$step$0 : ([8], [8]) -> [8]
-cry$step$0 m$0 x$1 =
-      cry$step$0.clamp$1 m$0 (cry$step$0.nibswap$0 x$1)
+--| cryptol cry/crymix.cry::step at [8] -> [8] -> [8]
+cry$step$8_8_8 : ([8], [8]) -> [8]
+cry$step$8_8_8 m$0 x$1 =
+      cry$step$8_8_8.clamp$1 m$0 (cry$step$8_8_8.nibswap$0 x$1)
 
 device top_level
       input __in0 : [8]
       input __in1 : [8]
       output __out0 : [8]
+      tag $x2 = 0
       let $in = __in0 # __in1
       let $res = main.$dispatch $in
       __out0 := $res

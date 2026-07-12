@@ -18,34 +18,34 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [18] -> [8]
-rw_main__dispatch x0 = rw_main__L__x4_274 x0
+rw_main__dispatch x0 = rw_main__x2 x0
 
-// main.$L.$x4$274
-rw_main__L__x4_274 : [18] -> [8]
-rw_main__L__x4_274 x0 = rw_main__L_ReWire_Monad_iter_1_s23_272 x0
+// main.$x2
+rw_main__x2 : [18] -> [8]
+rw_main__x2 x0 = rw_main_iter_W2W8W8_W8_sMain_go x0
 
-// main.$L.ReWire.Monad.iter$1$s23$272
-rw_main__L_ReWire_Monad_iter_1_s23_272 : [18] -> [8]
-rw_main__L_ReWire_Monad_iter_1_s23_272 x0 = s0
+// main.iter$W2W8W8$W8$sMain_go
+rw_main_iter_W2W8W8_W8_sMain_go : [18] -> [8]
+rw_main_iter_W2W8W8_W8_sMain_go x0 = s0
   where
     s0 : [8]
     s0 = rw_Main_go x0
 
 // Main.alu
 rw_Main_alu : [2] -> [8] -> [8] -> [8]
-rw_Main_alu x0 x1 x2 = rw_cry_alu_0 x0 x1 x2
+rw_Main_alu x0 x1 x2 = rw_cry_alu_2_8_8_8 x0 x1 x2
 
 // Main.recmix
 rw_Main_recmix : [8] -> [8] -> [8]
-rw_Main_recmix x0 x1 = rw_cry_recmix_1 x0 x1
+rw_Main_recmix x0 x1 = rw_cry_recmix_8_8_8 x0 x1
 
 // Main.both
 rw_Main_both : [8] -> [8] -> [8]
-rw_Main_both x0 x1 = rw_cry_both_2 x0 x1
+rw_Main_both x0 x1 = rw_cry_both_8_8_8 x0 x1
 
 // Main.cguard
 rw_Main_cguard : [8] -> [8]
-rw_Main_cguard x0 = rw_cry_cguard_3 x0
+rw_Main_cguard x0 = rw_cry_cguard_8_8 x0
 
 // Main.go
 rw_Main_go : [18] -> [8]
@@ -58,72 +58,72 @@ rw_Main_go x0 = rw_Main_alu s0 (rw_Main_recmix s1 s2) (rw_Main_both (rw_Main_cgu
     s2 : [8]
     s2 = drop`{10} x0
 
-// cry$alu$0.decode$0
-rw_cry_alu_0_decode_0 : [2] -> [8] -> [10]
-rw_cry_alu_0_decode_0 x0 x1 = if x0 == 0b00 then 0b0000000000 else (if x0 == 0b01 then 0b0100000000 else (0b10 # x1))
+// cry$alu$2_8_8_8.decode$0
+rw_cry_alu_2_8_8_8_decode_0 : [2] -> [8] -> [10]
+rw_cry_alu_2_8_8_8_decode_0 x0 x1 = if x0 == 0b00 then 0b0000000000 else (if x0 == 0b01 then 0b0100000000 else (0b10 # x1))
 
-// cry$alu$0.eval$1
-rw_cry_alu_0_eval_1 : [10] -> [8] -> [8] -> [8]
-rw_cry_alu_0_eval_1 x0 x1 x2 = if (take`{2} x0) == 0b00 then (x1 + x2) else (if (take`{2} x0) == 0b01 then (x1 - x2) else (if (take`{2} x0) == 0b10 then (drop`{2} x0) else 0x00))
+// cry$alu$2_8_8_8.eval$1
+rw_cry_alu_2_8_8_8_eval_1 : [10] -> [8] -> [8] -> [8]
+rw_cry_alu_2_8_8_8_eval_1 x0 x1 x2 = if (take`{2} x0) == 0b00 then (x1 + x2) else (if (take`{2} x0) == 0b01 then (x1 - x2) else (if (take`{2} x0) == 0b10 then (drop`{2} x0) else 0x00))
 
-// cry$alu$0
-rw_cry_alu_0 : [2] -> [8] -> [8] -> [8]
-rw_cry_alu_0 x0 x1 x2 = rw_cry_alu_0_eval_1 (rw_cry_alu_0_decode_0 x0 (x1 ^ x2)) x1 x2
+// cry$alu$2_8_8_8
+rw_cry_alu_2_8_8_8 : [2] -> [8] -> [8] -> [8]
+rw_cry_alu_2_8_8_8 x0 x1 x2 = rw_cry_alu_2_8_8_8_eval_1 (rw_cry_alu_2_8_8_8_decode_0 x0 (x1 ^ x2)) x1 x2
 
-// cry$recmix$1.bump$0
-rw_cry_recmix_1_bump_0 : [8] -> [8]
-rw_cry_recmix_1_bump_0 x0 = ((take`{4} x0) + (if (drop`{4} x0) == 0xf then 0x1 else 0x0)) # ((drop`{4} x0) + 0x1)
+// cry$recmix$8_8_8.bump$0
+rw_cry_recmix_8_8_8_bump_0 : [8] -> [8]
+rw_cry_recmix_8_8_8_bump_0 x0 = ((take`{4} x0) + (if (drop`{4} x0) == 0xf then 0x1 else 0x0)) # ((drop`{4} x0) + 0x1)
 
-// cry$recmix$1.mkPair$1
-rw_cry_recmix_1_mkPair_1 : [8] -> [8] -> [16]
-rw_cry_recmix_1_mkPair_1 x0 x1 = x0 # x1
+// cry$recmix$8_8_8.mkPair$1
+rw_cry_recmix_8_8_8_mkPair_1 : [8] -> [8] -> [16]
+rw_cry_recmix_8_8_8_mkPair_1 x0 x1 = x0 # x1
 
-// cry$recmix$1.swapP$2
-rw_cry_recmix_1_swapP_2 : [16] -> [16]
-rw_cry_recmix_1_swapP_2 x0 = (drop`{8} x0) # (take`{8} x0)
+// cry$recmix$8_8_8.swapP$2
+rw_cry_recmix_8_8_8_swapP_2 : [16] -> [16]
+rw_cry_recmix_8_8_8_swapP_2 x0 = (drop`{8} x0) # (take`{8} x0)
 
-// cry$recmix$1.setL$3
-rw_cry_recmix_1_setL_3 : [16] -> [8] -> [16]
-rw_cry_recmix_1_setL_3 x0 x1 = x1 # (drop`{8} x0)
+// cry$recmix$8_8_8.setL$3
+rw_cry_recmix_8_8_8_setL_3 : [16] -> [8] -> [16]
+rw_cry_recmix_8_8_8_setL_3 x0 x1 = x1 # (drop`{8} x0)
 
-// cry$recmix$1
-rw_cry_recmix_1 : [8] -> [8] -> [8]
-rw_cry_recmix_1 x0 x1 = ((take`{8} s1) ^ (drop`{8} s1)) ^ ((drop`{4} s2) # (take`{4} s2))
+// cry$recmix$8_8_8
+rw_cry_recmix_8_8_8 : [8] -> [8] -> [8]
+rw_cry_recmix_8_8_8 x0 x1 = ((take`{8} s1) ^ (drop`{8} s1)) ^ ((drop`{4} s2) # (take`{4} s2))
   where
     s0 : [16]
-    s0 = rw_cry_recmix_1_mkPair_1 x0 x1
+    s0 = rw_cry_recmix_8_8_8_mkPair_1 x0 x1
     s1 : [16]
-    s1 = rw_cry_recmix_1_setL_3 (rw_cry_recmix_1_swapP_2 s0) (x0 + x1)
+    s1 = rw_cry_recmix_8_8_8_setL_3 (rw_cry_recmix_8_8_8_swapP_2 s0) (x0 + x1)
     s2 : [8]
-    s2 = rw_cry_recmix_1_bump_0 ((drop`{4} x0) # (take`{4} x0))
+    s2 = rw_cry_recmix_8_8_8_bump_0 ((drop`{4} x0) # (take`{4} x0))
 
-// cry$both$2.swap2$0
-rw_cry_both_2_swap2_0 : [16] -> [16]
-rw_cry_both_2_swap2_0 x0 = s0 # s1
+// cry$both$8_8_8.swap2$0
+rw_cry_both_8_8_8_swap2_0 : [16] -> [16]
+rw_cry_both_8_8_8_swap2_0 x0 = s0 # s1
   where
     s0 : [8]
     s0 = drop`{8} x0
     s1 : [8]
     s1 = take`{8} x0
 
-// cry$both$2
-rw_cry_both_2 : [8] -> [8] -> [8]
-rw_cry_both_2 x0 x1 = (take`{8} s0) - (drop`{8} s0)
+// cry$both$8_8_8
+rw_cry_both_8_8_8 : [8] -> [8] -> [8]
+rw_cry_both_8_8_8 x0 x1 = (take`{8} s0) - (drop`{8} s0)
   where
     s0 : [16]
-    s0 = rw_cry_both_2_swap2_0 (x0 # x1)
+    s0 = rw_cry_both_8_8_8_swap2_0 (x0 # x1)
 
-// cry$cguard$3.cg.n...1.$0
-rw_cry_cguard_3_cg_n___1__0 : [8] -> [8]
-rw_cry_cguard_3_cg_n___1__0 x0 = (drop`{7} x0) # ((take`{1} (drop`{6} x0)) # ((take`{1} (drop`{5} x0)) # ((take`{1} (drop`{4} x0)) # ((take`{1} (drop`{3} x0)) # ((take`{1} (drop`{2} x0)) # ((take`{1} (drop`{1} x0)) # (take`{1} x0)))))))
+// cry$cguard$8_8.cg.n...1.$0
+rw_cry_cguard_8_8_cg_n___1__0 : [8] -> [8]
+rw_cry_cguard_8_8_cg_n___1__0 x0 = (drop`{7} x0) # ((take`{1} (drop`{6} x0)) # ((take`{1} (drop`{5} x0)) # ((take`{1} (drop`{4} x0)) # ((take`{1} (drop`{3} x0)) # ((take`{1} (drop`{2} x0)) # ((take`{1} (drop`{1} x0)) # (take`{1} x0)))))))
 
-// cry$cguard$3.cg$1
-rw_cry_cguard_3_cg_1 : [8] -> [8]
-rw_cry_cguard_3_cg_1 x0 = rw_cry_cguard_3_cg_n___1__0 x0
+// cry$cguard$8_8.cg$1
+rw_cry_cguard_8_8_cg_1 : [8] -> [8]
+rw_cry_cguard_8_8_cg_1 x0 = rw_cry_cguard_8_8_cg_n___1__0 x0
 
-// cry$cguard$3
-rw_cry_cguard_3 : [8] -> [8]
-rw_cry_cguard_3 x0 = rw_cry_cguard_3_cg_1 x0
+// cry$cguard$8_8
+rw_cry_cguard_8_8 : [8] -> [8]
+rw_cry_cguard_8_8 x0 = rw_cry_cguard_8_8_cg_1 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [18] -> [8]

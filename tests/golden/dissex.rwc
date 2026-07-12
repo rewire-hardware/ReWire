@@ -1,36 +1,44 @@
+--| state dispatch for process main: 0=i
 main.$dispatch : ([16], [1]) -> [24]
 main.$dispatch disc i =
-      main.$L.i3$254 i disc[8 +: 8] disc[0 +: 8]
+      main.i i disc[8 +: 8] disc[0 +: 8]
 
-main.$L._unused7$258 : ([8], [8], [8], [8]) -> [24]
-main.$L._unused7$258 r0 r1 s0 s1 =
+--| block '$L._unused' of process main
+main._unused : ([8], [8], [8], [8]) -> [24]
+main._unused r0 r1 s0 s1 =
       let $a = Main.plusW8 r0 r1 in
-      main.$L.Main.sig1$252 s0 $a
+      main.sig s0 $a
 
-main.$L.r16$257 : ([8], [8], [8], [8]) -> [24]
-main.$L.r16$257 r0 r1 s0 s1 =
-      main.$L._unused7$258 r0 r1 r1 s1
+--| block '$L.r1' of process main
+main.r1 : ([8], [8], [8], [8]) -> [24]
+main.r1 r0 r1 s0 s1 =
+      main._unused r0 r1 r1 s1
 
-main.$L.r05$256 : ([8], [8], [8]) -> [24]
-main.$L.r05$256 r0 s0 s1 =
-      main.$L.r16$257 r0 s1 s0 s1
+--| block '$L.r02' of process main
+main.r02 : ([8], [8], [8]) -> [24]
+main.r02 r0 s0 s1 =
+      main.r1 r0 s1 s0 s1
 
-main.$L.Main.incr4$255 : ([8], [8]) -> [24]
-main.$L.Main.incr4$255 s0 s1 =
-      main.$L.r05$256 s0 s0 s1
+--| block '$L.Main.incr' of process main
+main.incr : ([8], [8]) -> [24]
+main.incr s0 s1 =
+      main.r02 s0 s0 s1
 
-main.$L.i3$254 : ([1], [8], [8]) -> [24]
-main.$L.i3$254 i s0 s1 =
-      if eq i 1'h0 then main.$L.Main.sig1$252 s0 s1
-            else main.$L.Main.incr4$255 s0 s1
+--| block '$L.i' of process main (state 0)
+main.i : ([1], [8], [8]) -> [24]
+main.i i s0 s1 =
+      if not i then main.sig s0 s1
+            else main.incr s0 s1
 
-main.$L.r02$253 : ([8], [8], [8]) -> [24]
-main.$L.r02$253 r0 s0 s1 =
+--| block '$L.r0' of process main
+main.r0 : ([8], [8], [8]) -> [24]
+main.r0 r0 s0 s1 =
       r0 # s0 # s1
 
-main.$L.Main.sig1$252 : ([8], [8]) -> [24]
-main.$L.Main.sig1$252 s0 s1 =
-      main.$L.r02$253 s0 s0 s1
+--| block '$L.Main.sig' of process main
+main.sig : ([8], [8]) -> [24]
+main.sig s0 s1 =
+      main.r0 s0 s0 s1
 
 Main.plusW8 : ([8], [8]) -> [8]
 Main.plusW8 $eta0 $eta1 =
@@ -41,6 +49,7 @@ device top_level
       output __out0 : [8]
       register __st0 : [8] init 8'h0
       register __st1 : [8] init 8'h1
+      tag i = 0
       let $res = main.$dispatch (__st0 # __st1) __in0
       __out0 := $res[16 +: 8]
       next __st0 := $res[8 +: 8]

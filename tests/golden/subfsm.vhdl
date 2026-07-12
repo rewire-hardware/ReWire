@@ -218,7 +218,7 @@ signal \__resumption_tag\ : std_logic_vector (8 downto 0) := std_logic_vector'(B
 begin
 zi2 <= \__resumption_tag\(7 downto 0);
       zi4 <= rw_add(zi2, std_logic_vector'(B"00000001"));
-      zres <= rw_cond(rw_eq(\__resumption_tag\(8 downto 8), std_logic_vector'(B"0")), std_logic_vector'(B"0000000010000000000000000"), rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), (rw_add(zi2, zi2) & std_logic_vector'(B"000000000") & zi4), (zi4 & std_logic_vector'(B"1") & zi4 & zi4)));
+      zres <= rw_cond(rw_not(\__resumption_tag\(8 downto 8)), std_logic_vector'(B"0000000010000000000000000"), rw_cond(rw_not(\__in0\), (rw_add(zi2, zi2) & std_logic_vector'(B"000000000") & zi4), (zi4 & std_logic_vector'(B"1") & zi4 & zi4)));
       \__resumption_tag_next\ <= zres(16 downto 8);
       \__st0_next\ <= zres(7 downto 0);
       \__out0\ <= zres(24 downto 17);

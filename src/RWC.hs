@@ -44,7 +44,8 @@ options =
        , Option []    ["depth"]           (ReqArg FlagEvalDepth   "depth")           "Partial evaluation depth. Higher values can cause non-termination. (default: 8)."
        , Option []    ["rtl-opt"]         (ReqArg FlagRtlOpt      "level")           "RTL optimization level. Disable with 0. (default: 8)."
        , Option []    ["pretty"]          (NoArg  FlagPretty)                        "Attempt to output prettier RTL at the expense of performance."
-       , Option []    ["stable-names"]    (NoArg  FlagStableNames)                   "Use fully-uniquified (less readable, but edit-stable) names in generated output."
+       , Option []    ["stable-names"]    (NoArg  FlagStableNames)                   "Suffix machine-block names with their unique keys (always collision-free, machine-greppable) instead of collision-only readable names."
+       , Option []    ["locators"]        (NoArg  FlagLocators)                      "Emit source-locator comments (--@ file:line:col-line:col) in ReWire core (.rwc) output; --no-locators takes precedence."
        , Option []    ["no-locators"]     (NoArg  FlagNoLocators)                    "Suppress source-locator and provenance comments in generated output."
        ]
 

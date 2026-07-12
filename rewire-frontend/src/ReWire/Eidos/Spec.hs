@@ -27,13 +27,15 @@
 --   diagnostic.
 module ReWire.Eidos.Spec (specialize) where
 
-import ReWire.Annotation (noAnn)
+import ReWire.Annotation (noAnn, unAnn)
 import ReWire.Builtins (builtins)
 import ReWire.Error (AstError, MonadError, failAt)
+import ReWire.Eidos.Naming (originTag)
+import ReWire.Eidos.Pretty ()
 import ReWire.Eidos.Subst (instantiateDefn, nextUniq)
 import ReWire.Eidos.Syntax
-import ReWire.Eidos.Types (natNorm, flattenApp)
-import ReWire.Pretty (showt)
+import ReWire.Eidos.Types (natNorm, flattenApp, flattenArrow, flattenTyApp, evalNat)
+import ReWire.Pretty (prettyPrint, showt)
 
 import Control.Monad (foldM)
 import Control.Monad.State.Strict (StateT, evalStateT)
@@ -41,6 +43,7 @@ import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
 import Data.List (partition)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Numeric.Natural (Natural)
 
 import qualified Data.HashMap.Strict as Map
@@ -76,29 +79,34 @@ specialize bound p@(Program datas defns procs top) = evalStateT go $ nextUniq p
 
             go :: StateT Uniq m Program
             go = do
-                  (table, clones) <- rounds 0 (mempty, mempty) [] $ concatMap (requests . defnBody) kept
+                  (table, clones) <- rounds 0 mempty [] $ concatMap (requests . defnBody) kept
                   pure $ Program datas (map (rewrite table) $ kept <> clones) procs top
 
             -- One worklist generation per round.
-            rounds :: Natural -> (HashMap Key Id, IM.IntMap Int) -> [Defn] -> [Key] -> StateT Uniq m (HashMap Key Id, [Defn])
-            rounds n (table, counters) clones reqs
+            rounds :: Natural -> HashMap Key Id -> [Defn] -> [Key] -> StateT Uniq m (HashMap Key Id, [Defn])
+            rounds n table clones reqs
                   | null new   = pure (table, clones)
                   | n >= bound = failAt noAnn "polymorphic function instantiation not terminating (mutually recursive definitions?)."
                   | otherwise  = do
-                        ((table', counters'), batch) <- foldM step ((table, counters), []) new
+                        (table', batch) <- foldM step (table, []) new
                         let batch' = reverse batch
-                        rounds (n + 1) (table', counters') (clones <> batch') $ concatMap (requests . defnBody) batch'
+                        rounds (n + 1) table' (clones <> batch') $ concatMap (requests . defnBody) batch'
                   where new = dedupe table reqs
 
-            step :: ((HashMap Key Id, IM.IntMap Int), [Defn]) -> Key -> StateT Uniq m ((HashMap Key Id, IM.IntMap Int), [Defn])
-            step ((table, counters), acc) k@(u, ts) = case IM.lookup u polys of
-                  Nothing -> pure ((table, counters), acc) -- unreachable on lint-clean input
+            step :: (HashMap Key Id, [Defn]) -> Key -> StateT Uniq m (HashMap Key Id, [Defn])
+            step (table, acc) k@(u, ts) = case IM.lookup u polys of
+                  Nothing -> pure ((table), acc) -- unreachable on lint-clean input
                   Just d  -> do
-                        let i   = IM.findWithDefault 0 u counters + 1
-                            occ = idOcc (defnId d) <> "$" <> showt i
+                        -- The clone's display name carries its
+                        -- instantiation ('grev$Vec_8_Bool'), not a
+                        -- discovery counter: adding an unrelated
+                        -- instantiation elsewhere must not rename this
+                        -- one. Renderings that collide after sanitizing
+                        -- are disambiguated at the machine fold.
+                        let occ = idOcc (defnId d) <> "$" <> originTag (map renderTy ts)
                         d' <- instantiateDefn occ ts d
                         let d'' = d' { defnOrigin = Just $ SpecOrigin (idOcc $ defnId d) ts }
-                        pure ((Map.insert k (defnId d'') table, IM.insert u i counters), d'' : acc)
+                        pure (Map.insert k (defnId d'') table, d'' : acc)
 
             -- New keys, in discovery order.
             dedupe :: HashMap Key Id -> [Key] -> [Key]
@@ -183,3 +191,18 @@ specialize bound p@(Program datas defns procs top) = evalStateT go $ nextUniq p
             isTArg = \ case
                   TArg _ -> True
                   _      -> False
+
+-- | A type argument's display text for instance names: compact forms for
+--   the common cases (@Vec 8 Bool@ -> @W8@, @Vec 4 (Vec 8 Bool)@ ->
+--   @V4W8@, arrows @_@-joined), the pretty-printed type otherwise
+--   (annotations scrubbed so positions can't leak into names; 'originTag'
+--   sanitizes and caps the result).
+renderTy :: Ty -> Text
+renderTy t
+      | Just k <- evalNat t                = showt k
+      | (ds@(_ : _), cd) <- flattenArrow t = T.intercalate "_" $ map renderTy $ ds <> [cd]
+      | otherwise = case flattenTyApp t of
+            (TyCon _ "Vec", [n, TyCon _ "Bool"]) | Just k <- evalNat n -> "W" <> showt k
+            (TyCon _ "Vec", [n, el])             | Just k <- evalNat n -> "V" <> showt k <> renderTy el
+            (TyCon _ c, args)                                          -> T.takeWhileEnd (/= '.') c <> mconcat (map renderTy args)
+            _                                                          -> prettyPrint (unAnn t :: Ty)

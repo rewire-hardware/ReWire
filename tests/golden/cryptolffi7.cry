@@ -18,34 +18,34 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main.$dispatch
 rw_main__dispatch : [8] -> [8]
-rw_main__dispatch x0 = rw_main__L__x4_252 x0
+rw_main__dispatch x0 = rw_main__x2 x0
 
-// main.$L.$x4$252
-rw_main__L__x4_252 : [8] -> [8]
-rw_main__L__x4_252 x0 = rw_main__L_ReWire_Monad_iter_1_s23_250 x0
+// main.$x2
+rw_main__x2 : [8] -> [8]
+rw_main__x2 x0 = rw_main_iter_W8_W8_sMain_mix x0
 
-// main.$L.ReWire.Monad.iter$1$s23$250
-rw_main__L_ReWire_Monad_iter_1_s23_250 : [8] -> [8]
-rw_main__L_ReWire_Monad_iter_1_s23_250 x0 = s0
+// main.iter$W8$W8$sMain_mix
+rw_main_iter_W8_W8_sMain_mix : [8] -> [8]
+rw_main_iter_W8_W8_sMain_mix x0 = s0
   where
     s0 : [8]
     s0 = rw_Main_mix x0
 
 // Main.mix
 rw_Main_mix : [8] -> [8]
-rw_Main_mix x0 = rw_cry_mix_0 x0
+rw_Main_mix x0 = rw_cry_mix_8_8 x0
 
-// cry$mix$0.bump$0
-rw_cry_mix_0_bump_0 : [8] -> [8]
-rw_cry_mix_0_bump_0 x0 = x0 + 0x01
+// cry$mix$8_8.bump$0
+rw_cry_mix_8_8_bump_0 : [8] -> [8]
+rw_cry_mix_8_8_bump_0 x0 = x0 + 0x01
 
-// cry$mix$0.scale$3
-rw_cry_mix_0_scale_3 : [8] -> [8]
-rw_cry_mix_0_scale_3 x0 = x0 * 0x03
+// cry$mix$8_8.scale$3
+rw_cry_mix_8_8_scale_3 : [8] -> [8]
+rw_cry_mix_8_8_scale_3 x0 = x0 * 0x03
 
-// cry$mix$0
-rw_cry_mix_0 : [8] -> [8]
-rw_cry_mix_0 x0 = (rw_cry_mix_0_scale_3 (rw_cry_mix_0_bump_0 x0)) + (rw_cry_mix_0_bump_0 (rw_cry_mix_0_scale_3 x0))
+// cry$mix$8_8
+rw_cry_mix_8_8 : [8] -> [8]
+rw_cry_mix_8_8 x0 = (rw_cry_mix_8_8_scale_3 (rw_cry_mix_8_8_bump_0 x0)) + (rw_cry_mix_8_8_bump_0 (rw_cry_mix_8_8_scale_3 x0))
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [8]

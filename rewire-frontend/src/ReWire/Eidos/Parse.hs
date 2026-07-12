@@ -146,7 +146,7 @@ keyword k = lexeme $ try $ string' k *> notFollowedBy (identChar <|> char '#')
 reservedWords :: Set.HashSet Text
 reservedWords = Set.fromList
       [ "let", "in", "rec", "join", "jump", "case", "of", "top", "data"
-      , "forall", "inline", "noinline", "from", "list", "vec"
+      , "forall", "inline", "noinline", "from", "baked", "list", "vec"
       , "proc", "entry", "block", "state", "put", "get", "pause", "goto", "halt", "undef"
       , "Nat"
       ]
@@ -581,9 +581,13 @@ defnP = do
             attrP = (Inline <$ keyword "inline") <|> (NoInline <$ keyword "noinline")
 
             fromP :: TVScope -> Parser SpecOrigin
-            fromP tvs = do
-                  keyword "from"
-                  SpecOrigin <$> bareName <*> parens (tyP tvs `sepBy` comma)
+            fromP tvs = specP <|> bakedP
+                  where specP = do
+                              keyword "from"
+                              SpecOrigin <$> bareName <*> parens (tyP tvs `sepBy` comma)
+                        bakedP = do
+                              keyword "baked"
+                              BakeOrigin <$> bareName
 
 -- | @data T kind { C1 :: sig1; ... }@ (the constructor list may be empty;
 --   each constructor signature quantifies its own type variables).

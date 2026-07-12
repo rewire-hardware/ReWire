@@ -1,77 +1,85 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([30], [10]) -> [46]
 main.$dispatch disc i =
-      main.$L.$x8$481 i disc
+      main.$x2 i disc
 
-main.$L.$x8$481 : ([10], [30]) -> [46]
-main.$L.$x8$481 $x s0 =
-      main.$L.ReWire.Monad.iterSt$1$s25$477 $x s0
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([10], [30]) -> [46]
+main.$x2 $x s0 =
+      main.iterSt$Input$V2MyState$Output$sMain_loop $x s0
 
-main.$L._unused7$479 : ([16], [30]) -> [46]
-main.$L._unused7$479 o s0 =
+--| block '$L._unused2' of process main
+main._unused2 : ([16], [30]) -> [46]
+main._unused2 o s0 =
       o # s0
 
-main.$L.arm9$482 : ([16], [30], [30]) -> [46]
-main.$L.arm9$482 o s s0 =
-      main.$L._unused7$479 o s
+--| block '$L.arm' of process main
+main.arm : ([16], [30], [30]) -> [46]
+main.arm o s s0 =
+      main._unused2 o s
 
-main.$L.ds6$478 : ([46], [30]) -> [46]
-main.$L.ds6$478 ds s0 =
-      let o = ds[30 +: 16] in
-      let s = ds[0 +: 30] in
-      main.$L.arm9$482 o s s0
+--| block '$L.$ds2' of process main
+main.$ds2 : ([46], [30]) -> [46]
+main.$ds2 $ds s0 =
+      let o = $ds[30 +: 16] in
+      let s = $ds[0 +: 30] in
+      main.arm o s s0
 
-main.$L.x10$483 : ([10], [30], [30]) -> [46]
-main.$L.x10$483 i x s0 =
+--| block '$L.x' of process main
+main.x : ([10], [30], [30]) -> [46]
+main.x i x s0 =
       let $a = Main.loop i x in
-      main.$L.ds6$478 $a s0
+      main.$ds2 $a s0
 
-main.$L.ReWire.Monad.iterSt$1$s25$477 : ([10], [30]) -> [46]
-main.$L.ReWire.Monad.iterSt$1$s25$477 i s0 =
-      main.$L.x10$483 i s0 s0
+--| block '$L.ReWire.Monad.iterSt$Input$V2MyState$Output$sMain_loop' of process main
+main.iterSt$Input$V2MyState$Output$sMain_loop : ([10], [30]) -> [46]
+main.iterSt$Input$V2MyState$Output$sMain_loop i s0 =
+      main.x i s0 s0
 
 Main.inputToMyState : ([10], [15]) -> [15]
-Main.inputToMyState ds ds1 =
-      if eq ds[8 +: 2] 2'h0 then (let w4 = ds[0 +: 4] in
-            let b = ds1[14 +: 1] in
+Main.inputToMyState $ds $ds1 =
+      if eq $ds[8 +: 2] 2'h0 then (let w4 = $ds[0 +: 4] in
+            let b = $ds1[14 +: 1] in
             b # 1'h1 # w4 # 5'h0 # w4)
-            else if eq ds[8 +: 2] 2'h1 then (let w8 = ds[0 +: 8] in
-            let b = ds1[14 +: 1] in
-            let w4 = ds1[9 +: 5] in
-            b # w4 # 1'h1 # w8) else let ds2 = ds[0 +: 1] in
-            if eq ds2 1'h0 then (let w8 = ds1[0 +: 9] in
+            else if eq $ds[8 +: 2] 2'h1 then (let w8 = $ds[0 +: 8] in
+            let b = $ds1[14 +: 1] in
+            let w4 = $ds1[9 +: 5] in
+            b # w4 # 1'h1 # w8) else let $ds2 = $ds[0 +: 1] in
+            if not $ds2 then (let w8 = $ds1[0 +: 9] in
                   6'h0 # w8)
-                  else let ds5 = ds1[0 +: 9] in
-                  if eq ds1[13 +: 1] 1'h0 then 6'h20 # ds5
-                        else let w4 = ds1[9 +: 4] in
+                  else let $ds5 = $ds1[0 +: 9] in
+                  if not $ds1[13 +: 1] then 6'h20 # $ds5
+                        else let w4 = $ds1[9 +: 4] in
                         11'h400 # w4
 
 Main.myStateToOutput : ([15]) -> [16]
-Main.myStateToOutput ds =
-      let ds1 = ds[14 +: 1] in
-      let mw4 = ds[9 +: 5] in
-      let ds2 = ds[0 +: 9] in
-      if eq ds1 1'h0 then 7'h0 # ds2
-            else if eq ds[8 +: 1] 1'h0 then (let w4 = ds[0 +: 4] in
-            2'h3 # mw4 # 5'h0 # w4) else let w8 = ds[0 +: 8] in
+Main.myStateToOutput $ds =
+      let $ds1 = $ds[14 +: 1] in
+      let mw4 = $ds[9 +: 5] in
+      let $ds2 = $ds[0 +: 9] in
+      if not $ds1 then 7'h0 # $ds2
+            else if not $ds[8 +: 1] then (let w4 = $ds[0 +: 4] in
+            2'h3 # mw4 # 5'h0 # w4) else let w8 = $ds[0 +: 8] in
             2'h1 # mw4 # 1'h1 # w8
 
 Main.incrPipeline : ([45]) -> [45]
-Main.incrPipeline ds =
-      let s = ds[30 +: 15] in
-      let ps = ds[0 +: 30] in
-      s # ds[15 +: 15] # trunc 15 (lshr ps 128'h0)
+Main.incrPipeline $ds =
+      let s = $ds[30 +: 15] in
+      let ps = $ds[0 +: 30] in
+      s # $ds[15 +: 15] # trunc 15 (lshr ps 128'h0)
 
 Main.loop : ([10], [30]) -> [46]
 Main.loop i s =
-      let ds = Main.incrPipeline (Main.inputToMyState i s[15 +: 15] # s) in
-      Main.myStateToOutput (let out = ds[0 +: 15] in
-      out) # (let s' = ds[15 +: 30] in
+      let $ds = Main.incrPipeline (Main.inputToMyState i s[15 +: 15] # s) in
+      Main.myStateToOutput (let out = $ds[0 +: 15] in
+      out) # (let s' = $ds[15 +: 30] in
       s')
 
 device top_level
       input __in0 : [10]
       output __out0 : [16]
       register __st0 : [30] init 30'h0
+      tag $x2 = 0
       let $res = main.$dispatch __st0 __in0
       __out0 := $res[30 +: 16]
       next __st0 := $res[0 +: 30]

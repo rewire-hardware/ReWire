@@ -1,1047 +1,924 @@
+--| state dispatch for process main: 0=$x2
 main.$dispatch : ([256]) -> [128]
 main.$dispatch i =
-      main.$L.$x4$1551 i
+      main.$x2 i
 
-main.$L.$x4$1551 : ([256]) -> [128]
-main.$L.$x4$1551 $x =
-      main.$L.ReWire.Monad.iter$1$s23$1549 $x
+--| block '$L.$x2' of process main (state 0)
+main.$x2 : ([256]) -> [128]
+main.$x2 $x =
+      main.iter$W128W128$W128$sMain_multiplyFun $x
 
-main.$L.ReWire.Monad.iter$1$s23$1549 : ([256]) -> [128]
-main.$L.ReWire.Monad.iter$1$s23$1549 i =
+--| block '$L.ReWire.Monad.iter$W128W128$W128$sMain_multiplyFun' of process main
+main.iter$W128W128$W128$sMain_multiplyFun : ([256]) -> [128]
+main.iter$W128W128$W128$sMain_multiplyFun i =
       let $a = Main.multiplyFun i in
       $a
 
 Main.multiply : ([128], [128]) -> [128]
 Main.multiply input_a input_b =
       let temp_vector_0 = (let $t1 = (let $t0 = input_a[0 +: 1] in
-      if eq $t0 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t1 1'h0 then xor (lshr input_a 128'h1) 128'he1000000000000000000000000000000
+      not $t0) in
+      if not $t1 then xor (lshr input_a 128'h1) 128'he1000000000000000000000000000000
             else lshr input_a 128'h1) in
       let temp_vector_1 = (let $t6 = (let $t5 = temp_vector_0[0 +: 1] in
-      if eq $t5 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t6 1'h0 then xor (lshr temp_vector_0 128'h1) 128'he1000000000000000000000000000000
+      not $t5) in
+      if not $t6 then xor (lshr temp_vector_0 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_0 128'h1) in
       let temp_vector_2 = (let $t11 = (let $t10 = temp_vector_1[0 +: 1] in
-      if eq $t10 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t11 1'h0 then xor (lshr temp_vector_1 128'h1) 128'he1000000000000000000000000000000
+      not $t10) in
+      if not $t11 then xor (lshr temp_vector_1 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_1 128'h1) in
       let temp_vector_3 = (let $t16 = (let $t15 = temp_vector_2[0 +: 1] in
-      if eq $t15 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t16 1'h0 then xor (lshr temp_vector_2 128'h1) 128'he1000000000000000000000000000000
+      not $t15) in
+      if not $t16 then xor (lshr temp_vector_2 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_2 128'h1) in
       let temp_vector_4 = (let $t21 = (let $t20 = temp_vector_3[0 +: 1] in
-      if eq $t20 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t21 1'h0 then xor (lshr temp_vector_3 128'h1) 128'he1000000000000000000000000000000
+      not $t20) in
+      if not $t21 then xor (lshr temp_vector_3 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_3 128'h1) in
       let temp_vector_5 = (let $t26 = (let $t25 = temp_vector_4[0 +: 1] in
-      if eq $t25 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t26 1'h0 then xor (lshr temp_vector_4 128'h1) 128'he1000000000000000000000000000000
+      not $t25) in
+      if not $t26 then xor (lshr temp_vector_4 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_4 128'h1) in
       let temp_vector_6 = (let $t31 = (let $t30 = temp_vector_5[0 +: 1] in
-      if eq $t30 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t31 1'h0 then xor (lshr temp_vector_5 128'h1) 128'he1000000000000000000000000000000
+      not $t30) in
+      if not $t31 then xor (lshr temp_vector_5 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_5 128'h1) in
       let temp_vector_7 = (let $t36 = (let $t35 = temp_vector_6[0 +: 1] in
-      if eq $t35 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t36 1'h0 then xor (lshr temp_vector_6 128'h1) 128'he1000000000000000000000000000000
+      not $t35) in
+      if not $t36 then xor (lshr temp_vector_6 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_6 128'h1) in
       let temp_vector_8 = (let $t41 = (let $t40 = temp_vector_7[0 +: 1] in
-      if eq $t40 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t41 1'h0 then xor (lshr temp_vector_7 128'h1) 128'he1000000000000000000000000000000
+      not $t40) in
+      if not $t41 then xor (lshr temp_vector_7 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_7 128'h1) in
       let temp_vector_9 = (let $t46 = (let $t45 = temp_vector_8[0 +: 1] in
-      if eq $t45 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t46 1'h0 then xor (lshr temp_vector_8 128'h1) 128'he1000000000000000000000000000000
+      not $t45) in
+      if not $t46 then xor (lshr temp_vector_8 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_8 128'h1) in
       let temp_vector_10 = (let $t51 = (let $t50 = temp_vector_9[0 +: 1] in
-      if eq $t50 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t51 1'h0 then xor (lshr temp_vector_9 128'h1) 128'he1000000000000000000000000000000
+      not $t50) in
+      if not $t51 then xor (lshr temp_vector_9 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_9 128'h1) in
       let temp_vector_11 = (let $t56 = (let $t55 = temp_vector_10[0 +: 1] in
-      if eq $t55 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t56 1'h0 then xor (lshr temp_vector_10 128'h1) 128'he1000000000000000000000000000000
+      not $t55) in
+      if not $t56 then xor (lshr temp_vector_10 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_10 128'h1) in
       let temp_vector_12 = (let $t61 = (let $t60 = temp_vector_11[0 +: 1] in
-      if eq $t60 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t61 1'h0 then xor (lshr temp_vector_11 128'h1) 128'he1000000000000000000000000000000
+      not $t60) in
+      if not $t61 then xor (lshr temp_vector_11 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_11 128'h1) in
       let temp_vector_13 = (let $t66 = (let $t65 = temp_vector_12[0 +: 1] in
-      if eq $t65 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t66 1'h0 then xor (lshr temp_vector_12 128'h1) 128'he1000000000000000000000000000000
+      not $t65) in
+      if not $t66 then xor (lshr temp_vector_12 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_12 128'h1) in
       let temp_vector_14 = (let $t71 = (let $t70 = temp_vector_13[0 +: 1] in
-      if eq $t70 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t71 1'h0 then xor (lshr temp_vector_13 128'h1) 128'he1000000000000000000000000000000
+      not $t70) in
+      if not $t71 then xor (lshr temp_vector_13 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_13 128'h1) in
       let temp_vector_15 = (let $t76 = (let $t75 = temp_vector_14[0 +: 1] in
-      if eq $t75 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t76 1'h0 then xor (lshr temp_vector_14 128'h1) 128'he1000000000000000000000000000000
+      not $t75) in
+      if not $t76 then xor (lshr temp_vector_14 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_14 128'h1) in
       let temp_vector_16 = (let $t81 = (let $t80 = temp_vector_15[0 +: 1] in
-      if eq $t80 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t81 1'h0 then xor (lshr temp_vector_15 128'h1) 128'he1000000000000000000000000000000
+      not $t80) in
+      if not $t81 then xor (lshr temp_vector_15 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_15 128'h1) in
       let temp_vector_17 = (let $t86 = (let $t85 = temp_vector_16[0 +: 1] in
-      if eq $t85 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t86 1'h0 then xor (lshr temp_vector_16 128'h1) 128'he1000000000000000000000000000000
+      not $t85) in
+      if not $t86 then xor (lshr temp_vector_16 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_16 128'h1) in
       let temp_vector_18 = (let $t91 = (let $t90 = temp_vector_17[0 +: 1] in
-      if eq $t90 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t91 1'h0 then xor (lshr temp_vector_17 128'h1) 128'he1000000000000000000000000000000
+      not $t90) in
+      if not $t91 then xor (lshr temp_vector_17 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_17 128'h1) in
       let temp_vector_19 = (let $t96 = (let $t95 = temp_vector_18[0 +: 1] in
-      if eq $t95 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t96 1'h0 then xor (lshr temp_vector_18 128'h1) 128'he1000000000000000000000000000000
+      not $t95) in
+      if not $t96 then xor (lshr temp_vector_18 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_18 128'h1) in
       let temp_vector_20 = (let $t101 = (let $t100 = temp_vector_19[0 +: 1] in
-      if eq $t100 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t101 1'h0 then xor (lshr temp_vector_19 128'h1) 128'he1000000000000000000000000000000
+      not $t100) in
+      if not $t101 then xor (lshr temp_vector_19 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_19 128'h1) in
       let temp_vector_21 = (let $t106 = (let $t105 = temp_vector_20[0 +: 1] in
-      if eq $t105 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t106 1'h0 then xor (lshr temp_vector_20 128'h1) 128'he1000000000000000000000000000000
+      not $t105) in
+      if not $t106 then xor (lshr temp_vector_20 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_20 128'h1) in
       let temp_vector_22 = (let $t111 = (let $t110 = temp_vector_21[0 +: 1] in
-      if eq $t110 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t111 1'h0 then xor (lshr temp_vector_21 128'h1) 128'he1000000000000000000000000000000
+      not $t110) in
+      if not $t111 then xor (lshr temp_vector_21 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_21 128'h1) in
       let temp_vector_23 = (let $t116 = (let $t115 = temp_vector_22[0 +: 1] in
-      if eq $t115 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t116 1'h0 then xor (lshr temp_vector_22 128'h1) 128'he1000000000000000000000000000000
+      not $t115) in
+      if not $t116 then xor (lshr temp_vector_22 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_22 128'h1) in
       let temp_vector_24 = (let $t121 = (let $t120 = temp_vector_23[0 +: 1] in
-      if eq $t120 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t121 1'h0 then xor (lshr temp_vector_23 128'h1) 128'he1000000000000000000000000000000
+      not $t120) in
+      if not $t121 then xor (lshr temp_vector_23 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_23 128'h1) in
       let temp_vector_25 = (let $t126 = (let $t125 = temp_vector_24[0 +: 1] in
-      if eq $t125 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t126 1'h0 then xor (lshr temp_vector_24 128'h1) 128'he1000000000000000000000000000000
+      not $t125) in
+      if not $t126 then xor (lshr temp_vector_24 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_24 128'h1) in
       let temp_vector_26 = (let $t131 = (let $t130 = temp_vector_25[0 +: 1] in
-      if eq $t130 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t131 1'h0 then xor (lshr temp_vector_25 128'h1) 128'he1000000000000000000000000000000
+      not $t130) in
+      if not $t131 then xor (lshr temp_vector_25 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_25 128'h1) in
       let temp_vector_27 = (let $t136 = (let $t135 = temp_vector_26[0 +: 1] in
-      if eq $t135 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t136 1'h0 then xor (lshr temp_vector_26 128'h1) 128'he1000000000000000000000000000000
+      not $t135) in
+      if not $t136 then xor (lshr temp_vector_26 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_26 128'h1) in
       let temp_vector_28 = (let $t141 = (let $t140 = temp_vector_27[0 +: 1] in
-      if eq $t140 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t141 1'h0 then xor (lshr temp_vector_27 128'h1) 128'he1000000000000000000000000000000
+      not $t140) in
+      if not $t141 then xor (lshr temp_vector_27 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_27 128'h1) in
       let temp_vector_29 = (let $t146 = (let $t145 = temp_vector_28[0 +: 1] in
-      if eq $t145 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t146 1'h0 then xor (lshr temp_vector_28 128'h1) 128'he1000000000000000000000000000000
+      not $t145) in
+      if not $t146 then xor (lshr temp_vector_28 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_28 128'h1) in
       let temp_vector_30 = (let $t151 = (let $t150 = temp_vector_29[0 +: 1] in
-      if eq $t150 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t151 1'h0 then xor (lshr temp_vector_29 128'h1) 128'he1000000000000000000000000000000
+      not $t150) in
+      if not $t151 then xor (lshr temp_vector_29 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_29 128'h1) in
       let temp_vector_31 = (let $t156 = (let $t155 = temp_vector_30[0 +: 1] in
-      if eq $t155 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t156 1'h0 then xor (lshr temp_vector_30 128'h1) 128'he1000000000000000000000000000000
+      not $t155) in
+      if not $t156 then xor (lshr temp_vector_30 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_30 128'h1) in
       let temp_vector_32 = (let $t161 = (let $t160 = temp_vector_31[0 +: 1] in
-      if eq $t160 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t161 1'h0 then xor (lshr temp_vector_31 128'h1) 128'he1000000000000000000000000000000
+      not $t160) in
+      if not $t161 then xor (lshr temp_vector_31 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_31 128'h1) in
       let temp_vector_33 = (let $t166 = (let $t165 = temp_vector_32[0 +: 1] in
-      if eq $t165 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t166 1'h0 then xor (lshr temp_vector_32 128'h1) 128'he1000000000000000000000000000000
+      not $t165) in
+      if not $t166 then xor (lshr temp_vector_32 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_32 128'h1) in
       let temp_vector_34 = (let $t171 = (let $t170 = temp_vector_33[0 +: 1] in
-      if eq $t170 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t171 1'h0 then xor (lshr temp_vector_33 128'h1) 128'he1000000000000000000000000000000
+      not $t170) in
+      if not $t171 then xor (lshr temp_vector_33 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_33 128'h1) in
       let temp_vector_35 = (let $t176 = (let $t175 = temp_vector_34[0 +: 1] in
-      if eq $t175 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t176 1'h0 then xor (lshr temp_vector_34 128'h1) 128'he1000000000000000000000000000000
+      not $t175) in
+      if not $t176 then xor (lshr temp_vector_34 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_34 128'h1) in
       let temp_vector_36 = (let $t181 = (let $t180 = temp_vector_35[0 +: 1] in
-      if eq $t180 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t181 1'h0 then xor (lshr temp_vector_35 128'h1) 128'he1000000000000000000000000000000
+      not $t180) in
+      if not $t181 then xor (lshr temp_vector_35 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_35 128'h1) in
       let temp_vector_37 = (let $t186 = (let $t185 = temp_vector_36[0 +: 1] in
-      if eq $t185 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t186 1'h0 then xor (lshr temp_vector_36 128'h1) 128'he1000000000000000000000000000000
+      not $t185) in
+      if not $t186 then xor (lshr temp_vector_36 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_36 128'h1) in
       let temp_vector_38 = (let $t191 = (let $t190 = temp_vector_37[0 +: 1] in
-      if eq $t190 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t191 1'h0 then xor (lshr temp_vector_37 128'h1) 128'he1000000000000000000000000000000
+      not $t190) in
+      if not $t191 then xor (lshr temp_vector_37 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_37 128'h1) in
       let temp_vector_39 = (let $t196 = (let $t195 = temp_vector_38[0 +: 1] in
-      if eq $t195 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t196 1'h0 then xor (lshr temp_vector_38 128'h1) 128'he1000000000000000000000000000000
+      not $t195) in
+      if not $t196 then xor (lshr temp_vector_38 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_38 128'h1) in
       let temp_vector_40 = (let $t201 = (let $t200 = temp_vector_39[0 +: 1] in
-      if eq $t200 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t201 1'h0 then xor (lshr temp_vector_39 128'h1) 128'he1000000000000000000000000000000
+      not $t200) in
+      if not $t201 then xor (lshr temp_vector_39 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_39 128'h1) in
       let temp_vector_41 = (let $t206 = (let $t205 = temp_vector_40[0 +: 1] in
-      if eq $t205 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t206 1'h0 then xor (lshr temp_vector_40 128'h1) 128'he1000000000000000000000000000000
+      not $t205) in
+      if not $t206 then xor (lshr temp_vector_40 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_40 128'h1) in
       let temp_vector_42 = (let $t211 = (let $t210 = temp_vector_41[0 +: 1] in
-      if eq $t210 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t211 1'h0 then xor (lshr temp_vector_41 128'h1) 128'he1000000000000000000000000000000
+      not $t210) in
+      if not $t211 then xor (lshr temp_vector_41 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_41 128'h1) in
       let temp_vector_43 = (let $t216 = (let $t215 = temp_vector_42[0 +: 1] in
-      if eq $t215 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t216 1'h0 then xor (lshr temp_vector_42 128'h1) 128'he1000000000000000000000000000000
+      not $t215) in
+      if not $t216 then xor (lshr temp_vector_42 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_42 128'h1) in
       let temp_vector_44 = (let $t221 = (let $t220 = temp_vector_43[0 +: 1] in
-      if eq $t220 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t221 1'h0 then xor (lshr temp_vector_43 128'h1) 128'he1000000000000000000000000000000
+      not $t220) in
+      if not $t221 then xor (lshr temp_vector_43 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_43 128'h1) in
       let temp_vector_45 = (let $t226 = (let $t225 = temp_vector_44[0 +: 1] in
-      if eq $t225 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t226 1'h0 then xor (lshr temp_vector_44 128'h1) 128'he1000000000000000000000000000000
+      not $t225) in
+      if not $t226 then xor (lshr temp_vector_44 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_44 128'h1) in
       let temp_vector_46 = (let $t231 = (let $t230 = temp_vector_45[0 +: 1] in
-      if eq $t230 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t231 1'h0 then xor (lshr temp_vector_45 128'h1) 128'he1000000000000000000000000000000
+      not $t230) in
+      if not $t231 then xor (lshr temp_vector_45 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_45 128'h1) in
       let temp_vector_47 = (let $t236 = (let $t235 = temp_vector_46[0 +: 1] in
-      if eq $t235 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t236 1'h0 then xor (lshr temp_vector_46 128'h1) 128'he1000000000000000000000000000000
+      not $t235) in
+      if not $t236 then xor (lshr temp_vector_46 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_46 128'h1) in
       let temp_vector_48 = (let $t241 = (let $t240 = temp_vector_47[0 +: 1] in
-      if eq $t240 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t241 1'h0 then xor (lshr temp_vector_47 128'h1) 128'he1000000000000000000000000000000
+      not $t240) in
+      if not $t241 then xor (lshr temp_vector_47 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_47 128'h1) in
       let temp_vector_49 = (let $t246 = (let $t245 = temp_vector_48[0 +: 1] in
-      if eq $t245 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t246 1'h0 then xor (lshr temp_vector_48 128'h1) 128'he1000000000000000000000000000000
+      not $t245) in
+      if not $t246 then xor (lshr temp_vector_48 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_48 128'h1) in
       let temp_vector_50 = (let $t251 = (let $t250 = temp_vector_49[0 +: 1] in
-      if eq $t250 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t251 1'h0 then xor (lshr temp_vector_49 128'h1) 128'he1000000000000000000000000000000
+      not $t250) in
+      if not $t251 then xor (lshr temp_vector_49 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_49 128'h1) in
       let temp_vector_51 = (let $t256 = (let $t255 = temp_vector_50[0 +: 1] in
-      if eq $t255 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t256 1'h0 then xor (lshr temp_vector_50 128'h1) 128'he1000000000000000000000000000000
+      not $t255) in
+      if not $t256 then xor (lshr temp_vector_50 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_50 128'h1) in
       let temp_vector_52 = (let $t261 = (let $t260 = temp_vector_51[0 +: 1] in
-      if eq $t260 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t261 1'h0 then xor (lshr temp_vector_51 128'h1) 128'he1000000000000000000000000000000
+      not $t260) in
+      if not $t261 then xor (lshr temp_vector_51 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_51 128'h1) in
       let temp_vector_53 = (let $t266 = (let $t265 = temp_vector_52[0 +: 1] in
-      if eq $t265 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t266 1'h0 then xor (lshr temp_vector_52 128'h1) 128'he1000000000000000000000000000000
+      not $t265) in
+      if not $t266 then xor (lshr temp_vector_52 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_52 128'h1) in
       let temp_vector_54 = (let $t271 = (let $t270 = temp_vector_53[0 +: 1] in
-      if eq $t270 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t271 1'h0 then xor (lshr temp_vector_53 128'h1) 128'he1000000000000000000000000000000
+      not $t270) in
+      if not $t271 then xor (lshr temp_vector_53 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_53 128'h1) in
       let temp_vector_55 = (let $t276 = (let $t275 = temp_vector_54[0 +: 1] in
-      if eq $t275 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t276 1'h0 then xor (lshr temp_vector_54 128'h1) 128'he1000000000000000000000000000000
+      not $t275) in
+      if not $t276 then xor (lshr temp_vector_54 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_54 128'h1) in
       let temp_vector_56 = (let $t281 = (let $t280 = temp_vector_55[0 +: 1] in
-      if eq $t280 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t281 1'h0 then xor (lshr temp_vector_55 128'h1) 128'he1000000000000000000000000000000
+      not $t280) in
+      if not $t281 then xor (lshr temp_vector_55 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_55 128'h1) in
       let temp_vector_57 = (let $t286 = (let $t285 = temp_vector_56[0 +: 1] in
-      if eq $t285 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t286 1'h0 then xor (lshr temp_vector_56 128'h1) 128'he1000000000000000000000000000000
+      not $t285) in
+      if not $t286 then xor (lshr temp_vector_56 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_56 128'h1) in
       let temp_vector_58 = (let $t291 = (let $t290 = temp_vector_57[0 +: 1] in
-      if eq $t290 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t291 1'h0 then xor (lshr temp_vector_57 128'h1) 128'he1000000000000000000000000000000
+      not $t290) in
+      if not $t291 then xor (lshr temp_vector_57 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_57 128'h1) in
       let temp_vector_59 = (let $t296 = (let $t295 = temp_vector_58[0 +: 1] in
-      if eq $t295 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t296 1'h0 then xor (lshr temp_vector_58 128'h1) 128'he1000000000000000000000000000000
+      not $t295) in
+      if not $t296 then xor (lshr temp_vector_58 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_58 128'h1) in
       let temp_vector_60 = (let $t301 = (let $t300 = temp_vector_59[0 +: 1] in
-      if eq $t300 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t301 1'h0 then xor (lshr temp_vector_59 128'h1) 128'he1000000000000000000000000000000
+      not $t300) in
+      if not $t301 then xor (lshr temp_vector_59 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_59 128'h1) in
       let temp_vector_61 = (let $t306 = (let $t305 = temp_vector_60[0 +: 1] in
-      if eq $t305 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t306 1'h0 then xor (lshr temp_vector_60 128'h1) 128'he1000000000000000000000000000000
+      not $t305) in
+      if not $t306 then xor (lshr temp_vector_60 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_60 128'h1) in
       let temp_vector_62 = (let $t311 = (let $t310 = temp_vector_61[0 +: 1] in
-      if eq $t310 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t311 1'h0 then xor (lshr temp_vector_61 128'h1) 128'he1000000000000000000000000000000
+      not $t310) in
+      if not $t311 then xor (lshr temp_vector_61 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_61 128'h1) in
       let temp_vector_63 = (let $t316 = (let $t315 = temp_vector_62[0 +: 1] in
-      if eq $t315 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t316 1'h0 then xor (lshr temp_vector_62 128'h1) 128'he1000000000000000000000000000000
+      not $t315) in
+      if not $t316 then xor (lshr temp_vector_62 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_62 128'h1) in
       let temp_vector_64 = (let $t321 = (let $t320 = temp_vector_63[0 +: 1] in
-      if eq $t320 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t321 1'h0 then xor (lshr temp_vector_63 128'h1) 128'he1000000000000000000000000000000
+      not $t320) in
+      if not $t321 then xor (lshr temp_vector_63 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_63 128'h1) in
       let temp_vector_65 = (let $t326 = (let $t325 = temp_vector_64[0 +: 1] in
-      if eq $t325 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t326 1'h0 then xor (lshr temp_vector_64 128'h1) 128'he1000000000000000000000000000000
+      not $t325) in
+      if not $t326 then xor (lshr temp_vector_64 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_64 128'h1) in
       let temp_vector_66 = (let $t331 = (let $t330 = temp_vector_65[0 +: 1] in
-      if eq $t330 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t331 1'h0 then xor (lshr temp_vector_65 128'h1) 128'he1000000000000000000000000000000
+      not $t330) in
+      if not $t331 then xor (lshr temp_vector_65 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_65 128'h1) in
       let temp_vector_67 = (let $t336 = (let $t335 = temp_vector_66[0 +: 1] in
-      if eq $t335 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t336 1'h0 then xor (lshr temp_vector_66 128'h1) 128'he1000000000000000000000000000000
+      not $t335) in
+      if not $t336 then xor (lshr temp_vector_66 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_66 128'h1) in
       let temp_vector_68 = (let $t341 = (let $t340 = temp_vector_67[0 +: 1] in
-      if eq $t340 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t341 1'h0 then xor (lshr temp_vector_67 128'h1) 128'he1000000000000000000000000000000
+      not $t340) in
+      if not $t341 then xor (lshr temp_vector_67 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_67 128'h1) in
       let temp_vector_69 = (let $t346 = (let $t345 = temp_vector_68[0 +: 1] in
-      if eq $t345 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t346 1'h0 then xor (lshr temp_vector_68 128'h1) 128'he1000000000000000000000000000000
+      not $t345) in
+      if not $t346 then xor (lshr temp_vector_68 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_68 128'h1) in
       let temp_vector_70 = (let $t351 = (let $t350 = temp_vector_69[0 +: 1] in
-      if eq $t350 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t351 1'h0 then xor (lshr temp_vector_69 128'h1) 128'he1000000000000000000000000000000
+      not $t350) in
+      if not $t351 then xor (lshr temp_vector_69 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_69 128'h1) in
       let temp_vector_71 = (let $t356 = (let $t355 = temp_vector_70[0 +: 1] in
-      if eq $t355 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t356 1'h0 then xor (lshr temp_vector_70 128'h1) 128'he1000000000000000000000000000000
+      not $t355) in
+      if not $t356 then xor (lshr temp_vector_70 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_70 128'h1) in
       let temp_vector_72 = (let $t361 = (let $t360 = temp_vector_71[0 +: 1] in
-      if eq $t360 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t361 1'h0 then xor (lshr temp_vector_71 128'h1) 128'he1000000000000000000000000000000
+      not $t360) in
+      if not $t361 then xor (lshr temp_vector_71 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_71 128'h1) in
       let temp_vector_73 = (let $t366 = (let $t365 = temp_vector_72[0 +: 1] in
-      if eq $t365 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t366 1'h0 then xor (lshr temp_vector_72 128'h1) 128'he1000000000000000000000000000000
+      not $t365) in
+      if not $t366 then xor (lshr temp_vector_72 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_72 128'h1) in
       let temp_vector_74 = (let $t371 = (let $t370 = temp_vector_73[0 +: 1] in
-      if eq $t370 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t371 1'h0 then xor (lshr temp_vector_73 128'h1) 128'he1000000000000000000000000000000
+      not $t370) in
+      if not $t371 then xor (lshr temp_vector_73 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_73 128'h1) in
       let temp_vector_75 = (let $t376 = (let $t375 = temp_vector_74[0 +: 1] in
-      if eq $t375 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t376 1'h0 then xor (lshr temp_vector_74 128'h1) 128'he1000000000000000000000000000000
+      not $t375) in
+      if not $t376 then xor (lshr temp_vector_74 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_74 128'h1) in
       let temp_vector_76 = (let $t381 = (let $t380 = temp_vector_75[0 +: 1] in
-      if eq $t380 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t381 1'h0 then xor (lshr temp_vector_75 128'h1) 128'he1000000000000000000000000000000
+      not $t380) in
+      if not $t381 then xor (lshr temp_vector_75 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_75 128'h1) in
       let temp_vector_77 = (let $t386 = (let $t385 = temp_vector_76[0 +: 1] in
-      if eq $t385 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t386 1'h0 then xor (lshr temp_vector_76 128'h1) 128'he1000000000000000000000000000000
+      not $t385) in
+      if not $t386 then xor (lshr temp_vector_76 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_76 128'h1) in
       let temp_vector_78 = (let $t391 = (let $t390 = temp_vector_77[0 +: 1] in
-      if eq $t390 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t391 1'h0 then xor (lshr temp_vector_77 128'h1) 128'he1000000000000000000000000000000
+      not $t390) in
+      if not $t391 then xor (lshr temp_vector_77 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_77 128'h1) in
       let temp_vector_79 = (let $t396 = (let $t395 = temp_vector_78[0 +: 1] in
-      if eq $t395 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t396 1'h0 then xor (lshr temp_vector_78 128'h1) 128'he1000000000000000000000000000000
+      not $t395) in
+      if not $t396 then xor (lshr temp_vector_78 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_78 128'h1) in
       let temp_vector_80 = (let $t401 = (let $t400 = temp_vector_79[0 +: 1] in
-      if eq $t400 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t401 1'h0 then xor (lshr temp_vector_79 128'h1) 128'he1000000000000000000000000000000
+      not $t400) in
+      if not $t401 then xor (lshr temp_vector_79 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_79 128'h1) in
       let temp_vector_81 = (let $t406 = (let $t405 = temp_vector_80[0 +: 1] in
-      if eq $t405 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t406 1'h0 then xor (lshr temp_vector_80 128'h1) 128'he1000000000000000000000000000000
+      not $t405) in
+      if not $t406 then xor (lshr temp_vector_80 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_80 128'h1) in
       let temp_vector_82 = (let $t411 = (let $t410 = temp_vector_81[0 +: 1] in
-      if eq $t410 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t411 1'h0 then xor (lshr temp_vector_81 128'h1) 128'he1000000000000000000000000000000
+      not $t410) in
+      if not $t411 then xor (lshr temp_vector_81 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_81 128'h1) in
       let temp_vector_83 = (let $t416 = (let $t415 = temp_vector_82[0 +: 1] in
-      if eq $t415 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t416 1'h0 then xor (lshr temp_vector_82 128'h1) 128'he1000000000000000000000000000000
+      not $t415) in
+      if not $t416 then xor (lshr temp_vector_82 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_82 128'h1) in
       let temp_vector_84 = (let $t421 = (let $t420 = temp_vector_83[0 +: 1] in
-      if eq $t420 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t421 1'h0 then xor (lshr temp_vector_83 128'h1) 128'he1000000000000000000000000000000
+      not $t420) in
+      if not $t421 then xor (lshr temp_vector_83 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_83 128'h1) in
       let temp_vector_85 = (let $t426 = (let $t425 = temp_vector_84[0 +: 1] in
-      if eq $t425 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t426 1'h0 then xor (lshr temp_vector_84 128'h1) 128'he1000000000000000000000000000000
+      not $t425) in
+      if not $t426 then xor (lshr temp_vector_84 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_84 128'h1) in
       let temp_vector_86 = (let $t431 = (let $t430 = temp_vector_85[0 +: 1] in
-      if eq $t430 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t431 1'h0 then xor (lshr temp_vector_85 128'h1) 128'he1000000000000000000000000000000
+      not $t430) in
+      if not $t431 then xor (lshr temp_vector_85 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_85 128'h1) in
       let temp_vector_87 = (let $t436 = (let $t435 = temp_vector_86[0 +: 1] in
-      if eq $t435 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t436 1'h0 then xor (lshr temp_vector_86 128'h1) 128'he1000000000000000000000000000000
+      not $t435) in
+      if not $t436 then xor (lshr temp_vector_86 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_86 128'h1) in
       let temp_vector_88 = (let $t441 = (let $t440 = temp_vector_87[0 +: 1] in
-      if eq $t440 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t441 1'h0 then xor (lshr temp_vector_87 128'h1) 128'he1000000000000000000000000000000
+      not $t440) in
+      if not $t441 then xor (lshr temp_vector_87 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_87 128'h1) in
       let temp_vector_89 = (let $t446 = (let $t445 = temp_vector_88[0 +: 1] in
-      if eq $t445 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t446 1'h0 then xor (lshr temp_vector_88 128'h1) 128'he1000000000000000000000000000000
+      not $t445) in
+      if not $t446 then xor (lshr temp_vector_88 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_88 128'h1) in
       let temp_vector_90 = (let $t451 = (let $t450 = temp_vector_89[0 +: 1] in
-      if eq $t450 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t451 1'h0 then xor (lshr temp_vector_89 128'h1) 128'he1000000000000000000000000000000
+      not $t450) in
+      if not $t451 then xor (lshr temp_vector_89 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_89 128'h1) in
       let temp_vector_91 = (let $t456 = (let $t455 = temp_vector_90[0 +: 1] in
-      if eq $t455 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t456 1'h0 then xor (lshr temp_vector_90 128'h1) 128'he1000000000000000000000000000000
+      not $t455) in
+      if not $t456 then xor (lshr temp_vector_90 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_90 128'h1) in
       let temp_vector_92 = (let $t461 = (let $t460 = temp_vector_91[0 +: 1] in
-      if eq $t460 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t461 1'h0 then xor (lshr temp_vector_91 128'h1) 128'he1000000000000000000000000000000
+      not $t460) in
+      if not $t461 then xor (lshr temp_vector_91 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_91 128'h1) in
       let temp_vector_93 = (let $t466 = (let $t465 = temp_vector_92[0 +: 1] in
-      if eq $t465 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t466 1'h0 then xor (lshr temp_vector_92 128'h1) 128'he1000000000000000000000000000000
+      not $t465) in
+      if not $t466 then xor (lshr temp_vector_92 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_92 128'h1) in
       let temp_vector_94 = (let $t471 = (let $t470 = temp_vector_93[0 +: 1] in
-      if eq $t470 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t471 1'h0 then xor (lshr temp_vector_93 128'h1) 128'he1000000000000000000000000000000
+      not $t470) in
+      if not $t471 then xor (lshr temp_vector_93 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_93 128'h1) in
       let temp_vector_95 = (let $t476 = (let $t475 = temp_vector_94[0 +: 1] in
-      if eq $t475 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t476 1'h0 then xor (lshr temp_vector_94 128'h1) 128'he1000000000000000000000000000000
+      not $t475) in
+      if not $t476 then xor (lshr temp_vector_94 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_94 128'h1) in
       let temp_vector_96 = (let $t481 = (let $t480 = temp_vector_95[0 +: 1] in
-      if eq $t480 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t481 1'h0 then xor (lshr temp_vector_95 128'h1) 128'he1000000000000000000000000000000
+      not $t480) in
+      if not $t481 then xor (lshr temp_vector_95 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_95 128'h1) in
       let temp_vector_97 = (let $t486 = (let $t485 = temp_vector_96[0 +: 1] in
-      if eq $t485 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t486 1'h0 then xor (lshr temp_vector_96 128'h1) 128'he1000000000000000000000000000000
+      not $t485) in
+      if not $t486 then xor (lshr temp_vector_96 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_96 128'h1) in
       let temp_vector_98 = (let $t491 = (let $t490 = temp_vector_97[0 +: 1] in
-      if eq $t490 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t491 1'h0 then xor (lshr temp_vector_97 128'h1) 128'he1000000000000000000000000000000
+      not $t490) in
+      if not $t491 then xor (lshr temp_vector_97 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_97 128'h1) in
       let temp_vector_99 = (let $t496 = (let $t495 = temp_vector_98[0 +: 1] in
-      if eq $t495 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t496 1'h0 then xor (lshr temp_vector_98 128'h1) 128'he1000000000000000000000000000000
+      not $t495) in
+      if not $t496 then xor (lshr temp_vector_98 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_98 128'h1) in
       let temp_vector_100 = (let $t501 = (let $t500 = temp_vector_99[0 +: 1] in
-      if eq $t500 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t501 1'h0 then xor (lshr temp_vector_99 128'h1) 128'he1000000000000000000000000000000
+      not $t500) in
+      if not $t501 then xor (lshr temp_vector_99 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_99 128'h1) in
       let temp_vector_101 = (let $t506 = (let $t505 = temp_vector_100[0 +: 1] in
-      if eq $t505 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t506 1'h0 then xor (lshr temp_vector_100 128'h1) 128'he1000000000000000000000000000000
+      not $t505) in
+      if not $t506 then xor (lshr temp_vector_100 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_100 128'h1) in
       let temp_vector_102 = (let $t511 = (let $t510 = temp_vector_101[0 +: 1] in
-      if eq $t510 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t511 1'h0 then xor (lshr temp_vector_101 128'h1) 128'he1000000000000000000000000000000
+      not $t510) in
+      if not $t511 then xor (lshr temp_vector_101 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_101 128'h1) in
       let temp_vector_103 = (let $t516 = (let $t515 = temp_vector_102[0 +: 1] in
-      if eq $t515 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t516 1'h0 then xor (lshr temp_vector_102 128'h1) 128'he1000000000000000000000000000000
+      not $t515) in
+      if not $t516 then xor (lshr temp_vector_102 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_102 128'h1) in
       let temp_vector_104 = (let $t521 = (let $t520 = temp_vector_103[0 +: 1] in
-      if eq $t520 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t521 1'h0 then xor (lshr temp_vector_103 128'h1) 128'he1000000000000000000000000000000
+      not $t520) in
+      if not $t521 then xor (lshr temp_vector_103 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_103 128'h1) in
       let temp_vector_105 = (let $t526 = (let $t525 = temp_vector_104[0 +: 1] in
-      if eq $t525 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t526 1'h0 then xor (lshr temp_vector_104 128'h1) 128'he1000000000000000000000000000000
+      not $t525) in
+      if not $t526 then xor (lshr temp_vector_104 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_104 128'h1) in
       let temp_vector_106 = (let $t531 = (let $t530 = temp_vector_105[0 +: 1] in
-      if eq $t530 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t531 1'h0 then xor (lshr temp_vector_105 128'h1) 128'he1000000000000000000000000000000
+      not $t530) in
+      if not $t531 then xor (lshr temp_vector_105 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_105 128'h1) in
       let temp_vector_107 = (let $t536 = (let $t535 = temp_vector_106[0 +: 1] in
-      if eq $t535 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t536 1'h0 then xor (lshr temp_vector_106 128'h1) 128'he1000000000000000000000000000000
+      not $t535) in
+      if not $t536 then xor (lshr temp_vector_106 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_106 128'h1) in
       let temp_vector_108 = (let $t541 = (let $t540 = temp_vector_107[0 +: 1] in
-      if eq $t540 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t541 1'h0 then xor (lshr temp_vector_107 128'h1) 128'he1000000000000000000000000000000
+      not $t540) in
+      if not $t541 then xor (lshr temp_vector_107 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_107 128'h1) in
       let temp_vector_109 = (let $t546 = (let $t545 = temp_vector_108[0 +: 1] in
-      if eq $t545 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t546 1'h0 then xor (lshr temp_vector_108 128'h1) 128'he1000000000000000000000000000000
+      not $t545) in
+      if not $t546 then xor (lshr temp_vector_108 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_108 128'h1) in
       let temp_vector_110 = (let $t551 = (let $t550 = temp_vector_109[0 +: 1] in
-      if eq $t550 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t551 1'h0 then xor (lshr temp_vector_109 128'h1) 128'he1000000000000000000000000000000
+      not $t550) in
+      if not $t551 then xor (lshr temp_vector_109 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_109 128'h1) in
       let temp_vector_111 = (let $t556 = (let $t555 = temp_vector_110[0 +: 1] in
-      if eq $t555 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t556 1'h0 then xor (lshr temp_vector_110 128'h1) 128'he1000000000000000000000000000000
+      not $t555) in
+      if not $t556 then xor (lshr temp_vector_110 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_110 128'h1) in
       let temp_vector_112 = (let $t561 = (let $t560 = temp_vector_111[0 +: 1] in
-      if eq $t560 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t561 1'h0 then xor (lshr temp_vector_111 128'h1) 128'he1000000000000000000000000000000
+      not $t560) in
+      if not $t561 then xor (lshr temp_vector_111 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_111 128'h1) in
       let temp_vector_113 = (let $t566 = (let $t565 = temp_vector_112[0 +: 1] in
-      if eq $t565 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t566 1'h0 then xor (lshr temp_vector_112 128'h1) 128'he1000000000000000000000000000000
+      not $t565) in
+      if not $t566 then xor (lshr temp_vector_112 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_112 128'h1) in
       let temp_vector_114 = (let $t571 = (let $t570 = temp_vector_113[0 +: 1] in
-      if eq $t570 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t571 1'h0 then xor (lshr temp_vector_113 128'h1) 128'he1000000000000000000000000000000
+      not $t570) in
+      if not $t571 then xor (lshr temp_vector_113 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_113 128'h1) in
       let temp_vector_115 = (let $t576 = (let $t575 = temp_vector_114[0 +: 1] in
-      if eq $t575 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t576 1'h0 then xor (lshr temp_vector_114 128'h1) 128'he1000000000000000000000000000000
+      not $t575) in
+      if not $t576 then xor (lshr temp_vector_114 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_114 128'h1) in
       let temp_vector_116 = (let $t581 = (let $t580 = temp_vector_115[0 +: 1] in
-      if eq $t580 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t581 1'h0 then xor (lshr temp_vector_115 128'h1) 128'he1000000000000000000000000000000
+      not $t580) in
+      if not $t581 then xor (lshr temp_vector_115 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_115 128'h1) in
       let temp_vector_117 = (let $t586 = (let $t585 = temp_vector_116[0 +: 1] in
-      if eq $t585 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t586 1'h0 then xor (lshr temp_vector_116 128'h1) 128'he1000000000000000000000000000000
+      not $t585) in
+      if not $t586 then xor (lshr temp_vector_116 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_116 128'h1) in
       let temp_vector_118 = (let $t591 = (let $t590 = temp_vector_117[0 +: 1] in
-      if eq $t590 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t591 1'h0 then xor (lshr temp_vector_117 128'h1) 128'he1000000000000000000000000000000
+      not $t590) in
+      if not $t591 then xor (lshr temp_vector_117 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_117 128'h1) in
       let temp_vector_119 = (let $t596 = (let $t595 = temp_vector_118[0 +: 1] in
-      if eq $t595 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t596 1'h0 then xor (lshr temp_vector_118 128'h1) 128'he1000000000000000000000000000000
+      not $t595) in
+      if not $t596 then xor (lshr temp_vector_118 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_118 128'h1) in
       let temp_vector_120 = (let $t601 = (let $t600 = temp_vector_119[0 +: 1] in
-      if eq $t600 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t601 1'h0 then xor (lshr temp_vector_119 128'h1) 128'he1000000000000000000000000000000
+      not $t600) in
+      if not $t601 then xor (lshr temp_vector_119 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_119 128'h1) in
       let temp_vector_121 = (let $t606 = (let $t605 = temp_vector_120[0 +: 1] in
-      if eq $t605 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t606 1'h0 then xor (lshr temp_vector_120 128'h1) 128'he1000000000000000000000000000000
+      not $t605) in
+      if not $t606 then xor (lshr temp_vector_120 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_120 128'h1) in
       let temp_vector_122 = (let $t611 = (let $t610 = temp_vector_121[0 +: 1] in
-      if eq $t610 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t611 1'h0 then xor (lshr temp_vector_121 128'h1) 128'he1000000000000000000000000000000
+      not $t610) in
+      if not $t611 then xor (lshr temp_vector_121 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_121 128'h1) in
       let temp_vector_123 = (let $t616 = (let $t615 = temp_vector_122[0 +: 1] in
-      if eq $t615 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t616 1'h0 then xor (lshr temp_vector_122 128'h1) 128'he1000000000000000000000000000000
+      not $t615) in
+      if not $t616 then xor (lshr temp_vector_122 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_122 128'h1) in
       let temp_vector_124 = (let $t621 = (let $t620 = temp_vector_123[0 +: 1] in
-      if eq $t620 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t621 1'h0 then xor (lshr temp_vector_123 128'h1) 128'he1000000000000000000000000000000
+      not $t620) in
+      if not $t621 then xor (lshr temp_vector_123 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_123 128'h1) in
       let temp_vector_125 = (let $t626 = (let $t625 = temp_vector_124[0 +: 1] in
-      if eq $t625 1'h1 then 1'h0
-            else 1'h1) in
-      if eq $t626 1'h0 then xor (lshr temp_vector_124 128'h1) 128'he1000000000000000000000000000000
+      not $t625) in
+      if not $t626 then xor (lshr temp_vector_124 128'h1) 128'he1000000000000000000000000000000
             else lshr temp_vector_124 128'h1) in
       let accumulation_vector_0 = (let $t630 = input_b[127 +: 1] in
-      if eq $t630 1'h0 then 128'h0
+      if not $t630 then 128'h0
             else xor 128'h0 input_a) in
       let accumulation_vector_1 = (let $t632 = input_b[126 +: 1] in
-      if eq $t632 1'h0 then accumulation_vector_0
+      if not $t632 then accumulation_vector_0
             else xor accumulation_vector_0 temp_vector_0) in
       let accumulation_vector_2 = (let $t634 = input_b[125 +: 1] in
-      if eq $t634 1'h0 then accumulation_vector_1
+      if not $t634 then accumulation_vector_1
             else xor accumulation_vector_1 temp_vector_1) in
       let accumulation_vector_3 = (let $t636 = input_b[124 +: 1] in
-      if eq $t636 1'h0 then accumulation_vector_2
+      if not $t636 then accumulation_vector_2
             else xor accumulation_vector_2 temp_vector_2) in
       let accumulation_vector_4 = (let $t638 = input_b[123 +: 1] in
-      if eq $t638 1'h0 then accumulation_vector_3
+      if not $t638 then accumulation_vector_3
             else xor accumulation_vector_3 temp_vector_3) in
       let accumulation_vector_5 = (let $t640 = input_b[122 +: 1] in
-      if eq $t640 1'h0 then accumulation_vector_4
+      if not $t640 then accumulation_vector_4
             else xor accumulation_vector_4 temp_vector_4) in
       let accumulation_vector_6 = (let $t642 = input_b[121 +: 1] in
-      if eq $t642 1'h0 then accumulation_vector_5
+      if not $t642 then accumulation_vector_5
             else xor accumulation_vector_5 temp_vector_5) in
       let accumulation_vector_7 = (let $t644 = input_b[120 +: 1] in
-      if eq $t644 1'h0 then accumulation_vector_6
+      if not $t644 then accumulation_vector_6
             else xor accumulation_vector_6 temp_vector_6) in
       let accumulation_vector_8 = (let $t646 = input_b[119 +: 1] in
-      if eq $t646 1'h0 then accumulation_vector_7
+      if not $t646 then accumulation_vector_7
             else xor accumulation_vector_7 temp_vector_7) in
       let accumulation_vector_9 = (let $t648 = input_b[118 +: 1] in
-      if eq $t648 1'h0 then accumulation_vector_8
+      if not $t648 then accumulation_vector_8
             else xor accumulation_vector_8 temp_vector_8) in
       let accumulation_vector_10 = (let $t650 = input_b[117 +: 1] in
-      if eq $t650 1'h0 then accumulation_vector_9
+      if not $t650 then accumulation_vector_9
             else xor accumulation_vector_9 temp_vector_9) in
       let accumulation_vector_11 = (let $t652 = input_b[116 +: 1] in
-      if eq $t652 1'h0 then accumulation_vector_10
+      if not $t652 then accumulation_vector_10
             else xor accumulation_vector_10 temp_vector_10) in
       let accumulation_vector_12 = (let $t654 = input_b[115 +: 1] in
-      if eq $t654 1'h0 then accumulation_vector_11
+      if not $t654 then accumulation_vector_11
             else xor accumulation_vector_11 temp_vector_11) in
       let accumulation_vector_13 = (let $t656 = input_b[114 +: 1] in
-      if eq $t656 1'h0 then accumulation_vector_12
+      if not $t656 then accumulation_vector_12
             else xor accumulation_vector_12 temp_vector_12) in
       let accumulation_vector_14 = (let $t658 = input_b[113 +: 1] in
-      if eq $t658 1'h0 then accumulation_vector_13
+      if not $t658 then accumulation_vector_13
             else xor accumulation_vector_13 temp_vector_13) in
       let accumulation_vector_15 = (let $t660 = input_b[112 +: 1] in
-      if eq $t660 1'h0 then accumulation_vector_14
+      if not $t660 then accumulation_vector_14
             else xor accumulation_vector_14 temp_vector_14) in
       let accumulation_vector_16 = (let $t662 = input_b[111 +: 1] in
-      if eq $t662 1'h0 then accumulation_vector_15
+      if not $t662 then accumulation_vector_15
             else xor accumulation_vector_15 temp_vector_15) in
       let accumulation_vector_17 = (let $t664 = input_b[110 +: 1] in
-      if eq $t664 1'h0 then accumulation_vector_16
+      if not $t664 then accumulation_vector_16
             else xor accumulation_vector_16 temp_vector_16) in
       let accumulation_vector_18 = (let $t666 = input_b[109 +: 1] in
-      if eq $t666 1'h0 then accumulation_vector_17
+      if not $t666 then accumulation_vector_17
             else xor accumulation_vector_17 temp_vector_17) in
       let accumulation_vector_19 = (let $t668 = input_b[108 +: 1] in
-      if eq $t668 1'h0 then accumulation_vector_18
+      if not $t668 then accumulation_vector_18
             else xor accumulation_vector_18 temp_vector_18) in
       let accumulation_vector_20 = (let $t670 = input_b[107 +: 1] in
-      if eq $t670 1'h0 then accumulation_vector_19
+      if not $t670 then accumulation_vector_19
             else xor accumulation_vector_19 temp_vector_19) in
       let accumulation_vector_21 = (let $t672 = input_b[106 +: 1] in
-      if eq $t672 1'h0 then accumulation_vector_20
+      if not $t672 then accumulation_vector_20
             else xor accumulation_vector_20 temp_vector_20) in
       let accumulation_vector_22 = (let $t674 = input_b[105 +: 1] in
-      if eq $t674 1'h0 then accumulation_vector_21
+      if not $t674 then accumulation_vector_21
             else xor accumulation_vector_21 temp_vector_21) in
       let accumulation_vector_23 = (let $t676 = input_b[104 +: 1] in
-      if eq $t676 1'h0 then accumulation_vector_22
+      if not $t676 then accumulation_vector_22
             else xor accumulation_vector_22 temp_vector_22) in
       let accumulation_vector_24 = (let $t678 = input_b[103 +: 1] in
-      if eq $t678 1'h0 then accumulation_vector_23
+      if not $t678 then accumulation_vector_23
             else xor accumulation_vector_23 temp_vector_23) in
       let accumulation_vector_25 = (let $t680 = input_b[102 +: 1] in
-      if eq $t680 1'h0 then accumulation_vector_24
+      if not $t680 then accumulation_vector_24
             else xor accumulation_vector_24 temp_vector_24) in
       let accumulation_vector_26 = (let $t682 = input_b[101 +: 1] in
-      if eq $t682 1'h0 then accumulation_vector_25
+      if not $t682 then accumulation_vector_25
             else xor accumulation_vector_25 temp_vector_25) in
       let accumulation_vector_27 = (let $t684 = input_b[100 +: 1] in
-      if eq $t684 1'h0 then accumulation_vector_26
+      if not $t684 then accumulation_vector_26
             else xor accumulation_vector_26 temp_vector_26) in
       let accumulation_vector_28 = (let $t686 = input_b[99 +: 1] in
-      if eq $t686 1'h0 then accumulation_vector_27
+      if not $t686 then accumulation_vector_27
             else xor accumulation_vector_27 temp_vector_27) in
       let accumulation_vector_29 = (let $t688 = input_b[98 +: 1] in
-      if eq $t688 1'h0 then accumulation_vector_28
+      if not $t688 then accumulation_vector_28
             else xor accumulation_vector_28 temp_vector_28) in
       let accumulation_vector_30 = (let $t690 = input_b[97 +: 1] in
-      if eq $t690 1'h0 then accumulation_vector_29
+      if not $t690 then accumulation_vector_29
             else xor accumulation_vector_29 temp_vector_29) in
       let accumulation_vector_31 = (let $t692 = input_b[96 +: 1] in
-      if eq $t692 1'h0 then accumulation_vector_30
+      if not $t692 then accumulation_vector_30
             else xor accumulation_vector_30 temp_vector_30) in
       let accumulation_vector_32 = (let $t694 = input_b[95 +: 1] in
-      if eq $t694 1'h0 then accumulation_vector_31
+      if not $t694 then accumulation_vector_31
             else xor accumulation_vector_31 temp_vector_31) in
       let accumulation_vector_33 = (let $t696 = input_b[94 +: 1] in
-      if eq $t696 1'h0 then accumulation_vector_32
+      if not $t696 then accumulation_vector_32
             else xor accumulation_vector_32 temp_vector_32) in
       let accumulation_vector_34 = (let $t698 = input_b[93 +: 1] in
-      if eq $t698 1'h0 then accumulation_vector_33
+      if not $t698 then accumulation_vector_33
             else xor accumulation_vector_33 temp_vector_33) in
       let accumulation_vector_35 = (let $t700 = input_b[92 +: 1] in
-      if eq $t700 1'h0 then accumulation_vector_34
+      if not $t700 then accumulation_vector_34
             else xor accumulation_vector_34 temp_vector_34) in
       let accumulation_vector_36 = (let $t702 = input_b[91 +: 1] in
-      if eq $t702 1'h0 then accumulation_vector_35
+      if not $t702 then accumulation_vector_35
             else xor accumulation_vector_35 temp_vector_35) in
       let accumulation_vector_37 = (let $t704 = input_b[90 +: 1] in
-      if eq $t704 1'h0 then accumulation_vector_36
+      if not $t704 then accumulation_vector_36
             else xor accumulation_vector_36 temp_vector_36) in
       let accumulation_vector_38 = (let $t706 = input_b[89 +: 1] in
-      if eq $t706 1'h0 then accumulation_vector_37
+      if not $t706 then accumulation_vector_37
             else xor accumulation_vector_37 temp_vector_37) in
       let accumulation_vector_39 = (let $t708 = input_b[88 +: 1] in
-      if eq $t708 1'h0 then accumulation_vector_38
+      if not $t708 then accumulation_vector_38
             else xor accumulation_vector_38 temp_vector_38) in
       let accumulation_vector_40 = (let $t710 = input_b[87 +: 1] in
-      if eq $t710 1'h0 then accumulation_vector_39
+      if not $t710 then accumulation_vector_39
             else xor accumulation_vector_39 temp_vector_39) in
       let accumulation_vector_41 = (let $t712 = input_b[86 +: 1] in
-      if eq $t712 1'h0 then accumulation_vector_40
+      if not $t712 then accumulation_vector_40
             else xor accumulation_vector_40 temp_vector_40) in
       let accumulation_vector_42 = (let $t714 = input_b[85 +: 1] in
-      if eq $t714 1'h0 then accumulation_vector_41
+      if not $t714 then accumulation_vector_41
             else xor accumulation_vector_41 temp_vector_41) in
       let accumulation_vector_43 = (let $t716 = input_b[84 +: 1] in
-      if eq $t716 1'h0 then accumulation_vector_42
+      if not $t716 then accumulation_vector_42
             else xor accumulation_vector_42 temp_vector_42) in
       let accumulation_vector_44 = (let $t718 = input_b[83 +: 1] in
-      if eq $t718 1'h0 then accumulation_vector_43
+      if not $t718 then accumulation_vector_43
             else xor accumulation_vector_43 temp_vector_43) in
       let accumulation_vector_45 = (let $t720 = input_b[82 +: 1] in
-      if eq $t720 1'h0 then accumulation_vector_44
+      if not $t720 then accumulation_vector_44
             else xor accumulation_vector_44 temp_vector_44) in
       let accumulation_vector_46 = (let $t722 = input_b[81 +: 1] in
-      if eq $t722 1'h0 then accumulation_vector_45
+      if not $t722 then accumulation_vector_45
             else xor accumulation_vector_45 temp_vector_45) in
       let accumulation_vector_47 = (let $t724 = input_b[80 +: 1] in
-      if eq $t724 1'h0 then accumulation_vector_46
+      if not $t724 then accumulation_vector_46
             else xor accumulation_vector_46 temp_vector_46) in
       let accumulation_vector_48 = (let $t726 = input_b[79 +: 1] in
-      if eq $t726 1'h0 then accumulation_vector_47
+      if not $t726 then accumulation_vector_47
             else xor accumulation_vector_47 temp_vector_47) in
       let accumulation_vector_49 = (let $t728 = input_b[78 +: 1] in
-      if eq $t728 1'h0 then accumulation_vector_48
+      if not $t728 then accumulation_vector_48
             else xor accumulation_vector_48 temp_vector_48) in
       let accumulation_vector_50 = (let $t730 = input_b[77 +: 1] in
-      if eq $t730 1'h0 then accumulation_vector_49
+      if not $t730 then accumulation_vector_49
             else xor accumulation_vector_49 temp_vector_49) in
       let accumulation_vector_51 = (let $t732 = input_b[76 +: 1] in
-      if eq $t732 1'h0 then accumulation_vector_50
+      if not $t732 then accumulation_vector_50
             else xor accumulation_vector_50 temp_vector_50) in
       let accumulation_vector_52 = (let $t734 = input_b[75 +: 1] in
-      if eq $t734 1'h0 then accumulation_vector_51
+      if not $t734 then accumulation_vector_51
             else xor accumulation_vector_51 temp_vector_51) in
       let accumulation_vector_53 = (let $t736 = input_b[74 +: 1] in
-      if eq $t736 1'h0 then accumulation_vector_52
+      if not $t736 then accumulation_vector_52
             else xor accumulation_vector_52 temp_vector_52) in
       let accumulation_vector_54 = (let $t738 = input_b[73 +: 1] in
-      if eq $t738 1'h0 then accumulation_vector_53
+      if not $t738 then accumulation_vector_53
             else xor accumulation_vector_53 temp_vector_53) in
       let accumulation_vector_55 = (let $t740 = input_b[72 +: 1] in
-      if eq $t740 1'h0 then accumulation_vector_54
+      if not $t740 then accumulation_vector_54
             else xor accumulation_vector_54 temp_vector_54) in
       let accumulation_vector_56 = (let $t742 = input_b[71 +: 1] in
-      if eq $t742 1'h0 then accumulation_vector_55
+      if not $t742 then accumulation_vector_55
             else xor accumulation_vector_55 temp_vector_55) in
       let accumulation_vector_57 = (let $t744 = input_b[70 +: 1] in
-      if eq $t744 1'h0 then accumulation_vector_56
+      if not $t744 then accumulation_vector_56
             else xor accumulation_vector_56 temp_vector_56) in
       let accumulation_vector_58 = (let $t746 = input_b[69 +: 1] in
-      if eq $t746 1'h0 then accumulation_vector_57
+      if not $t746 then accumulation_vector_57
             else xor accumulation_vector_57 temp_vector_57) in
       let accumulation_vector_59 = (let $t748 = input_b[68 +: 1] in
-      if eq $t748 1'h0 then accumulation_vector_58
+      if not $t748 then accumulation_vector_58
             else xor accumulation_vector_58 temp_vector_58) in
       let accumulation_vector_60 = (let $t750 = input_b[67 +: 1] in
-      if eq $t750 1'h0 then accumulation_vector_59
+      if not $t750 then accumulation_vector_59
             else xor accumulation_vector_59 temp_vector_59) in
       let accumulation_vector_61 = (let $t752 = input_b[66 +: 1] in
-      if eq $t752 1'h0 then accumulation_vector_60
+      if not $t752 then accumulation_vector_60
             else xor accumulation_vector_60 temp_vector_60) in
       let accumulation_vector_62 = (let $t754 = input_b[65 +: 1] in
-      if eq $t754 1'h0 then accumulation_vector_61
+      if not $t754 then accumulation_vector_61
             else xor accumulation_vector_61 temp_vector_61) in
       let accumulation_vector_63 = (let $t756 = input_b[64 +: 1] in
-      if eq $t756 1'h0 then accumulation_vector_62
+      if not $t756 then accumulation_vector_62
             else xor accumulation_vector_62 temp_vector_62) in
       let accumulation_vector_64 = (let $t758 = input_b[63 +: 1] in
-      if eq $t758 1'h0 then accumulation_vector_63
+      if not $t758 then accumulation_vector_63
             else xor accumulation_vector_63 temp_vector_63) in
       let accumulation_vector_65 = (let $t760 = input_b[62 +: 1] in
-      if eq $t760 1'h0 then accumulation_vector_64
+      if not $t760 then accumulation_vector_64
             else xor accumulation_vector_64 temp_vector_64) in
       let accumulation_vector_66 = (let $t762 = input_b[61 +: 1] in
-      if eq $t762 1'h0 then accumulation_vector_65
+      if not $t762 then accumulation_vector_65
             else xor accumulation_vector_65 temp_vector_65) in
       let accumulation_vector_67 = (let $t764 = input_b[60 +: 1] in
-      if eq $t764 1'h0 then accumulation_vector_66
+      if not $t764 then accumulation_vector_66
             else xor accumulation_vector_66 temp_vector_66) in
       let accumulation_vector_68 = (let $t766 = input_b[59 +: 1] in
-      if eq $t766 1'h0 then accumulation_vector_67
+      if not $t766 then accumulation_vector_67
             else xor accumulation_vector_67 temp_vector_67) in
       let accumulation_vector_69 = (let $t768 = input_b[58 +: 1] in
-      if eq $t768 1'h0 then accumulation_vector_68
+      if not $t768 then accumulation_vector_68
             else xor accumulation_vector_68 temp_vector_68) in
       let accumulation_vector_70 = (let $t770 = input_b[57 +: 1] in
-      if eq $t770 1'h0 then accumulation_vector_69
+      if not $t770 then accumulation_vector_69
             else xor accumulation_vector_69 temp_vector_69) in
       let accumulation_vector_71 = (let $t772 = input_b[56 +: 1] in
-      if eq $t772 1'h0 then accumulation_vector_70
+      if not $t772 then accumulation_vector_70
             else xor accumulation_vector_70 temp_vector_70) in
       let accumulation_vector_72 = (let $t774 = input_b[55 +: 1] in
-      if eq $t774 1'h0 then accumulation_vector_71
+      if not $t774 then accumulation_vector_71
             else xor accumulation_vector_71 temp_vector_71) in
       let accumulation_vector_73 = (let $t776 = input_b[54 +: 1] in
-      if eq $t776 1'h0 then accumulation_vector_72
+      if not $t776 then accumulation_vector_72
             else xor accumulation_vector_72 temp_vector_72) in
       let accumulation_vector_74 = (let $t778 = input_b[53 +: 1] in
-      if eq $t778 1'h0 then accumulation_vector_73
+      if not $t778 then accumulation_vector_73
             else xor accumulation_vector_73 temp_vector_73) in
       let accumulation_vector_75 = (let $t780 = input_b[52 +: 1] in
-      if eq $t780 1'h0 then accumulation_vector_74
+      if not $t780 then accumulation_vector_74
             else xor accumulation_vector_74 temp_vector_74) in
       let accumulation_vector_76 = (let $t782 = input_b[51 +: 1] in
-      if eq $t782 1'h0 then accumulation_vector_75
+      if not $t782 then accumulation_vector_75
             else xor accumulation_vector_75 temp_vector_75) in
       let accumulation_vector_77 = (let $t784 = input_b[50 +: 1] in
-      if eq $t784 1'h0 then accumulation_vector_76
+      if not $t784 then accumulation_vector_76
             else xor accumulation_vector_76 temp_vector_76) in
       let accumulation_vector_78 = (let $t786 = input_b[49 +: 1] in
-      if eq $t786 1'h0 then accumulation_vector_77
+      if not $t786 then accumulation_vector_77
             else xor accumulation_vector_77 temp_vector_77) in
       let accumulation_vector_79 = (let $t788 = input_b[48 +: 1] in
-      if eq $t788 1'h0 then accumulation_vector_78
+      if not $t788 then accumulation_vector_78
             else xor accumulation_vector_78 temp_vector_78) in
       let accumulation_vector_80 = (let $t790 = input_b[47 +: 1] in
-      if eq $t790 1'h0 then accumulation_vector_79
+      if not $t790 then accumulation_vector_79
             else xor accumulation_vector_79 temp_vector_79) in
       let accumulation_vector_81 = (let $t792 = input_b[46 +: 1] in
-      if eq $t792 1'h0 then accumulation_vector_80
+      if not $t792 then accumulation_vector_80
             else xor accumulation_vector_80 temp_vector_80) in
       let accumulation_vector_82 = (let $t794 = input_b[45 +: 1] in
-      if eq $t794 1'h0 then accumulation_vector_81
+      if not $t794 then accumulation_vector_81
             else xor accumulation_vector_81 temp_vector_81) in
       let accumulation_vector_83 = (let $t796 = input_b[44 +: 1] in
-      if eq $t796 1'h0 then accumulation_vector_82
+      if not $t796 then accumulation_vector_82
             else xor accumulation_vector_82 temp_vector_82) in
       let accumulation_vector_84 = (let $t798 = input_b[43 +: 1] in
-      if eq $t798 1'h0 then accumulation_vector_83
+      if not $t798 then accumulation_vector_83
             else xor accumulation_vector_83 temp_vector_83) in
       let accumulation_vector_85 = (let $t800 = input_b[42 +: 1] in
-      if eq $t800 1'h0 then accumulation_vector_84
+      if not $t800 then accumulation_vector_84
             else xor accumulation_vector_84 temp_vector_84) in
       let accumulation_vector_86 = (let $t802 = input_b[41 +: 1] in
-      if eq $t802 1'h0 then accumulation_vector_85
+      if not $t802 then accumulation_vector_85
             else xor accumulation_vector_85 temp_vector_85) in
       let accumulation_vector_87 = (let $t804 = input_b[40 +: 1] in
-      if eq $t804 1'h0 then accumulation_vector_86
+      if not $t804 then accumulation_vector_86
             else xor accumulation_vector_86 temp_vector_86) in
       let accumulation_vector_88 = (let $t806 = input_b[39 +: 1] in
-      if eq $t806 1'h0 then accumulation_vector_87
+      if not $t806 then accumulation_vector_87
             else xor accumulation_vector_87 temp_vector_87) in
       let accumulation_vector_89 = (let $t808 = input_b[38 +: 1] in
-      if eq $t808 1'h0 then accumulation_vector_88
+      if not $t808 then accumulation_vector_88
             else xor accumulation_vector_88 temp_vector_88) in
       let accumulation_vector_90 = (let $t810 = input_b[37 +: 1] in
-      if eq $t810 1'h0 then accumulation_vector_89
+      if not $t810 then accumulation_vector_89
             else xor accumulation_vector_89 temp_vector_89) in
       let accumulation_vector_91 = (let $t812 = input_b[36 +: 1] in
-      if eq $t812 1'h0 then accumulation_vector_90
+      if not $t812 then accumulation_vector_90
             else xor accumulation_vector_90 temp_vector_90) in
       let accumulation_vector_92 = (let $t814 = input_b[35 +: 1] in
-      if eq $t814 1'h0 then accumulation_vector_91
+      if not $t814 then accumulation_vector_91
             else xor accumulation_vector_91 temp_vector_91) in
       let accumulation_vector_93 = (let $t816 = input_b[34 +: 1] in
-      if eq $t816 1'h0 then accumulation_vector_92
+      if not $t816 then accumulation_vector_92
             else xor accumulation_vector_92 temp_vector_92) in
       let accumulation_vector_94 = (let $t818 = input_b[33 +: 1] in
-      if eq $t818 1'h0 then accumulation_vector_93
+      if not $t818 then accumulation_vector_93
             else xor accumulation_vector_93 temp_vector_93) in
       let accumulation_vector_95 = (let $t820 = input_b[32 +: 1] in
-      if eq $t820 1'h0 then accumulation_vector_94
+      if not $t820 then accumulation_vector_94
             else xor accumulation_vector_94 temp_vector_94) in
       let accumulation_vector_96 = (let $t822 = input_b[31 +: 1] in
-      if eq $t822 1'h0 then accumulation_vector_95
+      if not $t822 then accumulation_vector_95
             else xor accumulation_vector_95 temp_vector_95) in
       let accumulation_vector_97 = (let $t824 = input_b[30 +: 1] in
-      if eq $t824 1'h0 then accumulation_vector_96
+      if not $t824 then accumulation_vector_96
             else xor accumulation_vector_96 temp_vector_96) in
       let accumulation_vector_98 = (let $t826 = input_b[29 +: 1] in
-      if eq $t826 1'h0 then accumulation_vector_97
+      if not $t826 then accumulation_vector_97
             else xor accumulation_vector_97 temp_vector_97) in
       let accumulation_vector_99 = (let $t828 = input_b[28 +: 1] in
-      if eq $t828 1'h0 then accumulation_vector_98
+      if not $t828 then accumulation_vector_98
             else xor accumulation_vector_98 temp_vector_98) in
       let accumulation_vector_100 = (let $t830 = input_b[27 +: 1] in
-      if eq $t830 1'h0 then accumulation_vector_99
+      if not $t830 then accumulation_vector_99
             else xor accumulation_vector_99 temp_vector_99) in
       let accumulation_vector_101 = (let $t832 = input_b[26 +: 1] in
-      if eq $t832 1'h0 then accumulation_vector_100
+      if not $t832 then accumulation_vector_100
             else xor accumulation_vector_100 temp_vector_100) in
       let accumulation_vector_102 = (let $t834 = input_b[25 +: 1] in
-      if eq $t834 1'h0 then accumulation_vector_101
+      if not $t834 then accumulation_vector_101
             else xor accumulation_vector_101 temp_vector_101) in
       let accumulation_vector_103 = (let $t836 = input_b[24 +: 1] in
-      if eq $t836 1'h0 then accumulation_vector_102
+      if not $t836 then accumulation_vector_102
             else xor accumulation_vector_102 temp_vector_102) in
       let accumulation_vector_104 = (let $t838 = input_b[23 +: 1] in
-      if eq $t838 1'h0 then accumulation_vector_103
+      if not $t838 then accumulation_vector_103
             else xor accumulation_vector_103 temp_vector_103) in
       let accumulation_vector_105 = (let $t840 = input_b[22 +: 1] in
-      if eq $t840 1'h0 then accumulation_vector_104
+      if not $t840 then accumulation_vector_104
             else xor accumulation_vector_104 temp_vector_104) in
       let accumulation_vector_106 = (let $t842 = input_b[21 +: 1] in
-      if eq $t842 1'h0 then accumulation_vector_105
+      if not $t842 then accumulation_vector_105
             else xor accumulation_vector_105 temp_vector_105) in
       let accumulation_vector_107 = (let $t844 = input_b[20 +: 1] in
-      if eq $t844 1'h0 then accumulation_vector_106
+      if not $t844 then accumulation_vector_106
             else xor accumulation_vector_106 temp_vector_106) in
       let accumulation_vector_108 = (let $t846 = input_b[19 +: 1] in
-      if eq $t846 1'h0 then accumulation_vector_107
+      if not $t846 then accumulation_vector_107
             else xor accumulation_vector_107 temp_vector_107) in
       let accumulation_vector_109 = (let $t848 = input_b[18 +: 1] in
-      if eq $t848 1'h0 then accumulation_vector_108
+      if not $t848 then accumulation_vector_108
             else xor accumulation_vector_108 temp_vector_108) in
       let accumulation_vector_110 = (let $t850 = input_b[17 +: 1] in
-      if eq $t850 1'h0 then accumulation_vector_109
+      if not $t850 then accumulation_vector_109
             else xor accumulation_vector_109 temp_vector_109) in
       let accumulation_vector_111 = (let $t852 = input_b[16 +: 1] in
-      if eq $t852 1'h0 then accumulation_vector_110
+      if not $t852 then accumulation_vector_110
             else xor accumulation_vector_110 temp_vector_110) in
       let accumulation_vector_112 = (let $t854 = input_b[15 +: 1] in
-      if eq $t854 1'h0 then accumulation_vector_111
+      if not $t854 then accumulation_vector_111
             else xor accumulation_vector_111 temp_vector_111) in
       let accumulation_vector_113 = (let $t856 = input_b[14 +: 1] in
-      if eq $t856 1'h0 then accumulation_vector_112
+      if not $t856 then accumulation_vector_112
             else xor accumulation_vector_112 temp_vector_112) in
       let accumulation_vector_114 = (let $t858 = input_b[13 +: 1] in
-      if eq $t858 1'h0 then accumulation_vector_113
+      if not $t858 then accumulation_vector_113
             else xor accumulation_vector_113 temp_vector_113) in
       let accumulation_vector_115 = (let $t860 = input_b[12 +: 1] in
-      if eq $t860 1'h0 then accumulation_vector_114
+      if not $t860 then accumulation_vector_114
             else xor accumulation_vector_114 temp_vector_114) in
       let accumulation_vector_116 = (let $t862 = input_b[11 +: 1] in
-      if eq $t862 1'h0 then accumulation_vector_115
+      if not $t862 then accumulation_vector_115
             else xor accumulation_vector_115 temp_vector_115) in
       let accumulation_vector_117 = (let $t864 = input_b[10 +: 1] in
-      if eq $t864 1'h0 then accumulation_vector_116
+      if not $t864 then accumulation_vector_116
             else xor accumulation_vector_116 temp_vector_116) in
       let accumulation_vector_118 = (let $t866 = input_b[9 +: 1] in
-      if eq $t866 1'h0 then accumulation_vector_117
+      if not $t866 then accumulation_vector_117
             else xor accumulation_vector_117 temp_vector_117) in
       let accumulation_vector_119 = (let $t868 = input_b[8 +: 1] in
-      if eq $t868 1'h0 then accumulation_vector_118
+      if not $t868 then accumulation_vector_118
             else xor accumulation_vector_118 temp_vector_118) in
       let accumulation_vector_120 = (let $t870 = input_b[7 +: 1] in
-      if eq $t870 1'h0 then accumulation_vector_119
+      if not $t870 then accumulation_vector_119
             else xor accumulation_vector_119 temp_vector_119) in
       let accumulation_vector_121 = (let $t872 = input_b[6 +: 1] in
-      if eq $t872 1'h0 then accumulation_vector_120
+      if not $t872 then accumulation_vector_120
             else xor accumulation_vector_120 temp_vector_120) in
       let accumulation_vector_122 = (let $t874 = input_b[5 +: 1] in
-      if eq $t874 1'h0 then accumulation_vector_121
+      if not $t874 then accumulation_vector_121
             else xor accumulation_vector_121 temp_vector_121) in
       let accumulation_vector_123 = (let $t876 = input_b[4 +: 1] in
-      if eq $t876 1'h0 then accumulation_vector_122
+      if not $t876 then accumulation_vector_122
             else xor accumulation_vector_122 temp_vector_122) in
       let accumulation_vector_124 = (let $t878 = input_b[3 +: 1] in
-      if eq $t878 1'h0 then accumulation_vector_123
+      if not $t878 then accumulation_vector_123
             else xor accumulation_vector_123 temp_vector_123) in
       let accumulation_vector_125 = (let $t880 = input_b[2 +: 1] in
-      if eq $t880 1'h0 then accumulation_vector_124
+      if not $t880 then accumulation_vector_124
             else xor accumulation_vector_124 temp_vector_124) in
       let accumulation_vector_126 = (let $t882 = input_b[1 +: 1] in
-      if eq $t882 1'h0 then accumulation_vector_125
+      if not $t882 then accumulation_vector_125
             else xor accumulation_vector_125 temp_vector_125) in
       let $t884 = input_b[0 +: 1] in
-      if eq $t884 1'h0 then accumulation_vector_126
+      if not $t884 then accumulation_vector_126
             else xor accumulation_vector_126 (let $t886 = (let $t885 = temp_vector_125[0 +: 1] in
-            if eq $t885 1'h1 then 1'h0
-                  else 1'h1) in
-            if eq $t886 1'h0 then xor (lshr temp_vector_125 128'h1) 128'he1000000000000000000000000000000
+            not $t885) in
+            if not $t886 then xor (lshr temp_vector_125 128'h1) 128'he1000000000000000000000000000000
                   else lshr temp_vector_125 128'h1)
 
 Main.multiplyFun : ([256]) -> [128]
-Main.multiplyFun ds =
-      let a = ds[128 +: 128] in
-      let b = ds[0 +: 128] in
+Main.multiplyFun $ds =
+      let a = $ds[128 +: 128] in
+      let b = $ds[0 +: 128] in
       Main.multiply a b
 
 device top_level
       input __in0 : [128]
       input __in1 : [128]
       output __out0 : [128]
+      tag $x2 = 0
       let $in = __in0 # __in1
       let $res = main.$dispatch $in
       __out0 := $res

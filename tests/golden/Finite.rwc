@@ -1,17 +1,21 @@
+--| state dispatch for process main: 0=a'2
 main.$dispatch : ([7]) -> [7]
 main.$dispatch i =
-      main.$L.a'4$250 i
+      main.a'2 i
 
-main.$L.a'4$250 : ([7]) -> [7]
-main.$L.a'4$250 a' =
-      main.$L.Main.dev3$249 (umod (add a' 7'h1) 7'h64)
+--| block '$L.a'2' of process main (state 0)
+main.a'2 : ([7]) -> [7]
+main.a'2 a' =
+      main.dev (umod (add a' 7'h1) 7'h64)
 
-main.$L.Main.dev3$249 : ([7]) -> [7]
-main.$L.Main.dev3$249 a =
+--| block '$L.Main.dev' of process main
+main.dev : ([7]) -> [7]
+main.dev a =
       a
 
 device top_level
       input __in0 : [7]
       output __out0 : [7]
+      tag a'2 = 0
       let $res = main.$dispatch __in0
       __out0 := $res
