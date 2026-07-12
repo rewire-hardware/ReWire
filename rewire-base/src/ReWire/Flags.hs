@@ -29,6 +29,8 @@ data Flag = FlagO !String
           | FlagEidos
           | FlagNoHalt
           | FlagRtlOpt !String
+          | FlagStableNames
+          | FlagNoLocators
       deriving (Eq, Show, Generic)
 
 instance Hashable Flag

@@ -160,7 +160,7 @@ data Exp = Add Exp Exp
          | Unsigned Exp -- ^ > $unsigned(e)
          | LitBits BV
          | LVal LVal
-      deriving (Eq, Show)
+      deriving (Eq, Ord, Show)
 
 class Parenless a where
       parenless :: a -> Bool
@@ -253,7 +253,7 @@ data LVal = Element Name Index
           | Range Name Index Index
           | Name Name
           | LVals [LVal]
-      deriving (Eq, Show)
+      deriving (Eq, Ord, Show)
 
 instance Pretty LVal where
       pretty = \ case
