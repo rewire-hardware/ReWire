@@ -201,22 +201,22 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (\__in0\ : in std_logic_vector (7 downto 0);
-      \__in1\ : in std_logic_vector (7 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (\__in0\ : in std_logic_vector (7 downto 0);
+            \__in1\ : in std_logic_vector (7 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-signal zi2 : std_logic_vector (3 downto 0);
-      signal zi3 : std_logic_vector (3 downto 0);
-      signal zi4 : std_logic_vector (7 downto 0);
-      signal zi5 : std_logic_vector (7 downto 0);
-      signal zres : std_logic_vector (7 downto 0);
+      signal \hi$4700\ : std_logic_vector (3 downto 0);
+      signal \lo$4698\ : std_logic_vector (3 downto 0);
+      signal \x$1\ : std_logic_vector (7 downto 0);
+      signal za : std_logic_vector (7 downto 0);
 begin
-zi2 <= \__in1\(7 downto 4);
-      zi3 <= \__in1\(3 downto 0);
-      zi4 <= (zi3 & zi2);
-      zi5 <= rw_cond(rw_gt(zi4, \__in0\), \__in0\, zi4);
-      zres <= zi5;
-      \__out0\ <= zres;
+      -- combinational logic
+      \hi$4700\ <= \__in1\(7 downto 4);
+      \lo$4698\ <= \__in1\(3 downto 0);
+      \x$1\ <= (\lo$4698\ & \hi$4700\);
+      za <= rw_cond(rw_gt(\x$1\, \__in0\), \__in0\, \x$1\);
+      -- outputs
+      \__out0\ <= za;
 end architecture;

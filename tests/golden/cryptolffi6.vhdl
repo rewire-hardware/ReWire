@@ -201,22 +201,22 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (\__in0\ : in std_logic_vector (7 downto 0);
-      \__in1\ : in std_logic_vector (7 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (\__in0\ : in std_logic_vector (7 downto 0);
+            \__in1\ : in std_logic_vector (7 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-signal zi2 : std_logic_vector (7 downto 0);
-      signal zi3 : std_logic_vector (7 downto 0);
-      signal zi4 : std_logic_vector (15 downto 0);
-      signal zi5 : std_logic_vector (7 downto 0);
-      signal zres : std_logic_vector (7 downto 0);
+      signal \za$4698\ : std_logic_vector (7 downto 0);
+      signal \zb$4701\ : std_logic_vector (7 downto 0);
+      signal zeta0 : std_logic_vector (15 downto 0);
+      signal za : std_logic_vector (7 downto 0);
 begin
-zi2 <= rw_mod(\__in0\, std_logic_vector'(B"11111011"));
-      zi3 <= rw_mod(\__in1\, std_logic_vector'(B"11111011"));
-      zi4 <= (\__in0\ & \__in1\);
-      zi5 <= rw_add(rw_resize(rw_mod(rw_add(rw_resize(rw_resize(rw_mod(rw_mul(rw_resize(zi2, 16), rw_resize(zi2, 16)), std_logic_vector'(B"0000000011111011")), 8), 9), rw_resize(zi3, 9)), std_logic_vector'(B"011111011")), 8), rw_resize(rw_resize(rw_resize(rw_mod(rw_add(rw_resize(rw_resize(rw_mod(rw_mul(rw_resize(rw_resize(rw_mod(rw_add(rw_resize(rw_resize(rw_mod(rw_mul(rw_resize(rw_resize(rw_mod(rw_add(rw_resize(rw_resize(rw_mod(rw_mul(rw_resize(rw_resize(rw_mod(rw_add(rw_resize(rw_resize(rw_mod(rw_mul(std_logic_vector'(B"00000000000000000"), rw_resize(rw_resize(rw_mod(zi4, std_logic_vector'(B"0000000100000001")), 9), 17)), std_logic_vector'(B"00000000100000001")), 9), 10), std_logic_vector'(B"0000000001")), std_logic_vector'(B"0100000001")), 9), 17), rw_resize(rw_resize(rw_mod(zi4, std_logic_vector'(B"0000000100000001")), 9), 17)), std_logic_vector'(B"00000000100000001")), 9), 10), std_logic_vector'(B"0000000010")), std_logic_vector'(B"0100000001")), 9), 17), rw_resize(rw_resize(rw_mod(zi4, std_logic_vector'(B"0000000100000001")), 9), 17)), std_logic_vector'(B"00000000100000001")), 9), 10), std_logic_vector'(B"0000000011")), std_logic_vector'(B"0100000001")), 9), 17), rw_resize(rw_resize(rw_mod(zi4, std_logic_vector'(B"0000000100000001")), 9), 17)), std_logic_vector'(B"00000000100000001")), 9), 10), std_logic_vector'(B"0000000100")), std_logic_vector'(B"0100000001")), 9), 16), 8));
-      zres <= zi5;
-      \__out0\ <= zres;
+      -- combinational logic
+      \za$4698\ <= rw_mod(\__in0\, std_logic_vector'(X"fb"));
+      \zb$4701\ <= rw_mod(\__in1\, std_logic_vector'(X"fb"));
+      zeta0 <= (\__in0\ & \__in1\);
+      za <= rw_add(rw_resize(rw_mod(rw_add(rw_resize(rw_resize(rw_mod(rw_mul(rw_resize(\za$4698\, 16), rw_resize(\za$4698\, 16)), std_logic_vector'(X"00fb")), 8), 9), rw_resize(\zb$4701\, 9)), std_logic_vector'(B"011111011")), 8), rw_resize(rw_resize(rw_resize(rw_mod(rw_add(rw_resize(rw_resize(rw_mod(rw_mul(rw_resize(rw_resize(rw_mod(rw_add(rw_resize(rw_resize(rw_mod(rw_mul(rw_resize(rw_resize(rw_mod(rw_add(rw_resize(rw_resize(rw_mod(rw_mul(rw_resize(rw_resize(rw_mod(rw_add(rw_resize(rw_resize(rw_mod(rw_mul(std_logic_vector'(B"00000000000000000"), rw_resize(rw_resize(rw_mod(zeta0, std_logic_vector'(X"0101")), 9), 17)), std_logic_vector'(B"00000000100000001")), 9), 10), std_logic_vector'(B"0000000001")), std_logic_vector'(B"0100000001")), 9), 17), rw_resize(rw_resize(rw_mod(zeta0, std_logic_vector'(X"0101")), 9), 17)), std_logic_vector'(B"00000000100000001")), 9), 10), std_logic_vector'(B"0000000010")), std_logic_vector'(B"0100000001")), 9), 17), rw_resize(rw_resize(rw_mod(zeta0, std_logic_vector'(X"0101")), 9), 17)), std_logic_vector'(B"00000000100000001")), 9), 10), std_logic_vector'(B"0000000011")), std_logic_vector'(B"0100000001")), 9), 17), rw_resize(rw_resize(rw_mod(zeta0, std_logic_vector'(X"0101")), 9), 17)), std_logic_vector'(B"00000000100000001")), 9), 10), std_logic_vector'(B"0000000100")), std_logic_vector'(B"0100000001")), 9), 16), 8));
+      -- outputs
+      \__out0\ <= za;
 end architecture;

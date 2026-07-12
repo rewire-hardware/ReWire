@@ -201,31 +201,34 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (0 downto 0);
-      \__out0\ : out std_logic_vector (0 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (0 downto 0);
+            \__out0\ : out std_logic_vector (0 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component \main___unused\ is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            res : out std_logic_vector (1 downto 0));
+      component \main___unused\ is
+            port (s0 : in std_logic_vector (0 downto 0);
+                  res : out std_logic_vector (1 downto 0));
       end component;
+      -- state registers
+      -- __st0: 1 bits, init 0x1
       signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
       signal \main__unused_out\ : std_logic_vector (1 downto 0);
-      signal \main__unused_outR1\ : std_logic_vector (1 downto 0);
       signal zres : std_logic_vector (1 downto 0);
 begin
-inst : \main___unused\ port map (\__st0\, \main__unused_out\);
-      \instR1\ : \main___unused\ port map (\__st0\, \main__unused_outR1\);
-      zres <= rw_cond(rw_not(\__st0\), \main__unused_out\, \main__unused_outR1\);
+      -- combinational logic
+      \_unused_i\ : \main___unused\ port map (\__st0\, \main__unused_out\);
+      zres <= rw_cond(rw_not(\__st0\), \main__unused_out\, \main__unused_out\);
       \__st0_next\ <= zres(0 downto 0);
+      -- outputs
       \__out0\ <= zres(1 downto 1);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
+            if rst = std_logic_vector'(B"1") then
                   \__st0\ <= std_logic_vector'(B"1");
             elsif rising_edge(clk(0)) then
                   \__st0\ <= \__st0_next\;
@@ -233,17 +236,18 @@ inst : \main___unused\ port map (\__st0\, \main__unused_out\);
       end process;
 end architecture;
 
+-- main._unused
+-- block '$L._unused' of process main
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity \main___unused\ is
-port (arg0 : in std_logic_vector (0 downto 0);
-      res : out std_logic_vector (1 downto 0));
+      port (s0 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (1 downto 0));
 end entity;
 
 architecture rtl of \main___unused\ is
-
 begin
-res <= (std_logic_vector'(B"0") & arg0);
+      res <= (std_logic_vector'(B"0") & s0);
 end architecture;

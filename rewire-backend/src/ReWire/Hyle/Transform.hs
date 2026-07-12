@@ -16,6 +16,7 @@ import ReWire.Annotation (Annote)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fixPure)
 import ReWire.Hyle.Interp (evalExp, evalOp, IEnv (..))
+import ReWire.Hyle.Mangle (stripFreshTag)
 import ReWire.Hyle.Syntax
 import ReWire.Pretty (showt)
 
@@ -136,7 +137,7 @@ inlineBy inlinable (Program exts ds dev) = purgeUnused $ Program exts ds' dev'
                               where bind :: (Name, Exp) -> State Int ((Name, Exp), [(Name, Exp)])
                                     bind (p, e) | atomic e  = pure ((p, e), [])
                                                 | otherwise = do
-                                                      p' <- freshName
+                                                      p' <- freshName p
                                                       pure ((p, Var an (sizeOf e) p'), [(p', e)])
 
                                     atomic :: Exp -> Bool
@@ -146,11 +147,16 @@ inlineBy inlinable (Program exts ds dev) = purgeUnused $ Program exts ds' dev'
                                           Undef {} -> True
                                           _        -> False
 
-                        freshName :: State Int Name
-                        freshName = do
+                        -- | A fresh name for an inlined binder, seeded with
+                        --   the original name (its own freshening suffixes
+                        --   stripped, so suffixes don't stack across
+                        --   callee-first inlining): the backends strip the
+                        --   tag back off for display.
+                        freshName :: Name -> State Int Name
+                        freshName base = do
                               i <- gets id
                               modify (+ 1)
-                              pure $ "$i" <> showt (i :: Int)
+                              pure $ stripFreshTag base <> "$i" <> showt (i :: Int)
 
                         -- | Substitute the given free names and rename all
                         --   bound names.
@@ -167,7 +173,7 @@ inlineBy inlinable (Program exts ds dev) = purgeUnused $ Program exts ds' dev'
                               Call an sz g es     -> Call an sz g <$> mapM (freshenExp m) es
                               Let an sz x e1 e2   -> do
                                     e1' <- freshenExp m e1
-                                    x'  <- freshName
+                                    x'  <- freshName x
                                     Let an sz x' e1' <$> freshenExp (Map.insert x (Var an (sizeOf e1) x') m) e2
 
 stmtExp :: Stmt -> Exp

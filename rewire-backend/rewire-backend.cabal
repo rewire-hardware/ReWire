@@ -55,6 +55,7 @@ library
   ghc-options: -Wall -Werror -Wunused-packages -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
       base ==4.20.*
+    , containers ==0.7.*
     , ghc-boot ==9.10.*
     , hashable ==1.5.*
     , lens ==5.3.*

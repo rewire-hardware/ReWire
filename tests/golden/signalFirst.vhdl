@@ -201,39 +201,46 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (7 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (7 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component main_dev is
-      port (arg0 : in std_logic_vector (7 downto 0);
-            arg1 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (24 downto 0));
+      component main_dev is
+            port (k : in std_logic_vector (7 downto 0);
+                  s0 : in std_logic_vector (7 downto 0);
+                  res : out std_logic_vector (24 downto 0));
       end component;
+      -- state registers
+      -- __resumption_tag: 9 bits, init 0x100
+      --   states: 0=i2 1=i
+      -- __st0: 8 bits, init 0x0
       signal \__resumption_tag\ : std_logic_vector (8 downto 0) := std_logic_vector'(B"100000000");
       signal \__resumption_tag_next\ : std_logic_vector (8 downto 0);
-      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
+      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(X"00");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal zi1 : std_logic_vector (7 downto 0);
+      signal k : std_logic_vector (7 downto 0);
       signal main_dev_out : std_logic_vector (24 downto 0);
-      signal \main_dev_outR1\ : std_logic_vector (24 downto 0);
+      signal main_dev_out_r1 : std_logic_vector (24 downto 0);
       signal zres : std_logic_vector (24 downto 0);
 begin
-zi1 <= \__resumption_tag\(7 downto 0);
-      inst : main_dev port map (zi1, \__in0\, main_dev_out);
-      \instR1\ : main_dev port map (\__in0\, std_logic_vector'(B"00000000"), \main_dev_outR1\);
-      zres <= rw_cond(rw_not(\__resumption_tag\(8 downto 8)), main_dev_out, \main_dev_outR1\);
+      -- combinational logic
+      k <= \__resumption_tag\(7 downto 0);
+      dev_i : main_dev port map (k, \__in0\, main_dev_out);
+      dev_i_r1 : main_dev port map (\__in0\, std_logic_vector'(X"00"), main_dev_out_r1);
+      zres <= rw_cond(rw_not(\__resumption_tag\(8 downto 8)), main_dev_out, main_dev_out_r1);
       \__resumption_tag_next\ <= zres(16 downto 8);
       \__st0_next\ <= zres(7 downto 0);
+      -- outputs
       \__out0\ <= zres(24 downto 17);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
+            if rst = std_logic_vector'(B"1") then
                   \__resumption_tag\ <= std_logic_vector'(B"100000000");
-                  \__st0\ <= std_logic_vector'(B"00000000");
+                  \__st0\ <= std_logic_vector'(X"00");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
                   \__st0\ <= \__st0_next\;
@@ -241,18 +248,19 @@ zi1 <= \__resumption_tag\(7 downto 0);
       end process;
 end architecture;
 
+-- main.dev
+-- block '$L.Main.dev' of process main
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity main_dev is
-port (arg0 : in std_logic_vector (7 downto 0);
-      arg1 : in std_logic_vector (7 downto 0);
-      res : out std_logic_vector (24 downto 0));
+      port (k : in std_logic_vector (7 downto 0);
+            s0 : in std_logic_vector (7 downto 0);
+            res : out std_logic_vector (24 downto 0));
 end entity;
 
 architecture rtl of main_dev is
-
 begin
-res <= (rw_add(arg1, arg0) & std_logic_vector'(B"0") & arg0 & arg1);
+      res <= (rw_add(s0, k) & std_logic_vector'(B"0") & k & s0);
 end architecture;

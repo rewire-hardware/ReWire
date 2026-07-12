@@ -201,71 +201,70 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (9 downto 0);
-      \__out0\ : out std_logic_vector (15 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (9 downto 0);
+            \__out0\ : out std_logic_vector (15 downto 0));
 end entity;
 
 architecture rtl of top_level is
-signal \__st0\ : std_logic_vector (29 downto 0) := std_logic_vector'(B"000000000000000000000000000000");
+      -- state registers
+      -- __st0: 30 bits, init 0x0
+      signal \__st0\ : std_logic_vector (29 downto 0) := (others => '0');
       signal \__st0_next\ : std_logic_vector (29 downto 0);
-      signal zi1 : std_logic_vector (3 downto 0);
-      signal zi2 : std_logic_vector (0 downto 0);
-      signal zi3 : std_logic_vector (7 downto 0);
-      signal zi4 : std_logic_vector (0 downto 0);
-      signal zi5 : std_logic_vector (4 downto 0);
-      signal zi6 : std_logic_vector (0 downto 0);
-      signal zi7 : std_logic_vector (8 downto 0);
-      signal zi8 : std_logic_vector (8 downto 0);
-      signal zi9 : std_logic_vector (3 downto 0);
-      signal zi10 : std_logic_vector (44 downto 0);
-      signal zi11 : std_logic_vector (14 downto 0);
-      signal zi12 : std_logic_vector (29 downto 0);
-      signal zi13 : std_logic_vector (44 downto 0);
-      signal zi14 : std_logic_vector (14 downto 0);
-      signal zi15 : std_logic_vector (14 downto 0);
-      signal zi16 : std_logic_vector (0 downto 0);
-      signal zi17 : std_logic_vector (4 downto 0);
-      signal zi18 : std_logic_vector (8 downto 0);
-      signal zi19 : std_logic_vector (3 downto 0);
-      signal zi20 : std_logic_vector (7 downto 0);
-      signal zi21 : std_logic_vector (29 downto 0);
-      signal zi22 : std_logic_vector (45 downto 0);
-      signal zi23 : std_logic_vector (15 downto 0);
-      signal zi24 : std_logic_vector (29 downto 0);
+      signal w4 : std_logic_vector (3 downto 0);
+      signal b : std_logic_vector (0 downto 0);
+      signal w8 : std_logic_vector (7 downto 0);
+      signal w4_r1 : std_logic_vector (4 downto 0);
+      signal zds2 : std_logic_vector (0 downto 0);
+      signal w8_r1 : std_logic_vector (8 downto 0);
+      signal w4_r2 : std_logic_vector (3 downto 0);
+      signal zds : std_logic_vector (44 downto 0);
+      signal s : std_logic_vector (14 downto 0);
+      signal ps : std_logic_vector (29 downto 0);
+      signal zds_r1 : std_logic_vector (44 downto 0);
+      signal \out\ : std_logic_vector (14 downto 0);
+      signal zds1 : std_logic_vector (0 downto 0);
+      signal mw4 : std_logic_vector (4 downto 0);
+      signal zds2_r1 : std_logic_vector (8 downto 0);
+      signal w4_r3 : std_logic_vector (3 downto 0);
+      signal w8_r2 : std_logic_vector (7 downto 0);
+      signal \s$\ : std_logic_vector (29 downto 0);
+      signal za : std_logic_vector (45 downto 0);
+      signal o : std_logic_vector (15 downto 0);
+      signal s_r1 : std_logic_vector (29 downto 0);
       signal zres : std_logic_vector (45 downto 0);
 begin
-zi1 <= \__in0\(3 downto 0);
-      zi2 <= \__st0\(29 downto 29);
-      zi3 <= \__in0\(7 downto 0);
-      zi4 <= \__st0\(29 downto 29);
-      zi5 <= \__st0\(28 downto 24);
-      zi6 <= \__in0\(0 downto 0);
-      zi7 <= \__st0\(23 downto 15);
-      zi8 <= \__st0\(23 downto 15);
-      zi9 <= \__st0\(27 downto 24);
-      zi10 <= (rw_cond(rw_eq(\__in0\(9 downto 8), std_logic_vector'(B"00")), (zi2 & std_logic_vector'(B"1") & zi1 & std_logic_vector'(B"00000") & zi1), rw_cond(rw_eq(\__in0\(9 downto 8), std_logic_vector'(B"01")), (zi4 & zi5 & std_logic_vector'(B"1") & zi3), rw_cond(rw_not(zi6), (std_logic_vector'(B"000000") & zi7), rw_cond(rw_not(\__st0\(28 downto 28)), (std_logic_vector'(B"100000") & zi8), (std_logic_vector'(B"10000000000") & zi9))))) & \__st0\);
-      zi11 <= zi10(44 downto 30);
-      zi12 <= zi10(29 downto 0);
-      zi13 <= (zi11 & zi10(29 downto 15) & rw_resize(rw_shiftr(zi12, rw_repl(128, std_logic_vector'(B"0"))), 15));
-      zi14 <= zi13(14 downto 0);
-      zi15 <= zi14;
-      zi16 <= zi15(14 downto 14);
-      zi17 <= zi15(13 downto 9);
-      zi18 <= zi15(8 downto 0);
-      zi19 <= zi15(3 downto 0);
-      zi20 <= zi15(7 downto 0);
-      zi21 <= zi13(44 downto 15);
-      zi22 <= (rw_cond(rw_not(zi16), (std_logic_vector'(B"0000000") & zi18), rw_cond(rw_not(zi15(8 downto 8)), (std_logic_vector'(B"11") & zi17 & std_logic_vector'(B"00000") & zi19), (std_logic_vector'(B"01") & zi17 & std_logic_vector'(B"1") & zi20))) & zi21);
-      zi23 <= zi22(45 downto 30);
-      zi24 <= zi22(29 downto 0);
-      zres <= (zi23 & zi24);
+      -- combinational logic
+      w4 <= \__in0\(3 downto 0);
+      b <= \__st0\(29 downto 29);
+      w8 <= \__in0\(7 downto 0);
+      w4_r1 <= \__st0\(28 downto 24);
+      zds2 <= \__in0\(0 downto 0);
+      w8_r1 <= \__st0\(23 downto 15);
+      w4_r2 <= \__st0\(27 downto 24);
+      zds <= (rw_cond(rw_eq(\__in0\(9 downto 8), std_logic_vector'(B"00")), (b & std_logic_vector'(B"1") & w4 & std_logic_vector'(B"00000") & w4), rw_cond(rw_eq(\__in0\(9 downto 8), std_logic_vector'(B"01")), (b & w4_r1 & std_logic_vector'(B"1") & w8), rw_cond(rw_not(zds2), (std_logic_vector'(B"000000") & w8_r1), rw_cond(rw_not(\__st0\(28 downto 28)), (std_logic_vector'(B"100000") & w8_r1), (std_logic_vector'(B"10000000000") & w4_r2))))) & \__st0\);
+      s <= zds(44 downto 30);
+      ps <= zds(29 downto 0);
+      zds_r1 <= (s & zds(29 downto 15) & rw_resize(rw_shiftr(ps, rw_repl(128, std_logic_vector'(B"0"))), 15));
+      \out\ <= zds_r1(14 downto 0);
+      zds1 <= \out\(14 downto 14);
+      mw4 <= \out\(13 downto 9);
+      zds2_r1 <= \out\(8 downto 0);
+      w4_r3 <= \out\(3 downto 0);
+      w8_r2 <= \out\(7 downto 0);
+      \s$\ <= zds_r1(44 downto 15);
+      za <= (rw_cond(rw_not(zds1), (std_logic_vector'(B"0000000") & zds2_r1), rw_cond(rw_not(\out\(8 downto 8)), (std_logic_vector'(B"11") & mw4 & std_logic_vector'(B"00000") & w4_r3), (std_logic_vector'(B"01") & mw4 & std_logic_vector'(B"1") & w8_r2))) & \s$\);
+      o <= za(45 downto 30);
+      s_r1 <= za(29 downto 0);
+      zres <= (o & s_r1);
       \__st0_next\ <= zres(29 downto 0);
+      -- outputs
       \__out0\ <= zres(45 downto 30);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
+            if rst = std_logic_vector'(B"1") then
                   \__st0\ <= std_logic_vector'(B"000000000000000000000000000000");
             elsif rising_edge(clk(0)) then
                   \__st0\ <= \__st0_next\;

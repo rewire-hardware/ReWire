@@ -201,16 +201,16 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (\__in0\ : in std_logic_vector (1023 downto 0);
-      \__in1\ : in std_logic_vector (31 downto 0);
-      \__out0\ : out std_logic_vector (63 downto 0));
+      port (\__in0\ : in std_logic_vector (1023 downto 0);
+            \__in1\ : in std_logic_vector (31 downto 0);
+            \__out0\ : out std_logic_vector (63 downto 0));
 end entity;
 
 architecture rtl of top_level is
-signal zi2 : std_logic_vector (63 downto 0);
-      signal zres : std_logic_vector (63 downto 0);
+      signal za : std_logic_vector (63 downto 0);
 begin
-zi2 <= (rw_add(\__in1\(7 downto 0), \__in0\(999 downto 992)) & rw_add(\__in1\(7 downto 0), \__in0\(935 downto 928)) & rw_add(\__in1\(7 downto 0), \__in0\(871 downto 864)) & rw_add(\__in1\(7 downto 0), \__in0\(807 downto 800)) & rw_add(\__in1\(7 downto 0), \__in0\(743 downto 736)) & rw_add(\__in1\(7 downto 0), \__in0\(679 downto 672)) & rw_add(\__in1\(7 downto 0), \__in0\(615 downto 608)) & rw_add(\__in1\(7 downto 0), \__in0\(551 downto 544)));
-      zres <= zi2;
-      \__out0\ <= zres;
+      -- combinational logic
+      za <= (rw_add(\__in1\(7 downto 0), \__in0\(999 downto 992)) & rw_add(\__in1\(7 downto 0), \__in0\(935 downto 928)) & rw_add(\__in1\(7 downto 0), \__in0\(871 downto 864)) & rw_add(\__in1\(7 downto 0), \__in0\(807 downto 800)) & rw_add(\__in1\(7 downto 0), \__in0\(743 downto 736)) & rw_add(\__in1\(7 downto 0), \__in0\(679 downto 672)) & rw_add(\__in1\(7 downto 0), \__in0\(615 downto 608)) & rw_add(\__in1\(7 downto 0), \__in0\(551 downto 544)));
+      -- outputs
+      \__out0\ <= za;
 end architecture;

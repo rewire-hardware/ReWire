@@ -2,62 +2,42 @@ module top_level (input logic [0:0] clk,
   input logic [0:0] rst,
   input logic [9:0] __in0,
   output logic [15:0] __out0);
+  // state registers
+  // __st0: 30 bits, init 0x0
   logic [29:0] __st0;
   logic [29:0] __st0_next;
-  logic [3:0] zi1;
-  logic [0:0] zi2;
-  logic [7:0] zi3;
-  logic [0:0] zi4;
-  logic [4:0] zi5;
-  logic [0:0] zi6;
-  logic [8:0] zi7;
-  logic [8:0] zi8;
-  logic [3:0] zi9;
-  logic [44:0] zi10;
-  logic [14:0] zi11;
-  logic [29:0] zi12;
-  logic [29:0] slice_in;
-  logic [44:0] zi13;
-  logic [14:0] zi14;
-  logic [14:0] zi15;
-  logic [0:0] zi16;
-  logic [4:0] zi17;
-  logic [8:0] zi18;
-  logic [3:0] zi19;
-  logic [7:0] zi20;
-  logic [29:0] zi21;
-  logic [45:0] zi22;
-  logic [15:0] zi23;
-  logic [29:0] zi24;
-  logic [45:0] zres;
-  assign zi1 = __in0[3:0];
-  assign zi2 = __st0[29];
-  assign zi3 = __in0[7:0];
-  assign zi4 = __st0[29];
-  assign zi5 = __st0[28:24];
-  assign zi6 = __in0[0];
-  assign zi7 = __st0[23:15];
-  assign zi8 = __st0[23:15];
-  assign zi9 = __st0[27:24];
-  assign zi10 = {(__in0[9:8] == 2'h0) ? {zi2, 1'h1, zi1, 5'h0, zi1} : ((__in0[9:8] == 2'h1) ? {zi4, zi5, 1'h1, zi3} : ((~zi6) ? {6'h0, zi7} : ((~__st0[28]) ? {6'h20, zi8} : {11'h400, zi9}))), __st0};
-  assign zi11 = zi10[44:30];
-  assign zi12 = zi10[29:0];
-  assign slice_in = zi12 >> {8'h80{1'h0}};
-  assign zi13 = {zi11, zi10[29:15], slice_in[14:0]};
-  assign zi14 = zi13[14:0];
-  assign zi15 = zi14;
-  assign zi16 = zi15[14];
-  assign zi17 = zi15[13:9];
-  assign zi18 = zi15[8:0];
-  assign zi19 = zi15[3:0];
-  assign zi20 = zi15[7:0];
-  assign zi21 = zi13[44:15];
-  assign zi22 = {(~zi16) ? {7'h0, zi18} : ((~zi15[8]) ? {2'h3, zi17, 5'h0, zi19} : {2'h1, zi17, 1'h1, zi20}), zi21};
-  assign zi23 = zi22[45:30];
-  assign zi24 = zi22[29:0];
-  assign zres = {zi23, zi24};
-  assign __st0_next = zres[29:0];
-  assign __out0 = zres[45:30];
+  // combinational logic
+  wire [3:0] w4 = __in0[3:0];
+  wire [0:0] b = __st0[29];
+  wire [7:0] w8 = __in0[7:0];
+  wire [4:0] w4R1 = __st0[28:24];
+  wire [0:0] Zds2 = __in0[0];
+  wire [8:0] w8R1 = __st0[23:15];
+  wire [3:0] w4R2 = __st0[27:24];
+  wire [44:0] Zds = {(__in0[9:8] == 2'h0) ? {b, 1'h1, w4, 5'h0, w4} :
+    ((__in0[9:8] == 2'h1) ? {b, w4R1, 1'h1, w8} :
+      ((~Zds2) ? {6'h0, w8R1} :
+        ((~__st0[28]) ? {6'h20, w8R1} : {11'h400, w4R2}))), __st0};
+  wire [14:0] s = Zds[44:30];
+  wire [29:0] ps = Zds[29:0];
+  wire [29:0] slice_in = ps >> {8'h80{1'h0}};
+  wire [44:0] ZdsR1 = {s, Zds[29:15], slice_in[14:0]};
+  wire [14:0] out = ZdsR1[14:0];
+  wire [0:0] Zds1 = out[14];
+  wire [4:0] mw4 = out[13:9];
+  wire [8:0] Zds2R1 = out[8:0];
+  wire [3:0] w4R3 = out[3:0];
+  wire [7:0] w8R2 = out[7:0];
+  wire [29:0] s$ = ZdsR1[44:15];
+  wire [45:0] Za = {(~Zds1) ? {7'h0, Zds2R1} :
+    ((~out[8]) ? {2'h3, mw4, 5'h0, w4R3} : {2'h1, mw4, 1'h1, w8R2}), s$};
+  wire [15:0] o = Za[45:30];
+  wire [29:0] sR1 = Za[29:0];
+  wire [45:0] Zres = {o, sR1};
+  assign __st0_next = Zres[29:0];
+  // outputs
+  assign __out0 = Zres[45:30];
+  // state register update
   initial __st0 = 30'h0;
   always @ (posedge clk or posedge rst) begin
     if (rst == 1'h1) begin

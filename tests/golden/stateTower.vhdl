@@ -201,41 +201,45 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (0 downto 0);
-      \__out0\ : out std_logic_vector (0 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (0 downto 0);
+            \__out0\ : out std_logic_vector (0 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component \main___unused\ is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            arg1 : in std_logic_vector (0 downto 0);
-            res : out std_logic_vector (2 downto 0));
+      component \main___unused\ is
+            port (s0 : in std_logic_vector (0 downto 0);
+                  s1 : in std_logic_vector (0 downto 0);
+                  res : out std_logic_vector (2 downto 0));
       end component;
+      -- state registers
+      -- __st0: 1 bits, init 0x1
+      -- __st1: 1 bits, init 0x1
       signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
       signal \__st1\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st1_next\ : std_logic_vector (0 downto 0);
-      signal zi3 : std_logic_vector (0 downto 0);
+      signal za : std_logic_vector (0 downto 0);
       signal \main__unused_out\ : std_logic_vector (2 downto 0);
-      signal zi4 : std_logic_vector (0 downto 0);
-      signal zi5 : std_logic_vector (0 downto 0);
-      signal \main__unused_outR1\ : std_logic_vector (2 downto 0);
+      signal zt1 : std_logic_vector (0 downto 0);
+      signal \main__unused_out_r1\ : std_logic_vector (2 downto 0);
       signal zres : std_logic_vector (2 downto 0);
 begin
-zi3 <= rw_not(\__in0\);
-      inst : \main___unused\ port map (\__st0\, \__st1\, \main__unused_out\);
-      zi4 <= rw_xor(\__st0\, \__st1\);
-      zi5 <= zi4;
-      \instR1\ : \main___unused\ port map (\__st1\, zi5, \main__unused_outR1\);
-      zres <= rw_cond(rw_not(zi3), \main__unused_out\, \main__unused_outR1\);
+      -- combinational logic
+      za <= rw_not(\__in0\);
+      \_unused_i\ : \main___unused\ port map (\__st0\, \__st1\, \main__unused_out\);
+      zt1 <= rw_xor(\__st0\, \__st1\);
+      \_unused_i_r1\ : \main___unused\ port map (\__st1\, zt1, \main__unused_out_r1\);
+      zres <= rw_cond(rw_not(za), \main__unused_out\, \main__unused_out_r1\);
       \__st0_next\ <= zres(1 downto 1);
       \__st1_next\ <= zres(0 downto 0);
+      -- outputs
       \__out0\ <= zres(2 downto 2);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
+            if rst = std_logic_vector'(B"1") then
                   \__st0\ <= std_logic_vector'(B"1");
                   \__st1\ <= std_logic_vector'(B"1");
             elsif rising_edge(clk(0)) then
@@ -245,18 +249,19 @@ zi3 <= rw_not(\__in0\);
       end process;
 end architecture;
 
+-- main._unused
+-- block '$L._unused' of process main
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity \main___unused\ is
-port (arg0 : in std_logic_vector (0 downto 0);
-      arg1 : in std_logic_vector (0 downto 0);
-      res : out std_logic_vector (2 downto 0));
+      port (s0 : in std_logic_vector (0 downto 0);
+            s1 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (2 downto 0));
 end entity;
 
 architecture rtl of \main___unused\ is
-
 begin
-res <= (arg0 & arg0 & arg1);
+      res <= (s0 & s0 & s1);
 end architecture;

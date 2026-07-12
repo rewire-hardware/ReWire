@@ -593,6 +593,16 @@ exactly at the explicit coercions.
   to a `parameter` block.
 - **Interpreter**: transcribe §6.3/§6.4 literally over `BV`.
 
+For readability, the RTL back ends recover `case` statements (Verilog) and
+selected signal assignments (VHDL) from if-chains that test one scrutinee
+against distinct literals — the shape of the state dispatch and of
+constructor-tag decodes. The equivalence with the mux/`rw_cond` chain they
+replace is 2-state: under an X/U scrutinee, a case falls through to its
+default arm where a mux chain merges unknowns. The pipeline never produces
+such a scrutinee (registers have initials, inputs are driven), and
+hand-written extern implementations must likewise not drive X/U into
+scrutinee positions.
+
 ### 8.4 The Cryptol embedding ⌈·⌉
 
 ⌈[n]⌉ = `[n]`. Variables, lets, ifs, calls map one-to-one. The only

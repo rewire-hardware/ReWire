@@ -204,7 +204,5 @@ entity top_level is
 end entity;
 
 architecture rtl of top_level is
-
 begin
-
 end architecture;

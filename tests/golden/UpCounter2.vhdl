@@ -201,53 +201,59 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (0 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (0 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component main_go is
-      port (arg0 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (15 downto 0));
+      component main_go is
+            port (s0 : in std_logic_vector (7 downto 0);
+                  res : out std_logic_vector (15 downto 0));
       end component;
-      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
+      -- state registers
+      -- __st0: 8 bits, init 0x0
+      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(X"00");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal zi0 : std_logic_vector (7 downto 0);
+      signal za : std_logic_vector (7 downto 0);
       signal main_go_out : std_logic_vector (15 downto 0);
-      signal zi1 : std_logic_vector (7 downto 0);
-      signal \main_go_outR1\ : std_logic_vector (15 downto 0);
+      signal za_r1 : std_logic_vector (7 downto 0);
+      signal main_go_out_r1 : std_logic_vector (15 downto 0);
       signal zres : std_logic_vector (15 downto 0);
 begin
-zi0 <= rw_add(\__st0\, std_logic_vector'(B"00000001"));
-      inst : main_go port map (zi0, main_go_out);
-      zi1 <= rw_or(rw_shiftl(\__st0\, std_logic_vector'(B"00000001")), rw_resize(\__st0\(7 downto 7), 8));
-      \instR1\ : main_go port map (zi1, \main_go_outR1\);
-      zres <= rw_cond(rw_not(\__in0\), main_go_out, \main_go_outR1\);
+      -- combinational logic
+      za <= rw_add(\__st0\, std_logic_vector'(X"01"));
+      go_i : main_go port map (za, main_go_out);
+      za_r1 <= rw_or(rw_shiftl(\__st0\, std_logic_vector'(X"01")), rw_resize(\__st0\(7 downto 7), 8));
+      go_i_r1 : main_go port map (za_r1, main_go_out_r1);
+      zres <= rw_cond(rw_not(\__in0\), main_go_out, main_go_out_r1);
       \__st0_next\ <= zres(7 downto 0);
+      -- outputs
       \__out0\ <= zres(15 downto 8);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
-                  \__st0\ <= std_logic_vector'(B"00000000");
+            if rst = std_logic_vector'(B"1") then
+                  \__st0\ <= std_logic_vector'(X"00");
             elsif rising_edge(clk(0)) then
                   \__st0\ <= \__st0_next\;
             end if;
       end process;
 end architecture;
 
+-- main.go
+-- block '$L.Main.go' of process main
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity main_go is
-port (arg0 : in std_logic_vector (7 downto 0);
-      res : out std_logic_vector (15 downto 0));
+      port (s0 : in std_logic_vector (7 downto 0);
+            res : out std_logic_vector (15 downto 0));
 end entity;
 
 architecture rtl of main_go is
-
 begin
-res <= (arg0 & arg0);
+      res <= (s0 & s0);
 end architecture;
