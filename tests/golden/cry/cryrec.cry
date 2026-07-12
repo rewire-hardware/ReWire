@@ -1,0 +1,53 @@
+module cryrec where
+
+newtype Ctr = { cLo : [4], cHi : [4] }
+
+bump : Ctr -> Ctr
+bump c = Ctr { cLo = c.cLo + 1, cHi = c.cHi + (if c.cLo == 0xf then 1 else 0) }
+
+type Pair = { left : [8], right : [8] }
+
+mkPair : [8] -> [8] -> Pair
+mkPair a b = { left = a, right = b }
+
+swapP : Pair -> Pair
+swapP p = { left = p.right, right = p.left }
+
+setL : Pair -> [8] -> Pair
+setL p v = { p | left = v }
+
+recmix : [8] -> [8] -> [8]
+recmix x y = q.left ^ q.right ^ c'.cLo # c'.cHi
+  where p  = mkPair x y
+        q  = setL (swapP p) (x + y)
+        c' = bump (Ctr { cLo = take x, cHi = drop x })
+
+enum Op = OpAdd | OpSub | OpPass [8]
+
+decode : [2] -> [8] -> Op
+decode s v = if s == 0 then OpAdd else if s == 1 then OpSub else OpPass v
+
+eval : Op -> [8] -> [8] -> [8]
+eval o a b = case o of
+      OpAdd -> a + b
+      OpSub -> a - b
+      other -> case other of
+                     OpPass v -> v
+                     _        -> 0
+
+alu : [2] -> [8] -> [8] -> [8]
+alu s a b = eval (decode s (a ^ b)) a b
+
+swap2 : ([8], [8]) -> ([8], [8])
+swap2 (a, b) = (b, a)
+
+both : [8] -> [8] -> [8]
+both x y = r.0 - r.1
+  where r = swap2 (x, y)
+
+cg : {n} (fin n, n >= 1) => [n] -> [n]
+cg xs | n == 1 => xs
+      | n >  1 => reverse xs
+
+cguard : [8] -> [8]
+cguard x = cg x

@@ -52,11 +52,14 @@
   implementation used when the program runs under GHC (`f = cryptol
   "f.cry" "f" f` for none), mirroring the extern-model idiom. The
   supported fragment: first-order combinational functions over
-  Bit/words/vectors/tuples -- if-then-else, local value bindings,
-  sequence comprehensions (fully unrolled), foldl/foldr, indexing with
-  constant or variable indices, and the scalar, slicing, and enumeration
-  primitives; local function bindings, records, enums, and recursive
-  (stateful) Cryptol are rejected with located errors.
+  Bit/words/vectors/tuples/records/newtypes/enums -- if-then-else, local
+  value bindings, case expressions, record construction/selection/update,
+  numeric constraint guards, sequence comprehensions (fully unrolled),
+  foldl/foldr, indexing with constant or variable indices, and the
+  scalar, slicing, and enumeration primitives (records and enums are
+  interior-only: the entry point's type must be words/vectors/tuples);
+  local function bindings and recursive (stateful) Cryptol are rejected
+  with located errors.
 * `rwc -d`/`--dump` addresses every pipeline pass again (the front-end
   rework had left only the Hyle fold dumpable) and now writes each dump to
   a file beside the output instead of stdout, named for the pass number

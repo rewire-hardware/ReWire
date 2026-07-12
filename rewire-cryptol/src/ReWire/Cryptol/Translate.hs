@@ -19,10 +19,15 @@
 --   'S.withDeclGroups' interface, whose name map recovers each
 --   primitive clone's instantiation types.
 --
---   Supported fragment (v1): first-order functions over Bit, words,
---   vectors, and tuples; if-then-else; local value bindings; the scalar
---   and slicing primitives. Comprehensions, folds, local function
---   bindings, variable indexing, records, enums, and recursion are
+--   Supported fragment: first-order functions over Bit, words, vectors,
+--   tuples, records, newtypes, and enums (case expressions); if-then-else;
+--   local value bindings; comprehensions and folds (unrolled); the scalar
+--   and slicing primitives. Records and enums are interior-only: the
+--   entry point's type must still be words/vectors/tuples (the rwc side
+--   has no Cryptol-record counterpart). Enum values are laid out
+--   tag#pad#args with the tag at the most-significant end and the tag
+--   width nbits(#constructors) -- the same convention the Eidos fold
+--   uses for ReWire ADTs. Local function bindings and recursion are
 --   rejected with (it is hoped) actionable messages.
 module ReWire.Cryptol.Translate (translate) where
 
@@ -42,11 +47,13 @@ import qualified Cryptol.Transform.Specialize as S
 import qualified Cryptol.TypeCheck.AST        as T
 import qualified Cryptol.TypeCheck.InferTypes as TI
 import qualified Cryptol.TypeCheck.Solver.SMT as SMT
+import qualified Cryptol.TypeCheck.Subst      as TS
 import qualified Cryptol.TypeCheck.TypeMap    as TM
 import qualified Cryptol.TypeCheck.TypeOf     as T (fastTypeOf)
 import qualified Cryptol.Utils.Ident          as I
 import qualified Cryptol.Utils.Logger         as L
 import Cryptol.Utils.PP (pp)
+import Cryptol.Utils.RecordMap (canonicalFields, recordElements)
 
 import Control.Exception (try, SomeException)
 import Control.Monad (unless, foldM, zipWithM)
@@ -96,7 +103,7 @@ translate file fn ty entry = either bail id <$> (try go :: IO (Either SomeExcept
                                                             $ S.withDeclGroups (ME.allDeclGroups env2)
                                                             $ S.specializeExpr texpr) env2
                         let (body, dgs, nmap) = spec
-                        liftEither $ transClosure entry body dgs nmap
+                        liftEither $ transClosure entry body dgs nmap $ ME.loadedNominalTypes env2
 
 ---
 --- The specialized closure to Hyle definitions.
@@ -107,14 +114,20 @@ data TEnv = TEnv
       , teDefns :: HashMap Int (A.GId, A.Sig)   -- ^ Translated definitions: Hyle name and signature.
       , teTypes :: Map.Map N.Name T.Schema      -- ^ Schemas of everything in scope, for type reconstruction.
       , teScope :: HashMap Int A.Exp            -- ^ Local binders.
+      , teCons  :: HashMap Int (T.NominalType, ConDef) -- ^ Struct/enum constructors, by name unique.
+      , teDepth :: Int                          -- ^ Case-nesting depth (uniquifies scrutinee lets).
       }
 
-transClosure :: Text -> T.Expr -> [T.DeclGroup] -> Map.Map N.Name (TM.TypesMap N.Name) -> Either Text [A.Defn]
-transClosure entry body dgs nmap = do
+-- | A nominal-type constructor: a struct/newtype's (transparent), or an
+--   enum's (tagged).
+type ConDef = Either T.StructCon T.EnumCon
+
+transClosure :: Text -> T.Expr -> [T.DeclGroup] -> Map.Map N.Name (TM.TypesMap N.Name) -> Map.Map N.Name T.NominalType -> Either Text [A.Defn]
+transClosure entry body dgs nmap noms = do
       mapM_ noRec dgs
-      entryName <- case fst (spine body) of
-            T.EVar x -> pure x
-            _        -> Left "cryptol: unexpected expression shape after specialization (rwcry bug)."
+      entryName <- case spine body of
+            (T.EVar x, _, _) -> pure x
+            _                -> Left "cryptol: unexpected expression shape after specialization (rwcry bug)."
       let decls   = concatMap T.groupDecls dgs
           primSet = HM.fromList [ (N.nameUnique $ T.dName d, ()) | d <- decls, isPrim $ T.dDefinition d ]
           prims   = HM.fromList [ (N.nameUnique cl, (I.identText $ N.nameIdent orig, tys))
@@ -122,14 +135,17 @@ transClosure entry body dgs nmap = do
                                 , (tys, cl)  <- TM.toListTM tm
                                 , N.nameUnique cl `HM.member` primSet
                                 ]
-          exprDs  = [ (d, e) | d <- decls, T.DExpr e <- [T.dDefinition d] ]
+          exprDs  = [ (d, e) | d <- decls, e <- defBody (T.dDefinition d) ]
       unless (any ((== N.nameUnique entryName) . N.nameUnique . T.dName . fst) exprDs)
             $ Left "cryptol: the requested function is a Cryptol primitive; wrap it in a Cryptol definition."
       names <- HM.fromList <$> zipWithM (mkName entryName) [0 :: Int ..] exprDs
       let env = TEnv { tePrims = prims
                      , teDefns = names
-                     , teTypes = Map.fromList [ (T.dName d, T.dSignature d) | d <- decls ]
+                     , teTypes = Map.fromList $ [ (T.dName d, T.dSignature d) | d <- decls ]
+                                             <> concatMap T.nominalTypeConTypes (Map.elems noms)
                      , teScope = mempty
+                     , teCons  = HM.fromList $ concatMap conEntries $ Map.elems noms
+                     , teDepth = 0
                      }
       mapM (transDecl env) exprDs
       where noRec :: T.DeclGroup -> Either Text ()
@@ -142,6 +158,20 @@ transClosure entry body dgs nmap = do
             isPrim = \ case
                   T.DPrim -> True
                   _       -> False
+
+            -- A translatable body: an ordinary definition, or a Cryptol
+            -- foreign (C FFI) function's Cryptol fallback implementation.
+            defBody :: T.DeclDef -> [T.Expr]
+            defBody = \ case
+                  T.DExpr e             -> [e]
+                  T.DForeign _ (Just e) -> [e]
+                  _                     -> []
+
+            conEntries :: T.NominalType -> [(Int, (T.NominalType, ConDef))]
+            conEntries nt = case T.ntDef nt of
+                  T.Struct sc -> [ (N.nameUnique $ T.ntConName sc, (nt, Left sc)) ]
+                  T.Enum ecs  -> [ (N.nameUnique $ T.ecName ec, (nt, Right ec)) | ec <- ecs ]
+                  T.Abstract  -> []
 
             mkName :: N.Name -> Int -> (T.Decl, T.Expr) -> Either Text (Int, (A.GId, A.Sig))
             mkName entryName i (d, _) = do
@@ -184,18 +214,23 @@ transDecl env (d, e) = do
 --   of a point-free definition).
 transExp :: TEnv -> [A.Exp] -> T.Expr -> Either Text A.Exp
 transExp env etas e0 = case spine e0 of
-      (T.EVar x, args)
-            | Just (pn, tys) <- HM.lookup (N.nameUnique x) (tePrims env), pn `elem` (["foldl", "foldr"] :: [Text]) -> do
+      (T.EVar x, tys, args)
+            | Just (nt, con) <- HM.lookup (N.nameUnique x) (teCons env) -> do
+                  unless (null etas) $ Left "cryptol: partial application of a constructor cannot cross the Cryptol boundary."
+                  args' <- mapM (transExp env []) args
+                  transCon nt con tys args'
+            | Just (pn, tys') <- HM.lookup (N.nameUnique x) (tePrims env), pn `elem` (["foldl", "foldr"] :: [Text]) -> do
                   unless (null etas) $ Left $ "cryptol: partial application of " <> pn <> " cannot cross the Cryptol boundary."
-                  transFold env pn tys args
+                  transFold env pn tys' args
             | otherwise -> do
                   args' <- (<> etas) <$> mapM (transExp env []) args
                   apply env x args'
-      (e, _ : _)              -> Left $ "cryptol: unsupported application head" <> unsupported e
-      (e, []) | not (null etas) -> Left $ "cryptol: unsupported point-free definition shape" <> unsupported e
-      (e, [])     -> case e of
+      (e, _, _ : _)              -> Left $ "cryptol: unsupported application head" <> unsupported e
+      (e, _, []) | not (null etas) -> Left $ "cryptol: unsupported point-free definition shape" <> unsupported e
+      (e, _, [])  -> case e of
             T.ETuple es    -> A.cat <$> mapM (transExp env []) es
             T.EList es _   -> A.cat <$> mapM (transExp env []) es
+            T.ERec fs      -> A.cat <$> mapM (transExp env []) (recordElements fs)
             T.EIf c t f    -> do
                   c' <- transExp env [] c
                   t' <- transExp env [] t
@@ -204,12 +239,11 @@ transExp env etas e0 = case spine e0 of
             T.ESel e' sel  -> do
                   a'  <- transExp env [] e'
                   sel' env e' a' sel
+            T.ESet ty e' sel v -> transSet env ty e' sel v
+            T.ECase scrut alts dflt -> transCase env scrut alts dflt
             T.EWhere e' ds -> transWhere env e' ds
             T.EComp _ ety body mss -> transComp env ety body mss
             T.EAbs {}      -> Left "cryptol: a lambda in argument or result position cannot cross the Cryptol boundary (define it as a named function)."
-            T.ECase {}     -> Left "cryptol: case expressions (enums) are not supported yet."
-            T.ERec {}      -> Left "cryptol: records are not supported yet."
-            T.ESet {}      -> Left "cryptol: record/sequence update is not supported yet."
             _              -> Left $ "cryptol: unsupported expression" <> unsupported e
       where sel' :: TEnv -> T.Expr -> A.Exp -> T.Selector -> Either Text A.Exp
             sel' env' scrut a' = \ case
@@ -223,10 +257,127 @@ transExp env etas e0 = case spine e0 of
                         (n, we)  <- seqWidths t
                         unless (fromIntegral i < n) $ Left "cryptol: sequence selector out of bounds."
                         pure $ A.Slice noAnn (fromIntegral $ (n - 1 - fromIntegral i) * we) (fromIntegral we) a'
-                  T.RecordSel {} -> Left "cryptol: records are not supported yet."
+                  T.RecordSel f _ -> do
+                        t  <- exprTy env' scrut
+                        fs <- recFields t
+                        case break ((== f) . fst) fs of
+                              (_, [])              -> Left $ "cryptol: unknown record field: " <> I.identText f
+                              (_, (_, w) : post) -> pure $ A.Slice noAnn (fromIntegral $ sum $ map snd post) (fromIntegral w) a'
 
 unsupported :: T.Expr -> Text
 unsupported e = ": " <> T.pack (show $ pp e)
+
+-- | A saturated constructor application (arguments already translated).
+--   A struct (newtype) constructor is transparent: the value is its
+--   record argument's bits. An enum constructor builds tag#pad#args: the
+--   constructor's declaration index in nbits(#constructors) bits at the
+--   most-significant end, zero padding up to the enum's width, then the
+--   argument bits (matching the Eidos fold's ADT layout).
+transCon :: T.NominalType -> ConDef -> [T.Type] -> [A.Exp] -> Either Text A.Exp
+transCon nt con tys args = case con of
+      Left _sc -> case args of
+            [a] -> pure a
+            _   -> Left $ "cryptol: a struct constructor expects exactly its record argument: " <> ntName
+      Right ec -> do
+            su <- paramSubst nt tys
+            let nCons  = length [ () | T.Enum ecs <- [T.ntDef nt], _ <- ecs ]
+            ftys <- mapM (tyWidth . TS.apSubst su) $ T.ecFields ec
+            unless (length args == length ftys)
+                  $ Left $ "cryptol: partial application of an enum constructor cannot cross the Cryptol boundary: " <> ntName
+            w <- tyWidth $ T.TNominal nt tys
+            let tagW   = fromIntegral $ nbits $ fromIntegral nCons
+                szArgs = sum ftys
+                padW   = w - tagW - szArgs
+            unless (padW >= 0) $ Left "cryptol: enum constructor wider than its type (rwcry bug)."
+            pure $ A.cat $ [ A.Lit noAnn $ bitVec (fromIntegral tagW) (toInteger $ T.ecNumber ec) | tagW > 0 ]
+                        <> [ A.Lit noAnn $ zeros $ fromIntegral padW | padW > 0 ]
+                        <> args
+      where ntName = I.identText $ N.nameIdent $ T.ntName nt
+
+-- | A case expression over an enum value: the scrutinee is bound once
+--   (the let's name is uniquified by case-nesting depth, the only axis
+--   along which capture is possible), the tag slice is compared against
+--   each alternative's constructor index in declaration order, and each
+--   alternative's binders are bound to slices of the payload. The
+--   default alternative (if any) is the final else and may bind the
+--   whole scrutinee.
+transCase :: TEnv -> T.Expr -> Map.Map I.Ident T.CaseAlt -> Maybe T.CaseAlt -> Either Text A.Exp
+transCase env scrut alts dflt = do
+      st        <- exprTy env scrut
+      nt <- case T.tNoUser st of
+            T.TNominal nt' _ -> pure nt'
+            _                -> Left $ "cryptol: case on a non-enum type: " <> tshow st
+      ecs <- case T.ntDef nt of
+            T.Enum ecs -> pure ecs
+            _          -> Left $ "cryptol: case on a non-enum type: " <> tshow st
+      scrut' <- transExp env [] scrut
+      let sw    = A.sizeOf scrut'
+          tagW  = fromIntegral $ nbits $ fromIntegral $ length ecs
+          sname = "case$" <> showt (teDepth env)
+          sv    = A.Var noAnn sw sname
+          tag   = A.Slice noAnn (sw - tagW) tagW sv
+          env'  = env { teDepth = teDepth env + 1 }
+      arms   <- sequence [ (toInteger $ T.ecNumber ec, ) <$> alt env' sv a
+                         | ec <- ecs, Just a <- [Map.lookup (N.nameIdent $ T.ecName ec) alts] ]
+      dflt'  <- traverse (dfltAlt env' sv) dflt
+      chain  <- ifChain tagW tag arms dflt'
+      pure $ A.Let noAnn (A.sizeOf chain) sname scrut' chain
+      where -- An alternative's binders map to payload slices: the fields
+            -- sit at the least-significant end, first field first.
+            alt :: TEnv -> A.Exp -> T.CaseAlt -> Either Text A.Exp
+            alt env' sv (T.CaseAlt bs rhs) = do
+                  ws <- mapM (tyWidth . snd) bs
+                  let offs  = drop 1 $ scanr (+) 0 ws
+                      binds = [ (x, t, A.Slice noAnn (fromIntegral off) (fromIntegral w) sv)
+                              | ((x, t), w, off) <- zip3 bs ws offs ]
+                  transExp (bindAll env' binds) [] rhs
+
+            -- The default alternative may bind the scrutinee itself.
+            dfltAlt :: TEnv -> A.Exp -> T.CaseAlt -> Either Text A.Exp
+            dfltAlt env' sv (T.CaseAlt bs rhs) = case bs of
+                  []       -> transExp env' [] rhs
+                  [(x, t)] -> transExp (bindAll env' [(x, t, sv)]) [] rhs
+                  _        -> Left "cryptol: unexpected default case-alternative shape (rwcry bug)."
+
+            ifChain :: A.Size -> A.Exp -> [(Integer, A.Exp)] -> Maybe A.Exp -> Either Text A.Exp
+            ifChain tagW tag arms mDflt = case (arms, mDflt) of
+                  ([], Just d)          -> pure d
+                  ([], Nothing)         -> Left "cryptol: a case expression with no alternatives (rwcry bug)."
+                  ((_, a) : _, _) -> do
+                        let w = A.sizeOf a
+                            (initArms, lastArm) = case mDflt of
+                                  Just d  -> (arms, d)
+                                  Nothing -> (init arms, snd $ last arms)
+                        pure $ foldr (\ (i, rhs) els ->
+                                    A.If noAnn w (A.Prim noAnn 1 A.Eq [tag, A.Lit noAnn $ bitVec (fromIntegral tagW) i]) rhs els)
+                              lastArm initArms
+
+-- | A record (or tuple/sequence) update @{ e | sel = v }@: the bits
+--   before and after the selected field are carried over, the field's
+--   bits replaced.
+transSet :: TEnv -> T.Type -> T.Expr -> T.Selector -> T.Expr -> Either Text A.Exp
+transSet env ty e sel v = do
+      w  <- tyWidth ty
+      e' <- transExp env [] e
+      v' <- transExp env [] v
+      (off, fw) <- case sel of
+            T.RecordSel f _ -> do
+                  fs <- recFields ty
+                  case break ((== f) . fst) fs of
+                        (_, [])              -> Left $ "cryptol: unknown record field: " <> I.identText f
+                        (_, (_, fw) : post) -> pure (sum $ map snd post, fw)
+            T.TupleSel i _  -> do
+                  ws <- tupleWidths ty
+                  unless (i < length ws) $ Left "cryptol: tuple update selector out of bounds (rwcry bug)."
+                  pure (sum $ drop (i + 1) ws, ws !! i)
+            T.ListSel i _   -> do
+                  (n, we) <- seqWidths ty
+                  unless (fromIntegral i < n) $ Left "cryptol: sequence update selector out of bounds."
+                  pure ((n - 1 - fromIntegral i) * we, we)
+      let hiW = w - off - fw
+      pure $ A.cat $ [ A.Slice noAnn (fromIntegral $ off + fw) (fromIntegral hiW) e' | hiW > 0 ]
+                  <> [ v' ]
+                  <> [ A.Slice noAnn 0 (fromIntegral off) e' | off > 0 ]
 
 -- | Local bindings: monomorphic value bindings become Hyle lets;
 --   local functions (which may capture) are not supported yet.
@@ -351,10 +502,14 @@ transFold env pn tys args = case (pn, tys, args) of
 --   partially applied, or a lambda) to translated arguments.
 applyFn :: TEnv -> T.Expr -> [A.Exp] -> Either Text A.Exp
 applyFn env f args = case spine f of
-      (T.EVar x, pre) -> do
-            pre' <- mapM (transExp env []) pre
-            apply env x (pre' <> args)
-      (l@(T.EAbs {}), []) -> lam env l args
+      (T.EVar x, tys, pre)
+            | Just (nt, con) <- HM.lookup (N.nameUnique x) (teCons env) -> do
+                  pre' <- mapM (transExp env []) pre
+                  transCon nt con tys (pre' <> args)
+            | otherwise -> do
+                  pre' <- mapM (transExp env []) pre
+                  apply env x (pre' <> args)
+      (l@(T.EAbs {}), _, []) -> lam env l args
       _ -> Left "cryptol: unsupported function argument (use a named function or a lambda)."
       where lam :: TEnv -> T.Expr -> [A.Exp] -> Either Text A.Exp
             lam env' (T.EAbs x t b) (a : as) = lam (bindAll env' [(x, t, a)]) b as
@@ -526,14 +681,43 @@ transPrim pn tys args = case (pn, tys, args) of
 ---
 
 -- | The width of a representable Cryptol value type: Bit, words,
---   sequences, tuples.
+--   sequences, tuples, records, and nominal types (newtypes are their
+--   field record; enums are nbits(#constructors) of tag plus the widest
+--   constructor payload).
 tyWidth :: T.Type -> Either Text Integer
 tyWidth t = case T.tNoUser t of
       T.TCon (T.TC T.TCBit) []      -> pure 1
       T.TCon (T.TC T.TCSeq) [n, el] -> (*) <$> maybe (Left $ "cryptol: sequence length is not a literal: " <> tshow n) pure (tyNat n)
                                            <*> tyWidth el
       T.TCon (T.TC (T.TCTuple _)) es -> sum <$> mapM tyWidth es
+      T.TRec fs                     -> sum <$> mapM tyWidth (recordElements fs)
+      T.TNominal nt tys             -> do
+            su <- paramSubst nt tys
+            case T.ntDef nt of
+                  T.Struct sc -> sum <$> mapM (tyWidth . TS.apSubst su) (recordElements $ T.ntFields sc)
+                  T.Enum ecs  -> do
+                        ws <- mapM (fmap sum . mapM (tyWidth . TS.apSubst su) . T.ecFields) ecs
+                        pure $ toInteger (nbits $ fromIntegral $ length ecs) + maximum (0 : ws)
+                  T.Abstract  -> Left $ "cryptol: abstract type: " <> tshow t
       _                             -> Left $ "cryptol: unrepresentable type: " <> tshow t
+
+-- | Record fields and widths, in canonical (label-sorted) order -- the
+--   layout order, first field most significant. Newtypes are their
+--   underlying record.
+recFields :: T.Type -> Either Text [(I.Ident, Integer)]
+recFields t = case T.tNoUser t of
+      T.TRec fs -> mapM (\ (f, ft) -> (f, ) <$> tyWidth ft) $ canonicalFields fs
+      T.TNominal nt tys | T.Struct sc <- T.ntDef nt -> do
+            su <- paramSubst nt tys
+            mapM (\ (f, ft) -> (f, ) <$> tyWidth (TS.apSubst su ft)) $ canonicalFields $ T.ntFields sc
+      _         -> Left $ "cryptol: expected a record type, got: " <> tshow t
+
+-- | The substitution instantiating a nominal type's parameters.
+paramSubst :: T.NominalType -> [T.Type] -> Either Text TS.Subst
+paramSubst nt tys = do
+      unless (length (T.ntParams nt) == length tys)
+            $ Left $ "cryptol: under-applied nominal type: " <> I.identText (N.nameIdent $ T.ntName nt)
+      pure $ TS.listParamSubst $ zip (T.ntParams nt) tys
 
 -- | Tuple component widths.
 tupleWidths :: T.Type -> Either Text [Integer]
@@ -572,15 +756,18 @@ exprTy env e = pure $ T.fastTypeOf (teTypes env) e
 tshow :: T.Type -> Text
 tshow = T.pack . show . pp
 
--- | An application spine, stripping locations and proofs.
-spine :: T.Expr -> (T.Expr, [T.Expr])
-spine = go []
-      where go :: [T.Expr] -> T.Expr -> (T.Expr, [T.Expr])
-            go acc = \ case
-                  T.ELocated _ e -> go acc e
-                  T.EProofApp e  -> go acc e
-                  T.EApp f a     -> go (a : acc) f
-                  e              -> (e, acc)
+-- | An application spine, stripping locations and proofs and collecting
+--   type applications (which survive specialization only on
+--   constructors, whose instantiation they carry).
+spine :: T.Expr -> (T.Expr, [T.Type], [T.Expr])
+spine = go [] []
+      where go :: [T.Type] -> [T.Expr] -> T.Expr -> (T.Expr, [T.Type], [T.Expr])
+            go tacc acc = \ case
+                  T.ELocated _ e -> go tacc acc e
+                  T.EProofApp e  -> go tacc acc e
+                  T.EApp f a     -> go tacc (a : acc) f
+                  T.ETApp e t    -> go (t : tacc) acc e
+                  e              -> (e, tacc, acc)
 
 -- | The (arguments, result) of a function type.
 flatFun :: T.Type -> ([T.Type], T.Type)
