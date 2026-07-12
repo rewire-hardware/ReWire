@@ -66,9 +66,14 @@
   element-wise), `scanl`, `update`/`updateEnd`, rotates, element shifts,
   `transpose`, carry-less polynomial arithmetic
   (`pmult`/`pdiv`/`pmod`, constant divisor), `lg2`, signed division,
-  and modular arithmetic (`Z n` as a bounded word, interior-only);
-  value recursion, infinite streams, floating point, and other
-  unrepresentable or stateful Cryptol are rejected with located errors.
+  and modular arithmetic (`Z n` as a bounded word, interior-only).
+  `error`/`assert`/`undefined` compile to a zero constant (Hyle is
+  total) and `trace`/`traceVal` to the identity, each with a
+  compile-time warning; an unrolling that exceeds a node budget
+  (tunable with `RWC_CRY_MAX_NODES`) fails with an actionable message
+  rather than hanging. Value recursion, infinite streams, floating
+  point, and other unrepresentable or stateful Cryptol are rejected
+  with located errors.
 * `rwc -d`/`--dump` addresses every pipeline pass again (the front-end
   rework had left only the Hyle fold dumpable) and now writes each dump to
   a file beside the output instead of stdout, named for the pass number

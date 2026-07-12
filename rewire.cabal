@@ -92,11 +92,13 @@ data-files:
     tests/negative/core-slice-out-of-bounds.rwc
     tests/negative/core-unknown-extern-instance.rwc
     tests/negative/cry/cryneg.cry
+    tests/warning/cryptol-poison.hs
     tests/warning/extern-model-clocked.hs
     tests/warning/extern-model-rejected.hs
     tests/warning/live-error-call.hs
     tests/warning/missing-inputs.hs
     tests/warning/testbench-ignored.hs
+    tests/warning/cry/cryerr.cry
     tests/golden/Mods/Infix.hs
     tests/golden/Mods/X.hs
     tests/golden/Mods/Y.hs
