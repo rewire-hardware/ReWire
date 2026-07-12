@@ -61,8 +61,13 @@
   local function bindings, higher-order functions applied to statically
   known functions (named, lambdas, curried, or chosen by `if`/`case`),
   and type-indexed recursion (e.g. `pow`{e-1}` behind constraint
-  guards, unrolled per instantiation); value recursion and other
-  stateful Cryptol are rejected with located errors.
+  guards, unrolled per instantiation); recursive finite comprehensions
+  (the message-schedule/key-expansion/CBC-chaining idiom, unrolled
+  element-wise), `scanl`, `update`/`updateEnd`, rotates, element shifts,
+  `transpose`, carry-less polynomial arithmetic
+  (`pmult`/`pdiv`/`pmod`, constant divisor), `lg2`, signed division;
+  value recursion, infinite streams, and other stateful Cryptol are
+  rejected with located errors.
 * `rwc -d`/`--dump` addresses every pipeline pass again (the front-end
   rework had left only the Hyle fold dumpable) and now writes each dump to
   a file beside the output instead of stdout, named for the pass number

@@ -56,12 +56,14 @@ import Cryptol.Utils.PP (pp)
 import Cryptol.Utils.RecordMap (canonicalFields, recordElements)
 
 import Control.Exception (try, SomeException)
-import Control.Monad (unless, foldM)
+import Control.Monad (unless)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError, liftEither)
 import Control.Monad.IO.Class (liftIO)
+import Data.Bits (testBit)
 import Data.Char (isAlphaNum)
 import Data.Graph (stronglyConnComp, SCC (..))
 import Data.HashMap.Strict (HashMap)
+import Data.List (genericLength)
 import Data.Text (Text)
 import System.FilePath (takeDirectory)
 
@@ -120,6 +122,8 @@ data TEnv = TEnv
       , teFuns  :: HashMap Int (TEnv, T.Expr)   -- ^ Inlinable bindings (higher-order or otherwise
                                                 --   un-Hyle-able definitions, local functions), with
                                                 --   the environment closed over at the binding.
+      , teInts  :: HashMap Int Integer          -- ^ Constant Integer-typed binders (unrolled
+                                                --   comprehension indices); see 'intVal'.
       }
 
 -- | A nominal-type constructor: a struct/newtype's (transparent), or an
@@ -159,6 +163,7 @@ transClosure entry body dgs nmap noms = do
                      , teCons  = HM.fromList $ concatMap conEntries $ Map.elems noms
                      , teDepth = 0
                      , teFuns  = HM.fromList [ (N.nameUnique $ T.dName d, (env, e)) | (d, e) <- inls ]
+                     , teInts  = mempty
                      }
       mapM (transDecl env . snd) fits
       where isPrim :: T.DeclDef -> Bool
@@ -200,16 +205,23 @@ orderDecls = fmap concat . mapM go
       where go :: T.DeclGroup -> Either Text [T.Decl]
             go = \ case
                   T.NonRecursive d -> pure [d]
-                  T.Recursive ds   -> mapM unSCC $ stronglyConnComp
-                        [ (d, N.nameUnique $ T.dName d, filter (`HM.member` us) $ map N.nameUnique $ declRefs d)
-                        | d <- ds ]
-                        where us = HM.fromList [ (N.nameUnique $ T.dName d, ()) | d <- ds ]
+                  T.Recursive ds   -> mapM unSCC $ sccDecls ds
 
             unSCC :: SCC T.Decl -> Either Text T.Decl
             unSCC = \ case
                   AcyclicSCC d -> pure d
-                  CyclicSCC ds -> Left $ "cryptol: recursive definitions are not supported: "
-                        <> T.intercalate ", " (map (I.identText . N.nameIdent . T.dName) ds)
+                  CyclicSCC ds -> Left $ noRecMsg ds
+
+-- | Strongly connected components of a recursive group, in dependency
+--   order.
+sccDecls :: [T.Decl] -> [SCC T.Decl]
+sccDecls ds = stronglyConnComp
+      [ (d, N.nameUnique $ T.dName d, filter (`HM.member` us) $ map N.nameUnique $ declRefs d) | d <- ds ]
+      where us = HM.fromList [ (N.nameUnique $ T.dName d, ()) | d <- ds ]
+
+noRecMsg :: [T.Decl] -> Text
+noRecMsg ds = "cryptol: recursive definitions are not supported: "
+      <> T.intercalate ", " (map (I.identText . N.nameIdent . T.dName) ds)
 
 -- | Names referenced by a declaration/expression (for the post-
 --   specialization recursion analysis).
@@ -281,6 +293,8 @@ transDecl env (d, e) = do
 --   definition, or arguments awaiting a function-valued subexpression
 --   (they thread through lambdas, ifs, wheres, and cases).
 transExp :: TEnv -> [A.Exp] -> T.Expr -> Either Text A.Exp
+transExp env etas e0
+      | null etas, Just v <- intVal env e0 = pure $ intLit v
 transExp env etas e0 = case spine e0 of
       (T.EVar x, tys, args)
             | Just (nt, con) <- HM.lookup (N.nameUnique x) (teCons env) -> do
@@ -289,7 +303,7 @@ transExp env etas e0 = case spine e0 of
                   transCon nt con tys args'
             | Just (envF, rhs) <- HM.lookup (N.nameUnique x) (teFuns env) ->
                   inline env envF rhs args etas
-            | Just (pn, tys') <- HM.lookup (N.nameUnique x) (tePrims env), pn `elem` (["foldl", "foldr"] :: [Text]) -> do
+            | Just (pn, tys') <- HM.lookup (N.nameUnique x) (tePrims env), pn `elem` (["foldl", "foldr", "scanl"] :: [Text]) -> do
                   unless (null etas) $ Left $ "cryptol: partial application of " <> pn <> " cannot cross the Cryptol boundary."
                   transFold env pn tys' args
             | otherwise -> do
@@ -338,6 +352,72 @@ transExp env etas e0 = case spine e0 of
 
 unsupported :: T.Expr -> Text
 unsupported e = ": " <> T.pack (show $ pp e)
+
+-- | Evaluate a constant Integer-typed expression. Unbounded Integers at
+--   runtime are unrepresentable in hardware, but the common uses --
+--   comprehension indices (@[4 .. 43]@ defaults its elements to Integer)
+--   flowing into indexing, arithmetic, and comparisons -- are constants
+--   once comprehensions unroll: comprehension binders over constant
+--   Integer sequences land in 'teInts', and this folds the arithmetic
+--   over them.
+intVal :: TEnv -> T.Expr -> Maybe Integer
+intVal env e = case spine e of
+      (T.EVar x, _, args) -> case (HM.lookup (N.nameUnique x) $ teInts env, HM.lookup (N.nameUnique x) $ teFuns env, args) of
+            (Just v, _, [])           -> pure v
+            (_, Just (envF, rhs), []) -> intVal envF rhs
+            _                         -> do
+                  (pn, tys) <- HM.lookup (N.nameUnique x) $ tePrims env
+                  vs        <- mapM (intVal env) args
+                  -- Only at the Integer instance: literals and arithmetic
+                  -- at word types translate as words.
+                  case (pn, tys, vs) of
+                        ("number", [v, rep], []) | isInteger rep       -> tyNat v
+                        ("+", [t], [a, b])       | isInteger t         -> pure $ a + b
+                        ("-", [t], [a, b])       | isInteger t         -> pure $ a - b
+                        ("*", [t], [a, b])       | isInteger t         -> pure $ a * b
+                        ("/", [t], [a, b])       | isInteger t, b /= 0 -> pure $ a `div` b
+                        ("%", [t], [a, b])       | isInteger t, b /= 0 -> pure $ a `mod` b
+                        ("^^", [t, _], [a, b])   | isInteger t, b >= 0 -> pure $ a ^ b
+                        ("negate", [t], [a])     | isInteger t         -> pure $ negate a
+                        ("toInteger", _, [a])                          -> pure a
+                        ("max", [t], [a, b])     | isInteger t         -> pure $ max a b
+                        ("min", [t], [a, b])     | isInteger t         -> pure $ min a b
+                        _                                              -> Nothing
+      _ -> Nothing
+
+-- | An Integer constant as a Hyle literal, at the width of its value
+--   (consumers -- indexing, shift amounts -- extend as needed).
+intLit :: Integer -> A.Exp
+intLit v = A.Lit noAnn $ bitVec (max 1 $ fromIntegral $ nbits $ fromIntegral $ max 0 v + 1) v
+
+-- | The constant value of a translated expression, folding literal
+--   arithmetic (unrolled comprehension indices produce shapes like
+--   @sub i 4@ over literals).
+litVal :: A.Exp -> Maybe Integer
+litVal = \ case
+      A.Lit _ bv          -> pure $ nat bv
+      A.Slice _ off w e   -> do
+            v <- litVal e
+            pure $ (v `div` (2 ^ toInteger off)) `mod` (2 ^ toInteger w)
+      A.Cat _ l r         -> do
+            lv <- litVal l
+            rv <- litVal r
+            pure $ lv * (2 ^ toInteger (A.sizeOf r)) + rv
+      A.Prim _ w op es    -> do
+            vs <- mapM litVal es
+            let wrap v = v `mod` (2 ^ toInteger w)
+            case (op, vs) of
+                  (A.Add,  [a, b])          -> pure $ wrap $ a + b
+                  (A.Sub,  [a, b])          -> pure $ wrap $ a - b
+                  (A.Mul,  [a, b])          -> pure $ wrap $ a * b
+                  (A.UDiv, [a, b]) | b /= 0 -> pure $ a `div` b
+                  (A.UMod, [a, b]) | b /= 0 -> pure $ a `mod` b
+                  (A.Shl,  [a, b])          -> pure $ wrap $ a * 2 ^ b
+                  (A.LShr, [a, b])          -> pure $ a `div` (2 ^ b)
+                  (A.ZExt _,  [a])          -> pure a
+                  (A.Trunc _, [a])          -> pure $ wrap a
+                  _                         -> Nothing
+      _                   -> Nothing
 
 -- | Inline an inlinable binding at a use site: parameters with
 --   Hyle-representable types bind to their translated arguments; the
@@ -482,14 +562,28 @@ transSet env ty e sel v = do
 -- | Local bindings: representable monomorphic value bindings become
 --   Hyle lets; local functions (and unrepresentable local values, e.g.
 --   Integer-typed intermediates) are recorded with the environment they
---   close over and inlined at their use sites.
+--   close over and inlined at their use sites; recursive groups that
+--   survive the post-specialization SCC analysis are recursive sequence
+--   definitions, unrolled element-wise by 'recSeqs'.
 transWhere :: TEnv -> [A.Exp] -> T.Expr -> [T.DeclGroup] -> Either Text A.Exp
-transWhere env etas body dgs = do
-      decls <- orderDecls dgs
-      go env decls
-      where go :: TEnv -> [T.Decl] -> Either Text A.Exp
-            go env' []       = transExp env' etas body
-            go env' (d : ds) = case T.dDefinition d of
+transWhere env etas body dgs = go env $ concatMap items dgs
+      where items :: T.DeclGroup -> [Either T.Decl [T.Decl]]
+            items = \ case
+                  T.NonRecursive d -> [Left d]
+                  T.Recursive ds   -> map fromSCC $ sccDecls ds
+
+            fromSCC :: SCC T.Decl -> Either T.Decl [T.Decl]
+            fromSCC = \ case
+                  AcyclicSCC d -> Left d
+                  CyclicSCC c  -> Right c
+
+            go :: TEnv -> [Either T.Decl [T.Decl]] -> Either Text A.Exp
+            go env' []              = transExp env' etas body
+            go env' (Right c : ds)  = do
+                  (env'', lets) <- recSeqs env' c
+                  rest <- go env'' ds
+                  pure $ foldr (\ (x, rhs) b -> A.Let noAnn (A.sizeOf b) x rhs b) rest lets
+            go env' (Left d : ds) = case T.dDefinition d of
                   T.DExpr rhs | ([], t) <- flatFun $ T.sType $ T.dSignature d, Right _ <- tyWidth t -> do
                         rhs' <- transExp env' [] rhs
                         let x  = sanitize (I.identText $ N.nameIdent $ T.dName d) <> "$" <> showt (N.nameUnique $ T.dName d)
@@ -502,6 +596,124 @@ transWhere env etas body dgs = do
                                          , teTypes = Map.insert (T.dName d) (T.dSignature d) $ teTypes env'
                                          } ds
                   _         -> Left "cryptol: unsupported local binding."
+
+-- | A cyclic group of local value bindings, each a finite sequence: the
+--   recursive-comprehension idiom (@ys = [iv] # [ f y x | y <- ys | x <-
+--   xs ]@ -- CBC chaining, key schedules, message schedules). Each
+--   definition's name is bound to the concatenation of fresh per-element
+--   variables, the right-hand sides translate against that (so
+--   self-references become element references once 'pev' folds the
+--   slice/concat algebra), and the elements are let-bound in dependency
+--   order; a genuinely cyclic element dependency is rejected.
+recSeqs :: TEnv -> [T.Decl] -> Either Text (TEnv, [(A.Name, A.Exp)])
+recSeqs env ds = do
+      infos <- mapM info ds
+      let env' = env { teScope = HM.fromList [ (u, A.cat [ A.Var noAnn (fromIntegral we) x | x <- xs ])
+                                             | (u, _, we, xs, _) <- infos ] <> teScope env
+                     , teTypes = Map.fromList [ (T.dName d, T.dSignature d) | d <- ds ] <> teTypes env
+                     }
+      elems <- concat <$> mapM (elemsOf env') infos
+      let nameSet = HM.fromList [ (x, ()) | (x, _) <- elems ]
+      lets <- mapM unSCC $ stronglyConnComp
+            [ ((x, e), x, [ r | r <- varRefs e, r `HM.member` nameSet ]) | (x, e) <- elems ]
+      pure (env', lets)
+      where info :: T.Decl -> Either Text (Int, Integer, Integer, [A.Name], T.Expr)
+            info d = case T.dDefinition d of
+                  T.DExpr rhs | ([], t) <- flatFun $ T.sType $ T.dSignature d
+                              , Right (n, we) <- seqWidths t ->
+                        let base = sanitize (I.identText $ N.nameIdent $ T.dName d) <> "$" <> showt (N.nameUnique $ T.dName d)
+                        in pure ( N.nameUnique $ T.dName d, n, we
+                                , [ base <> "$" <> showt i | i <- [0 .. n - 1] ], rhs )
+                  _ -> Left $ noRecMsg ds
+
+            elemsOf :: TEnv -> (Int, Integer, Integer, [A.Name], T.Expr) -> Either Text [(A.Name, A.Exp)]
+            elemsOf env' (_, n, we, xs, rhs) = do
+                  rhs' <- transExp env' [] rhs
+                  pure [ (x, pev $ elemSlice n we i rhs') | (i, x) <- zip [0 ..] xs ]
+
+            unSCC :: SCC (A.Name, A.Exp) -> Either Text (A.Name, A.Exp)
+            unSCC = \ case
+                  AcyclicSCC x -> pure x
+                  CyclicSCC xs -> Left $ "cryptol: a recursive sequence definition has a cyclic element dependency: "
+                        <> T.intercalate ", " (map fst xs)
+
+-- | Partial evaluation of a translated expression: slice/concat/literal
+--   algebra plus constant arithmetic. Extracting the elements of a
+--   recursive sequence definition relies on this: the element slice of
+--   the translated right-hand side must reduce to references to only
+--   the element variables it actually depends on, so that the elements
+--   admit a dependency order.
+pev :: A.Exp -> A.Exp
+pev = \ case
+      A.Cat an l r         -> A.Cat an (pev l) (pev r)
+      A.Slice _ off w e    -> sliceE (toInteger off) (toInteger w) (pev e)
+      A.Prim an w op es    ->
+            let e' = A.Prim an w op $ map pev es
+            in maybe e' (A.Lit an . bitVec (fromIntegral w)) $ litVal e'
+      A.If an w c t f      -> case litVal $ pev c of
+            Just v  -> if v /= 0 then pev t else pev f
+            Nothing -> A.If an w (pev c) (pev t) (pev f)
+      A.Call an w g es     -> A.Call an w g $ map pev es
+      A.XCall an w x gs es -> A.XCall an w x gs $ map pev es
+      A.Let an w x rhs b   -> A.Let an w x (pev rhs) (pev b)
+      e                    -> e
+
+-- | @sliceE off w e@: e[off +: w], pushing the slice through concats,
+--   slices, literals, and muxes.
+sliceE :: Integer -> Integer -> A.Exp -> A.Exp
+sliceE off w e
+      | w <= 0                                = A.Lit noAnn $ zeros 0
+      | off == 0, w == toInteger (A.sizeOf e) = e
+      | otherwise = case e of
+            A.Cat _ l r ->
+                  let rw = toInteger $ A.sizeOf r
+                  in if off >= rw then sliceE (off - rw) w l
+                     else if off + w <= rw then sliceE off w r
+                     else A.Cat noAnn (sliceE 0 (off + w - rw) l) (sliceE off (rw - off) r)
+            A.Slice _ off' _ e' -> sliceE (off + toInteger off') w e'
+            A.Lit _ bv          -> A.Lit noAnn $ bitVec (fromIntegral w) $ (nat bv `div` (2 ^ off)) `mod` (2 ^ w)
+            A.If _ _ c t f      -> A.If noAnn (fromIntegral w) c (sliceE off w t) (sliceE off w f)
+            _                   -> A.Slice noAnn (fromIntegral off) (fromIntegral w) e
+
+-- | Variable references in a translated expression.
+varRefs :: A.Exp -> [A.Name]
+varRefs = \ case
+      A.Var _ _ x        -> [x]
+      A.Cat _ l r        -> varRefs l <> varRefs r
+      A.Slice _ _ _ e    -> varRefs e
+      A.Prim _ _ _ es    -> concatMap varRefs es
+      A.Call _ _ _ es    -> concatMap varRefs es
+      A.XCall _ _ _ _ es -> concatMap varRefs es
+      A.If _ _ c t f     -> varRefs c <> varRefs t <> varRefs f
+      A.Let _ _ _ rhs b  -> varRefs rhs <> varRefs b
+      _                  -> []
+
+-- | Count references to a variable (a let-binding may shadow it).
+countVar :: A.Name -> A.Exp -> Int
+countVar x = \ case
+      A.Var _ _ y        -> if y == x then 1 else 0
+      A.Cat _ l r        -> countVar x l + countVar x r
+      A.Slice _ _ _ e    -> countVar x e
+      A.Prim _ _ _ es    -> sum $ map (countVar x) es
+      A.Call _ _ _ es    -> sum $ map (countVar x) es
+      A.XCall _ _ _ _ es -> sum $ map (countVar x) es
+      A.If _ _ c t f     -> countVar x c + countVar x t + countVar x f
+      A.Let _ _ y rhs b  -> countVar x rhs + (if y == x then 0 else countVar x b)
+      _                  -> 0
+
+-- | Substitute an expression for a variable (a let-binding shadows it).
+substVar :: A.Name -> A.Exp -> A.Exp -> A.Exp
+substVar x s = go
+      where go = \ case
+                  A.Var _ _ y        | y == x -> s
+                  A.Cat an l r        -> A.Cat an (go l) (go r)
+                  A.Slice an o w e    -> A.Slice an o w (go e)
+                  A.Prim an w op es   -> A.Prim an w op $ map go es
+                  A.Call an w g es    -> A.Call an w g $ map go es
+                  A.XCall an w n gs es -> A.XCall an w n gs $ map go es
+                  A.If an w c t f     -> A.If an w (go c) (go t) (go f)
+                  A.Let an w y rhs b  -> A.Let an w y (go rhs) (if y == x then b else go b)
+                  e                   -> e
 
 -- | A comprehension, fully unrolled: the lengths are concrete after
 --   specialization, so each element of the result is the body translated
@@ -543,6 +755,14 @@ armIter env ms = do
                         go _ [] = pure []
                         go env' ((m, dig) : rest) = do
                               b@(x, t, _) <- case (m, dig) of
+                                    -- Integer-element generators (index idioms like
+                                    -- @i <- [4 .. 43]@ default to Integer) bind each
+                                    -- unrolled index to its constant value.
+                                    (T.From x' _ et src, Just i) | isInteger et -> do
+                                          vs <- seqIntVals env' src
+                                          v  <- maybe (Left "cryptol: comprehension index out of range (rwcry bug).") pure
+                                                    $ lookup i $ zip [0 ..] vs
+                                          pure (x', et, intLit v)
                                     (T.From x' _ et src, Just i) -> do
                                           we   <- tyWidth et
                                           n    <- maybe (Left "cryptol: non-literal length (rwcry bug)") pure . tyNat $ srcLen m
@@ -569,31 +789,107 @@ armIter env ms = do
                         go' (Nothing : rest) k' = Nothing : go' rest k'
                         go' (Just n : rest) k'  = Just (k' `mod` n) : go' rest (k' `div` n)
 
--- | Extend the environment with translated bindings.
+-- | Extend the environment with translated bindings (constant
+--   Integer-typed binders also land in 'teInts' for 'intVal').
 bindAll :: TEnv -> [(N.Name, T.Type, A.Exp)] -> TEnv
 bindAll env binds = env
       { teScope = HM.fromList [ (N.nameUnique x, a) | (x, _, a) <- binds ] <> teScope env
       , teTypes = foldr (\ (x, t, _) -> Map.insert x (T.tMono t)) (teTypes env) binds
+      , teInts  = HM.fromList [ (N.nameUnique x, v) | (x, t, a) <- binds, isInteger t, Just v <- [litVal a] ] <> teInts env
       }
 
--- | Unrolled folds; the function argument is taken unstranslated (it may
---   be a reference or a lambda -- there are no function values in Hyle).
+-- | The constant values of an Integer-element sequence (an enumeration
+--   primitive or a literal list): Integer generators only unroll over
+--   constants.
+seqIntVals :: TEnv -> T.Expr -> Either Text [Integer]
+seqIntVals env src = case spine src of
+      (T.EVar x, _, [])
+            | Just (pn, tys) <- HM.lookup (N.nameUnique x) $ tePrims env
+            , Just (vs, _) <- enumVals pn tys -> pure vs
+      (T.EList es _, _, []) -> maybe (Left msg) pure $ mapM (intVal env) es
+      _                     -> Left msg
+      where msg = "cryptol: a comprehension over Integer must draw from a constant range or list."
+
+-- | The values and element type of a constant enumeration primitive.
+enumVals :: Text -> [T.Type] -> Maybe ([Integer], T.Type)
+enumVals pn tys = case (pn, tys) of
+      ("fromTo",                  [f, l, a])          -> range a $ (\ fv lv -> [fv .. lv])                  <$> tyNat f <*> tyNat l
+      ("fromToLessThan",          [f, b, a])          -> range a $ (\ fv bv -> [fv .. bv - 1])              <$> tyNat f <*> tyNat b
+      ("fromToBy",                [f, l, s, a])       -> range a $ (\ fv lv sv -> [fv, fv + sv .. lv])      <$> tyNat f <*> tyNat l <*> tyNat s
+      ("fromToByLessThan",        [f, b, s, a])       -> range a $ (\ fv bv sv -> [fv, fv + sv .. bv - 1])  <$> tyNat f <*> tyNat b <*> tyNat s
+      ("fromToDownBy",            [f, l, s, a])       -> range a $ (\ fv lv sv -> [fv, fv - sv .. lv])      <$> tyNat f <*> tyNat l <*> tyNat s
+      ("fromToDownByGreaterThan", [f, b, s, a])       -> range a $ (\ fv bv sv -> [fv, fv - sv .. bv + 1])  <$> tyNat f <*> tyNat b <*> tyNat s
+      ("fromThenTo",              [f, nx, l, a, _n])  -> range a $ (\ fv nv lv -> [fv, nv .. lv])           <$> tyNat f <*> tyNat nx <*> tyNat l
+      _                                               -> Nothing
+      where range :: T.Type -> Maybe [Integer] -> Maybe ([Integer], T.Type)
+            range a = fmap (, a)
+
+-- | Unrolled folds and scans; the function argument is taken
+--   untranslated (it may be a reference or a lambda -- there are no
+--   function values in Hyle). Each accumulator step is let-bound
+--   (fold$<depth>$<k>) so a step function that uses its accumulator more
+--   than once doesn't blow up the term.
 transFold :: TEnv -> Text -> [T.Type] -> [T.Expr] -> Either Text A.Exp
 transFold env pn tys args = case (pn, tys, args) of
       ("foldl", [n, _b, a], [f, z, xs]) -> do
             (nv, we, xsA, zA) <- setup n a xs z
-            foldM (\ acc i -> applyFn env f [acc, elemSlice nv we i xsA]) zA [0 .. nv - 1]
+            foldChain zA [ \ env' acc -> applyFn env' f [acc, elemSlice nv we i xsA] | i <- [0 .. nv - 1] ]
       ("foldr", [n, a, _b], [f, z, xs]) -> do
             (nv, we, xsA, zA) <- setup n a xs z
-            foldM (\ acc i -> applyFn env f [elemSlice nv we i xsA, acc]) zA [nv - 1, nv - 2 .. 0]
+            foldChain zA [ \ env' acc -> applyFn env' f [elemSlice nv we i xsA, acc] | i <- [nv - 1, nv - 2 .. 0] ]
+      ("scanl", [n, _a, b], [f, z, xs]) -> do
+            (nv, we, xsA, zA) <- setup n b xs z
+            scanChain zA [ \ env' acc -> applyFn env' f [acc, elemSlice nv we i xsA] | i <- [0 .. nv - 1] ]
       _ -> Left $ "cryptol: unsupported use of " <> pn <> " (expected a fully applied fold)."
       where setup :: T.Type -> T.Type -> T.Expr -> T.Expr -> Either Text (Integer, Integer, A.Exp, A.Exp)
-            setup n a xs z = do
+            setup n el xs z = do
                   nv  <- maybe (Left $ "cryptol: (" <> pn <> "): non-literal length.") pure $ tyNat n
-                  we  <- tyWidth a
+                  we  <- tyWidth el
                   xsA <- transExp env [] xs
                   zA  <- transExp env [] z
                   pure (nv, we, xsA, zA)
+
+            env' :: TEnv
+            env' = env { teDepth = teDepth env + 1 }
+
+            nm :: Int -> A.Name
+            nm k = "fold$" <> showt (teDepth env) <> "$" <> showt k
+
+            -- A fold: thread the accumulator through the steps, keeping
+            -- only the final value. An intermediate is let-bound only when
+            -- its consuming step uses it more than once; a single-use
+            -- accumulator inlines, so a plain reduction stays a single
+            -- expression (as before scans were let-bound).
+            foldChain :: A.Exp -> [TEnv -> A.Exp -> Either Text A.Exp] -> Either Text A.Exp
+            foldChain z steps = do
+                  let w = A.sizeOf z
+                  (final, binds) <- foldl' (stepFold w) (pure (z, [])) (zip [0 ..] steps)
+                  pure $ foldr (\ (x, rhs) b -> A.Let noAnn (A.sizeOf b) x rhs b) final $ reverse binds
+
+            stepFold :: A.Size -> Either Text (A.Exp, [(A.Name, A.Exp)]) -> (Int, TEnv -> A.Exp -> Either Text A.Exp)
+                     -> Either Text (A.Exp, [(A.Name, A.Exp)])
+            stepFold w acc (k, step) = do
+                  (cur, binds) <- acc
+                  body <- step env' $ A.Var noAnn w $ nm k
+                  if countVar (nm k) body > 1
+                        then pure (body, (nm k, cur) : binds)       -- share the accumulator
+                        else pure (substVar (nm k) cur body, binds) -- inline it
+
+            -- A scan: every prefix feeds the output, so each accumulator
+            -- is let-bound and referenced by name.
+            scanChain :: A.Exp -> [TEnv -> A.Exp -> Either Text A.Exp] -> Either Text A.Exp
+            scanChain z steps = do
+                  let w = A.sizeOf z
+                  binds <- goScan w 0 steps
+                  let allBinds = (nm 0, z) : binds
+                      out      = A.cat [ A.Var noAnn w $ nm k | k <- [0 .. length steps] ]
+                  pure $ foldr (\ (x, rhs) b -> A.Let noAnn (A.sizeOf b) x rhs b) out allBinds
+
+            goScan :: A.Size -> Int -> [TEnv -> A.Exp -> Either Text A.Exp] -> Either Text [(A.Name, A.Exp)]
+            goScan _ _ []            = pure []
+            goScan w k (step : rest) = do
+                  body <- step env' $ A.Var noAnn w $ nm k
+                  ((nm (k + 1), body) :) <$> goScan w (k + 1) rest
 
 -- | Apply a function-position expression (a reference, possibly already
 --   partially applied, or a lambda) to translated arguments.
@@ -646,7 +942,7 @@ transPrim pn tys args = case (pn, tys, args) of
             val <- tyNat' "number" v
             case wordWidth rep of
                   Just w  -> pure $ A.Lit noAnn $ bitVec (fromIntegral w) val
-                  Nothing | isInteger rep -> pure $ A.Lit noAnn $ bitVec (max 1 $ fromIntegral $ nbits $ fromIntegral val) val
+                  Nothing | isInteger rep -> pure $ intLit val
                   Nothing -> Left $ "cryptol: a numeric literal at an unsupported type: " <> tshow rep
       ("True",  _, [])               -> pure $ A.Lit noAnn $ bitVec 1 (1 :: Integer)
       ("False", _, [])               -> pure $ A.Lit noAnn $ bitVec 1 (0 :: Integer)
@@ -678,8 +974,7 @@ transPrim pn tys args = case (pn, tys, args) of
       (">>",  [n, _ix, el], [a, b])  -> shift ">>" n el A.LShr a b
       (">>$", [n, _ix], [a, b])      -> (\ w -> A.Prim noAnn w A.AShr [a, b]) . fromIntegral <$> tyNat' ">>$" n
       ("#", [_f, _b, el], [a, b])    -> do
-            ew <- tyWidth el
-            unless (ew == 1) $ Left "cryptol: (#) at a non-word sequence type is not supported yet."
+            _ <- tyWidth el -- representable
             pure $ A.cat [a, b]
       ("take", [f, b, el], [a])      -> do
             (fw, bw, ew) <- (,,) <$> tyNat' "take" f <*> tyNat' "take" b <*> tyWidth el
@@ -706,30 +1001,172 @@ transPrim pn tys args = case (pn, tys, args) of
       ("max", [t], [a, b])           -> (\ w -> A.If noAnn w (A.Prim noAnn 1 A.UGt [a, b]) a b) <$> likeWord "max" t
       ("sum", [n, el], [a])          -> reduce "sum" A.Add n el a
       ("product", [n, el], [a])      -> reduce "product" A.Mul n el a
-      ("fromTo", [first, lst, bits], []) -> do
-            (fv, lv, bv) <- (,,) <$> tyNat' "fromTo" first <*> tyNat' "fromTo" lst <*> tyNat' "fromTo" bits
-            pure $ A.cat [ A.Lit noAnn $ bitVec (fromIntegral bv) v | v <- [fv .. lv] ]
-      ("fromThenTo", [first, next, lst, bits, _len], []) -> do
-            (fv, nv, lv, bv) <- (,,,) <$> tyNat' "fromThenTo" first <*> tyNat' "fromThenTo" next
-                                      <*> tyNat' "fromThenTo" lst <*> tyNat' "fromThenTo" bits
-            pure $ A.cat [ A.Lit noAnn $ bitVec (fromIntegral bv) v | v <- [fv, nv .. lv] ]
       ("@", [n, el, _ix], [a, i])    -> index "@" True  n el a i
       ("!", [n, el, _ix], [a, i])    -> index "!" False n el a i
+      ("<<<", [n, _ix, el], [a, b])  -> rotate "<<<" True  n el a b
+      (">>>", [n, _ix, el], [a, b])  -> rotate ">>>" False n el a b
+      ("update",    [n, el, _ix], [xs, i, v]) -> update' "update"    True  n el xs i v
+      ("updateEnd", [n, el, _ix], [xs, i, v]) -> update' "updateEnd" False n el xs i v
+      ("transpose", [r, c, el], [a]) -> do
+            (rv, cv, ew) <- (,,) <$> tyNat' "transpose" r <*> tyNat' "transpose" c <*> tyWidth el
+            pure $ A.cat [ elemSlice (rv * cv) ew (i * cv + j) a | j <- [0 .. cv - 1], i <- [0 .. rv - 1] ]
+      ("fromInteger", [t], [a])      -> do
+            w <- likeWord "fromInteger" t
+            v <- maybe (Left "cryptol: fromInteger of a non-constant Integer cannot be realized in hardware.") pure $ litVal a
+            pure $ A.Lit noAnn $ bitVec (fromIntegral w) v
+      ("lg2", [n], [a])              -> do
+            nv <- tyNat' "lg2" n
+            let w = fromIntegral nv
+            pure $ foldr (\ k rest -> A.If noAnn w (A.Prim noAnn 1 A.ULe [a, A.Lit noAnn $ bitVec (fromIntegral w) ((2 :: Integer) ^ k)])
+                                                   (A.Lit noAnn $ bitVec (fromIntegral w) k) rest)
+                         (A.Lit noAnn $ bitVec (fromIntegral w) nv) [0 .. nv - 1]
+      ("/$", [n], [a, b])            -> signedDivMod True  n a b
+      ("%$", [n], [a, b])            -> signedDivMod False n a b
+      ("pmult", [u, v], [a, b])      -> do
+            (uv, vv) <- (,) <$> tyNat' "pmult" u <*> tyNat' "pmult" v
+            let wa = uv + 1                 -- dividend width
+                wr = uv + vv + 1            -- result width
+                -- b's coefficient of x^i, gating a shifted-by-i copy of a.
+                term i = A.If noAnn (fromIntegral wr) (A.Slice noAnn (fromIntegral i) 1 b)
+                              (A.cat $ [ A.Lit noAnn $ zeros $ fromIntegral $ wr - wa - i | wr - wa - i > 0 ]
+                                    <> [a]
+                                    <> [ A.Lit noAnn $ zeros $ fromIntegral i | i > 0 ])
+                              (A.Lit noAnn $ zeros $ fromIntegral wr)
+            pure $ foldr (\ i acc -> A.Prim noAnn (fromIntegral wr) A.XOr [term i, acc])
+                         (A.Lit noAnn $ zeros $ fromIntegral wr) [0 .. vv]
+      ("pdiv", [_u, _v], [a, b])     -> A.cat . fst <$> pdivmod a b
+      ("pmod", [_u, v], [a, b])      -> do
+            vv     <- tyNat' "pmod" v
+            (_, r) <- pdivmod a b
+            pure $ A.cat $ [ A.Lit noAnn $ zeros $ fromIntegral $ vv - genericLength r | vv > genericLength r ] <> r
+      _ | Just (vs, elt) <- enumVals pn tys, null args -> do
+            ew <- likeWord pn elt
+            pure $ A.cat [ A.Lit noAnn $ bitVec (fromIntegral ew) v | v <- vs ]
       _                              -> Left $ "cryptol: unsupported primitive: " <> pn
             <> (if null tys then "" else " (at " <> T.intercalate ", " (map tshow tys) <> ")")
       where wordBin :: Text -> T.Type -> A.Op -> A.Exp -> A.Exp -> Either Text A.Exp
             wordBin nm t op a b = (\ w -> A.Prim noAnn w op [a, b]) <$> likeWord nm t
 
             cmp :: T.Type -> A.Op -> A.Exp -> A.Exp -> Either Text A.Exp
-            cmp t op a b = do
-                  _ <- tyWidth t -- representable
-                  pure $ A.Prim noAnn 1 op [a, b]
+            cmp t op a b
+                  -- Constant comparisons fold (also covering constant
+                  -- Integer-typed operands, whose literals' widths differ).
+                  | op `elem` [A.Eq, A.Ne, A.ULt, A.ULe, A.UGt, A.UGe]
+                  , Just va <- litVal a, Just vb <- litVal b =
+                        let r = case op of
+                                    A.Eq  -> va == vb
+                                    A.Ne  -> va /= vb
+                                    A.ULt -> va < vb
+                                    A.ULe -> va <= vb
+                                    A.UGt -> va > vb
+                                    _     -> va >= vb
+                        in pure $ A.Lit noAnn $ bitVec 1 $ fromEnum r
+                  | otherwise = do
+                        _ <- tyWidth t -- representable
+                        pure $ A.Prim noAnn 1 op [a, b]
 
-            shift :: Text -> T.Type -> T.Type -> A.Op -> A.Exp -> A.Exp -> Either Text A.Exp
-            shift nm n el op a b = do
+            -- Rotation by a constant is re-wiring; by a variable amount,
+            -- the doubled-sequence shift trick: rotate the bits of a#a
+            -- by (amount mod n) elements and take the top (<<<) or
+            -- bottom (>>>) half.
+            rotate :: Text -> Bool -> T.Type -> T.Type -> A.Exp -> A.Exp -> Either Text A.Exp
+            rotate nm left n el a b = do
+                  nv <- tyNat' nm n
                   ew <- tyWidth el
-                  unless (ew == 1) $ Left $ "cryptol: (" <> nm <> ") at a non-word sequence type is not supported yet."
-                  (\ w -> A.Prim noAnn (fromIntegral w) op [a, b]) <$> tyNat' nm n
+                  let w = A.sizeOf a
+                  if nv <= 1 then pure a else case litVal b of
+                        Just k -> do
+                              let k' = (if left then k else nv - k `mod` nv) `mod` nv
+                              pure $ if k' == 0 then a else A.cat
+                                    [ A.Slice noAnn 0 (fromIntegral $ (nv - k') * ew) a
+                                    , A.Slice noAnn (fromIntegral $ (nv - k') * ew) (fromIntegral $ k' * ew) a ]
+                        Nothing -> do
+                              let wk   = max (fromIntegral $ A.sizeOf b) (nbits (fromIntegral nv) + 1)
+                                  wamt = fromIntegral $ max wk $ nbits (fromIntegral $ (nv - 1) * ew) + 1
+                                  b'   | A.sizeOf b == wamt = b
+                                       | otherwise          = A.Prim noAnn wamt (A.ZExt wamt) [b]
+                                  kmod = A.Prim noAnn wamt A.UMod [b', A.Lit noAnn $ bitVec (fromIntegral wamt) nv]
+                                  amt  = A.Prim noAnn wamt A.Mul [kmod, A.Lit noAnn $ bitVec (fromIntegral wamt) ew]
+                                  dbl  = A.Cat noAnn a a
+                              pure $ if left
+                                    then A.Slice noAnn w w $ A.Prim noAnn (2 * w) A.Shl  [dbl, amt]
+                                    else A.Slice noAnn 0 w $ A.Prim noAnn (2 * w) A.LShr [dbl, amt]
+
+            -- Sequence update: a constant index is re-wiring; a variable
+            -- index muxes each element against an index comparison.
+            update' :: Text -> Bool -> T.Type -> T.Type -> A.Exp -> A.Exp -> A.Exp -> Either Text A.Exp
+            update' nm fromFront n el xs i v = do
+                  nv <- tyNat' nm n
+                  ew <- tyWidth el
+                  case litVal i of
+                        Just iv -> do
+                              unless (iv >= 0 && iv < nv) $ Left $ "cryptol: (" <> nm <> ") index out of bounds."
+                              let idx = if fromFront then iv else nv - 1 - iv -- position from the front (MSB)
+                                  off = (nv - 1 - idx) * ew                   -- the replaced element's LSB offset
+                              pure $ A.cat $ [ A.Slice noAnn (fromIntegral $ off + ew) (fromIntegral $ idx * ew) xs | idx > 0 ]
+                                          <> [ v ]
+                                          <> [ A.Slice noAnn 0 (fromIntegral off) xs | off > 0 ]
+                        Nothing -> do
+                              let wI = A.sizeOf i
+                                  jlit j = let jv = if fromFront then j else nv - 1 - j
+                                           in if jv < 2 ^ toInteger wI
+                                                 then Just $ A.Lit noAnn $ bitVec (fromIntegral wI) jv
+                                                 else Nothing -- the index can never name this element
+                                  elem' j = elemSlice nv ew j xs
+                              pure $ A.cat [ case jlit j of
+                                                 Just jl -> A.If noAnn (fromIntegral ew) (A.Prim noAnn 1 A.Eq [i, jl]) v $ elem' j
+                                                 Nothing -> elem' j
+                                           | j <- [0 .. nv - 1] ]
+
+            -- Signed division/remainder (truncated toward zero, remainder
+            -- taking the dividend's sign), via unsigned ops on magnitudes.
+            signedDivMod :: Bool -> T.Type -> A.Exp -> A.Exp -> Either Text A.Exp
+            signedDivMod isDiv n a b = do
+                  nv <- tyNat' (if isDiv then "/$" else "%$") n
+                  let w     = fromIntegral nv
+                      z     = A.Lit noAnn $ zeros $ fromIntegral w
+                      neg x = A.Prim noAnn w A.Sub [z, x]
+                      sgn x = A.Prim noAnn 1 A.SLt [x, z]
+                      mag x = A.If noAnn w (sgn x) (neg x) x
+                      q     = A.Prim noAnn w (if isDiv then A.UDiv else A.UMod) [mag a, mag b]
+                  pure $ if isDiv
+                        then A.If noAnn w (A.Prim noAnn 1 A.XOr [sgn a, sgn b]) (neg q) q
+                        else A.If noAnn w (sgn a) (neg q) q
+
+            -- Polynomial (carry-less) long division by a constant
+            -- divisor: quotient and remainder bits as XOR combinations of
+            -- the dividend's bits (both MSB-first).
+            pdivmod :: A.Exp -> A.Exp -> Either Text ([A.Exp], [A.Exp])
+            pdivmod a b = do
+                  bv <- maybe (Left "cryptol: polynomial division by a non-constant divisor is not supported (pdiv/pmod need a constant polynomial).") pure $ litVal b
+                  unless (bv /= 0) $ Left "cryptol: polynomial division by zero."
+                  let d    = genericLength (takeWhile (> 1) $ iterate (`div` 2) bv) :: Integer
+                      wa   = fromIntegral (A.sizeOf a) :: Integer
+                      abit k = A.Slice noAnn (fromIntegral $ wa - 1 - k) 1 a
+                      xor1 x y = A.Prim noAnn 1 A.XOr [x, y]
+                      step (qs, r) k =
+                            let (top, rest) = case r <> [abit k] of -- coefficients x^d .. x^0
+                                    t : r' -> (t, r')
+                                    []     -> (abit k, [])          -- unreachable: the list is nonempty
+                                r2  = [ if testBit bv (fromIntegral $ d - 1 - j) then xor1 rj top else rj
+                                      | (j, rj) <- zip [0 :: Integer ..] rest ]
+                            in (qs <> [top], r2)
+                      (q, r) = foldl step ([], replicate (fromIntegral d) (A.Lit noAnn $ zeros 1)) [0 .. wa - 1]
+                  pure (q, r)
+
+            -- Sequence shifts move whole elements (bit shifts when the
+            -- elements are bits): the amount scales by the element width.
+            shift :: Text -> T.Type -> T.Type -> A.Op -> A.Exp -> A.Exp -> Either Text A.Exp
+            shift _nm _n el op a b = do
+                  ew <- tyWidth el
+                  let w = A.sizeOf a
+                  if ew == 1 then pure $ A.Prim noAnn w op [a, b] else case litVal b of
+                        Just k  -> pure $ A.Prim noAnn w op [a, A.Lit noAnn $ bitVec (fromIntegral $ max 1 $ nbits $ fromIntegral $ k * ew + 1) $ k * ew]
+                        Nothing -> do
+                              -- Wide enough that the element-to-bit scaling can't wrap.
+                              let wamt = A.sizeOf b + fromIntegral (max 1 $ nbits $ fromIntegral $ ew + 1)
+                                  b'   = A.Prim noAnn wamt (A.ZExt wamt) [b]
+                              pure $ A.Prim noAnn w op [a, A.Prim noAnn wamt A.Mul [b', A.Lit noAnn $ bitVec (fromIntegral wamt) ew]]
 
             -- Element selection from the front (@) or back (!): a static
             -- slice for a constant index; for a variable index, a shift

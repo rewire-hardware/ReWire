@@ -1,0 +1,63 @@
+module cryseq where
+
+// SHA-flavored message schedule: a recursive comprehension with lagging
+// generators, rotates, and shifts.
+sched : [4][16] -> [16]
+sched m = ws ! 0
+  where ws = m # [ (w0 <<< 3) ^ (w1 >>> 2) + (w1 >> 1) + j
+                 | w0 <- ws | w1 <- drop`{2} ws | j <- [4 .. 11] ]
+
+// AES-flavored key schedule: indexing the sequence under construction
+// with constant-foldable Integer arithmetic.
+keyexp : [2][8] -> [8]
+keyexp k = ws @ (5 : [3])
+  where ws = k # [ (ws @ (i - 2)) ^ (ws @ (i - 1)) + fromInteger i | i <- [2 .. 5] ]
+
+// CBC chaining: mutual lagging self-reference.
+cbc : [3][8] -> [8] -> [8]
+cbc pts iv = last cts
+  where cts = [iv] # [ (p ^ c) + 1 | p <- pts | c <- cts ]
+
+// update / updateEnd, constant and variable indices
+upd : [4][8] -> [2] -> [8] -> [8]
+upd xs i v = foldl (^) 0 (updateEnd (update xs i v) (1 : [2]) (v + 1))
+
+// scanl
+scans : [4][8] -> [8]
+scans xs = foldl (^) 0 (scanl (+) 1 xs)
+
+// signed division, lg2
+sdivs : [8] -> [8] -> [8]
+sdivs a b = (a /$ nz) + (a %$ nz) + lg2 b
+  where nz = if b == 0 then 1 else b
+
+// carry-less polynomial arithmetic (CRC-ish)
+crc : [8] -> [8]
+crc d = pmod (pmult d 0x1b) 0b100011011 ^ pdiv d 0x07
+
+// transpose
+tsp : [2][4] -> [4][2]
+tsp = transpose
+
+// enumeration variants
+ranges : [8]
+ranges = foldl (+) 0 ([1, 3 .. 9] # [10, 8 .. 2] # take`{2} [0 .. 10])
+
+// [8]-boundary wrappers for the FFI golden test
+schedw : [8] -> [8] -> [8]
+schedw a b = drop`{8} (sched [a # b, b # a, (a + 1) # b, a # (b + 1)])
+
+keyw : [8] -> [8] -> [8]
+keyw a b = keyexp [a, b]
+
+cbcw : [8] -> [8] -> [8]
+cbcw a b = cbc [a, b, a + b] (a ^ b)
+
+updw : [8] -> [8] -> [8]
+updw a b = upd [a, b, a + b, a - b] (drop`{6} b) (a ^ b)
+
+scansw : [8] -> [8] -> [8]
+scansw a b = scans [a, b, a + b, a ^ b]
+
+tspw : [8] -> [8]
+tspw x = join (transpose (split`{2} x))

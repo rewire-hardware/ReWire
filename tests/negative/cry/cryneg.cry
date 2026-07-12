@@ -19,3 +19,6 @@ turn d = case d of
       East  -> South
       South -> West
       West  -> North
+
+pmodvar : [8] -> [9] -> [8]
+pmodvar a b = pmod a b
