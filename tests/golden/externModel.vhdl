@@ -201,111 +201,103 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (\__in0\ : in std_logic_vector (31 downto 0);
-      \__out0\ : out std_logic_vector (31 downto 0));
+      port (\__in0\ : in std_logic_vector (31 downto 0);
+            \__out0\ : out std_logic_vector (31 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component \andW32\ is
-      port (p0 : in std_logic_vector (31 downto 0);
-            p1 : in std_logic_vector (31 downto 0);
-            p2 : out std_logic_vector (31 downto 0));
+      component \andW32\ is
+            port (p0 : in std_logic_vector (31 downto 0);
+                  p1 : in std_logic_vector (31 downto 0);
+                  p2 : out std_logic_vector (31 downto 0));
       end component;
       component \notW32\ is
-      port (p0 : in std_logic_vector (31 downto 0);
-            p1 : out std_logic_vector (31 downto 0));
+            port (p0 : in std_logic_vector (31 downto 0);
+                  p1 : out std_logic_vector (31 downto 0));
       end component;
       component \plusW32\ is
-      port (p0 : in std_logic_vector (31 downto 0);
-            p1 : in std_logic_vector (31 downto 0);
-            p2 : out std_logic_vector (31 downto 0));
+            port (p0 : in std_logic_vector (31 downto 0);
+                  p1 : in std_logic_vector (31 downto 0);
+                  p2 : out std_logic_vector (31 downto 0));
       end component;
       component \xorW32\ is
-      port (p0 : in std_logic_vector (31 downto 0);
-            p1 : in std_logic_vector (31 downto 0);
-            p2 : out std_logic_vector (31 downto 0));
+            port (p0 : in std_logic_vector (31 downto 0);
+                  p1 : in std_logic_vector (31 downto 0);
+                  p2 : out std_logic_vector (31 downto 0));
       end component;
       signal extres : std_logic_vector (31 downto 0);
-      signal zi0 : std_logic_vector (31 downto 0);
-      signal \extresR1\ : std_logic_vector (31 downto 0);
-      signal zi1 : std_logic_vector (31 downto 0);
-      signal \extresR2\ : std_logic_vector (31 downto 0);
-      signal zi2 : std_logic_vector (31 downto 0);
-      signal \extresR3\ : std_logic_vector (31 downto 0);
-      signal zi3 : std_logic_vector (31 downto 0);
-      signal zres : std_logic_vector (31 downto 0);
+      signal extres_r1 : std_logic_vector (31 downto 0);
+      signal extres_r2 : std_logic_vector (31 downto 0);
+      signal extres_r3 : std_logic_vector (31 downto 0);
 begin
-inst : \andW32\ port map (p0 => \__in0\, p1 => std_logic_vector'(B"11110000111100001111000011110000"), p2 => extres(31 downto 0));
-      zi0 <= extres;
-      \instR1\ : \notW32\ port map (p0 => \__in0\, p1 => \extresR1\(31 downto 0));
-      zi1 <= \extresR1\;
-      \instR2\ : \xorW32\ port map (p0 => zi1, p1 => std_logic_vector'(B"00010010001101000101011001111000"), p2 => \extresR2\(31 downto 0));
-      zi2 <= \extresR2\;
-      \instR3\ : \plusW32\ port map (p0 => zi0, p1 => zi2, p2 => \extresR3\(31 downto 0));
-      zi3 <= \extresR3\;
-      zres <= zi3;
-      \__out0\ <= zres;
+      -- combinational logic
+      andw32_i : \andW32\ port map (p0 => \__in0\, p1 => std_logic_vector'(X"f0f0f0f0"), p2 => extres(31 downto 0));
+      notw32_i : \notW32\ port map (p0 => \__in0\, p1 => extres_r1(31 downto 0));
+      xorw32_i : \xorW32\ port map (p0 => extres_r1, p1 => std_logic_vector'(X"12345678"), p2 => extres_r2(31 downto 0));
+      plusw32_i : \plusW32\ port map (p0 => extres, p1 => extres_r2, p2 => extres_r3(31 downto 0));
+      -- outputs
+      \__out0\ <= extres_r3;
 end architecture;
 
+-- Main.andModel
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity \Main_andModel\ is
-port (arg0 : in std_logic_vector (31 downto 0);
-      arg1 : in std_logic_vector (31 downto 0);
-      res : out std_logic_vector (31 downto 0));
+      port (a : in std_logic_vector (31 downto 0);
+            b : in std_logic_vector (31 downto 0);
+            res : out std_logic_vector (31 downto 0));
 end entity;
 
 architecture rtl of \Main_andModel\ is
-
 begin
-res <= rw_and(arg0, arg1);
+      res <= rw_and(a, b);
 end architecture;
 
+-- Main.xorModel
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity \Main_xorModel\ is
-port (arg0 : in std_logic_vector (31 downto 0);
-      arg1 : in std_logic_vector (31 downto 0);
-      res : out std_logic_vector (31 downto 0));
+      port (a : in std_logic_vector (31 downto 0);
+            b : in std_logic_vector (31 downto 0);
+            res : out std_logic_vector (31 downto 0));
 end entity;
 
 architecture rtl of \Main_xorModel\ is
-
 begin
-res <= rw_xor(arg0, arg1);
+      res <= rw_xor(a, b);
 end architecture;
 
+-- Main.notModel
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity \Main_notModel\ is
-port (arg0 : in std_logic_vector (31 downto 0);
-      res : out std_logic_vector (31 downto 0));
+      port (\Zeta0\ : in std_logic_vector (31 downto 0);
+            res : out std_logic_vector (31 downto 0));
 end entity;
 
 architecture rtl of \Main_notModel\ is
-
 begin
-res <= rw_not(arg0);
+      res <= rw_not(\Zeta0\);
 end architecture;
 
+-- Main.plusModel
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity \Main_plusModel\ is
-port (arg0 : in std_logic_vector (31 downto 0);
-      arg1 : in std_logic_vector (31 downto 0);
-      res : out std_logic_vector (31 downto 0));
+      port (a : in std_logic_vector (31 downto 0);
+            b : in std_logic_vector (31 downto 0);
+            res : out std_logic_vector (31 downto 0));
 end entity;
 
 architecture rtl of \Main_plusModel\ is
-
 begin
-res <= rw_add(arg0, arg1);
+      res <= rw_add(a, b);
 end architecture;

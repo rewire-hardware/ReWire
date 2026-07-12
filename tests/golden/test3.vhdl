@@ -201,49 +201,53 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (0 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (0 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component main_tick is
-      port (arg0 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (15 downto 0));
+      component main_tick is
+            port (s0 : in std_logic_vector (7 downto 0);
+                  res : out std_logic_vector (15 downto 0));
       end component;
-      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
+      -- state registers
+      -- __st0: 8 bits, init 0x0
+      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(X"00");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
       signal main_tick_out : std_logic_vector (15 downto 0);
-      signal \main_tick_outR1\ : std_logic_vector (15 downto 0);
       signal zres : std_logic_vector (15 downto 0);
 begin
-inst : main_tick port map (\__st0\, main_tick_out);
-      \instR1\ : main_tick port map (\__st0\, \main_tick_outR1\);
-      zres <= rw_cond(rw_not(\__in0\), main_tick_out, \main_tick_outR1\);
+      -- combinational logic
+      tick_i : main_tick port map (\__st0\, main_tick_out);
+      zres <= rw_cond(rw_not(\__in0\), main_tick_out, main_tick_out);
       \__st0_next\ <= zres(7 downto 0);
+      -- outputs
       \__out0\ <= zres(15 downto 8);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
-                  \__st0\ <= std_logic_vector'(B"00000000");
+            if rst = std_logic_vector'(B"1") then
+                  \__st0\ <= std_logic_vector'(X"00");
             elsif rising_edge(clk(0)) then
                   \__st0\ <= \__st0_next\;
             end if;
       end process;
 end architecture;
 
+-- main.tick
+-- block '$L.Main.tick' of process main
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity main_tick is
-port (arg0 : in std_logic_vector (7 downto 0);
-      res : out std_logic_vector (15 downto 0));
+      port (s0 : in std_logic_vector (7 downto 0);
+            res : out std_logic_vector (15 downto 0));
 end entity;
 
 architecture rtl of main_tick is
-
 begin
-res <= (arg0 & arg0);
+      res <= (s0 & s0);
 end architecture;

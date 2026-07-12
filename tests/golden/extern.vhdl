@@ -201,21 +201,23 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (15 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (15 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component mymod is
-      port (clk : in std_logic_vector (0 downto 0);
-            rst : in std_logic_vector (0 downto 0);
-            x : in std_logic_vector (15 downto 0);
-            \out\ : out std_logic_vector (7 downto 0));
+      component mymod is
+            port (clk : in std_logic_vector (0 downto 0);
+                  rst : in std_logic_vector (0 downto 0);
+                  x : in std_logic_vector (15 downto 0);
+                  \out\ : out std_logic_vector (7 downto 0));
       end component;
       signal \mymod$x1_out\ : std_logic_vector (7 downto 0);
 begin
-\mymod$x1\ : mymod port map (clk => clk, rst => rst, x => \__in0\, \out\ => \mymod$x1_out\);
+      -- instances
+      \mymod$x1\ : mymod port map (clk => clk, rst => rst, x => \__in0\, \out\ => \mymod$x1_out\);
+      -- outputs
       \__out0\ <= \mymod$x1_out\;
 end architecture;

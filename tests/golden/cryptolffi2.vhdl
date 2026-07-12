@@ -201,49 +201,50 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (\__in0\ : in std_logic_vector (15 downto 0);
-      \__out0\ : out std_logic_vector (15 downto 0);
-      \__out1\ : out std_logic_vector (3 downto 0));
+      port (\__in0\ : in std_logic_vector (15 downto 0);
+            \__out0\ : out std_logic_vector (15 downto 0);
+            \__out1\ : out std_logic_vector (3 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component \cry$bytemap$16__16_subst$1\ is
-      port (arg0 : in std_logic_vector (3 downto 0);
-            res : out std_logic_vector (3 downto 0));
+      component \cry$bytemap$16__16_subst$1\ is
+            port (\i$0\ : in std_logic_vector (3 downto 0);
+                  res : out std_logic_vector (3 downto 0));
       end component;
       signal \cry$bytemap$16_16_subst$1_out\ : std_logic_vector (3 downto 0);
-      signal \cry$bytemap$16_16_subst$1_outR1\ : std_logic_vector (3 downto 0);
-      signal \cry$bytemap$16_16_subst$1_outR2\ : std_logic_vector (3 downto 0);
-      signal \cry$bytemap$16_16_subst$1_outR3\ : std_logic_vector (3 downto 0);
-      signal zi0 : std_logic_vector (15 downto 0);
-      signal zi1 : std_logic_vector (3 downto 0);
-      signal zi2 : std_logic_vector (19 downto 0);
-      signal zres : std_logic_vector (19 downto 0);
+      signal \cry$bytemap$16_16_subst$1_out_r1\ : std_logic_vector (3 downto 0);
+      signal \cry$bytemap$16_16_subst$1_out_r2\ : std_logic_vector (3 downto 0);
+      signal \cry$bytemap$16_16_subst$1_out_r3\ : std_logic_vector (3 downto 0);
+      signal zeta0 : std_logic_vector (15 downto 0);
+      signal zeta0_r1 : std_logic_vector (3 downto 0);
+      signal za : std_logic_vector (19 downto 0);
 begin
-inst : \cry$bytemap$16__16_subst$1\ port map (\__in0\(15 downto 12), \cry$bytemap$16_16_subst$1_out\);
-      \instR1\ : \cry$bytemap$16__16_subst$1\ port map (\__in0\(11 downto 8), \cry$bytemap$16_16_subst$1_outR1\);
-      \instR2\ : \cry$bytemap$16__16_subst$1\ port map (\__in0\(7 downto 4), \cry$bytemap$16_16_subst$1_outR2\);
-      \instR3\ : \cry$bytemap$16__16_subst$1\ port map (\__in0\(3 downto 0), \cry$bytemap$16_16_subst$1_outR3\);
-      zi0 <= (\cry$bytemap$16_16_subst$1_out\ & \cry$bytemap$16_16_subst$1_outR1\ & \cry$bytemap$16_16_subst$1_outR2\ & \cry$bytemap$16_16_subst$1_outR3\);
-      zi1 <= rw_xor(rw_xor(rw_xor(rw_xor(std_logic_vector'(B"0000"), \__in0\(15 downto 12)), \__in0\(11 downto 8)), \__in0\(7 downto 4)), \__in0\(3 downto 0));
-      zi2 <= ((zi0(7 downto 0) & zi0(15 downto 8)) & (zi1(1 downto 0) & zi1(3 downto 2)));
-      zres <= zi2;
-      \__out0\ <= zres(19 downto 4);
-      \__out1\ <= zres(3 downto 0);
+      -- combinational logic
+      \subst$1_i\ : \cry$bytemap$16__16_subst$1\ port map (\__in0\(15 downto 12), \cry$bytemap$16_16_subst$1_out\);
+      \subst$1_i_r1\ : \cry$bytemap$16__16_subst$1\ port map (\__in0\(11 downto 8), \cry$bytemap$16_16_subst$1_out_r1\);
+      \subst$1_i_r2\ : \cry$bytemap$16__16_subst$1\ port map (\__in0\(7 downto 4), \cry$bytemap$16_16_subst$1_out_r2\);
+      \subst$1_i_r3\ : \cry$bytemap$16__16_subst$1\ port map (\__in0\(3 downto 0), \cry$bytemap$16_16_subst$1_out_r3\);
+      zeta0 <= (\cry$bytemap$16_16_subst$1_out\ & \cry$bytemap$16_16_subst$1_out_r1\ & \cry$bytemap$16_16_subst$1_out_r2\ & \cry$bytemap$16_16_subst$1_out_r3\);
+      zeta0_r1 <= rw_xor(rw_xor(rw_xor(rw_xor(std_logic_vector'(X"0"), \__in0\(15 downto 12)), \__in0\(11 downto 8)), \__in0\(7 downto 4)), \__in0\(3 downto 0));
+      za <= ((zeta0(7 downto 0) & zeta0(15 downto 8)) & (zeta0_r1(1 downto 0) & zeta0_r1(3 downto 2)));
+      -- outputs
+      \__out0\ <= za(19 downto 4);
+      \__out1\ <= za(3 downto 0);
 end architecture;
 
+-- cry$bytemap$16_16.subst$1
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity \cry$bytemap$16__16_subst$1\ is
-port (arg0 : in std_logic_vector (3 downto 0);
-      res : out std_logic_vector (3 downto 0));
+      port (\i$0\ : in std_logic_vector (3 downto 0);
+            res : out std_logic_vector (3 downto 0));
 end entity;
 
 architecture rtl of \cry$bytemap$16__16_subst$1\ is
-signal slice_in : std_logic_vector (63 downto 0);
+      signal slice_in : std_logic_vector (63 downto 0);
 begin
-slice_in <= rw_shiftl(std_logic_vector'(B"1110010011010001001011111011100000111010011011000101100100000111"), rw_mul(rw_resize(arg0, 6), std_logic_vector'(B"000100")));
+      slice_in <= rw_shiftl(std_logic_vector'(X"e4d12fb83a6c5907"), rw_mul(rw_resize(\i$0\, 6), std_logic_vector'(B"000100")));
       res <= slice_in(63 downto 60);
 end architecture;

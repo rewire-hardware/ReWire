@@ -201,46 +201,50 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__in0\ : in std_logic_vector (0 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__in0\ : in std_logic_vector (0 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component main_loop is
-      port (arg0 : in std_logic_vector (7 downto 0);
-            arg1 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (24 downto 0));
+      component main_loop is
+            port (n : in std_logic_vector (7 downto 0);
+                  m : in std_logic_vector (7 downto 0);
+                  res : out std_logic_vector (24 downto 0));
       end component;
+      -- state registers
+      -- __resumption_tag: 17 bits, init 0x10001
+      --   states: 0=b2 1=b
       signal \__resumption_tag\ : std_logic_vector (16 downto 0) := std_logic_vector'(B"10000000000000001");
       signal \__resumption_tag_next\ : std_logic_vector (16 downto 0);
-      signal zi0 : std_logic_vector (7 downto 0);
-      signal zi1 : std_logic_vector (7 downto 0);
+      signal n : std_logic_vector (7 downto 0);
+      signal m : std_logic_vector (7 downto 0);
       signal conn : std_logic_vector (7 downto 0);
       signal main_loop_out : std_logic_vector (24 downto 0);
-      signal \main_loop_outR1\ : std_logic_vector (24 downto 0);
-      signal zi2 : std_logic_vector (7 downto 0);
-      signal \connR1\ : std_logic_vector (7 downto 0);
-      signal \main_loop_outR2\ : std_logic_vector (24 downto 0);
-      signal \main_loop_outR3\ : std_logic_vector (24 downto 0);
+      signal main_loop_out_r1 : std_logic_vector (24 downto 0);
+      signal conn_r1 : std_logic_vector (7 downto 0);
+      signal main_loop_out_r2 : std_logic_vector (24 downto 0);
+      signal main_loop_out_r3 : std_logic_vector (24 downto 0);
       signal zres : std_logic_vector (24 downto 0);
 begin
-zi0 <= \__resumption_tag\(15 downto 8);
-      zi1 <= \__resumption_tag\(7 downto 0);
-      conn <= rw_add(zi0, zi1);
-      inst : main_loop port map (zi1, conn, main_loop_out);
-      \instR1\ : main_loop port map (zi0, zi1, \main_loop_outR1\);
-      zi2 <= \__resumption_tag\(7 downto 0);
-      \connR1\ <= rw_add(std_logic_vector'(B"00000000"), zi2);
-      \instR2\ : main_loop port map (zi2, \connR1\, \main_loop_outR2\);
-      \instR3\ : main_loop port map (std_logic_vector'(B"00000000"), zi2, \main_loop_outR3\);
-      zres <= rw_cond(rw_not(\__resumption_tag\(16 downto 16)), rw_cond(rw_not(\__in0\), main_loop_out, \main_loop_outR1\), rw_cond(rw_not(\__in0\), \main_loop_outR2\, \main_loop_outR3\));
+      -- combinational logic
+      n <= \__resumption_tag\(15 downto 8);
+      m <= \__resumption_tag\(7 downto 0);
+      conn <= rw_add(n, m);
+      loop_i : main_loop port map (m, conn, main_loop_out);
+      loop_i_r1 : main_loop port map (n, m, main_loop_out_r1);
+      conn_r1 <= rw_add(std_logic_vector'(X"00"), m);
+      loop_i_r2 : main_loop port map (m, conn_r1, main_loop_out_r2);
+      loop_i_r3 : main_loop port map (std_logic_vector'(X"00"), m, main_loop_out_r3);
+      zres <= rw_cond(rw_not(\__resumption_tag\(16 downto 16)), rw_cond(rw_not(\__in0\), main_loop_out, main_loop_out_r1), rw_cond(rw_not(\__in0\), main_loop_out_r2, main_loop_out_r3));
       \__resumption_tag_next\ <= zres(16 downto 0);
+      -- outputs
       \__out0\ <= zres(24 downto 17);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
+            if rst = std_logic_vector'(B"1") then
                   \__resumption_tag\ <= std_logic_vector'(B"10000000000000001");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
@@ -248,18 +252,19 @@ zi0 <= \__resumption_tag\(15 downto 8);
       end process;
 end architecture;
 
+-- main.loop
+-- block '$L.Main.loop' of process main
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity main_loop is
-port (arg0 : in std_logic_vector (7 downto 0);
-      arg1 : in std_logic_vector (7 downto 0);
-      res : out std_logic_vector (24 downto 0));
+      port (n : in std_logic_vector (7 downto 0);
+            m : in std_logic_vector (7 downto 0);
+            res : out std_logic_vector (24 downto 0));
 end entity;
 
 architecture rtl of main_loop is
-
 begin
-res <= (arg0 & std_logic_vector'(B"0") & arg0 & arg1);
+      res <= (n & std_logic_vector'(B"0") & n & m);
 end architecture;

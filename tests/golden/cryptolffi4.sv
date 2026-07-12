@@ -3,22 +3,21 @@ module top_level (input logic [7:0] __in0,
   output logic [7:0] __out0);
   logic [7:0] cry$hof$8_8_inc$1_out;
   logic [7:0] cry$hof$8_8_inc$1_outR1;
-  logic [0:0] zi5;
-  logic [7:0] zi6;
   logic [7:0] cry$hof$8_8_inc$1_outR2;
-  logic [7:0] zi7;
-  logic [7:0] zres;
-  cry$hof$8__8_inc$1  inst (__in1, cry$hof$8_8_inc$1_out);
-  cry$hof$8__8_inc$1  instR1 (cry$hof$8_8_inc$1_out, cry$hof$8_8_inc$1_outR1);
-  assign zi5 = __in0 == __in1;
-  assign zi6 = __in0 * (__in0 * (__in0 * (__in0 * (__in0 * 8'h1))));
-  cry$hof$8__8_inc$1  instR2 (zi6, cry$hof$8_8_inc$1_outR2);
-  assign zi7 = ((((__in1 + __in0) + __in0) + ((cry$hof$8_8_inc$1_outR1 + ((__in1 * 8'h2) * 8'h2)) + __in1)) + (__in0 + __in1)) + (zi5 ? cry$hof$8_8_inc$1_outR2 : (~zi6));
-  assign zres = zi7;
-  assign __out0 = zres;
+  // combinational logic
+  cry$hof$8__8_inc$1  inc$1_i (__in1, cry$hof$8_8_inc$1_out);
+  cry$hof$8__8_inc$1  inc$1_iR1 (cry$hof$8_8_inc$1_out, cry$hof$8_8_inc$1_outR1);
+  wire [0:0] Zeta0 = __in0 == __in1;
+  wire [7:0] Zeta1 = __in0 * (__in0 * (__in0 * (__in0 * (__in0 * 8'h1))));
+  cry$hof$8__8_inc$1  inc$1_iR2 (Zeta1, cry$hof$8_8_inc$1_outR2);
+  wire [7:0] Za = ((((__in1 + __in0) + __in0) + ((cry$hof$8_8_inc$1_outR1 + ((__in1 * 8'h2) * 8'h2)) + __in1)) + (__in0 + __in1)) + (Zeta0 ? cry$hof$8_8_inc$1_outR2 : (~Zeta1));
+  // outputs
+  assign __out0 = Za;
 endmodule
 
-module cry$hof$8__8_inc$1 (input logic [7:0] arg0,
+// cry$hof$8_8.inc$1
+// also: cry$pick$Bit_8_8.inc$0
+module cry$hof$8__8_inc$1 (input logic [7:0] v$0,
   output logic [7:0] res);
-  assign res = arg0 + 8'h1;
+  assign res = v$0 + 8'h1;
 endmodule

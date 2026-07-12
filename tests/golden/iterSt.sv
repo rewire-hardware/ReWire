@@ -2,20 +2,20 @@ module top_level (input logic [0:0] clk,
   input logic [0:0] rst,
   input logic [0:0] __in0,
   output logic [0:0] __out0);
+  // state registers
+  // __st0: 1 bits, init 0x0
   logic [0:0] __st0;
   logic [0:0] __st0_next;
-  logic [0:0] zi0;
-  logic [1:0] zi1;
-  logic [0:0] zi2;
-  logic [0:0] zi3;
-  logic [1:0] zres;
-  assign zi0 = __st0 ^ __in0;
-  assign zi1 = {zi0, __st0};
-  assign zi2 = zi1[1];
-  assign zi3 = zi1[0];
-  assign zres = {zi2, zi3};
-  assign __st0_next = zres[0];
-  assign __out0 = zres[1];
+  // combinational logic
+  wire [0:0] Zt1 = __st0 ^ __in0;
+  wire [1:0] Za = {Zt1, __st0};
+  wire [0:0] o = Za[1];
+  wire [0:0] s = Za[0];
+  wire [1:0] Zres = {o, s};
+  assign __st0_next = Zres[0];
+  // outputs
+  assign __out0 = Zres[1];
+  // state register update
   initial __st0 = 1'h0;
   always @ (posedge clk or posedge rst) begin
     if (rst == 1'h1) begin

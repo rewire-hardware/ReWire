@@ -201,61 +201,61 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (\__in0\ : in std_logic_vector (7 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (\__in0\ : in std_logic_vector (7 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-component \cry$mix$8__8_bump$0\ is
-      port (arg0 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (7 downto 0));
+      component \cry$mix$8__8_bump$0\ is
+            port (\x$0\ : in std_logic_vector (7 downto 0);
+                  res : out std_logic_vector (7 downto 0));
       end component;
       component \cry$mix$8__8_scale$3\ is
-      port (arg0 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (7 downto 0));
+            port (\x$0\ : in std_logic_vector (7 downto 0);
+                  res : out std_logic_vector (7 downto 0));
       end component;
       signal \cry$mix$8_8_bump$0_out\ : std_logic_vector (7 downto 0);
       signal \cry$mix$8_8_scale$3_out\ : std_logic_vector (7 downto 0);
-      signal \cry$mix$8_8_scale$3_outR1\ : std_logic_vector (7 downto 0);
-      signal \cry$mix$8_8_bump$0_outR1\ : std_logic_vector (7 downto 0);
-      signal zi0 : std_logic_vector (7 downto 0);
-      signal zres : std_logic_vector (7 downto 0);
+      signal \cry$mix$8_8_scale$3_out_r1\ : std_logic_vector (7 downto 0);
+      signal \cry$mix$8_8_bump$0_out_r1\ : std_logic_vector (7 downto 0);
+      signal za : std_logic_vector (7 downto 0);
 begin
-inst : \cry$mix$8__8_bump$0\ port map (\__in0\, \cry$mix$8_8_bump$0_out\);
-      \instR1\ : \cry$mix$8__8_scale$3\ port map (\cry$mix$8_8_bump$0_out\, \cry$mix$8_8_scale$3_out\);
-      \instR2\ : \cry$mix$8__8_scale$3\ port map (\__in0\, \cry$mix$8_8_scale$3_outR1\);
-      \instR3\ : \cry$mix$8__8_bump$0\ port map (\cry$mix$8_8_scale$3_outR1\, \cry$mix$8_8_bump$0_outR1\);
-      zi0 <= rw_add(\cry$mix$8_8_scale$3_out\, \cry$mix$8_8_bump$0_outR1\);
-      zres <= zi0;
-      \__out0\ <= zres;
+      -- combinational logic
+      \bump$0_i\ : \cry$mix$8__8_bump$0\ port map (\__in0\, \cry$mix$8_8_bump$0_out\);
+      \scale$3_i\ : \cry$mix$8__8_scale$3\ port map (\cry$mix$8_8_bump$0_out\, \cry$mix$8_8_scale$3_out\);
+      \scale$3_i_r1\ : \cry$mix$8__8_scale$3\ port map (\__in0\, \cry$mix$8_8_scale$3_out_r1\);
+      \bump$0_i_r1\ : \cry$mix$8__8_bump$0\ port map (\cry$mix$8_8_scale$3_out_r1\, \cry$mix$8_8_bump$0_out_r1\);
+      za <= rw_add(\cry$mix$8_8_scale$3_out\, \cry$mix$8_8_bump$0_out_r1\);
+      -- outputs
+      \__out0\ <= za;
 end architecture;
 
+-- cry$mix$8_8.bump$0
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity \cry$mix$8__8_bump$0\ is
-port (arg0 : in std_logic_vector (7 downto 0);
-      res : out std_logic_vector (7 downto 0));
+      port (\x$0\ : in std_logic_vector (7 downto 0);
+            res : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of \cry$mix$8__8_bump$0\ is
-
 begin
-res <= rw_add(arg0, std_logic_vector'(B"00000001"));
+      res <= rw_add(\x$0\, std_logic_vector'(X"01"));
 end architecture;
 
+-- cry$mix$8_8.scale$3
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity \cry$mix$8__8_scale$3\ is
-port (arg0 : in std_logic_vector (7 downto 0);
-      res : out std_logic_vector (7 downto 0));
+      port (\x$0\ : in std_logic_vector (7 downto 0);
+            res : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of \cry$mix$8__8_scale$3\ is
-
 begin
-res <= rw_mul(arg0, std_logic_vector'(B"00000011"));
+      res <= rw_mul(\x$0\, std_logic_vector'(X"03"));
 end architecture;

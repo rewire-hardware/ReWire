@@ -201,12 +201,12 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (\__in0\ : in std_logic_vector (1 downto 0);
-      \__out0\ : out std_logic_vector (1 downto 0));
+      port (\__in0\ : in std_logic_vector (1 downto 0);
+            \__out0\ : out std_logic_vector (1 downto 0));
 end entity;
 
 architecture rtl of top_level is
-
 begin
-\__out0\ <= std_logic_vector'(B"01");
+      -- outputs
+      \__out0\ <= std_logic_vector'(B"01");
 end architecture;

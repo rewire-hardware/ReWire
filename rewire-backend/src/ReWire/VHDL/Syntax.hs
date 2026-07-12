@@ -8,11 +8,12 @@ module ReWire.VHDL.Syntax where
 
 import ReWire.BitVector (BV, width, nat)
 import ReWire.VHDL.Helpers (helpersPackage)
-import ReWire.Pretty (text, Pretty (..), parens, (<+>), vsep, hsep, semi, colon, punctuate, comma, nest, Doc, empty)
+import ReWire.Pretty (text, Pretty (..), parens, (<+>), vsep, hsep, semi, colon, punctuate, comma, nest, align, Doc, empty)
 
 import Data.Char (isAsciiLower, isDigit)
 import Data.List (intersperse)
 import Data.Text (Text)
+import Numeric (showHex)
 import Numeric.Natural (Natural)
 
 import qualified Data.HashSet as Set
@@ -34,6 +35,7 @@ instance Pretty Device where
 --   ieee.std_logic_1164.all; library clauses are derived).
 data Unit = Unit
       { unitName       :: !Name
+      , unitComments   :: ![Text] -- ^ Header comment lines, printed above the entity.
       , unitPackages   :: ![Text]
       , unitPorts      :: ![Port]
       , unitComponents :: ![Component]
@@ -64,26 +66,43 @@ data Component = Component !Name ![Name] ![Port]
       deriving (Eq, Show)
 
 instance Pretty Component where
-      pretty (Component n gens ps) = vsep $
-            [ text "component" <+> ppName n <+> text "is" ]
-            <> (if null gens then []
-                  else [ nest 6 $ text "generic" <+> parens (hsep $ punctuate semi $ map ppGeneric gens) <> semi ])
-            <> (if null ps then []
-                  else [ nest 6 $ text "port" <+> parens (vsep $ punctuate semi $ map pretty ps) <> semi ])
-            <> [ text "end component" <> semi ]
+      pretty (Component n gens ps) = vsep
+            [ nest 6 $ vsep $ [ text "component" <+> ppName n <+> text "is" ]
+                  <> [ text "generic" <+> parens (align $ hsep $ punctuate semi $ map ppGeneric gens) <> semi | not $ null gens ]
+                  <> [ text "port" <+> parens (align $ vsep $ punctuate semi $ map pretty ps) <> semi | not $ null ps ]
+            , text "end component" <> semi
+            ]
             where ppGeneric :: Name -> Doc an
                   ppGeneric g = ppName g <+> colon <+> text "integer"
 
--- | Signal with an optional initial value.
+-- | Declarations in the architecture declarative part: signals with an
+--   optional initial value, constants, and display-only comment lines.
 data Signal = Signal !Name !Size !(Maybe BV)
+            | Constant !Name !Size !BV
+            | SigComment !Text
       deriving (Eq, Show)
 
 instance Pretty Signal where
-      pretty (Signal n sz mbv) = text "signal" <+> ppName n <+> colon <+> ppVecTy sz <> maybe mempty ((text " :=" <+>) . ppLit) mbv <> semi
+      pretty = \ case
+            Signal n sz mbv  -> text "signal" <+> ppName n <+> colon <+> ppVecTy sz <> maybe mempty ((text " :=" <+>) . ppInit) mbv <> semi
+            Constant n sz bv -> text "constant" <+> ppName n <+> colon <+> ppVecTy sz <+> text ":=" <+> ppLit bv <> semi
+            SigComment c     -> ppComment c
+
+ppComment :: Text -> Doc an
+ppComment c = text "--" <+> text (sanitizeComment c)
+
+-- | Newlines in comment text would push the remainder into code position.
+sanitizeComment :: Text -> Text
+sanitizeComment = T.map $ \ case
+      '\n' -> ' '
+      '\r' -> ' '
+      c    -> c
 
 data Stmt = Assign !LVal !Exp
+          | SelAssign !Exp !LVal ![(BV, Exp)] !Exp                    -- ^ Selected signal assignment: scrutinee, target, choices, others.
           | Process ![Name] ![ProcVar] ![SeqStmt]                     -- ^ Sensitivity list (empty: none), variables, body.
           | Instantiate !Name !Name ![(Name, Integer)] ![(Name, Exp)] -- ^ Component, instance label, generic map, port map (empty name: positional).
+          | Comment !Text
       deriving (Eq, Show)
 
 -- | Process-local variable declarations.
@@ -97,13 +116,15 @@ instance Pretty ProcVar where
 instance Pretty Stmt where
       pretty = \ case
             Assign lv e               -> pretty lv <+> text "<=" <+> pretty e <> semi
-            Process sens vars body    -> vsep $
-                  [ text "process" <> (if null sens then mempty else mempty <+> parens (hsep $ punctuate comma $ map ppName sens)) ]
-                  <> (if null vars then [] else [nest 6 $ vsep $ map pretty vars])
-                  <> [ text "begin"
-                     , nest 6 $ vsep $ map pretty body
-                     , text "end process" <> semi
-                     ]
+            SelAssign c lv arms dflt  -> nest 6 ( vsep
+                  $ (text "with" <+> pretty c <+> text "select" <+> pretty lv <+> text "<=")
+                  : punctuate comma (map ppArm arms <> [pretty dflt <+> text "when others"]) ) <> semi
+            Comment c                 -> ppComment c
+            Process sens vars body    -> vsep
+                  [ nest 6 $ vsep $ (text "process" <> (if null sens then mempty else mempty <+> parens (hsep $ punctuate comma $ map ppName sens))) : map pretty vars
+                  , nest 6 $ vsep $ text "begin" : map pretty body
+                  , text "end process" <> semi
+                  ]
             Instantiate c inst gm pm  -> ppName inst <+> colon <+> ppName c
                   <> (if null gm then mempty else mempty <+> text "generic map" <+> parens (hsep $ punctuate comma $ map ppGenAssoc gm))
                   <+> text "port map" <+> parens (hsep $ punctuate comma $ map ppPortAssoc pm) <> semi
@@ -114,6 +135,12 @@ instance Pretty Stmt where
                         ppPortAssoc = \ case
                               ("", e) -> pretty e
                               (n, e)  -> ppName n <+> text "=>" <+> pretty e
+
+-- | A selected-assignment choice: the choices are literal bit-strings of
+--   exactly the scrutinee's width (never constants or aggregates, for
+--   portability).
+ppArm :: (BV, Exp) -> Doc an
+ppArm (v, e) = pretty e <+> text "when" <+> text "\"" <> text (ppBits v) <> text "\""
 
 -- | Sequential statements (process bodies).
 data SeqStmt = SIf ![(Cond, [SeqStmt])] ![SeqStmt] -- ^ if/elsif branches, else branch.
@@ -179,7 +206,11 @@ data Exp = Lit !BV
          | Cat ![Exp]
          | FunCall !Name ![Exp]
          | Num !Natural
-      deriving (Eq, Ord, Show)
+      -- N.B.: deliberately no Ord, and Eq only for shape tests -- the bv
+      -- package's BV Eq is width-blind (bitVec 4 0 == bitVec 8 0), so any
+      -- instance derived through 'Lit' is too. Never key a map on this
+      -- type; use the emitter's width-exact 'expKey' instead.
+      deriving (Eq, Show)
 
 instance Pretty Exp where
       pretty = \ case
@@ -193,11 +224,28 @@ instance Pretty Exp where
             FunCall f es  -> text f <> parens (hsep $ punctuate comma $ map pretty es) -- only rw_helpers functions
             Num n         -> pretty $ toInteger n
 
--- | A qualified bit-string literal: std_logic_vector'(B"0101").
+-- | A qualified bit-string literal: hex (std_logic_vector'(X"5a")) when the
+--   width is a whole number of hex digits, binary (std_logic_vector'(B"0101"))
+--   otherwise.
 ppLit :: BV -> Doc an
-ppLit bv = text "std_logic_vector'(B\"" <> text bits <> text "\")"
-      where bits :: Text
-            bits = T.pack $ map (\ i -> if odd $ nat bv `div` (2 ^ i) then '1' else '0') $ reverse [0 .. toInteger (width bv) - 1]
+ppLit bv | w > 0, w `mod` 4 == 0 = text "std_logic_vector'(X\"" <> text (ppHex bv) <> text "\")"
+         | otherwise             = text "std_logic_vector'(B\"" <> text (ppBits bv) <> text "\")"
+      where w :: Int
+            w = width bv
+
+-- | A literal in signal-initial position: like 'ppLit', except wide all-zero
+--   vectors render as an aggregate.
+ppInit :: BV -> Doc an
+ppInit bv | width bv > 8, nat bv == 0 = text "(others => '0')"
+          | otherwise                 = ppLit bv
+
+-- | The value in binary, exactly the vector's width.
+ppBits :: BV -> Text
+ppBits bv = T.pack $ map (\ i -> if odd $ nat bv `div` (2 ^ i) then '1' else '0') $ reverse [0 .. toInteger (width bv) - 1]
+
+-- | The value in hex, zero-padded to exactly width/4 digits.
+ppHex :: BV -> Text
+ppHex bv = T.justifyRight (width bv `div` 4) '0' $ T.pack $ showHex (nat bv) ""
 
 ppVecTy :: Size -> Doc an
 ppVecTy sz = text "std_logic_vector" <+> parens (pretty (toInteger sz - 1) <+> text "downto" <+> pretty (0 :: Int))
@@ -239,18 +287,15 @@ reservedWords = Set.fromList
       ]
 
 ppUnit :: Unit -> Doc an
-ppUnit (Unit n pkgs ps comps sigs stmts) = vsep $
-      [ ppContext pkgs
-      , text "entity" <+> ppName n <+> text "is"
-      ]
-      <> (if null ps then []
-            else [nest 6 $ text "port" <+> parens (vsep $ punctuate semi $ map pretty ps) <> semi])
-      <> [ text "end entity" <> semi
+ppUnit (Unit n cmts pkgs ps comps sigs stmts) = vsep $
+      map ppComment cmts
+      <> [ ppContext pkgs
+         , nest 6 $ vsep $ (text "entity" <+> ppName n <+> text "is")
+               : [ text "port" <+> parens (align $ vsep $ punctuate semi $ map pretty ps) <> semi | not $ null ps ]
+         , text "end entity" <> semi
          , empty
-         , text "architecture rtl of" <+> ppName n <+> text "is"
-         , nest 6 $ vsep $ map pretty comps <> map pretty sigs
-         , text "begin"
-         , nest 6 $ vsep $ map pretty stmts
+         , nest 6 $ vsep $ (text "architecture rtl of" <+> ppName n <+> text "is") : map pretty comps <> map pretty sigs
+         , nest 6 $ vsep $ text "begin" : map pretty stmts
          , text "end architecture" <> semi
          ]
 

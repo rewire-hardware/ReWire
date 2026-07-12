@@ -201,25 +201,30 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (clk : in std_logic_vector (0 downto 0);
-      rst : in std_logic_vector (0 downto 0);
-      \__out0\ : out std_logic_vector (7 downto 0));
+      port (clk : in std_logic_vector (0 downto 0);
+            rst : in std_logic_vector (0 downto 0);
+            \__out0\ : out std_logic_vector (7 downto 0));
 end entity;
 
 architecture rtl of top_level is
-signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000001");
+      -- state registers
+      -- __st0: 8 bits, init 0x1
+      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(X"01");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal zi0 : std_logic_vector (7 downto 0);
+      signal s01 : std_logic_vector (7 downto 0);
       signal zres : std_logic_vector (15 downto 0);
 begin
-zi0 <= rw_add(\__st0\, std_logic_vector'(B"00000001"));
-      zres <= (\__st0\ & zi0);
+      -- combinational logic
+      s01 <= rw_add(\__st0\, std_logic_vector'(X"01"));
+      zres <= (\__st0\ & s01);
       \__st0_next\ <= zres(7 downto 0);
+      -- outputs
       \__out0\ <= zres(15 downto 8);
+      -- state register update
       process (clk, rst)
       begin
-      if rst = std_logic_vector'(B"1") then
-                  \__st0\ <= std_logic_vector'(B"00000001");
+            if rst = std_logic_vector'(B"1") then
+                  \__st0\ <= std_logic_vector'(X"01");
             elsif rising_edge(clk(0)) then
                   \__st0\ <= \__st0_next\;
             end if;

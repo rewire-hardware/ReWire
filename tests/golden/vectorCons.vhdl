@@ -201,18 +201,18 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity top_level is
-port (\__in0\ : in std_logic_vector (63 downto 0);
-      \__in1\ : in std_logic_vector (63 downto 0);
-      \__out0\ : out std_logic_vector (63 downto 0);
-      \__out1\ : out std_logic_vector (63 downto 0));
+      port (\__in0\ : in std_logic_vector (63 downto 0);
+            \__in1\ : in std_logic_vector (63 downto 0);
+            \__out0\ : out std_logic_vector (63 downto 0);
+            \__out1\ : out std_logic_vector (63 downto 0));
 end entity;
 
 architecture rtl of top_level is
-signal zi1 : std_logic_vector (127 downto 0);
-      signal zres : std_logic_vector (127 downto 0);
+      signal za : std_logic_vector (127 downto 0);
 begin
-zi1 <= (\__in0\(55 downto 0) & rw_resize(rw_shiftr(\__in1\, rw_repl(128, std_logic_vector'(B"0"))), 8) & \__in0\(63 downto 56) & \__in1\(63 downto 8));
-      zres <= zi1;
-      \__out0\ <= zres(127 downto 64);
-      \__out1\ <= zres(63 downto 0);
+      -- combinational logic
+      za <= (\__in0\(55 downto 0) & rw_resize(rw_shiftr(\__in1\, rw_repl(128, std_logic_vector'(B"0"))), 8) & \__in0\(63 downto 56) & \__in1\(63 downto 8));
+      -- outputs
+      \__out0\ <= za(127 downto 64);
+      \__out1\ <= za(63 downto 0);
 end architecture;
