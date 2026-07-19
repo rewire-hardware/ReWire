@@ -428,6 +428,16 @@ naming and ordering function, which fixes dispatch order and tag values.
   command AST is a general expression, the machine lint enforces the
   jump/tail discipline, and the full r-shape check is pending, like the
   representable-closure permit-list.)
+- **Scope of the uniqueness invariant at this stage**: procify builds
+  block parameters and command binders from the reactive fragment it
+  consumes, and the consumed definitions remain in the program (as
+  unreferenced carriers) still carrying those uniques — one binder can
+  also ride a goto chain into several blocks. Whole-program binder
+  uniqueness (§2, §4.4) therefore holds of the datatype and definition
+  fragment, per-proc block labels are distinct, and in-block binding is
+  validated by scoping and occurrence-signature agreement rather than
+  global uniqueness. (Pass 8 runs the per-proc machine lint only, so
+  the implementation never re-checks global uniqueness here.)
 - All rules are stated per-proc.
 
 ### 7.5 Machine semantics
