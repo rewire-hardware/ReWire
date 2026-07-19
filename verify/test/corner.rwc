@@ -1,0 +1,26 @@
+--| Corner-op coverage for the differential harness: the primitives the
+--| golden corpus never exercises (pow, ashr, sext, rep, redxor) plus
+--| the division-by-zero conventions, the reduction edge cases at small
+--| widths, and a zero-width slice. Not a compiler golden — evaluated
+--| directly by rwv-diff and rwc --from-core --interpret.
+corner.f : ([8], [8], [3]) -> [66]
+corner.f a b s =
+      let dz = udiv a b in
+      let mz = umod a b in
+      let pw = pow a b in
+      let sh = ashr a s in
+      let se = sext 12 a in
+      let rp = rep 3 s in
+      let rx = redxor a in
+      let ra = redand a in
+      let ro = redor a in
+      let zw = a[3 +: 0] in
+      dz # mz # pw # sh # se # rp # rx # ra # ro # zw # (pow 8'h0 8'h0) # sext 2 (trunc 1 a)
+
+device top_level
+      input __in0 : [8]
+      input __in1 : [8]
+      input __in2 : [3]
+      output __out0 : [66]
+      let $res = corner.f __in0 __in1 __in2
+      __out0 := $res[0 +: 66]
