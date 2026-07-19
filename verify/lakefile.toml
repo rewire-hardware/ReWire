@@ -12,3 +12,7 @@ root = "Main"
 [[lean_exe]]
 name = "rwv-parse-check"
 root = "ParseCheck"
+
+[[lean_exe]]
+name = "rwv-eir-parse-check"
+root = "EirParseCheck"

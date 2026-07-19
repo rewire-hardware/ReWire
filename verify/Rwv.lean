@@ -5,3 +5,7 @@ import Rwv.Hyle.Parse
 import Rwv.Eidos.Syntax
 import Rwv.Eidos.Types
 import Rwv.Eidos.Value
+import Rwv.Eidos.PrimBasis
+import Rwv.Eidos.Parse
+import Rwv.Eidos.Eval
+import Rwv.Eidos.Machine
