@@ -1,0 +1,10 @@
+name = "rwv"
+version = "0.1.0"
+defaultTargets = ["Rwv"]
+
+[[lean_lib]]
+name = "Rwv"
+
+[[lean_exe]]
+name = "rwv-diff"
+root = "Main"
