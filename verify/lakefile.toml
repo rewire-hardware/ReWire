@@ -8,3 +8,7 @@ name = "Rwv"
 [[lean_exe]]
 name = "rwv-diff"
 root = "Main"
+
+[[lean_exe]]
+name = "rwv-parse-check"
+root = "ParseCheck"
