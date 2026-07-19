@@ -52,14 +52,17 @@
 --   of (), the tuple family, and Bool lint only if the program declares
 --   them; the bridge stage supplies the prim basis (as Crust's addPrims
 --   does today).
---   TODO(eidos): primitive occurrence types are trusted (scope/closedness
---   checked, but not compared against a builtin signature table); the
---   bridge stage carries the rwPrim* signatures and should land the table.
+--   TODO(eidos): the builtin signature check ('ReWire.Eidos.BuiltinSigs')
+--   is partial on type-level arithmetic: scheme subterms like
+--   @Vec ((i + n) + m) a@ become deferred equations, checked only when
+--   nat-closed on both sides after substitution. Shape and everything
+--   matching binds directly are always checked.
 module ReWire.Eidos.Lint (LintMode (..), lint, lintDefn, lintProc) where
 
 import ReWire.Annotation (Annote, ann, noAnn)
 import ReWire.Builtins (builtins)
 import ReWire.Eidos.ANF (hasJump)
+import ReWire.Eidos.BuiltinSigs (builtinSig, matchesSig)
 import ReWire.Error (AstError, MonadError, failAt, failAtWith)
 import ReWire.Eidos.Pretty ()
 import ReWire.Eidos.Syntax
@@ -660,10 +663,14 @@ checkExp env = \ case
             checkTy env an t
             checkCon env an t c
             pure t
-      Prim an t _        -> do
-            -- No signature table for builtins exists at the Eidos level;
-            -- the carried instantiated type is trusted.
+      Prim an t b        -> do
             checkTy env an t
+            case builtinSig b of
+                  Just sig | not $ matchesSig sig t -> failAt an
+                        $ "primitive rwPrim" <> showt b <> " at a type that does not instantiate its signature"
+                        <> "\n      expected an instance of: " <> prettyPrint sig
+                        <> "\n      but the occurrence has:  " <> prettyPrint t
+                  _ -> pure ()
             pure t
       LitInt an t n      -> do
             checkTy env an t

@@ -21,13 +21,13 @@ Main.m2#12 =
                 ((rwPrimSignal :: Bool -> ReacT Bool Bool (StateT Bool Identity) Bool) s#13)
                 (\ (j#14 :: Bool) -> Main.m2#12))
 
-Main.dev#20 :: Bool -> ReacT Bool Bool Identity ((,) () Bool)
+Main.dev#20 :: Bool -> ReacT Bool Bool Identity ()
 Main.dev#20 (b#21 :: Bool) =
-      (rwPrimExtrude :: ReacT Bool Bool (StateT Bool Identity) () -> Bool -> ReacT Bool Bool Identity ((,) () Bool))
+      (rwPrimExtrude :: ReacT Bool Bool (StateT Bool Identity) () -> Bool -> ReacT Bool Bool Identity ())
         (case b#21 of s#22 { _ -> Main.m1#10; True -> Main.m2#12 } :: ReacT Bool Bool (StateT Bool Identity) ())
         b#21
 
-Main.start#30 :: ReacT Bool Bool Identity ((,) () Bool)
+Main.start#30 :: ReacT Bool Bool Identity ()
 Main.start#30 = Main.dev#20 (False :: Bool)
 
 top Main.start#30
