@@ -41,7 +41,7 @@ with a less precise error position; and a *tightly* written negative
 number in type position (`-5 3`) is rejected rather than read as the
 prefix application `- 5 3` (the printer always spaces nat operators).
 -/
-import Rwv.Eidos.Syntax
+import Rwv.Eidos.Types
 import Std.Data.HashMap
 
 namespace Rwv.Eidos
@@ -949,81 +949,14 @@ structure Env where
 def insertVar (x : Id) (env : Env) : Env :=
   { env with vars := env.vars.insert x.uniq x }
 
-/-- Substitution of types for type variables (by unique). No renaming is
-ever needed: types contain no binders. -/
-def substTv (s : Std.HashMap Int Ty) : Ty → Ty
-  | .var a     => s.getD a.uniq (.var a)
-  | .app t u   => .app (substTv s t) (substTv s u)
-  | .arrow t u => .arrow (substTv s t) (substTv s u)
-  | t          => t
-
-/-- Instantiate a signature at type arguments (the caller checks
-saturation). -/
-def instantiate (sig : Sig) (ts : List Ty) : Ty :=
-  substTv (Std.HashMap.ofList ((sig.tvs.zip ts).map fun (v, t) => (v.uniq, t))) sig.ty
-
-/-- A term application spine: head and arguments, outermost last. -/
-def flattenApp : Exp → Exp × List Arg := go []
-where
-  go (acc : List Arg) : Exp → Exp × List Arg
-    | .app e a => go (a :: acc) e
-    | e        => (e, acc)
-
-def isTArg : Arg → Bool
-  | .tArg _ => true
-  | _       => false
-
-/-- Peel `n` arrows off a type (the result of applying `n` term
-arguments). -/
-def peel : Nat → Ty → Except String Ty
-  | 0,     t           => .ok t
-  | n + 1, .arrow _ u  => peel n u
-  | _ + 1, _           => .error "term argument applied to a non-arrow type"
-
-/-- The type of an instantiated head: a bare (argument-less) reference to
-a polymorphic name yields its open signature type. -/
-def headTy (sig : Sig) (tys : List Ty) : Except String Ty :=
-  if tys.isEmpty then .ok sig.ty
-  else if sig.tvs.length == tys.length then .ok (instantiate sig tys)
-  else .error "unsaturated type application"
-
-/-- Synthesize the type of an (already elaborated) expression: the
-transcription of the reference's `synthTy` (itself the monadic twin of
-ReWire.Eidos.Types.typeOf), used where the concrete syntax omits a type
-that the abstract syntax carries. Grossly ill-typed input is rejected
-here; everything subtler is the linter's job. -/
-partial def synthTy (env : Env) : Exp → Except String Ty
-  | .var x        => .ok x.sig.ty
-  | .con t _      => .ok t
-  | .prim t _     => .ok t
-  | .litInt t _   => .ok t
-  | .litStr _     => .ok (.con "String")
-  | .litList t _  => .ok t
-  | .litVec t _   => .ok t
-  | .lam x b      => Ty.arrow x.sig.ty <$> synthTy env b
-  | .letE (.join j xs e) body => do
-      let bt ← synthTy env e
-      let jt := xs.foldr (fun x acc => Ty.arrow x.sig.ty acc) bt
-      synthTy { env with joins := env.joins.insert j.uniq jt } body
-  | .letE _ body  => synthTy env body
-  | .jump l args  =>
-      match env.joins[l.uniq]? with
-      | some t => peel args.length t
-      | none   => .error s!"unbound join point: {l.occ}#{l.uniq}"
-  | .cases t _ _ _ => .ok t
-  | e@(.app ..)   => do
-      let (h, args) := flattenApp e
-      match h with
-      | .var x => do
-          let (tas, eas) := args.span isTArg
-          let tys := tas.filterMap fun | .tArg t => some t | _ => none
-          if eas.any isTArg then
-            .error "type arguments must form a prefix of the application spine"
-          else do
-            peel eas.length (← headTy x.sig tys)
-      | _ =>
-          if args.any isTArg then .error "type argument applied to a non-variable head"
-          else do peel args.length (← synthTy env h)
+/-- Synthesize the type of an (already elaborated) expression, used
+where the concrete syntax omits a type that the abstract syntax
+carries: the shared trusting synthesizer `Rwv.Eidos.typeOf`
+(Rwv.Eidos.Types), applied at this elaboration environment's join
+scope. Grossly ill-typed input is rejected here; everything subtler is
+the machine-mode checker's job (Rwv.Eidos.Check). -/
+def synthTy (env : Env) : Exp → Except String Ty :=
+  typeOf env.joins
 
 mutual
 
