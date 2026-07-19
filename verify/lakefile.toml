@@ -16,3 +16,7 @@ root = "ParseCheck"
 [[lean_exe]]
 name = "rwv-eir-parse-check"
 root = "EirParseCheck"
+
+[[lean_exe]]
+name = "rwv-eidos-diff"
+root = "EidosDiff"
