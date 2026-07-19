@@ -184,11 +184,14 @@ inductive DefnAttr where
   | noinline
 deriving DecidableEq, Repr
 
-/-- Specializer provenance (§3.5): carried for dumps and stable naming;
-semantically inert. -/
-structure SpecOrigin where
-  name : String
-  args : List Ty
+/-- Provenance of a compiler-minted definition clone (§3.5): the origin
+definition's display name and — for specializer clones — the type
+arguments it was instantiated at (`baked` marks the partial evaluator's
+value-baked clones, whose baked arguments are terms, not types).
+Semantically inert; carried for dumps and stable naming. -/
+inductive SpecOrigin where
+  | spec  (name : String) (args : List Ty)
+  | baked (name : String)
 deriving Repr
 
 /-- A definition (§3.5): the parameter telescope matches a prefix of
