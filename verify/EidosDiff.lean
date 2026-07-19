@@ -89,6 +89,7 @@ failure, 2 usage error.
 -/
 import Rwv.Eidos.Parse
 import Rwv.Eidos.PrimBasis
+import Rwv.Eidos.Check
 import Rwv.Eidos.Machine
 import Rwv.Hyle.Parse
 import Rwv.Diff
@@ -377,7 +378,15 @@ def main (argv : List String) : IO UInt32 := do
     match parseEir eirTxt args.eirFile with
     | .error e => err s!"{args.eirFile}: parse error: {e}"
     | .ok p₀ => do
-      let p := etaSaturate (addPrims p₀)
+      let p₁ := addPrims p₀
+      -- The machine-mode well-formedness judgment (Rwv.Eidos.Check),
+      -- on the program as rwc dumped it (pre eta-saturation, which is
+      -- this driver's local workaround) — so the differential harness
+      -- exercises the judgment corpus-wide before every run.
+      match p₁.checkMachine with
+      | .error e => err s!"{args.eirFile}: machine-mode well-formedness: {e}"
+      | .ok () => do
+      let p := etaSaturate p₁
       let Δ := DEnv.ofDatas p.datas
       let defns := mkDefnMap p.defns
       match p.procs with
