@@ -32,6 +32,7 @@ library
   exposed-modules:
       ReWire.Builtins
       ReWire.Eidos.ANF
+      ReWire.Eidos.BuiltinSigs
       ReWire.Eidos.Externs
       ReWire.Eidos.Inline
       ReWire.Eidos.Lint

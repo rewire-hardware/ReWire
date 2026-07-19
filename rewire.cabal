@@ -695,6 +695,7 @@ data-files:
     tests/eidos/smoke.eir
     tests/eidos/negative/goto-cycle.eir
     tests/eidos/negative/input-type.eir
+    tests/eidos/negative/prim-sig.eir
     tests/eidos/negative/unknown-cell.eir
     rewire-user/src/ReWire.hs
     rewire-user/src/RWC/Primitives.hs
