@@ -213,8 +213,9 @@ The linter checks a program in one of four cumulative modes:
   Builtin-named definitions (`rwPrim*`) are exempt: they are the builtins'
   type assumptions riding to the Eidos-to-Hyle fold as polymorphic signature
   carriers (error-stub bodies, never referenced as variables — references
-  become `Prim` occurrences at the bridge), and they check in poly mode
-  until an Eidos-level builtin signature table replaces them.
+  become `Prim` occurrences at the bridge), and they check in poly mode.
+  (`Prim` occurrences themselves are checked against the builtin signature
+  table of §7.6, in every mode.)
 - **mono+ANF** (procify's input contract): additionally, value binders are
   first-order and the type grammar is restricted to the *representable
   closure*: `Vec n τ`, `Finite n`, `Bool`, `()`, tuples, monomorphic ADTs,
@@ -362,6 +363,10 @@ no state-stack indexing and no cross-proc state. Cell initials `e₀` are
 closed pure expressions, compile-time evaluated (consulting combinational
 extern models; a model-less extern in an initial is a located error), or
 `undef` for a cell first written before any read on every path from entry.
+An `undef` initial *denotes* the zero value of the cell's type (`zero_τ`,
+§7.5.1) — the write-before-read convention makes the choice unobservable
+in intended use, and pinning it keeps the semantics total and matches the
+compiled machine bit-for-bit.
 
 Externs: combinational extern calls (`xcall`) are ordinary ANF right-hand
 sides; *sequential* (clocked) extern calls are legal only as commands, and
@@ -408,19 +413,310 @@ naming and ordering function, which fixes dispatch order and tag values.
   of every binder, parameter, and cell; full-arity jumps and gotos; the
   input parameter typed `τ_I`; "root proc never pauses" (a proc with no
   pause target has no machine) — all with located diagnostics.
+- **Pure-acyclicity**: the call graph of the pure definitions reachable
+  from the process (block bodies, cell initials, and transitively) is
+  acyclic. Together with guardedness this makes the machine semantics
+  (§7.5) a well-founded definition and block lowering total. (Enforced
+  today downstream, by the Hyle checker's recursion rule and the
+  translation's entry-evaluation check; Eidos-level lint enforcement is
+  pending.)
+- Command right-hand sides are the *pure* ANF forms of §6 — jumps, join
+  bindings, and reactive spines are excluded from blocks (§7.1); joins
+  survive only in pure definition bodies. (Holds by construction —
+  procify's ANF input names only simple right-hand sides, and
+  jump-containing cases stay in tail position; the implementation's
+  command AST is a general expression, the machine lint enforces the
+  jump/tail discipline, and the full r-shape check is pending, like the
+  representable-closure permit-list.)
 - All rules are stated per-proc.
 
 ### 7.5 Machine semantics
 
-A proc with cells `s̄ : τ̄`, pause-target labels `L̄`, and step fold
-`step : Label × args × cells × τ_I → out × Label × args × cells` denotes
-the causal stream function obtained by iterating `step` from the initial
-label and cell values (§7.3), exactly the device semantics of Hyle
-(doc/hyle.md §6.4): output at time t depends on inputs strictly before t.
-The translation to a Hyle device (registers = cells ⧺ label ⧺ args;
-equations = the step fold's ANF, mapped 1:1 onto Hyle lets and muxes) is
-semantics-preserving by construction, and the four-way cosimulation check
-in `rwc-test` tests exactly this.
+This section defines the meaning of a well-formed (machine-mode) process
+as a stream function, independent of the translation to Hyle. The
+translation realizes exactly this semantics (§7.5.6); the four-way
+cosimulation in `rwc-test` tests the correspondence per test.
+
+#### 7.5.1 Semantic values
+
+For each representable type τ (§4.1), the set `V_τ` of values:
+
+- `V_(Vec n τ)` = length-n tuples over `V_τ`. Index 0 is the *head*
+  (printed leftmost); for `Vec n Bool` the head is the most significant
+  bit.
+- `V_Bool = {False, True}`; `V_() = {()}`; `V_(Proxy n) = {Proxy}`.
+- `V_(Finite n) = {0, …, n−1}` for n ≥ 1. `Finite 0` is uninhabited in
+  the source language; its machine representation is zero-width, so the
+  semantics gives it the single degenerate value (like `()`), which no
+  well-typed closed program observes.
+- `V_Integer = {0, …, 2¹²⁸ − 1}`: `Integer` compiles at fixed width 128
+  (§4.1); its machine meaning is the 128-bit residue. Integer literals
+  at `Finite n` and `Vec n Bool` are lint-checked to fit; at `Integer`
+  every literal is accepted and denotes its 128-bit residue (wrapping
+  silently), as does runtime arithmetic.
+- For a monomorphic instance `T τ̄` of a declared datatype: the disjoint
+  union, over its constructors `C :: ∀ā. τ₁ → … → τ_k → T ā`, of tuples
+  `C(v₁, …, v_k)` with `vᵢ ∈ V_(τᵢ[ā ↦ τ̄])`. (Recursive datatypes are
+  not representable, so this induction is well-founded.)
+
+**Bit readings.** `bv : V_(Vec n Bool) → {0, …, 2ⁿ−1}` reads a bit
+vector MSB-first: `bv(v) = Σᵢ vᵢ · 2^(n−1−i)`; `⟨x⟩ₙ = x mod 2ⁿ` is the
+width-n residue and `bv⁻¹ₙ` its inverse reading. `Finite` and `Integer`
+values are already numbers. These canonical readings are all the builtin
+denotations (§7.6) need; the general data-to-bits encoding of ADTs
+belongs to the translation (doc/hyle.md), not to this semantics.
+
+**Zero values.** `zero_τ ∈ V_τ`, used by cell initials (7.5.4) and the
+`error` builtin (§7.6): `zero_(Vec n τ)` = n copies of `zero_τ`;
+`zero_Bool = False`; `zero_() = ()`; `zero_(Finite n) = 0`;
+`zero_Integer = 0`; `zero_(T τ̄) = C₀(zero_τ₁', …)` where `C₀` is T's
+first constructor in declaration order. Well-defined by the same
+induction.
+
+#### 7.5.2 Pure evaluation
+
+Let ρ map term binders to values and η interpret externs (7.5.5).
+`E⟦e⟧ρ` is standard call-by-value big-step evaluation of the machine-mode
+pure fragment:
+
+- **Atoms**: variables look up ρ; an integer literal at type `Integer`,
+  `Finite n`, or `Vec n Bool` denotes its residue/value at that type
+  (7.5.1); `vec [e₁,…]` denotes the tuple of its elements' values.
+- **Constructors**: a saturated constructor spine denotes `C(v̄)`.
+- **Definition calls**: a saturated call to a pure definition evaluates
+  the definition's body with parameters bound to argument values —
+  well-founded because the pure call graph is acyclic (§7.4,
+  *pure-acyclicity*).
+- **Builtins**: per the signature and denotation table of §7.6.
+  Higher-order builtin arguments (`rwPrimVecMap`'s function argument: a
+  lambda, or a possibly-partially-applied reference to a definition) are
+  applied semantically, element by element.
+- **Case**: evaluate the scrutinee; select the first *matching*
+  constructor or literal alternative, binding the case binder to the
+  scrutinee's value and field binders to its components; the default
+  alternative (syntactically first, when present) fires only when no
+  other alternative matches. Machine-mode case analyses are total
+  (a non-matching value with no default is ill-formed input; the
+  translation compiles the last alternative as unconditional).
+- **Joins**: `let join L(x̄) = e_L in e` evaluates `e` with `L` bound to
+  its continuation; `jump L(ā)` evaluates `e_L` under `x̄ ↦ ā-values`.
+  Jumps are tail transfers to lexically enclosing joins; the scoping
+  discipline (§3.4) admits no recursion among joins, so this is
+  structural.
+
+Evaluation is total on machine-mode programs (no exceptions, no
+divergence): every partiality in the source discipline — literal fit,
+static-argument requirements, `error` — is either rejected by lint/the
+translation or given a total denotation (§7.6).
+
+#### 7.5.3 Configurations and the machine step
+
+A machine state is `(ℓ, w̄, σ)`: a pause-target label ℓ, saved values w̄
+for ℓ's parameters *except* the last (the resumed input, §7.1), and a
+cell store σ.
+
+Block-body execution `X⟦cmds; term⟧(ρ, σ)` threads the cell store
+through the commands and then runs the terminator:
+
+    X⟦x ← r;  rest⟧(ρ, σ)   = X⟦rest⟧(ρ[x ↦ E⟦r⟧ρ], σ)
+    X⟦x ← get s; rest⟧(ρ, σ) = X⟦rest⟧(ρ[x ↦ σ(s)], σ)
+    X⟦put s a; rest⟧(ρ, σ)  = X⟦rest⟧(ρ, σ[s ↦ E⟦a⟧ρ])
+
+    X⟦pause a → L(ā)⟧(ρ, σ) = Step(E⟦a⟧ρ, L, E⟦ā⟧ρ, σ)
+    X⟦goto L(ā)⟧(ρ, σ)      = X⟦body(L)⟧(params(L) ↦ E⟦ā⟧ρ, σ)
+    X⟦halt a⟧(ρ, σ)         = Halt(E⟦a⟧ρ, σ)
+    X⟦case a of talts⟧(ρ, σ) = X⟦term of the selected alternative⟧(ρ', σ)
+                               (selection and field binding as in 7.5.2)
+
+The `goto` clause is well-founded by signal-guardedness (§7.4): the
+goto-only subgraph is acyclic, so recursion decreases the block's rank
+in any topological order of that subgraph. A `goto` supplies *all* of
+the target's parameters, including its resumed-input slot.
+
+The one-cycle step, for input value i:
+
+    step(ℓ, w̄, σ, i) = X⟦body(ℓ)⟧(params(ℓ) ↦ w̄ ⧺ ⟨i⟩, σ)
+
+yielding either `Step(o, ℓ′, w̄′, σ′)` — an emitted output and the next
+state — or `Halt(a, σ′)`.
+
+#### 7.5.4 Initialization, streams, and halt
+
+The initial cell store σ₀ maps each cell to its declared initial's value
+(a closed pure expression, evaluated with extern models per §7.1) or, for
+`undef` initials, to `zero_τ` — the write-before-read convention of §7.1
+makes this choice unobservable in intended use, and the compiled machine
+realizes exactly `zero_τ`. (Declared initials are a calculus-level
+generality: the pipeline's only producer emits `undef` for every cell,
+entry-block writes are the implemented initialization path, and the
+translation does not yet consult declared initials.)
+
+The reset step runs the parameterless entry block: `X⟦entry⟧(∅, σ₀)`
+(terminating, by guardedness). If it yields `Step(o₋, ℓ₀, w̄₀, σ₀′)`, the
+initial machine state is `s(0) = (ℓ₀, w̄₀, σ₀′)` and **the entry's
+emitted value o₋ is not observable** — it is the value "paused on"
+during reset; the first observable output is produced at cycle 0. If the
+entry halts, the process's observable trace is empty.
+
+The process then denotes the stream function
+
+    𝔐⟦P⟧η : (ℕ → V_I) → V_O-traces
+
+defined by iterating: `step(s(t), i(t))` yields `(o(t), s(t+1))` while
+it yields `Step`; if it yields `Halt(a, ·)` at cycle k, the trace is the
+finite prefix `⟨o(0), …, o(k−1)⟩` and the process's *result* is a — the
+halting cycle drives no *defined* output (the machine does not route the
+answer to the output port; whatever halt-record bits happen to overlap
+the output field are unspecified), and there is no post-halt behavior
+(§7.3; the strict mode `--no-halt` rejects reachable halt, and halt-free
+processes denote total streams).
+
+**Causality.** `o(t)` depends on `i(0), …, i(t)`: the resumed block
+reads the current cycle's input combinationally (a Mealy machine, as in
+doc/hyle.md §6.4). It is the machine *state* — label, saved arguments,
+cells — that is registered and depends only on strictly earlier inputs.
+
+#### 7.5.5 Externs
+
+Mirroring doc/hyle.md §6.1, algebraically: an interpretation η assigns
+each model-less combinational extern a function between the `V`-domains
+of its use-site monotype; an extern with a usable model is pinned to the
+model definition's denotation. A process's denotation is a function of
+η; processes whose externs all carry models (or that have none) denote
+absolutely. Sequential (clocked) externs — legal only as commands, one
+device instance per syntactic occurrence — are interpreted as strictly
+causal stream functions, exactly as instances in doc/hyle.md §6.4.
+Cryptol foreign functions (`rwPrimCryptol`) are model-carrying by
+construction: their denotation is fixed by the translated Cryptol
+fragment.
+
+#### 7.5.6 Correspondence to Hyle
+
+The translation (`ReWire.Eidos.ToHyle`) realizes this semantics as a
+Hyle device: the machine state becomes the registers (label tag ⧺ saved
+arguments ⧺ cells, in the translation's record layout), each block
+becomes a definition, dispatch is a case on the label tag, and the
+register initials come from compile-time evaluation of the entry block
+(7.5.4). The device's stream function (doc/hyle.md §6.4) agrees with
+`𝔐⟦P⟧η` through the data-to-bits encoding on the observable trace — up
+to and excluding the halting cycle, exactly (bit-for-bit) for halt-free
+processes. The four-way cosimulation check in `rwc-test` tests exactly
+this correspondence.
+
+### 7.6 Builtin signatures and denotations
+
+The normative signature scheme and machine-level denotation of every
+builtin (`ReWire.Builtins`; occurrences print as `rwPrim<Name>`, §9).
+Signatures are what `Prim` occurrences must instantiate: an occurrence's
+carried type must be a substitution instance of its builtin's scheme
+(this is the linter's builtin signature table). Quantified `n, m, i` have
+kind `Nat`; `a, b` kind `*`; `m̂` ranges over the reactive stack. In
+denotations, `x = bv(v)` and `y = bv(w)` are the bit readings of the
+first and second `Vec _ Bool` arguments (§7.5.1), and `⟨·⟩ₙ` the width-n
+residue; "as hyle `op`" means the denotation table of doc/hyle.md §5.2,
+through `bv`. A **static** argument must be a compile-time literal after
+inlining (a located error otherwise) — a partiality of the *translation*,
+not of the denotation.
+
+**Eliminated before the M level** (signatures only; these have no
+machine denotation — purification consumes them, and none may appear in
+a process or in any definition reachable from one):
+
+| builtin | signature | eliminated by |
+|---|---|---|
+| `rwPrimBind` | `∀ m̂ a b. m̂ a → (a → m̂ b) → m̂ b` | procify |
+| `rwPrimReturn` | `∀ m̂ a. a → m̂ a` | procify |
+| `rwPrimGet` | `∀ s m̂. StateT s m̂ s` | procify |
+| `rwPrimPut` | `∀ s m̂. s → StateT s m̂ ()` | procify |
+| `rwPrimSignal` | `∀ i o m̂. o → ReacT i o m̂ i` | procify |
+| `rwPrimLift` | `∀ t̂ m̂ a. m̂ a → t̂ m̂ a` | procify |
+| `rwPrimExtrude` | `∀ i o s m̂ a. ReacT i o (StateT s m̂) a → s → ReacT i o m̂ a` | procify |
+| `rwPrimUnfold` | `∀ s i o. ((R_, s) → i → PuRe s o) → (s → PuRe s o) → ReacT i o Identity ()` | legacy (the retired purifier's device constructor; not produced by the current pipeline) |
+
+**Foreign mechanisms** (signatures; denotation per §7.5.5):
+
+| builtin | signature | notes |
+|---|---|---|
+| `rwPrimExtern` | `∀ a. [(String, Integer)] → String → String → [(String, Integer)] → [(String, Integer)] → String → a → String → a` | params, clock, reset, ins, outs, module name, model, instance name — all but the model static; becomes an `xcall` (combinational) or an instance (clocked) |
+| `rwPrimCryptol` | `∀ a. String → String → a → a` | module file and function name static; model-carrying by construction (§7.5.5) |
+| `rwPrimUsingExtern`, `rwPrimVecFoldR`, `rwPrimVecFoldL` | — | reserved enum entries: no user-facing carrier, no lowering; occurrences are rejected (at the Hyle fold — the linter records no signature for them, trusting occurrence types as it also does for `Extern` and `Unfold`) |
+
+**Bit-vector operations** (denotations through `bv`; the result width is
+fixed by the type):
+
+| builtin | signature | denotation |
+|---|---|---|
+| `rwPrimAdd` | `∀ n. Vec n Bool → Vec n Bool → Vec n Bool` | as hyle `add`: `⟨x + y⟩ₙ` |
+| `rwPrimSub` | ″ | as hyle `sub` (modular) |
+| `rwPrimMul` | ″ | as hyle `mul` |
+| `rwPrimDiv` | ″ | as hyle `udiv`: y = 0 ⇒ 2ⁿ−1 (SMT-LIB). *The GHC model errors on a zero divisor; the compiled semantics is total.* |
+| `rwPrimMod` | ″ | as hyle `umod`: y = 0 ⇒ x (SMT-LIB). *Same GHC caveat.* |
+
+*(A width caveat on the five rows above: the GHC models of Add, Sub,
+Mul, Div, and Mod compute through the 128-bit `rwPrimBits`, so they
+agree with the compiled semantics only at widths n ≤ 128. Pow, the
+shifts, and the bitwise, comparison, and reduction operations are exact
+at every width.)*
+| `rwPrimPow` | ″ | as hyle `pow`: `⟨x^y⟩ₙ`, 0⁰ = 1 |
+| `rwPrimAnd`, `rwPrimOr`, `rwPrimXOr` | ″ | bitwise |
+| `rwPrimXNor` | ″ | `⟨2ⁿ−1⟩ − (x ⊕ y)` (bitwise complement of xor) |
+| `rwPrimNot` | `∀ n. Vec n Bool → Vec n Bool` | bitwise complement |
+| `rwPrimLShift` | `∀ n. Vec n Bool → Vec n Bool → Vec n Bool` | as hyle `shl` (y ≥ n ⇒ 0) |
+| `rwPrimRShift` | ″ | as hyle `lshr` (y ≥ n ⇒ 0) |
+| `rwPrimRShiftArith` | ″ | as hyle `ashr` (sign-filling; y ≥ n ⇒ all-sign) |
+| `rwPrimEq` | `∀ n. Vec n Bool → Vec n Bool → Bool` | x = y (n = 0 ⇒ True) |
+| `rwPrimGt`, `rwPrimGtEq`, `rwPrimLt`, `rwPrimLtEq` | ″ | unsigned comparison |
+| `rwPrimLAnd` | ″ | (x ≠ 0) ∧ (y ≠ 0) |
+| `rwPrimLOr` | ″ | (x ≠ 0) ∨ (y ≠ 0) |
+| `rwPrimLNot` | `∀ n. Vec n Bool → Bool` | x = 0 |
+| `rwPrimRAnd` | `∀ n. Vec n Bool → Bool` | as hyle `redand`: x = 2ⁿ−1 (n = 0 ⇒ True) |
+| `rwPrimROr` | ″ | as hyle `redor`: x ≠ 0 |
+| `rwPrimRNAnd` | `∀ n. Vec (1 + n) Bool → Bool` | ¬ redand |
+| `rwPrimRNor` | ″ | ¬ redor |
+| `rwPrimRXOr` | ″ | as hyle `redxor`: parity of x |
+| `rwPrimRXNor` | ″ | ¬ parity |
+| `rwPrimMSBit` | ″ | the head element (bit n, LSB-numbered — the MSB) |
+
+**Conversions, `Finite`, and miscellany**:
+
+| builtin | signature | denotation | static / well-formedness |
+|---|---|---|---|
+| `rwPrimError` | `∀ a. String → a` | `zero_a` (§7.5.1) | the message is not compiled (no hardware representation); the translation warns, quoting the message when it is a literal |
+| `rwPrimBits` | `Integer → Vec 128 Bool` | `bv⁻¹₁₂₈(x)` (identity on residues) | |
+| `rwPrimResize` | `∀ m n. Vec n Bool → Vec m Bool` | `bv⁻¹ₘ⟨x⟩ₘ` — truncate (keep low bits) or zero-extend | |
+| `rwPrimNatVal` | `∀ n. Proxy n → Integer` | `⟨n⟩₁₂₈` | |
+| `rwPrimBitSlice` | `∀ m n. Vec n Bool → Finite n → Finite n → Vec m Bool` | bits j…i of x, LSB-numbered (head = bit n−1) | j, i static (`finite` applications of integer literals); j + 1 ≥ i (j = i − 1 is the empty slice); m = j − i + 1, enforced downstream by the Hyle checker |
+| `rwPrimBitIndex` | `∀ n. Vec n Bool → Finite n → Bool` | bit i of x, LSB-numbered | i static (a `finite` application of an integer literal) |
+| `rwPrimFinite` | `∀ n. Integer → Finite n` | the value itself | static; 0 ≤ value < n |
+| `rwPrimFiniteMinBound` | `∀ n. Finite n` | 0 | n ≥ 1 |
+| `rwPrimFiniteMaxBound` | `∀ n. Finite n` | n − 1 | n ≥ 1 |
+| `rwPrimToFinite` | `∀ m n. Vec m Bool → Finite n` | `bv(v)` | 2^m ≤ n |
+| `rwPrimToFiniteMod` | `∀ m n. Vec m Bool → Finite n` | `bv(v) mod n` | n = 0 degenerates to the unit value (§7.5.1). *The GHC model errors (mod 0); the compiled semantics is total.* |
+| `rwPrimFromFinite` | `∀ n m. Finite n → Vec m Bool` | `bv⁻¹ₘ(i)` | n ≤ 2^m |
+
+**Vectors** (element-polymorphic; denotations are algebraic on tuples,
+positions 0-indexed from the head):
+
+| builtin | signature | denotation | static |
+|---|---|---|---|
+| `rwPrimVecFromList` | `∀ n a. [a] → Vec n a` | the elements, in order | the list literal; length n enforced downstream by the Hyle checker |
+| `rwPrimVecReplicate` | `∀ n a. a → Vec n a` | n copies | |
+| `rwPrimVecReverse` | `∀ n a. Vec n a → Vec n a` | reversal | |
+| `rwPrimVecSlice` | `∀ i n m a. Proxy i → Vec ((i + n) + m) a → Vec n a` | elements i … i+n−1 | |
+| `rwPrimVecRSlice` | `∀ i n m a. Proxy i → Vec ((i + n) + m) a → Vec n a` | elements ℓ−i−n … ℓ−i−1, ℓ = i+n+m (counted from the end) | |
+| `rwPrimVecIndex` | `∀ n a. Vec n a → Finite n → a` | element i (dynamic index) | |
+| `rwPrimVecIndexProxy` | `∀ n m a. Vec ((n + m) + 1) a → Proxy n → a` | element n | |
+| `rwPrimVecConcat` | `∀ n m a. Vec n a → Vec m a → Vec (n + m) a` | concatenation | |
+| `rwPrimVecMap` | `∀ n a b. (a → b) → Vec n a → Vec n b` | elementwise application (7.5.2) | |
+| `rwPrimVecGenerate` | `∀ n a. (Finite n → a) → Vec n a` | `⟨f(0), …, f(n−1)⟩` (function argument as in 7.5.2) | |
+
+Two exports of `RWC.Primitives` are *not* builtins and appear here only
+to disclaim them: `rwPrimSignextend` and `rwPrimToInteger` have no
+`Builtin` constructor, and — because the bridge treats every `rwPrim*`
+name defined in `RWC.Primitives` as a primitive, stubbing its body — an
+occurrence of either is rejected as an unknown primitive. They (and
+`ReWire.Bits.sext`/`toInteger`, which wrap them) are GHC-only
+compatibility exports.
 
 ## 8. Pass discipline
 
@@ -583,6 +879,7 @@ one removable lint rule instead of an axiom of the unifier.
 | §3 (P syntax) | `ReWire.Eidos.Syntax` |
 | §5 (`typeOf`, nats, spines) | `ReWire.Eidos.Types` |
 | §4 (lint modes poly/mono) | `ReWire.Eidos.Lint` |
+| §7.6 (builtin signatures) | `ReWire.Eidos.BuiltinSigs` |
 | §2/§8 (uniqueness, the refreshing clone, substitution) | `ReWire.Eidos.Subst` |
 | §8 (specialization) | `ReWire.Eidos.Spec` (types), `ReWire.Eidos.Simplify` (values) |
 | §8 (INLINE inlining) | `ReWire.Eidos.Inline` |
