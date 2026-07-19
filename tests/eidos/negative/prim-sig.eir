@@ -1,0 +1,9 @@
+-- A primitive occurrence whose carried type does not instantiate the
+-- builtin signature table (doc/eidos.md, section 7.6): rwPrimAdd is
+-- Vec n Bool -> Vec n Bool -> Vec n Bool, never Integer arithmetic.
+-- EXPECT-LINT-ERROR: does not instantiate its signature
+-- EXPECT-LINT-ERROR: rwPrimAdd
+Main.f#1 :: Integer -> Integer
+Main.f#1 (n#2 :: Integer) = (rwPrimAdd :: Integer -> Integer -> Integer) n#2 n#2
+
+top Main.f#1

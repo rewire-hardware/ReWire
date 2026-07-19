@@ -7,28 +7,28 @@ data Main.Empty * { }
 
 data (,) (* -> * -> *) { (,) :: forall (c#5 :: *) (d#6 :: *) . c#5 -> d#6 -> (,) c#5 d#6 }
 
-data Main.B * { Main.T :: Main.B; Main.F :: Main.B }
+data Bool * { False :: Bool; True :: Bool }
 
 data Main.Pair (* -> * -> *) { Main.MkPair :: forall (a#1 :: *) (b#2 :: *) . a#1 -> b#2 -> Main.Pair a#1 b#2 }
 
 Main.idf#10 :: forall (a#11 :: *) . a#11 -> a#11
 inline Main.idf#10 (x#12 :: a#11) = x#12
 
-Main.f#20 :: Vec 8 Main.B -> Vec (4 + 4) Main.B
-noinline from Main.g (Vec 8 Main.B, + 2 6) Main.f#20 (v#21 :: Vec 8 Main.B) =
-      let x#22 :: Vec (+ 4 4) Main.B = Main.idf#10 @(Vec 8 Main.B) v#21 in
-      let join k#23 ((b#24 :: Vec 8 Main.B)) = b#24 in
+Main.f#20 :: Vec 8 Bool -> Vec (4 + 4) Bool
+noinline from Main.g (Vec 8 Bool, + 2 6) Main.f#20 (v#21 :: Vec 8 Bool) =
+      let x#22 :: Vec (+ 4 4) Bool = Main.idf#10 @(Vec 8 Bool) v#21 in
+      let join k#23 ((b#24 :: Vec 8 Bool)) = b#24 in
       let join k0#26 () = jump k#23 (x#22) in
-      case (rwPrimMSBit :: Vec 8 Main.B -> Main.B) x#22 of w#25 {
+      case (rwPrimMSBit :: Vec 8 Bool -> Bool) x#22 of w#25 {
             _ -> jump k0#26 ();
-            Main.T -> jump k#23 (v#21)
-      } :: Vec 8 Main.B
+            True -> jump k#23 (v#21)
+      } :: Vec 8 Bool
 
 Main.lits#30 :: Integer -> (,) Integer String
 from Main.h () Main.lits#30 (n#31 :: Integer) =
       let s#32 :: String = "hi\n\t\"\\there" in
       let m#33 :: Integer = case n#31 of q#34 {
-            _ -> (rwPrimAdd :: Integer -> Integer -> Integer) q#34 (1 :: Integer);
+            _ -> q#34;
             0 -> (-5 :: Integer)
       } :: Integer in
       ((,) :: Integer -> String -> (,) Integer String) m#33 s#32
