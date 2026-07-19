@@ -496,7 +496,13 @@ pure fragment:
 - **Definition calls**: a saturated call to a pure definition evaluates
   the definition's body with parameters bound to argument values —
   well-founded because the pure call graph is acyclic (§7.4,
-  *pure-acyclicity*).
+  *pure-acyclicity*). A definition may be eta-reduced (fewer declared
+  parameters than its signature has arrows — including a bare builtin
+  body); it means its eta-expansion, exactly as the translation
+  eta-expands before lowering. The same reading covers a builtin
+  applied below its signature arity in an argument position (a
+  partially applied `error` at function type denotes the function
+  constantly `zero` at the result).
 - **Builtins**: per the signature and denotation table of §7.6.
   Higher-order builtin arguments (`rwPrimVecMap`'s function argument: a
   lambda, or a possibly-partially-applied reference to a definition) are
