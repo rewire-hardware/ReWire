@@ -33,7 +33,8 @@ its raw dump (--force to regenerate).
 Usage:
   verify/test/hyle-equiv-goldens.py [--only SUBSTR] [--workdir DIR]
       [--rwc PATH] [--equiv-exe PATH] [--sat-timeout SEC] [--timeout SEC]
-      [--jobs N] [--prove-jobs N] [--no-check] [--force] [--integration] [-v]
+      [--jobs N] [--prove-jobs N] [--no-check] [--no-normalize] [--force]
+      [--integration] [-v]
 """
 
 import argparse
@@ -138,12 +139,14 @@ def gen_dumps(rwc, src: Path, work: Path, force: bool, verbose: bool):
 # ------------------------------------------------------------ prove phase
 
 def run_equiv(exe, raw: Path, final: Path, out: Path, sat_timeout: int,
-              timeout: int, no_check: bool, verbose: bool):
+              timeout: int, no_check: bool, no_normalize: bool, verbose: bool):
     """Run rwv-hyle-equiv on one pair; return (status, detail, size, ms)."""
     cmd = [exe, str(raw), str(final), "--out", str(out),
            "--lake-dir", str(VERIFY), "--timeout", str(sat_timeout)]
     if no_check:
         cmd.append("--no-check")
+    if no_normalize:
+        cmd.append("--no-normalize")
     if verbose:
         print("  $", " ".join(cmd), file=sys.stderr)
     try:
@@ -196,6 +199,9 @@ def main():
                     help="parallel proving jobs (default 1, for honest times)")
     ap.add_argument("--no-check", action="store_true",
                     help="emit obligations only; do not run bv_decide")
+    ap.add_argument("--no-normalize", action="store_true",
+                    help="bypass the DAG normalization layer (legacy "
+                         "two-def flat obligations, for A/B measurement)")
     ap.add_argument("--force", action="store_true",
                     help="regenerate dumps even when cached")
     ap.add_argument("--integration", action="store_true",
@@ -246,7 +252,8 @@ def main():
             return base, "FAILED", f"dump generation: {err}", None, None
         status, detail, size, ms = run_equiv(
             exe, raw, final, work / f"{base}.equiv.lean",
-            args.sat_timeout, args.timeout, args.no_check, args.verbose)
+            args.sat_timeout, args.timeout, args.no_check, args.no_normalize,
+            args.verbose)
         return base, status, detail, size, ms
 
     def report(base, status, detail, size, ms):
