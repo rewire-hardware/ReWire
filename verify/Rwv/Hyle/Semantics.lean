@@ -261,14 +261,24 @@ def step (F : FEnv) (X : XEnv) (dev : Device) (regs : HashMap String BV) (ins : 
 def initRegs (dev : Device) : HashMap String BV :=
   HashMap.ofList (dev.registers.map fun r => (r.name, r.init))
 
+/-- One iteration of the §6.4 recurrence as `run`'s fold body: step
+the device from the current register store, pushing the cycle's
+outputs onto the (reversed) trace accumulator. Named (rather than
+inline in `run`) so proofs can reason about the fold by its
+equations. -/
+def foldStep (F : FEnv) (X : XEnv) (dev : Device) :
+    HashMap String BV × List (List BV) → List BV →
+    Except String (HashMap String BV × List (List BV))
+  | (regs, acc), ins => do
+      let (outs, regs') ← step F X dev regs ins
+      pure (regs', outs :: acc)
+
 /-- The n-prefix of 𝔇⟦device⟧ (doc/hyle.md §6.4, instance-free): the
 Mealy unfolding from the declared initials over a finite stimulus, the
 semantics `--interpret` and the golden traces realize. -/
 def run (F : FEnv) (X : XEnv) (dev : Device) (stimulus : List (List BV)) :
     Except String (List (List BV)) := do
-  let (_, outsRev) ← stimulus.foldlM (init := (initRegs dev, ([] : List (List BV)))) fun (regs, acc) ins => do
-    let (outs, regs') ← step F X dev regs ins
-    pure (regs', outs :: acc)
+  let (_, outsRev) ← stimulus.foldlM (init := (initRegs dev, ([] : List (List BV)))) (foldStep F X dev)
   pure outsRev.reverse
 
 end Sem

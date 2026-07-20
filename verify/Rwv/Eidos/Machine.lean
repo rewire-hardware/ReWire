@@ -144,6 +144,23 @@ def step (Δ : DEnv) (defns : HashMap Int Defn) (blocks : HashMap Int Block)
         (fun e (p, v) => (p.uniq, v) :: e) ([] : Eval.Env)
       execBlock Δ defns blocks evalFuel gotoFuel env s.cells blk
 
+/-- One iteration of `Proc.run`'s fold: step the live machine state on
+the cycle's input (pushing the emitted output), record a halt answer
+(dropping the state), or — once halted — consume the input as a no-op.
+Named (rather than inline in `Proc.run`) so proofs can reason about
+the fold by its equations. -/
+def foldStep (Δ : DEnv) (defns : HashMap Int Defn) (blocks : HashMap Int Block)
+    (evalFuel gotoFuel : Nat) :
+    List Val × Option Val × Option MState → Val →
+    Except String (List Val × Option Val × Option MState)
+  | (acc, halted, s?), i => do
+      match s?, halted with
+      | some s, none => do
+          match ← step Δ defns blocks evalFuel gotoFuel s i with
+          | .step o s' => pure (o :: acc, none, some s')
+          | .halt a    => pure (acc, some a, none)
+      | _, _ => pure (acc, halted, s?)
+
 end Machine
 
 /-- A finite observable trace (§7.5.4): the outputs up to (and
@@ -165,13 +182,7 @@ def Proc.run (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel gotoFuel : Nat)
   | .step _o s₀ => do
       let (outsRev, halted, _) ← inputs.foldlM
           (init := (([] : List Val), (Option.none : Option Val), some s₀))
-          fun (acc, halted, s?) i => do
-            match s?, halted with
-            | some s, none => do
-                match ← Machine.step Δ defns blocks evalFuel gotoFuel s i with
-                | .step o s' => pure (o :: acc, none, some s')
-                | .halt a    => pure (acc, some a, none)
-            | _, _ => pure (acc, halted, s?)
+          (Machine.foldStep Δ defns blocks evalFuel gotoFuel)
       pure ⟨outsRev.reverse, halted⟩
 
 end Rwv.Eidos
