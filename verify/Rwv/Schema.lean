@@ -114,37 +114,43 @@ lockstep is not demanded either; `simP_run` assumes both runs
 succeeded, which kills the mixed error branches. -/
 
 /-- Prefix simulation along a state relation `R` with an output
-relation `Q`: from related states, if both machines step they emit
-`Q`-related outputs and step to related states, and the right machine
-does not halt first. -/
+relation `Q`, over inputs satisfying `P` (the input-canonicality
+restriction: a validator can only discharge the per-step agreement for
+well-typed inputs — a non-canonical input with a well-formed bit image
+can drive the two case-selection mechanisms, constructor-name matching
+on the Eidos side and tag-bit comparison on the Hyle side, to
+different alternatives while both steps succeed): from related states
+and a `P`-input, if both machines step they emit `Q`-related outputs
+and step to related states, and the right machine does not halt
+first. -/
 structure SimP {S T I O₁ O₂ : Type} (m₁ : MealyE S I O₁) (m₂ : MealyE T I O₂)
-    (R : S → T → Prop) (Q : O₁ → O₂ → Prop) : Prop where
-  agree : ∀ s t i, R s t →
+    (R : S → T → Prop) (Q : O₁ → O₂ → Prop) (P : I → Prop) : Prop where
+  agree : ∀ s t i, P i → R s t →
     match m₁.step s i, m₂.step t i with
     | .ok (some (o₁, s')), .ok (some (o₂, t')) => Q o₁ o₂ ∧ R s' t'
     | .ok (some _), .ok none => False   -- the right machine may not halt first
     | _, _ => True   -- left halt: fine; error cases: excluded by the success hypotheses
 
 /-- The prefix-simulation metatheorem: from related states, whenever
-both machines run successfully, the left trace is `Q`-pointwise-related
-to a prefix of the right trace. -/
+both machines run successfully on a `P`-pointwise stimulus, the left
+trace is `Q`-pointwise-related to a prefix of the right trace. -/
 theorem simP_run {S T I O₁ O₂ : Type} {m₁ : MealyE S I O₁} {m₂ : MealyE T I O₂}
-    {R : S → T → Prop} {Q : O₁ → O₂ → Prop} (h : SimP m₁ m₂ R Q) :
+    {R : S → T → Prop} {Q : O₁ → O₂ → Prop} {P : I → Prop} (h : SimP m₁ m₂ R Q P) :
     ∀ (is : List I) (s : S) (t : T) (os₁ : List O₁) (os₂ : List O₂),
-      R s t → m₁.run s is = .ok os₁ → m₂.run t is = .ok os₂ →
+      (∀ i ∈ is, P i) → R s t → m₁.run s is = .ok os₁ → m₂.run t is = .ok os₂ →
       ∃ os₂', os₂' <+: os₂ ∧ List.Forall₂ Q os₁ os₂' := by
   intro is
   induction is with
   | nil =>
-      intro s t os₁ os₂ _ h₁ h₂
+      intro s t os₁ os₂ _ _ h₁ h₂
       simp only [MealyE.run] at h₁ h₂
       injection h₁ with h₁
       injection h₂ with h₂
       subst h₁; subst h₂
       exact ⟨[], List.nil_prefix, List.Forall₂.nil⟩
   | cons i is ih =>
-      intro s t os₁ os₂ hR h₁ h₂
-      have hag := h.agree s t i hR
+      intro s t os₁ os₂ hP hR h₁ h₂
+      have hag := h.agree s t i (hP i List.mem_cons_self) hR
       match hs₁ : m₁.step s i, hs₂ : m₂.step t i with
       | .error e, _ =>
           simp only [MealyE.run, hs₁] at h₁
@@ -178,7 +184,8 @@ theorem simP_run {S T I O₁ O₂ : Type} {m₁ : MealyE S I O₁} {m₂ : Mealy
               injection h₁ with h₁
               injection h₂ with h₂
               subst h₁; subst h₂
-              obtain ⟨os₂', hpre, hfa⟩ := ih s' t' os₁' os₂'' hR' hr₁ hr₂
+              obtain ⟨os₂', hpre, hfa⟩ := ih s' t' os₁' os₂''
+                (fun j hj => hP j (List.mem_cons_of_mem _ hj)) hR' hr₁ hr₂
               exact ⟨o₂ :: os₂', List.cons_prefix_cons.mpr ⟨rfl, hpre⟩,
                      List.Forall₂.cons hQ hfa⟩
 
@@ -424,9 +431,11 @@ a compiled Hyle device: a prefix simulation between the two induced
 Mealy machines — the Eidos-M machine on algebraic values, and the Hyle
 device precomposed with the input port-split encoding — along a
 candidate state relation `R`, with outputs related by the output
-port-split encoding. This is the package a validator discharges per
-label (by combinational equivalence, in later phases); `R` is the
-canonicality-invariant graph of the state encoding. -/
+port-split encoding, over well-typed inputs (`Val.HasTy` at the
+process input type — the hypothesis `Corresponds` supplies; without
+it the agreement is undischargeable, see `SimP`). This is the package
+a validator discharges per label (by combinational equivalence);
+`R` is the canonicality-invariant graph of the state encoding. -/
 def StepObligations (Δ : Eidos.DEnv) (defns : HashMap Int Eidos.Defn)
     (evalFuel gotoFuel : Nat) (blocks : HashMap Int Eidos.Block)
     (F : Hyle.Sem.FEnv) (X : Hyle.Sem.XEnv) (dev : Hyle.Device) (p : Eidos.Proc)
@@ -435,6 +444,7 @@ def StepObligations (Δ : Eidos.DEnv) (defns : HashMap Int Eidos.Defn)
       ((Hyle.inducedMealy F X dev).mapIn (Eidos.Val.portSplit Δ evalFuel p.inTy))
       R
       (fun v bs => Eidos.Val.portSplit Δ evalFuel p.outTy v = .ok bs)
+      (fun v => Eidos.Val.HasTy Δ v p.inTy)
 
 /-- The glue theorem: the step obligations, plus the initial-state
 obligation (the entry block's post-reset state is `R`-related to the
@@ -460,7 +470,7 @@ theorem stepObligations_corresponds
         R s₀ (Hyle.Sem.initRegs dev)) :
     Eidos.Corresponds Δ defns evalFuel gotoFuel p H := by
   subst hX hdev
-  intro ins _hty encIns hmapM mt hmrun ht hhrun
+  intro ins hty encIns hmapM mt hmrun ht hhrun
   -- Expose the stream semantics inside `Program.run`.
   have hrunF : (do
       let F' ← Hyle.Sem.mkFEnv H
@@ -488,7 +498,7 @@ theorem stepObligations_corresponds
       obtain ⟨o, s₀, hexec, hmealyE⟩ := hstep
       have hR₀ : R s₀ (Hyle.Sem.initRegs H.device) := hinit σ₀ o s₀ hσ hexec
       obtain ⟨os₂', hpre, hfa⟩ := Sim.simP_run hR ins s₀ (Hyle.Sem.initRegs H.device)
-        mt.outs ht hR₀ hmealyE hmealyH
+        mt.outs ht hty hR₀ hmealyE hmealyH
       refine ⟨os₂', forall₂_mapM_ok hfa, ?_⟩
       cases hh : mt.halted with
       | some a => exact hpre
