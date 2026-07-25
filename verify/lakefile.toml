@@ -28,3 +28,7 @@ root = "EquivGen"
 [[lean_exe]]
 name = "rwv-check-equiv"
 root = "CheckEquiv"
+
+[[lean_exe]]
+name = "rwv-cexp-validate"
+root = "CexpValidate"
