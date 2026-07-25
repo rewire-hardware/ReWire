@@ -24,3 +24,7 @@ root = "EidosDiff"
 [[lean_exe]]
 name = "rwv-hyle-equiv"
 root = "EquivGen"
+
+[[lean_exe]]
+name = "rwv-check-equiv"
+root = "CheckEquiv"
