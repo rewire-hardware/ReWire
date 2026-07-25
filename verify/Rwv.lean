@@ -11,6 +11,7 @@ import Rwv.Eidos.Parse
 import Rwv.Eidos.Check
 import Rwv.Eidos.Eval
 import Rwv.Eidos.Machine
+import Rwv.Eidos.FuelMono
 import Rwv.Sim
 import Rwv.Correspond
 import Rwv.Correspond2
