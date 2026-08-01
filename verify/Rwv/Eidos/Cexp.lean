@@ -33,19 +33,24 @@ evaluator's `JEnv`), ToHyle's commuting rewrites (lambda applied,
 let-headed and case-headed applications — realized as a `pend`ing
 list of already-compiled arguments, with definition calls consuming
 a prefix and passing the remainder into the body, mirroring
-`applyMany`), and the remaining first-order §7.6 rows (the Finite
+`applyMany`), the remaining first-order §7.6 rows (the Finite
 family, VecReplicate/Concat/Reverse/Slice/RSlice/Index/IndexProxy/
 FromList, NatVal, BitSlice/BitIndex at syntactic Finite literals,
-and live `error` as the checked zero value). `cexpJ_sound` /
+and live `error` as the checked zero value), and the HIGHER-ORDER
+Vec rows (VecMap, VecGenerate — ToHyle's `applyFn`: unrolled per
+element, the function argument applied through the same pending
+discipline, so lambdas bind the element normal form and (possibly
+partially applied) definition references consume it as their final
+argument; soundness relates each element to the evaluator's
+`applyAll` loop through the `applyMany` leg). `cexpJ_sound` /
 `cexpFull_sound` extend the soundness statement with an `applyMany`
 leg and a join-environment correspondence (`JEnvC`), and
 `cexpJ_varsWF`/`cexpFull_varsWF` establish the bridge's `VarsWF`
 discipline for compiled forms, upgrading `checkDefnPair`'s verified
 verdict with the width-aware `cfoldW3` leg (guarded by `paramsOkW`).
-Still outside: higher-order rows (VecMap, VecGenerate), foreign rows
-(extern, cryptol), strings, local-variable application, bare
-lambdas, and FromFinite at widening widths (`VTy` does not track
-Finite canonicality).
+Still outside: foreign rows (extern, cryptol), strings,
+local-variable application, bare lambdas, and FromFinite at widening
+widths (`VTy` does not track Finite canonicality).
 
 THE soundness theorem (`cexp_sound`): a successful compilation is
 rep-correspondent — if the committed evaluator produces a value, the
@@ -109,6 +114,7 @@ locally rather than exported from committed files.
 import Rwv.Eidos.Eval
 import Rwv.Eidos.FuelMono
 import Rwv.Hyle.Bridge
+import Rwv.Hyle.BridgeDag
 import Std.Data.HashMap
 
 namespace Rwv.Eidos.Cexp
@@ -3594,10 +3600,19 @@ mirroring the reference lowering construct for construct:
     VecIndexProxy, VecIndex (the dynamic shift construction),
     VecFromList (list-literal argument), NatVal, BitSlice/BitIndex
     (syntactic Finite-literal indices, exactly ToHyle's `finLit`),
-    and live `rwPrimError` (zero value / `undef`).
+    and live `rwPrimError` (zero value / `undef`);
+  * the higher-order Vec rows (ToHyle's VecMap/VecGenerate cases and
+    `applyFn`): unrolled per element — VecMap slices the compiled
+    vector argument MSB-first at the input-element width, VecGenerate
+    supplies index literals at width `nbits nElems` — and the function
+    argument is compiled applied to the element through the pending
+    discipline (`cexpJ f [(elem, teI)]`), which realizes exactly
+    `applyFn`'s two shapes: a lambda binds the element in Γ, a
+    definition reference (with or without earlier arguments on its
+    spine) consumes it as its final argument and inlines.
 
-Still outside: higher-order rows (VecMap, VecGenerate), foreign rows
-(extern, cryptol), strings, local-variable application, bare lambdas.
+Still outside: foreign rows (extern, cryptol), strings,
+local-variable application, bare lambdas.
 
 The original 4a `cexp`/`cAlt`/`cchain`/`cprim` and every theorem about
 them are unchanged above; `cexpFull` (= `cexpJ` with empty join
@@ -4071,6 +4086,50 @@ def cexpJ (Δ : DEnv) (dmap : HashMap Int Defn) :
                         else .error s!"rwPrimBitSlice: invalid slice (j: {j}, i: {i})"
                     | _, _ => .error "rwPrimBitSlice: indices must be Finite literals")
                 | _ => .error "rwPrimBitSlice: arity mismatch")
+            | .vecMap =>
+                -- ToHyle's VecMap: unroll per element (MSB-first input
+                -- slices), applying the function argument through the
+                -- pending-argument discipline (a lambda binds the
+                -- element; a — possibly partially applied — definition
+                -- reference consumes it as its final argument).
+                (match args with
+                | [fE, argE] => do
+                    let (nElems, teO) ← vecLenElem "rwPrimVecMap" (Ty.flattenArrow pty).2
+                    let seO ← Δ.sizeOf (fuel + 1) [] teO
+                    let (a, ta) ← cexpJ Δ dmap fuel Γ jΓ argE []
+                    let (len, teI) ← vecLenElem "rwPrimVecMap" ta
+                    let seI ← Δ.sizeOf (fuel + 1) [] teI
+                    let szV ← Δ.sizeOf (fuel + 1) [] ta
+                    if len = nElems then do
+                      let ps ← (List.range nElems).mapM fun i => do
+                        let (ei, ti) ← cexpJ Δ dmap fuel Γ jΓ fE
+                          [(sliceNF (szV - (i + 1) * seI) seI a, teI)]
+                        if teq ti teO then .ok (ei, seO)
+                        else .error "rwPrimVecMap: element result-type mismatch"
+                      .ok (catNF ps, (Ty.flattenArrow pty).2)
+                    else .error "rwPrimVecMap: length mismatch"
+                | _ => .error "rwPrimVecMap: arity mismatch")
+            | .vecGenerate =>
+                -- ToHyle's VecGenerate: apply the function argument to
+                -- each index literal at the `nbits nElems` width.
+                (match args with
+                | [fE] => do
+                    let (nElems, teO) ← vecLenElem "rwPrimVecGenerate" (Ty.flattenArrow pty).2
+                    let seO ← Δ.sizeOf (fuel + 1) [] teO
+                    let ft ← domTyT "rwPrimVecGenerate" (Ty.flattenArrow pty).1 0
+                    match ft with
+                    | .arrow tFin _ => do
+                        let nb ← finBoundT "rwPrimVecGenerate" tFin
+                        if nb = nElems then do
+                          let ps ← (List.range nElems).mapM fun i => do
+                            let (ei, ti) ← cexpJ Δ dmap fuel Γ jΓ fE
+                              [(.lit ⟨nbits nElems, BitVec.ofNat (nbits nElems) i⟩, tFin)]
+                            if teq ti teO then .ok (ei, seO)
+                            else .error "rwPrimVecGenerate: element result-type mismatch"
+                          .ok (catNF ps, (Ty.flattenArrow pty).2)
+                        else .error "rwPrimVecGenerate: generator domain-bound mismatch"
+                    | _ => .error "rwPrimVecGenerate: non-arrow function-argument type"
+                | _ => .error "rwPrimVecGenerate: arity mismatch")
             | _ => do
                 let pas ← args.mapM (cexpJ Δ dmap fuel Γ jΓ · [])
                 cprimF Δ (fuel + 1) pty b pas
@@ -4225,6 +4284,50 @@ private theorem applyMany_one (C : Eval.Ctx) (k : Nat) (f : Val) :
     Eval.applyMany C (k + 1) f [] = .ok f := by
   rw [Eval.applyMany]
   rfl
+
+/-- Dissect a successful `applyAll` (the evaluator's VecMap/VecGenerate
+element loop) into pointwise single-argument applications, in the
+`applyMany`-singleton form the soundness statement's application leg
+consumes. -/
+private theorem applyAll_ok_idx {C : Eval.Ctx} :
+    ∀ {k : Nat} {f : Val} {xs ys : List Val}, Eval.applyAll C k f xs = .ok ys →
+      ys.length = xs.length ∧
+      ∀ i (h1 : i < xs.length) (h2 : i < ys.length),
+        ∃ K, Eval.applyMany C K f [xs[i]] = .ok ys[i] := by
+  intro k
+  induction k with
+  | zero =>
+      intro f xs ys h
+      rw [Eval.applyAll] at h
+      exact error_ne_ok h
+  | succ k ih =>
+      intro f xs ys h
+      match xs with
+      | [] =>
+          rw [Eval.applyAll, except_pure_def] at h
+          injection h with h
+          subst h
+          exact ⟨rfl, fun i h1 _ => absurd h1 (by simp)⟩
+      | x :: rest =>
+          rw [Eval.applyAll] at h
+          obtain ⟨y, hy, h⟩ := except_bind_eq_ok h
+          obtain ⟨ys', hys', h⟩ := except_bind_eq_ok h
+          rw [except_pure_def] at h
+          injection h with h
+          subst h
+          obtain ⟨hlen, hpt⟩ := ih hys'
+          refine ⟨by simpa using hlen, ?_⟩
+          intro i h1 h2
+          match i with
+          | 0 =>
+              refine ⟨k + 2, ?_⟩
+              simp only [List.getElem_cons_zero]
+              rw [Eval.applyMany, Eval.applyValCore_mono (Nat.le_succ k) hy,
+                  except_bind_ok]
+              exact applyMany_one C k y
+          | i + 1 =>
+              simp only [List.getElem_cons_succ]
+              exact hpt i (by simpa using h1) (by simpa using h2)
 
 /-- `zip` ignores a right-list suffix beyond the left list's length. -/
 private theorem zip_append_left {α β : Type} :
@@ -7578,6 +7681,299 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
                             (a.eval σ).bits.extractLsb' iidx (jidx + 1 - iidx)⟩ : BV)
                       from rfl]
                   rw [hival, hjval]
+          · -- rwPrimVecMap: unrolled per element, the function argument
+            -- applied through the pending discipline; each element
+            -- relates to the evaluator's `applyAll` loop through the
+            -- `applyMany` leg.
+            cases args with
+            | nil => exact error_ne_ok hc
+            | cons fE rest1 =>
+            cases rest1 with
+            | nil => exact error_ne_ok hc
+            | cons argE rest2 =>
+            cases rest2 with
+            | cons a3 rest3 => exact error_ne_ok hc
+            | nil =>
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨nto, hres, hc⟩ := hc
+            obtain ⟨nElems, teO⟩ := nto
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨seO, hseO, hc⟩ := hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨ant, harg, hc⟩ := hc
+            obtain ⟨a, ta⟩ := ant
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨nti, hlenI, hc⟩ := hc
+            obtain ⟨len, teI⟩ := nti
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨seI, hseI, hc⟩ := hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨szV, hszV, hc⟩ := hc
+            split at hc
+            rotate_left
+            · exact error_ne_ok hc
+            rename_i hlenN
+            rw [bind_ok_iff] at hc
+            obtain ⟨ps, hps, hc⟩ := hc
+            injection hc with hc
+            injection hc with hnf hty
+            subst hnf; subst hty
+            -- the evaluator's two arguments
+            have hvs2 : vs.length = 2 := by simpa using hvlen
+            obtain ⟨fv, av, hvs2'⟩ := list_len2 hvs2
+            subst hvs2'
+            obtain ⟨_, kf0, hevf⟩ := hpt2 0 (by simp)
+            obtain ⟨_, ka0, heva⟩ := hpt2 1 (by simp)
+            simp only [List.getElem_cons_zero, List.getElem_cons_succ] at hevf heva
+            obtain ⟨hvta, kra, hrepa⟩ := ih Γ jΓ argE [] a ta ka0 1 env jenv av [] av
+              harg heva (applyMany_one ⟨Δ, dmap⟩ 0 av) hΓ hJ rfl
+              (fun j hj1 _ => absurd hj1 (by simp))
+            -- the evaluator's row
+            cases efuel with
+            | zero =>
+                rw [Eval.evalBuiltin.eq_def] at hev
+                exact error_ne_ok hev
+            | succ ef2 =>
+            rw [Eval.evalBuiltin.eq_def] at hev
+            dsimp only at hev
+            obtain ⟨xs, hxs, hev⟩ := except_bind_eq_ok hev
+            obtain ⟨ys, hys, hev⟩ := except_bind_eq_ok hev
+            rw [except_pure_def] at hev
+            injection hev with hev
+            subst hev
+            -- the argument value is a canonical vector
+            have hav : av = .vec xs := vecVal_inv hxs
+            obtain ⟨ntI, hflta, hnta⟩ := vecLenElem_inv hlenI
+            obtain ⟨elems, hav2, hellen, helems⟩ := vty_vec_inv hΔ hflta hnta hvta
+            rw [hav] at hav2
+            injection hav2 with hav2
+            subst hav2
+            -- its representation, elementwise
+            rw [hav] at hrepa
+            obtain ⟨kr, rs, _, hrs, hacat⟩ := rep_vec_inv hrepa
+            obtain ⟨hrslen, hrspt⟩ := mapM_ok_idx hrs
+            have hrw : ∀ x ∈ rs, x.width = seI := elem_widths helems hrs hseI
+            -- the vector width is the element count times the element width
+            obtain ⟨kk, we, hkk, hwe, hszVe⟩ := sizeOf_inv_vec hflta hszV
+            have hkk2 : len = kk := by
+              rw [hnta] at hkk
+              exact Option.some.inj hkk
+            subst hkk2
+            have hwe2 : seI = we := (sizeOf_det hwe hseI).symm
+            subst hwe2
+            -- the compiled elements, pointwise
+            obtain ⟨hpslen, hpspt⟩ := mapM_ok_idx hps
+            have hpslen' : ps.length = nElems := by
+              rw [hpslen, List.length_range]
+            obtain ⟨hyslen, hyspt⟩ := applyAll_ok_idx hys
+            have hxslen : xs.length = len := hellen
+            -- per-element soundness through the `applyMany` leg
+            have helem : ∀ i (hi : i < nElems),
+                VTy Δ (ys[i]'(by omega)) teO ∧
+                (∃ k, Val.rep Δ k (ys[i]'(by omega))
+                    = .ok ((ps[i]'(by omega)).1.eval σ)) ∧
+                (ps[i]'(by omega)).2 = seO := by
+              intro i hi
+              obtain ⟨hi2, hci⟩ := hpspt i (by rw [List.length_range]; omega)
+              rw [List.getElem_range] at hci
+              obtain ⟨eti, hcei, hifi⟩ := except_bind_eq_ok hci
+              obtain ⟨ei, ti⟩ := eti
+              dsimp only at hifi
+              split at hifi
+              rotate_left
+              · exact error_ne_ok hifi
+              rename_i hteqi
+              injection hifi with hifi
+              obtain ⟨K, hKi⟩ := hyspt i (by omega) (by omega)
+              have hsl : (sliceNF (szV - (i + 1) * seI) seI a).eval σ
+                  = rs[i]'(by omega) := by
+                rw [sliceNF_eval, hacat]
+                have hoff : szV - (i + 1) * seI = (rs.length - i - 1) * seI := by
+                  rw [hszVe, hrslen, hxslen,
+                      sub_mul_offsets (show i + 1 ≤ len by omega), Nat.add_mul,
+                      Nat.sub_sub]
+                rw [hoff]
+                exact slice_singleton hrw (by omega)
+              obtain ⟨hvy, ky, hky⟩ := ih Γ jΓ fE
+                [(sliceNF (szV - (i + 1) * seI) seI a, teI)] ei ti kf0 K env jenv
+                fv [xs[i]'(by omega)] (ys[i]'(by omega)) hcei hevf hKi hΓ hJ rfl
+                (by
+                  intro j hj1 hj2
+                  match j with
+                  | 0 =>
+                      simp only [List.getElem_cons_zero]
+                      refine ⟨helems _ (List.getElem_mem _), kr, ?_⟩
+                      show Val.rep Δ kr (xs[i]'(by omega))
+                        = .ok ((sliceNF (szV - (i + 1) * seI) seI a).eval σ)
+                      rw [hsl]
+                      exact (hrspt i (by omega)).2
+                  | j + 1 => exact absurd hj1 (by simp))
+              rw [← hifi]
+              exact ⟨teq_eq hteqi ▸ hvy, ⟨ky, hky⟩, rfl⟩
+            -- assemble the vector value
+            obtain ⟨ntO, hflo, hno⟩ := vecLenElem_inv hres
+            have hyslen2 : ys.length = nElems := by omega
+            constructor
+            · refine VTy.vec hflo hno hyslen2 ?_
+              intro e' he'
+              obtain ⟨j, hj, hej⟩ := List.getElem_of_mem he'
+              rw [← hej]
+              exact (helem j (by omega)).1
+            · obtain ⟨K, hK⟩ := mapM_rep_exists (Δ := Δ) (vs := ys)
+                (bs := ps.map (fun p => p.1.eval σ))
+                (by rw [List.length_map]; omega)
+                (fun i h1 h2 => by
+                  obtain ⟨_, ⟨k1, hrep1⟩, _⟩ := helem i (by omega)
+                  exact ⟨k1, by simpa using hrep1⟩)
+              refine ⟨K + 1, ?_⟩
+              rw [Val.rep, mapM_attach_erase, hK, except_bind_ok, except_pure_def]
+              congr 1
+              have hpwidths : ∀ p ∈ ps, (p.1.eval σ).width = p.2 := by
+                intro p hp
+                obtain ⟨j, hj, hpj⟩ := List.getElem_of_mem hp
+                obtain ⟨hvyj, ⟨kyj, hkyj⟩, hsnd⟩ := helem j (by omega)
+                rw [← hpj, hsnd]
+                exact vty_rep_width hvyj hkyj hseO
+              rw [catNF_eval σ _ hpwidths]
+              exact bvConcat_eq _
+          · -- rwPrimVecGenerate: index literals at width `nbits nElems`,
+            -- applied through the pending discipline.
+            cases args with
+            | nil => exact error_ne_ok hc
+            | cons fE rest1 =>
+            cases rest1 with
+            | cons a2 rest2 => exact error_ne_ok hc
+            | nil =>
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨nto, hres, hc⟩ := hc
+            obtain ⟨nElems, teO⟩ := nto
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨seO, hseO, hc⟩ := hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨ft, hft, hc⟩ := hc
+            cases ft with
+            | con c => exact error_ne_ok hc
+            | app t1 t2 => exact error_ne_ok hc
+            | var xv => exact error_ne_ok hc
+            | nat nn => exact error_ne_ok hc
+            | arrow tFin tR =>
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨nb, hnb, hc⟩ := hc
+            split at hc
+            rotate_left
+            · exact error_ne_ok hc
+            rename_i hnbe
+            rw [bind_ok_iff] at hc
+            obtain ⟨ps, hps, hc⟩ := hc
+            injection hc with hc
+            injection hc with hnf hty
+            subst hnf; subst hty
+            -- the evaluator's single argument
+            have hvs1 : vs.length = 1 := by simpa using hvlen
+            obtain ⟨fv, hvs1'⟩ := list_len1 hvs1
+            subst hvs1'
+            obtain ⟨_, kf0, hevf⟩ := hpt2 0 (by simp)
+            simp only [List.getElem_cons_zero] at hevf
+            -- the evaluator's row
+            cases efuel with
+            | zero =>
+                rw [Eval.evalBuiltin.eq_def] at hev
+                exact error_ne_ok hev
+            | succ ef2 =>
+            rw [Eval.evalBuiltin.eq_def] at hev
+            dsimp only at hev
+            obtain ⟨n', hn', hev⟩ := except_bind_eq_ok hev
+            obtain ⟨ys, hys, hev⟩ := except_bind_eq_ok hev
+            rw [except_pure_def] at hev
+            injection hev with hev
+            subst hev
+            -- the two length readings agree
+            obtain ⟨ntO, hflo, hno⟩ := vecLenElem_inv hres
+            obtain ⟨nt2, te2, hflr2, hn2⟩ := vecLen_inv hn'
+            rw [hflo] at hflr2
+            have hn'e : nElems = n' := by
+              have hp : ntO = nt2 ∧ teO = te2 := by simpa using hflr2
+              obtain ⟨hp1, _⟩ := hp
+              subst hp1
+              rw [hno] at hn2
+              exact Option.some.inj hn2
+            subst hn'e
+            -- the Finite domain type
+            obtain ⟨btF, hflF, hbtF⟩ := finBoundT_inv hnb
+            have hnbe' : nElems = nb := hnbe.symm
+            subst hnbe'
+            -- the compiled elements, pointwise
+            obtain ⟨hpslen, hpspt⟩ := mapM_ok_idx hps
+            have hpslen' : ps.length = nElems := by
+              rw [hpslen, List.length_range]
+            obtain ⟨hyslen, hyspt⟩ := applyAll_ok_idx hys
+            rw [List.length_map, List.length_range] at hyslen
+            -- per-element soundness through the `applyMany` leg
+            have helem : ∀ i (hi : i < nElems),
+                VTy Δ (ys[i]'(by omega)) teO ∧
+                (∃ k, Val.rep Δ k (ys[i]'(by omega))
+                    = .ok ((ps[i]'(by omega)).1.eval σ)) ∧
+                (ps[i]'(by omega)).2 = seO := by
+              intro i hi
+              obtain ⟨hi2, hci⟩ := hpspt i (by rw [List.length_range]; omega)
+              rw [List.getElem_range] at hci
+              obtain ⟨eti, hcei, hifi⟩ := except_bind_eq_ok hci
+              obtain ⟨ei, ti⟩ := eti
+              dsimp only at hifi
+              split at hifi
+              rotate_left
+              · exact error_ne_ok hifi
+              rename_i hteqi
+              injection hifi with hifi
+              obtain ⟨K, hKi⟩ := hyspt i
+                (by simp only [List.length_map, List.length_range]; omega) (by omega)
+              simp only [List.getElem_map, List.getElem_range] at hKi
+              obtain ⟨hvy, ky, hky⟩ := ih Γ jΓ fE
+                [(.lit ⟨nbits nElems, BitVec.ofNat (nbits nElems) i⟩, tFin)] ei ti kf0 K
+                env jenv fv [Val.finite nElems i] (ys[i]'(by omega)) hcei hevf hKi hΓ hJ
+                rfl
+                (by
+                  intro j hj1 hj2
+                  match j with
+                  | 0 =>
+                      simp only [List.getElem_cons_zero]
+                      refine ⟨VTy.finite hflF hbtF, 1, ?_⟩
+                      rw [Val.rep, except_pure_def]
+                      rfl
+                  | j + 1 => exact absurd hj1 (by simp))
+              rw [← hifi]
+              exact ⟨teq_eq hteqi ▸ hvy, ⟨ky, hky⟩, rfl⟩
+            -- assemble the vector value
+            constructor
+            · refine VTy.vec hflo hno (by omega) ?_
+              intro e' he'
+              obtain ⟨j, hj, hej⟩ := List.getElem_of_mem he'
+              rw [← hej]
+              exact (helem j (by omega)).1
+            · obtain ⟨K, hK⟩ := mapM_rep_exists (Δ := Δ) (vs := ys)
+                (bs := ps.map (fun p => p.1.eval σ))
+                (by rw [List.length_map]; omega)
+                (fun i h1 h2 => by
+                  obtain ⟨_, ⟨k1, hrep1⟩, _⟩ := helem i (by omega)
+                  exact ⟨k1, by simpa using hrep1⟩)
+              refine ⟨K + 1, ?_⟩
+              rw [Val.rep, mapM_attach_erase, hK, except_bind_ok, except_pure_def]
+              congr 1
+              have hpwidths : ∀ p ∈ ps, (p.1.eval σ).width = p.2 := by
+                intro p hp
+                obtain ⟨j, hj, hpj⟩ := List.getElem_of_mem hp
+                obtain ⟨hvyj, ⟨kyj, hkyj⟩, hsnd⟩ := helem j (by omega)
+                rw [← hpj, hsnd]
+                exact vty_rep_width hvyj hkyj hseO
+              rw [catNF_eval σ _ hpwidths]
+              exact bvConcat_eq _
           · -- the extended row table
             rw [bind_ok_iff] at hc
             obtain ⟨pas, hpas, hc⟩ := hc
@@ -8877,6 +9273,116 @@ theorem cexpJ_varsWF {Δ : DEnv} {dmap : HashMap Int Defn} {P : String → Nat �
             rw [← h1]
             exact sliceNF_varsWF (ih Γ jΓ argE [] a ta hΓ hJ
               (fun q hq => absurd hq (by simp)) harg)
+          · -- vecMap
+            cases args with
+            | nil => exact error_ne_ok hc
+            | cons fE rest1 =>
+            cases rest1 with
+            | nil => exact error_ne_ok hc
+            | cons argE rest2 =>
+            cases rest2 with
+            | cons a3 rest3 => exact error_ne_ok hc
+            | nil =>
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨nto, hres, hc⟩ := hc
+            obtain ⟨nElems, teO⟩ := nto
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨seO, hseO, hc⟩ := hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨ant, harg, hc⟩ := hc
+            obtain ⟨a, ta⟩ := ant
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨nti, hlenI, hc⟩ := hc
+            obtain ⟨len, teI⟩ := nti
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨seI, hseI, hc⟩ := hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨szV, hszV, hc⟩ := hc
+            split at hc
+            rotate_left
+            · exact error_ne_ok hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨ps, hps, hc⟩ := hc
+            injection hc with hc
+            have h1 := congrArg Prod.fst hc
+            dsimp only at h1
+            rw [← h1]
+            have haWF : NF.VarsWF P a :=
+              ih Γ jΓ argE [] a ta hΓ hJ (fun q hq => absurd hq (by simp)) harg
+            obtain ⟨hpslen, hpspt⟩ := mapM_ok_idx hps
+            refine catNF_varsWF ?_
+            intro p hp
+            obtain ⟨j, hj, hpj⟩ := List.getElem_of_mem hp
+            obtain ⟨hj2, hcj⟩ := hpspt j (by omega)
+            obtain ⟨etj, hcej, hifj⟩ := except_bind_eq_ok hcj
+            obtain ⟨ej, tj⟩ := etj
+            dsimp only at hifj
+            split at hifj
+            rotate_left
+            · exact error_ne_ok hifj
+            injection hifj with hifj
+            rw [← hpj, ← hifj]
+            exact ih Γ jΓ fE _ ej tj hΓ hJ
+              (by
+                intro q hq
+                obtain rfl := List.mem_singleton.mp hq
+                exact sliceNF_varsWF haWF) hcej
+          · -- vecGenerate
+            cases args with
+            | nil => exact error_ne_ok hc
+            | cons fE rest1 =>
+            cases rest1 with
+            | cons a2 rest2 => exact error_ne_ok hc
+            | nil =>
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨nto, hres, hc⟩ := hc
+            obtain ⟨nElems, teO⟩ := nto
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨seO, hseO, hc⟩ := hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨ft, hft, hc⟩ := hc
+            cases ft with
+            | con c => exact error_ne_ok hc
+            | app t1 t2 => exact error_ne_ok hc
+            | var xv => exact error_ne_ok hc
+            | nat nn => exact error_ne_ok hc
+            | arrow tFin tR =>
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨nb, hnb, hc⟩ := hc
+            split at hc
+            rotate_left
+            · exact error_ne_ok hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨ps, hps, hc⟩ := hc
+            injection hc with hc
+            have h1 := congrArg Prod.fst hc
+            dsimp only at h1
+            rw [← h1]
+            obtain ⟨hpslen, hpspt⟩ := mapM_ok_idx hps
+            refine catNF_varsWF ?_
+            intro p hp
+            obtain ⟨j, hj, hpj⟩ := List.getElem_of_mem hp
+            obtain ⟨hj2, hcj⟩ := hpspt j (by omega)
+            obtain ⟨etj, hcej, hifj⟩ := except_bind_eq_ok hcj
+            obtain ⟨ej, tj⟩ := etj
+            dsimp only at hifj
+            split at hifj
+            rotate_left
+            · exact error_ne_ok hifj
+            injection hifj with hifj
+            rw [← hpj, ← hifj]
+            exact ih Γ jΓ fE _ ej tj hΓ hJ
+              (by
+                intro q hq
+                obtain rfl := List.mem_singleton.mp hq
+                trivial) hcej
           · -- extended rows
             rw [bind_ok_iff] at hc
             obtain ⟨pas, hpas, hc⟩ := hc
@@ -9110,6 +9616,1412 @@ theorem cexpFull_varsWF {Δ : DEnv} {dmap : HashMap Int Defn} {P : String → Na
     NF.VarsWF P nf :=
   cexpJ_varsWF fuel Γ [] e [] nf ty hΓ jgammaWF_nil
     (fun p hp => absurd hp (by simp)) hc
+
+
+/-! # The DAG mirror of the full compiler (Phase 4d)
+
+`cexpJD` compiles the same fragment as `cexpJ` into
+`Rwv.Hyle.BridgeDag`'s hash-consed node store, raw node for raw node
+(the way `symExpDag` mirrors `symExp`), so the per-definition and
+per-label validators can compare by store index where the tree normal
+forms blow up. The mirror's guards are exactly `cexpJ`'s (plus
+width-coherence checks that keep the store invariant and can only
+make the mirror fail MORE often, never differently). The intended
+soundness statement is the simulation "a successful DAG compilation
+certifies a successful tree compilation whose normal form is the
+reading of the returned index" (`symExpDag_sim`'s pattern); the
+groundwork proved below covers the environment/join simulation
+relations, every constructor helper (`catListD`/`catNFD`/`sliceNFD`/
+`resizeNFD`/`slicesWD`/`cpendVecD`/`cpendGenD`), the integer-literal
+row, and the complete 4a row table (`cprimD_sim`; the extended-row
+`cprimFD_sim` is finished in scratch form but not yet landed — its
+one-theorem shape compiles too slowly). The top-level `cexpJD`
+induction (and with it the per-defn DAG verdict) is NOT yet stated as
+a theorem — the mirror is measurement-grade until then (nothing
+unproved is claimed; the tree validators are unaffected). -/
+
+section DagMirror
+
+open Rwv.Hyle.BridgeDag (Dag DNode mIdx)
+
+/-- The index-based symbolic environment (`cexpJ`'s Γ with normal
+forms as store indices). -/
+abbrev DGamma := HashMap Int (Nat × Ty)
+
+/-- Index-based compile-time join closures (mirror `Cexp.CJoin`). -/
+inductive CJoinD where
+  | mk (params : List Id) (Γ : DGamma) (js : List (Int × CJoinD)) (body : Exp)
+
+abbrev CJEnvD := List (Int × CJoinD)
+
+/-- `Cexp.teqAll` on index pairs (only the types are consulted). -/
+def teqAllD : List (Nat × Ty) → List Ty → Bool
+  | [], [] => true
+  | (_, t) :: ps, u :: us => teq t u && teqAllD ps us
+  | _, _ => false
+
+/-- `Cexp.catList` on indices. -/
+def catListD (d : Dag) : List Nat → Dag × Nat
+  | [] => d.mkLit Rwv.Hyle.BV.nil
+  | [x] => (d, x)
+  | x :: y :: xs =>
+      let (d₁, r) := catListD d (y :: xs)
+      d₁.rawCat x r
+
+/-- `Cexp.catNF` on width-annotated indices. -/
+def catNFD (d : Dag) (xs : List (Nat × Nat)) : Dag × Nat :=
+  catListD d ((xs.filter fun p => p.2 != 0).map (·.1))
+
+/-- `Cexp.sliceNF` on indices. -/
+def sliceNFD (d : Dag) (off w e : Nat) : Dag × Nat :=
+  if w = 0 then d.mkLit Rwv.Hyle.BV.nil else d.rawSlice off w e
+
+/-- `Cexp.resizeNF` on indices. -/
+def resizeNFD (d : Dag) (m wa : Nat) (a : Nat) : Dag × Nat :=
+  if m = wa then (d, a)
+  else if wa < m then d.rawPrim1 (.zext m) a
+  else d.rawPrim1 (.trunc m) a
+
+/-- `Cexp.clitInt` on the store. -/
+def clitIntD (d : Dag) (ty : Ty) (n : Int) : Except String (Dag × Nat × Ty) := do
+  let (nf, rty) ← clitInt ty n
+  match nf with
+  | .lit v =>
+      let dr := d.mkLit v
+      .ok (dr.1, dr.2, rty)
+  | _ => .error "cexpD: non-literal integer-literal image"
+
+/-- The 4a row table on indices (`Cexp.cprim`, row for row; the rows
+build only `prim1`/`prim2`/`slice` nodes over the argument indices). -/
+def cprimD (d : Dag) (pty : Ty) (b : Builtin) (pas : List (Nat × Ty)) :
+    Except String (Dag × Nat × Ty) :=
+  let res := (Ty.flattenArrow pty).2
+  let arith := fun (op : Op) (ta : Ty) (a b' : Nat) => do
+    let m ← vecBoolLen "arith row" res
+    let wa ← vecBoolLen "arith row" ta
+    if wa = m then
+      let (d₁, r) := d.rawPrim2 op a b'
+      .ok (d₁, r, res)
+    else .error "cexp: arith row width mismatch"
+  let cmp := fun (op : Op) (a b' : Nat) =>
+    if isBoolT res then
+      let (d₁, r) := d.rawPrim2 op a b'
+      (.ok (d₁, r, res) : Except String (Dag × Nat × Ty))
+    else .error "cexp: comparison row at a non-Bool result type"
+  let red := fun (negated : Bool) (op : Op) (a : Nat) =>
+    if isBoolT res then
+      if negated then
+        let (d₁, r) := d.rawPrim1 op a
+        let (d₂, r₂) := d₁.rawPrim1 .not r
+        (.ok (d₂, r₂, res) : Except String (Dag × Nat × Ty))
+      else
+        let (d₁, r) := d.rawPrim1 op a
+        .ok (d₁, r, res)
+    else .error "cexp: reduction row at a non-Bool result type"
+  match b, pas with
+  | .bits, [(a, _)] => do
+      let k ← vecBoolLen "rwPrimBits" res
+      if k = 128 then .ok (d, a, res) else .error "rwPrimBits: result is not Vec 128 Bool"
+  | .resize, [(a, ta)] => do
+      let m ← vecBoolLen "rwPrimResize" res
+      let wa ← vecBoolLen "rwPrimResize" ta
+      if m = wa then .ok (d, a, res)
+      else if wa < m then
+        let (d₁, r) := d.rawPrim1 (.zext m) a
+        .ok (d₁, r, res)
+      else
+        let (d₁, r) := d.rawPrim1 (.trunc m) a
+        .ok (d₁, r, res)
+  | .add, [(a, ta), (b', _)] => arith .add  ta a b'
+  | .sub, [(a, ta), (b', _)] => arith .sub  ta a b'
+  | .mul, [(a, ta), (b', _)] => arith .mul  ta a b'
+  | .div, [(a, ta), (b', _)] => arith .udiv ta a b'
+  | .mod, [(a, ta), (b', _)] => arith .umod ta a b'
+  | .pow, [(a, ta), (b', _)] => arith .pow  ta a b'
+  | .and, [(a, ta), (b', _)] => arith .and  ta a b'
+  | .or,  [(a, ta), (b', _)] => arith .or   ta a b'
+  | .xor, [(a, ta), (b', _)] => arith .xor  ta a b'
+  | .xnor, [(a, ta), (b', _)] => do
+      let m ← vecBoolLen "rwPrimXNor" res
+      let wa ← vecBoolLen "rwPrimXNor" ta
+      if wa = m then
+        let (d₁, r) := d.rawPrim2 .xor a b'
+        let (d₂, r₂) := d₁.rawPrim1 .not r
+        .ok (d₂, r₂, res)
+      else .error "rwPrimXNor: width mismatch"
+  | .not, [(a, ta)] => do
+      let m ← vecBoolLen "rwPrimNot" res
+      let wa ← vecBoolLen "rwPrimNot" ta
+      if wa = m then
+        let (d₁, r) := d.rawPrim1 .not a
+        .ok (d₁, r, res)
+      else .error "rwPrimNot: width mismatch"
+  | .lShift,      [(a, ta), (b', _)] => arith .shl  ta a b'
+  | .rShift,      [(a, ta), (b', _)] => arith .lshr ta a b'
+  | .rShiftArith, [(a, ta), (b', _)] => arith .ashr ta a b'
+  | .eq,   [(a, _), (b', _)] => cmp .eq  a b'
+  | .gt,   [(a, _), (b', _)] => cmp .ugt a b'
+  | .gtEq, [(a, _), (b', _)] => cmp .uge a b'
+  | .lt,   [(a, _), (b', _)] => cmp .ult a b'
+  | .ltEq, [(a, _), (b', _)] => cmp .ule a b'
+  | .lAnd, [(a, _), (b', _)] =>
+      if isBoolT res then
+        let (d₁, ra) := d.rawPrim1 .redor a
+        let (d₂, rb) := d₁.rawPrim1 .redor b'
+        let (d₃, r) := d₂.rawPrim2 .and ra rb
+        .ok (d₃, r, res)
+      else .error "cexp: comparison row at a non-Bool result type"
+  | .lOr, [(a, _), (b', _)] =>
+      if isBoolT res then
+        let (d₁, ra) := d.rawPrim1 .redor a
+        let (d₂, rb) := d₁.rawPrim1 .redor b'
+        let (d₃, r) := d₂.rawPrim2 .or ra rb
+        .ok (d₃, r, res)
+      else .error "cexp: comparison row at a non-Bool result type"
+  | .lNot, [(a, _)] => red true .redor a
+  | .rAnd,  [(a, _)] => red false .redand a
+  | .rNAnd, [(a, _)] => red true  .redand a
+  | .rOr,   [(a, _)] => red false .redor  a
+  | .rNor,  [(a, _)] => red true  .redor  a
+  | .rXOr,  [(a, _)] => red false .redxor a
+  | .rXNor, [(a, _)] => red true  .redxor a
+  | .msBit, [(a, ta)] => do
+      if isBoolT res then do
+        let wa ← vecBoolLen "rwPrimMSBit" ta
+        if wa ≥ 1 then
+          let (d₁, r) := d.rawSlice (wa - 1) 1 a
+          .ok (d₁, r, res)
+        else .error "rwPrimMSBit: zero-width argument"
+      else .error "rwPrimMSBit: non-Bool result type"
+  | _, _ => .error s!"cexp: unsupported builtin {b.name} (outside the Phase 4a fragment)"
+
+/-- Push a list of (offset, width) slices of a base index, keeping the
+widths. -/
+def slicesWD (d : Dag) (a : Nat) : List (Nat × Nat) → Dag × List (Nat × Nat)
+  | [] => (d, [])
+  | (off, w) :: rest =>
+      let (d₁, s) := sliceNFD d off w a
+      let (d₂, rs) := slicesWD d₁ a rest
+      (d₂, (s, w) :: rs)
+
+/-- The extended row table on indices (`Cexp.cprimF`, row for row). -/
+def cprimFD (d : Dag) (Δ : DEnv) (szf : Nat) (pty : Ty) (b : Builtin)
+    (pas : List (Nat × Ty)) : Except String (Dag × Nat × Ty) :=
+  match b with
+  | .finite =>
+      (match pas with
+      | [(a, _)] => do
+          let n ← finBoundT "rwPrimFinite" (Ty.flattenArrow pty).2
+          match d.nodes[a]? with
+          | some (.lit v) =>
+              if v.nat < n then
+                let dr := d.mkLit ⟨nbits n, BitVec.ofNat (nbits n) v.nat⟩
+                .ok (dr.1, dr.2, (Ty.flattenArrow pty).2)
+              else .error s!"rwPrimFinite: {v.nat} is not representable in Finite {n}"
+          | _ => .error "rwPrimFinite: can't determine the argument value at compile time"
+      | _ => .error "rwPrimFinite: arity mismatch")
+  | .natVal =>
+      (match pas with
+      | [(_, _)] => do
+          let pt ← domTyT "rwPrimNatVal" (Ty.flattenArrow pty).1 0
+          let k ← proxyNatT "rwPrimNatVal" pt
+          match Ty.flatten (Ty.flattenArrow pty).2 with
+          | (.con "Integer", []) =>
+              let dr := d.mkLit ⟨128, BitVec.ofNat 128 k⟩
+              .ok (dr.1, dr.2, (Ty.flattenArrow pty).2)
+          | _ => .error "rwPrimNatVal: non-Integer result type"
+      | _ => .error "rwPrimNatVal: arity mismatch")
+  | .vecIndexProxy =>
+      (match pas with
+      | [(a, ta), (_, _)] => do
+          let pt ← domTyT "rwPrimVecIndexProxy" (Ty.flattenArrow pty).1 1
+          let k ← proxyNatT "rwPrimVecIndexProxy" pt
+          let (len, tea) ← vecLenElem "rwPrimVecIndexProxy" ta
+          if teq tea (Ty.flattenArrow pty).2 then do
+            let se ← Δ.sizeOf szf [] (Ty.flattenArrow pty).2
+            let szA ← Δ.sizeOf szf [] ta
+            if k < len then
+              let (d₁, r) := sliceNFD d (szA - k * se - se) se a
+              .ok (d₁, r, (Ty.flattenArrow pty).2)
+            else .error "rwPrimVecIndexProxy: index out of range"
+          else .error "rwPrimVecIndexProxy: element-type mismatch"
+      | _ => .error "rwPrimVecIndexProxy: arity mismatch")
+  | .finiteMinBound =>
+      (match pas with
+      | [] => do
+          let n ← finBoundT "rwPrimFiniteBound" (Ty.flattenArrow pty).2
+          if 1 ≤ n then
+            let dr := d.mkLit ⟨nbits n, BitVec.ofNat (nbits n) 0⟩
+            .ok (dr.1, dr.2, (Ty.flattenArrow pty).2)
+          else .error "rwPrimFiniteBound: Finite 0 is uninhabited"
+      | _ => .error "rwPrimFiniteBound: arity mismatch")
+  | .finiteMaxBound =>
+      (match pas with
+      | [] => do
+          let n ← finBoundT "rwPrimFiniteBound" (Ty.flattenArrow pty).2
+          if 1 ≤ n then
+            let dr := d.mkLit ⟨nbits n, BitVec.ofNat (nbits n) (n - 1)⟩
+            .ok (dr.1, dr.2, (Ty.flattenArrow pty).2)
+          else .error "rwPrimFiniteBound: Finite 0 is uninhabited"
+      | _ => .error "rwPrimFiniteBound: arity mismatch")
+  | .toFinite =>
+      (match pas with
+      | [(a, ta)] => do
+          let n ← finBoundT "rwPrimToFinite" (Ty.flattenArrow pty).2
+          let wa ← vecBoolLen "rwPrimToFinite" ta
+          if 2 ^ wa ≤ n then
+            let dr := resizeNFD d (nbits n) wa a
+            .ok (dr.1, dr.2, (Ty.flattenArrow pty).2)
+          else .error "rwPrimToFinite: bit vector not representable in the Finite bound"
+      | _ => .error "rwPrimToFinite: arity mismatch")
+  | .toFiniteMod =>
+      (match pas with
+      | [(a, ta)] => do
+          let n ← finBoundT "rwPrimToFiniteMod" (Ty.flattenArrow pty).2
+          let wa ← vecBoolLen "rwPrimToFiniteMod" ta
+          if 2 ^ wa ≤ n then
+            let dr := resizeNFD d (nbits n) wa a
+            .ok (dr.1, dr.2, (Ty.flattenArrow pty).2)
+          else
+            let w := max wa (nbits n)
+            let (d₁, r₁) := resizeNFD d w wa a
+            let (d₂, l₂) := d₁.mkLit ⟨w, BitVec.ofNat w n⟩
+            let (d₃, r₃) := d₂.rawPrim2 .umod r₁ l₂
+            let (d₄, r₄) := resizeNFD d₃ (nbits n) w r₃
+            .ok (d₄, r₄, (Ty.flattenArrow pty).2)
+      | _ => .error "rwPrimToFiniteMod: arity mismatch")
+  | .fromFinite =>
+      (match pas with
+      | [(a, ta)] => do
+          let n ← finBoundT "rwPrimFromFinite" ta
+          let m ← vecBoolLen "rwPrimFromFinite" (Ty.flattenArrow pty).2
+          if n ≤ 2 ^ m then
+            if nbits n = m then .ok (d, a, (Ty.flattenArrow pty).2)
+            else .error "rwPrimFromFinite: widening from a Finite (canonicality untracked)"
+          else .error "rwPrimFromFinite: Finite bound not representable"
+      | _ => .error "rwPrimFromFinite: arity mismatch")
+  | .vecReplicate =>
+      (match pas with
+      | [(a, ta)] => do
+          let (n, te) ← vecLenElem "rwPrimVecReplicate" (Ty.flattenArrow pty).2
+          if teq ta te then do
+            let sz ← Δ.sizeOf szf [] (Ty.flattenArrow pty).2
+            if n = 0 ∨ sz = 0 then
+              let dr := d.mkLit Rwv.Hyle.BV.nil
+              .ok (dr.1, dr.2, (Ty.flattenArrow pty).2)
+            else
+              let dr := d.rawPrim1 (.rep n) a
+              .ok (dr.1, dr.2, (Ty.flattenArrow pty).2)
+          else .error "rwPrimVecReplicate: element-type mismatch"
+      | _ => .error "rwPrimVecReplicate: arity mismatch")
+  | .vecConcat =>
+      (match pas with
+      | [(a, ta), (b', tb)] => do
+          let (nr, ter) ← vecLenElem "rwPrimVecConcat" (Ty.flattenArrow pty).2
+          let (n1, te1) ← vecLenElem "rwPrimVecConcat" ta
+          let (n2, te2) ← vecLenElem "rwPrimVecConcat" tb
+          if teq te1 ter && teq te2 ter && nr == n1 + n2 then do
+            let sa ← Δ.sizeOf szf [] ta
+            let sb ← Δ.sizeOf szf [] tb
+            let (d₁, r) := catNFD d [(a, sa), (b', sb)]
+            .ok (d₁, r, (Ty.flattenArrow pty).2)
+          else .error "rwPrimVecConcat: type mismatch"
+      | _ => .error "rwPrimVecConcat: arity mismatch")
+  | .vecReverse =>
+      (match pas with
+      | [(a, ta)] => do
+          let (nr, ter) ← vecLenElem "rwPrimVecReverse" (Ty.flattenArrow pty).2
+          let (n1, te1) ← vecLenElem "rwPrimVecReverse" ta
+          if teq te1 ter && nr == n1 then do
+            let se ← Δ.sizeOf szf [] ter
+            let (d₁, ps) := slicesWD d a ((List.range n1).map fun k => (k * se, se))
+            let (d₂, r) := catNFD d₁ ps
+            .ok (d₂, r, (Ty.flattenArrow pty).2)
+          else .error "rwPrimVecReverse: type mismatch"
+      | _ => .error "rwPrimVecReverse: arity mismatch")
+  | .vecSlice =>
+      (match pas with
+      | [(_, _), (a, ta)] => do
+          let pt ← domTyT "rwPrimVecSlice" (Ty.flattenArrow pty).1 0
+          let i ← proxyNatT "rwPrimVecSlice" pt
+          let (m, ter) ← vecLenElem "rwPrimVecSlice" (Ty.flattenArrow pty).2
+          let (len, tea) ← vecLenElem "rwPrimVecSlice" ta
+          if teq tea ter then do
+            let se ← Δ.sizeOf szf [] ter
+            let szA ← Δ.sizeOf szf [] ta
+            if i + m ≤ len then
+              let (d₁, r) := sliceNFD d (szA - i * se - m * se) (m * se) a
+              .ok (d₁, r, (Ty.flattenArrow pty).2)
+            else .error "rwPrimVecSlice: slice out of range"
+          else .error "rwPrimVecSlice: element-type mismatch"
+      | _ => .error "rwPrimVecSlice: arity mismatch")
+  | .vecRSlice =>
+      (match pas with
+      | [(_, _), (a, ta)] => do
+          let pt ← domTyT "rwPrimVecRSlice" (Ty.flattenArrow pty).1 0
+          let i ← proxyNatT "rwPrimVecRSlice" pt
+          let (m, ter) ← vecLenElem "rwPrimVecRSlice" (Ty.flattenArrow pty).2
+          let (len, tea) ← vecLenElem "rwPrimVecRSlice" ta
+          if teq tea ter then do
+            let se ← Δ.sizeOf szf [] ter
+            let _szA ← Δ.sizeOf szf [] ta
+            if i + m ≤ len then
+              let (d₁, r) := sliceNFD d (i * se) (m * se) a
+              .ok (d₁, r, (Ty.flattenArrow pty).2)
+            else .error "rwPrimVecRSlice: slice out of range"
+          else .error "rwPrimVecRSlice: element-type mismatch"
+      | _ => .error "rwPrimVecRSlice: arity mismatch")
+  | .vecIndex =>
+      (match pas with
+      | [(a, ta), (i, ti)] => do
+          let (len, te) ← vecLenElem "rwPrimVecIndex" ta
+          let nb ← finBoundT "rwPrimVecIndex" ti
+          if nb == len && teq te (Ty.flattenArrow pty).2 then do
+            let se ← Δ.sizeOf szf [] (Ty.flattenArrow pty).2
+            let szA ← Δ.sizeOf szf [] ta
+            if 1 ≤ len ∧ len < 2 ^ 128 ∧ len * se < 2 ^ 128 then
+              let w := max (nbits nb) 128
+              let (d₁, i') := resizeNFD d w (nbits nb) i
+              let (d₂, lLen) := d₁.mkLit ⟨w, BitVec.ofNat w len⟩
+              let (d₃, s₁) := d₂.rawPrim2 .sub lLen i'
+              let (d₄, l1) := d₃.mkLit ⟨w, 1⟩
+              let (d₅, s₂) := d₄.rawPrim2 .sub s₁ l1
+              let (d₆, lSe) := d₅.mkLit ⟨w, BitVec.ofNat w se⟩
+              let (d₇, amt) := d₆.rawPrim2 .mul s₂ lSe
+              let (d₈, sh) := d₇.rawPrim2 .lshr a amt
+              let (d₉, r) := resizeNFD d₈ se szA sh
+              .ok (d₉, r, (Ty.flattenArrow pty).2)
+            else .error "rwPrimVecIndex: width guard failed"
+          else .error "rwPrimVecIndex: type mismatch"
+      | _ => .error "rwPrimVecIndex: arity mismatch")
+  | _ => cprimD d pty b pas
+
+/-- Bind binders over a `DGamma` (`Cexp.bindFieldsΓ`). -/
+def bindFieldsΓD (xs : List Id) (nts : List (Nat × Ty)) (Γ : DGamma) : DGamma :=
+  (xs.zip nts).foldr (fun (x, nt) m => m.insert x.uniq nt) Γ
+
+/-- `Cexp.mkGamma` on indices. -/
+def mkGammaD (params : List Id) (pas : List (Nat × Ty)) : DGamma :=
+  bindFieldsΓD params pas ∅
+
+/-- Per-element pend heads for the VecMap row: MSB-first input-element
+slices of the compiled vector argument. -/
+def cpendVecD (d : Dag) (szV seI a : Nat) : List Nat → Dag × List Nat
+  | [] => (d, [])
+  | i :: is =>
+      let (d₁, s) := sliceNFD d (szV - (i + 1) * seI) seI a
+      let (d₂, rest) := cpendVecD d₁ szV seI a is
+      (d₂, s :: rest)
+
+/-- Per-element pend heads for the VecGenerate row: the index literals
+at width `nbits nElems`. -/
+def cpendGenD (d : Dag) (nElems : Nat) : List Nat → Dag × List Nat
+  | [] => (d, [])
+  | i :: is =>
+      let (d₁, s) := d.mkLit ⟨nbits nElems, BitVec.ofNat (nbits nElems) i⟩
+      let (d₂, rest) := cpendGenD d₁ nElems is
+      (d₂, s :: rest)
+
+mutual
+
+/-- `Cexp.cAltJ`, mirrored on the store. -/
+def cAltJD (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) (Γ' : DGamma)
+    (jΓ : CJEnvD) (dty : Ty) (szT : Nat) (dn : Nat) (resTy : Ty) (pend : List (Nat × Ty)) :
+    Alt → Option Nat → Dag → Except String (Dag × Nat)
+  | .mk .default _ _, _, _ => .error "cexp: default alternative not first"
+  | .mk (.dataAlt cn) xs body, macc, d => do
+      if ctorOfB Δ dty cn then do
+        let (tag, w) ← Δ.ctorTag dty cn
+        match Δ.ctorSig.get? cn with
+        | none => .error s!"cexp: unknown constructor {cn}"
+        | some sig => do
+            let sub ← DEnv.matchTy (Ty.flattenArrow sig.ty).2 dty
+            let instTys := (Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)
+            if xs.length = instTys.length then do
+              let szXs ← instTys.mapM (Δ.sizeOf (fuel + 1) [])
+              if w + szXs.sum ≤ szT then do
+                let offs := (List.range szXs.length).map fun i =>
+                  (szXs.drop (i + 1)).sum
+                let (d₁, slices) := (szXs.zip offs).foldr
+                  (fun (sz, off) (dacc, acc) =>
+                    let (d', r) := sliceNFD dacc off sz dn
+                    (d', r :: acc))
+                  (d, ([] : List Nat))
+                let Γ'' := bindFieldsΓD xs (slices.zip instTys) Γ'
+                let (d₂, bnf, bty) ← cexpJD Δ dmap fuel Γ'' jΓ body pend d₁
+                if teq bty resTy then
+                  match macc, w with
+                  | some acc, _ + 1 =>
+                      let (d₃, sl) := sliceNFD d₂ (szT - w) w dn
+                      let (d₄, tl) := d₃.mkLit ⟨w, BitVec.ofNat w tag⟩
+                      let (d₅, cnd) := d₄.rawPrim2 .eq sl tl
+                      if d₅.widthOf bnf = d₅.widthOf acc then
+                        .ok (d₅.rawIte cnd bnf acc)
+                      else .error "cexpD: alternative arm width mismatch"
+                  | _, _ => .ok (d₂, bnf)
+                else .error "cexp: case alternative result-type mismatch"
+              else .error s!"cexp: constructor {cn} wider than the discriminant"
+            else .error s!"cexp: constructor {cn} binder arity mismatch"
+      else .error s!"cexp: constructor {cn} does not belong to the discriminant type"
+  | .mk (.litAlt i) _ body, macc, d => do
+      let (d₁, bnf, bty) ← cexpJD Δ dmap fuel Γ' jΓ body pend d
+      if teq bty resTy then
+        match macc with
+        | some acc =>
+            let (d₂, tl) := d₁.mkLit ⟨szT, BitVec.ofInt szT i⟩
+            let (d₃, cnd) := d₂.rawPrim2 .eq dn tl
+            if d₃.widthOf bnf = d₃.widthOf acc then
+              .ok (d₃.rawIte cnd bnf acc)
+            else .error "cexpD: alternative arm width mismatch"
+        | none => .ok (d₁, bnf)
+      else .error "cexp: case alternative result-type mismatch"
+termination_by alt _ _ => (fuel, 1, 0)
+
+/-- `Cexp.cchainJ`, mirrored on the store. -/
+def cchainJD (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) (Γ' : DGamma)
+    (jΓ : CJEnvD) (dty : Ty) (szT : Nat) (dn : Nat) (resTy : Ty) (pend : List (Nat × Ty)) :
+    List Alt → Option Nat → Dag → Except String (Dag × Nat × Ty)
+  | [], some els, d => .ok (d, els, resTy)
+  | [], none, _ => .error "cexp: empty case"
+  | [alt], none, d => do
+      let (d₁, bnf) ← cAltJD Δ dmap fuel Γ' jΓ dty szT dn resTy pend alt none d
+      .ok (d₁, bnf, resTy)
+  | alt :: rest, macc, d => do
+      let (d₁, accnf, _) ← cchainJD Δ dmap fuel Γ' jΓ dty szT dn resTy pend rest macc d
+      let (d₂, bnf) ← cAltJD Δ dmap fuel Γ' jΓ dty szT dn resTy pend alt (some accnf) d₁
+      .ok (d₂, bnf, resTy)
+termination_by rest _ _ => (fuel, 2, rest.length)
+
+/-- Compile a spine's arguments left to right, threading the store
+(`args.mapM (cexpJ …)`, state-passing). -/
+def cargsD (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) (Γ : DGamma)
+    (jΓ : CJEnvD) : List Exp → Dag → Except String (Dag × List (Nat × Ty))
+  | [], d => .ok (d, [])
+  | e :: es, d => do
+      let (d₁, r, t) ← cexpJD Δ dmap fuel Γ jΓ e [] d
+      let (d₂, rs) ← cargsD Δ dmap fuel Γ jΓ es d₁
+      .ok (d₂, (r, t) :: rs)
+termination_by es _ => (fuel, 3, es.length)
+
+/-- Apply the function argument to each pre-built pend head, checking
+the element result type (the VecMap/VecGenerate element loop). -/
+def celemsD (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) (Γ : DGamma)
+    (jΓ : CJEnvD) (fE : Exp) (teI teO : Ty) (seO : Nat) :
+    List Nat → Dag → Except String (Dag × List (Nat × Nat))
+  | [], d => .ok (d, [])
+  | p :: ps', d => do
+      let (d₁, ei, ti) ← cexpJD Δ dmap fuel Γ jΓ fE [(p, teI)] d
+      if teq ti teO then do
+        let (d₂, rest) ← celemsD Δ dmap fuel Γ jΓ fE teI teO seO ps' d₁
+        .ok (d₂, (ei, seO) :: rest)
+      else .error "cexpD: element result-type mismatch"
+termination_by ps' _ => (fuel, 3, ps'.length)
+
+/-- `Cexp.cexpJ`, mirrored on the store (the corpus fragment: the
+higher-order Vec rows and `vecFromList`'s list literals stay in the
+tree leg). -/
+def cexpJD (Δ : DEnv) (dmap : HashMap Int Defn) :
+    Nat → DGamma → CJEnvD → Exp → List (Nat × Ty) → Dag →
+    Except String (Dag × Nat × Ty)
+  | 0, _, _, _, _, _ => .error "cexp: out of fuel"
+  | fuel + 1, Γ, jΓ, e, pend, d =>
+    match Eval.flattenApp e with
+    | (.var x, args) =>
+        match Γ.get? x.uniq with
+        | some nt =>
+            match args, pend with
+            | [], [] => .ok (d, nt.1, nt.2)
+            | _, _ => .error s!"cexp: unsupported application of a local variable: {x.occ}"
+        | none =>
+            match dmap.get? x.uniq with
+            | some df => do
+                let (d₁, pas) ← cargsD Δ dmap fuel Γ jΓ args d
+                let pall := pas ++ pend
+                if df.params.length ≤ pall.length then
+                  if teqAllD (pall.take df.params.length) (df.params.map (·.sig.ty)) then
+                    if df.params.length ≤ pas.length || x.uniq == df.name.uniq then
+                      cexpJD Δ dmap fuel (mkGammaD df.params (pall.take df.params.length)) []
+                        df.body (pall.drop df.params.length) d₁
+                    else .error s!"cexp: call to {x.occ}: partial application through an inconsistent map"
+                  else .error s!"cexp: call to {x.occ}: argument-type mismatch"
+                else .error s!"cexp: call to {x.occ}: unsaturated ({pall.length} of {df.params.length} arguments)"
+            | none => .error s!"cexp: unknown definition {x.occ}#{x.uniq}"
+    | (.con cty c, args) =>
+        match pend with
+        | _ :: _ => .error s!"cexp: over-applied constructor {c}"
+        | [] => do
+            let (d₁, pas) ← cargsD Δ dmap fuel Γ jΓ args d
+            let resTy := (Ty.flattenArrow cty).2
+            if pas.length = (Ty.flattenArrow cty).1.length then
+              match Δ.ctorSig.get? c with
+              | some sig => do
+                  let sub ← DEnv.matchTy (Ty.flattenArrow sig.ty).2 resTy
+                  if teqAllD pas ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)) then
+                    if ctorOfB Δ resTy c then do
+                      let whole ← Δ.sizeOf (fuel + 1) [] resTy
+                      let (tag, w) ← Δ.ctorTag resTy c
+                      let ws ← ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)).mapM
+                        (Δ.sizeOf (fuel + 1) [])
+                      if w + ws.sum ≤ whole then
+                        let (d₂, tl) := d₁.mkLit ⟨w, BitVec.ofNat w tag⟩
+                        let (d₃, pl) := d₂.mkLit ⟨whole - w - ws.sum, 0⟩
+                        let (d₄, r) := catNFD d₃ ((tl, w)
+                                    :: (pl, whole - w - ws.sum)
+                                    :: (pas.map (·.1)).zip ws)
+                        .ok (d₄, r, resTy)
+                      else .error s!"cexp: constructor {c} wider than its type"
+                    else .error s!"cexp: constructor {c} does not belong to its result type"
+                  else .error s!"cexp: constructor {c}: field-type mismatch"
+              | none => .error s!"cexp: unknown constructor {c}"
+            else .error s!"cexp: unsaturated constructor {c}"
+    | (.prim pty b, args) =>
+        match pend with
+        | _ :: _ => .error "cexp: over-applied primitive"
+        | [] =>
+            match b with
+            | .error => do
+                let rty := Eval.dropArrows args.length pty
+                let sz ← Δ.sizeOf (fuel + 1) [] rty
+                let zv ← Δ.zeroVal (fuel + 1) rty
+                if vtyB Δ (fuel + 1) zv rty then
+                  match Val.rep Δ (fuel + 1) zv with
+                  | .ok bv =>
+                      if bv == (⟨sz, 0⟩ : BV) then
+                        let dr := d.mkLit ⟨sz, 0⟩
+                        .ok (dr.1, dr.2, rty)
+                      else .error "rwPrimError: zero value is not all-zeros at the result width"
+                  | .error _ => .error "rwPrimError: zero value has no representation"
+                else .error "rwPrimError: zero value not canonical at the result type"
+            | .vecFromList =>
+                (match args with
+                | [.litList _ els] => do
+                    let (d₁, pas) ← cargsD Δ dmap fuel Γ jΓ els d
+                    let res := (Ty.flattenArrow pty).2
+                    match Ty.flatten res with
+                    | (.con "Vec", [nt, te]) =>
+                        match Ty.evalNat nt with
+                        | some k =>
+                            if pas.length = k then
+                              if teqAllD pas (List.replicate pas.length te) then do
+                                let se ← Δ.sizeOf (fuel + 1) [] te
+                                let (d₂, r) := catNFD d₁ ((pas.map (·.1)).map (·, se))
+                                .ok (d₂, r, res)
+                              else .error "rwPrimVecFromList: element-type mismatch"
+                            else .error "rwPrimVecFromList: length mismatch"
+                        | none => .error "rwPrimVecFromList: open Vec length"
+                    | _ => .error "rwPrimVecFromList: non-Vec result type"
+                | _ => .error "rwPrimVecFromList: argument must be a list literal")
+            | .bitIndex =>
+                (match args with
+                | [argE, iE] =>
+                    (match finLitE iE with
+                    | some i => do
+                        let (d₁, a, ta) ← cexpJD Δ dmap fuel Γ jΓ argE [] d
+                        let wa ← vecBoolLen "rwPrimBitIndex" ta
+                        if isBoolT (Ty.flattenArrow pty).2 then
+                          if i < wa then
+                            let (d₂, r) := sliceNFD d₁ i 1 a
+                            .ok (d₂, r, (Ty.flattenArrow pty).2)
+                          else .error "rwPrimBitIndex: index out of range"
+                        else .error "rwPrimBitIndex: non-Bool result type"
+                    | none => .error "rwPrimBitIndex: index must be a Finite literal")
+                | _ => .error "rwPrimBitIndex: arity mismatch")
+            | .bitSlice =>
+                (match args with
+                | [argE, jE, iE] =>
+                    (match finLitE jE, finLitE iE with
+                    | some j, some i =>
+                        if i ≤ j + 1 then do
+                          let (d₁, a, ta) ← cexpJD Δ dmap fuel Γ jΓ argE [] d
+                          let wa ← vecBoolLen "rwPrimBitSlice" ta
+                          let mr ← vecBoolLen "rwPrimBitSlice" (Ty.flattenArrow pty).2
+                          if mr = j + 1 - i ∧ i + (j + 1 - i) ≤ wa then
+                            let (d₂, r) := sliceNFD d₁ i (j + 1 - i) a
+                            .ok (d₂, r, (Ty.flattenArrow pty).2)
+                          else .error "rwPrimBitSlice: slice out of range"
+                        else .error s!"rwPrimBitSlice: invalid slice (j: {j}, i: {i})"
+                    | _, _ => .error "rwPrimBitSlice: indices must be Finite literals")
+                | _ => .error "rwPrimBitSlice: arity mismatch")
+            | .vecMap =>
+                (match args with
+                | [fE, argE] => do
+                    let (nElems, teO) ← vecLenElem "rwPrimVecMap" (Ty.flattenArrow pty).2
+                    let seO ← Δ.sizeOf (fuel + 1) [] teO
+                    let (d₁, a, ta) ← cexpJD Δ dmap fuel Γ jΓ argE [] d
+                    let (len, teI) ← vecLenElem "rwPrimVecMap" ta
+                    let seI ← Δ.sizeOf (fuel + 1) [] teI
+                    let szV ← Δ.sizeOf (fuel + 1) [] ta
+                    if len = nElems then do
+                      let (d₂, pends) := cpendVecD d₁ szV seI a (List.range nElems)
+                      let (d₃, ps) ← celemsD Δ dmap fuel Γ jΓ fE teI teO seO pends d₂
+                      let (d₄, r) := catNFD d₃ ps
+                      .ok (d₄, r, (Ty.flattenArrow pty).2)
+                    else .error "rwPrimVecMap: length mismatch"
+                | _ => .error "rwPrimVecMap: arity mismatch")
+            | .vecGenerate =>
+                (match args with
+                | [fE] => do
+                    let (nElems, teO) ← vecLenElem "rwPrimVecGenerate" (Ty.flattenArrow pty).2
+                    let seO ← Δ.sizeOf (fuel + 1) [] teO
+                    let ft ← domTyT "rwPrimVecGenerate" (Ty.flattenArrow pty).1 0
+                    match ft with
+                    | .arrow tFin _ => do
+                        let nb ← finBoundT "rwPrimVecGenerate" tFin
+                        if nb = nElems then do
+                          let (d₁, pends) := cpendGenD d nElems (List.range nElems)
+                          let (d₂, ps) ← celemsD Δ dmap fuel Γ jΓ fE tFin teO seO pends d₁
+                          let (d₃, r) := catNFD d₂ ps
+                          .ok (d₃, r, (Ty.flattenArrow pty).2)
+                        else .error "rwPrimVecGenerate: generator domain-bound mismatch"
+                    | _ => .error "rwPrimVecGenerate: non-arrow function-argument type"
+                | _ => .error "rwPrimVecGenerate: arity mismatch")
+            | _ => do
+                let (d₁, pas) ← cargsD Δ dmap fuel Γ jΓ args d
+                cprimFD d₁ Δ (fuel + 1) pty b pas
+    | (.litInt ty n, []) =>
+        match pend with
+        | [] => clitIntD d ty n
+        | _ :: _ => .error "cexp: applied integer literal"
+    | (.litVec vty es, []) =>
+        match pend with
+        | _ :: _ => .error "cexp: applied vector literal"
+        | [] => do
+            let (d₁, pas) ← cargsD Δ dmap fuel Γ jΓ es d
+            match Ty.flatten vty with
+            | (.con "Vec", [nt, te]) =>
+                match Ty.evalNat nt with
+                | some k =>
+                    if pas.length = k then
+                      if teqAllD pas (List.replicate pas.length te) then do
+                        let se ← Δ.sizeOf (fuel + 1) [] te
+                        let (d₂, r) := catNFD d₁ ((pas.map (·.1)).map (·, se))
+                        .ok (d₂, r, vty)
+                      else .error "cexp: vector literal element-type mismatch"
+                    else .error "cexp: vector literal length mismatch"
+                | none => .error "cexp: vector literal at an open Vec length"
+            | _ => .error "cexp: vector literal at a non-Vec type"
+    | (.lam x b, args) => do
+        let (d₁, pas) ← cargsD Δ dmap fuel Γ jΓ args d
+        match pas ++ pend with
+        | [] => .error "cexp: unsupported lambda expression"
+        | nt :: rest => cexpJD Δ dmap fuel (Γ.insert x.uniq nt) [] b rest d₁
+    | (.letE (.nonRec x rhs) body, args) => do
+        let (d₁, r, t) ← cexpJD Δ dmap fuel Γ jΓ rhs [] d
+        let (d₂, pas) ← cargsD Δ dmap fuel Γ jΓ args d₁
+        cexpJD Δ dmap fuel (Γ.insert x.uniq (r, t)) jΓ body (pas ++ pend) d₂
+    | (.letE (.join l ps jb) body, args) => do
+        let (d₁, pas) ← cargsD Δ dmap fuel Γ jΓ args d
+        cexpJD Δ dmap fuel Γ ((l.uniq, .mk ps Γ jΓ jb) :: jΓ) body (pas ++ pend) d₁
+    | (.jump l es, []) => do
+        let (d₁, pas) ← cargsD Δ dmap fuel Γ jΓ es d
+        match jΓ.lookup l.uniq with
+        | some (.mk ps Γc jc jb) =>
+            if teqAllD pas (ps.map (·.sig.ty)) then
+              cexpJD Δ dmap fuel (bindFieldsΓD ps pas Γc) jc jb pend d₁
+            else .error s!"cexp: jump to {l.occ}: arity or argument-type mismatch"
+        | none => .error s!"cexp: jump to an unbound join point {l.occ}#{l.uniq}"
+    | (.cases resTy scrut binder alts, args) => do
+        let (d₁, dn, dty) ← cexpJD Δ dmap fuel Γ jΓ scrut [] d
+        let szT ← Δ.sizeOf (fuel + 1) [] dty
+        let (d₂, pas) ← cargsD Δ dmap fuel Γ jΓ args d₁
+        let pall := pas ++ pend
+        let resTy' ← Ty.peel pall.length resTy
+        let Γ' := Γ.insert binder.uniq (dn, dty)
+        match alts with
+        | .mk .default _ dbody :: rest => do
+            let (d₃, dnf, dbt) ← cexpJD Δ dmap fuel Γ' jΓ dbody pall d₂
+            if teq dbt resTy' then
+              cchainJD Δ dmap fuel Γ' jΓ dty szT dn resTy' pall rest (some dnf) d₃
+            else .error "cexp: default alternative result-type mismatch"
+        | rest => cchainJD Δ dmap fuel Γ' jΓ dty szT dn resTy' pall rest none d₂
+    | (_, _) => .error "cexp: unsupported expression (outside the Phase 4b fragment)"
+termination_by fuel _ _ _ _ _ => (fuel, 0, 0)
+
+end
+
+/-- `cexpFull` on the store. -/
+def cexpFullD (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) (Γ : DGamma)
+    (e : Exp) (d : Dag) : Except String (Dag × Nat × Ty) :=
+  cexpJD Δ dmap fuel Γ [] e [] d
+
+
+/-! ## The simulation: a successful DAG compilation certifies a
+successful tree compilation whose result is the reading of the
+returned index (`symExpDag_sim`'s pattern, lifted to `cexpJ`). -/
+
+open Rwv.Hyle.BridgeDag (Mk)
+open Rwv.Hyle.BridgeDag.Dag (mkLit_spec mkVar_spec rawCat_spec rawSlice_spec
+  rawPrim1_spec rawPrim2_spec rawIte_spec self_mk read_ext node_of_lt lt_of_node
+  read_eq widthOf_eq)
+
+theorem mk_out {d d' : Dag} {r : Nat} {res : Dag × Nat} {nf : NF}
+    (h : Mk d res nf) (heq : res = (d', r)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧ d'.read r = nf := by
+  rw [heq] at h
+  exact ⟨h.wf, h.ext, h.lt, h.read⟩
+
+theorem mk_trans {d d₁ : Dag} {res : Dag × Nat} {nf : NF}
+    (hext : d.Ext d₁) (h : Mk d₁ res nf) : Mk d res nf :=
+  ⟨h.wf, hext.trans h.ext, h.lt, h.read⟩
+
+/-- The environment simulation: pointwise readings plus range
+(`BridgeDag.EnvSim`, keyed by uniques and carrying the types). -/
+structure GSim (d : Dag) (ΓD : DGamma) (ΓS : HashMap Int (NF × Ty)) : Prop where
+  reads : ∀ u, ΓS.get? u = (ΓD.get? u).map fun p => (d.read p.1, p.2)
+  inRange : ∀ u p, ΓD.get? u = some p → p.1 < d.size
+
+private theorem GSim.mono {d d' : Dag} {ΓD : DGamma} {ΓS : HashMap Int (NF × Ty)}
+    (h : GSim d ΓD ΓS) (hext : d.Ext d') : GSim d' ΓD ΓS := by
+  refine ⟨fun u => ?_, fun u p hp => Nat.lt_of_lt_of_le (h.inRange u p hp) hext.size_le⟩
+  rw [h.reads u]
+  cases hu : ΓD.get? u with
+  | none => rfl
+  | some p =>
+      simp only [Option.map_some]
+      rw [read_ext hext p.1 (h.inRange u p hu)]
+
+private theorem GSim.insert {d : Dag} {ΓD : DGamma} {ΓS : HashMap Int (NF × Ty)}
+    (h : GSim d ΓD ΓS) (u : Int) {i : Nat} {t : Ty} (hi : i < d.size) :
+    GSim d (ΓD.insert u (i, t)) (ΓS.insert u (d.read i, t)) := by
+  refine ⟨fun y => ?_, fun y p hp => ?_⟩
+  · rw [get?_insert, get?_insert]
+    by_cases hy : y = u
+    · rw [if_pos hy, if_pos hy]
+      rfl
+    · rw [if_neg hy, if_neg hy]
+      exact h.reads y
+  · rw [get?_insert] at hp
+    by_cases hy : y = u
+    · rw [if_pos hy] at hp
+      injection hp with hp
+      subst hp
+      exact hi
+    · rw [if_neg hy] at hp
+      exact h.inRange y p hp
+
+theorem gsim_empty (d : Dag) : GSim d (∅ : DGamma) (∅ : HashMap Int (NF × Ty)) := by
+  refine ⟨fun u => ?_, fun u p hp => ?_⟩
+  · rw [HashMap.get?_eq_getElem?, HashMap.get?_eq_getElem?]
+    simp
+  · rw [HashMap.get?_eq_getElem?] at hp
+    simp at hp
+
+theorem gsim_bindFields {d : Dag} :
+    ∀ (xs : List Id) {ntsD : List (Nat × Ty)} {ΓD : DGamma} {ΓS : HashMap Int (NF × Ty)},
+      GSim d ΓD ΓS → (∀ p ∈ ntsD, p.1 < d.size) →
+      GSim d (bindFieldsΓD xs ntsD ΓD)
+        (bindFieldsΓ xs (ntsD.map fun p => (d.read p.1, p.2)) ΓS) := by
+  intro xs
+  induction xs with
+  | nil =>
+      intro ntsD ΓD ΓS h _
+      simpa [bindFieldsΓD, bindFieldsΓ] using h
+  | cons x xs ih =>
+      intro ntsD ΓD ΓS h hin
+      match ntsD with
+      | [] => simpa [bindFieldsΓD, bindFieldsΓ] using h
+      | nt :: nts =>
+          have step : bindFieldsΓD (x :: xs) (nt :: nts) ΓD
+              = (bindFieldsΓD xs nts ΓD).insert x.uniq nt := by
+            simp only [bindFieldsΓD, List.zip_cons_cons, List.foldr_cons]
+          have stepS : bindFieldsΓ (x :: xs) ((nt :: nts).map fun p => (d.read p.1, p.2)) ΓS
+              = (bindFieldsΓ xs (nts.map fun p => (d.read p.1, p.2)) ΓS).insert x.uniq
+                  (d.read nt.1, nt.2) := by
+            simp only [List.map_cons, bindFieldsΓ, List.zip_cons_cons, List.foldr_cons]
+          rw [step, stepS]
+          exact GSim.insert (ih h (fun p hp => hin p (List.mem_cons_of_mem _ hp))) x.uniq
+            (hin nt List.mem_cons_self)
+
+/-- The join-closure simulation (lookup form, mirroring `JC`). -/
+inductive JSimC (d : Dag) : CJoinD → CJoin → Prop where
+  | mk {ps : List Id} {ΓD : DGamma} {ΓS : HashMap Int (NF × Ty)}
+      {jsD : CJEnvD} {jsS : CJEnv} {body : Exp} :
+      GSim d ΓD ΓS →
+      (∀ l cj, jsD.lookup l = some cj → (jsS.lookup l).isSome) →
+      (∀ l cj cjS, jsD.lookup l = some cj → jsS.lookup l = some cjS → JSimC d cj cjS) →
+      JSimC d (.mk ps ΓD jsD body) (.mk ps ΓS jsS body)
+
+def JSimEnv (d : Dag) (jΓD : CJEnvD) (jΓS : CJEnv) : Prop :=
+  ∀ l cj, jΓD.lookup l = some cj → ∃ cjS, jΓS.lookup l = some cjS ∧ JSimC d cj cjS
+
+theorem JSimC.mono {d d' : Dag} (hext : d.Ext d') {cj : CJoinD} {cjS : CJoin}
+    (h : JSimC d cj cjS) : JSimC d' cj cjS := by
+  induction h with
+  | mk hG hcov hpt ih => exact JSimC.mk (hG.mono hext) hcov ih
+
+theorem jsimEnv_mono {d d' : Dag} {jΓD : CJEnvD} {jΓS : CJEnv}
+    (h : JSimEnv d jΓD jΓS) (hext : d.Ext d') : JSimEnv d' jΓD jΓS := by
+  intro l cj hl
+  obtain ⟨cjS, hlS, hc⟩ := h l cj hl
+  exact ⟨cjS, hlS, hc.mono hext⟩
+
+theorem jsimEnv_cons {d : Dag} {jΓD : CJEnvD} {jΓS : CJEnv}
+    (h : JSimEnv d jΓD jΓS) {l : Int} {cj : CJoinD} {cjS : CJoin}
+    (hcj : JSimC d cj cjS) : JSimEnv d ((l, cj) :: jΓD) ((l, cjS) :: jΓS) := by
+  intro l' cj' hl
+  rw [lookup_cons] at hl
+  rw [lookup_cons]
+  by_cases he : l' = l
+  · rw [if_pos he] at hl
+    rw [if_pos he]
+    injection hl with hl
+    subst hl
+    exact ⟨cjS, rfl, hcj⟩
+  · rw [if_neg he] at hl
+    rw [if_neg he]
+    exact h l' cj' hl
+
+theorem jsimC_intro {d : Dag} {ps : List Id} {ΓD : DGamma}
+    {ΓS : HashMap Int (NF × Ty)} {jsD : CJEnvD} {jsS : CJEnv} {body : Exp}
+    (hG : GSim d ΓD ΓS) (hJ : JSimEnv d jsD jsS) :
+    JSimC d (.mk ps ΓD jsD body) (.mk ps ΓS jsS body) := by
+  refine JSimC.mk hG ?_ ?_
+  · intro l cj h
+    obtain ⟨cjS, hlS, _⟩ := hJ l cj h
+    rw [hlS]
+    rfl
+  · intro l cj cjS h1 h2
+    obtain ⟨cjS', hlS', hc⟩ := hJ l cj h1
+    rw [hlS'] at h2
+    injection h2 with h2
+    subst h2
+    exact hc
+
+theorem jsimEnv_of_jsimC {d : Dag} {ps ps' : List Id} {ΓD : DGamma}
+    {ΓS : HashMap Int (NF × Ty)} {jsD : CJEnvD} {jsS : CJEnv} {body body' : Exp}
+    (h : JSimC d (.mk ps ΓD jsD body) (.mk ps' ΓS jsS body')) : JSimEnv d jsD jsS := by
+  cases h with
+  | mk hG hcov hpt =>
+      intro l cj hl
+      cases hjS : jsS.lookup l with
+      | none =>
+          have := hcov l cj hl
+          rw [hjS] at this
+          exact absurd this (by simp)
+      | some cjS => exact ⟨cjS, rfl, hpt l cj cjS hl hjS⟩
+
+theorem gsim_of_jsimC {d : Dag} {ps ps' : List Id} {ΓD : DGamma}
+    {ΓS : HashMap Int (NF × Ty)} {jsD : CJEnvD} {jsS : CJEnv} {body body' : Exp}
+    (h : JSimC d (.mk ps ΓD jsD body) (.mk ps' ΓS jsS body')) : GSim d ΓD ΓS := by
+  cases h with
+  | mk hG _ _ => exact hG
+
+theorem jsimEnv_nil {d : Dag} {jΓS : CJEnv} : JSimEnv d [] jΓS := by
+  intro l cj h
+  simp [List.lookup] at h
+
+/-! ### Constructor-spec lemmas for the mirrored helpers -/
+
+theorem catListD_spec :
+    ∀ (xs : List Nat) (d : Dag), d.WF → (∀ x ∈ xs, x < d.size) →
+      Mk d (catListD d xs) (catList (xs.map d.read)) := by
+  intro xs
+  match xs with
+  | [] =>
+      intro d hwf _
+      exact (mkLit_spec hwf _).cast rfl
+  | [x] =>
+      intro d hwf h
+      exact (self_mk hwf (h x List.mem_cons_self)).cast rfl
+  | x :: y :: rest =>
+      intro d hwf h
+      have hrest := catListD_spec (y :: rest) d hwf
+        (fun z hz => h z (List.mem_cons_of_mem _ hz))
+      rcases hres : catListD d (y :: rest) with ⟨d₁, r⟩
+      obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out hrest hres
+      have hx1 : x < d₁.size := Nat.lt_of_lt_of_le (h x List.mem_cons_self) E₁.size_le
+      have hcat := rawCat_spec W₁ hx1 L₁
+      have hgoal : catListD d (x :: y :: rest) = d₁.rawCat x r := by
+        rw [catListD, hres]
+      rw [hgoal]
+      refine (mk_trans E₁ hcat).cast ?_
+      rw [read_ext E₁ x (h x List.mem_cons_self), R₁]
+      rfl
+
+theorem filter_map_snd {d : Dag} (xs : List (Nat × Nat)) :
+    ((xs.map fun p => ((d.read p.1 : NF), p.2)).filter fun p => p.2 != 0).map (·.1)
+      = ((xs.filter fun p => p.2 != 0).map (·.1)).map d.read := by
+  induction xs with
+  | nil => rfl
+  | cons x rest ih =>
+      by_cases hx : (x.2 != 0) = true
+      · simp only [List.map_cons, List.filter_cons, hx, if_pos, List.map_cons, ih]
+      · simp only [List.map_cons, List.filter_cons]
+        rw [if_neg (by simpa using hx), if_neg (by simpa using hx)]
+        exact ih
+
+theorem catNFD_spec {d : Dag} (hwf : d.WF) {xs : List (Nat × Nat)}
+    (h : ∀ p ∈ xs, p.1 < d.size) :
+    Mk d (catNFD d xs) (catNF (xs.map fun p => (d.read p.1, p.2))) := by
+  rw [catNF, filter_map_snd]
+  refine (catListD_spec _ d hwf ?_).cast rfl
+  intro x hx
+  obtain ⟨p, hp, hpx⟩ := List.mem_map.mp hx
+  rw [← hpx]
+  exact h p (List.mem_filter.mp hp).1
+
+theorem sliceNFD_spec {d : Dag} (hwf : d.WF) {e : Nat} (off w : Nat)
+    (he : e < d.size) : Mk d (sliceNFD d off w e) (sliceNF off w (d.read e)) := by
+  rw [sliceNFD, sliceNF]
+  by_cases hw : w = 0
+  · rw [if_pos hw, if_pos hw]
+    exact (mkLit_spec hwf _).cast rfl
+  · rw [if_neg hw, if_neg hw]
+    exact rawSlice_spec hwf off w he
+
+theorem resizeNFD_spec {d : Dag} (hwf : d.WF) {m wa a : Nat} (ha : a < d.size) :
+    Mk d (resizeNFD d m wa a) (resizeNF m wa (d.read a)) := by
+  rw [resizeNFD, resizeNF]
+  by_cases h1 : m = wa
+  · rw [if_pos h1, if_pos h1]
+    exact self_mk hwf ha
+  · rw [if_neg h1, if_neg h1]
+    by_cases h2 : wa < m
+    · rw [if_pos h2, if_pos h2]
+      exact rawPrim1_spec hwf ha rfl
+    · rw [if_neg h2, if_neg h2]
+      exact rawPrim1_spec hwf ha rfl
+
+/-- The list-result contract for the walkers (readings paired with
+kept annotations). -/
+def MkLW (d : Dag) (res : Dag × List (Nat × Nat)) (nfs : List (NF × Nat)) : Prop :=
+  res.1.WF ∧ d.Ext res.1 ∧ (∀ q ∈ res.2, q.1 < res.1.size) ∧
+    res.2.map (fun q => ((res.1.read q.1 : NF), q.2)) = nfs
+
+theorem slicesWD_spec {a : Nat} :
+    ∀ (ps : List (Nat × Nat)) (d : Dag), d.WF → a < d.size →
+      MkLW d (slicesWD d a ps) (ps.map fun q => (sliceNF q.1 q.2 (d.read a), q.2)) := by
+  intro ps
+  induction ps with
+  | nil =>
+      intro d hwf _
+      exact ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, by simp [slicesWD], by simp [slicesWD]⟩
+  | cons q rest ih =>
+      intro d hwf ha
+      show MkLW d (slicesWD d a (q :: rest)) _
+      rw [MkLW, slicesWD]
+      rcases hs : sliceNFD d q.1 q.2 a with ⟨d₁, s⟩
+      obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out (sliceNFD_spec hwf q.1 q.2 ha) hs
+      obtain ⟨W₂, E₂, L₂, R₂⟩ := ih d₁ W₁ (Nat.lt_of_lt_of_le ha E₁.size_le)
+      rcases hr : slicesWD d₁ a rest with ⟨d₂, rs⟩
+      rw [hr] at W₂ E₂ L₂ R₂
+      simp only [hs, hr]
+      refine ⟨W₂, E₁.trans E₂, ?_, ?_⟩
+      · intro p hp
+        rcases List.mem_cons.mp hp with hp | hp
+        · subst hp
+          exact Nat.lt_of_lt_of_le L₁ E₂.size_le
+        · exact L₂ p hp
+      · rw [List.map_cons, List.map_cons, R₂,
+            read_ext E₂ s L₁, R₁,
+            read_ext E₁ a ha]
+
+theorem cpendVecD_spec {szV seI a : Nat} :
+    ∀ (is : List Nat) (d : Dag), d.WF → a < d.size →
+      (cpendVecD d szV seI a is).1.WF ∧ d.Ext (cpendVecD d szV seI a is).1 ∧
+      (∀ q ∈ (cpendVecD d szV seI a is).2, q < (cpendVecD d szV seI a is).1.size) ∧
+      (cpendVecD d szV seI a is).2.map (cpendVecD d szV seI a is).1.read
+        = is.map fun i => sliceNF (szV - (i + 1) * seI) seI (d.read a) := by
+  intro is
+  induction is with
+  | nil =>
+      intro d hwf _
+      exact ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, by simp [cpendVecD], by simp [cpendVecD]⟩
+  | cons i rest ih =>
+      intro d hwf ha
+      show _ ∧ _ ∧ _ ∧ _
+      rw [cpendVecD]
+      rcases hs : sliceNFD d (szV - (i + 1) * seI) seI a with ⟨d₁, s⟩
+      obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out (sliceNFD_spec hwf _ _ ha) hs
+      obtain ⟨W₂, E₂, L₂, R₂⟩ := ih d₁ W₁ (Nat.lt_of_lt_of_le ha E₁.size_le)
+      rcases hr : cpendVecD d₁ szV seI a rest with ⟨d₂, rs⟩
+      rw [hr] at W₂ E₂ L₂ R₂
+      simp only [hs, hr]
+      refine ⟨W₂, E₁.trans E₂, ?_, ?_⟩
+      · intro q hq
+        rcases List.mem_cons.mp hq with hq | hq
+        · subst hq
+          exact Nat.lt_of_lt_of_le L₁ E₂.size_le
+        · exact L₂ q hq
+      · rw [List.map_cons, List.map_cons, R₂,
+            read_ext E₂ s L₁, R₁,
+            read_ext E₁ a ha]
+
+theorem cpendGenD_spec {nElems : Nat} :
+    ∀ (is : List Nat) (d : Dag), d.WF →
+      (cpendGenD d nElems is).1.WF ∧ d.Ext (cpendGenD d nElems is).1 ∧
+      (∀ q ∈ (cpendGenD d nElems is).2, q < (cpendGenD d nElems is).1.size) ∧
+      (cpendGenD d nElems is).2.map (cpendGenD d nElems is).1.read
+        = is.map fun i => (.lit ⟨nbits nElems, BitVec.ofNat (nbits nElems) i⟩ : NF) := by
+  intro is
+  induction is with
+  | nil =>
+      intro d hwf
+      exact ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, by simp [cpendGenD], by simp [cpendGenD]⟩
+  | cons i rest ih =>
+      intro d hwf
+      show _ ∧ _ ∧ _ ∧ _
+      rw [cpendGenD]
+      rcases hs : d.mkLit ⟨nbits nElems, BitVec.ofNat (nbits nElems) i⟩ with ⟨d₁, s⟩
+      obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out (mkLit_spec hwf _) hs
+      obtain ⟨W₂, E₂, L₂, R₂⟩ := ih d₁ W₁
+      rcases hr : cpendGenD d₁ nElems rest with ⟨d₂, rs⟩
+      rw [hr] at W₂ E₂ L₂ R₂
+      simp only [hs, hr]
+      refine ⟨W₂, E₁.trans E₂, ?_, ?_⟩
+      · intro q hq
+        rcases List.mem_cons.mp hq with hq | hq
+        · subst hq
+          exact Nat.lt_of_lt_of_le L₁ E₂.size_le
+        · exact L₂ q hq
+      · rw [List.map_cons, List.map_cons, R₂,
+            read_ext E₂ s L₁, R₁]
+
+theorem triple_eq {d₁ d₂ : Dag} {r₁ r₂ : Nat} {t₁ t₂ : Ty}
+    (h : (Except.ok (d₁, r₁, t₁) : Except String (Dag × Nat × Ty)) = .ok (d₂, r₂, t₂)) :
+    d₁ = d₂ ∧ r₁ = r₂ ∧ t₁ = t₂ := by
+  injection h with h
+  injection h with h1 h2
+  injection h2 with h2 h3
+  exact ⟨h1, h2, h3⟩
+
+set_option maxHeartbeats 3200000 in
+/-- The 4a row table's simulation: a successful `cprimD` run certifies
+the `cprim` row over the read-back arguments. -/
+theorem cprimD_sim {d : Dag} (hwf : d.WF) {pty : Ty} {b : Builtin}
+    {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimD d pty b pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprim pty b (pas.map fun p => ((d.read p.1 : NF), p.2)) = .ok (d'.read r, ty) := by
+  have harith : ∀ (op : Op), Rwv.Hyle.Bridge.opArity op = 2 →
+      ∀ {a ta b' tb}, pas = [(a, ta), (b', tb)] →
+      (do
+        let m ← vecBoolLen "arith row" (Ty.flattenArrow pty).2
+        let wa ← vecBoolLen "arith row" ta
+        if wa = m then
+          let (d₁, r) := d.rawPrim2 op a b'
+          (.ok (d₁, r, (Ty.flattenArrow pty).2) : Except String (Dag × Nat × Ty))
+        else .error "cexp: arith row width mismatch") = .ok (d', r, ty) →
+      d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+        arithRow op (Ty.flattenArrow pty).2 ta (d.read a) (d.read b')
+          = .ok (d'.read r, ty) := by
+    clear h
+    intro op hop a ta b' tb hps h
+    subst hps
+    obtain ⟨m, hm, h⟩ := except_bind_eq_ok h
+    obtain ⟨wa, hwa, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hcond
+    rcases hp : d.rawPrim2 op a b' with ⟨d₁, r₁⟩
+    rw [hp] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W, E, L, R⟩ := mk_out (rawPrim2_spec hwf (show a < d.size from hpas (a, ta) (by simp)) (show b' < d.size from hpas (b', tb) (by simp)) hop) hp
+    refine ⟨W, E, L, ?_⟩
+    rw [arithRow, hm, except_bind_ok, hwa, except_bind_ok, if_pos hcond,
+        except_pure_def, R]
+  have hcmp : ∀ (op : Op), Rwv.Hyle.Bridge.opArity op = 2 →
+      ∀ {a ta b' tb}, pas = [(a, ta), (b', tb)] →
+      (if isBoolT (Ty.flattenArrow pty).2 then
+        let (d₁, r) := d.rawPrim2 op a b'
+        (.ok (d₁, r, (Ty.flattenArrow pty).2) : Except String (Dag × Nat × Ty))
+      else .error "cexp: comparison row at a non-Bool result type") = .ok (d', r, ty) →
+      d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+        cmpRow op (Ty.flattenArrow pty).2 (d.read a) (d.read b') = .ok (d'.read r, ty) := by
+    clear h
+    intro op hop a ta b' tb hps h
+    subst hps
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hcond
+    rcases hp : d.rawPrim2 op a b' with ⟨d₁, r₁⟩
+    rw [hp] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W, E, L, R⟩ := mk_out (rawPrim2_spec hwf (show a < d.size from hpas (a, ta) (by simp)) (show b' < d.size from hpas (b', tb) (by simp)) hop) hp
+    refine ⟨W, E, L, ?_⟩
+    rw [cmpRow, if_pos hcond, except_pure_def, R]
+  have hred : ∀ (op : Op) (neg : Bool), Rwv.Hyle.Bridge.opArity op = 1 →
+      ∀ {a ta}, pas = [(a, ta)] →
+      (if isBoolT (Ty.flattenArrow pty).2 then
+        if neg then
+          let (d₁, r) := d.rawPrim1 op a
+          let (d₂, r₂) := d₁.rawPrim1 .not r
+          (.ok (d₂, r₂, (Ty.flattenArrow pty).2) : Except String (Dag × Nat × Ty))
+        else
+          let (d₁, r) := d.rawPrim1 op a
+          .ok (d₁, r, (Ty.flattenArrow pty).2)
+      else .error "cexp: reduction row at a non-Bool result type") = .ok (d', r, ty) →
+      d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+        redRow op neg (Ty.flattenArrow pty).2 (d.read a) = .ok (d'.read r, ty) := by
+    clear h
+    intro op neg hop a ta hps h
+    subst hps
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hcond
+    cases neg with
+    | false =>
+        simp only [Bool.false_eq_true, if_false] at h
+        rcases hp : d.rawPrim1 op a with ⟨d₁, r₁⟩
+        rw [hp] at h
+        obtain ⟨hd, hr, hty⟩ := triple_eq h
+        subst hd; subst hr; subst hty
+        obtain ⟨W, E, L, R⟩ := mk_out (rawPrim1_spec hwf (show a < d.size from hpas (a, ta) (by simp)) hop) hp
+        refine ⟨W, E, L, ?_⟩
+        rw [redRow, if_pos hcond]
+        show Except.ok ((NF.prim1 op (d.read a) : NF), (Ty.flattenArrow pty).2) = _
+        rw [R]
+    | true =>
+        simp only [if_true] at h
+        rcases hp : d.rawPrim1 op a with ⟨d₁, r₁⟩
+        rw [hp] at h
+        rcases hp2 : d₁.rawPrim1 .not r₁ with ⟨d₂, r₂⟩
+        rw [hp2] at h
+        obtain ⟨hd, hr, hty⟩ := triple_eq h
+        subst hd; subst hr; subst hty
+        obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out (rawPrim1_spec hwf (show a < d.size from hpas (a, ta) (by simp)) hop) hp
+        obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (rawPrim1_spec W₁ L₁ rfl) hp2
+        refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+        rw [redRow, if_pos hcond]
+        show Except.ok ((NF.prim1 .not (NF.prim1 op (d.read a)) : NF), (Ty.flattenArrow pty).2) = _
+        rw [R₂, R₁]
+  simp only [cprimD] at h
+  split at h
+  · -- .bits
+    rename_i a ta
+    obtain ⟨k, hk, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hcond
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    refine ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, hpas (a, ta) (by simp), ?_⟩
+    show cprim pty .bits [((d.read a : NF), ta)] = _
+    rw [cprim, hk, except_bind_ok, if_pos hcond, except_pure_def]
+  · -- .resize
+    rename_i a ta
+    obtain ⟨m, hm, h⟩ := except_bind_eq_ok h
+    obtain ⟨wa, hwa, h⟩ := except_bind_eq_ok h
+    have htree : ∀ (out : NF),
+        d'.read r = out →
+        (if m = wa then (Except.ok ((d.read a : NF), (Ty.flattenArrow pty).2) :
+              Except String (NF × Ty))
+         else if wa < m then .ok (.prim1 (.zext m) (d.read a), (Ty.flattenArrow pty).2)
+         else .ok (.prim1 (.trunc m) (d.read a), (Ty.flattenArrow pty).2)) = .ok (out, ty) →
+        cprim pty .resize [((d.read a : NF), ta)] = .ok (d'.read r, ty) := by
+      intro out hout htr
+      show (do
+        let m ← vecBoolLen "rwPrimResize" (Ty.flattenArrow pty).2
+        let wa ← vecBoolLen "rwPrimResize" ta
+        if m = wa then pure ((d.read a : NF), (Ty.flattenArrow pty).2)
+        else if wa < m then pure (.prim1 (.zext m) (d.read a), (Ty.flattenArrow pty).2)
+        else pure (.prim1 (.trunc m) (d.read a), (Ty.flattenArrow pty).2)) = _
+      rw [hm, except_bind_ok, hwa, except_bind_ok]
+      rw [hout]
+      exact htr
+    split at h
+    · -- m = wa: identity
+      rename_i hcond
+      obtain ⟨hd, hr, hty⟩ := triple_eq h
+      subst hd; subst hr; subst hty
+      refine ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, hpas (a, ta) (by simp), ?_⟩
+      exact htree _ rfl (by rw [if_pos hcond])
+    · split at h
+      · -- zext
+        rename_i hne hlt
+        rcases hp : d.rawPrim1 (.zext m) a with ⟨d₁, r₁⟩
+        rw [hp] at h
+        obtain ⟨hd, hr, hty⟩ := triple_eq h
+        subst hd; subst hr; subst hty
+        obtain ⟨W, E, L, R⟩ := mk_out (rawPrim1_spec hwf (show a < d.size from hpas (a, ta) (by simp)) rfl) hp
+        refine ⟨W, E, L, ?_⟩
+        exact htree _ R (by rw [if_neg hne, if_pos hlt])
+      · -- trunc
+        rename_i hne hnlt
+        rcases hp : d.rawPrim1 (.trunc m) a with ⟨d₁, r₁⟩
+        rw [hp] at h
+        obtain ⟨hd, hr, hty⟩ := triple_eq h
+        subst hd; subst hr; subst hty
+        obtain ⟨W, E, L, R⟩ := mk_out (rawPrim1_spec hwf (show a < d.size from hpas (a, ta) (by simp)) rfl) hp
+        refine ⟨W, E, L, ?_⟩
+        exact htree _ R (by rw [if_neg hne, if_neg hnlt])
+  · exact harith .add  rfl rfl h
+  · exact harith .sub  rfl rfl h
+  · exact harith .mul  rfl rfl h
+  · exact harith .udiv rfl rfl h
+  · exact harith .umod rfl rfl h
+  · exact harith .pow  rfl rfl h
+  · exact harith .and  rfl rfl h
+  · exact harith .or   rfl rfl h
+  · exact harith .xor  rfl rfl h
+  · -- .xnor
+    rename_i a ta b' tb
+    obtain ⟨m, hm, h⟩ := except_bind_eq_ok h
+    obtain ⟨wa, hwa, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hcond
+    rcases hp : d.rawPrim2 .xor a b' with ⟨d₁, r₁⟩
+    rw [hp] at h
+    rcases hp2 : d₁.rawPrim1 .not r₁ with ⟨d₂, r₂⟩
+    rw [hp2] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out (rawPrim2_spec hwf (show a < d.size from hpas (a, ta) (by simp)) (show b' < d.size from hpas (b', tb) (by simp)) rfl) hp
+    obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (rawPrim1_spec W₁ L₁ rfl) hp2
+    refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+    show (do
+      let m ← vecBoolLen "rwPrimXNor" (Ty.flattenArrow pty).2
+      let wa ← vecBoolLen "rwPrimXNor" ta
+      if wa = m then
+        pure ((.prim1 .not (.prim2 .xor (d.read a) (d.read b')) : NF), (Ty.flattenArrow pty).2)
+      else .error "rwPrimXNor: width mismatch") = _
+    rw [hm, except_bind_ok, hwa, except_bind_ok, if_pos hcond, except_pure_def, R₂, R₁]
+  · -- .not
+    rename_i a ta
+    obtain ⟨m, hm, h⟩ := except_bind_eq_ok h
+    obtain ⟨wa, hwa, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hcond
+    rcases hp : d.rawPrim1 .not a with ⟨d₁, r₁⟩
+    rw [hp] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W, E, L, R⟩ := mk_out (rawPrim1_spec hwf (show a < d.size from hpas (a, ta) (by simp)) rfl) hp
+    refine ⟨W, E, L, ?_⟩
+    show (do
+      let m ← vecBoolLen "rwPrimNot" (Ty.flattenArrow pty).2
+      let wa ← vecBoolLen "rwPrimNot" ta
+      if wa = m then pure ((.prim1 .not (d.read a) : NF), (Ty.flattenArrow pty).2)
+      else .error "rwPrimNot: width mismatch") = _
+    rw [hm, except_bind_ok, hwa, except_bind_ok, if_pos hcond, except_pure_def, R]
+  · exact harith .shl  rfl rfl h
+  · exact harith .lshr rfl rfl h
+  · exact harith .ashr rfl rfl h
+  · exact hcmp .eq  rfl rfl h
+  · exact hcmp .ugt rfl rfl h
+  · exact hcmp .uge rfl rfl h
+  · exact hcmp .ult rfl rfl h
+  · exact hcmp .ule rfl rfl h
+  · -- .lAnd
+    rename_i a ta b' tb
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hcond
+    rcases hp1 : d.rawPrim1 .redor a with ⟨d₁, ra⟩
+    rw [hp1] at h
+    rcases hp2 : d₁.rawPrim1 .redor b' with ⟨d₂, rb⟩
+    rw [hp2] at h
+    rcases hp3 : d₂.rawPrim2 .and ra rb with ⟨d₃, r₃⟩
+    rw [hp3] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out (rawPrim1_spec hwf (show a < d.size from hpas (a, ta) (by simp)) rfl) hp1
+    obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (rawPrim1_spec W₁
+      (Nat.lt_of_lt_of_le (show b' < d.size from hpas (b', tb) (by simp)) E₁.size_le) rfl) hp2
+    obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (rawPrim2_spec W₂
+      (Nat.lt_of_lt_of_le L₁ E₂.size_le) L₂ rfl) hp3
+    refine ⟨W₃, (E₁.trans E₂).trans E₃, L₃, ?_⟩
+    show cmpRow .and (Ty.flattenArrow pty).2
+      (.prim1 .redor (d.read a)) (.prim1 .redor (d.read b')) = _
+    rw [cmpRow, if_pos hcond, except_pure_def, R₃,
+        read_ext E₂ ra L₁, R₁, R₂,
+        read_ext E₁ b' (show b' < d.size from hpas (b', tb) (by simp))]
+  · -- .lOr
+    rename_i a ta b' tb
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hcond
+    rcases hp1 : d.rawPrim1 .redor a with ⟨d₁, ra⟩
+    rw [hp1] at h
+    rcases hp2 : d₁.rawPrim1 .redor b' with ⟨d₂, rb⟩
+    rw [hp2] at h
+    rcases hp3 : d₂.rawPrim2 .or ra rb with ⟨d₃, r₃⟩
+    rw [hp3] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out (rawPrim1_spec hwf (show a < d.size from hpas (a, ta) (by simp)) rfl) hp1
+    obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (rawPrim1_spec W₁
+      (Nat.lt_of_lt_of_le (show b' < d.size from hpas (b', tb) (by simp)) E₁.size_le) rfl) hp2
+    obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (rawPrim2_spec W₂
+      (Nat.lt_of_lt_of_le L₁ E₂.size_le) L₂ rfl) hp3
+    refine ⟨W₃, (E₁.trans E₂).trans E₃, L₃, ?_⟩
+    show cmpRow .or (Ty.flattenArrow pty).2
+      (.prim1 .redor (d.read a)) (.prim1 .redor (d.read b')) = _
+    rw [cmpRow, if_pos hcond, except_pure_def, R₃,
+        read_ext E₂ ra L₁, R₁, R₂,
+        read_ext E₁ b' (show b' < d.size from hpas (b', tb) (by simp))]
+  · exact hred .redor  true  rfl rfl h
+  · exact hred .redand false rfl rfl h
+  · exact hred .redand true  rfl rfl h
+  · exact hred .redor  false rfl rfl h
+  · exact hred .redor  true  rfl rfl h
+  · exact hred .redxor false rfl rfl h
+  · exact hred .redxor true  rfl rfl h
+  · -- .msBit
+    rename_i a ta
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hcond
+    obtain ⟨wa, hwa, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hge
+    rcases hp : d.rawSlice (wa - 1) 1 a with ⟨d₁, r₁⟩
+    rw [hp] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W, E, L, R⟩ := mk_out (rawSlice_spec hwf (wa - 1) 1 (show a < d.size from hpas (a, ta) (by simp))) hp
+    refine ⟨W, E, L, ?_⟩
+    show (do
+      if isBoolT (Ty.flattenArrow pty).2 then do
+        let wa ← vecBoolLen "rwPrimMSBit" ta
+        if wa ≥ 1 then pure ((.slice (wa - 1) 1 (d.read a) : NF), (Ty.flattenArrow pty).2)
+        else .error "rwPrimMSBit: zero-width argument"
+      else .error "rwPrimMSBit: non-Bool result type") = _
+    rw [if_pos hcond, hwa, except_bind_ok, if_pos hge, except_pure_def, R]
+  · -- catch-all
+    exact error_ne_ok h
+
+theorem clitIntD_sim {d : Dag} (hwf : d.WF) {ty : Ty} {n : Int}
+    {d' : Dag} {r : Nat} {rty : Ty}
+    (h : clitIntD d ty n = .ok (d', r, rty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧ clitInt ty n = .ok (d'.read r, rty) := by
+  rw [clitIntD] at h
+  obtain ⟨nt, hnt, h⟩ := except_bind_eq_ok h
+  obtain ⟨nf, rty'⟩ := nt
+  dsimp only at h
+  split at h
+  rotate_left
+  · exact error_ne_ok h
+  rename_i v
+  injection h with h
+  injection h with h1 h2
+  injection h2 with h2 h3
+  rcases hlit : d.mkLit v with ⟨dl, rl⟩
+  rw [hlit] at h1 h2
+  subst h1
+  subst h2
+  subst h3
+  obtain ⟨W, E, L, R⟩ := mk_out (mkLit_spec hwf v) hlit
+  refine ⟨W, E, L, ?_⟩
+  rw [hnt, R]
+
+end DagMirror
 
 /-! ## The per-definition validator, upgraded (Phase 4b)
 
