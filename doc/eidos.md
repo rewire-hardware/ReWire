@@ -617,7 +617,8 @@ register initials come from compile-time evaluation of the entry block
 `𝔐⟦P⟧η` through the data-to-bits encoding on the observable trace — up
 to and excluding the halting cycle, exactly (bit-for-bit) for halt-free
 processes. The four-way cosimulation check in `rwc-test` tests exactly
-this correspondence.
+this correspondence, and `rwc --certify` checks it per compilation with
+a machine-checked validator (doc/certify.md).
 
 ### 7.6 Builtin signatures and denotations
 

@@ -33,8 +33,8 @@ import Control.Monad.State.Strict (evalState)
 import Data.List (isSuffixOf, isInfixOf, stripPrefix, intercalate)
 import Data.Maybe (fromMaybe, mapMaybe)
 import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
-import System.Directory (listDirectory, setCurrentDirectory, getCurrentDirectory, doesFileExist)
-import System.Environment (getArgs, withArgs, lookupEnv)
+import System.Directory (listDirectory, setCurrentDirectory, getCurrentDirectory, doesFileExist, findExecutable, makeAbsolute)
+import System.Environment (getArgs, withArgs, lookupEnv, setEnv)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Exit (exitFailure, ExitCode (..))
 import System.FilePath ((</>), (-<.>), takeBaseName, takeDirectory, takeFileName)
@@ -426,6 +426,74 @@ getSmokeTests = do
                   withStdoutTo (fn -<.> ("out.smoke-" <> name <> ".log")) $
                         withArgs ([fn, "-o", out] <> args) RWC.main
 
+-- | The --certify test group: recompile a representative subset of the golden
+--   tests from Haskell source with --certify, requiring the validator's
+--   VALIDATED confirmation line on stdout; the extern tests instead require
+--   the not-validated warning to fire (the leg must never see a false
+--   VALIDATED on an out-of-scope device). Like the HDL checks, the group is
+--   gated on its tool being available: when the validator binary is missing
+--   (RWC_RWV, then the PATH, then verify/.lake/build/bin in a checkout), a
+--   single placeholder test records the skip. The discovered binary is handed
+--   to the in-process rwc via RWC_RWV, since the tests cd into the data
+--   directory, where rwc's own checkout-relative fallback cannot find it.
+getCertifyTests :: IO TestTree
+getCertifyTests = findValidator >>= \ case
+      Nothing  -> pure $ testGroup "certify"
+            [ testCase "certify (skipped: rwv-cstep-validate not found; build it with 'cd verify && lake build rwv-cstep-validate')" $ pure () ]
+      Just exe -> do
+            setEnv "RWC_RWV" exe
+            dir <- getDataFileName ("tests" </> "golden")
+            pure $ testGroup "certify" $ map (certifyTest dir True) validated <> map (certifyTest dir False) notValidated
+      where -- Representative goldens that must VALIDATE end-to-end (TinyISA is
+            -- the big one: the validator takes on the order of two minutes on
+            -- its block bodies).
+            validated :: [FilePath]
+            validated =
+                  [ "fibo1.hs", "fibo2.hs", "case1.hs", "guards.hs", "iter.hs"
+                  , "state.hs", "multireg.hs", "records.hs", "subfsm.hs"
+                  , "UpCounter1.hs", "wordArith.hs", "PreludeTest.hs"
+                  , "Sha256.hs", "zerowidth.hs", "TinyISA.hs"
+                  ]
+
+            -- Devices outside the validator's scope (device instances and
+            -- extern calls): rwc must warn rather than claim VALIDATED.
+            notValidated :: [FilePath]
+            notValidated = [ "extern.hs", "externModel.hs" ]
+
+            certifyTest :: FilePath -> Bool -> FilePath -> TestTree
+            certifyTest dir expectValid file = testCase (takeBaseName file <> " (certify)") $ do
+                  let fn   = dir </> file
+                      logF = fn -<.> "out.certify.log"
+                      errF = fn -<.> "out.certify.err"
+                  setCurrentDirectory dir
+                  r <- withStdoutTo logF $ withStderrTo errF
+                        $ try (withArgs [fn, "--certify", "-o", fn -<.> "out.certify.sv"] RWC.main)
+                  outTxt <- readFile logF
+                  errTxt <- readFile errF
+                  case (r :: Either ExitCode ()) of
+                        Left e -> assertFailure $ "rwc --certify exited (" <> show e <> "); stderr:\n" <> errTxt
+                        Right ()
+                              | expectValid -> assertBool ("expected a VALIDATED verdict; stdout:\n" <> outTxt <> "\nstderr:\n" <> errTxt)
+                                    $ "certify: VALIDATED" `isInfixOf` outTxt
+                              | otherwise   -> do
+                                    assertBool ("expected the certify not-validated warning; stderr:\n" <> errTxt)
+                                          $ "ertify: not validated" `isInfixOf` errTxt
+                                    assertBool ("expected no VALIDATED verdict; stdout:\n" <> outTxt)
+                                          $ not ("VALIDATED" `isInfixOf` outTxt)
+
+            -- The validator, as the group gate: RWC_RWV, then the PATH, then
+            -- the Lake build directory relative to the initial working
+            -- directory (the package root, when run via stack test).
+            findValidator :: IO (Maybe FilePath)
+            findValidator = lookupEnv "RWC_RWV" >>= \ case
+                  Just r  -> pure $ Just r
+                  Nothing -> findExecutable "rwv-cstep-validate" >>= \ case
+                        Just r  -> pure $ Just r
+                        Nothing -> do
+                              let local = "verify" </> ".lake" </> "build" </> "bin" </> "rwv-cstep-validate"
+                              ex <- doesFileExist local
+                              if ex then Just <$> makeAbsolute local else pure Nothing
+
 -- | Build a test group from every .hs file in tests/<dirName>, using the given
 --   per-file test builder.
 testsFrom :: FilePath -> (FilePath -> IO [TestTree]) -> IO TestTree
@@ -463,7 +531,8 @@ main = do
             pure $ testGroup "eidos" $ map testEir files <> map testEirRefresh files <> map testEirSpec files
                                     <> map testEirProcify (filter (("procin-" `isInfixOf`) . takeBaseName) files)
                                     <> map testEirBad negFiles
-      smokeTests <- getSmokeTests
+      smokeTests   <- getSmokeTests
+      certifyTests <- getCertifyTests
       -- The integration directory holds full-program golden tests (same legs as
       -- tests/golden), but they are heavyweight, so they only run under --integration.
       intgTests  <- if FlagIntegration `elem` flags
@@ -480,7 +549,7 @@ main = do
       cwd0 <- getCurrentDirectory
       withArgs (concatMap toTastyArg flags)
             (defaultMain $ localOption (NumThreads 1)
-                  $ testGroup "Tests" ([goldTests, smokeTests, negTests, warnTests, eirTests] <> intgTests))
+                  $ testGroup "Tests" ([goldTests, smokeTests, certifyTests, negTests, warnTests, eirTests] <> intgTests))
             `finally` setCurrentDirectory cwd0
 
       where toTastyArg :: Flag -> [String]

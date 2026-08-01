@@ -11,7 +11,7 @@ module ReWire.Config
       , inputSigs, stateSigs, outputSigs
       , vhdlPackages, inputsFile, defaultInputsFile, outFile
       , noWarn, wError
-      , start, top, loadPath, cycles, depth, dump, source, rtlOpt, eidos, noHalt, debugLint
+      , start, top, loadPath, cycles, depth, dump, source, rtlOpt, eidos, certify, noHalt, debugLint
       , testbench
       , stableNames, locators, noLocators
       , pDebug
@@ -64,6 +64,7 @@ data Config = Config
       , _depth        :: Natural
       , _dump         :: Natural -> Bool
       , _eidos        :: Bool
+      , _certify      :: Bool -- ^ --certify: validate the compiled device against the Eidos machine IR with the verified validator.
       , _noHalt       :: Bool
       , _debugLint    :: Bool
       , _rtlOpt       :: Natural
@@ -98,6 +99,7 @@ defaultConfig = Config
       , _depth        = 8
       , _dump         = const False
       , _eidos        = False
+      , _certify      = False
       , _noHalt       = False
       , _debugLint    = False
       , _rtlOpt       = 8
@@ -181,6 +183,7 @@ interpret = foldM interp defaultConfig
                   FlagCycles n                    -> readNat "--cycles" n  >>= \ v -> pure $ cycles .~ Just v $ c
                   FlagEvalDepth n                 -> readNat "--depth" n   >>= \ v -> pure $ depth .~ v $ c
                   FlagEidos                       -> pure $ eidos .~ True $ c
+                  FlagCertify                     -> pure $ certify .~ True $ c
                   FlagNoHalt                      -> pure $ noHalt .~ True $ c
                   FlagDebugLint                   -> pure $ debugLint .~ True $ c
                   FlagRtlOpt n                    -> readNat "--rtl-opt" n >>= \ v -> pure $ rtlOpt .~ v $ c
