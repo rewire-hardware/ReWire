@@ -762,18 +762,20 @@ per-label compilation into `Rwv.Hyle.BridgeDag`'s shared node store —
 node for node, the way `symExpDag` mirrors `symExp` — and compares by
 STORE INDEX after three `renorm` sweeps (the store-level `cfoldW3`,
 mirroring `ceqB`'s width-aware leg; raw-index equality is subsumed).
-The intended soundness is a REDUCTION to the tree checker — a passing
-DAG leg certifies a passing `checkLabel` run, so `checkLabel_sound`
-and `validateProc_corresponds` would apply unchanged — but that
-reduction is NOT yet proved: `checkLabelDag` is a measurement-grade
-checker (exercised by scratch/dag-measure.lean), it is NOT wired into
-`validateProcE`, and no committed theorem mentions it. The expression
-tier's groundwork (the `GSim`/`JSimC` simulation relations, the
-constructor specs, and the complete row-table simulations) is proved
-in Rwv.Eidos.Cexp. The mirror covers the corpus fragment (joins and
-the higher-order Vec rows included); an unmirrored construct fails
-the DAG leg. The mirror may fail MORE often than the tree compiler
-(extra width-coherence checks keep the store invariant), never
+Soundness is a REDUCTION to the tree checker, PROVED in §DagLegSound
+below: `checkLabelDag_toTree` shows a passing DAG leg certifies a
+passing `checkLabel` run over the same symbolic step, and
+`checkLabelD_toTree` extends this to the dispatcher (`checkLabelD`,
+DAG leg first, tree fallback on any DAG-leg failure), which is what
+`validateProcE` runs per pause target — so `checkLabel_sound` and
+`validateProc_corresponds` apply unchanged. The expression tier's
+simulation (`cexpJD_sim`/`cexpFullD_sim`, plus the `GSim`/`JSimC`
+relations, the constructor specs, and the complete row-table
+simulations) is proved in Rwv.Eidos.Cexp. The mirror covers the
+corpus fragment (joins and the higher-order Vec rows included); an
+unmirrored construct fails the DAG leg into the tree fallback. The
+mirror may fail MORE often than the tree compiler (extra
+width-coherence checks keep the store invariant), never
 differently. -/
 
 section DagLeg
@@ -1064,10 +1066,10 @@ def pairSlicesD (d : Dag) (rec : Nat) :
 from pause target `tgt` into the shared store, specialize the device
 step's indices to `tgt`'s tag by the substitution sweep, and compare
 slice for slice by index after three `renorm` sweeps (the store-level
-`cfoldW3`). Measurement-grade: the reduction "a passing run certifies
-a passing `checkLabel` run" is the intended (not yet proved)
-soundness statement, so this checker is not consulted by
-`validateProcE`. -/
+`cfoldW3`). Sound by reduction: a passing run certifies a passing
+`checkLabel` run over the same symbolic step (`checkLabelDag_toTree`
+below), which is how `validateProcE` consults it (through
+`checkLabelD`) without touching `checkLabel_sound`. -/
 def checkLabelDag (C : Ctx) (plan : Plan) (dev : Rwv.Hyle.Device)
     (d0 : Dag) (outsL nextsL : List (String × Nat)) (inTy : Ty) (fuel : Nat)
     (tgt : LTarget) : Except String Unit := do
@@ -1226,7 +1228,15 @@ def validateProcE (Δ : DEnv) (edm : HashMap Int Defn) (p : Proc)
   let C : Ctx := { Δ, edm, lo, blocks, cexpFuel := fuel, outTy := p.outTy }
   let ss ← Rwv.Hyle.Bridge.symStep (Rwv.Hyle.Bridge.dmapOf H)
     (Rwv.Hyle.Bridge.progFuel H) H.device
-  let _ ← forAllM (checkLabel C plan H.device ss p.inTy fuel) lo.targets
+  -- The DAG leg's shared store: the device step evaluated once by
+  -- `symStepDag`; a per-label DAG-leg failure falls back to the tree
+  -- checker inside `checkLabelD`, so the tree validator's verdict is
+  -- never lost (`checkLabelD_toTree` reduces either route to it).
+  let dss := match Rwv.Hyle.BridgeDag.symStepDag (Rwv.Hyle.Bridge.dmapOf H)
+      (Rwv.Hyle.Bridge.progFuel H) H.device Rwv.Hyle.BridgeDag.Dag.empty with
+    | .ok r => some r
+    | .error _ => none
+  let _ ← forAllM (checkLabelD C plan H.device dss ss p.inTy fuel) lo.targets
   checkInit C plan H.device p fuel fuel fuel
 
 /-- The Boolean validator (the shape a soundness statement quantifies
@@ -6898,6 +6908,1596 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
       · rw [HashMap.contains_eq_isSome_getElem?] at hx
         simp at hx
 
+/-! # Soundness of the DAG comparison leg (Phase 4d)
+
+The reduction promised in §DagLeg: a passing `checkLabelDag` run
+certifies a passing `checkLabel` run over the same symbolic device
+step, so `checkLabel_sound` (and with it `validateProc_corresponds`)
+applies unchanged. The layers, mirroring the expression tier's
+`cexpJD_sim`:
+
+  * `CellsSim` — the cell-store simulation (pointwise names, types,
+    widths; indices in range reading to the tree cells' normal forms),
+    with `find?`/update/record-piece transport.
+  * `mkVarsD`/`cells0D`/`pauseRecD`/`haltRecD` constructor specs.
+  * `goD_sim` — the five-way goto-fuel induction: a successful store
+    compilation of a block body certifies the tree compilation whose
+    record is the reading of the returned index (`cexpFullD_sim` for
+    the expression tier).
+  * `substAllD_spec` — the tag-substitution sweep computes `substNF
+    (tagSubst plan lo tag)` images for every index (`renorm_spec`'s
+    sweep discipline with raw constructors).
+  * `pairSlicesD_spec` and `checkLabelDag_toTree`/`checkLabelD_toTree`
+    — the per-label reduction: index equality after three `renorm`
+    sweeps gives the `cfoldW3` leg of every `ceqB` comparison the tree
+    checker makes.
+-/
+
+section DagLegSound
+
+open Rwv.Hyle.BridgeDag (Dag DNode mIdx Mk)
+open Rwv.Hyle.BridgeDag.Dag (read_ext read_eq mkLit_spec mkVar_spec rawCat_spec
+  rawSlice_spec rawPrim1_spec rawPrim2_spec rawIte_spec self_mk node_of_lt
+  lt_of_node widthOf_eq)
+open Rwv.Eidos.Cexp (teqAllD DGamma cexpFullD GSim gsim_empty cexpFullD_sim mk_out
+  mk_trans altSlices_spec catNFD_spec sliceNFD_spec pend_read_ext teqAllD_eq
+  catNFD sliceNFD)
+
+/-! ## The cell-store simulation -/
+
+/-- The cell-store simulation: pointwise name/type/width agreement,
+the index in range and reading to the tree cell's normal form. -/
+inductive CellsSim (d : Dag) : List CellNFD → List CellNF → Prop where
+  | nil : CellsSim d [] []
+  | cons {cD : CellNFD} {cS : CellNF} {restD : List CellNFD} {restS : List CellNF} :
+      cD.name = cS.name → cD.ty = cS.ty → cD.width = cS.width →
+      cD.nf < d.size → d.read cD.nf = cS.nf →
+      CellsSim d restD restS → CellsSim d (cD :: restD) (cS :: restS)
+
+private theorem CellsSim.mono {d d' : Dag} (hext : d.Ext d') :
+    ∀ {cD : List CellNFD} {cS : List CellNF}, CellsSim d cD cS → CellsSim d' cD cS := by
+  intro cD cS h
+  induction h with
+  | nil => exact .nil
+  | cons hn ht hw hlt hr _ ih =>
+      exact .cons hn ht hw (Nat.lt_of_lt_of_le hlt hext.size_le)
+        (by rw [read_ext hext _ hlt, hr]) ih
+
+/-- `find?` by name transports along the simulation. -/
+private theorem cellsSim_find {d : Dag} {c : String} :
+    ∀ {cD : List CellNFD} {cS : List CellNF}, CellsSim d cD cS →
+      ∀ {cc : CellNFD}, cD.find? (fun x => x.name == c) = some cc →
+      ∃ ccS, cS.find? (fun x => x.name == c) = some ccS ∧
+        cc.ty = ccS.ty ∧ cc.width = ccS.width ∧ cc.nf < d.size ∧ d.read cc.nf = ccS.nf := by
+  intro cD cS h
+  induction h with
+  | nil =>
+      intro cc hcc
+      rw [List.find?_nil] at hcc
+      cases hcc
+  | @cons cD' cS' restD' restS' hn ht hw hlt hr _ ih =>
+      intro cc hcc
+      rw [List.find?_cons] at hcc
+      by_cases hname : (cD'.name == c) = true
+      · rw [hname] at hcc
+        dsimp only at hcc
+        injection hcc with hcc
+        subst hcc
+        refine ⟨cS', ?_, ht, hw, hlt, hr⟩
+        rw [List.find?_cons, show (cS'.name == c) = true from by rw [← hn]; exact hname]
+      · rw [Bool.not_eq_true] at hname
+        rw [hname] at hcc
+        dsimp only at hcc
+        obtain ⟨ccS, hfind, hrest⟩ := ih hcc
+        refine ⟨ccS, ?_, hrest⟩
+        rw [List.find?_cons, show (cS'.name == c) = false from by rw [← hn]; exact hname]
+        dsimp only
+        exact hfind
+
+/-- A `put`'s pointwise update transports along the simulation. -/
+private theorem cellsSim_update {d : Dag} {c : String} {rD : Nat} {nfS : NF}
+    (hr : rD < d.size) (hread : d.read rD = nfS) :
+    ∀ {cD : List CellNFD} {cS : List CellNF}, CellsSim d cD cS →
+      CellsSim d (cD.map fun c' => if c'.name == c then { c' with nf := rD } else c')
+        (cS.map fun c' => if c'.name == c then { c' with nf := nfS } else c') := by
+  intro cD cS h
+  induction h with
+  | nil => exact .nil
+  | @cons cD' cS' restD' restS' hn ht hw hlt hrd _ ih =>
+      simp only [List.map_cons]
+      by_cases hname : (cD'.name == c) = true
+      · rw [if_pos hname, if_pos (show (cS'.name == c) = true from by rw [← hn]; exact hname)]
+        exact .cons hn ht hw hr hread ih
+      · rw [if_neg hname,
+            if_neg (show ¬ (cS'.name == c) = true from by rw [← hn]; exact hname)]
+        exact .cons hn ht hw hlt hrd ih
+
+/-- The trailing cell pieces of a record, read back. -/
+private theorem cellsSim_pieces {d : Dag} :
+    ∀ {cD : List CellNFD} {cS : List CellNF}, CellsSim d cD cS →
+      (∀ q ∈ cD.map (fun c => (c.nf, c.width)), q.1 < d.size) ∧
+      (cD.map (fun c => (c.nf, c.width))).map (fun q => ((d.read q.1 : NF), q.2))
+        = cS.map (fun c => (c.nf, c.width)) := by
+  intro cD cS h
+  induction h with
+  | nil => exact ⟨by simp, rfl⟩
+  | cons hn ht hw hlt hr _ ih =>
+      obtain ⟨ihL, ihR⟩ := ih
+      refine ⟨?_, ?_⟩
+      · intro q hq
+        rcases List.mem_cons.mp hq with rfl | hq
+        · exact hlt
+        · exact ihL q hq
+      · simp only [List.map_cons]
+        rw [hr, hw, ihR]
+
+/-! ## Environment and record-piece transport -/
+
+/-- Nat-index/width zips, read back at an extended store. -/
+private theorem zipW_reads {d d' : Dag} (hext : d.Ext d') :
+    ∀ (is : List Nat) (ws : List Nat), (∀ i ∈ is, i < d.size) →
+      ((is.zip ws).map fun q => ((d'.read q.1 : NF), q.2))
+        = (is.map d.read).zip ws := by
+  intro is
+  induction is with
+  | nil => intro ws _; rfl
+  | cons i rest ih =>
+      intro ws h
+      cases ws with
+      | nil => rfl
+      | cons w wrest =>
+          simp only [List.zip_cons_cons, List.map_cons]
+          rw [read_ext hext i (h i List.mem_cons_self)]
+          exact congrArg _ (ih wrest fun q hq => h q (List.mem_cons_of_mem _ hq))
+
+/-- The parameter-binding `foldl` (goto and label entries) preserves
+the environment simulation. -/
+private theorem gsim_zipFoldl {d : Dag} :
+    ∀ (xs : List Id) (pasD : List (Nat × Ty)) (ΓD : DGamma)
+      (ΓS : Std.HashMap Int (NF × Ty)),
+      GSim d ΓD ΓS → (∀ p ∈ pasD, p.1 < d.size) →
+      GSim d ((xs.zip pasD).foldl (fun m (x, nt) => m.insert x.uniq nt) ΓD)
+        ((xs.zip (pasD.map fun p => ((d.read p.1 : NF), p.2))).foldl
+          (fun m (x, nt) => m.insert x.uniq nt) ΓS) := by
+  intro xs
+  induction xs with
+  | nil => intro pasD ΓD ΓS h _; simpa using h
+  | cons x xs ih =>
+      intro pasD ΓD ΓS h hlt
+      cases pasD with
+      | nil => simpa using h
+      | cons p rest =>
+          simp only [List.map_cons, List.zip_cons_cons, List.foldl_cons]
+          have hins : GSim d (ΓD.insert x.uniq p)
+              (ΓS.insert x.uniq (d.read p.1, p.2)) :=
+            Rwv.Eidos.Cexp.GSim.insert h x.uniq (hlt p List.mem_cons_self)
+          exact ih rest _ _ hins (fun q hq => hlt q (List.mem_cons_of_mem _ hq))
+
+/-! ## Constructor specs for the mirrored record builders -/
+
+private theorem mkVarsD_spec :
+    ∀ (prs : List (String × Nat)) (d : Dag), d.WF →
+      (mkVarsD d prs).1.WF ∧ d.Ext (mkVarsD d prs).1 ∧
+      (∀ q ∈ (mkVarsD d prs).2, q.1 < (mkVarsD d prs).1.size) ∧
+      (mkVarsD d prs).2.map (fun q => (((mkVarsD d prs).1.read q.1 : NF), q.2))
+        = prs.map (fun (x, w) => ((.var w x : NF), w)) := by
+  intro prs
+  induction prs with
+  | nil =>
+      intro d hwf
+      exact ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, by simp [mkVarsD], by simp [mkVarsD]⟩
+  | cons p rest ih =>
+      intro d hwf
+      obtain ⟨x, w⟩ := p
+      show _ ∧ _ ∧ _ ∧ _
+      rw [mkVarsD]
+      rcases hv : d.mkVar w x with ⟨d₁, i⟩
+      obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out (mkVar_spec hwf w x) hv
+      obtain ⟨W₂, E₂, L₂, R₂⟩ := ih d₁ W₁
+      rcases hr : mkVarsD d₁ rest with ⟨d₂, is⟩
+      rw [hr] at W₂ E₂ L₂ R₂
+      simp only [hv, hr]
+      refine ⟨W₂, E₁.trans E₂, ?_, ?_⟩
+      · intro q hq
+        rcases List.mem_cons.mp hq with rfl | hq
+        · exact Nat.lt_of_lt_of_le L₁ E₂.size_le
+        · exact L₂ q hq
+      · rw [List.map_cons, List.map_cons, R₂]
+        dsimp only
+        rw [read_ext E₂ i L₁, R₁]
+
+/-- `cells0D` builds the initial cell store simulation-related to the
+tree `cells0`. -/
+private theorem cells0D_spec :
+    ∀ (cs : List CellPlan) (d : Dag), d.WF →
+      (cells0D d cs).1.WF ∧ d.Ext (cells0D d cs).1 ∧
+      CellsSim (cells0D d cs).1 (cells0D d cs).2
+        (cs.map fun c =>
+          { name := c.name, ty := c.ty, width := c.width
+            nf := catNF (c.regs.map fun (r, w) => ((.var w r : NF), w)) : CellNF }) := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro d hwf
+      exact ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, by rw [cells0D]; exact .nil⟩
+  | cons c rest ih =>
+      intro d hwf
+      obtain ⟨W₁, E₁, L₁, R₁⟩ := mkVarsD_spec c.regs d hwf
+      rcases hmv : mkVarsD d c.regs with ⟨d₁, pieces⟩
+      rw [hmv] at W₁ E₁ L₁ R₁
+      dsimp only at W₁ E₁ L₁ R₁
+      rcases hcat : catNFD d₁ pieces with ⟨d₂, nf⟩
+      obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (catNFD_spec W₁ L₁) hcat
+      obtain ⟨W₃, E₃, S₃⟩ := ih d₂ W₂
+      rcases hrest : cells0D d₂ rest with ⟨d₃, cells⟩
+      rw [hrest] at W₃ E₃ S₃
+      dsimp only at W₃ E₃ S₃
+      show _ ∧ _ ∧ _
+      rw [cells0D]
+      simp only [hmv, hcat, hrest]
+      refine ⟨W₃, (E₁.trans E₂).trans E₃, ?_⟩
+      rw [List.map_cons]
+      refine CellsSim.cons rfl rfl rfl (Nat.lt_of_lt_of_le L₂ E₃.size_le) ?_ S₃
+      rw [read_ext E₃ nf L₂, R₂, R₁]
+
+/-- `pauseRecD` assembles the reading of the tree `pauseRec`. -/
+private theorem pauseRecD_spec (C : Ctx) {d : Dag} (hwf : d.WF) {onf : Nat}
+    (tgt : LTarget) {pas : List Nat} {cD : List CellNFD} {cS : List CellNF}
+    (ho : onf < d.size) (hpas : ∀ i ∈ pas, i < d.size) (hcells : CellsSim d cD cS) :
+    Mk d (pauseRecD C d onf tgt pas cD)
+      (pauseRec C (d.read onf) tgt (pas.map d.read) cS) := by
+  simp only [pauseRecD, pauseRec]
+  rcases h1 : d.mkLit ⟨C.lo.pTagW, 1⟩ with ⟨d₁, l₁⟩
+  obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out (mkLit_spec hwf _) h1
+  rcases h2 : d₁.mkLit ⟨C.lo.recW - C.lo.pTagW - C.lo.outW - C.lo.rW - C.lo.cellsW, 0⟩
+    with ⟨d₂, l₂⟩
+  obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (mkLit_spec W₁ _) h2
+  rcases h3 : d₂.mkLit ⟨C.lo.rTagW, BitVec.ofNat _ tgt.tag⟩ with ⟨d₃, l₃⟩
+  obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (mkLit_spec W₂ _) h3
+  rcases h4 : d₃.mkLit ⟨C.lo.rPayW - tgt.argWs.sum, 0⟩ with ⟨d₄, l₄⟩
+  obtain ⟨W₄, E₄, L₄, R₄⟩ := mk_out (mkLit_spec W₃ _) h4
+  simp only [h1, h2, h3, h4]
+  have hE₁₄ : d.Ext d₄ := ((E₁.trans E₂).trans E₃).trans E₄
+  refine (mk_trans hE₁₄ (catNFD_spec W₄ ?_)).cast ?_
+  · intro q hq
+    rcases List.mem_append.mp hq with hq | hq
+    · rcases List.mem_append.mp hq with hq | hq
+      · rcases List.mem_cons.mp hq with rfl | hq
+        · exact Nat.lt_of_lt_of_le L₁ ((E₂.trans E₃).trans E₄).size_le
+        rcases List.mem_cons.mp hq with rfl | hq
+        · exact Nat.lt_of_lt_of_le L₂ (E₃.trans E₄).size_le
+        rcases List.mem_cons.mp hq with rfl | hq
+        · exact Nat.lt_of_lt_of_le ho hE₁₄.size_le
+        rcases List.mem_cons.mp hq with rfl | hq
+        · exact Nat.lt_of_lt_of_le L₃ E₄.size_le
+        rcases List.mem_cons.mp hq with rfl | hq
+        · exact L₄
+        · cases hq
+      · obtain ⟨a, b⟩ := q
+        exact Nat.lt_of_lt_of_le (hpas a (List.of_mem_zip hq).1) hE₁₄.size_le
+    · exact Nat.lt_of_lt_of_le ((cellsSim_pieces hcells).1 q hq) hE₁₄.size_le
+  · congr 1
+    rw [List.map_append, List.map_append, zipW_reads hE₁₄ pas tgt.argWs hpas,
+        (cellsSim_pieces (hcells.mono hE₁₄)).2]
+    simp only [List.map_cons, List.map_nil]
+    rw [read_ext ((E₂.trans E₃).trans E₄) l₁ L₁, R₁,
+        read_ext (E₃.trans E₄) l₂ L₂, R₂,
+        read_ext hE₁₄ onf ho,
+        read_ext E₄ l₃ L₃, R₃, R₄]
+
+/-- `haltRecD` assembles the reading of the tree `haltRec`. -/
+private theorem haltRecD_spec (C : Ctx) {d : Dag} (hwf : d.WF) {anf : Nat}
+    (atag aw : Nat) {cD : List CellNFD} {cS : List CellNF}
+    (ha : anf < d.size) (hcells : CellsSim d cD cS) :
+    Mk d (haltRecD C d anf atag aw cD)
+      (haltRec C (d.read anf) atag aw cS) := by
+  simp only [haltRecD, haltRec]
+  rcases h1 : d.mkLit ⟨C.lo.pTagW, 0⟩ with ⟨d₁, l₁⟩
+  obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out (mkLit_spec hwf _) h1
+  rcases h2 : d₁.mkLit ⟨C.lo.recW - C.lo.pTagW - C.lo.aW - C.lo.cellsW, 0⟩ with ⟨d₂, l₂⟩
+  obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (mkLit_spec W₁ _) h2
+  rcases h3 : d₂.mkLit ⟨C.lo.aTagW, BitVec.ofNat _ atag⟩ with ⟨d₃, l₃⟩
+  obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (mkLit_spec W₂ _) h3
+  rcases h4 : d₃.mkLit ⟨C.lo.aPayW - aw, 0⟩ with ⟨d₄, l₄⟩
+  obtain ⟨W₄, E₄, L₄, R₄⟩ := mk_out (mkLit_spec W₃ _) h4
+  simp only [h1, h2, h3, h4]
+  have hE₁₄ : d.Ext d₄ := ((E₁.trans E₂).trans E₃).trans E₄
+  refine (mk_trans hE₁₄ (catNFD_spec W₄ ?_)).cast ?_
+  · intro q hq
+    rcases List.mem_append.mp hq with hq | hq
+    · rcases List.mem_cons.mp hq with rfl | hq
+      · exact Nat.lt_of_lt_of_le L₁ ((E₂.trans E₃).trans E₄).size_le
+      rcases List.mem_cons.mp hq with rfl | hq
+      · exact Nat.lt_of_lt_of_le L₂ (E₃.trans E₄).size_le
+      rcases List.mem_cons.mp hq with rfl | hq
+      · exact Nat.lt_of_lt_of_le L₃ E₄.size_le
+      rcases List.mem_cons.mp hq with rfl | hq
+      · exact L₄
+      rcases List.mem_cons.mp hq with rfl | hq
+      · exact Nat.lt_of_lt_of_le ha hE₁₄.size_le
+      · cases hq
+    · exact Nat.lt_of_lt_of_le ((cellsSim_pieces hcells).1 q hq) hE₁₄.size_le
+  · congr 1
+    rw [List.map_append, (cellsSim_pieces (hcells.mono hE₁₄)).2]
+    simp only [List.map_cons, List.map_nil]
+    rw [read_ext ((E₂.trans E₃).trans E₄) l₁ L₁, R₁,
+        read_ext (E₃.trans E₄) l₂ L₂, R₂,
+        read_ext E₄ l₃ L₃, R₃, R₄,
+        read_ext hE₁₄ anf ha]
+
+/-! ## The goD-layer simulation: the five-way goto-fuel induction -/
+
+private theorem bind_ok_iff {α β : Type} {x : Except String α} {f : α → Except String β}
+    {b : β} : (x >>= f) = .ok b ↔ ∃ a, x = .ok a ∧ f a = .ok b :=
+  ⟨except_bind_eq_ok, fun ⟨a, hx, hf⟩ => by rw [hx, except_bind_ok]; exact hf⟩
+
+/-- `goAltsD` on an empty chain without a default always fails (at
+every fuel — the shape the terminator-cases inversion needs at an
+abstract goto fuel). -/
+private theorem goAltsD_nil_none {C : Ctx} {fuel : Nat} {Γ : DGamma}
+    {cells : List CellNFD} {dty : Ty} {szT dn : Nat} {d : Dag} :
+    ∃ msg, goAltsD C fuel Γ cells dty szT dn [] none d = .error msg := by
+  cases fuel
+  · exact ⟨_, rfl⟩
+  · exact ⟨_, rfl⟩
+
+/-- The simulation contract for `goCmdsD` at one goto fuel. -/
+private abbrev CmdsSimAt (C : Ctx) (fuel : Nat) : Prop :=
+  ∀ (Γ : DGamma) (cellsD : List CellNFD) (cmds : List Cmd) (term : Term)
+    (d d' : Dag) (r : Nat) (ΓS : HashMap Int (NF × Ty)) (cellsS : List CellNF),
+    d.WF → GSim d Γ ΓS → CellsSim d cellsD cellsS →
+    goCmdsD C fuel Γ cellsD cmds term d = .ok (d', r) →
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      goCmds C fuel ΓS cellsS cmds term = .ok (d'.read r)
+
+/-- The simulation contract for `goTermD` at one goto fuel. -/
+private abbrev TermSimAt (C : Ctx) (fuel : Nat) : Prop :=
+  ∀ (Γ : DGamma) (cellsD : List CellNFD) (term : Term) (d d' : Dag) (r : Nat)
+    (ΓS : HashMap Int (NF × Ty)) (cellsS : List CellNF),
+    d.WF → GSim d Γ ΓS → CellsSim d cellsD cellsS →
+    goTermD C fuel Γ cellsD term d = .ok (d', r) →
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      goTerm C fuel ΓS cellsS term = .ok (d'.read r)
+
+/-- The simulation contract for `goArgsD` at one goto fuel. -/
+private abbrev ArgsSimAt (C : Ctx) (fuel : Nat) : Prop :=
+  ∀ (Γ : DGamma) (es : List Exp) (d d' : Dag) (pas : List (Nat × Ty))
+    (ΓS : HashMap Int (NF × Ty)),
+    d.WF → GSim d Γ ΓS →
+    goArgsD C fuel Γ es d = .ok (d', pas) →
+    d'.WF ∧ d.Ext d' ∧ (∀ p ∈ pas, p.1 < d'.size) ∧
+      es.mapM (Rwv.Eidos.Cexp.cexpFull C.Δ C.edm C.cexpFuel ΓS)
+        = .ok (pas.map fun p => ((d'.read p.1 : NF), p.2))
+
+/-- The simulation contract for `goAltsD` at one goto fuel. -/
+private abbrev AltsSimAt (C : Ctx) (fuel : Nat) : Prop :=
+  ∀ (Γ : DGamma) (cellsD : List CellNFD) (dty : Ty) (szT dn : Nat)
+    (alts : List TAlt) (maccD : Option Nat) (maccS : Option NF)
+    (d d' : Dag) (r : Nat) (ΓS : HashMap Int (NF × Ty)) (cellsS : List CellNF),
+    d.WF → GSim d Γ ΓS → CellsSim d cellsD cellsS → dn < d.size →
+    (match maccD, maccS with
+     | some aD, some aS => aD < d.size ∧ d.read aD = aS
+     | none, none => True
+     | _, _ => False) →
+    goAltsD C fuel Γ cellsD dty szT dn alts maccD d = .ok (d', r) →
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      goAlts C fuel ΓS cellsS dty szT (d.read dn) alts maccS = .ok (d'.read r)
+
+/-- The simulation contract for `goAlt1D` at one goto fuel. -/
+private abbrev Alt1SimAt (C : Ctx) (fuel : Nat) : Prop :=
+  ∀ (Γ : DGamma) (cellsD : List CellNFD) (dty : Ty) (szT dn : Nat)
+    (alt : TAlt) (maccD : Option Nat) (maccS : Option NF)
+    (d d' : Dag) (r : Nat) (ΓS : HashMap Int (NF × Ty)) (cellsS : List CellNF),
+    d.WF → GSim d Γ ΓS → CellsSim d cellsD cellsS → dn < d.size →
+    (match maccD, maccS with
+     | some aD, some aS => aD < d.size ∧ d.read aD = aS
+     | none, none => True
+     | _, _ => False) →
+    goAlt1D C fuel Γ cellsD dty szT dn alt maccD d = .ok (d', r) →
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      goAlt1 C fuel ΓS cellsS dty szT (d.read dn) alt maccS = .ok (d'.read r)
+
+set_option maxHeartbeats 3200000 in
+/-- The goD-layer simulation, all five levels at once (the goto-fuel
+induction): a successful store compilation certifies the tree
+compilation whose record is the reading of the returned index. -/
+private theorem goD_sim (C : Ctx) :
+    ∀ fuel, CmdsSimAt C fuel ∧ TermSimAt C fuel ∧ ArgsSimAt C fuel ∧
+      AltsSimAt C fuel ∧ Alt1SimAt C fuel := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      refine ⟨?_, ?_, ?_, ?_, ?_⟩
+      · intro Γ cellsD cmds term d d' r ΓS cellsS _ _ _ hc
+        rw [goCmdsD] at hc
+        exact error_ne_ok hc
+      · intro Γ cellsD term d d' r ΓS cellsS _ _ _ hc
+        rw [goTermD] at hc
+        exact error_ne_ok hc
+      · intro Γ es d d' pas ΓS _ _ hc
+        rw [goArgsD] at hc
+        exact error_ne_ok hc
+      · intro Γ cellsD dty szT dn alts maccD maccS d d' r ΓS cellsS _ _ _ _ _ hc
+        rw [goAltsD] at hc
+        exact error_ne_ok hc
+      · intro Γ cellsD dty szT dn alt maccD maccS d d' r ΓS cellsS _ _ _ _ _ hc
+        rw [goAlt1D] at hc
+        exact error_ne_ok hc
+  | succ fuel ih =>
+      obtain ⟨ihC, ihT, ihArgs, ihAlts, ihA1⟩ := ih
+      refine ⟨?_, ?_, ?_, ?_, ?_⟩
+      · -- goCmdsD
+        intro Γ cellsD cmds term d d' r ΓS cellsS hwf hG hCells hc
+        cases cmds with
+        | nil =>
+            rw [goCmdsD] at hc
+            obtain ⟨W, E, L, S⟩ := ihT Γ cellsD term d d' r ΓS cellsS hwf hG hCells hc
+            refine ⟨W, E, L, ?_⟩
+            rw [goCmds]
+            exact S
+        | cons cmd rest =>
+            cases cmd with
+            | bind x e =>
+                rw [goCmdsD] at hc
+                rw [goCmds]
+                dsimp only at hc ⊢
+                rw [bind_ok_iff] at hc
+                obtain ⟨drt, he, hc⟩ := hc
+                obtain ⟨d₁, r0, t0⟩ := drt
+                dsimp only at hc
+                obtain ⟨W₁, E₁, L₁, S₁⟩ := cexpFullD_sim hwf hG he
+                obtain ⟨W₂, E₂, L₂, S₂⟩ := ihC (Γ.insert x.uniq (r0, t0)) cellsD rest term
+                  d₁ d' r (ΓS.insert x.uniq (d₁.read r0, t0)) cellsS
+                  W₁ ((hG.mono E₁).insert x.uniq L₁) (hCells.mono E₁) hc
+                refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+                rw [S₁, except_bind_ok]
+                exact S₂
+            | get x cname =>
+                rw [goCmdsD] at hc
+                rw [goCmds]
+                cases hfind : cellsD.find? (fun cc => cc.name == cname) with
+                | none => rw [hfind] at hc; exact error_ne_ok hc
+                | some cc =>
+                    rw [hfind] at hc
+                    dsimp only at hc
+                    obtain ⟨ccS, hfindS, hty, hwid, hlt, hread⟩ := cellsSim_find hCells hfind
+                    rw [hfindS]
+                    dsimp only
+                    obtain ⟨W, E, L, S⟩ := ihC (Γ.insert x.uniq (cc.nf, cc.ty)) cellsD rest
+                      term d d' r (ΓS.insert x.uniq (d.read cc.nf, cc.ty)) cellsS
+                      hwf (hG.insert x.uniq hlt) hCells hc
+                    refine ⟨W, E, L, ?_⟩
+                    rw [hread, hty] at S
+                    exact S
+            | put cname e =>
+                rw [goCmdsD] at hc
+                rw [goCmds]
+                dsimp only at hc ⊢
+                rw [bind_ok_iff] at hc
+                obtain ⟨drt, he, hc⟩ := hc
+                obtain ⟨d₁, r0, t0⟩ := drt
+                dsimp only at hc
+                obtain ⟨W₁, E₁, L₁, S₁⟩ := cexpFullD_sim hwf hG he
+                cases hfind : cellsD.find? (fun cc => cc.name == cname) with
+                | none => rw [hfind] at hc; exact error_ne_ok hc
+                | some cc =>
+                    rw [hfind] at hc
+                    dsimp only at hc
+                    obtain ⟨ccS, hfindS, hty, hwid, hlt, hread⟩ :=
+                      cellsSim_find (hCells.mono E₁) hfind
+                    split at hc
+                    rotate_left
+                    · exact error_ne_ok hc
+                    rename_i hteq
+                    obtain ⟨W₂, E₂, L₂, S₂⟩ := ihC Γ _ rest term d₁ d' r ΓS _
+                      W₁ (hG.mono E₁)
+                      (cellsSim_update L₁ rfl (hCells.mono E₁)) hc
+                    refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+                    rw [S₁, except_bind_ok]
+                    dsimp only
+                    rw [hfindS]
+                    dsimp only
+                    rw [if_pos (show teq t0 ccS.ty = true from by rw [← hty]; exact hteq)]
+                    exact S₂
+      · -- goTermD
+        intro Γ cellsD term d d' r ΓS cellsS hwf hG hCells hc
+        cases term with
+        | pause out l args =>
+            rw [goTermD] at hc
+            rw [goTerm]
+            dsimp only at hc ⊢
+            rw [bind_ok_iff] at hc
+            obtain ⟨dot, ho, hc⟩ := hc
+            obtain ⟨d₁, onf, oty⟩ := dot
+            dsimp only at hc
+            obtain ⟨W₁, E₁, L₁, S₁⟩ := cexpFullD_sim hwf hG ho
+            split at hc
+            rotate_left
+            · exact error_ne_ok hc
+            rename_i hoty
+            cases htgt : C.lo.targets.find? (fun t => t.uniq == l.uniq) with
+            | none => rw [htgt] at hc; exact error_ne_ok hc
+            | some tgt =>
+                rw [htgt] at hc
+                dsimp only at hc
+                rw [bind_ok_iff] at hc
+                obtain ⟨dps, hargs, hc⟩ := hc
+                obtain ⟨d₂, pas⟩ := dps
+                dsimp only at hc
+                obtain ⟨W₂, E₂, L₂, S₂⟩ := ihArgs Γ args d₁ d₂ pas ΓS W₁ (hG.mono E₁) hargs
+                split at hc
+                rotate_left
+                · exact error_ne_ok hc
+                rename_i hteqs
+                injection hc with hc
+                obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (pauseRecD_spec C W₂ tgt
+                  (Nat.lt_of_lt_of_le L₁ E₂.size_le)
+                  (by
+                    intro i hi
+                    obtain ⟨p, hp, hpi⟩ := List.mem_map.mp hi
+                    rw [← hpi]
+                    exact L₂ p hp)
+                  (hCells.mono (E₁.trans E₂))) hc
+                refine ⟨W₃, (E₁.trans E₂).trans E₃, L₃, ?_⟩
+                rw [S₁, except_bind_ok]
+                dsimp only
+                rw [if_pos hoty, S₂, except_bind_ok]
+                rw [teqAllD_eq d₂] at hteqs
+                rw [if_pos hteqs, except_pure_def, R₃,
+                    show d₁.read onf = d₂.read onf from (read_ext E₂ onf L₁).symm,
+                    show ((pas.map fun p => ((d₂.read p.1 : NF), p.2)).map (·.1))
+                        = (pas.map (·.1)).map d₂.read from by
+                      simp only [List.map_map]; rfl]
+        | goto l args =>
+            rw [goTermD] at hc
+            rw [goTerm]
+            dsimp only at hc ⊢
+            cases hblk : C.blocks.get? l.uniq with
+            | none => rw [hblk] at hc; exact error_ne_ok hc
+            | some blk =>
+                rw [hblk] at hc
+                dsimp only at hc ⊢
+                rw [bind_ok_iff] at hc
+                obtain ⟨dps, hargs, hc⟩ := hc
+                obtain ⟨d₁, pas⟩ := dps
+                dsimp only at hc
+                obtain ⟨W₁, E₁, L₁, S₁⟩ := ihArgs Γ args d d₁ pas ΓS hwf hG hargs
+                split at hc
+                rotate_left
+                · exact error_ne_ok hc
+                rename_i hteqs
+                obtain ⟨W₂, E₂, L₂, S₂⟩ := ihC _ cellsD blk.cmds blk.term d₁ d' r _ cellsS
+                  W₁ (gsim_zipFoldl blk.params pas ∅ ∅ (gsim_empty d₁) L₁)
+                  (hCells.mono E₁) hc
+                refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+                rw [S₁, except_bind_ok]
+                rw [teqAllD_eq d₁] at hteqs
+                rw [if_pos hteqs]
+                exact S₂
+        | halt e =>
+            rw [goTermD] at hc
+            rw [goTerm]
+            dsimp only at hc ⊢
+            rw [bind_ok_iff] at hc
+            obtain ⟨dat, he, hc⟩ := hc
+            obtain ⟨d₁, anf, aty⟩ := dat
+            dsimp only at hc
+            obtain ⟨W₁, E₁, L₁, S₁⟩ := cexpFullD_sim hwf hG he
+            cases hh : C.lo.halts.find? (fun h => h.1 == aty) with
+            | none =>
+                rw [hh] at hc
+                dsimp only at hc
+                exact error_ne_ok hc
+            | some tw =>
+                obtain ⟨t0, tag0, w0⟩ := tw
+                rw [hh] at hc
+                dsimp only at hc
+                rw [except_pure_def, except_bind_ok] at hc
+                dsimp only at hc
+                injection hc with hc
+                obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (haltRecD_spec C W₁ tag0 w0 L₁
+                  (hCells.mono E₁)) hc
+                refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+                rw [S₁, except_bind_ok]
+                dsimp only
+                rw [hh]
+                dsimp only
+                rw [except_pure_def, except_bind_ok]
+                dsimp only
+                rw [except_pure_def, R₂]
+        | cases scrut alts =>
+            rw [goTermD] at hc
+            rw [goTerm]
+            dsimp only at hc ⊢
+            rw [bind_ok_iff] at hc
+            obtain ⟨dnt, hs, hc⟩ := hc
+            obtain ⟨d₁, dn, dty⟩ := dnt
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨szT, hsz, hc⟩ := hc
+            obtain ⟨W₁, E₁, L₁, S₁⟩ := cexpFullD_sim hwf hG hs
+            rw [S₁, except_bind_ok]
+            dsimp only
+            rw [hsz, except_bind_ok]
+            rcases alts with _ | ⟨⟨con0, bs0, dt⟩, rest⟩
+            · dsimp only at hc ⊢
+              obtain ⟨msg, hmsg⟩ := goAltsD_nil_none (C := C) (fuel := fuel)
+              rw [hmsg] at hc
+              exact error_ne_ok hc
+            · cases con0 with
+              | default =>
+                  dsimp only at hc ⊢
+                  split at hc
+                  rotate_left
+                  · exact error_ne_ok hc
+                  rename_i hbs
+                  rw [bind_ok_iff] at hc
+                  obtain ⟨det, hdt, hc⟩ := hc
+                  obtain ⟨d₂, els⟩ := det
+                  dsimp only at hc
+                  obtain ⟨W₂, E₂, L₂, S₂⟩ := ihT Γ cellsD dt d₁ d₂ els ΓS cellsS
+                    W₁ (hG.mono E₁) (hCells.mono E₁) hdt
+                  obtain ⟨W₃, E₃, L₃, S₃⟩ := ihAlts Γ cellsD dty szT dn rest
+                    (some els) (some (d₂.read els)) d₂ d' r ΓS cellsS
+                    W₂ (hG.mono (E₁.trans E₂)) (hCells.mono (E₁.trans E₂))
+                    (Nat.lt_of_lt_of_le L₁ E₂.size_le) ⟨L₂, rfl⟩ hc
+                  refine ⟨W₃, (E₁.trans E₂).trans E₃, L₃, ?_⟩
+                  rw [if_pos hbs, S₂, except_bind_ok]
+                  rw [show d₁.read dn = d₂.read dn from (read_ext E₂ dn L₁).symm]
+                  exact S₃
+              | dataAlt cn =>
+                  dsimp only at hc ⊢
+                  obtain ⟨W₃, E₃, L₃, S₃⟩ := ihAlts Γ cellsD dty szT dn
+                    (TAlt.mk (.dataAlt cn) bs0 dt :: rest) none none d₁ d' r ΓS cellsS
+                    W₁ (hG.mono E₁) (hCells.mono E₁) L₁ trivial hc
+                  exact ⟨W₃, E₁.trans E₃, L₃, S₃⟩
+              | litAlt i =>
+                  dsimp only at hc ⊢
+                  obtain ⟨W₃, E₃, L₃, S₃⟩ := ihAlts Γ cellsD dty szT dn
+                    (TAlt.mk (.litAlt i) bs0 dt :: rest) none none d₁ d' r ΓS cellsS
+                    W₁ (hG.mono E₁) (hCells.mono E₁) L₁ trivial hc
+                  exact ⟨W₃, E₁.trans E₃, L₃, S₃⟩
+      · -- goArgsD
+        intro Γ es d d' pas ΓS hwf hG hc
+        cases es with
+        | nil =>
+            rw [goArgsD] at hc
+            injection hc with hc
+            injection hc with h1 h2
+            subst h1; subst h2
+            exact ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, by simp, rfl⟩
+        | cons e es =>
+            rw [goArgsD] at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨drt, he, hc⟩ := hc
+            obtain ⟨d₁, r0, t0⟩ := drt
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨drs, hrest, hc⟩ := hc
+            obtain ⟨d₂, rs⟩ := drs
+            dsimp only at hc
+            injection hc with hc
+            injection hc with h1 h2
+            subst h1; subst h2
+            obtain ⟨W₁, E₁, L₁, S₁⟩ := cexpFullD_sim hwf hG he
+            obtain ⟨W₂, E₂, L₂, S₂⟩ := ihArgs Γ es d₁ d₂ rs ΓS W₁ (hG.mono E₁) hrest
+            refine ⟨W₂, E₁.trans E₂, ?_, ?_⟩
+            · intro p hp
+              rcases List.mem_cons.mp hp with rfl | hp
+              · exact Nat.lt_of_lt_of_le L₁ E₂.size_le
+              · exact L₂ p hp
+            · rw [List.mapM_cons, S₁, except_bind_ok, S₂, except_bind_ok,
+                  except_pure_def, List.map_cons, read_ext E₂ r0 L₁]
+      · -- goAltsD
+        intro Γ cellsD dty szT dn alts maccD maccS d d' r ΓS cellsS
+          hwf hG hCells hdn hmacc hc
+        rcases alts with _ | ⟨alt, restT⟩
+        · cases maccD with
+          | none => rw [goAltsD] at hc; exact error_ne_ok hc
+          | some els =>
+              cases maccS with
+              | none => exact absurd hmacc (by simp)
+              | some elsS =>
+                  obtain ⟨hlt, hread⟩ := hmacc
+                  rw [goAltsD] at hc
+                  injection hc with hc
+                  injection hc with h1 h2
+                  subst h1; subst h2
+                  refine ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, hlt, ?_⟩
+                  rw [goAlts, hread]
+                  rfl
+        · rcases restT with _ | ⟨r2, rt⟩
+          · cases maccD with
+            | none =>
+                cases maccS with
+                | some aS => exact absurd hmacc (by simp)
+                | none =>
+                    rw [goAltsD] at hc
+                    obtain ⟨W, E, L, S⟩ := ihA1 Γ cellsD dty szT dn alt none none
+                      d d' r ΓS cellsS hwf hG hCells hdn trivial hc
+                    refine ⟨W, E, L, ?_⟩
+                    rw [goAlts]
+                    exact S
+            | some aD =>
+                cases maccS with
+                | none => exact absurd hmacc (by simp)
+                | some aS =>
+                    rw [goAltsD] at hc
+                    rw [bind_ok_iff] at hc
+                    obtain ⟨dacc, hacc, hc⟩ := hc
+                    obtain ⟨d₁, accnf⟩ := dacc
+                    dsimp only at hc
+                    obtain ⟨W₁, E₁, L₁, S₁⟩ := ihAlts Γ cellsD dty szT dn [] (some aD)
+                      (some aS) d d₁ accnf ΓS cellsS hwf hG hCells hdn hmacc hacc
+                    obtain ⟨W₂, E₂, L₂, S₂⟩ := ihA1 Γ cellsD dty szT dn alt (some accnf)
+                      (some (d₁.read accnf)) d₁ d' r ΓS cellsS
+                      W₁ (hG.mono E₁) (hCells.mono E₁)
+                      (Nat.lt_of_lt_of_le hdn E₁.size_le) ⟨L₁, rfl⟩ hc
+                    refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+                    rw [goAlts, S₁, except_bind_ok,
+                        show d.read dn = d₁.read dn from (read_ext E₁ dn hdn).symm]
+                    exact S₂
+                    all_goals intro h' _
+                    all_goals cases h'
+          · rw [goAltsD] at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨dacc, hacc, hc⟩ := hc
+            obtain ⟨d₁, accnf⟩ := dacc
+            dsimp only at hc
+            obtain ⟨W₁, E₁, L₁, S₁⟩ := ihAlts Γ cellsD dty szT dn (r2 :: rt) maccD
+              maccS d d₁ accnf ΓS cellsS hwf hG hCells hdn hmacc hacc
+            obtain ⟨W₂, E₂, L₂, S₂⟩ := ihA1 Γ cellsD dty szT dn alt (some accnf)
+              (some (d₁.read accnf)) d₁ d' r ΓS cellsS
+              W₁ (hG.mono E₁) (hCells.mono E₁)
+              (Nat.lt_of_lt_of_le hdn E₁.size_le) ⟨L₁, rfl⟩ hc
+            refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+            rw [goAlts, S₁, except_bind_ok,
+                show d.read dn = d₁.read dn from (read_ext E₁ dn hdn).symm]
+            exact S₂
+            all_goals intro _ h'
+            all_goals cases h'
+      · -- goAlt1D
+        intro Γ cellsD dty szT dn alt maccD maccS d d' r ΓS cellsS
+          hwf hG hCells hdn hmacc hc
+        obtain ⟨con0, xs, t⟩ := alt
+        cases con0 with
+        | default =>
+            rw [goAlt1D] at hc
+            exact error_ne_ok hc
+        | dataAlt cn =>
+            rw [goAlt1D] at hc
+            rw [goAlt1]
+            split at hc
+            · exact error_ne_ok hc
+            rename_i habs
+            split at hc
+            rotate_left
+            · exact error_ne_ok hc
+            rename_i hctb
+            rw [bind_ok_iff] at hc
+            obtain ⟨tg, htag, hc⟩ := hc
+            obtain ⟨tag, w⟩ := tg
+            dsimp only at hc
+            cases hcs : C.Δ.ctorSig.get? cn with
+            | none => rw [hcs] at hc; exact error_ne_ok hc
+            | some sig =>
+            rw [hcs] at hc
+            dsimp only at hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨sub, hsub, hc⟩ := hc
+            split at hc
+            rotate_left
+            · exact error_ne_ok hc
+            rename_i hxlen
+            rw [bind_ok_iff] at hc
+            obtain ⟨szXs, hszXs, hc⟩ := hc
+            split at hc
+            rotate_left
+            · exact error_ne_ok hc
+            rename_i hwle
+            rcases hfold : (szXs.zip (offsetsOf szXs)).foldr
+                (fun (q : Nat × Nat) (acc : Dag × List Nat) =>
+                  let (d', r) := sliceNFD acc.1 q.2 q.1 dn
+                  (d', r :: acc.2)) (d, ([] : List Nat)) with ⟨d₁, slices⟩
+            rw [hfold] at hc
+            obtain ⟨W₁, E₁, L₁, R₁⟩ := altSlices_spec _ d hwf hdn
+            rw [hfold] at W₁ E₁ L₁ R₁
+            dsimp only at W₁ E₁ L₁ R₁
+            rw [bind_ok_iff] at hc
+            obtain ⟨det, hbody, hc⟩ := hc
+            obtain ⟨d₂, bnf⟩ := det
+            dsimp only at hc
+            have hzipS : ((slices.zip ((Ty.flattenArrow sig.ty).1.map
+                (DEnv.substTv sub))).map fun p => ((d₁.read p.1 : NF), p.2))
+                = ((szXs.zip (offsetsOf szXs)).map
+                    fun q => sliceNF q.2 q.1 (d.read dn)).zip
+                  ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)) := by
+              rw [← R₁]
+              rw [List.zip_map_left]
+              rfl
+            obtain ⟨W₂, E₂, L₂, S₂⟩ := ihT _ cellsD t d₁ d₂ bnf _ cellsS
+              W₁ (gsim_zipFoldl xs _ Γ ΓS (hG.mono E₁) (by
+                intro p hp
+                exact L₁ p.1 (List.of_mem_zip hp).1))
+              (hCells.mono E₁) hbody
+            rw [hzipS] at S₂
+            -- assemble per macc/w
+            cases maccD with
+            | none =>
+                cases maccS with
+                | some aS => exact absurd hmacc (by simp)
+                | none =>
+                    cases hwcase : w with
+                    | zero =>
+                        subst hwcase
+                        injection hc with hc
+                        obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (self_mk W₂ L₂) hc
+                        refine ⟨W₃, (E₁.trans E₂).trans E₃, L₃, ?_⟩
+                        rw [if_neg (by simpa using habs), if_pos hctb, htag,
+                            except_bind_ok]
+                        dsimp only
+                        rw [hsub, except_bind_ok, if_pos hxlen, hszXs, except_bind_ok,
+                            if_pos hwle, S₂, except_bind_ok]
+                        rw [except_pure_def, R₃]
+                    | succ w0 =>
+                        subst hwcase
+                        injection hc with hc
+                        obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (self_mk W₂ L₂) hc
+                        refine ⟨W₃, (E₁.trans E₂).trans E₃, L₃, ?_⟩
+                        rw [if_neg (by simpa using habs), if_pos hctb, htag,
+                            except_bind_ok]
+                        dsimp only
+                        rw [hsub, except_bind_ok, if_pos hxlen, hszXs, except_bind_ok,
+                            if_pos hwle, S₂, except_bind_ok]
+                        rw [except_pure_def, R₃]
+            | some aD =>
+                cases maccS with
+                | none => exact absurd hmacc (by simp)
+                | some aS =>
+                    obtain ⟨haD, haR⟩ := hmacc
+                    cases hwcase : w with
+                    | zero =>
+                        subst hwcase
+                        injection hc with hc
+                        obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (self_mk W₂ L₂) hc
+                        refine ⟨W₃, (E₁.trans E₂).trans E₃, L₃, ?_⟩
+                        rw [if_neg (by simpa using habs), if_pos hctb, htag,
+                            except_bind_ok]
+                        dsimp only
+                        rw [hsub, except_bind_ok, if_pos hxlen, hszXs, except_bind_ok,
+                            if_pos hwle, S₂, except_bind_ok]
+                        rw [except_pure_def, R₃]
+                    | succ w0 =>
+                        subst hwcase
+                        rcases hsl : sliceNFD d₂ (szT - (w0 + 1)) (w0 + 1) dn with ⟨d₃, sl⟩
+                        rw [hsl] at hc
+                        rcases hlt : d₃.mkLit ⟨w0 + 1, BitVec.ofNat (w0 + 1) tag⟩
+                          with ⟨d₄, tl⟩
+                        rw [hlt] at hc
+                        rcases hpe : d₄.rawPrim2 .eq sl tl with ⟨d₅, cnd⟩
+                        rw [hpe] at hc
+                        dsimp only at hc
+                        split at hc
+                        rotate_left
+                        · exact error_ne_ok hc
+                        rename_i harm
+                        rcases hit : d₅.rawIte cnd bnf aD with ⟨d₆, itr⟩
+                        rw [hit] at hc
+                        injection hc with hc
+                        injection hc with h1 h2
+                        subst h1; subst h2
+                        have hdnd2 : dn < d₂.size :=
+                          Nat.lt_of_lt_of_le hdn (E₁.trans E₂).size_le
+                        obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (sliceNFD_spec W₂ _ _ hdnd2) hsl
+                        obtain ⟨W₄, E₄, L₄, R₄⟩ := mk_out (mkLit_spec W₃ _) hlt
+                        obtain ⟨W₅, E₅, L₅, R₅⟩ := mk_out
+                          (rawPrim2_spec W₄ (Nat.lt_of_lt_of_le L₃ E₄.size_le) L₄ rfl) hpe
+                        have haD5 : aD < d₅.size := Nat.lt_of_lt_of_le haD
+                          ((((E₁.trans E₂).trans E₃).trans E₄).trans E₅).size_le
+                        have hbnf5 : bnf < d₅.size :=
+                          Nat.lt_of_lt_of_le L₂ ((E₃.trans E₄).trans E₅).size_le
+                        obtain ⟨W₆, E₆, L₆, R₆⟩ := mk_out
+                          (rawIte_spec W₅ L₅ hbnf5 haD5 harm) hit
+                        refine ⟨W₆,
+                          ((((E₁.trans E₂).trans E₃).trans E₄).trans E₅).trans E₆,
+                          L₆, ?_⟩
+                        rw [if_neg (by simpa using habs), if_pos hctb, htag,
+                            except_bind_ok]
+                        dsimp only
+                        rw [hsub, except_bind_ok, if_pos hxlen, hszXs, except_bind_ok,
+                            if_pos hwle, S₂, except_bind_ok]
+                        rw [except_pure_def, R₆, R₅, read_ext E₄ sl L₃, R₃, R₄,
+                            read_ext ((E₃.trans E₄).trans E₅) bnf L₂,
+                            read_ext ((((E₁.trans E₂).trans E₃).trans E₄).trans E₅) aD haD,
+                            read_ext (E₁.trans E₂) dn hdn, haR]
+        | litAlt i =>
+            rw [goAlt1D] at hc
+            rw [goAlt1]
+            split at hc
+            rotate_left
+            · exact error_ne_ok hc
+            rename_i hbs
+            rw [bind_ok_iff] at hc
+            obtain ⟨det, hbody, hc⟩ := hc
+            obtain ⟨d₁, bnf⟩ := det
+            dsimp only at hc
+            obtain ⟨W₁, E₁, L₁, S₁⟩ := ihT Γ cellsD t d d₁ bnf ΓS cellsS
+              hwf hG hCells hbody
+            cases maccD with
+            | none =>
+                cases maccS with
+                | some aS => exact absurd hmacc (by simp)
+                | none =>
+                    injection hc with hc
+                    obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (self_mk W₁ L₁) hc
+                    refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+                    rw [if_pos hbs, S₁, except_bind_ok]
+                    dsimp only
+                    rw [except_pure_def, R₂]
+            | some aD =>
+                cases maccS with
+                | none => exact absurd hmacc (by simp)
+                | some aS =>
+                    obtain ⟨haD, haR⟩ := hmacc
+                    rcases hlt : d₁.mkLit ⟨szT, BitVec.ofInt szT i⟩ with ⟨d₂, tl⟩
+                    rw [hlt] at hc
+                    rcases hpe : d₂.rawPrim2 .eq dn tl with ⟨d₃, cnd⟩
+                    rw [hpe] at hc
+                    dsimp only at hc
+                    split at hc
+                    rotate_left
+                    · exact error_ne_ok hc
+                    rename_i harm
+                    rcases hit : d₃.rawIte cnd bnf aD with ⟨d₄, itr⟩
+                    rw [hit] at hc
+                    injection hc with hc
+                    injection hc with h1 h2
+                    subst h1; subst h2
+                    obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (mkLit_spec W₁ _) hlt
+                    have hdn2 : dn < d₂.size :=
+                      Nat.lt_of_lt_of_le hdn (E₁.trans E₂).size_le
+                    obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (rawPrim2_spec W₂ hdn2 L₂ rfl) hpe
+                    have haD3 : aD < d₃.size :=
+                      Nat.lt_of_lt_of_le haD ((E₁.trans E₂).trans E₃).size_le
+                    have hbnf3 : bnf < d₃.size :=
+                      Nat.lt_of_lt_of_le L₁ (E₂.trans E₃).size_le
+                    obtain ⟨W₄, E₄, L₄, R₄⟩ := mk_out (rawIte_spec W₃ L₃ hbnf3 haD3 harm) hit
+                    refine ⟨W₄, ((E₁.trans E₂).trans E₃).trans E₄, L₄, ?_⟩
+                    rw [if_pos hbs, S₁, except_bind_ok]
+                    dsimp only
+                    rw [except_pure_def, R₄, R₃, read_ext (E₁.trans E₂) dn hdn, R₂,
+                        read_ext (E₂.trans E₃) bnf L₁,
+                        read_ext ((E₁.trans E₂).trans E₃) aD haD, haR]
+
+/-! ## The tag-substitution sweep's specification (`renorm_spec`'s
+sweep discipline, with raw constructors and `substNF` images) -/
+
+private theorem mIdx_eq' {m : Array Nat} {a : Nat} (h : a < m.size) :
+    mIdx m a = m[a] := by
+  rw [mIdx, Array.getElem?_eq_getElem h]
+  rfl
+
+private theorem substNodeD_spec {plan : Plan} {lo : Layout} {tag : Nat}
+    {d₀ dc : Dag} {m : Array Nat} {n : DNode} {i : Nat}
+    (hwf₀ : d₀.WF) (hwfc : dc.WF) (_hext : d₀.Ext dc)
+    (_hi : i < d₀.size) (hm : i = m.size) (hn : d₀.nodes[i]? = some n)
+    (hinv : ∀ j, (hj : j < m.size) →
+      m[j] < dc.size ∧ dc.read m[j] = substNF (tagSubst plan lo tag) (d₀.read j))
+    {d₁ : Dag} {r : Nat} (h : substNodeD plan lo tag dc m n = .ok (d₁, r)) :
+    d₁.WF ∧ dc.Ext d₁ ∧ r < d₁.size ∧
+      d₁.read r = substNF (tagSubst plan lo tag) (d₀.read i) := by
+  have hread : d₀.read i = n.toNF d₀.read :=
+    read_eq (hwf₀.child_lt i n hn) hn
+  have hchild : ∀ j ∈ n.children, j < m.size := fun j hj => by
+    rw [← hm]
+    exact hwf₀.child_lt i n hn j hj
+  cases n with
+  | var w x =>
+      rw [substNodeD] at h
+      cases hreg : plan.tagReg with
+      | none =>
+          rw [tagSubstD, hreg] at h
+          dsimp only at h
+          injection h with h
+          obtain ⟨W, E, L, R⟩ := mk_out (mkVar_spec hwfc w x) h
+          refine ⟨W, E, L, ?_⟩
+          rw [R, hread]
+          show (NF.var w x : NF) = substNF (tagSubst plan lo tag) (.var w x)
+          rw [substNF, tagSubst, hreg]
+          rfl
+      | some rw0 =>
+          obtain ⟨r0, wr⟩ := rw0
+          rw [tagSubstD, hreg] at h
+          dsimp only at h
+          by_cases hcond : 0 < lo.rTagW ∧ x = r0
+          · rw [if_pos hcond] at h
+            dsimp only at h
+            rcases h1 : dc.mkLit ⟨lo.rTagW, BitVec.ofNat _ tag⟩ with ⟨e₁, i₁⟩
+            rw [h1] at h
+            obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out (mkLit_spec hwfc _) h1
+            by_cases hpay : lo.rPayW = 0
+            · rw [if_pos hpay] at h
+              rcases h2 : e₁.mkLit Rwv.Hyle.BV.nil with ⟨e₂, i₂⟩
+              rw [h2] at h
+              dsimp only at h
+              obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (mkLit_spec W₁ _) h2
+              injection h with h
+              obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out
+                (rawCat_spec W₂ (Nat.lt_of_lt_of_le L₁ E₂.size_le) L₂) h
+              refine ⟨W₃, (E₁.trans E₂).trans E₃, L₃, ?_⟩
+              rw [R₃, read_ext E₂ i₁ L₁, R₁, R₂, hread]
+              show _ = substNF (tagSubst plan lo tag) (.var w x)
+              rw [substNF, tagSubst, hreg]
+              dsimp only
+              rw [if_pos hcond]
+              rw [Option.getD_some, sliceNF, if_pos hpay]
+            · rw [if_neg hpay] at h
+              rcases h2 : e₁.mkVar wr r0 with ⟨e₂, i₂⟩
+              rw [h2] at h
+              dsimp only at h
+              obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (mkVar_spec W₁ wr r0) h2
+              rcases h3 : e₂.rawSlice 0 lo.rPayW i₂ with ⟨e₃, i₃⟩
+              rw [h3] at h
+              dsimp only at h
+              obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (rawSlice_spec W₂ 0 lo.rPayW L₂) h3
+              injection h with h
+              obtain ⟨W₄, E₄, L₄, R₄⟩ := mk_out
+                (rawCat_spec W₃ (Nat.lt_of_lt_of_le L₁ (E₂.trans E₃).size_le) L₃) h
+              refine ⟨W₄, ((E₁.trans E₂).trans E₃).trans E₄, L₄, ?_⟩
+              rw [R₄, read_ext (E₂.trans E₃) i₁ L₁, R₁, R₃, R₂, hread]
+              show _ = substNF (tagSubst plan lo tag) (.var w x)
+              rw [substNF, tagSubst, hreg]
+              dsimp only
+              rw [if_pos hcond]
+              rw [Option.getD_some, sliceNF, if_neg hpay]
+          · rw [if_neg hcond] at h
+            dsimp only at h
+            injection h with h
+            obtain ⟨W, E, L, R⟩ := mk_out (mkVar_spec hwfc w x) h
+            refine ⟨W, E, L, ?_⟩
+            rw [R, hread]
+            show (NF.var w x : NF) = substNF (tagSubst plan lo tag) (.var w x)
+            rw [substNF, tagSubst, hreg]
+            dsimp only
+            rw [if_neg hcond]
+            rfl
+  | lit v =>
+      rw [substNodeD] at h
+      injection h with h
+      obtain ⟨W, E, L, R⟩ := mk_out (mkLit_spec hwfc v) h
+      refine ⟨W, E, L, ?_⟩
+      rw [R, hread]
+      rfl
+  | prim1 w op a =>
+      rw [substNodeD] at h
+      split at h
+      rotate_left
+      · exact error_ne_ok h
+      rename_i hop
+      injection h with h
+      have ha : a < m.size := hchild a (by simp [DNode.children])
+      obtain ⟨hra, hca⟩ := hinv a ha
+      rw [mIdx_eq' ha] at h
+      obtain ⟨W, E, L, R⟩ := mk_out (rawPrim1_spec hwfc hra hop) h
+      refine ⟨W, E, L, ?_⟩
+      rw [R, hca, hread]
+      rfl
+  | prim2 w op a b =>
+      rw [substNodeD] at h
+      split at h
+      rotate_left
+      · exact error_ne_ok h
+      rename_i hop
+      injection h with h
+      have ha : a < m.size := hchild a (by simp [DNode.children])
+      have hb : b < m.size := hchild b (by simp [DNode.children])
+      obtain ⟨hra, hca⟩ := hinv a ha
+      obtain ⟨hrb, hcb⟩ := hinv b hb
+      rw [mIdx_eq' ha, mIdx_eq' hb] at h
+      obtain ⟨W, E, L, R⟩ := mk_out (rawPrim2_spec hwfc hra hrb hop) h
+      refine ⟨W, E, L, ?_⟩
+      rw [R, hca, hcb, hread]
+      rfl
+  | cat w a b =>
+      rw [substNodeD] at h
+      injection h with h
+      have ha : a < m.size := hchild a (by simp [DNode.children])
+      have hb : b < m.size := hchild b (by simp [DNode.children])
+      obtain ⟨hra, hca⟩ := hinv a ha
+      obtain ⟨hrb, hcb⟩ := hinv b hb
+      rw [mIdx_eq' ha, mIdx_eq' hb] at h
+      obtain ⟨W, E, L, R⟩ := mk_out (rawCat_spec hwfc hra hrb) h
+      refine ⟨W, E, L, ?_⟩
+      rw [R, hca, hcb, hread]
+      rfl
+  | slice j w e =>
+      rw [substNodeD] at h
+      injection h with h
+      have he : e < m.size := hchild e (by simp [DNode.children])
+      obtain ⟨hre, hce⟩ := hinv e he
+      rw [mIdx_eq' he] at h
+      obtain ⟨W, E, L, R⟩ := mk_out (rawSlice_spec hwfc j w hre) h
+      refine ⟨W, E, L, ?_⟩
+      rw [R, hce, hread]
+      rfl
+  | ite w c t e =>
+      rw [substNodeD] at h
+      split at h
+      rotate_left
+      · exact error_ne_ok h
+      rename_i harm
+      injection h with h
+      have hcm : c < m.size := hchild c (by simp [DNode.children])
+      have htm : t < m.size := hchild t (by simp [DNode.children])
+      have hem : e < m.size := hchild e (by simp [DNode.children])
+      obtain ⟨hrc, hcc⟩ := hinv c hcm
+      obtain ⟨hrt, hct⟩ := hinv t htm
+      obtain ⟨hre, hce⟩ := hinv e hem
+      rw [mIdx_eq' htm, mIdx_eq' hem] at harm
+      rw [mIdx_eq' hcm, mIdx_eq' htm, mIdx_eq' hem] at h
+      obtain ⟨W, E, L, R⟩ := mk_out (rawIte_spec hwfc hrc hrt hre harm) h
+      refine ⟨W, E, L, ?_⟩
+      rw [R, hcc, hct, hce, hread]
+      rfl
+
+private theorem substGoD_spec {plan : Plan} {lo : Layout} {tag : Nat} :
+    ∀ (k : Nat) (d₀ dc : Dag) (m : Array Nat) (d' : Dag) (m' : Array Nat),
+      d₀.WF → dc.WF → d₀.Ext dc → m.size + k = d₀.size →
+      (∀ j, (hj : j < m.size) →
+        m[j] < dc.size ∧ dc.read m[j] = substNF (tagSubst plan lo tag) (d₀.read j)) →
+      substGoD plan lo tag k dc m = .ok (d', m') →
+      d'.WF ∧ dc.Ext d' ∧ m'.size = d₀.size ∧
+      (∀ j, (hj : j < m'.size) →
+        m'[j] < d'.size ∧ d'.read m'[j] = substNF (tagSubst plan lo tag) (d₀.read j)) := by
+  intro k
+  induction k with
+  | zero =>
+      intro d₀ dc m d' m' hwf₀ hwfc hext hsz hinv h
+      rw [substGoD] at h
+      injection h with h
+      injection h with h₁ h₂
+      subst h₁
+      subst h₂
+      exact ⟨hwfc, Rwv.Hyle.BridgeDag.Dag.Ext.refl dc, by omega, hinv⟩
+  | succ k ih =>
+      intro d₀ dc m d' m' hwf₀ hwfc hext hsz hinv h
+      rw [substGoD] at h
+      have hi : m.size < d₀.size := by omega
+      obtain ⟨n, hn⟩ := node_of_lt hi
+      have hnc : dc.nodes[m.size]? = some n := by
+        rw [hext.nodes_eq m.size hi]
+        exact hn
+      rw [hnc] at h
+      rw [bind_ok_iff] at h
+      obtain ⟨dr, hrn, h⟩ := h
+      obtain ⟨d₁, r⟩ := dr
+      dsimp only at h
+      obtain ⟨W₁, E₁, L₁, R₁⟩ :=
+        substNodeD_spec hwf₀ hwfc hext hi rfl hn hinv hrn
+      have hinv' : ∀ j, (hj : j < (m.push r).size) →
+          (m.push r)[j] < d₁.size ∧
+          d₁.read (m.push r)[j] = substNF (tagSubst plan lo tag) (d₀.read j) := by
+        intro j hj
+        rw [Array.size_push] at hj
+        by_cases hjm : j < m.size
+        · rw [Array.getElem_push_lt hjm]
+          obtain ⟨hr, hc⟩ := hinv j hjm
+          exact ⟨Nat.lt_of_lt_of_le hr E₁.size_le, by rw [read_ext E₁ _ hr, hc]⟩
+        · have hj' : j = m.size := by omega
+          subst hj'
+          rw [Array.getElem_push_eq]
+          exact ⟨L₁, R₁⟩
+      obtain ⟨W₂, E₂, hsz₂, hinv₂⟩ := ih d₀ d₁ (m.push r) d' m' hwf₀ W₁
+        (hext.trans E₁) (by rw [Array.size_push]; omega) hinv' h
+      exact ⟨W₂, E₁.trans E₂, hsz₂, hinv₂⟩
+
+/-- The full tag-substitution sweep computes `substNF (tagSubst plan
+lo tag)` images for every index of the store. -/
+private theorem substAllD_spec {plan : Plan} {lo : Layout} {tag : Nat}
+    {d d' : Dag} {m : Array Nat} (hwf : d.WF)
+    (h : substAllD plan lo tag d = .ok (d', m)) :
+    d'.WF ∧ d.Ext d' ∧ m.size = d.size ∧
+    (∀ j, j < d.size → mIdx m j < d'.size ∧
+      d'.read (mIdx m j) = substNF (tagSubst plan lo tag) (d.read j)) := by
+  obtain ⟨W, E, hsz, hinv⟩ := substGoD_spec d.size d d #[] d' m hwf hwf
+    (Rwv.Hyle.BridgeDag.Dag.Ext.refl d) (by simp) (by intro j hj; simp at hj) h
+  refine ⟨W, E, hsz, ?_⟩
+  intro j hj
+  have hj' : j < m.size := by omega
+  rw [mIdx_eq' hj']
+  exact hinv j hj'
+
+/-! ## The per-label comparison slices -/
+
+private theorem pairSlicesD_spec {rec : Nat} :
+    ∀ (prs : List (((String × Nat) × Nat) × (String × Nat))) (d : Dag),
+      d.WF → rec < d.size →
+      ∀ (d₁ : Dag) (ps : List (Nat × Nat)),
+      pairSlicesD d rec prs = .ok (d₁, ps) →
+      d₁.WF ∧ d.Ext d₁ ∧ ps.length = prs.length ∧
+      ∀ k (h1 : k < ps.length) (h2 : k < prs.length),
+        (prs[k]'h2).1.1.1 = (prs[k]'h2).2.1 ∧
+        (ps[k]'h1).1 < d₁.size ∧
+        d₁.read (ps[k]'h1).1
+          = sliceNF (prs[k]'h2).1.2 (prs[k]'h2).1.1.2 (d.read rec) ∧
+        (ps[k]'h1).2 = (prs[k]'h2).2.2 := by
+  intro prs
+  induction prs with
+  | nil =>
+      intro d hwf hrec d₁ ps h
+      rw [pairSlicesD] at h
+      injection h with h
+      injection h with h1 h2
+      subst h1; subst h2
+      exact ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, rfl,
+        by intro k h1 h2; exact absurd h1 (by simp)⟩
+  | cons pr rest ih =>
+      intro d hwf hrec d₁ ps h
+      rw [pairSlicesD] at h
+      split at h
+      rotate_left
+      · exact error_ne_ok h
+      rename_i hname
+      rcases hsl : sliceNFD d pr.1.2 pr.1.1.2 rec with ⟨da, s⟩
+      rw [hsl] at h
+      dsimp only at h
+      rw [bind_ok_iff] at h
+      obtain ⟨drs, hrest, h⟩ := h
+      obtain ⟨db, ps'⟩ := drs
+      dsimp only at h
+      injection h with h
+      injection h with h1 h2
+      subst h1; subst h2
+      obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out (sliceNFD_spec hwf pr.1.2 pr.1.1.2 hrec) hsl
+      obtain ⟨W₂, E₂, hlen, hpt⟩ :=
+        ih da W₁ (Nat.lt_of_lt_of_le hrec E₁.size_le) db ps' hrest
+      refine ⟨W₂, E₁.trans E₂, by simp [hlen], ?_⟩
+      intro k h1 h2
+      cases k with
+      | zero =>
+          refine ⟨eq_of_beq hname, ?_, ?_, ?_⟩
+          · simpa using Nat.lt_of_lt_of_le L₁ E₂.size_le
+          · simp only [List.getElem_cons_zero]
+            rw [read_ext E₂ s L₁, R₁]
+          · simp
+      | succ k =>
+          simp only [List.getElem_cons_succ]
+          obtain ⟨hna, hlt, hrd, hw⟩ := hpt k (by simpa using h1) (by simpa using h2)
+          refine ⟨hna, hlt, ?_, hw⟩
+          rw [hrd, read_ext E₁ rec hrec]
+
+/-- Assemble a passing `forAllM` from pointwise passes. -/
+private theorem forAllM_intro {α : Type} {f : α → Except String Unit} :
+    ∀ {xs : List α}, (∀ x ∈ xs, f x = .ok ()) → forAllM f xs = .ok () := by
+  intro xs
+  induction xs with
+  | nil => intro _; rfl
+  | cons a as ih =>
+      intro h
+      rw [forAllM, h a List.mem_cons_self, except_bind_ok]
+      exact ih fun x hx => h x (List.mem_cons_of_mem _ hx)
+
+/-- The width-aware leg makes `ceqB` pass. -/
+private theorem ceqB_of_w3 {a b : NF}
+    (h : Rwv.Hyle.Bridge.cfoldW3 a = Rwv.Hyle.Bridge.cfoldW3 b) : ceqB a b = true := by
+  rw [ceqB]
+  have hb : (Rwv.Hyle.Bridge.cfoldW3 a == Rwv.Hyle.Bridge.cfoldW3 b) = true :=
+    beq_iff_eq.mpr h
+  rw [hb, Bool.or_true]
+
+/-! ## The per-label reduction: a passing DAG leg certifies the tree
+checker's verdict -/
+
+/-- Generic index/annotation zips, read back at an extended store. -/
+private theorem zip_reads_gen {β : Type} {d d' : Dag} (hext : d.Ext d') :
+    ∀ (is : List Nat) (ws : List β), (∀ i ∈ is, i < d.size) →
+      ((is.zip ws).map fun q => ((d'.read q.1 : NF), q.2))
+        = (is.map d.read).zip ws := by
+  intro is
+  induction is with
+  | nil => intro ws _; rfl
+  | cons i rest ih =>
+      intro ws h
+      cases ws with
+      | nil => rfl
+      | cons w wrest =>
+          simp only [List.zip_cons_cons, List.map_cons]
+          rw [read_ext hext i (h i List.mem_cons_self)]
+          exact congrArg _ (ih wrest fun q hq => h q (List.mem_cons_of_mem _ hq))
+
+set_option maxHeartbeats 3200000 in
+/-- THE per-label reduction: a passing `checkLabelDag` run (over the
+device step evaluated into the store by `symStepDag`) certifies a
+passing `checkLabel` run over the tree symbolic step, so
+`checkLabel_sound` applies unchanged. -/
+theorem checkLabelDag_toTree {C : Ctx} {plan : Plan} {dev : Rwv.Hyle.Device}
+    {dmap : HashMap String Rwv.Hyle.Defn} {hfuel : Nat}
+    {d0 : Dag} {outsL nextsL : List (String × Nat)} {ss : Rwv.Hyle.Bridge.StepNF}
+    {inTy : Ty} {fuel : Nat} {tgt : LTarget}
+    (hsd : Rwv.Hyle.BridgeDag.symStepDag dmap hfuel dev Rwv.Hyle.BridgeDag.Dag.empty
+      = .ok (d0, outsL, nextsL))
+    (hsym : Rwv.Hyle.Bridge.symStep dmap hfuel dev = .ok ss)
+    (h : checkLabelDag C plan dev d0 outsL nextsL inTy fuel tgt = .ok ()) :
+    checkLabel C plan dev ss inTy fuel tgt = .ok () := by
+  obtain ⟨W0, _E0, Lo, Ln, hT⟩ :=
+    Rwv.Hyle.BridgeDag.symStepDag_sim Rwv.Hyle.BridgeDag.Dag.WF.empty hsd
+  have hss : ss = ⟨outsL.map (fun p => (p.1, d0.read p.2)),
+                   nextsL.map (fun p => (p.1, d0.read p.2))⟩ := by
+    rw [hsym] at hT
+    injection hT with hT
+  subst hss
+  rw [checkLabelDag] at h
+  rw [checkLabel]
+  cases hblk : C.blocks.get? tgt.uniq with
+  | none =>
+      rw [hblk] at h
+      dsimp only at h
+      exact error_ne_ok h
+  | some blk =>
+  rw [hblk] at h
+  dsimp only at h ⊢
+  rw [except_pure_def, except_bind_ok] at h ⊢
+  split at h
+  rotate_left
+  · exact error_ne_ok h
+  rename_i harity
+  rw [if_pos harity]
+  cases hlast : blk.params.getLast? with
+  | none => rw [hlast] at h; exact error_ne_ok h
+  | some inP =>
+  rw [hlast] at h
+  dsimp only at h ⊢
+  split at h
+  rotate_left
+  · exact error_ne_ok h
+  rename_i hteq
+  rw [if_pos hteq]
+  -- the tag variable
+  rcases htv : (match plan.tagReg with
+    | some (r, w) => d0.mkVar w r
+    | none => d0.mkLit Rwv.Hyle.BV.nil) with ⟨d₁, tagVar⟩
+  have hmkTV : Mk d0 (d₁, tagVar)
+      (match plan.tagReg with
+       | some (r, w) => (.var w r : NF)
+       | none => (.lit Rwv.Hyle.BV.nil : NF)) := by
+    cases hreg : plan.tagReg with
+    | none =>
+        rw [hreg] at htv
+        exact htv ▸ mkLit_spec W0 _
+    | some rw0 =>
+        obtain ⟨r0, w0⟩ := rw0
+        rw [hreg] at htv
+        exact htv ▸ mkVar_spec W0 w0 r0
+  rw [htv] at h
+  dsimp only at h
+  obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out hmkTV rfl
+  -- the saved-argument slices
+  rcases hfold : (tgt.argWs.zip (offsetsOf tgt.argWs)).foldr
+      (fun (q : Nat × Nat) (acc : Dag × List Nat) =>
+        let (d', r) := sliceNFD acc.1 q.2 q.1 tagVar
+        (d', r :: acc.2)) (d₁, ([] : List Nat)) with ⟨d₂, argIdxs⟩
+  rw [hfold] at h
+  obtain ⟨W₂, E₂, L₂, R₂⟩ := altSlices_spec _ d₁ W₁ L₁
+  rw [hfold] at W₂ E₂ L₂ R₂
+  dsimp only at W₂ E₂ L₂ R₂
+  -- the input pieces
+  obtain ⟨W₃, E₃, L₃, R₃⟩ := mkVarsD_spec plan.inPorts d₂ W₂
+  rcases hmv : mkVarsD d₂ plan.inPorts with ⟨d₃, inPieces⟩
+  rw [hmv] at h W₃ E₃ L₃ R₃
+  dsimp only at h W₃ E₃ L₃ R₃
+  rcases hcat : catNFD d₃ inPieces with ⟨d₄, inIdx⟩
+  rw [hcat] at h
+  obtain ⟨W₄, E₄, L₄, R₄⟩ := mk_out (catNFD_spec W₃ L₃) hcat
+  -- the initial cell store
+  obtain ⟨W₅, E₅, S₅⟩ := cells0D_spec plan.cells d₄ W₄
+  rcases hcells : cells0D d₄ plan.cells with ⟨d₅, cellsD⟩
+  rw [hcells] at h W₅ E₅ S₅
+  dsimp only at h W₅ E₅ S₅
+  -- the step compilation
+  rw [bind_ok_iff] at h
+  obtain ⟨drec, hgo, h⟩ := h
+  obtain ⟨d₆, recI⟩ := drec
+  dsimp only at h
+  have hE₁₅ : d₁.Ext d₅ := ((E₂.trans E₃).trans E₄).trans E₅
+  have hargIdx₅ : ∀ i ∈ argIdxs ++ [inIdx], i < d₅.size := by
+    intro i hi
+    rcases List.mem_append.mp hi with hi | hi
+    · exact Nat.lt_of_lt_of_le (L₂ i hi) ((E₃.trans E₄).trans E₅).size_le
+    · rcases List.mem_cons.mp hi with rfl | hi
+      · exact Nat.lt_of_lt_of_le L₄ E₅.size_le
+      · cases hi
+  have hreads₅ : (argIdxs ++ [inIdx]).map d₅.read
+      = ((tgt.argWs.zip (offsetsOf tgt.argWs)).map
+          fun q => sliceNF q.2 q.1 (match plan.tagReg with
+            | some (r, w) => (.var w r : NF)
+            | none => (.lit Rwv.Hyle.BV.nil : NF)))
+        ++ [catNF (plan.inPorts.map fun (x, w) => ((.var w x : NF), w))] := by
+    rw [List.map_append]
+    congr 1
+    · rw [show argIdxs.map d₅.read = argIdxs.map d₂.read from
+          List.map_congr_left fun i hi =>
+            read_ext ((E₃.trans E₄).trans E₅) i (L₂ i hi), R₂, R₁]
+    · rw [List.map_cons, List.map_nil, read_ext E₅ inIdx L₄, R₄, R₃]
+  obtain ⟨hgWF, hgExt, hgLt, hgTree⟩ := (goD_sim C fuel).1
+    _ cellsD blk.cmds blk.term d₅ d₆ recI _ (cells0 plan)
+    W₅
+    (by
+      have hg := gsim_zipFoldl (d := d₅) blk.params
+        ((argIdxs ++ [inIdx]).zip (tgt.argTys ++ [inTy])) ∅ ∅ (gsim_empty d₅)
+        (fun p hp => hargIdx₅ p.1 (List.of_mem_zip hp).1)
+      rw [zip_reads_gen (Rwv.Hyle.BridgeDag.Dag.Ext.refl d₅) _ _ hargIdx₅,
+          hreads₅] at hg
+      exact hg)
+    S₅
+    hgo
+  -- the comparison slices
+  rw [bind_ok_iff] at h
+  obtain ⟨dop, houts, h⟩ := h
+  obtain ⟨d₇, outPairs⟩ := dop
+  dsimp only at h
+  rw [bind_ok_iff] at h
+  obtain ⟨drp, hregs, h⟩ := h
+  obtain ⟨d₈, regPairs⟩ := drp
+  dsimp only at h
+  obtain ⟨W₇, E₇, hlen₇, hpt₇⟩ := pairSlicesD_spec _ _ hgWF hgLt _ _ houts
+  obtain ⟨W₈, E₈, hlen₈, hpt₈⟩ := pairSlicesD_spec _ _ W₇
+    (Nat.lt_of_lt_of_le hgLt E₇.size_le) _ _ hregs
+  -- the substitution sweep and the three renormalizations
+  rw [bind_ok_iff] at h
+  obtain ⟨dsm, hsub, h⟩ := h
+  obtain ⟨d₉, msub⟩ := dsm
+  dsimp only at h
+  obtain ⟨W₉, E₉, hszS, hinvS⟩ := substAllD_spec W₈ hsub
+  rw [bind_ok_iff] at h
+  obtain ⟨rn₁, hr₁, h⟩ := h
+  obtain ⟨e₁, m₁⟩ := rn₁
+  dsimp only at h
+  rw [bind_ok_iff] at h
+  obtain ⟨rn₂, hr₂, h⟩ := h
+  obtain ⟨e₂, m₂⟩ := rn₂
+  dsimp only at h
+  rw [bind_ok_iff] at h
+  obtain ⟨rn₃, hr₃, h⟩ := h
+  obtain ⟨e₃, m₃⟩ := rn₃
+  dsimp only at h
+  obtain ⟨WR₁, ER₁, hsz₁, hinv₁⟩ := Rwv.Hyle.BridgeDag.renorm_spec W₉ hr₁
+  obtain ⟨WR₂, ER₂, hsz₂, hinv₂⟩ := Rwv.Hyle.BridgeDag.renorm_spec WR₁ hr₂
+  obtain ⟨WR₃, ER₃, hsz₃, hinv₃⟩ := Rwv.Hyle.BridgeDag.renorm_spec WR₂ hr₃
+  split at h
+  rotate_left
+  · exact error_ne_ok h
+  rename_i hall
+  have hchain : ∀ i, i < d₉.size →
+      e₃.read (mIdx m₃ (mIdx m₂ (mIdx m₁ i)))
+        = Rwv.Hyle.Bridge.cfoldW3 (d₉.read i) := by
+    intro i hi
+    obtain ⟨h1lt, h1eq⟩ := hinv₁ i hi
+    obtain ⟨h2lt, h2eq⟩ := hinv₂ (mIdx m₁ i) h1lt
+    obtain ⟨h3lt, h3eq⟩ := hinv₃ (mIdx m₂ (mIdx m₁ i)) h2lt
+    rw [h3eq, h2eq, h1eq]
+    rfl
+  have hd0₈ : d0.Ext d₈ :=
+    ((((E₁.trans hE₁₅).trans hgExt).trans E₇).trans E₈)
+  have hcmp : ∀ p ∈ outPairs ++ regPairs, p.1 < d₈.size → p.2 < d0.size →
+      Rwv.Hyle.Bridge.cfoldW3 (d₈.read p.1)
+        = Rwv.Hyle.Bridge.cfoldW3
+            (substNF (tagSubst plan C.lo tgt.tag) (d0.read p.2)) := by
+    intro p hp hp1 hp2
+    have hb := List.all_eq_true.mp hall p hp
+    have hidx : mIdx m₃ (mIdx m₂ (mIdx m₁ p.1))
+        = mIdx m₃ (mIdx m₂ (mIdx m₁ (mIdx msub p.2))) := beq_iff_eq.mp hb
+    obtain ⟨hmlt, hmrd⟩ := hinvS p.2 (Nat.lt_of_lt_of_le hp2 hd0₈.size_le)
+    have hread₁ := hchain p.1 (Nat.lt_of_lt_of_le hp1 E₉.size_le)
+    have hread₂ := hchain (mIdx msub p.2) hmlt
+    rw [← read_ext E₉ p.1 hp1, ← hread₁, hidx, hread₂, hmrd,
+        read_ext hd0₈ p.2 hp2]
+  -- assemble the tree checker
+  rw [hgTree, except_bind_ok]
+  have hOuts : ∀ x ∈ (dev.outputs.zip
+        ((offsetsOf (dev.outputs.map (·.2))).map (· + C.lo.rW + C.lo.cellsW))).zip
+        (outsL.map (fun p => (p.1, d0.read p.2))),
+      checkOut C (tagSubst plan C.lo tgt.tag) (d₆.read recI) tgt.tag x = .ok () := by
+    intro x hx
+    obtain ⟨k, hk, hxk⟩ := List.getElem_of_mem hx
+    have hkO : k < outsL.length := by
+      simp only [List.length_zip, List.length_map] at hk
+      omega
+    have hkA : k < (dev.outputs.zip
+        ((offsetsOf (dev.outputs.map (·.2))).map (· + C.lo.rW + C.lo.cellsW))).length := by
+      simp only [List.length_zip, List.length_map] at hk ⊢
+      omega
+    have hkP : k < ((dev.outputs.zip
+        ((offsetsOf (dev.outputs.map (·.2))).map (· + C.lo.rW + C.lo.cellsW))).zip
+        outsL).length := by
+      simp only [List.length_zip, List.length_map] at hk ⊢
+      omega
+    have hkOP : k < outPairs.length := by
+      rw [hlen₇]
+      exact hkP
+    obtain ⟨hname, hslt, hsrd, hsw⟩ := hpt₇ k hkOP hkP
+    rw [List.getElem_zip] at hname hsrd hsw
+    dsimp only at hname hsrd hsw
+    have hmem : outPairs[k] ∈ outPairs ++ regPairs :=
+      List.mem_append.mpr (Or.inl (List.getElem_mem hkOP))
+    have hp2lt : outPairs[k].2 < d0.size := by
+      rw [hsw]
+      exact Lo _ (List.getElem_mem hkO)
+    have hw3 := hcmp outPairs[k] hmem (Nat.lt_of_lt_of_le hslt E₈.size_le) hp2lt
+    rw [read_ext E₈ _ hslt, hsrd, hsw] at hw3
+    rw [← hxk, List.getElem_zip, List.getElem_map]
+    rw [checkOut]
+    dsimp only
+    rw [if_pos (beq_iff_eq.mpr hname)]
+    rw [if_pos (ceqB_of_w3 hw3)]
+    rfl
+  rw [forAllM_intro hOuts, except_bind_ok]
+  have hRegs : ∀ x ∈ (dev.registers.zip (offsetsOf (dev.registers.map (·.width)))).zip
+        (nextsL.map (fun p => (p.1, d0.read p.2))),
+      checkReg C (tagSubst plan C.lo tgt.tag) (d₆.read recI) tgt.tag x = .ok () := by
+    intro x hx
+    obtain ⟨k, hk, hxk⟩ := List.getElem_of_mem hx
+    have hkN : k < nextsL.length := by
+      simp only [List.length_zip, List.length_map] at hk
+      omega
+    have hkP : k < (((dev.registers.map fun r => (r.name, r.width)).zip
+        (offsetsOf (dev.registers.map (·.width)))).zip nextsL).length := by
+      simp only [List.length_zip, List.length_map] at hk ⊢
+      omega
+    have hkRP : k < regPairs.length := by
+      rw [hlen₈]
+      exact hkP
+    obtain ⟨hname, hslt, hsrd, hsw⟩ := hpt₈ k hkRP hkP
+    rw [List.getElem_zip] at hname hsrd hsw
+    rw [List.getElem_zip, List.getElem_map] at hname hsrd
+    dsimp only at hname hsrd hsw
+    have hmem : regPairs[k] ∈ outPairs ++ regPairs :=
+      List.mem_append.mpr (Or.inr (List.getElem_mem hkRP))
+    have hp2lt : regPairs[k].2 < d0.size := by
+      rw [hsw]
+      exact Ln _ (List.getElem_mem hkN)
+    have hw3 := hcmp regPairs[k] hmem hslt hp2lt
+    rw [hsrd, hsw, read_ext E₇ recI hgLt] at hw3
+    rw [← hxk, List.getElem_zip, List.getElem_map]
+    rw [checkReg]
+    dsimp only
+    rw [List.getElem_zip]
+    dsimp only
+    rw [if_pos (beq_iff_eq.mpr hname)]
+    rw [if_pos (ceqB_of_w3 hw3)]
+    rfl
+  exact forAllM_intro hRegs
+
+/-- The dispatcher's reduction: a passing `checkLabelD` run (however
+the DAG leg went) certifies the tree checker's verdict. -/
+theorem checkLabelD_toTree {C : Ctx} {plan : Plan} {dev : Rwv.Hyle.Device}
+    {dmap : HashMap String Rwv.Hyle.Defn} {hfuel : Nat}
+    {ss : Rwv.Hyle.Bridge.StepNF} {inTy : Ty} {fuel : Nat} {tgt : LTarget}
+    (hsym : Rwv.Hyle.Bridge.symStep dmap hfuel dev = .ok ss)
+    (h : checkLabelD C plan dev
+      (match Rwv.Hyle.BridgeDag.symStepDag dmap hfuel dev
+          Rwv.Hyle.BridgeDag.Dag.empty with
+       | .ok r => some r
+       | .error _ => none) ss inTy fuel tgt = .ok ()) :
+    checkLabel C plan dev ss inTy fuel tgt = .ok () := by
+  cases hsd : Rwv.Hyle.BridgeDag.symStepDag dmap hfuel dev
+      Rwv.Hyle.BridgeDag.Dag.empty with
+  | error e =>
+      rw [hsd] at h
+      dsimp only at h
+      rw [checkLabelD] at h
+      exact h
+  | ok r =>
+      obtain ⟨d0, outsL, nextsL⟩ := r
+      rw [hsd] at h
+      dsimp only at h
+      rw [checkLabelD] at h
+      split at h
+      · rename_i hdag
+        exact checkLabelDag_toTree hsd hsym hdag
+      · exact h
+
+end DagLegSound
+
 set_option maxHeartbeats 1600000 in
 /-- THE end-to-end theorem: a passing `validateProc` run certifies the
 §7.5.6 correspondence, at every evaluation fuel at least the
@@ -6953,7 +8553,11 @@ theorem validateProc_corresponds {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
   obtain ⟨plan, hplan, hvE⟩ := except_bind_eq_ok hvE
   obtain ⟨ss, hsym, hvE⟩ := except_bind_eq_ok hvE
   obtain ⟨u6, hlblF, hinitCk⟩ := except_bind_eq_ok hvE
-  have hlabels := forAllM_ok hlblF
+  -- Each label passed `checkLabelD`; either route (the DAG leg or the
+  -- tree fallback) certifies the tree checker's verdict, so
+  -- `checkLabel_sound` applies unchanged.
+  have hlabels := fun tgt ht =>
+    checkLabelD_toTree hsym (forAllM_ok hlblF tgt ht)
   have hImpl := Rwv.Hyle.Bridge.mkFEnv_implements (nodupB_nodup hndH) hF
   refine Rwv.stepObligations_corresponds
     (R := stateRel Δ lo plan (HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b))))
@@ -7022,6 +8626,8 @@ theorem validateProc_corresponds {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
 #print axioms cstep_sound
 #print axioms goCmds_varsWF
 #print axioms checkLabel_sound
+#print axioms checkLabelDag_toTree
+#print axioms checkLabelD_toTree
 #print axioms validateProc_corresponds
 
 end Rwv.Eidos.Cstep
