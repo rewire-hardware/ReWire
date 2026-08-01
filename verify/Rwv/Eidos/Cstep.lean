@@ -136,6 +136,7 @@ import Rwv.Eidos.Cexp
 import Rwv.Eidos.Machine
 import Rwv.Eidos.FuelMono
 import Rwv.Hyle.Bridge
+import Rwv.Hyle.BridgeDag
 import Rwv.Schema
 
 namespace Rwv.Eidos.Cstep
@@ -752,6 +753,377 @@ def checkLabel (C : Ctx) (plan : Plan) (dev : Rwv.Hyle.Device)
         forAllM (checkReg C θ rec tgt.tag) ((dev.registers.zip regOffs).zip ss.nexts)
       else throw "checkLabel: resumed-input parameter is not at the process input type"
   else throw "checkLabel: block arity does not match the layout target"
+
+/-! # The DAG comparison leg (Phase 4d)
+
+`checkLabel`'s comparisons run on tree normal forms; for the pairs
+whose trees blow up (gfmult, MiniISA), a hash-consed leg mirrors the
+per-label compilation into `Rwv.Hyle.BridgeDag`'s shared node store —
+node for node, the way `symExpDag` mirrors `symExp` — and compares by
+STORE INDEX after three `renorm` sweeps (the store-level `cfoldW3`,
+mirroring `ceqB`'s width-aware leg; raw-index equality is subsumed).
+The intended soundness is a REDUCTION to the tree checker — a passing
+DAG leg certifies a passing `checkLabel` run, so `checkLabel_sound`
+and `validateProc_corresponds` would apply unchanged — but that
+reduction is NOT yet proved: `checkLabelDag` is a measurement-grade
+checker (exercised by scratch/dag-measure.lean), it is NOT wired into
+`validateProcE`, and no committed theorem mentions it. The expression
+tier's groundwork (the `GSim`/`JSimC` simulation relations, the
+constructor specs, and the complete row-table simulations) is proved
+in Rwv.Eidos.Cexp. The mirror covers the corpus fragment (joins and
+the higher-order Vec rows included); an unmirrored construct fails
+the DAG leg. The mirror may fail MORE often than the tree compiler
+(extra width-coherence checks keep the store invariant), never
+differently. -/
+
+section DagLeg
+
+open Rwv.Hyle.BridgeDag (Dag DNode mIdx)
+open Rwv.Eidos.Cexp (clitInt catList resizeNF vecBoolLen isBoolT vecLenElem finBoundT
+  proxyNatT domTyT finLitE mkGamma bindFieldsΓ arithRow cmpRow redRow cprim cprimF
+  rowFinite rowNatVal rowVecIndexProxy cexpJ cAltJ cchainJ cexpFull CJoin CJEnv
+  DGamma CJoinD CJEnvD teqAllD catListD catNFD sliceNFD resizeNFD clitIntD cprimD
+  cprimFD bindFieldsΓD mkGammaD cAltJD cchainJD cargsD cpendVecD cpendGenD celemsD
+  cexpJD cexpFullD)
+
+/-- An index-based symbolic cell store entry. -/
+structure CellNFD where
+  name  : String
+  ty    : Ty
+  width : Nat
+  nf    : Nat
+
+/-- Push a run of variables (name/width pairs), keeping the widths. -/
+def mkVarsD (d : Dag) : List (String × Nat) → Dag × List (Nat × Nat)
+  | [] => (d, [])
+  | (x, w) :: rest =>
+      let (d₁, i) := d.mkVar w x
+      let (d₂, is) := mkVarsD d₁ rest
+      (d₂, (i, w) :: is)
+
+/-- The initial symbolic cell store on indices (`cells0`). -/
+def cells0D (d : Dag) : List CellPlan → Dag × List CellNFD
+  | [] => (d, [])
+  | c :: cs =>
+      let (d₁, pieces) := mkVarsD d c.regs
+      let (d₂, nf) := catNFD d₁ pieces
+      let (d₃, rest) := cells0D d₂ cs
+      (d₃, { name := c.name, ty := c.ty, width := c.width, nf := nf } :: rest)
+
+/-- `pauseRec` on indices. -/
+def pauseRecD (C : Ctx) (d : Dag) (onf : Nat) (tgt : LTarget) (pas : List Nat)
+    (cells : List CellNFD) : Dag × Nat :=
+  let lo := C.lo
+  let padW := lo.recW - lo.pTagW - lo.outW - lo.rW - lo.cellsW
+  let rPadW := lo.rPayW - tgt.argWs.sum
+  let (d₁, l₁) := d.mkLit ⟨lo.pTagW, 1⟩
+  let (d₂, l₂) := d₁.mkLit ⟨padW, 0⟩
+  let (d₃, l₃) := d₂.mkLit ⟨lo.rTagW, BitVec.ofNat _ tgt.tag⟩
+  let (d₄, l₄) := d₃.mkLit ⟨rPadW, 0⟩
+  catNFD d₄ ([(l₁, lo.pTagW), (l₂, padW), (onf, lo.outW), (l₃, lo.rTagW), (l₄, rPadW)]
+        ++ pas.zip tgt.argWs
+        ++ cells.map fun c => (c.nf, c.width))
+
+/-- `haltRec` on indices. -/
+def haltRecD (C : Ctx) (d : Dag) (anf : Nat) (atag aw : Nat) (cells : List CellNFD) :
+    Dag × Nat :=
+  let lo := C.lo
+  let padW := lo.recW - lo.pTagW - lo.aW - lo.cellsW
+  let aPadW := lo.aPayW - aw
+  let (d₁, l₁) := d.mkLit ⟨lo.pTagW, 0⟩
+  let (d₂, l₂) := d₁.mkLit ⟨padW, 0⟩
+  let (d₃, l₃) := d₂.mkLit ⟨lo.aTagW, BitVec.ofNat _ atag⟩
+  let (d₄, l₄) := d₃.mkLit ⟨aPadW, 0⟩
+  catNFD d₄ ([(l₁, lo.pTagW), (l₂, padW), (l₃, lo.aTagW), (l₄, aPadW), (anf, aw)]
+        ++ cells.map fun c => (c.nf, c.width))
+
+mutual
+
+/-- `goCmds`, mirrored on the store. -/
+def goCmdsD (C : Ctx) : Nat → DGamma → List CellNFD → List Cmd → Term → Dag →
+    Except String (Dag × Nat)
+  | 0, _, _, _, _, _ => .error "cstep: out of fuel"
+  | fuel + 1, Γ, cells, [], term, d => goTermD C fuel Γ cells term d
+  | fuel + 1, Γ, cells, cmd :: rest, term, d =>
+      match cmd with
+      | .bind x e => do
+          let (d₁, r, t) ← cexpFullD C.Δ C.edm C.cexpFuel Γ e d
+          goCmdsD C fuel (Γ.insert x.uniq (r, t)) cells rest term d₁
+      | .get x c =>
+          match cells.find? (fun cc => cc.name == c) with
+          | some cc => goCmdsD C fuel (Γ.insert x.uniq (cc.nf, cc.ty)) cells rest term d
+          | none => .error s!"cstep: get from unknown cell {c}"
+      | .put c e => do
+          let (d₁, r, ty) ← cexpFullD C.Δ C.edm C.cexpFuel Γ e d
+          match cells.find? (fun cc => cc.name == c) with
+          | some cc =>
+              if teq ty cc.ty then
+                goCmdsD C fuel Γ
+                  (cells.map fun c' => if c'.name == c then { c' with nf := r } else c')
+                  rest term d₁
+              else .error s!"cstep: put to cell {c} at the wrong type"
+          | none => .error s!"cstep: put to unknown cell {c}"
+
+/-- `goTerm`, mirrored on the store. -/
+def goTermD (C : Ctx) : Nat → DGamma → List CellNFD → Term → Dag →
+    Except String (Dag × Nat)
+  | 0, _, _, _, _ => .error "cstep: out of fuel"
+  | fuel + 1, Γ, cells, term, d =>
+      match term with
+      | .pause out l args => do
+          let (d₁, onf, oty) ← cexpFullD C.Δ C.edm C.cexpFuel Γ out d
+          if teq oty C.outTy then
+            match C.lo.targets.find? (fun t => t.uniq == l.uniq) with
+            | none => .error s!"cstep: pause to an unknown target {l.occ}"
+            | some tgt => do
+                let (d₂, pas) ← goArgsD C fuel Γ args d₁
+                if teqAllD pas tgt.argTys then
+                  .ok (pauseRecD C d₂ onf tgt (pas.map (·.1)) cells)
+                else .error "cstep: pause argument type mismatch"
+          else .error "cstep: pause output type mismatch"
+      | .goto l args => do
+          match C.blocks.get? l.uniq with
+          | none => .error s!"cstep: goto to an unknown block {l.occ}"
+          | some blk => do
+              let (d₁, pas) ← goArgsD C fuel Γ args d
+              if teqAllD pas (blk.params.map (·.sig.ty)) then
+                goCmdsD C fuel
+                  ((blk.params.zip pas).foldl
+                    (fun m (x, nt) => m.insert x.uniq nt) (∅ : DGamma))
+                  cells blk.cmds blk.term d₁
+              else .error s!"cstep: goto {l.occ} argument mismatch"
+      | .halt e => do
+          let (d₁, anf, aty) ← cexpFullD C.Δ C.edm C.cexpFuel Γ e d
+          let (atag, aw) ← match C.lo.halts.find? (fun h => h.1 == aty) with
+            | some (_, tag, w) => pure (tag, w)
+            | none => .error "cstep: halt at an unknown answer type"
+          .ok (haltRecD C d₁ anf atag aw cells)
+      | .cases scrut alts => do
+          let (d₁, dn, dty) ← cexpFullD C.Δ C.edm C.cexpFuel Γ scrut d
+          let szT ← C.Δ.sizeOf (C.cexpFuel + 1) [] dty
+          match alts with
+          | .mk .default bs dt :: rest =>
+              if bs.isEmpty then do
+                let (d₂, els) ← goTermD C fuel Γ cells dt d₁
+                goAltsD C fuel Γ cells dty szT dn rest (some els) d₂
+              else .error "cstep: default alternative with binders"
+          | rest => goAltsD C fuel Γ cells dty szT dn rest none d₁
+
+/-- The terminator arguments, threaded (`args.mapM (cexpFull …)`). -/
+def goArgsD (C : Ctx) : Nat → DGamma → List Exp → Dag →
+    Except String (Dag × List (Nat × Ty))
+  | 0, _, _, _ => .error "cstep: out of fuel"
+  | _ + 1, _, [], d => .ok (d, [])
+  | fuel + 1, Γ, e :: es, d => do
+      let (d₁, r, t) ← cexpFullD C.Δ C.edm C.cexpFuel Γ e d
+      let (d₂, rs) ← goArgsD C fuel Γ es d₁
+      .ok (d₂, (r, t) :: rs)
+
+/-- `goAlts`, mirrored on the store. -/
+def goAltsD (C : Ctx) : Nat → DGamma → List CellNFD → Ty → Nat → Nat →
+    List TAlt → Option Nat → Dag → Except String (Dag × Nat)
+  | 0, _, _, _, _, _, _, _, _ => .error "cstep: out of fuel"
+  | _ + 1, _, _, _, _, _, [], some els, d => .ok (d, els)
+  | _ + 1, _, _, _, _, _, [], none, _ => .error "cstep: empty terminator case"
+  | fuel + 1, Γ, cells, dty, szT, dn, [alt], none, d =>
+      goAlt1D C fuel Γ cells dty szT dn alt none d
+  | fuel + 1, Γ, cells, dty, szT, dn, alt :: rest, macc, d => do
+      let (d₁, acc) ← goAltsD C fuel Γ cells dty szT dn rest macc d
+      goAlt1D C fuel Γ cells dty szT dn alt (some acc) d₁
+
+/-- `goAlt1`, mirrored on the store. -/
+def goAlt1D (C : Ctx) : Nat → DGamma → List CellNFD → Ty → Nat → Nat →
+    TAlt → Option Nat → Dag → Except String (Dag × Nat)
+  | 0, _, _, _, _, _, _, _, _ => .error "cstep: out of fuel"
+  | _ + 1, _, _, _, _, _, .mk .default _ _, _, _ =>
+      .error "cstep: default alternative not first"
+  | fuel + 1, Γ, cells, dty, szT, dn, .mk (.dataAlt cn) xs t, macc, d => do
+      if abstractHead dty then
+        .error "cstep: constructor pattern at an abstract bit-reading head" else
+      if ctorOfB C.Δ dty cn then do
+        let (tag, w) ← C.Δ.ctorTag dty cn
+        match C.Δ.ctorSig.get? cn with
+        | none => .error s!"cstep: unknown constructor {cn}"
+        | some sig => do
+            let sub ← DEnv.matchTy (Ty.flattenArrow sig.ty).2 dty
+            let instTys := (Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)
+            if xs.length = instTys.length then do
+              let szXs ← instTys.mapM (C.Δ.sizeOf (C.cexpFuel + 1) [])
+              if w + szXs.sum ≤ szT then do
+                let offs := offsetsOf szXs
+                let (d₁, slices) := (szXs.zip offs).foldr
+                  (fun (sz, off) (dacc, acc) =>
+                    let (d', r) := sliceNFD dacc off sz dn
+                    (d', r :: acc))
+                  (d, ([] : List Nat))
+                let Γ' := (xs.zip (slices.zip instTys)).foldl
+                  (fun m (x, nt) => m.insert x.uniq nt) Γ
+                let (d₂, bnf) ← goTermD C fuel Γ' cells t d₁
+                match macc, w with
+                | some acc, _ + 1 =>
+                    let (d₃, sl) := sliceNFD d₂ (szT - w) w dn
+                    let (d₄, tl) := d₃.mkLit ⟨w, BitVec.ofNat w tag⟩
+                    let (d₅, cnd) := d₄.rawPrim2 .eq sl tl
+                    if d₅.widthOf bnf = d₅.widthOf acc then
+                      .ok (d₅.rawIte cnd bnf acc)
+                    else .error "cstepD: alternative arm width mismatch"
+                | _, _ => .ok (d₂, bnf)
+              else .error s!"cstep: constructor {cn} wider than the discriminant"
+            else .error s!"cstep: constructor {cn} binder arity mismatch"
+      else .error s!"cstep: constructor {cn} does not belong to the discriminant type"
+  | fuel + 1, Γ, cells, _dty, szT, dn, .mk (.litAlt i) bs t, macc, d =>
+      if bs.isEmpty then do
+        let (d₁, bnf) ← goTermD C fuel Γ cells t d
+        match macc with
+        | some acc =>
+            let (d₂, tl) := d₁.mkLit ⟨szT, BitVec.ofInt szT i⟩
+            let (d₃, cnd) := d₂.rawPrim2 .eq dn tl
+            if d₃.widthOf bnf = d₃.widthOf acc then
+              .ok (d₃.rawIte cnd bnf acc)
+            else .error "cstepD: alternative arm width mismatch"
+        | none => .ok (d₁, bnf)
+      else .error "cstep: literal alternative with binders"
+
+end
+
+/-! ## The tag specialization on the store: a full sweep computing
+`substNF (tagSubst plan lo tag)` images for every index. -/
+
+/-- The tag-substitution image for one variable node (pushes the
+replacement's three nodes when the variable is the resumption-tag
+register). -/
+def tagSubstD (plan : Plan) (lo : Layout) (tag : Nat) (d : Dag) (x : String) :
+    Option (Dag × Nat) :=
+  match plan.tagReg with
+  | some (r, wr) =>
+      if 0 < lo.rTagW ∧ x = r then
+        let (d₁, i₁) := d.mkLit ⟨lo.rTagW, BitVec.ofNat _ tag⟩
+        let (d₂, i₂) :=
+          if lo.rPayW = 0 then d₁.mkLit Rwv.Hyle.BV.nil
+          else
+            let (da, ia) := d₁.mkVar wr r
+            da.rawSlice 0 lo.rPayW ia
+        some (d₂.rawCat i₁ i₂)
+      else none
+  | none => none
+
+/-- Substitute one node, children through the image map (mirrors
+`BridgeDag.renormNode`'s sweep discipline with raw constructors). -/
+def substNodeD (plan : Plan) (lo : Layout) (tag : Nat) (d : Dag) (m : Array Nat) :
+    DNode → Except String (Dag × Nat)
+  | .var w x =>
+      match tagSubstD plan lo tag d x with
+      | some res => .ok res
+      | none => .ok (d.mkVar w x)
+  | .lit v => .ok (d.mkLit v)
+  | .prim1 _ op a =>
+      if Rwv.Hyle.Bridge.opArity op = 1 then .ok (d.rawPrim1 op (mIdx m a))
+      else .error "substD: prim1 arity"
+  | .prim2 _ op a b =>
+      if Rwv.Hyle.Bridge.opArity op = 2 then .ok (d.rawPrim2 op (mIdx m a) (mIdx m b))
+      else .error "substD: prim2 arity"
+  | .cat _ a b => .ok (d.rawCat (mIdx m a) (mIdx m b))
+  | .slice i w e => .ok (d.rawSlice i w (mIdx m e))
+  | .ite _ c t e =>
+      if d.widthOf (mIdx m t) = d.widthOf (mIdx m e) then
+        .ok (d.rawIte (mIdx m c) (mIdx m t) (mIdx m e))
+      else .error "substD: ite arm widths"
+
+def substGoD (plan : Plan) (lo : Layout) (tag : Nat) :
+    Nat → Dag → Array Nat → Except String (Dag × Array Nat)
+  | 0, d, m => .ok (d, m)
+  | k + 1, d, m =>
+      match d.nodes[m.size]? with
+      | none => .error "substD: index out of range"
+      | some n => do
+          let (d₁, r) ← substNodeD plan lo tag d m n
+          substGoD plan lo tag k d₁ (m.push r)
+
+/-- One full tag-substitution sweep of the store. -/
+def substAllD (plan : Plan) (lo : Layout) (tag : Nat) (d : Dag) :
+    Except String (Dag × Array Nat) :=
+  substGoD plan lo tag d.size d #[]
+
+/-! ## The per-label DAG check -/
+
+/-- Push the comparison slices of the compiled record, checking the
+name pairing (mirrors `checkOut`/`checkReg`'s order-drift guard);
+returns (slice index, device-side index) pairs. -/
+def pairSlicesD (d : Dag) (rec : Nat) :
+    List (((String × Nat) × Nat) × (String × Nat)) →
+    Except String (Dag × List (Nat × Nat))
+  | [] => .ok (d, [])
+  | pr :: rest =>
+      if pr.1.1.1 == pr.2.1 then do
+        let (d₁, s) := sliceNFD d pr.1.2 pr.1.1.2 rec
+        let (d₂, ps) ← pairSlicesD d₁ rec rest
+        .ok (d₂, (s, pr.2.2) :: ps)
+      else .error s!"checkLabelDag: order drift ({pr.1.1.1} vs {pr.2.1})"
+
+/-- The per-label obligation on the store: compile the machine step
+from pause target `tgt` into the shared store, specialize the device
+step's indices to `tgt`'s tag by the substitution sweep, and compare
+slice for slice by index after three `renorm` sweeps (the store-level
+`cfoldW3`). Measurement-grade: the reduction "a passing run certifies
+a passing `checkLabel` run" is the intended (not yet proved)
+soundness statement, so this checker is not consulted by
+`validateProcE`. -/
+def checkLabelDag (C : Ctx) (plan : Plan) (dev : Rwv.Hyle.Device)
+    (d0 : Dag) (outsL nextsL : List (String × Nat)) (inTy : Ty) (fuel : Nat)
+    (tgt : LTarget) : Except String Unit := do
+  let blk ← match C.blocks.get? tgt.uniq with
+    | some blk => pure blk
+    | none => .error s!"checkLabelDag: no block for target {tgt.uniq}"
+  if blk.params.length == tgt.argWs.length + 1 then
+    match blk.params.getLast? with
+    | none => .error "checkLabelDag: parameterless pause target"
+    | some inP =>
+      if teq inP.sig.ty inTy then do
+        let (d₁, tagVar) := match plan.tagReg with
+          | some (r, w) => d0.mkVar w r
+          | none => d0.mkLit Rwv.Hyle.BV.nil
+        let (d₂, argNFs) := (tgt.argWs.zip (offsetsOf tgt.argWs)).foldr
+          (fun (w, off) (dacc, acc) =>
+            let (d', r) := sliceNFD dacc off w tagVar
+            (d', r :: acc)) (d₁, ([] : List Nat))
+        let (d₃, inPieces) := mkVarsD d₂ plan.inPorts
+        let (d₄, inNF) := catNFD d₃ inPieces
+        let Γ₀ := (blk.params.zip ((argNFs ++ [inNF]).zip (tgt.argTys ++ [inTy]))).foldl
+          (fun m (x, nt) => m.insert x.uniq nt) (∅ : DGamma)
+        let (d₅, cells) := cells0D d₄ plan.cells
+        let (d₆, rec) ← goCmdsD C fuel Γ₀ cells blk.cmds blk.term d₅
+        let outOffs := (offsetsOf (dev.outputs.map (·.2))).map (· + C.lo.rW + C.lo.cellsW)
+        let (d₇, outPairs) ← pairSlicesD d₆ rec ((dev.outputs.zip outOffs).zip outsL)
+        let regOffs := offsetsOf (dev.registers.map (·.width))
+        let (d₈, regPairs) ← pairSlicesD d₇ rec
+          (((dev.registers.map fun r => (r.name, r.width)).zip regOffs).zip nextsL)
+        let (d₉, msub) ← substAllD plan C.lo tgt.tag d₈
+        let (e₁, m₁) ← Rwv.Hyle.BridgeDag.renorm d₉
+        let (e₂, m₂) ← Rwv.Hyle.BridgeDag.renorm e₁
+        let (_, m₃) ← Rwv.Hyle.BridgeDag.renorm e₂
+        if (outPairs ++ regPairs).all (fun p =>
+              mIdx m₃ (mIdx m₂ (mIdx m₁ p.1))
+                == mIdx m₃ (mIdx m₂ (mIdx m₁ (mIdx msub p.2)))) then
+          pure ()
+        else .error s!"checkLabelDag: label tag {tgt.tag}: comparison failed"
+      else .error "checkLabelDag: resumed-input parameter is not at the process input type"
+  else .error "checkLabelDag: block arity does not match the layout target"
+
+/-- The per-label dispatcher: the DAG leg first, the tree leg on any
+DAG-leg failure. `dss` is the device step evaluated into the store
+(`symStepDag` from the empty store), when it succeeded. -/
+def checkLabelD (C : Ctx) (plan : Plan) (dev : Rwv.Hyle.Device)
+    (dss : Option (Dag × List (String × Nat) × List (String × Nat)))
+    (ss : Rwv.Hyle.Bridge.StepNF) (inTy : Ty) (fuel : Nat) (tgt : LTarget) :
+    Except String Unit :=
+  match dss with
+  | some (d0, outsL, nextsL) =>
+      match checkLabelDag C plan dev d0 outsL nextsL inTy fuel tgt with
+      | .ok () => .ok ()
+      | .error _ => checkLabel C plan dev ss inTy fuel tgt
+  | none => checkLabel C plan dev ss inTy fuel tgt
+
+end DagLeg
 
 /-! ## The initial-state check -/
 
