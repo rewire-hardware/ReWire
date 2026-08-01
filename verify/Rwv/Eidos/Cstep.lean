@@ -55,7 +55,11 @@ the device:
     against the device's declared register initials (plus the
     `stateRel` canonicality checks, decided by `vtyB`).
   * `validateProcE` / `validateProc` — the composition over all pause
-    targets plus the initial-state check.
+    targets plus the initial-state check, gated by the up-front
+    environment checks (`denvOk`, the tuple discipline, distinct Hyle
+    definition names, distinct block-label uniques, and `repOkB` on
+    the output type — the representation-totality fact the final
+    theorem's output-encoding leg consumes).
 
 Soundness layers proved here (all sorry-free; anything not proved is
 not stated):
@@ -96,25 +100,37 @@ not stated):
     cells' representations, and a halt is unconstrained (`SimP` never
     inspects the right machine on a left halt).
 
-Not yet delivered (Phase 4c remainder; nothing is stated with
-`sorry` — the statements below are simply absent):
+The Phase 4c composition, completing the file (everything below is
+proved; nothing anywhere in this file is `sorry`d):
 
-  * `goCmds`/`goTerm` width discipline (`VarsWF (WP σ)` of the
-    compiled record, the mirror of `cexpJ_varsWF` at term level) —
-    needed to consume `ceqB`'s width-aware (`cfoldW3`) leg, which is
-    the leg most labels pass on.
+  * `goCmds_varsWF` — the step compiler's width discipline (`VarsWF
+    (WP σ)` of the compiled record, the term-level mirror of
+    `cexpJ_varsWF`), which is what lets `ceqB`'s width-aware
+    (`cfoldW3`) comparison leg conclude denotation equality.
   * `checkLabel_sound` — the per-label composition: `stateRel s t` +
-    `HasTy` input ⟹ the `SimP.agree` body, by instantiating
-    `cstep_sound` at the Γ₀/cells0 environments (built from the
-    `encodeList` characterization and the `sigmaOf` union-bias facts,
-    both proved here), comparing slices via `ceqB` + `substNF`/
-    `tagSubst_eval` against `Bridge.symStep_sound`'s device step, and
-    re-establishing `stateRel` from `StepValC` + `encodeList_intro`.
-  * `validateProc_corresponds` — `validateProc = true →
-    Rwv.Eidos.Corresponds` via `Rwv.stepObligations_corresponds`
-    (`forAllM` inversion over the targets, `hasTy_vty` under the
-    checked `tupleCtorsOk`, `mkFEnv_implements` under the checked
-    definition-name distinctness, and `checkInit_sound` for `hinit`).
+    `HasTy` input ⟹ the `SimP.agree` body. Γ₀/cells0 relate to the
+    machine's resumed environment and cell store by the `encodeList`
+    characterization and the `sigmaOf` union-bias facts (`stateRel`'s
+    store-domain bound makes input-port names miss the store, so the
+    valuation reads them from the stimulus); `cstep_sound` pins the
+    compiled record to the machine step and `symStep_sound` the
+    concrete device step to the symbolic one; the passing `ceqB`
+    comparisons evaluate through `substNF`/`tagSubst_eval` (sound on
+    `stateRel` stores by `encTag_top` + `tagFix_of_store`); the output
+    ports assemble to `portSplit` at the statement's own fuel by
+    `repOkB`/`vty_rep_total` + `Val.rep_mono`; and the successor
+    `stateRel` is rebuilt from `StepValC` + `encodeList_intro`, with
+    the register-pointwise agreement by the `offsetsOf_append`
+    zip-walk (`run_shift`/`cells_walk`) across `PlanInv.regsplit`.
+  * `validateProc_corresponds` — THE end-to-end statement:
+    `validateProc Δ edm p H fuel = true → fuel ≤ ef →
+    Rwv.Eidos.Corresponds Δ edm ef gf p H` (every goto fuel), by
+    constructing the schema's `SimP` from `checkLabel_sound` (the
+    input-precomposed device never returns a halt, so the right
+    machine never stops first), `hasTy_vty` under the checked
+    `tupleCtorsOk`, `mkFEnv_implements` under the checked
+    definition-name distinctness, `checkInit_sound` for the initial
+    state, and `Rwv.stepObligations_corresponds` to conclude.
 -/
 import Rwv.Eidos.Cexp
 import Rwv.Eidos.Machine
@@ -387,14 +403,19 @@ def encodeM (Δ : DEnv) (fuel : Nat) (lo : Layout) (plan : Plan) (s : MState) :
 (Rwv.StepObligations): the machine state is at a pause target whose
 block exists with the right arity, its saved arguments and cells are
 canonical (`VTy`) at their declared types, and the register store
-agrees pointwise with the state's encoding. -/
+agrees pointwise with the state's encoding — and holds nothing beyond
+the encoding's names (the domain bound `sigmaOf_input` needs: on an
+`R`-related store, an input-port name misses, so the step valuation
+reads it from the stimulus). -/
 def stateRel (Δ : DEnv) (lo : Layout) (plan : Plan) (blocks : HashMap Int Block)
     (s : MState) (t : HashMap String BV) : Prop :=
   (∃ tgt ∈ lo.targets, tgt.uniq = s.label) ∧
   (∃ blk, blocks.get? s.label = some blk ∧ s.args.length + 1 = blk.params.length ∧
     ∀ pr ∈ (blk.params.dropLast).zip s.args, VTy Δ pr.2 pr.1.sig.ty) ∧
   (∀ c ∈ plan.cells, ∃ v, s.cells.get? c.name = some v ∧ VTy Δ v c.ty) ∧
-  (∃ k enc, encodeList Δ k lo plan s = .ok enc ∧ ∀ pr ∈ enc, t.get? pr.1 = some pr.2)
+  (∃ k enc, encodeList Δ k lo plan s = .ok enc ∧
+    (∀ pr ∈ enc, t.get? pr.1 = some pr.2) ∧
+    (∀ x, t.contains x = true → x ∈ enc.map (·.1)))
 
 /-! ## The decidable canonicality check -/
 
@@ -773,6 +794,38 @@ def checkInit (C : Ctx) (plan : Plan) (dev : Rwv.Hyle.Device) (p : Proc)
 
 /-! ## The whole-process validator -/
 
+/-- Representation totality, decided per type: `Val.rep` on a
+constructor value checks the static bound
+`tagW + Σ field widths ≤ whole` at run time; this check discharges it
+once per (type, constructor) at validation time, making `rep` total on
+canonical values at checked types (`vty_rep_total` below) — the fact
+the output-encoding leg of the final theorem needs (`portSplit` runs
+at the correspondence statement's own evaluation fuel). -/
+def repOkB (Δ : DEnv) : Nat → Ty → Bool
+  | 0, _ => false
+  | fuel + 1, t =>
+      match Ty.flatten t with
+      | (.con "Vec", [_, te]) => repOkB Δ fuel te
+      | (.con tc, _) =>
+          (match Δ.sizeOf (fuel + 1) [] t with
+           | .ok whole =>
+               (if Ty.isTupleCon tc then [tc] else (Δ.ctors.get? tc).getD []).all fun c =>
+                 (match Δ.ctorTag t c, Δ.ctorSig.get? c with
+                  | .ok (_, tagW), some sig =>
+                      (match DEnv.matchTy (Ty.flattenArrow sig.ty).2 t with
+                       | .ok sub =>
+                           (match ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)).mapM
+                               (Δ.sizeOf fuel []) with
+                            | .ok ws =>
+                                decide (tagW + ws.sum ≤ whole)
+                                  && ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)).all
+                                       (repOkB Δ fuel)
+                            | .error _ => false)
+                       | .error _ => false)
+                  | _, _ => false)
+           | .error _ => false)
+      | _ => true
+
 /-- The prim-basis tuple discipline: every tuple datatype is declared
 with its single eponymous constructor. -/
 def tupleCtorsOk (Δ : DEnv) : Bool :=
@@ -792,6 +845,8 @@ def validateProcE (Δ : DEnv) (edm : HashMap Int Defn) (p : Proc)
     throw "validateProc: duplicate Hyle definition names"
   unless Rwv.Eidos.Cexp.nodupIntB (p.blocks.map (·.1.uniq)) do
     throw "validateProc: duplicate block-label uniques"
+  unless repOkB Δ fuel p.outTy do
+    throw "validateProc: output type failed the representation-totality check"
   let lo ← mkLayoutL Δ fuel p
   let plan ← mkPlan Δ fuel p lo H.device
   let blocks : HashMap Int Block :=
@@ -1017,23 +1072,32 @@ theorem initStateOk_sound {Δ : DEnv} {lo : Layout} {plan : Plan}
         rw [he] at henc
         have henc' : enc = dev.registers.map fun r => (r.name, r.init) :=
           of_decide_eq_true henc
-        refine ⟨vf, enc, he, ?_⟩
-        intro pr hpr
-        rw [henc'] at hpr
-        have hdist : (dev.registers.map fun r => (r.name, r.init)).Pairwise
-            (fun a b => (a.1 == b.1) = false) := by
-          have h₁ : (dev.registers.map (·.name)).Pairwise
-              (fun a b => (a == b) = false) :=
-            nodupB_pairwise (nodupB_append_right hnodup)
-          have h₂ : dev.registers.Pairwise
-              (fun a b => (a.name == b.name) = false) :=
-            (List.pairwise_map).mp h₁
-          exact (List.pairwise_map).mpr (by
-            refine h₂.imp ?_
-            intro a b hab
-            simpa using hab)
-        rw [Rwv.Hyle.Sem.initRegs, HashMap.get?_eq_getElem?]
-        exact HashMap.getElem?_ofList_of_mem (k_beq := beq_self_eq_true pr.1) hdist hpr
+        refine ⟨vf, enc, he, ?_, ?_⟩
+        · intro pr hpr
+          rw [henc'] at hpr
+          have hdist : (dev.registers.map fun r => (r.name, r.init)).Pairwise
+              (fun a b => (a.1 == b.1) = false) := by
+            have h₁ : (dev.registers.map (·.name)).Pairwise
+                (fun a b => (a == b) = false) :=
+              nodupB_pairwise (nodupB_append_right hnodup)
+            have h₂ : dev.registers.Pairwise
+                (fun a b => (a.name == b.name) = false) :=
+              (List.pairwise_map).mp h₁
+            exact (List.pairwise_map).mpr (by
+              refine h₂.imp ?_
+              intro a b hab
+              simpa using hab)
+          rw [Rwv.Hyle.Sem.initRegs, HashMap.get?_eq_getElem?]
+          exact HashMap.getElem?_ofList_of_mem (k_beq := beq_self_eq_true pr.1) hdist hpr
+        · -- The domain bound: the declared initials hold exactly the
+          -- encoding's names.
+          intro x hx
+          rw [Rwv.Hyle.Sem.initRegs, HashMap.contains_ofList] at hx
+          have hx' : x ∈ (dev.registers.map fun r => (r.name, r.init)).map Prod.fst := by
+            have := List.contains_iff_mem.mp hx
+            simpa using this
+          rw [henc']
+          simpa using hx'
 
 set_option linter.unusedVariables false in
 /-- THE initial-state theorem: a passing `checkInit` discharges the
@@ -1998,37 +2062,8 @@ private theorem vty_rep_width {Δ : DEnv} :
 
 /-! ## Representation totality (the `repOkB` check)
 
-`Val.rep` on a constructor value checks the static bound
-`tagW + Σ field widths ≤ whole` at run time; the check below
-discharges it once per (type, constructor) at validation time, making
-`rep` total on canonical values at checked types — the fact the
-output-encoding leg of the final theorem needs (`portSplit` runs at
-the correspondence statement's own evaluation fuel). -/
-
-def repOkB (Δ : DEnv) : Nat → Ty → Bool
-  | 0, _ => false
-  | fuel + 1, t =>
-      match Ty.flatten t with
-      | (.con "Vec", [_, te]) => repOkB Δ fuel te
-      | (.con tc, _) =>
-          (match Δ.sizeOf (fuel + 1) [] t with
-           | .ok whole =>
-               (if Ty.isTupleCon tc then [tc] else (Δ.ctors.get? tc).getD []).all fun c =>
-                 (match Δ.ctorTag t c, Δ.ctorSig.get? c with
-                  | .ok (_, tagW), some sig =>
-                      (match DEnv.matchTy (Ty.flattenArrow sig.ty).2 t with
-                       | .ok sub =>
-                           (match ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)).mapM
-                               (Δ.sizeOf fuel []) with
-                            | .ok ws =>
-                                decide (tagW + ws.sum ≤ whole)
-                                  && ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)).all
-                                       (repOkB Δ fuel)
-                            | .error _ => false)
-                       | .error _ => false)
-                  | _, _ => false)
-           | .error _ => false)
-      | _ => true
+The check itself (`repOkB`) is defined with the validator above; the
+soundness statement is here with its supporting inversions. -/
 
 private theorem vec_not_tuple {Δ : DEnv} (h : denvOk Δ = true) :
     Ty.isTupleCon "Vec" = false := by
@@ -5162,6 +5197,1441 @@ theorem goCmds_varsWF {C : Ctx} {P : String → Nat → Prop} :
                     subst h4
                     exact ⟨⟨sliceNF_varsWF hdnW, trivial⟩, hbW, hmW acc rfl⟩
 
+/-! ## The per-label composition: plumbing helpers
+
+Everything from here to the end assembles already-proved layers; no
+new semantic content. The helpers are the mechanical needs the staking
+flagged: the `forAllM` inversion, the `symStep` interface shape, the
+`stepNextsVal` store reads, the `ceqB` evaluation bridge, and the
+`offsetsOf_append` zip-walk across `PlanInv.regsplit`. -/
+
+/-- A passing `forAllM` passed each element. -/
+private theorem forAllM_ok {α : Type} {f : α → Except String Unit} :
+    ∀ {xs : List α} {u : Unit}, forAllM f xs = .ok u → ∀ x ∈ xs, f x = .ok () := by
+  intro xs
+  induction xs with
+  | nil => intro u _ x hx; cases hx
+  | cons a as ih =>
+      intro u h x hx
+      rw [forAllM] at h
+      obtain ⟨w, hw, h⟩ := except_bind_eq_ok h
+      rcases List.mem_cons.mp hx with hx | hx
+      · subst hx
+        cases w
+        exact hw
+      · exact ih h x hx
+
+/-- `nodupB` on a prefix. -/
+private theorem nodupB_append_left {xs ys : List String}
+    (h : Rwv.Hyle.Bridge.nodupB (xs ++ ys) = true) :
+    Rwv.Hyle.Bridge.nodupB xs = true := by
+  induction xs with
+  | nil => rfl
+  | cons x xs ih =>
+      rw [List.cons_append, Rwv.Hyle.Bridge.nodupB] at h
+      simp only [Bool.and_eq_true, Bool.not_eq_true'] at h
+      rw [Rwv.Hyle.Bridge.nodupB]
+      simp only [Bool.and_eq_true, Bool.not_eq_true']
+      refine ⟨?_, ih h.2⟩
+      cases hc : xs.contains x with
+      | false => rfl
+      | true =>
+          exfalso
+          have hmem : x ∈ xs := by simpa using hc
+          have hmem' : (xs ++ ys).contains x = true := by
+            simpa using List.mem_append.mpr (.inl hmem)
+          rw [hmem'] at h
+          exact absurd h.1 (by simp)
+
+/-- Width-zero bit vectors are unique. -/
+private theorem bv_eq_of_width_zero {x y : BV} (hx : x.width = 0) (hy : y.width = 0) :
+    x = y := by
+  refine bv_ext (by rw [hx, hy]) ?_
+  intro i
+  rw [getLsbD_ge x.bits (by omega), getLsbD_ge y.bits (by omega)]
+
+/-- Any element is bounded by the list sum. -/
+private theorem getElem_le_sum {l : List Nat} {i : Nat} (h : i < l.length) :
+    l[i] ≤ l.sum := by
+  have := drop_sum_le h
+  omega
+
+/-- The appended singleton, read at the end. -/
+private theorem getElem_last_concat {α : Type} {l : List α} {a : α} {j : Nat}
+    (hj : j = l.length) (h : j < (l ++ [a]).length) : (l ++ [a])[j]'h = a := by
+  subst hj
+  rw [List.getElem_append_right (Nat.le_refl _)]
+  simp
+
+/-- The interface shape of a successful `symStep`: one output entry
+per declared output and one next entry per declared register, names
+agreeing pointwise in order (`symFinish` reads them off the device's
+port and register lists). -/
+private theorem symStep_shape {dmap : Std.HashMap String Rwv.Hyle.Defn} {hfuel : Nat}
+    {dev : Rwv.Hyle.Device} {ss : Rwv.Hyle.Bridge.StepNF}
+    (h : Rwv.Hyle.Bridge.symStep dmap hfuel dev = .ok ss) :
+    (ss.outs.length = dev.outputs.length ∧
+      ∀ i (hi : i < dev.outputs.length) (hi' : i < ss.outs.length),
+        (ss.outs[i]'hi').1 = (dev.outputs[i]'hi).1) ∧
+    (ss.nexts.length = dev.registers.length ∧
+      ∀ i (hi : i < dev.registers.length) (hi' : i < ss.nexts.length),
+        (ss.nexts[i]'hi').1 = (dev.registers[i]'hi).name) := by
+  rw [Rwv.Hyle.Bridge.symStep] at h
+  obtain ⟨res, _, hfin⟩ := except_bind_eq_ok h
+  obtain ⟨ρ, outsM, nextsM⟩ := res
+  dsimp only [Rwv.Hyle.Bridge.symFinish] at hfin
+  obtain ⟨outsL, hoL, hfin⟩ := except_bind_eq_ok hfin
+  obtain ⟨nextsL, hnL, hfin⟩ := except_bind_eq_ok hfin
+  rw [except_pure_def] at hfin
+  injection hfin with hfin
+  subst hfin
+  obtain ⟨hoLen, hoPt⟩ := mapM_ok_idx hoL
+  obtain ⟨hnLen, hnPt⟩ := mapM_ok_idx hnL
+  refine ⟨⟨hoLen, ?_⟩, ⟨hnLen, ?_⟩⟩
+  · intro i hi hi'
+    obtain ⟨hy, hg⟩ := hoPt i hi
+    obtain ⟨o, w, how⟩ : ∃ a b, dev.outputs[i]'hi = (a, b) := ⟨_, _, rfl⟩
+    rw [how] at hg
+    dsimp only at hg
+    cases hget : outsM.get? o with
+    | none => rw [hget] at hg; exact error_ne_ok hg
+    | some n =>
+        rw [hget] at hg
+        dsimp only at hg
+        rw [except_pure_def] at hg
+        injection hg with hg
+        rw [← hg, how]
+  · intro i hi hi'
+    obtain ⟨hy, hg⟩ := hnPt i hi
+    cases hget : nextsM.get? ((dev.registers[i]'hi).name) with
+    | none => rw [hget] at hg; exact error_ne_ok hg
+    | some n =>
+        rw [hget] at hg
+        dsimp only at hg
+        rw [except_pure_def] at hg
+        injection hg with hg
+        rw [← hg]
+
+/-- `stepNextsVal`'s fold, read at a name it never touches. -/
+private theorem foldl_insert_get?_skip {σ : String → BV} :
+    ∀ (l : List (String × NF)) (m : Std.HashMap String BV) (x : String),
+      x ∉ l.map Prod.fst →
+      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ)) m).get? x = m.get? x := by
+  intro l
+  induction l with
+  | nil => intro m x _; rfl
+  | cons p l ih =>
+      intro m x hx
+      simp only [List.map_cons, List.mem_cons, not_or] at hx
+      rw [List.foldl_cons, ih _ x hx.2, HashMap.get?_eq_getElem?,
+          HashMap.getElem?_insert,
+          if_neg (by simp only [beq_iff_eq]; exact fun hc => hx.1 hc.symm),
+          ← HashMap.get?_eq_getElem?]
+
+/-- `stepNextsVal`'s fold, read at a recorded name (distinct keys). -/
+private theorem foldl_insert_get?_mem {σ : String → BV} :
+    ∀ (l : List (String × NF)) (m : Std.HashMap String BV) {x : String} {n : NF},
+      (l.map Prod.fst).Nodup → (x, n) ∈ l →
+      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ)) m).get? x = some (n.eval σ) := by
+  intro l
+  induction l with
+  | nil => intro m x n _ hmem; cases hmem
+  | cons p l ih =>
+      intro m x n hnd hmem
+      simp only [List.map_cons, List.nodup_cons] at hnd
+      rw [List.foldl_cons]
+      rcases List.mem_cons.mp hmem with hmem | hmem
+      · have hp : p = (x, n) := hmem.symm
+        subst hp
+        rw [foldl_insert_get?_skip _ _ _ (by simpa using hnd.1),
+            HashMap.get?_eq_getElem?, HashMap.getElem?_insert, if_pos (by simp)]
+      · exact ih _ hnd.2 hmem
+
+/-- `stepNextsVal`'s fold holds nothing beyond the recorded names. -/
+private theorem foldl_insert_contains' {σ : String → BV} :
+    ∀ (l : List (String × NF)) (m : Std.HashMap String BV) {x : String},
+      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ)) m).contains x = true →
+      x ∈ l.map Prod.fst ∨ m.contains x = true := by
+  intro l
+  induction l with
+  | nil => intro m x h; exact .inr h
+  | cons p l ih =>
+      intro m x h
+      rw [List.foldl_cons] at h
+      rcases ih _ h with h | h
+      · exact .inl (List.mem_cons_of_mem _ h)
+      · rw [HashMap.contains_insert] at h
+        rcases Bool.or_eq_true_iff.mp h with h | h
+        · exact .inl (by
+            simp only [List.map_cons, List.mem_cons]
+            exact .inl (eq_of_beq h).symm)
+        · exact .inr h
+
+/-- Both `ceqB` legs conclude denotation equality at width-respecting
+valuations. -/
+private theorem ceqB_eval {σ : String → BV} {a b : NF} (h : ceqB a b = true)
+    (ha : a.VarsWF (Rwv.Hyle.Bridge.WP σ)) (hb : b.VarsWF (Rwv.Hyle.Bridge.WP σ)) :
+    a.eval σ = b.eval σ := by
+  rw [ceqB, Bool.or_eq_true] at h
+  rcases h with h | h
+  · have he : a.cfold = b.cfold := eq_of_beq h
+    rw [← Rwv.Hyle.Bridge.cfold_eval σ a, ← Rwv.Hyle.Bridge.cfold_eval σ b, he]
+  · have he : Rwv.Hyle.Bridge.cfoldW3 a = Rwv.Hyle.Bridge.cfoldW3 b := eq_of_beq h
+    rw [← Rwv.Hyle.Bridge.cfoldW3_eval ha, ← Rwv.Hyle.Bridge.cfoldW3_eval hb, he]
+
+/-- Summing the flattened register-run widths cell by cell. -/
+private theorem flat_regs_sum :
+    ∀ (cs : List CellPlan), (∀ c ∈ cs, (c.regs.map (·.2)).sum = c.width) →
+      (((cs.map (·.regs)).flatten).map (·.2)).sum = (cs.map (·.width)).sum := by
+  intro cs
+  induction cs with
+  | nil => intro _; rfl
+  | cons c rest ih =>
+      intro h
+      rw [List.map_cons, List.flatten_cons, List.map_append, List.sum_append,
+          h c List.mem_cons_self, List.map_cons, List.sum_cons,
+          ih (fun d hd => h d (List.mem_cons_of_mem _ hd))]
+
+/-- One register run, re-based: the slices of a cell value are the
+whole-record slices shifted by the cell's base offset, when the cell
+value is itself the record's slice there. -/
+private theorem run_shift {rv bv : BV} {B : Nat} (hbv : sliceBV rv B bv.width = bv) :
+    ∀ (regs : List (String × Nat)), (regs.map (·.2)).sum ≤ bv.width →
+      (regs.zip (offsetsOf (regs.map (·.2)))).map (fun q => (q.1.1, sliceBV bv q.2 q.1.2))
+      = (regs.zip ((offsetsOf (regs.map (·.2))).map (· + B))).map
+          (fun q => (q.1.1, sliceBV rv q.2 q.1.2)) := by
+  intro regs
+  induction regs with
+  | nil => intro _; rfl
+  | cons rw rest ih =>
+      intro hsum
+      obtain ⟨r, w, hrw⟩ : ∃ a b, rw = (a, b) := ⟨_, _, rfl⟩
+      subst hrw
+      rw [show ((r, w) :: rest).map (·.2) = w :: rest.map (·.2) from rfl,
+          offsetsOf_cons, List.map_cons, List.zip_cons_cons, List.zip_cons_cons,
+          List.map_cons, List.map_cons]
+      rw [show ((r, w) :: rest).map (·.2) = w :: rest.map (·.2) from rfl,
+          List.sum_cons] at hsum
+      congr 1
+      · dsimp only
+        congr 1
+        rw [← hbv, sliceBV_sliceBV (by omega)]
+        congr 1
+        omega
+      · exact ih (by omega)
+
+/-- Offsets step down a cons cell by cell. -/
+private theorem offsetsOf_widths_succ (c : CellPlan) (rest : List CellPlan)
+    (j : Nat) (hj : j < rest.length) :
+    (offsetsOf ((c :: rest).map (·.width)))[j + 1]'(by
+        rw [offsetsOf_length, List.length_map, List.length_cons]; omega)
+      = (offsetsOf (rest.map (·.width)))[j]'(by
+        rw [offsetsOf_length, List.length_map]; omega) := by
+  rw [offsetsOf_getElem _ (j + 1) (by rw [List.length_map, List.length_cons]; omega),
+      offsetsOf_getElem _ j (by rw [List.length_map]; omega),
+      List.map_cons, List.drop_succ_cons]
+
+/-- THE zip-walk across `PlanInv.regsplit`: per-cell register-run
+encodings, flattened, are the whole-register-tail slices of the
+record value at the `offsetsOf` positions — when each cell's own
+value is the record's slice at the cell's field position (the
+`StepValC` cell facts). -/
+private theorem cells_walk (rv : BV) :
+    ∀ (cs : List CellPlan) (parts : List (List (String × BV)))
+      (hlen : cs.length = parts.length),
+      (∀ j (hj : j < cs.length), ∃ bv,
+        ((cs[j]'hj).regs.map (·.2)).sum = (cs[j]'hj).width ∧
+        bv.width = (cs[j]'hj).width ∧
+        sliceBV rv ((offsetsOf (cs.map (·.width)))[j]'(by
+            rw [offsetsOf_length, List.length_map]; exact hj)) (cs[j]'hj).width = bv ∧
+        parts[j]'(hlen ▸ hj)
+          = ((cs[j]'hj).regs.zip (offsetsOf ((cs[j]'hj).regs.map (·.2)))).map
+              fun q => (q.1.1, sliceBV bv q.2 q.1.2)) →
+      parts.flatten
+        = ((((cs.map (·.regs)).flatten).zip
+             (offsetsOf (((cs.map (·.regs)).flatten).map (·.2)))).map
+            fun q => (q.1.1, sliceBV rv q.2 q.1.2)) := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro parts hlen _
+      match parts, hlen with
+      | [], _ => rfl
+  | cons c rest ih =>
+      intro parts hlen hpt
+      match parts, hlen with
+      | part :: prest, hlen =>
+      obtain ⟨bv, hrun, hbw, hslice, hshape⟩ := hpt 0 (by simp)
+      simp only [List.getElem_cons_zero] at hrun hbw hslice hshape
+      have hruns : ∀ d ∈ rest, (d.regs.map (·.2)).sum = d.width := by
+        intro d hd
+        obtain ⟨j, hj, hdj⟩ := List.getElem_of_mem hd
+        obtain ⟨_, h1, _, _, _⟩ := hpt (j + 1) (by simpa using hj)
+        rw [List.getElem_cons_succ] at h1
+        rw [← hdj]
+        exact h1
+      have hw2sum : ((((rest.map (·.regs)).flatten).map (·.2)).sum)
+          = (rest.map (·.width)).sum := flat_regs_sum rest hruns
+      -- The head cell's slice offset is the tail's total width.
+      have hslice0 : sliceBV rv ((rest.map (·.width)).sum) c.width = bv := by
+        have h0 : (offsetsOf ((c :: rest).map (·.width)))[0]'(by
+            rw [offsetsOf_length, List.length_map]; simp) = (rest.map (·.width)).sum := by
+          rw [offsetsOf_getElem _ 0 (by rw [List.length_map]; simp), List.map_cons,
+              List.drop_succ_cons, List.drop_zero]
+        rw [← h0]
+        exact hslice
+      have hslice0' : sliceBV rv ((((rest.map (·.regs)).flatten).map (·.2)).sum)
+          bv.width = bv := by
+        rw [hw2sum, hbw]
+        exact hslice0
+      -- Assemble.
+      rw [List.flatten_cons, List.map_cons, List.flatten_cons, List.map_append,
+          offsetsOf_append,
+          List.zip_append (by rw [List.length_map, offsetsOf_length, List.length_map]),
+          List.map_append]
+      congr 1
+      · -- The head cell's run.
+        rw [hshape]
+        exact run_shift hslice0' c.regs (by rw [hbw]; omega)
+      · -- The tail cells, by the induction hypothesis.
+        refine ih prest (by simpa using hlen) ?_
+        intro j hj
+        obtain ⟨bvj, h1, h2, h3, h4⟩ := hpt (j + 1) (by simpa using hj)
+        refine ⟨bvj, ?_, ?_, ?_, ?_⟩
+        · rw [List.getElem_cons_succ] at h1; exact h1
+        · rw [List.getElem_cons_succ] at h2; exact h2
+        · rw [List.getElem_cons_succ] at h3
+          rw [offsetsOf_widths_succ c rest j hj] at h3
+          exact h3
+        · rw [List.getElem_cons_succ] at h4
+          exact h4
+
+/-- Every enc-entry's (name, width) is its register's declaration:
+the shape half of the walk, for the CURRENT state's encoding. -/
+private theorem parts_widths {Δ : DEnv} {k : Nat} {s : MState} :
+    ∀ {cs : List CellPlan} {parts : List (List (String × BV))},
+      cs.mapM (encCellE Δ k s) = .ok parts →
+      parts.flatten.map (fun pr => (pr.1, pr.2.width)) = (cs.map (·.regs)).flatten := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro parts h
+      rw [List.mapM_nil, except_pure_def] at h
+      injection h with h
+      subst h
+      rfl
+  | cons c rest ih =>
+      intro parts h
+      rw [List.mapM_cons] at h
+      obtain ⟨part, hpart, h⟩ := except_bind_eq_ok h
+      obtain ⟨parts', hparts', h⟩ := except_bind_eq_ok h
+      rw [except_pure_def] at h
+      injection h with h
+      subst h
+      obtain ⟨v, bv, _, _, _, hsum, hshape⟩ := encCellE_inv hpart
+      rw [List.flatten_cons, List.map_append, ih hparts', List.map_cons,
+          List.flatten_cons]
+      congr 1
+      rw [hshape, List.map_map]
+      have hfun : ((fun pr => (pr.1, pr.2.width))
+            ∘ fun (q : (String × Nat) × Nat) => (q.1.1, sliceBV bv q.2 q.1.2))
+          = fun (q : (String × Nat) × Nat) => (q.1.1, q.1.2) := by
+        funext q
+        simp [Function.comp, sliceBV_width]
+      rw [hfun]
+      have : (fun (q : (String × Nat) × Nat) => (q.1.1, q.1.2))
+          = fun (q : (String × Nat) × Nat) => q.1 := by
+        funext q
+        rfl
+      rw [this]
+      refine List.ext_getElem (by simp [List.length_zip, offsetsOf_length]) ?_
+      intro m h1 h2
+      rw [List.getElem_map, List.getElem_zip]
+
+/-- The (name, width) shape of the whole encoding: the tag register at
+the resumption load, then the flattened per-cell runs — the LHS of
+`PlanInv.regsplit`. -/
+private theorem encodeList_widths {Δ : DEnv} {k : Nat} {lo : Layout} {plan : Plan}
+    {s : MState} {enc : List (String × BV)}
+    (h : encodeList Δ k lo plan s = .ok enc)
+    (hpay : ∀ tgt ∈ lo.targets, tgt.argWs.sum ≤ lo.rPayW)
+    (htagw : ∀ r w, plan.tagReg = some (r, w) → w = lo.rTagW + lo.rPayW) :
+    enc.map (fun pr => (pr.1, pr.2.width))
+      = (match plan.tagReg with | some rw => [rw] | none => [])
+        ++ (plan.cells.map (·.regs)).flatten := by
+  obtain ⟨tgt, reps, parts, hfind, hreps, hw, hparts, hsh⟩ := encodeList_inv h
+  subst hsh
+  rw [List.map_append, parts_widths hparts]
+  congr 1
+  cases htr : plan.tagReg with
+  | none => rfl
+  | some rw =>
+      obtain ⟨r, w⟩ := rw
+      simp only [List.map_cons, List.map_nil]
+      rw [encTag_width hw (hpay tgt (List.mem_of_find?_eq_some hfind)),
+          htagw r w htr]
+
+/-- Lift the per-cell `rep` fuels (from the `StepValC` cell facts) to
+one common fuel. -/
+private theorem cells_common_fuel {Δ : DEnv} {store : Std.HashMap String Val}
+    (f : CellPlan → Val → BV → Prop) :
+    ∀ (cs : List CellPlan),
+      (∀ c ∈ cs, ∃ v bv k, store.get? c.name = some v ∧
+        Val.rep Δ k v = .ok bv ∧ f c v bv) →
+      ∃ K, ∀ c ∈ cs, ∃ v bv, store.get? c.name = some v ∧
+        Val.rep Δ K v = .ok bv ∧ f c v bv := by
+  intro cs
+  induction cs with
+  | nil => intro _; exact ⟨0, fun c hc => absurd hc (by simp)⟩
+  | cons c rest ih =>
+      intro h
+      obtain ⟨v, bv, k, h1, h2, h3⟩ := h c List.mem_cons_self
+      obtain ⟨K, hK⟩ := ih (fun d hd => h d (List.mem_cons_of_mem _ hd))
+      refine ⟨max k K, ?_⟩
+      intro d hd
+      rcases List.mem_cons.mp hd with hd | hd
+      · subst hd
+        exact ⟨v, bv, h1, Val.rep_mono Δ (Nat.le_max_left k K) h2, h3⟩
+      · obtain ⟨v', bv', h1', h2', h3'⟩ := hK d hd
+        exact ⟨v', bv', h1', Val.rep_mono Δ (Nat.le_max_right k K) h2', h3'⟩
+
+/-! ## THE per-label composition -/
+
+set_option maxHeartbeats 1600000 in
+/-- `checkLabel_sound`: on an `R`-related state and store and a
+well-typed input, when both machines step — the Eidos machine to a
+pause, the device on the input's port encoding — a passing validator
+run forces the device outputs to be the emitted output's port
+encoding and re-establishes `R` at the successors. This is the
+`SimP.agree` body of the step-obligation schema, per label:
+`cstep_sound` pins the compiled record to the machine step,
+`symStep_sound` pins the device step to the symbolic one, and the
+passing `ceqB` comparisons (through the tag specialization, sound on
+`stateRel` stores by `encTag_top`) tie the two together, slice by
+slice. -/
+theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
+    {fuel : Nat} {lo : Layout} {plan : Plan} {dev : Rwv.Hyle.Device}
+    {dmap : HashMap String Rwv.Hyle.Defn} {hfuel : Nat} {ss : Rwv.Hyle.Bridge.StepNF}
+    {X : Rwv.Hyle.Sem.XEnv} {F : Rwv.Hyle.Sem.FEnv} {blocks : HashMap Int Block}
+    (hblocks : blocks = HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b)))
+    (hden : denvOk Δ = true) (htup : tupleCtorsOk Δ = true)
+    (hndb : Rwv.Eidos.Cexp.nodupIntB (p.blocks.map (·.1.uniq)) = true)
+    (hrep : repOkB Δ fuel p.outTy = true)
+    (hlo : mkLayoutL Δ fuel p = .ok lo)
+    (hplan : mkPlan Δ fuel p lo dev = .ok plan)
+    (hsym : Rwv.Hyle.Bridge.symStep dmap hfuel dev = .ok ss)
+    (hImpl : Rwv.Hyle.Bridge.FImplements dmap X F)
+    (hlabels : ∀ tgt ∈ lo.targets,
+      checkLabel { Δ := Δ, edm := edm, lo := lo, blocks := blocks,
+                   cexpFuel := fuel, outTy := p.outTy }
+        plan dev ss p.inTy fuel tgt = .ok ())
+    {ef gf : Nat} (hef : fuel ≤ ef)
+    {s : MState} {t : HashMap String BV} {i : Val}
+    (hR : stateRel Δ lo plan blocks s t)
+    (hty : Val.HasTy Δ i p.inTy)
+    {o₁ : Val} {s' : MState}
+    (hm : Machine.step Δ edm blocks ef gf s i = .ok (.step o₁ s'))
+    {ins : List BV} (hsplit : Val.portSplit Δ ef p.inTy i = .ok ins)
+    {outs : List BV} {t' : HashMap String BV}
+    (hd : Rwv.Hyle.Sem.step F X dev t ins = .ok (outs, t')) :
+    Val.portSplit Δ ef p.outTy o₁ = .ok outs ∧ stateRel Δ lo plan blocks s' t' := by
+  have li := mkLayoutL_inv hlo
+  have pinv := mkPlan_inv hplan
+  have hndT : (lo.targets.map (·.uniq)).Nodup :=
+    li.uniqsub.nodup (nodupIntB_nodup hndb)
+  -- The stateRel components and the current state's encoding.
+  obtain ⟨-, ⟨blkR, hblkR, harity, hvargs⟩, hcellsR, kR, enc, henc, hencPt, hencDom⟩ := hR
+  obtain ⟨tgt, reps, parts, hfind, hreps, hwreps, hparts, hencSh⟩ := encodeList_inv henc
+  have htgtMem : tgt ∈ lo.targets := List.mem_of_find?_eq_some hfind
+  have htgtUq : tgt.uniq = s.label := by simpa using List.find?_some hfind
+  -- This target's label check, inverted.
+  have hlbl := hlabels tgt htgtMem
+  rw [checkLabel] at hlbl
+  dsimp only at hlbl
+  split at hlbl
+  rotate_left
+  · exact error_ne_ok hlbl
+  rename_i blk hblkGet
+  rw [except_pure_def, except_bind_ok] at hlbl
+  have hblkGetS : blocks.get? s.label = some blk := htgtUq ▸ hblkGet
+  rw [hblkGetS] at hblkR
+  injection hblkR with hblkR
+  subst hblkR
+  split at hlbl
+  rotate_left
+  · exact error_ne_ok hlbl
+  rename_i hbArity
+  split at hlbl
+  · exact error_ne_ok hlbl
+  rename_i inP hgetLast
+  split at hlbl
+  rotate_left
+  · exact error_ne_ok hlbl
+  rename_i hteqIn
+  obtain ⟨rv0, hgo, hlbl⟩ := except_bind_eq_ok hlbl
+  obtain ⟨u1, houtsF, hregsF⟩ := except_bind_eq_ok hlbl
+  -- Machine.step, inverted.
+  rw [Machine.step, hblkGetS] at hm
+  dsimp only at hm
+  split at hm
+  · exact error_ne_ok hm
+  rename_i hArityNe
+  -- Arity bookkeeping.
+  have hbArity' : blk.params.length = tgt.argWs.length + 1 := by
+    have := eq_of_beq hbArity
+    omega
+  have hargsLenS : s.args.length = tgt.argWs.length := by omega
+  obtain ⟨lT, bT, hbTmem, hlTuq, hTys, hTwsM⟩ := li.tgts tgt htgtMem
+  have hbT : blk = bT := by
+    have hg := blocks_get hndb hbTmem
+    rw [← hblocks, hlTuq, hblkGet] at hg
+    exact Option.some.inj hg
+  subst hbT
+  have hTysLen : tgt.argTys.length = tgt.argWs.length := ((mapM_ok_idx hTwsM).1).symm
+  -- The input decode, characterized.
+  obtain ⟨bvIn, szsIn, hrepIn, hszsIn, hsumIn, hinsSh⟩ := portSplit_char hsplit
+  have hszsEq : szsIn = dev.inputs.map (·.2) :=
+    detupleSizes_det hszsIn (detupleSizes_mono hef pinv.insz)
+  subst hszsEq
+  have hinsLen : ins.length = dev.inputs.length := by
+    rw [hinsSh]
+    simp [List.length_zip, offsetsOf_length]
+  have hinsIdx : ∀ j (hj : j < dev.inputs.length),
+      ins[j]'(by omega) = sliceBV bvIn
+        ((offsetsOf (dev.inputs.map (·.2)))[j]'(by
+          rw [offsetsOf_length, List.length_map]; omega))
+        ((dev.inputs[j]'hj).2) := by
+    intro j hj
+    rw [List.getElem_of_eq hinsSh, List.getElem_map, List.getElem_zip, List.getElem_map]
+  -- Encoding shape: names and widths are the register declarations.
+  have hltagw : ∀ r w, plan.tagReg = some (r, w) → w = lo.rTagW + lo.rPayW :=
+    fun r w h => (pinv.tagw r w h).trans li.rwdef
+  have hencWid : enc.map (fun pr => (pr.1, pr.2.width))
+      = dev.registers.map (fun r => (r.name, r.width)) := by
+    rw [encodeList_widths henc li.paybound hltagw, ← pinv.regsplit]
+  have hencKeys : enc.map (·.1) = dev.registers.map (·.name) := by
+    have h2 := congrArg (List.map Prod.fst) hencWid
+    rw [List.map_map, List.map_map] at h2
+    exact h2
+  -- (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) at register names: the store's (= the encoding's) values.
+  have hσreg : ∀ pr ∈ enc, (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) pr.1 = pr.2 := fun pr hpr => sigmaOf_reg (hencPt pr hpr)
+  have hdomReg : ∀ r ∈ dev.registers, t.contains r.name = true := by
+    intro r hr
+    have hk : r.name ∈ enc.map (·.1) := by
+      rw [hencKeys]
+      exact List.mem_map.mpr ⟨r, hr, rfl⟩
+    obtain ⟨pr, hpr, hprn⟩ := List.mem_map.mp hk
+    have hg := hencPt pr hpr
+    rw [hprn] at hg
+    rw [HashMap.contains_eq_isSome_getElem?, ← HashMap.get?_eq_getElem?, hg]
+    rfl
+  have hWPreg : ∀ x w, (x, w) ∈ dev.registers.map (fun r => (r.name, r.width)) →
+      ((Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) x).width = w := by
+    intro x w hxw
+    rw [← hencWid] at hxw
+    obtain ⟨pr, hpr, hpreq⟩ := List.mem_map.mp hxw
+    have h1 : pr.1 = x := congrArg Prod.fst hpreq
+    have h2 : pr.2.width = w := congrArg Prod.snd hpreq
+    rw [← h1, hσreg pr hpr, h2]
+  -- (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) at input names: the stimulus values.
+  have hndIO := nodupB_nodup pinv.ndio
+  have hndInp : (dev.inputs.map Prod.fst).Nodup := (List.nodup_append.mp hndIO).1
+  have hgetInNone : ∀ x ∈ dev.inputs.map Prod.fst, t.get? x = none := by
+    intro x hx
+    cases hc : t.contains x with
+    | false =>
+        have hiff := HashMap.contains_eq_isSome_getElem? (m := t) (a := x)
+        rw [hc] at hiff
+        rw [HashMap.get?_eq_getElem?]
+        exact Option.not_isSome_iff_eq_none.mp (by rw [← hiff]; simp)
+    | true =>
+        exfalso
+        have hxr : x ∈ dev.registers.map (·.name) := by
+          rw [← hencKeys]
+          exact hencDom x hc
+        exact (List.nodup_append.mp hndIO).2.2 x hx x hxr rfl
+  have hσin : ∀ j (hj : j < dev.inputs.length),
+      (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) ((dev.inputs[j]'hj).1) = ins[j]'(by omega) := by
+    intro j hj
+    refine sigmaOf_input
+      (hgetInNone _ (List.mem_map.mpr ⟨dev.inputs[j]'hj, List.getElem_mem hj, rfl⟩))
+      hndInp ?_
+    have hz : ((dev.inputs.map Prod.fst).zip ins)[j]'(by
+        rw [List.length_zip, List.length_map]; omega)
+        = ((dev.inputs[j]'hj).1, ins[j]'(by omega)) := by
+      rw [List.getElem_zip, List.getElem_map]
+    exact hz ▸ List.getElem_mem _
+  have hWPin : ∀ x w, (x, w) ∈ dev.inputs → ((Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) x).width = w := by
+    intro x w hxw
+    obtain ⟨j, hj, hje⟩ := List.getElem_of_mem hxw
+    have h1 := hσin j hj
+    rw [hje] at h1
+    dsimp only at h1
+    rw [h1, hinsIdx j hj, sliceBV_width, hje]
+  -- The device step, pinned to the symbolic one.
+  have hstepEq := Rwv.Hyle.Bridge.symStep_sound hImpl hsym t ins hinsLen hdomReg
+  rw [hd] at hstepEq
+  injection hstepEq with hstepEq
+  have hOuts : outs = Rwv.Hyle.Bridge.stepOutsVal (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) ss := congrArg Prod.fst hstepEq
+  have hT' : t' = Rwv.Hyle.Bridge.stepNextsVal (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) ss := congrArg Prod.snd hstepEq
+  -- The tag specialization is sound at (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins).
+  have hσtag : ∀ r w, plan.tagReg = some (r, w) →
+      (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) r = encTag lo tgt.tag tgt.argWs reps := by
+    intro r w htr
+    have hmem : (r, encTag lo tgt.tag tgt.argWs reps) ∈ enc := by
+      rw [hencSh, htr]
+      exact List.mem_append.mpr (.inl (List.mem_singleton.mpr rfl))
+    exact hσreg _ hmem
+  have hfix : ∀ r w, plan.tagReg = some (r, w) → 0 < lo.rTagW →
+      (NF.cat (.lit ⟨lo.rTagW, BitVec.ofNat _ tgt.tag⟩)
+        (sliceNF 0 lo.rPayW (.var w r))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) = (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) r := by
+    intro r w htr _
+    refine tagFix_of_store ?_ ?_
+    · rw [hσtag r w htr]
+      exact encTag_width hwreps (li.paybound tgt htgtMem)
+    · intro jj hjj
+      rw [hσtag r w htr]
+      exact encTag_top hwreps (li.paybound tgt htgtMem) jj hjj
+  have hsubstE : ∀ nf, (substNF (tagSubst plan lo tgt.tag) nf).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) = nf.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) :=
+    tagSubst_eval hfix
+  -- Width discipline: Γ₀, the cell store, the compiled record, the
+  -- symbolic step, and the specialization images all respect (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins).
+  have hWPtagVar : NF.VarsWF (Rwv.Hyle.Bridge.WP (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+      (match plan.tagReg with
+       | some (r, w) => NF.var w r
+       | none => NF.lit BV.nil) := by
+    cases htr : plan.tagReg with
+    | some rw =>
+        obtain ⟨r, w⟩ := rw
+        show ((Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) r).width = w
+        rw [hσtag r w htr, encTag_width hwreps (li.paybound tgt htgtMem)]
+        exact (hltagw r w htr).symm
+    | none => trivial
+  have hGamWF : Rwv.Eidos.Cexp.GammaWF (Rwv.Hyle.Bridge.WP (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+      ((blk.params.zip
+        ((((tgt.argWs.zip (offsetsOf tgt.argWs)).map fun (w, off) =>
+            sliceNF off w
+              (match plan.tagReg with
+               | some (r, w) => NF.var w r
+               | none => NF.lit BV.nil))
+          ++ [catNF (plan.inPorts.map fun (x, w) => ((.var w x : NF), w))]).zip
+          (tgt.argTys ++ [p.inTy]))).foldl
+        (fun m (x, nt) => m.insert x.uniq nt) (∅ : HashMap Int (NF × Ty))) := by
+    refine gammaWF_foldl_zip _ _ (fun u nt hu => by
+      rw [HashMap.get?_eq_getElem?] at hu
+      simp at hu) ?_
+    intro nt hnt
+    have h1 := (List.of_mem_zip hnt).1
+    rcases List.mem_append.mp h1 with h1 | h1
+    · obtain ⟨wo, hwo, hnfe⟩ := List.mem_map.mp h1
+      obtain ⟨w, off, hwoeq⟩ : ∃ a b, wo = (a, b) := ⟨_, _, rfl⟩
+      subst hwoeq
+      rw [← hnfe]
+      exact sliceNF_varsWF hWPtagVar
+    · have h1' : nt.1 = catNF (plan.inPorts.map fun (x, w) => ((.var w x : NF), w)) := by
+        simpa using h1
+      rw [h1']
+      refine catNF_varsWF ?_
+      intro q hq
+      obtain ⟨xw, hxw, hqe⟩ := List.mem_map.mp hq
+      obtain ⟨x, w, hxweq⟩ : ∃ a b, xw = (a, b) := ⟨_, _, rfl⟩
+      subst hxweq
+      rw [← hqe]
+      show ((Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) x).width = w
+      refine hWPin x w ?_
+      rw [pinv.inports] at hxw
+      exact hxw
+  have hCellWF : ∀ d ∈ cells0 plan, NF.VarsWF (Rwv.Hyle.Bridge.WP (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) d.nf := by
+    intro d hd
+    obtain ⟨c, hc, hdc⟩ := List.mem_map.mp hd
+    rw [← hdc]
+    refine catNF_varsWF ?_
+    intro q hq
+    obtain ⟨rw, hrw, hqe⟩ := List.mem_map.mp hq
+    obtain ⟨rr, ww, hrweq⟩ : ∃ a b, rw = (a, b) := ⟨_, _, rfl⟩
+    subst hrweq
+    rw [← hqe]
+    show ((Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) rr).width = ww
+    refine hWPreg rr ww ?_
+    rw [pinv.regsplit]
+    refine List.mem_append.mpr (.inr ?_)
+    exact List.mem_flatten.mpr ⟨c.regs, List.mem_map.mpr ⟨c, hc, rfl⟩, hrw⟩
+  have hrecWF : NF.VarsWF (Rwv.Hyle.Bridge.WP (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) rv0 :=
+    (goCmds_varsWF fuel).1 _ _ _ _ _ hgo hGamWF hCellWF
+  have hssWF : ∀ pr ∈ ss.outs ++ ss.nexts, NF.VarsWF (Rwv.Hyle.Bridge.WP (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) pr.2 := by
+    intro pr hpr
+    refine (Rwv.Hyle.Bridge.symStep_varsWF hsym pr hpr).mono ?_
+    intro x w hxw
+    rcases List.mem_append.mp hxw with hin | hrg
+    · exact hWPin x w hin
+    · exact hWPreg x w (by
+        obtain ⟨r, hr, hre⟩ := List.mem_map.mp hrg
+        exact List.mem_map.mpr ⟨r, hr, hre⟩)
+  have hθWF : ∀ x n, tagSubst plan lo tgt.tag x = some n →
+      NF.VarsWF (Rwv.Hyle.Bridge.WP (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) n := by
+    intro x n hx
+    rw [tagSubst] at hx
+    split at hx
+    · rename_i r w htr
+      split at hx
+      · rename_i hcond
+        injection hx with hx
+        subst hx
+        refine ⟨trivial, ?_⟩
+        refine sliceNF_varsWF ?_
+        show ((Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) r).width = w
+        rw [hσtag r w htr, encTag_width hwreps (li.paybound tgt htgtMem)]
+        exact (hltagw r w htr).symm
+      · exact absurd hx (by simp)
+    · exact absurd hx (by simp)
+  -- The environment correspondence at the block's parameters.
+  have hpasLen : ((((tgt.argWs.zip (offsetsOf tgt.argWs)).map fun (w, off) =>
+      sliceNF off w
+        (match plan.tagReg with
+         | some (r, w) => NF.var w r
+         | none => NF.lit BV.nil))
+      ++ [catNF (plan.inPorts.map fun (x, w) => ((.var w x : NF), w))]).zip
+      (tgt.argTys ++ [p.inTy])).length = blk.params.length := by
+    simp only [List.length_zip, List.length_append, List.length_map, offsetsOf_length,
+      List.length_singleton]
+    omega
+  have hσtagVarSlice : ∀ j (hj : j < tgt.argWs.length),
+      (sliceNF ((offsetsOf tgt.argWs)[j]'(by rw [offsetsOf_length]; omega))
+        (tgt.argWs[j]'hj)
+        (match plan.tagReg with
+         | some (r, w) => NF.var w r
+         | none => NF.lit BV.nil)).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)
+      = reps[j]'(by
+          have := congrArg List.length hwreps
+          rw [List.length_map] at this
+          omega) := by
+    intro j hj
+    rw [sliceNF_eval]
+    cases htr : plan.tagReg with
+    | some rw =>
+        obtain ⟨r, w⟩ := rw
+        show sliceBV ((NF.var w r).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) _ _ = _
+        show sliceBV ((Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) r) _ _ = _
+        rw [hσtag r w htr]
+        exact encTag_arg hwreps (li.paybound tgt htgtMem) j hj
+    | none =>
+        have h0 : lo.rPayW = 0 := by
+          have h1 := pinv.tagnone htr
+          have h2 := li.rwdef
+          omega
+        have hwj : tgt.argWs[j]'hj = 0 := by
+          have hb := li.paybound tgt htgtMem
+          have := getElem_le_sum hj
+          omega
+        have hrw : (reps[j]'(by
+            have := congrArg List.length hwreps
+            rw [List.length_map] at this
+            omega)).width = 0 := by
+          have hg : (reps.map (·.width))[j]'(by rw [hwreps]; omega) = tgt.argWs[j]'hj := by
+            rw [List.getElem_of_eq hwreps]
+          rw [List.getElem_map] at hg
+          omega
+        exact bv_eq_of_width_zero (by rw [sliceBV_width]; omega) hrw
+  have hEnvC : Rwv.Eidos.Cexp.EnvC Δ (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)
+      ((blk.params.zip
+        ((((tgt.argWs.zip (offsetsOf tgt.argWs)).map fun (w, off) =>
+            sliceNF off w
+              (match plan.tagReg with
+               | some (r, w) => NF.var w r
+               | none => NF.lit BV.nil))
+          ++ [catNF (plan.inPorts.map fun (x, w) => ((.var w x : NF), w))]).zip
+          (tgt.argTys ++ [p.inTy]))).foldl
+        (fun m (x, nt) => m.insert x.uniq nt) (∅ : HashMap Int (NF × Ty)))
+      ((blk.params.zip (s.args ++ [i])).foldl (fun e (p, v) => (p.uniq, v) :: e) []) := by
+    refine envC_foldl_zip _ _ _ envC_empty hpasLen (by
+      simp only [List.length_append, List.length_singleton]
+      omega) ?_
+    intro j h1 h2 h3
+    rw [List.getElem_zip]
+    dsimp only
+    by_cases hj : j < tgt.argWs.length
+    · -- A saved argument: slice of the tag register vs the stored value.
+      have hjNF : j < ((tgt.argWs.zip (offsetsOf tgt.argWs)).map fun (w, off) =>
+          sliceNF off w
+            (match plan.tagReg with
+             | some (r, w) => NF.var w r
+             | none => NF.lit BV.nil)).length := by
+        rw [List.length_map, List.length_zip, offsetsOf_length]
+        omega
+      have hjTy : j < tgt.argTys.length := by omega
+      have hjArg : j < s.args.length := by omega
+      rw [List.getElem_append_left hjNF, List.getElem_append_left hjTy,
+          List.getElem_append_left hjArg, List.getElem_map, List.getElem_zip]
+      dsimp only
+      constructor
+      · -- VTy at the recorded type.
+        have hjDL : j < blk.params.dropLast.length := by
+          rw [List.length_dropLast, hbArity']
+          omega
+        have hpair : (blk.params.dropLast[j]'hjDL, s.args[j]'hjArg)
+            ∈ (blk.params.dropLast).zip s.args := by
+          have hz : ((blk.params.dropLast).zip s.args)[j]'(by
+              rw [List.length_zip]
+              omega) = (blk.params.dropLast[j]'hjDL, s.args[j]'hjArg) :=
+            List.getElem_zip ..
+          exact hz ▸ List.getElem_mem _
+        have hvt := hvargs _ hpair
+        have hTyj : tgt.argTys[j]'hjTy = (blk.params.dropLast[j]'hjDL).sig.ty := by
+          rw [List.getElem_of_eq hTys, List.getElem_map]
+        rw [hTyj]
+        exact hvt
+      · -- The representation: the tag-register slice is the stored rep.
+        refine ⟨kR, ?_⟩
+        have hjR : j < reps.length := by
+          have := congrArg List.length hwreps
+          rw [List.length_map] at this
+          omega
+        have hrepj : Val.rep Δ kR (s.args[j]'hjArg) = .ok (reps[j]'hjR) := by
+          obtain ⟨-, hpt⟩ := mapM_ok_idx hreps
+          obtain ⟨hb2, hgj⟩ := hpt j hjArg
+          exact hgj
+        rw [hrepj, hσtagVarSlice j hj]
+    · -- The resumed input: the input-port concatenation vs the input.
+      have hjEq : j = tgt.argWs.length := by omega
+      have hinEval : (catNF (plan.inPorts.map fun (x, w) =>
+          ((.var w x : NF), w))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) = bvIn := by
+        rw [pinv.inports]
+        rw [catNF_eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) _ (by
+          intro q hq
+          obtain ⟨xw, hxw, hqe⟩ := List.mem_map.mp hq
+          obtain ⟨x, w, hxweq⟩ : ∃ a b, xw = (a, b) := ⟨_, _, rfl⟩
+          subst hxweq
+          rw [← hqe]
+          exact hWPin x w hxw)]
+        have hlist : ((dev.inputs.map fun (x, w) => ((NF.var w x : NF), w)).map
+            (fun q => q.1.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)))
+            = (((dev.inputs.map (·.2)).zip (offsetsOf (dev.inputs.map (·.2)))).map
+                fun q => sliceBV bvIn q.2 q.1) := by
+          refine List.ext_getElem (by
+            simp [List.length_zip, offsetsOf_length]) ?_
+          intro m hm1 hm2
+          have hmI : m < dev.inputs.length := by
+            rw [List.length_map, List.length_map] at hm1
+            exact hm1
+          rw [List.getElem_map, List.getElem_map, List.getElem_map, List.getElem_zip]
+          obtain ⟨x, w, hxe⟩ : ∃ a b, dev.inputs[m]'hmI = (a, b) := ⟨_, _, rfl⟩
+          rw [hxe]
+          dsimp only
+          have h1 := hσin m hmI
+          rw [hxe] at h1
+          dsimp only at h1
+          rw [hinsIdx m hmI, hxe] at h1
+          dsimp only at h1
+          rw [List.getElem_map, hxe]
+          dsimp only
+          exact h1
+        rw [hlist, catAll_slices, hsumIn, sliceBV_all]
+      have hNFj : (((tgt.argWs.zip (offsetsOf tgt.argWs)).map fun (w, off) =>
+            sliceNF off w
+              (match plan.tagReg with
+               | some (r, w) => NF.var w r
+               | none => NF.lit BV.nil))
+          ++ [catNF (plan.inPorts.map fun (x, w) => ((.var w x : NF), w))])[j]'(by
+            rw [List.length_append, List.length_map, List.length_zip, offsetsOf_length,
+                Nat.min_self, List.length_singleton]
+            omega)
+          = catNF (plan.inPorts.map fun (x, w) => ((.var w x : NF), w)) :=
+        getElem_last_concat (by
+          rw [List.length_map, List.length_zip, offsetsOf_length, Nat.min_self]
+          omega) _
+      have hTyj : ((tgt.argTys ++ [p.inTy])[j]'(by
+            rw [List.length_append, List.length_singleton]
+            omega)) = p.inTy :=
+        getElem_last_concat (by omega) _
+      have hVj : ((s.args ++ [i])[j]'h3) = i :=
+        getElem_last_concat (by omega) _
+      rw [hNFj, hTyj, hVj]
+      constructor
+      · exact hasTy_vty htup hty
+      · refine ⟨ef, ?_⟩
+        rw [hinEval]
+        exact hrepIn
+  -- The static invariant, and the cell-store correspondence.
+  have hSInv : SInv { Δ := Δ, edm := edm, lo := lo, blocks := blocks,
+                      cexpFuel := fuel, outTy := p.outTy } plan := by
+    refine ⟨hden, ⟨fuel, li.outsz⟩, ?_, li.paybound, ?_, ?_⟩
+    · intro tg htg
+      obtain ⟨l2, b2, hmem2, huq2, hty2, hws2⟩ := li.tgts tg htg
+      refine ⟨b2, ?_, hty2, fuel, hws2⟩
+      show blocks.get? tg.uniq = some b2
+      rw [hblocks, ← huq2]
+      exact blocks_get hndb hmem2
+    · intro c hc
+      refine ⟨fuel, ?_⟩
+      have hmem3 : (c.name, c.ty, c.width) ∈ lo.cells := by
+        rw [← pinv.cellshape]
+        exact List.mem_map.mpr ⟨c, hc, rfl⟩
+      exact li.cellsz _ hmem3
+    · show (plan.cells.map (·.width)).sum = (lo.cells.map (·.2.2)).sum
+      rw [← pinv.cellshape, List.map_map]
+      rfl
+  have hCellsC : CellsC { Δ := Δ, edm := edm, lo := lo, blocks := blocks,
+                          cexpFuel := fuel, outTy := p.outTy }
+      plan (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) (cells0 plan) s.cells := by
+    refine ⟨?_, ?_, ?_⟩
+    · rw [cells0, List.map_map]
+      rfl
+    · have h1 : (cells0 plan).map (·.name) = plan.cells.map (·.name) := by
+        rw [cells0, List.map_map]
+        rfl
+      rw [h1]
+      have h2 : plan.cells.map (·.name) = lo.cells.map (·.1) := by
+        have h3 := congrArg (List.map Prod.fst) pinv.cellshape
+        rw [List.map_map] at h3
+        exact h3
+      rw [h2]
+      exact nodupB_nodup pinv.ndcell
+    · intro d hd
+      rw [cells0] at hd
+      obtain ⟨c, hc, hdc⟩ := List.mem_map.mp hd
+      obtain ⟨j, hj, hcj⟩ := List.getElem_of_mem hc
+      obtain ⟨hplen2, hppt2⟩ := mapM_ok_idx hparts
+      obtain ⟨hjp, hpj⟩ := hppt2 j hj
+      rw [hcj] at hpj
+      obtain ⟨v, bv, hvget, hvrep, hbw, hsumj, hshape⟩ := encCellE_inv hpj
+      have hσrun : ∀ q ∈ parts[j]'hjp, (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) q.1 = q.2 := by
+        intro q hq
+        refine hσreg q ?_
+        rw [hencSh]
+        refine List.mem_append.mpr (.inr ?_)
+        exact List.mem_flatten.mpr ⟨parts[j]'hjp, List.getElem_mem hjp, hq⟩
+      have hnfe : (catNF (c.regs.map fun (r, w) => ((.var w r : NF), w))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) = bv := by
+        rw [catNF_eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) _ (by
+          intro q hq
+          obtain ⟨rw2, hrw2, hqe⟩ := List.mem_map.mp hq
+          obtain ⟨rr, ww, hrweq⟩ : ∃ a b, rw2 = (a, b) := ⟨_, _, rfl⟩
+          subst hrweq
+          rw [← hqe]
+          show ((Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) rr).width = ww
+          refine hWPreg rr ww ?_
+          rw [pinv.regsplit]
+          refine List.mem_append.mpr (.inr ?_)
+          exact List.mem_flatten.mpr ⟨c.regs, List.mem_map.mpr ⟨c, hc, rfl⟩, hrw2⟩)]
+        have hlist2 : ((c.regs.map fun (r, w) => ((NF.var w r : NF), w)).map
+            (fun q => q.1.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)))
+            = (((c.regs.map (·.2)).zip (offsetsOf (c.regs.map (·.2)))).map
+                fun q => sliceBV bv q.2 q.1) := by
+          refine List.ext_getElem (by
+            simp [List.length_zip, offsetsOf_length]) ?_
+          intro m hm1 hm2
+          have hmR : m < c.regs.length := by
+            rw [List.length_map, List.length_map] at hm1
+            exact hm1
+          rw [List.getElem_map, List.getElem_map, List.getElem_map, List.getElem_zip]
+          obtain ⟨rr, ww, hre⟩ : ∃ a b, c.regs[m]'hmR = (a, b) := ⟨_, _, rfl⟩
+          rw [hre]
+          dsimp only
+          have hoffm : m < (offsetsOf (c.regs.map (·.2))).length := by
+            rw [offsetsOf_length, List.length_map]
+            exact hmR
+          have hqm : ((c.regs.zip (offsetsOf (c.regs.map (·.2)))).map
+              fun q => (q.1.1, sliceBV bv q.2 q.1.2))[m]'(by
+                rw [List.length_map, List.length_zip, offsetsOf_length, List.length_map]
+                omega)
+              = (rr, sliceBV bv ((offsetsOf (c.regs.map (·.2)))[m]'hoffm) ww) := by
+            rw [List.getElem_map, List.getElem_zip, hre]
+          have hmem4 : (rr, sliceBV bv ((offsetsOf (c.regs.map (·.2)))[m]'hoffm) ww)
+              ∈ parts[j]'hjp := by
+            rw [hshape]
+            exact hqm ▸ List.getElem_mem _
+          have h5 := hσrun _ hmem4
+          dsimp only at h5
+          rw [List.getElem_map, hre]
+          exact h5
+        rw [hlist2, catAll_slices, hsumj, sliceBV_all]
+      obtain ⟨v2, hv2get, hv2ty⟩ := hcellsR c hc
+      have hveq : v = v2 := by
+        rw [hvget] at hv2get
+        exact Option.some.inj hv2get
+      refine ⟨v, kR, ?_, ?_, ?_, ?_⟩
+      · rw [← hdc]
+        exact hvget
+      · rw [← hdc]
+        show VTy Δ v c.ty
+        rw [hveq]
+        exact hv2ty
+      · rw [← hdc]
+        show Val.rep Δ kR v = .ok ((catNF (c.regs.map fun (r, w) =>
+            ((.var w r : NF), w))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+        rw [hnfe]
+        exact hvrep
+      · rw [← hdc]
+        show ((catNF (c.regs.map fun (r, w) => ((.var w r : NF), w))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)).width
+            = c.width
+        rw [hnfe]
+        exact hbw
+  -- The machine-step soundness, instantiated at this label.
+  have hSV : StepValC { Δ := Δ, edm := edm, lo := lo, blocks := blocks,
+                        cexpFuel := fuel, outTy := p.outTy }
+      plan (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)
+      (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) (.step o₁ s') :=
+    (cstep_sound hSInv fuel).1 _ _ _ _ _ _ _ ef gf _ hgo hEnvC hCellsC hm
+  obtain ⟨hVTyO, ⟨bo, ko, hrepO, hboW, hsliceO⟩, tgt', htgt'Mem, htgt'Uq, hargsLen',
+    hvty', ⟨reps', kr', hreps'M, hwreps', hsliceTag⟩, hcells'⟩ := hSV
+  have hsliceO' : sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+      (lo.cellsW + lo.rW) lo.outW = bo := hsliceO
+  have hboW' : bo.width = lo.outW := hboW
+  have hsliceTag' : sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+      lo.cellsW lo.rW = encTag lo tgt'.tag tgt'.argWs reps' := hsliceTag
+  -- The interface shape of the symbolic step.
+  obtain ⟨⟨houtsLen, houtsFst⟩, ⟨hnextsLen, hnextsFst⟩⟩ := symStep_shape hsym
+  have hnextsNames : ss.nexts.map Prod.fst = dev.registers.map (·.name) := by
+    refine List.ext_getElem (by rw [List.length_map, List.length_map]; omega) ?_
+    intro m h1 h2
+    rw [List.getElem_map, List.getElem_map]
+    exact hnextsFst m (by rw [List.length_map] at h2; omega)
+      (by rw [List.length_map] at h1; omega)
+  -- The Q leg: the device outputs are the output's port encoding.
+  obtain ⟨boF, hrepOF⟩ := vty_rep_total hden hVTyO hrep
+  have hrepOef : Val.rep Δ ef o₁ = .ok bo := by
+    have h1 := Val.rep_mono Δ hef hrepOF
+    rw [h1]
+    exact congrArg Except.ok (rep_det hrepOF hrepO)
+  have hszsOut : Val.detupleSizes Δ ef p.outTy = .ok (dev.outputs.map (·.2)) :=
+    detupleSizes_mono hef pinv.outsz
+  have hsumOut : (dev.outputs.map (·.2)).sum = bo.width := by
+    rw [pinv.outsum]
+    exact hboW'.symm
+  have hQlist := portSplit_intro hrepOef hszsOut hsumOut
+  have hout_val : ∀ j (hj : j < dev.outputs.length),
+      ((ss.outs[j]'(by omega)).2).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)
+        = sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+            (((offsetsOf (dev.outputs.map (·.2)))[j]'(by
+                rw [offsetsOf_length, List.length_map]; omega)) + lo.rW + lo.cellsW)
+            ((dev.outputs[j]'hj).2) := by
+    intro j hj
+    have hjz : j < ((dev.outputs.zip ((offsetsOf (dev.outputs.map (·.2))).map
+        (· + lo.rW + lo.cellsW))).zip ss.outs).length := by
+      rw [List.length_zip, List.length_zip, List.length_map, offsetsOf_length,
+          List.length_map]
+      omega
+    have hchk := forAllM_ok houtsF _ (List.getElem_mem hjz)
+    rw [checkOut, List.getElem_zip, List.getElem_zip, List.getElem_map] at hchk
+    dsimp only at hchk
+    split at hchk
+    rotate_left
+    · exact error_ne_ok hchk
+    split at hchk
+    rotate_left
+    · exact error_ne_ok hchk
+    rename_i hnm hceq
+    have hev := ceqB_eval hceq (sliceNF_varsWF hrecWF)
+      (substNF_varsWF hθWF (hssWF _ (List.mem_append.mpr
+        (.inl (List.getElem_mem (by omega))))))
+    rw [sliceNF_eval, hsubstE] at hev
+    exact hev.symm
+  have hQeq : Rwv.Hyle.Bridge.stepOutsVal (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) ss
+      = (((dev.outputs.map (·.2)).zip (offsetsOf (dev.outputs.map (·.2)))).map
+          fun q => sliceBV bo q.2 q.1) := by
+    rw [Rwv.Hyle.Bridge.stepOutsVal]
+    refine List.ext_getElem (by
+      rw [List.length_map, List.length_map, List.length_zip, offsetsOf_length,
+          List.length_map]
+      omega) ?_
+    intro j h1 h2
+    have hjO : j < dev.outputs.length := by
+      rw [List.length_map] at h1
+      omega
+    have hoffb : ((offsetsOf (dev.outputs.map (·.2)))[j]'(by
+          rw [offsetsOf_length, List.length_map]; omega))
+        + (dev.outputs[j]'hjO).2 ≤ lo.outW := by
+      rw [offsetsOf_getElem _ j (by rw [List.length_map]; omega)]
+      have hds := drop_sum_le (l := dev.outputs.map (·.2)) (i := j)
+        (by rw [List.length_map]; omega)
+      rw [List.getElem_map] at hds
+      rw [← pinv.outsum]
+      omega
+    have hkey : ((ss.outs[j]'(by omega)).2).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)
+        = sliceBV bo
+            ((offsetsOf (dev.outputs.map (·.2)))[j]'(by
+              rw [offsetsOf_length, List.length_map]; omega))
+            ((dev.outputs[j]'hjO).2) := by
+      rw [hout_val j hjO]
+      have hb2 : sliceBV
+            (sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+              (lo.cellsW + lo.rW) lo.outW)
+            ((offsetsOf (dev.outputs.map (·.2)))[j]'(by
+              rw [offsetsOf_length, List.length_map]; omega))
+            ((dev.outputs[j]'hjO).2)
+          = sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+              (lo.cellsW + lo.rW
+                + ((offsetsOf (dev.outputs.map (·.2)))[j]'(by
+                    rw [offsetsOf_length, List.length_map]; omega)))
+              ((dev.outputs[j]'hjO).2) :=
+        sliceBV_sliceBV (by omega)
+      rw [hsliceO'] at hb2
+      rw [show ((offsetsOf (dev.outputs.map (·.2)))[j]'(by
+            rw [offsetsOf_length, List.length_map]; omega)) + lo.rW + lo.cellsW
+          = lo.cellsW + lo.rW + ((offsetsOf (dev.outputs.map (·.2)))[j]'(by
+            rw [offsetsOf_length, List.length_map]; omega)) from by omega]
+      exact hb2.symm
+    rw [List.getElem_map, List.getElem_map, List.getElem_zip, List.getElem_map]
+    exact hkey
+  have hQ : Val.portSplit Δ ef p.outTy o₁ = .ok outs := by
+    rw [hQlist, hOuts, hQeq]
+  -- The successor relation, conjunct by conjunct.
+  refine ⟨hQ, ⟨tgt', htgt'Mem, htgt'Uq⟩, ?_, ?_, ?_⟩
+  · -- The block at the successor's label, at the right arity.
+    obtain ⟨l3, b3, hmem3, huq3, hty3, hws3⟩ := li.tgts tgt' htgt'Mem
+    have hb3get : blocks.get? tgt'.uniq = some b3 := by
+      rw [hblocks, ← huq3]
+      exact blocks_get hndb hmem3
+    have hlbl2 := hlabels tgt' htgt'Mem
+    rw [checkLabel] at hlbl2
+    dsimp only at hlbl2
+    split at hlbl2
+    rotate_left
+    · exact error_ne_ok hlbl2
+    rename_i blk2 hblk2get
+    rw [except_pure_def, except_bind_ok] at hlbl2
+    have hb23 : blk2 = b3 := by
+      rw [hblk2get] at hb3get
+      exact Option.some.inj hb3get
+    have hty3' : tgt'.argTys = blk2.params.dropLast.map (·.sig.ty) := by
+      rw [hb23]
+      exact hty3
+    split at hlbl2
+    rotate_left
+    · exact error_ne_ok hlbl2
+    rename_i hbArity2
+    have hbArity2' : blk2.params.length = tgt'.argWs.length + 1 := by
+      have := eq_of_beq hbArity2
+      omega
+    have hTysLen' : tgt'.argTys.length = tgt'.argWs.length := ((mapM_ok_idx hws3).1).symm
+    refine ⟨blk2, by rw [← htgt'Uq]; exact hblk2get, by omega, ?_⟩
+    intro pr hpr
+    obtain ⟨m, hm, hpre⟩ := List.getElem_of_mem hpr
+    have hmDL : m < blk2.params.dropLast.length := by
+      rw [List.length_zip] at hm
+      omega
+    have hmA : m < s'.args.length := by
+      rw [List.length_zip] at hm
+      omega
+    have hmT : m < tgt'.argTys.length := by
+      rw [List.length_dropLast] at hmDL
+      omega
+    rw [List.getElem_zip] at hpre
+    have hz4 : (tgt'.argTys.zip s'.args)[m]'(by
+        rw [List.length_zip]
+        omega) = (tgt'.argTys[m]'hmT, s'.args[m]'hmA) := by
+      rw [List.getElem_zip]
+    have hvt := hvty' _ (hz4 ▸ List.getElem_mem _)
+    dsimp only at hvt
+    rw [← hpre]
+    dsimp only
+    have hTym : tgt'.argTys[m]'hmT = (blk2.params.dropLast[m]'hmDL).sig.ty := by
+      rw [List.getElem_of_eq hty3', List.getElem_map]
+    rw [← hTym]
+    exact hvt
+  · -- The successor's cells are present and canonical.
+    intro c hc
+    obtain ⟨jc, hjc, hcjc⟩ := List.getElem_of_mem hc
+    have hjz2 : jc < (plan.cells.zip (offsetsOf (plan.cells.map (·.width)))).length := by
+      rw [List.length_zip, offsetsOf_length, List.length_map]
+      omega
+    have hz2 : (plan.cells.zip (offsetsOf (plan.cells.map (·.width))))[jc]'hjz2
+        = (plan.cells[jc]'hjc, (offsetsOf (plan.cells.map (·.width)))[jc]'(by
+            rw [offsetsOf_length, List.length_map]; omega)) := by
+      rw [List.getElem_zip]
+    obtain ⟨v, bv, k2, hg2, hvty2, -, -, -⟩ := hcells' _ (hz2 ▸ List.getElem_mem hjz2)
+    dsimp only at hg2 hvty2
+    rw [hcjc] at hg2 hvty2
+    exact ⟨v, hg2, hvty2⟩
+  · -- The successor's encoding, pointwise in the successor store.
+    have hcellsIdx : ∀ c2 ∈ plan.cells, ∃ v bv k, s'.cells.get? c2.name = some v ∧
+        Val.rep Δ k v = .ok bv ∧ (VTy Δ v c2.ty ∧ bv.width = c2.width) := by
+      intro c2 hc2
+      obtain ⟨jc, hjc, hcjc⟩ := List.getElem_of_mem hc2
+      have hjz2 : jc < (plan.cells.zip (offsetsOf (plan.cells.map (·.width)))).length := by
+        rw [List.length_zip, offsetsOf_length, List.length_map]
+        omega
+      have hz2 : (plan.cells.zip (offsetsOf (plan.cells.map (·.width))))[jc]'hjz2
+          = (plan.cells[jc]'hjc, (offsetsOf (plan.cells.map (·.width)))[jc]'(by
+              rw [offsetsOf_length, List.length_map]; omega)) := by
+        rw [List.getElem_zip]
+      obtain ⟨v, bv, k2, hg2, hvty2, hr2, hbw2, -⟩ := hcells' _ (hz2 ▸ List.getElem_mem hjz2)
+      dsimp only at hg2 hvty2 hr2 hbw2
+      rw [hcjc] at hg2 hvty2 hbw2
+      exact ⟨v, bv, k2, hg2, hr2, hvty2, hbw2⟩
+    obtain ⟨K, hK⟩ := cells_common_fuel _ plan.cells hcellsIdx
+    have hencCell : ∀ jc (hjc : jc < plan.cells.length), ∃ part,
+        encCellE Δ (max kr' K) s' (plan.cells[jc]'hjc) = .ok part := by
+      intro jc hjc
+      obtain ⟨v, bv, hg3, hr3, hvty3, hbw3⟩ := hK _ (List.getElem_mem hjc)
+      have henc1 : encCellE Δ (max kr' K) s' (plan.cells[jc]'hjc)
+          = encCellRegs (plan.cells[jc]'hjc).regs bv := by
+        rw [encCellE, hg3]
+        dsimp only
+        rw [Val.rep_mono Δ (Nat.le_max_right kr' K) hr3, except_bind_ok]
+        rw [if_pos (by simpa using hbw3)]
+      rw [henc1, encCellRegs_intro (by
+        rw [(pinv.cellszs _ (List.getElem_mem hjc)).2, ← hbw3])]
+      exact ⟨_, rfl⟩
+    obtain ⟨parts', hparts'M, hplen', hppt'⟩ :=
+      mapM_total_idx (g := encCellE Δ (max kr' K) s') (xs := plan.cells) hencCell
+    have hfind' : lo.targets.find? (fun tg => tg.uniq == s'.label) = some tgt' :=
+      find?_uniq hndT htgt'Mem htgt'Uq
+    have hreps'F : s'.args.mapM (Val.rep Δ (max kr' K)) = .ok reps' :=
+      mapM_rep_mono (Nat.le_max_left kr' K) hreps'M
+    have henc' := encodeList_intro (plan := plan) hfind' hreps'F hwreps' hparts'M
+    -- The next-state store, read register by register.
+    have hT'get : ∀ idx (hidx : idx < dev.registers.length),
+        t'.get? ((dev.registers[idx]'hidx).name)
+          = some (((ss.nexts[idx]'(by omega)).2).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) := by
+      intro idx hidx
+      rw [hT', Rwv.Hyle.Bridge.stepNextsVal]
+      have hnn : (ss.nexts.map Prod.fst).Nodup := by
+        rw [hnextsNames]
+        exact (List.nodup_append.mp hndIO).2.1
+      refine foldl_insert_get?_mem _ _ hnn ?_
+      have hmm : ss.nexts[idx]'(by omega)
+          = ((dev.registers[idx]'hidx).name, (ss.nexts[idx]'(by omega)).2) := by
+        rw [← hnextsFst idx hidx (by omega)]
+      exact hmm ▸ List.getElem_mem _
+    have hreg_val : ∀ idx (hidx : idx < dev.registers.length),
+        ((ss.nexts[idx]'(by omega)).2).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)
+          = sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+              ((offsetsOf (dev.registers.map (·.width)))[idx]'(by
+                rw [offsetsOf_length, List.length_map]; omega))
+              ((dev.registers[idx]'hidx).width) := by
+      intro idx hidx
+      have hjz3 : idx < ((dev.registers.zip (offsetsOf (dev.registers.map (·.width)))).zip
+          ss.nexts).length := by
+        rw [List.length_zip, List.length_zip, offsetsOf_length, List.length_map]
+        omega
+      have hchk := forAllM_ok hregsF _ (List.getElem_mem hjz3)
+      rw [checkReg, List.getElem_zip, List.getElem_zip] at hchk
+      dsimp only at hchk
+      split at hchk
+      rotate_left
+      · exact error_ne_ok hchk
+      split at hchk
+      rotate_left
+      · exact error_ne_ok hchk
+      rename_i hnm hceq
+      have hev := ceqB_eval hceq (sliceNF_varsWF hrecWF)
+        (substNF_varsWF hθWF (hssWF _ (List.mem_append.mpr
+          (.inr (List.getElem_mem (by omega))))))
+      rw [sliceNF_eval, hsubstE] at hev
+      exact hev.symm
+    -- The zip-walk: the successor encoding is the record's register slices.
+    have hwalkTail : parts'.flatten
+        = (((plan.cells.map (·.regs)).flatten).zip
+            (offsetsOf (((plan.cells.map (·.regs)).flatten).map (·.2)))).map
+            (fun q => (q.1.1, sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) q.2 q.1.2)) := by
+      refine cells_walk (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) plan.cells parts' hplen'.symm ?_
+      intro jc hjc
+      obtain ⟨hjp', hpj'⟩ := hppt' jc hjc
+      obtain ⟨v3, bv3, hg4, hr4, hbw4, hsum4, hshape4⟩ := encCellE_inv hpj'
+      have hjz2 : jc < (plan.cells.zip (offsetsOf (plan.cells.map (·.width)))).length := by
+        rw [List.length_zip, offsetsOf_length, List.length_map]
+        omega
+      have hz2 : (plan.cells.zip (offsetsOf (plan.cells.map (·.width))))[jc]'hjz2
+          = (plan.cells[jc]'hjc, (offsetsOf (plan.cells.map (·.width)))[jc]'(by
+              rw [offsetsOf_length, List.length_map]; omega)) := by
+        rw [List.getElem_zip]
+      obtain ⟨v4, bv4, k4, hg5, -, hr5, hbw5, hs5⟩ := hcells' _ (hz2 ▸ List.getElem_mem hjz2)
+      dsimp only at hg5 hr5 hbw5 hs5
+      have hveq : v4 = v3 := by
+        rw [hg4] at hg5
+        exact (Option.some.inj hg5).symm
+      have hbveq : bv4 = bv3 := rep_det (hveq ▸ hr5) hr4
+      refine ⟨bv3, (pinv.cellszs _ (List.getElem_mem hjc)).2, hbw4, ?_, hshape4⟩
+      rw [← hbveq]
+      exact hs5
+    -- The head: the tag register, then the flattened runs.
+    have hw2s : ((((plan.cells.map (·.regs)).flatten).map (·.2)).sum) = lo.cellsW := by
+      rw [flat_regs_sum plan.cells (fun c2 hc2 => (pinv.cellszs c2 hc2).2)]
+      show (plan.cells.map (·.width)).sum = (lo.cells.map (·.2.2)).sum
+      rw [← pinv.cellshape, List.map_map]
+      rfl
+    have hfull : (match plan.tagReg with
+          | none => []
+          | some (r, _) => [(r, encTag lo tgt'.tag tgt'.argWs reps')]) ++ parts'.flatten
+        = ((dev.registers.map (fun r => (r.name, r.width))).zip
+            (offsetsOf (dev.registers.map (·.width)))).map
+            (fun q => (q.1.1, sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) q.2 q.1.2)) := by
+      cases htr : plan.tagReg with
+      | none =>
+          have hR0 : dev.registers.map (fun r => (r.name, r.width))
+              = (plan.cells.map (·.regs)).flatten := by
+            have h5 := pinv.regsplit
+            rw [htr] at h5
+            simpa using h5
+          have hWs0 : dev.registers.map (·.width)
+              = ((plan.cells.map (·.regs)).flatten).map (·.2) := by
+            have h6 := congrArg (List.map Prod.snd) hR0
+            rw [List.map_map] at h6
+            exact h6
+          rw [List.nil_append, hwalkTail, hR0, hWs0]
+      | some rw2 =>
+          obtain ⟨r, w⟩ := rw2
+          have hR1 : dev.registers.map (fun r => (r.name, r.width))
+              = (r, w) :: (plan.cells.map (·.regs)).flatten := by
+            have h5 := pinv.regsplit
+            rw [htr] at h5
+            simpa using h5
+          have hWs1 : dev.registers.map (·.width)
+              = w :: ((plan.cells.map (·.regs)).flatten).map (·.2) := by
+            have h6 := congrArg (List.map Prod.snd) hR1
+            rw [List.map_map, List.map_cons] at h6
+            exact h6
+          rw [hR1, hWs1, offsetsOf_cons, List.zip_cons_cons, List.map_cons,
+              List.singleton_append]
+          dsimp only
+          rw [show encTag lo tgt'.tag tgt'.argWs reps'
+              = sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+                  ((((plan.cells.map (·.regs)).flatten).map (·.2)).sum) w from by
+            rw [hw2s, show w = lo.rW from pinv.tagw r w htr]
+            exact hsliceTag'.symm]
+          rw [hwalkTail]
+    refine ⟨max kr' K, _, henc', ?_, ?_⟩
+    · -- Pointwise agreement with the successor store.
+      intro pr hpr
+      rw [hfull] at hpr
+      obtain ⟨q, hq, hqe⟩ := List.mem_map.mp hpr
+      obtain ⟨idx, hidx, hqi⟩ := List.getElem_of_mem hq
+      have hidxR : idx < dev.registers.length := by
+        rw [List.length_zip, List.length_map, offsetsOf_length, List.length_map] at hidx
+        omega
+      rw [List.getElem_zip, List.getElem_map] at hqi
+      subst hqi
+      rw [← hqe]
+      dsimp only
+      rw [hT'get idx hidxR, hreg_val idx hidxR]
+    · -- The domain bound: the successor store holds only register names.
+      intro x hx
+      rw [hT', Rwv.Hyle.Bridge.stepNextsVal] at hx
+      rcases foldl_insert_contains' _ _ hx with hx | hx
+      · have hxR : x ∈ dev.registers.map (·.name) := by
+          rw [← hnextsNames]
+          exact hx
+        have hkeys' : ((match plan.tagReg with
+            | none => []
+            | some (r, _) => [(r, encTag lo tgt'.tag tgt'.argWs reps')])
+              ++ parts'.flatten).map (·.1)
+            = dev.registers.map (·.name) := by
+          rw [hfull]
+          refine List.ext_getElem (by
+            simp [List.length_zip, offsetsOf_length]) ?_
+          intro m h1 h2
+          simp only [List.getElem_map, List.getElem_zip]
+        rw [hkeys']
+        exact hxR
+      · rw [HashMap.contains_eq_isSome_getElem?] at hx
+        simp at hx
+
+set_option maxHeartbeats 1600000 in
+/-- THE end-to-end theorem: a passing `validateProc` run certifies the
+§7.5.6 correspondence, at every evaluation fuel at least the
+validator's own and at every goto fuel. The composition is exactly the
+schema's: `SimP` from `checkLabel_sound` per label (a Hyle device
+never halts, so the right machine never stops first), `hasTy_vty` for
+the input canonicality, `mkFEnv_implements` for the definition
+environment, `checkInit_sound` for the initial state, and
+`Rwv.stepObligations_corresponds` to conclude. -/
+theorem validateProc_corresponds {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
+    {H : Rwv.Hyle.Program} {fuel ef gf : Nat}
+    (hv : validateProc Δ edm p H fuel = true) (hef : fuel ≤ ef) :
+    Rwv.Eidos.Corresponds Δ edm ef gf p H := by
+  have hvE : validateProcE Δ edm p H fuel = .ok () := by
+    rw [validateProc] at hv
+    split at hv
+    · rename_i u heq
+      cases u
+      exact heq
+    · exact absurd hv (by simp)
+  cases hF : Rwv.Hyle.Sem.mkFEnv H with
+  | error e =>
+      intro ins hty encIns hmapM mt hmrun ht hhrun
+      have hrun : (do
+          let F ← Rwv.Hyle.Sem.mkFEnv H
+          Rwv.Hyle.Sem.run F (Rwv.Hyle.Sem.xenv H) H.device encIns) = .ok ht := hhrun
+      rw [hF] at hrun
+      exact error_ne_ok hrun
+  | ok F =>
+  rw [validateProcE] at hvE
+  split at hvE
+  rotate_left
+  · exact error_ne_ok hvE
+  rename_i hden
+  dsimp only at hvE
+  split at hvE
+  rotate_left
+  · exact error_ne_ok hvE
+  rename_i htup
+  split at hvE
+  rotate_left
+  · exact error_ne_ok hvE
+  rename_i hndH
+  split at hvE
+  rotate_left
+  · exact error_ne_ok hvE
+  rename_i hndb
+  split at hvE
+  rotate_left
+  · exact error_ne_ok hvE
+  rename_i hrepok
+  obtain ⟨lo, hlo, hvE⟩ := except_bind_eq_ok hvE
+  obtain ⟨plan, hplan, hvE⟩ := except_bind_eq_ok hvE
+  obtain ⟨ss, hsym, hvE⟩ := except_bind_eq_ok hvE
+  obtain ⟨u6, hlblF, hinitCk⟩ := except_bind_eq_ok hvE
+  have hlabels := forAllM_ok hlblF
+  have hImpl := Rwv.Hyle.Bridge.mkFEnv_implements (nodupB_nodup hndH) hF
+  refine Rwv.stepObligations_corresponds
+    (R := stateRel Δ lo plan (HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b))))
+    hF rfl rfl rfl ?_ ?_
+  · -- The step obligations: the prefix simulation, label by label.
+    refine ⟨?_⟩
+    intro s t i hP hRst
+    split <;> try trivial
+    · -- Both machines stepped: the per-label composition.
+      rename_i o₁ s' o₂ t' h₁ h₂
+      obtain ⟨so, hso, h₁'⟩ := except_bind_eq_ok h₁
+      cases so with
+      | halt a =>
+          dsimp only at h₁'
+          rw [except_pure_def] at h₁'
+          injection h₁' with h₁'
+          exact absurd h₁' (by simp)
+      | step o s2 =>
+          dsimp only at h₁'
+          rw [except_pure_def] at h₁'
+          injection h₁' with h₁'
+          injection h₁' with h₁'
+          injection h₁' with ho hs
+          subst ho
+          subst hs
+          obtain ⟨ins, hins, h₂'⟩ := except_bind_eq_ok h₂
+          obtain ⟨pr2, hpr2, h₂''⟩ := except_bind_eq_ok h₂'
+          obtain ⟨outs2, t2⟩ := pr2
+          dsimp only at h₂''
+          rw [except_pure_def] at h₂''
+          injection h₂'' with h₂''
+          injection h₂'' with h₂''
+          injection h₂'' with ho2 ht2
+          subst ho2
+          subst ht2
+          exact checkLabel_sound rfl hden htup hndb hrepok hlo hplan hsym hImpl
+            hlabels hef hRst hP hso hins hpr2
+    · -- The right machine cannot halt first: a device never halts.
+      rename_i pr h₁ h₂
+      obtain ⟨ins, hins, h₂'⟩ := except_bind_eq_ok h₂
+      obtain ⟨pr2, hpr2, h₂''⟩ := except_bind_eq_ok h₂'
+      obtain ⟨outs2, t2⟩ := pr2
+      dsimp only at h₂''
+      rw [except_pure_def] at h₂''
+      injection h₂'' with h₂''
+      exact absurd h₂'' (by simp)
+  · -- The initial state, from the reset check.
+    intro σ₀ o s₀ hic hexec
+    exact checkInit_sound (mkPlan_nodup hplan) hinitCk ef gf σ₀ o s₀ hic hexec
+
 /-! ## Axiom audit -/
 
 #print axioms vtyB_sound
@@ -5179,5 +6649,7 @@ theorem goCmds_varsWF {C : Ctx} {P : String → Nat → Prop} :
 #print axioms mkPlan_inv
 #print axioms cstep_sound
 #print axioms goCmds_varsWF
+#print axioms checkLabel_sound
+#print axioms validateProc_corresponds
 
 end Rwv.Eidos.Cstep
