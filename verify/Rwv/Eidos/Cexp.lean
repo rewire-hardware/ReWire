@@ -9626,19 +9626,24 @@ theorem cexpFull_varsWF {Δ : DEnv} {dmap : HashMap Int Defn} {P : String → Na
 per-label validators can compare by store index where the tree normal
 forms blow up. The mirror's guards are exactly `cexpJ`'s (plus
 width-coherence checks that keep the store invariant and can only
-make the mirror fail MORE often, never differently). The intended
-soundness statement is the simulation "a successful DAG compilation
-certifies a successful tree compilation whose normal form is the
-reading of the returned index" (`symExpDag_sim`'s pattern); the
-groundwork proved below covers the environment/join simulation
-relations, every constructor helper (`catListD`/`catNFD`/`sliceNFD`/
-`resizeNFD`/`slicesWD`/`cpendVecD`/`cpendGenD`), the integer-literal
-row, and the complete 4a row table (`cprimD_sim`; the extended-row
-`cprimFD_sim` is finished in scratch form but not yet landed — its
-one-theorem shape compiles too slowly). The top-level `cexpJD`
-induction (and with it the per-defn DAG verdict) is NOT yet stated as
-a theorem — the mirror is measurement-grade until then (nothing
-unproved is claimed; the tree validators are unaffected). -/
+make the mirror fail MORE often, never differently). THE soundness
+statement is the simulation `cexpJD_sim`/`cexpFullD_sim`: a
+successful DAG compilation certifies a successful tree compilation
+whose normal form is the reading of the returned index
+(`symExpDag_sim`'s pattern, lifted through the join environment and
+the pending-argument discipline); beneath it sit the environment/join
+simulation relations, every constructor helper
+(`catListD`/`catNFD`/`sliceNFD`/`resizeNFD`/`slicesWD`/`cpendVecD`/
+`cpendGenD`/`pushVars`), the integer-literal row, the complete row
+tables (`cprimD_sim`, `cprimFD_sim` — split per row family), and the
+case-chain legs (`cAltJD_sim`/`cchainJD_sim`). On top of the
+simulation, `checkDefnPairDag` is the per-definition DAG verdict —
+both sides compiled into ONE shared store over pushed parameter
+variables, compared by index after three `renorm` sweeps (the
+store-level `cfoldW3`) — and `checkDefnPairDag_sound` reduces its
+`true` verdict to the tree legs, which is how `checkDefnPair` (the
+DAG leg ordered first) keeps `checkDefnPair_sound` intact on pairs
+whose tree normal forms blow up. -/
 
 section DagMirror
 
@@ -10370,7 +10375,7 @@ structure GSim (d : Dag) (ΓD : DGamma) (ΓS : HashMap Int (NF × Ty)) : Prop wh
   reads : ∀ u, ΓS.get? u = (ΓD.get? u).map fun p => (d.read p.1, p.2)
   inRange : ∀ u p, ΓD.get? u = some p → p.1 < d.size
 
-private theorem GSim.mono {d d' : Dag} {ΓD : DGamma} {ΓS : HashMap Int (NF × Ty)}
+theorem GSim.mono {d d' : Dag} {ΓD : DGamma} {ΓS : HashMap Int (NF × Ty)}
     (h : GSim d ΓD ΓS) (hext : d.Ext d') : GSim d' ΓD ΓS := by
   refine ⟨fun u => ?_, fun u p hp => Nat.lt_of_lt_of_le (h.inRange u p hp) hext.size_le⟩
   rw [h.reads u]
@@ -10380,7 +10385,7 @@ private theorem GSim.mono {d d' : Dag} {ΓD : DGamma} {ΓS : HashMap Int (NF × 
       simp only [Option.map_some]
       rw [read_ext hext p.1 (h.inRange u p hu)]
 
-private theorem GSim.insert {d : Dag} {ΓD : DGamma} {ΓS : HashMap Int (NF × Ty)}
+theorem GSim.insert {d : Dag} {ΓD : DGamma} {ΓS : HashMap Int (NF × Ty)}
     (h : GSim d ΓD ΓS) (u : Int) {i : Nat} {t : Ty} (hi : i < d.size) :
     GSim d (ΓD.insert u (i, t)) (ΓS.insert u (d.read i, t)) := by
   refine ⟨fun y => ?_, fun y p hp => ?_⟩
@@ -11021,6 +11026,2268 @@ theorem clitIntD_sim {d : Dag} (hwf : d.WF) {ty : Ty} {n : Int}
   refine ⟨W, E, L, ?_⟩
   rw [hnt, R]
 
+
+/-! ### The cexpJD simulation groundwork (Phase 4d, the landing) -/
+
+/-- Readings of in-range pend pairs are extension-stable. -/
+theorem pend_read_ext {d d' : Dag} (hext : d.Ext d') {ps : List (Nat × Ty)}
+    (h : ∀ p ∈ ps, p.1 < d.size) :
+    (ps.map fun p => ((d'.read p.1 : NF), p.2)) = ps.map fun p => ((d.read p.1 : NF), p.2) :=
+  List.map_congr_left fun p hp => by rw [read_ext hext p.1 (h p hp)]
+
+/-- `teqAllD` is `teqAll` of the read-back pairs (only types are
+consulted). -/
+theorem teqAllD_eq (d : Dag) :
+    ∀ (ps : List (Nat × Ty)) (us : List Ty),
+      teqAllD ps us = teqAll (ps.map fun p => ((d.read p.1 : NF), p.2)) us := by
+  intro ps
+  induction ps with
+  | nil => intro us; cases us <;> rfl
+  | cons p rest ih =>
+      intro us
+      cases us with
+      | nil => rfl
+      | cons u urest =>
+          obtain ⟨i, t⟩ := p
+          show (teq t u && teqAllD rest urest) = (teq t u && teqAll _ urest)
+          rw [ih urest]
+
+/-- The simulation contract at one fuel (the induction hypothesis's
+shape): a successful `cexpJD` run certifies a successful `cexpJ` run
+whose normal form is the reading of the returned index, at read-back
+environments and pending arguments. -/
+abbrev DSimAt (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) : Prop :=
+  ∀ (ΓD : DGamma) (jΓD : CJEnvD) (e : Exp) (pendD : List (Nat × Ty)) (d d' : Dag)
+    (r : Nat) (ty : Ty) (ΓS : HashMap Int (NF × Ty)) (jΓS : CJEnv),
+    d.WF → GSim d ΓD ΓS → JSimEnv d jΓD jΓS → (∀ p ∈ pendD, p.1 < d.size) →
+    cexpJD Δ dmap fuel ΓD jΓD e pendD d = .ok (d', r, ty) →
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cexpJ Δ dmap fuel ΓS jΓS e (pendD.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty)
+
+/-- The argument-spine leg. -/
+theorem cargsD_sim {Δ : DEnv} {dmap : HashMap Int Defn} {fuel : Nat}
+    {ΓD : DGamma} {jΓD : CJEnvD} {ΓS : HashMap Int (NF × Ty)} {jΓS : CJEnv}
+    (IH : DSimAt Δ dmap fuel) :
+    ∀ (es : List Exp) (d d₁ : Dag) (pas : List (Nat × Ty)),
+      d.WF → GSim d ΓD ΓS → JSimEnv d jΓD jΓS →
+      cargsD Δ dmap fuel ΓD jΓD es d = .ok (d₁, pas) →
+      d₁.WF ∧ d.Ext d₁ ∧ (∀ p ∈ pas, p.1 < d₁.size) ∧
+        es.mapM (fun e => cexpJ Δ dmap fuel ΓS jΓS e [])
+          = .ok (pas.map fun p => ((d₁.read p.1 : NF), p.2)) := by
+  intro es
+  induction es with
+  | nil =>
+      intro d d₁ pas hwf hG hJ h
+      rw [cargsD] at h
+      injection h with h
+      injection h with h1 h2
+      subst h1; subst h2
+      exact ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, by simp, rfl⟩
+  | cons e es ihe =>
+      intro d d₁ pas hwf hG hJ h
+      rw [cargsD] at h
+      obtain ⟨drt, hd1, h⟩ := except_bind_eq_ok h
+      obtain ⟨da, ra, ta⟩ := drt
+      dsimp only at h
+      obtain ⟨drs, hd2, h⟩ := except_bind_eq_ok h
+      obtain ⟨db, rs⟩ := drs
+      dsimp only at h
+      injection h with h
+      injection h with h1 h2
+      subst h1; subst h2
+      obtain ⟨W₁, E₁, L₁, S₁⟩ := IH ΓD jΓD e [] d da ra ta ΓS jΓS hwf hG hJ
+        (by simp) hd1
+      simp only [List.map_nil] at S₁
+      obtain ⟨W₂, E₂, L₂, S₂⟩ := ihe da db rs W₁ (hG.mono E₁) (jsimEnv_mono hJ E₁) hd2
+      refine ⟨W₂, E₁.trans E₂, ?_, ?_⟩
+      · intro p hp
+        rcases List.mem_cons.mp hp with hp | hp
+        · subst hp
+          exact Nat.lt_of_lt_of_le L₁ E₂.size_le
+        · exact L₂ p hp
+      · rw [List.mapM_cons, S₁, except_bind_ok, S₂, except_bind_ok, except_pure_def, List.map_cons,
+            read_ext E₂ ra L₁]
+
+
+/-- The per-element application leg (VecMap/VecGenerate): the tree
+side's `List.range` mapM, from pre-built pend heads whose readings are
+the per-index tree pends. -/
+theorem celemsD_sim {Δ : DEnv} {dmap : HashMap Int Defn} {fuel : Nat}
+    {ΓD : DGamma} {jΓD : CJEnvD} {ΓS : HashMap Int (NF × Ty)} {jΓS : CJEnv}
+    {fE : Exp} {teI teO : Ty} {seO : Nat} {pf : Nat → NF} {emsg : String}
+    (IH : DSimAt Δ dmap fuel) :
+    ∀ (is : List Nat) (pends : List Nat) (d d₁ : Dag) (ps : List (Nat × Nat)),
+      d.WF → GSim d ΓD ΓS → JSimEnv d jΓD jΓS → (∀ q ∈ pends, q < d.size) →
+      pends.length = is.length →
+      (∀ j (h1 : j < pends.length) (h2 : j < is.length),
+        d.read (pends[j]'h1) = pf (is[j]'h2)) →
+      celemsD Δ dmap fuel ΓD jΓD fE teI teO seO pends d = .ok (d₁, ps) →
+      d₁.WF ∧ d.Ext d₁ ∧ (∀ q ∈ ps, q.1 < d₁.size) ∧
+        is.mapM (fun i => do
+            let (ei, ti) ← cexpJ Δ dmap fuel ΓS jΓS fE [(pf i, teI)]
+            if teq ti teO then (.ok (ei, seO) : Except String (NF × Nat))
+            else .error emsg)
+          = .ok (ps.map fun q => ((d₁.read q.1 : NF), q.2)) := by
+  intro is
+  induction is with
+  | nil =>
+      intro pends d d₁ ps hwf hG hJ hrange hlen hreads h
+      have hp : pends = [] := List.length_eq_zero_iff.mp (by simpa using hlen)
+      subst hp
+      rw [celemsD] at h
+      injection h with h
+      injection h with h1 h2
+      subst h1; subst h2
+      exact ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, by simp, rfl⟩
+  | cons i is ihe =>
+      intro pends d d₁ ps hwf hG hJ hrange hlen hreads h
+      match pends, hlen with
+      | p :: prest, hlen =>
+      rw [celemsD] at h
+      obtain ⟨det, hde, h⟩ := except_bind_eq_ok h
+      obtain ⟨da, ei, ti⟩ := det
+      dsimp only at h
+      split at h
+      rotate_left
+      · exact error_ne_ok h
+      rename_i hteq
+      obtain ⟨drs, hdr, h⟩ := except_bind_eq_ok h
+      obtain ⟨db, rest⟩ := drs
+      dsimp only at h
+      injection h with h
+      injection h with h1 h2
+      subst h1; subst h2
+      obtain ⟨W₁, E₁, L₁, S₁⟩ := IH ΓD jΓD fE [(p, teI)] d da ei ti ΓS jΓS hwf hG hJ
+        (by
+          intro q hq
+          obtain rfl := List.mem_singleton.mp hq
+          exact hrange p List.mem_cons_self) hde
+      obtain ⟨W₂, E₂, L₂, S₂⟩ := ihe prest da db rest W₁ (hG.mono E₁) (jsimEnv_mono hJ E₁)
+        (fun q hq => Nat.lt_of_lt_of_le (hrange q (List.mem_cons_of_mem _ hq)) E₁.size_le)
+        (by simpa using hlen)
+        (by
+          intro j h1 h2
+          rw [read_ext E₁ _ (hrange _ (List.mem_cons_of_mem _ (List.getElem_mem _)))]
+          have := hreads (j + 1) (by simpa using h1) (by simpa using h2)
+          simpa using this)
+        hdr
+      have hp0 : d.read p = pf i := by
+        have := hreads 0 (by simp) (by simp)
+        simpa using this
+      refine ⟨W₂, E₁.trans E₂, ?_, ?_⟩
+      · intro q hq
+        rcases List.mem_cons.mp hq with hq | hq
+        · subst hq
+          exact Nat.lt_of_lt_of_le L₁ E₂.size_le
+        · exact L₂ q hq
+      · rw [List.mapM_cons]
+        rw [show [((pf i : NF), teI)] = [(p, teI)].map fun p => ((d.read p.1 : NF), p.2) by
+          simp [hp0]]
+        rw [S₁, except_bind_ok]
+        dsimp only
+        rw [if_pos hteq, except_bind_ok, S₂, except_bind_ok, except_pure_def, List.map_cons,
+            read_ext E₂ ei L₁]
+
+/-- The record slices of one terminator alternative (the `foldr` in
+`cAltJD`/`goAlt1D`). -/
+theorem altSlices_spec {dn : Nat} :
+    ∀ (ps : List (Nat × Nat)) (d : Dag), d.WF → dn < d.size →
+      (ps.foldr (fun (q : Nat × Nat) (acc : Dag × List Nat) =>
+          let (d', r) := sliceNFD acc.1 q.2 q.1 dn
+          (d', r :: acc.2)) (d, ([] : List Nat))).1.WF ∧
+      d.Ext (ps.foldr (fun q acc =>
+          let (d', r) := sliceNFD acc.1 q.2 q.1 dn
+          (d', r :: acc.2)) (d, ([] : List Nat))).1 ∧
+      (∀ q ∈ (ps.foldr (fun q acc =>
+          let (d', r) := sliceNFD acc.1 q.2 q.1 dn
+          (d', r :: acc.2)) (d, ([] : List Nat))).2,
+        q < (ps.foldr (fun q acc =>
+          let (d', r) := sliceNFD acc.1 q.2 q.1 dn
+          (d', r :: acc.2)) (d, ([] : List Nat))).1.size) ∧
+      (ps.foldr (fun q acc =>
+          let (d', r) := sliceNFD acc.1 q.2 q.1 dn
+          (d', r :: acc.2)) (d, ([] : List Nat))).2.map
+        (ps.foldr (fun q acc =>
+          let (d', r) := sliceNFD acc.1 q.2 q.1 dn
+          (d', r :: acc.2)) (d, ([] : List Nat))).1.read
+        = ps.map fun q => sliceNF q.2 q.1 (d.read dn) := by
+  intro ps
+  induction ps with
+  | nil =>
+      intro d hwf hdn
+      exact ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, by simp, by simp⟩
+  | cons q rest ih =>
+      intro d hwf hdn
+      obtain ⟨W₁, E₁, L₁, R₁⟩ := ih d hwf hdn
+      rcases hfold : rest.foldr (fun q acc =>
+          let (d', r) := sliceNFD acc.1 q.2 q.1 dn
+          (d', r :: acc.2)) (d, ([] : List Nat)) with ⟨d₁, acc⟩
+      rw [hfold] at W₁ E₁ L₁ R₁
+      dsimp only at W₁ E₁ L₁ R₁
+      rcases hs : sliceNFD d₁ q.2 q.1 dn with ⟨d₂, s⟩
+      obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out
+        (sliceNFD_spec W₁ q.2 q.1 (Nat.lt_of_lt_of_le hdn E₁.size_le)) hs
+      have hstep : (q :: rest).foldr (fun q acc =>
+          let (d', r) := sliceNFD acc.1 q.2 q.1 dn
+          (d', r :: acc.2)) (d, ([] : List Nat)) = (d₂, s :: acc) := by
+        rw [List.foldr_cons, hfold]
+        dsimp only
+        rw [hs]
+      rw [hstep]
+      dsimp only
+      refine ⟨W₂, E₁.trans E₂, ?_, ?_⟩
+      · intro x hx
+        rcases List.mem_cons.mp hx with hx | hx
+        · subst hx
+          exact L₂
+        · exact Nat.lt_of_lt_of_le (L₁ x hx) E₂.size_le
+      · rw [List.map_cons, R₂, List.map_cons]
+        congr 1
+        · rw [read_ext E₁ dn hdn]
+        · rw [← R₁]
+          exact List.map_congr_left fun x hx => read_ext E₂ x (L₁ x hx)
+
+/-- One alternative's simulation (`cAltJ`'s mirror), parameterized by
+the master induction hypothesis. All relations are stated at the entry
+store `d`. -/
+theorem cAltJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} {fuel : Nat}
+    (IH : DSimAt Δ dmap fuel) {Γ'D : DGamma} {jΓD : CJEnvD}
+    {Γ'S : HashMap Int (NF × Ty)} {jΓS : CJEnv} {dty : Ty} {szT : Nat} {dnD : Nat}
+    {resTy : Ty} {pendD : List (Nat × Ty)} :
+    ∀ (alt : Alt) (maccD : Option Nat) (maccS : Option NF) (d d' : Dag) (bnf : Nat),
+      d.WF → GSim d Γ'D Γ'S → JSimEnv d jΓD jΓS → (∀ p ∈ pendD, p.1 < d.size) →
+      dnD < d.size →
+      (match maccD, maccS with
+       | some aD, some aS => aD < d.size ∧ d.read aD = aS
+       | none, none => True
+       | _, _ => False) →
+      cAltJD Δ dmap fuel Γ'D jΓD dty szT dnD resTy pendD alt maccD d = .ok (d', bnf) →
+      d'.WF ∧ d.Ext d' ∧ bnf < d'.size ∧
+        cAltJ Δ dmap fuel Γ'S jΓS dty szT (d.read dnD) resTy
+            (pendD.map fun p => ((d.read p.1 : NF), p.2)) alt maccS
+          = .ok (d'.read bnf) := by
+  intro alt maccD maccS d d' bnf hwf hG hJ hpend hdn hmacc h
+  obtain ⟨con, xs, body⟩ := alt
+  cases con with
+  | default => rw [cAltJD] at h; exact error_ne_ok h
+  | dataAlt cn =>
+      rw [cAltJD] at h
+      split at h
+      rotate_left
+      · exact error_ne_ok h
+      rename_i hctb
+      obtain ⟨tg, htag, h⟩ := except_bind_eq_ok h
+      obtain ⟨tag, w⟩ := tg
+      cases hcs : Δ.ctorSig.get? cn with
+      | none => rw [hcs] at h; dsimp only at h; exact error_ne_ok h
+      | some sig =>
+      rw [hcs] at h
+      dsimp only at h
+      obtain ⟨sub, hsub, h⟩ := except_bind_eq_ok h
+      split at h
+      rotate_left
+      · exact error_ne_ok h
+      rename_i hxlen
+      obtain ⟨szXs, hszXs, h⟩ := except_bind_eq_ok h
+      split at h
+      rotate_left
+      · exact error_ne_ok h
+      rename_i hwle
+      -- the field slices
+      rcases hfold : (szXs.zip ((List.range szXs.length).map fun i =>
+          (szXs.drop (i + 1)).sum)).foldr
+          (fun (q : Nat × Nat) (acc : Dag × List Nat) =>
+            let (d', r) := sliceNFD acc.1 q.2 q.1 dnD
+            (d', r :: acc.2)) (d, ([] : List Nat)) with ⟨d₁, slices⟩
+      rw [hfold] at h
+      obtain ⟨W₁, E₁, L₁, R₁⟩ := altSlices_spec _ d hwf hdn
+      rw [hfold] at W₁ E₁ L₁ R₁
+      obtain ⟨det, hbody, h⟩ := except_bind_eq_ok h
+      obtain ⟨d₂, bnf', bty⟩ := det
+      dsimp only at h
+      split at h
+      rotate_left
+      · exact error_ne_ok h
+      rename_i hbteq
+      -- the compiled body through the IH
+      have hGb : GSim d₁ (bindFieldsΓD xs ((slices.zip ((Ty.flattenArrow sig.ty).1.map
+          (DEnv.substTv sub))) ) Γ'D)
+          (bindFieldsΓ xs (((slices.zip ((Ty.flattenArrow sig.ty).1.map
+            (DEnv.substTv sub))).map fun p => ((d₁.read p.1 : NF), p.2))) Γ'S) :=
+        gsim_bindFields xs (hG.mono E₁) (by
+          intro p hp
+          exact L₁ p.1 (List.of_mem_zip hp).1)
+      obtain ⟨W₂, E₂, L₂, S₂⟩ := IH _ jΓD body pendD d₁ d₂ bnf' bty _ jΓS
+        W₁ hGb (jsimEnv_mono hJ E₁)
+        (fun p hp => Nat.lt_of_lt_of_le (hpend p hp) E₁.size_le) hbody
+      -- the tree-side slice pairs coincide
+      have hzipS : ((slices.zip ((Ty.flattenArrow sig.ty).1.map
+          (DEnv.substTv sub))).map fun p => ((d₁.read p.1 : NF), p.2))
+          = ((szXs.zip ((List.range szXs.length).map fun i =>
+              (szXs.drop (i + 1)).sum)).map fun q => sliceNF q.2 q.1 (d.read dnD)).zip
+            ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)) := by
+        rw [← R₁]
+        rw [List.zip_map_left]
+        rfl
+      -- assemble per macc
+      cases maccD with
+      | none =>
+          cases maccS with
+          | some aS => exact absurd hmacc (by simp)
+          | none =>
+              cases hwcase : w with
+              | zero =>
+                  subst hwcase
+                  injection h with h
+                  injection h with h1 h2
+                  subst h1; subst h2
+                  refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+                  rw [cAltJ]
+                  rw [if_pos hctb, htag, except_bind_ok, hcs]
+                  dsimp only
+                  rw [hsub, except_bind_ok, if_pos hxlen, hszXs, except_bind_ok, if_pos hwle]
+                  rw [show (pendD.map fun p => ((d.read p.1 : NF), p.2))
+                        = pendD.map fun p => ((d₁.read p.1 : NF), p.2) from
+                      (pend_read_ext E₁ hpend).symm]
+                  rw [← hzipS, S₂, except_bind_ok]
+                  dsimp only
+                  rw [if_pos hbteq]
+              | succ w0 =>
+                  subst hwcase
+                  injection h with h
+                  injection h with h1 h2
+                  subst h1; subst h2
+                  refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+                  rw [cAltJ]
+                  rw [if_pos hctb, htag, except_bind_ok, hcs]
+                  dsimp only
+                  rw [hsub, except_bind_ok, if_pos hxlen, hszXs, except_bind_ok, if_pos hwle]
+                  rw [show (pendD.map fun p => ((d.read p.1 : NF), p.2))
+                        = pendD.map fun p => ((d₁.read p.1 : NF), p.2) from
+                      (pend_read_ext E₁ hpend).symm]
+                  rw [← hzipS, S₂, except_bind_ok]
+                  dsimp only
+                  rw [if_pos hbteq]
+      | some aD =>
+          cases maccS with
+          | none => exact absurd hmacc (by simp)
+          | some aS =>
+              obtain ⟨haD, haR⟩ := hmacc
+              cases hwcase : w with
+              | zero =>
+                  subst hwcase
+                  injection h with h
+                  injection h with h1 h2
+                  subst h1; subst h2
+                  refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+                  rw [cAltJ]
+                  rw [if_pos hctb, htag, except_bind_ok, hcs]
+                  dsimp only
+                  rw [hsub, except_bind_ok, if_pos hxlen, hszXs, except_bind_ok, if_pos hwle]
+                  rw [show (pendD.map fun p => ((d.read p.1 : NF), p.2))
+                        = pendD.map fun p => ((d₁.read p.1 : NF), p.2) from
+                      (pend_read_ext E₁ hpend).symm]
+                  rw [← hzipS, S₂, except_bind_ok]
+                  dsimp only
+                  rw [if_pos hbteq]
+              | succ w0 =>
+                  subst hwcase
+                  -- the guarded if-chain node
+                  rcases hsl : sliceNFD d₂ (szT - (w0 + 1)) (w0 + 1) dnD with ⟨d₃, sl⟩
+                  rw [hsl] at h
+                  rcases hlt : d₃.mkLit ⟨w0 + 1, BitVec.ofNat (w0 + 1) tag⟩ with ⟨d₄, tl⟩
+                  rw [hlt] at h
+                  rcases hpe : d₄.rawPrim2 .eq sl tl with ⟨d₅, cnd⟩
+                  rw [hpe] at h
+                  dsimp only at h
+                  split at h
+                  rotate_left
+                  · exact error_ne_ok h
+                  rename_i harm
+                  rcases hit : d₅.rawIte cnd bnf' aD with ⟨d₆, itr⟩
+                  rw [hit] at h
+                  injection h with h
+                  injection h with h1 h2
+                  subst h1; subst h2
+                  have hdnd2 : dnD < d₂.size :=
+                    Nat.lt_of_lt_of_le hdn (E₁.trans E₂).size_le
+                  obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (sliceNFD_spec W₂ _ _ hdnd2) hsl
+                  obtain ⟨W₄, E₄, L₄, R₄⟩ := mk_out (mkLit_spec W₃ _) hlt
+                  obtain ⟨W₅, E₅, L₅, R₅⟩ := mk_out
+                    (rawPrim2_spec W₄ (Nat.lt_of_lt_of_le L₃ E₄.size_le) L₄ rfl) hpe
+                  have haD5 : aD < d₅.size := Nat.lt_of_lt_of_le haD
+                    ((((E₁.trans E₂).trans E₃).trans E₄).trans E₅).size_le
+                  have hbnf5 : bnf' < d₅.size :=
+                    Nat.lt_of_lt_of_le L₂ ((E₃.trans E₄).trans E₅).size_le
+                  obtain ⟨W₆, E₆, L₆, R₆⟩ := mk_out (rawIte_spec W₅ L₅ hbnf5 haD5 harm) hit
+                  refine ⟨W₆, ((((E₁.trans E₂).trans E₃).trans E₄).trans E₅).trans E₆,
+                    L₆, ?_⟩
+                  rw [cAltJ]
+                  rw [if_pos hctb, htag, except_bind_ok, hcs]
+                  dsimp only
+                  rw [hsub, except_bind_ok, if_pos hxlen, hszXs, except_bind_ok, if_pos hwle]
+                  rw [show (pendD.map fun p => ((d.read p.1 : NF), p.2))
+                        = pendD.map fun p => ((d₁.read p.1 : NF), p.2) from
+                      (pend_read_ext E₁ hpend).symm]
+                  rw [← hzipS, S₂, except_bind_ok]
+                  dsimp only
+                  rw [if_pos hbteq]
+                  rw [R₆, R₅, read_ext E₄ sl L₃, R₃, R₄,
+                      read_ext ((E₃.trans E₄).trans E₅) bnf' L₂,
+                      read_ext ((((E₁.trans E₂).trans E₃).trans E₄).trans E₅) aD haD,
+                      read_ext (E₁.trans E₂) dnD hdn, haR]
+  | litAlt i =>
+      rw [cAltJD] at h
+      obtain ⟨det, hbody, h⟩ := except_bind_eq_ok h
+      obtain ⟨d₁, bnf', bty⟩ := det
+      dsimp only at h
+      split at h
+      rotate_left
+      · exact error_ne_ok h
+      rename_i hbteq
+      obtain ⟨W₁, E₁, L₁, S₁⟩ := IH Γ'D jΓD body pendD d d₁ bnf' bty Γ'S jΓS
+        hwf hG hJ hpend hbody
+      cases maccD with
+      | none =>
+          cases maccS with
+          | some aS => exact absurd hmacc (by simp)
+          | none =>
+              injection h with h
+              injection h with h1 h2
+              subst h1; subst h2
+              refine ⟨W₁, E₁, L₁, ?_⟩
+              rw [cAltJ, S₁, except_bind_ok]
+              dsimp only
+              rw [if_pos hbteq]
+      | some aD =>
+          cases maccS with
+          | none => exact absurd hmacc (by simp)
+          | some aS =>
+              obtain ⟨haD, haR⟩ := hmacc
+              rcases hlt : d₁.mkLit ⟨szT, BitVec.ofInt szT i⟩ with ⟨d₂, tl⟩
+              rw [hlt] at h
+              rcases hpe : d₂.rawPrim2 .eq dnD tl with ⟨d₃, cnd⟩
+              rw [hpe] at h
+              dsimp only at h
+              split at h
+              rotate_left
+              · exact error_ne_ok h
+              rename_i harm
+              rcases hit : d₃.rawIte cnd bnf' aD with ⟨d₄, itr⟩
+              rw [hit] at h
+              injection h with h
+              injection h with h1 h2
+              subst h1; subst h2
+              obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (mkLit_spec W₁ _) hlt
+              have hdn2 : dnD < d₂.size :=
+                Nat.lt_of_lt_of_le hdn (E₁.trans E₂).size_le
+              obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (rawPrim2_spec W₂ hdn2 L₂ rfl) hpe
+              have haD3 : aD < d₃.size :=
+                Nat.lt_of_lt_of_le haD ((E₁.trans E₂).trans E₃).size_le
+              have hbnf3 : bnf' < d₃.size :=
+                Nat.lt_of_lt_of_le L₁ (E₂.trans E₃).size_le
+              obtain ⟨W₄, E₄, L₄, R₄⟩ := mk_out (rawIte_spec W₃ L₃ hbnf3 haD3 harm) hit
+              refine ⟨W₄, ((E₁.trans E₂).trans E₃).trans E₄, L₄, ?_⟩
+              rw [cAltJ, S₁, except_bind_ok]
+              dsimp only
+              rw [if_pos hbteq]
+              rw [R₄, R₃, read_ext (E₁.trans E₂) dnD hdn, R₂,
+                  read_ext (E₂.trans E₃) bnf' L₁,
+                  read_ext ((E₁.trans E₂).trans E₃) aD haD, haR]
+
+/-- The if-chain simulation (`cchainJ`'s mirror). -/
+theorem cchainJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} {fuel : Nat}
+    (IH : DSimAt Δ dmap fuel) {Γ'D : DGamma} {jΓD : CJEnvD}
+    {Γ'S : HashMap Int (NF × Ty)} {jΓS : CJEnv} {dty : Ty} {szT : Nat} {dnD : Nat}
+    {resTy : Ty} {pendD : List (Nat × Ty)} :
+    ∀ (rest : List Alt) (maccD : Option Nat) (maccS : Option NF) (d d' : Dag)
+      (out : Nat) (oty : Ty),
+      d.WF → GSim d Γ'D Γ'S → JSimEnv d jΓD jΓS → (∀ p ∈ pendD, p.1 < d.size) →
+      dnD < d.size →
+      (match maccD, maccS with
+       | some aD, some aS => aD < d.size ∧ d.read aD = aS
+       | none, none => True
+       | _, _ => False) →
+      cchainJD Δ dmap fuel Γ'D jΓD dty szT dnD resTy pendD rest maccD d
+        = .ok (d', out, oty) →
+      d'.WF ∧ d.Ext d' ∧ out < d'.size ∧
+        cchainJ Δ dmap fuel Γ'S jΓS dty szT (d.read dnD) resTy
+            (pendD.map fun p => ((d.read p.1 : NF), p.2)) rest maccS
+          = .ok (d'.read out, oty) := by
+  intro rest
+  induction rest with
+  | nil =>
+      intro maccD maccS d d' out oty hwf hG hJ hpend hdn hmacc h
+      cases maccD with
+      | none => rw [cchainJD] at h; exact error_ne_ok h
+      | some els =>
+          cases maccS with
+          | none => exact absurd hmacc (by simp)
+          | some elsS =>
+              obtain ⟨hlt, hread⟩ := hmacc
+              rw [cchainJD] at h
+              obtain ⟨hd, hr, hty⟩ := triple_eq h
+              subst hd; subst hr; subst hty
+              refine ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, hlt, ?_⟩
+              rw [cchainJ, hread]
+  | cons alt restT ihR =>
+      intro maccD maccS d d' out oty hwf hG hJ hpend hdn hmacc h
+      rcases restT with _ | ⟨r2, rt⟩
+      · cases maccD with
+        | none =>
+            cases maccS with
+            | some aS => exact absurd hmacc (by simp)
+            | none =>
+                rw [cchainJD] at h
+                obtain ⟨db, hb, h⟩ := except_bind_eq_ok h
+                obtain ⟨d₁, bnf⟩ := db
+                dsimp only at h
+                obtain ⟨hd, hr, hty⟩ := triple_eq h
+                subst hd; subst hr; subst hty
+                obtain ⟨W, E, L, S⟩ := cAltJD_sim IH alt none none d d₁ bnf
+                  hwf hG hJ hpend hdn trivial hb
+                refine ⟨W, E, L, ?_⟩
+                rw [cchainJ, S, except_bind_ok]
+        | some aD =>
+            cases maccS with
+            | none => exact absurd hmacc (by simp)
+            | some aS =>
+                rw [cchainJD] at h
+                obtain ⟨dacc, hacc, h⟩ := except_bind_eq_ok h
+                obtain ⟨d₁, accnf, accty⟩ := dacc
+                dsimp only at h
+                obtain ⟨db, hb, h⟩ := except_bind_eq_ok h
+                obtain ⟨d₂, bnf'⟩ := db
+                dsimp only at h
+                obtain ⟨hd, hr, hty⟩ := triple_eq h
+                subst hd; subst hr; subst hty
+                obtain ⟨W₁, E₁, L₁, S₁⟩ := ihR (some aD) (some aS) d d₁ accnf accty
+                  hwf hG hJ hpend hdn hmacc hacc
+                obtain ⟨W₂, E₂, L₂, S₂⟩ := cAltJD_sim IH alt (some accnf)
+                  (some (d₁.read accnf)) d₁ d₂ bnf' W₁ (hG.mono E₁)
+                  (jsimEnv_mono hJ E₁)
+                  (fun p hp => Nat.lt_of_lt_of_le (hpend p hp) E₁.size_le)
+                  (Nat.lt_of_lt_of_le hdn E₁.size_le) ⟨L₁, rfl⟩ hb
+                refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+                rw [cchainJ, S₁, except_bind_ok]
+                dsimp only
+                rw [show ((pendD.map fun p => ((d.read p.1 : NF), p.2)))
+                      = pendD.map fun p => ((d₁.read p.1 : NF), p.2) from
+                    (pend_read_ext E₁ hpend).symm,
+                    show d.read dnD = d₁.read dnD from
+                      (read_ext E₁ dnD hdn).symm, S₂, except_bind_ok]
+                all_goals intro h' _
+                all_goals cases h'
+      · rw [cchainJD] at h
+        obtain ⟨dacc, hacc, h⟩ := except_bind_eq_ok h
+        obtain ⟨d₁, accnf, accty⟩ := dacc
+        dsimp only at h
+        obtain ⟨db, hb, h⟩ := except_bind_eq_ok h
+        obtain ⟨d₂, bnf'⟩ := db
+        dsimp only at h
+        obtain ⟨hd, hr, hty⟩ := triple_eq h
+        subst hd; subst hr; subst hty
+        have hmaccS : maccS.isSome = maccD.isSome := by
+          cases maccD <;> cases maccS <;> simp_all
+        obtain ⟨W₁, E₁, L₁, S₁⟩ := ihR maccD maccS d d₁ accnf accty
+          hwf hG hJ hpend hdn hmacc hacc
+        obtain ⟨W₂, E₂, L₂, S₂⟩ := cAltJD_sim IH alt (some accnf)
+          (some (d₁.read accnf)) d₁ d₂ bnf' W₁ (hG.mono E₁)
+          (jsimEnv_mono hJ E₁)
+          (fun p hp => Nat.lt_of_lt_of_le (hpend p hp) E₁.size_le)
+          (Nat.lt_of_lt_of_le hdn E₁.size_le) ⟨L₁, rfl⟩ hb
+        refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+        rw [cchainJ, S₁, except_bind_ok]
+        dsimp only
+        rw [show ((pendD.map fun p => ((d.read p.1 : NF), p.2)))
+              = pendD.map fun p => ((d₁.read p.1 : NF), p.2) from
+            (pend_read_ext E₁ hpend).symm,
+            show d.read dnD = d₁.read dnD from
+              (read_ext E₁ dnD hdn).symm, S₂, except_bind_ok]
+        all_goals intro _ h'
+        all_goals cases h'
+
+private theorem cprimFD_sim_finite {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
+    {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty .finite pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty .finite (pas.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty) := by
+    simp only [cprimFD] at h
+    rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨⟨b2, tb2⟩, ps⟩⟩
+    · exact error_ne_ok h
+    rotate_left
+    · exact error_ne_ok h
+    obtain ⟨n, hn, h⟩ := except_bind_eq_ok h
+    cases hnd : d.nodes[a]? with
+    | none => rw [hnd] at h; exact error_ne_ok h
+    | some node =>
+        rw [hnd] at h
+        cases node <;> try exact error_ne_ok h
+        rename_i v
+        dsimp only at h
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        rename_i hlt
+        rcases hml : d.mkLit ⟨nbits n, BitVec.ofNat (nbits n) v.nat⟩ with ⟨d₁, r₁⟩
+        rw [hml] at h
+        obtain ⟨hd, hr, hty⟩ := triple_eq h
+        subst hd; subst hr; subst hty
+        obtain ⟨W, E, L, R⟩ := mk_out (mkLit_spec hwf _) hml
+        have hread : d.read a = .lit v :=
+          read_eq (fun j hj => absurd hj (by simp [DNode.children])) hnd
+        refine ⟨W, E, L, ?_⟩
+        show rowFinite (Ty.flattenArrow pty).2 [((d.read a : NF), ta)] = _
+        rw [hread, rowFinite, hn, except_bind_ok]
+        dsimp only
+        rw [if_pos hlt, R]
+
+private theorem cprimFD_sim_natVal {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
+    {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty .natVal pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty .natVal (pas.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty) := by
+    simp only [cprimFD] at h
+    rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨⟨b2, tb2⟩, ps⟩⟩
+    · exact error_ne_ok h
+    rotate_left
+    · exact error_ne_ok h
+    obtain ⟨pt, hpt, h⟩ := except_bind_eq_ok h
+    obtain ⟨k, hk, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hfl
+    rcases hml : d.mkLit ⟨128, BitVec.ofNat 128 k⟩ with ⟨d₁, r₁⟩
+    rw [hml] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W, E, L, R⟩ := mk_out (mkLit_spec hwf _) hml
+    refine ⟨W, E, L, ?_⟩
+    show rowNatVal (Ty.flattenArrow pty).1 (Ty.flattenArrow pty).2
+      [((d.read a : NF), ta)] = _
+    rw [rowNatVal, hpt, except_bind_ok, hk, except_bind_ok, hfl]
+    split
+    · rw [R]
+    · simp_all
+
+private theorem cprimFD_sim_vecIndexProxy {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
+    {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty .vecIndexProxy pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty .vecIndexProxy (pas.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty) := by
+    simp only [cprimFD] at h
+    rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨⟨b2, tb2⟩, _ | ⟨p3, ps⟩⟩⟩
+    · exact error_ne_ok h
+    · exact error_ne_ok h
+    rotate_left
+    · exact error_ne_ok h
+    obtain ⟨pt, hpt, h⟩ := except_bind_eq_ok h
+    obtain ⟨k, hk, h⟩ := except_bind_eq_ok h
+    obtain ⟨lt', hlt', h⟩ := except_bind_eq_ok h
+    obtain ⟨len, tea⟩ := lt'
+    dsimp only at h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hteq
+    obtain ⟨se, hse, h⟩ := except_bind_eq_ok h
+    obtain ⟨szA, hszA, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hklen
+    rcases hsl : sliceNFD d (szA - k * se - se) se a with ⟨d₁, r₁⟩
+    rw [hsl] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W, E, L, R⟩ := mk_out
+      (sliceNFD_spec hwf _ _ (show a < d.size from hpas (a, ta) (by simp))) hsl
+    refine ⟨W, E, L, ?_⟩
+    show rowVecIndexProxy Δ szf (Ty.flattenArrow pty).1 (Ty.flattenArrow pty).2
+      [((d.read a : NF), ta), ((d.read b2 : NF), tb2)] = _
+    rw [rowVecIndexProxy, hpt, except_bind_ok, hk, except_bind_ok, hlt', except_bind_ok]
+    dsimp only
+    rw [if_pos hteq, hse, except_bind_ok, hszA, except_bind_ok, if_pos hklen, R]
+
+private theorem cprimFD_sim_finiteMinBound {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
+    {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty .finiteMinBound pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty .finiteMinBound (pas.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty) := by
+    simp only [cprimFD] at h
+    rcases pas with _ | ⟨p1, ps⟩
+    rotate_left
+    · exact error_ne_ok h
+    obtain ⟨n, hn, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hge
+    rcases hml : d.mkLit ⟨nbits n, BitVec.ofNat (nbits n) 0⟩ with ⟨d₁, r₁⟩
+    rw [hml] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W, E, L, R⟩ := mk_out (mkLit_spec hwf _) hml
+    refine ⟨W, E, L, ?_⟩
+    show rowFinBound false (Ty.flattenArrow pty).2 [] = _
+    rw [rowFinBound, hn, except_bind_ok, if_pos hge, R]
+    rfl
+
+private theorem cprimFD_sim_finiteMaxBound {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
+    {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty .finiteMaxBound pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty .finiteMaxBound (pas.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty) := by
+    simp only [cprimFD] at h
+    rcases pas with _ | ⟨p1, ps⟩
+    rotate_left
+    · exact error_ne_ok h
+    obtain ⟨n, hn, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hge
+    rcases hml : d.mkLit ⟨nbits n, BitVec.ofNat (nbits n) (n - 1)⟩ with ⟨d₁, r₁⟩
+    rw [hml] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W, E, L, R⟩ := mk_out (mkLit_spec hwf _) hml
+    refine ⟨W, E, L, ?_⟩
+    show rowFinBound true (Ty.flattenArrow pty).2 [] = _
+    rw [rowFinBound, hn, except_bind_ok, if_pos hge, R]
+    rfl
+
+private theorem cprimFD_sim_toFinite {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
+    {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty .toFinite pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty .toFinite (pas.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty) := by
+    simp only [cprimFD] at h
+    rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨⟨b2, tb2⟩, ps⟩⟩
+    · exact error_ne_ok h
+    rotate_left
+    · exact error_ne_ok h
+    obtain ⟨n, hn, h⟩ := except_bind_eq_ok h
+    obtain ⟨wa, hwa, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hle
+    rcases hrz : resizeNFD d (nbits n) wa a with ⟨d₁, r₁⟩
+    rw [hrz] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W, E, L, R⟩ := mk_out
+      (resizeNFD_spec hwf (show a < d.size from hpas (a, ta) (by simp))) hrz
+    refine ⟨W, E, L, ?_⟩
+    show rowToFinite (Ty.flattenArrow pty).2 [((d.read a : NF), ta)] = _
+    rw [rowToFinite, hn, except_bind_ok, hwa, except_bind_ok, if_pos hle, R]
+
+private theorem cprimFD_sim_toFiniteMod {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
+    {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty .toFiniteMod pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty .toFiniteMod (pas.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty) := by
+    simp only [cprimFD] at h
+    rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨⟨b2, tb2⟩, ps⟩⟩
+    · exact error_ne_ok h
+    rotate_left
+    · exact error_ne_ok h
+    obtain ⟨n, hn, h⟩ := except_bind_eq_ok h
+    obtain ⟨wa, hwa, h⟩ := except_bind_eq_ok h
+    split at h
+    · rename_i hle
+      rcases hrz : resizeNFD d (nbits n) wa a with ⟨d₁, r₁⟩
+      rw [hrz] at h
+      obtain ⟨hd, hr, hty⟩ := triple_eq h
+      subst hd; subst hr; subst hty
+      obtain ⟨W, E, L, R⟩ := mk_out
+        (resizeNFD_spec hwf (show a < d.size from hpas (a, ta) (by simp))) hrz
+      refine ⟨W, E, L, ?_⟩
+      show rowToFiniteMod (Ty.flattenArrow pty).2 [((d.read a : NF), ta)] = _
+      rw [rowToFiniteMod, hn, except_bind_ok, hwa, except_bind_ok, if_pos hle, R]
+    · rename_i hnle
+      rcases hr1 : resizeNFD d (max wa (nbits n)) wa a with ⟨d₁, r₁⟩
+      rw [hr1] at h
+      rcases hl2 : d₁.mkLit ⟨max wa (nbits n), BitVec.ofNat (max wa (nbits n)) n⟩
+        with ⟨d₂, l₂⟩
+      rw [hl2] at h
+      rcases hp3 : d₂.rawPrim2 .umod r₁ l₂ with ⟨d₃, r₃⟩
+      rw [hp3] at h
+      rcases hr4 : resizeNFD d₃ (nbits n) (max wa (nbits n)) r₃ with ⟨d₄, r₄⟩
+      rw [hr4] at h
+      obtain ⟨hd, hr, hty⟩ := triple_eq h
+      subst hd; subst hr; subst hty
+      obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out
+        (resizeNFD_spec hwf (show a < d.size from hpas (a, ta) (by simp))) hr1
+      obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (mkLit_spec W₁ _) hl2
+      obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out
+        (rawPrim2_spec W₂ (Nat.lt_of_lt_of_le L₁ E₂.size_le) L₂ rfl) hp3
+      obtain ⟨W₄, E₄, L₄, R₄⟩ := mk_out (resizeNFD_spec W₃ L₃) hr4
+      refine ⟨W₄, ((E₁.trans E₂).trans E₃).trans E₄, L₄, ?_⟩
+      show rowToFiniteMod (Ty.flattenArrow pty).2 [((d.read a : NF), ta)] = _
+      rw [rowToFiniteMod, hn, except_bind_ok, hwa, except_bind_ok, if_neg hnle,
+          R₄, R₃, read_ext E₂ r₁ L₁, R₁, R₂]
+
+private theorem cprimFD_sim_fromFinite {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
+    {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty .fromFinite pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty .fromFinite (pas.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty) := by
+    simp only [cprimFD] at h
+    rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨⟨b2, tb2⟩, ps⟩⟩
+    · exact error_ne_ok h
+    rotate_left
+    · exact error_ne_ok h
+    obtain ⟨n, hn, h⟩ := except_bind_eq_ok h
+    obtain ⟨m, hm, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hle
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hnb
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    refine ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d,
+      show a < d.size from hpas (a, ta) (by simp), ?_⟩
+    show rowFromFinite (Ty.flattenArrow pty).2 [((d.read a : NF), ta)] = _
+    rw [rowFromFinite, hn, except_bind_ok, hm, except_bind_ok, if_pos hle, if_pos hnb]
+
+private theorem cprimFD_sim_vecReplicate {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
+    {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty .vecReplicate pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty .vecReplicate (pas.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty) := by
+    simp only [cprimFD] at h
+    rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨⟨b2, tb2⟩, ps⟩⟩
+    · exact error_ne_ok h
+    rotate_left
+    · exact error_ne_ok h
+    obtain ⟨nte, hnte, h⟩ := except_bind_eq_ok h
+    obtain ⟨n, te⟩ := nte
+    dsimp only at h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hteq
+    obtain ⟨sz, hsz, h⟩ := except_bind_eq_ok h
+    split at h
+    · rename_i hz
+      rcases hml : d.mkLit Rwv.Hyle.BV.nil with ⟨d₁, r₁⟩
+      rw [hml] at h
+      obtain ⟨hd, hr, hty⟩ := triple_eq h
+      subst hd; subst hr; subst hty
+      obtain ⟨W, E, L, R⟩ := mk_out (mkLit_spec hwf _) hml
+      refine ⟨W, E, L, ?_⟩
+      show rowVecReplicate Δ szf (Ty.flattenArrow pty).2 [((d.read a : NF), ta)] = _
+      rw [rowVecReplicate, hnte, except_bind_ok]
+      dsimp only
+      rw [if_pos hteq, hsz, except_bind_ok, if_pos hz, R]
+    · rename_i hnz
+      rcases hp : d.rawPrim1 (.rep n) a with ⟨d₁, r₁⟩
+      rw [hp] at h
+      obtain ⟨hd, hr, hty⟩ := triple_eq h
+      subst hd; subst hr; subst hty
+      obtain ⟨W, E, L, R⟩ := mk_out
+        (rawPrim1_spec hwf (show a < d.size from hpas (a, ta) (by simp)) rfl) hp
+      refine ⟨W, E, L, ?_⟩
+      show rowVecReplicate Δ szf (Ty.flattenArrow pty).2 [((d.read a : NF), ta)] = _
+      rw [rowVecReplicate, hnte, except_bind_ok]
+      dsimp only
+      rw [if_pos hteq, hsz, except_bind_ok, if_neg hnz, R]
+
+private theorem cprimFD_sim_vecConcat {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
+    {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty .vecConcat pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty .vecConcat (pas.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty) := by
+    simp only [cprimFD] at h
+    rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨⟨b2, tb2⟩, _ | ⟨p3, ps⟩⟩⟩
+    · exact error_ne_ok h
+    · exact error_ne_ok h
+    rotate_left
+    · exact error_ne_ok h
+    obtain ⟨nte, hnte, h⟩ := except_bind_eq_ok h
+    obtain ⟨nr, ter⟩ := nte
+    dsimp only at h
+    obtain ⟨nte1, hnte1, h⟩ := except_bind_eq_ok h
+    obtain ⟨n1, te1⟩ := nte1
+    dsimp only at h
+    obtain ⟨nte2, hnte2, h⟩ := except_bind_eq_ok h
+    obtain ⟨n2, te2⟩ := nte2
+    dsimp only at h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hteq
+    obtain ⟨sa, hsa, h⟩ := except_bind_eq_ok h
+    obtain ⟨sb, hsb, h⟩ := except_bind_eq_ok h
+    rcases hcat : catNFD d [(a, sa), (b2, sb)] with ⟨d₁, r₁⟩
+    rw [hcat] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W, E, L, R⟩ := mk_out (catNFD_spec hwf (by
+      intro p hp
+      rcases List.mem_cons.mp hp with hp | hp
+      · subst hp; exact hpas (a, ta) (by simp)
+      rcases List.mem_cons.mp hp with hp | hp
+      · subst hp; exact hpas (b2, tb2) (by simp)
+      · exact absurd hp (by simp))) hcat
+    refine ⟨W, E, L, ?_⟩
+    show rowVecConcat Δ szf (Ty.flattenArrow pty).2
+      [((d.read a : NF), ta), ((d.read b2 : NF), tb2)] = _
+    rw [rowVecConcat, hnte, except_bind_ok]
+    dsimp only
+    rw [hnte1, except_bind_ok]
+    dsimp only
+    rw [hnte2, except_bind_ok]
+    dsimp only
+    rw [if_pos hteq, hsa, except_bind_ok, hsb, except_bind_ok, R]
+    rfl
+
+private theorem cprimFD_sim_vecReverse {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
+    {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty .vecReverse pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty .vecReverse (pas.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty) := by
+    simp only [cprimFD] at h
+    rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨⟨b2, tb2⟩, ps⟩⟩
+    · exact error_ne_ok h
+    rotate_left
+    · exact error_ne_ok h
+    obtain ⟨nte, hnte, h⟩ := except_bind_eq_ok h
+    obtain ⟨nr, ter⟩ := nte
+    dsimp only at h
+    obtain ⟨nte1, hnte1, h⟩ := except_bind_eq_ok h
+    obtain ⟨n1, te1⟩ := nte1
+    dsimp only at h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hteq
+    obtain ⟨se, hse, h⟩ := except_bind_eq_ok h
+    rcases hsw : slicesWD d a ((List.range n1).map fun k => (k * se, se)) with ⟨d₁, ps₁⟩
+    rw [hsw] at h
+    rcases hcat : catNFD d₁ ps₁ with ⟨d₂, r₂⟩
+    rw [hcat] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    have hspec := slicesWD_spec (a := a) ((List.range n1).map fun k => (k * se, se)) d hwf
+      (show a < d.size from hpas (a, ta) (by simp))
+    rw [hsw, MkLW] at hspec
+    obtain ⟨W₁, E₁, L₁, R₁⟩ := hspec
+    obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (catNFD_spec W₁ L₁) hcat
+    refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+    show rowVecReverse Δ szf (Ty.flattenArrow pty).2 [((d.read a : NF), ta)] = _
+    rw [rowVecReverse, hnte, except_bind_ok]
+    dsimp only
+    rw [hnte1, except_bind_ok]
+    dsimp only
+    rw [if_pos hteq, hse, except_bind_ok, R₂, R₁]
+    congr 1
+    rw [List.map_map]
+    rfl
+
+private theorem cprimFD_sim_vecSlice {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
+    {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty .vecSlice pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty .vecSlice (pas.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty) := by
+    simp only [cprimFD] at h
+    rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨⟨b2, tb2⟩, _ | ⟨p3, ps⟩⟩⟩
+    · exact error_ne_ok h
+    · exact error_ne_ok h
+    rotate_left
+    · exact error_ne_ok h
+    obtain ⟨pt, hpt, h⟩ := except_bind_eq_ok h
+    obtain ⟨i, hi, h⟩ := except_bind_eq_ok h
+    obtain ⟨nte, hnte, h⟩ := except_bind_eq_ok h
+    obtain ⟨m, ter⟩ := nte
+    dsimp only at h
+    obtain ⟨nte1, hnte1, h⟩ := except_bind_eq_ok h
+    obtain ⟨len, tea⟩ := nte1
+    dsimp only at h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hteq
+    obtain ⟨se, hse, h⟩ := except_bind_eq_ok h
+    obtain ⟨szA, hszA, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hrange
+    rcases hsl : sliceNFD d (szA - i * se - m * se) (m * se) b2 with ⟨d₁, r₁⟩
+    rw [hsl] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W, E, L, R⟩ := mk_out
+      (sliceNFD_spec hwf _ _ (show b2 < d.size from hpas (b2, tb2) (by simp))) hsl
+    refine ⟨W, E, L, ?_⟩
+    show rowVecSlice Δ szf (Ty.flattenArrow pty).1 (Ty.flattenArrow pty).2
+      [((d.read a : NF), ta), ((d.read b2 : NF), tb2)] = _
+    rw [rowVecSlice, hpt, except_bind_ok, hi, except_bind_ok, hnte, except_bind_ok]
+    dsimp only
+    rw [hnte1, except_bind_ok]
+    dsimp only
+    rw [if_pos hteq, hse, except_bind_ok, hszA, except_bind_ok, if_pos hrange, R]
+
+private theorem cprimFD_sim_vecRSlice {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
+    {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty .vecRSlice pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty .vecRSlice (pas.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty) := by
+    simp only [cprimFD] at h
+    rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨⟨b2, tb2⟩, _ | ⟨p3, ps⟩⟩⟩
+    · exact error_ne_ok h
+    · exact error_ne_ok h
+    rotate_left
+    · exact error_ne_ok h
+    obtain ⟨pt, hpt, h⟩ := except_bind_eq_ok h
+    obtain ⟨i, hi, h⟩ := except_bind_eq_ok h
+    obtain ⟨nte, hnte, h⟩ := except_bind_eq_ok h
+    obtain ⟨m, ter⟩ := nte
+    dsimp only at h
+    obtain ⟨nte1, hnte1, h⟩ := except_bind_eq_ok h
+    obtain ⟨len, tea⟩ := nte1
+    dsimp only at h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hteq
+    obtain ⟨se, hse, h⟩ := except_bind_eq_ok h
+    obtain ⟨szA, hszA, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hrange
+    rcases hsl : sliceNFD d (i * se) (m * se) b2 with ⟨d₁, r₁⟩
+    rw [hsl] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W, E, L, R⟩ := mk_out
+      (sliceNFD_spec hwf _ _ (show b2 < d.size from hpas (b2, tb2) (by simp))) hsl
+    refine ⟨W, E, L, ?_⟩
+    show rowVecRSlice Δ szf (Ty.flattenArrow pty).1 (Ty.flattenArrow pty).2
+      [((d.read a : NF), ta), ((d.read b2 : NF), tb2)] = _
+    rw [rowVecRSlice, hpt, except_bind_ok, hi, except_bind_ok, hnte, except_bind_ok]
+    dsimp only
+    rw [hnte1, except_bind_ok]
+    dsimp only
+    rw [if_pos hteq, hse, except_bind_ok, hszA, except_bind_ok, if_pos hrange, R]
+
+set_option maxHeartbeats 1600000 in
+private theorem cprimFD_sim_vecIndex {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
+    {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty .vecIndex pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty .vecIndex (pas.map fun p => ((d.read p.1 : NF), p.2))
+        = .ok (d'.read r, ty) := by
+    rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨⟨b2, tb2⟩, _ | ⟨p3, ps⟩⟩⟩ <;>
+      rw [cprimFD.eq_def] at h <;> dsimp only at h
+    · exact error_ne_ok h
+    · exact error_ne_ok h
+    rotate_left
+    · exact error_ne_ok h
+    obtain ⟨nte, hnte, h⟩ := except_bind_eq_ok h
+    obtain ⟨len, te⟩ := nte
+    dsimp only at h
+    obtain ⟨nb, hnb, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hteq
+    obtain ⟨se, hse, h⟩ := except_bind_eq_ok h
+    obtain ⟨szA, hszA, h⟩ := except_bind_eq_ok h
+    split at h
+    rotate_left
+    · exact error_ne_ok h
+    rename_i hguard
+    rcases hr1 : resizeNFD d (max (nbits nb) 128) (nbits nb) b2 with ⟨d₁, i'⟩
+    rw [hr1] at h
+    rcases hl2 : d₁.mkLit ⟨max (nbits nb) 128, BitVec.ofNat (max (nbits nb) 128) len⟩
+      with ⟨d₂, lLen⟩
+    rw [hl2] at h
+    rcases hp3 : d₂.rawPrim2 .sub lLen i' with ⟨d₃, s₁⟩
+    rw [hp3] at h
+    rcases hl4 : d₃.mkLit ⟨max (nbits nb) 128, 1⟩ with ⟨d₄, l1⟩
+    rw [hl4] at h
+    rcases hp5 : d₄.rawPrim2 .sub s₁ l1 with ⟨d₅, s₂⟩
+    rw [hp5] at h
+    rcases hl6 : d₅.mkLit ⟨max (nbits nb) 128, BitVec.ofNat (max (nbits nb) 128) se⟩
+      with ⟨d₆, lSe⟩
+    rw [hl6] at h
+    rcases hp7 : d₆.rawPrim2 .mul s₂ lSe with ⟨d₇, amt⟩
+    rw [hp7] at h
+    rcases hp8 : d₇.rawPrim2 .lshr a amt with ⟨d₈, sh⟩
+    rw [hp8] at h
+    rcases hr9 : resizeNFD d₈ se szA sh with ⟨d₉, r₉⟩
+    rw [hr9] at h
+    obtain ⟨hd, hr, hty⟩ := triple_eq h
+    subst hd; subst hr; subst hty
+    obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out
+      (resizeNFD_spec hwf (show b2 < d.size from hpas (b2, tb2) (by simp))) hr1
+    obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (mkLit_spec W₁ _) hl2
+    obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out
+      (rawPrim2_spec W₂ L₂ (Nat.lt_of_lt_of_le L₁ E₂.size_le) rfl) hp3
+    obtain ⟨W₄, E₄, L₄, R₄⟩ := mk_out (mkLit_spec W₃ _) hl4
+    obtain ⟨W₅, E₅, L₅, R₅⟩ := mk_out
+      (rawPrim2_spec W₄ (Nat.lt_of_lt_of_le L₃ E₄.size_le) L₄ rfl) hp5
+    obtain ⟨W₆, E₆, L₆, R₆⟩ := mk_out (mkLit_spec W₅ _) hl6
+    obtain ⟨W₇, E₇, L₇, R₇⟩ := mk_out
+      (rawPrim2_spec W₆ (Nat.lt_of_lt_of_le L₅ E₆.size_le) L₆ rfl) hp7
+    have haRange : a < d₇.size :=
+      Nat.lt_of_lt_of_le (show a < d.size from hpas (a, ta) (by simp))
+        ((((((E₁.trans E₂).trans E₃).trans E₄).trans E₅).trans E₆).trans E₇).size_le
+    obtain ⟨W₈, E₈, L₈, R₈⟩ := mk_out (rawPrim2_spec W₇ haRange L₇ rfl) hp8
+    obtain ⟨W₉, E₉, L₉, R₉⟩ := mk_out (resizeNFD_spec W₈ L₈) hr9
+    refine ⟨W₉, (((((((E₁.trans E₂).trans E₃).trans E₄).trans E₅).trans E₆).trans
+      E₇).trans E₈).trans E₉, L₉, ?_⟩
+    show rowVecIndex Δ szf (Ty.flattenArrow pty).2
+      [((d.read a : NF), ta), ((d.read b2 : NF), tb2)] = _
+    rw [rowVecIndex, hnte, except_bind_ok]
+    dsimp only
+    rw [hnb, except_bind_ok, if_pos hteq, hse, except_bind_ok, hszA, except_bind_ok,
+        if_pos hguard, R₉, R₈,
+        read_ext ((((((E₁.trans E₂).trans E₃).trans E₄).trans E₅).trans E₆).trans E₇) a
+          (show a < d.size from hpas (a, ta) (by simp)),
+        R₇, read_ext E₆ s₂ L₅, R₅,
+        read_ext E₄ s₁ L₃, R₃, R₂,
+        read_ext E₂ i' L₁, R₁, R₄, R₆]
+
+set_option maxHeartbeats 1600000 in
+/-- The extended row table's simulation: a successful `cprimFD` run
+certifies the `cprimF` row over the read-back arguments (split per row
+family; non-extended rows dispatch to `cprimD_sim`). -/
+theorem cprimFD_sim {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat} {pty : Ty}
+    {b : Builtin} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
+    (hpas : ∀ p ∈ pas, p.1 < d.size)
+    (h : cprimFD d Δ szf pty b pas = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cprimF Δ szf pty b (pas.map fun p => ((d.read p.1 : NF), p.2)) = .ok (d'.read r, ty) := by
+  cases b
+  case finite => exact cprimFD_sim_finite hwf hpas h
+  case natVal => exact cprimFD_sim_natVal hwf hpas h
+  case vecIndexProxy => exact cprimFD_sim_vecIndexProxy hwf hpas h
+  case finiteMinBound => exact cprimFD_sim_finiteMinBound hwf hpas h
+  case finiteMaxBound => exact cprimFD_sim_finiteMaxBound hwf hpas h
+  case toFinite => exact cprimFD_sim_toFinite hwf hpas h
+  case toFiniteMod => exact cprimFD_sim_toFiniteMod hwf hpas h
+  case fromFinite => exact cprimFD_sim_fromFinite hwf hpas h
+  case vecReplicate => exact cprimFD_sim_vecReplicate hwf hpas h
+  case vecConcat => exact cprimFD_sim_vecConcat hwf hpas h
+  case vecReverse => exact cprimFD_sim_vecReverse hwf hpas h
+  case vecSlice => exact cprimFD_sim_vecSlice hwf hpas h
+  case vecRSlice => exact cprimFD_sim_vecRSlice hwf hpas h
+  case vecIndex => exact cprimFD_sim_vecIndex hwf hpas h
+  all_goals
+    simp only [cprimFD] at h
+    obtain ⟨W, E, L, R⟩ := cprimD_sim hwf hpas h
+    simp only [cprimF]
+    exact ⟨W, E, L, R⟩
+
+/-! ### The master simulation: a successful `cexpJD` run certifies the
+`cexpJ` run whose result is the reading of the returned index. -/
+
+/-- Zip-with-widths reads transport (the constructor-field pattern):
+reading the zipped indices at an extended store is zipping the
+read-back pairs' firsts. -/
+private theorem zip_reads {d d' : Dag} (hext : d.Ext d') :
+    ∀ (pas : List (Nat × Ty)) (ws : List Nat), (∀ p ∈ pas, p.1 < d.size) →
+      ((pas.map (·.1)).zip ws).map (fun q => ((d'.read q.1 : NF), q.2))
+        = ((pas.map fun p => ((d.read p.1 : NF), p.2)).map (·.1)).zip ws := by
+  intro pas
+  induction pas with
+  | nil => intro ws _; rfl
+  | cons p rest ih =>
+      intro ws h
+      cases ws with
+      | nil => rfl
+      | cons w wrest =>
+          simp only [List.map_cons, List.zip_cons_cons]
+          rw [read_ext hext p.1 (h p List.mem_cons_self)]
+          exact congrArg _ (ih wrest fun q hq => h q (List.mem_cons_of_mem _ hq))
+
+/-- Same-store variant for the per-element `(·, se)` annotation (the
+vector-literal pattern). -/
+private theorem map_se_reads {d : Dag} (se : Nat) (pas : List (Nat × Ty)) :
+    (((pas.map (·.1)).map (·, se)).map fun q => ((d.read q.1 : NF), q.2))
+      = ((pas.map fun p => ((d.read p.1 : NF), p.2)).map (·.1)).map (·, se) := by
+  simp only [List.map_map]
+  rfl
+
+set_option maxHeartbeats 3200000 in
+/-- THE simulation theorem for the DAG mirror (Phase 4d): a successful
+`cexpJD` compilation certifies a successful `cexpJ` compilation whose
+normal form is the reading of the returned index, at read-back
+environments, join closures, and pending arguments. -/
+theorem cexpJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} :
+    ∀ (fuel : Nat), DSimAt Δ dmap fuel := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro ΓD jΓD e pendD d d' r ty ΓS jΓS _ _ _ _ hc
+      rw [cexpJD] at hc
+      exact error_ne_ok hc
+  | succ fuel ih =>
+      intro ΓD jΓD e pendD d d' r ty ΓS jΓS hwf hG hJ hpend hc
+      rw [cexpJD] at hc
+      rw [cexpJ]
+      rcases hfl : Eval.flattenApp e with ⟨hd, args⟩
+      rw [hfl] at hc
+      clear hfl
+      cases hd with
+      | var x =>
+          dsimp only at hc ⊢
+          cases hΓx : ΓD.get? x.uniq with
+          | some nt =>
+              rw [hΓx] at hc
+              have hsx : ΓS.get? x.uniq = some (d.read nt.1, nt.2) := by
+                rw [hG.reads x.uniq, hΓx]
+                rfl
+              cases args with
+              | cons a as =>
+                  cases pendD <;> exact error_ne_ok hc
+              | nil =>
+                  cases pendD with
+                  | cons p ps => exact error_ne_ok hc
+                  | nil =>
+                      obtain ⟨hd', hr, hty⟩ := triple_eq hc
+                      subst hd'; subst hr; subst hty
+                      refine ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d,
+                        hG.inRange _ _ hΓx, ?_⟩
+                      rw [hsx]
+                      simp only [List.map_nil]
+          | none =>
+              rw [hΓx] at hc
+              have hsx : ΓS.get? x.uniq = none := by
+                rw [hG.reads x.uniq, hΓx]
+                rfl
+              rw [hsx]
+              cases hdm : dmap.get? x.uniq with
+              | none => rw [hdm] at hc; exact error_ne_ok hc
+              | some df =>
+                  rw [hdm] at hc
+                  dsimp only at hc ⊢
+                  rw [bind_ok_iff] at hc
+                  obtain ⟨dp, hargs, hc⟩ := hc
+                  obtain ⟨d₁, pas⟩ := dp
+                  dsimp only at hc
+                  obtain ⟨W₁, E₁, L₁, S₁⟩ := cargsD_sim ih args d d₁ pas hwf hG hJ hargs
+                  split at hc
+                  rotate_left
+                  · exact error_ne_ok hc
+                  rename_i hlen
+                  split at hc
+                  rotate_left
+                  · exact error_ne_ok hc
+                  rename_i hteqs
+                  split at hc
+                  rotate_left
+                  · exact error_ne_ok hc
+                  rename_i hsat
+                  have hallrange : ∀ p ∈ pas ++ pendD, p.1 < d₁.size := by
+                    intro p hp
+                    rcases List.mem_append.mp hp with hp | hp
+                    · exact L₁ p hp
+                    · exact Nat.lt_of_lt_of_le (hpend p hp) E₁.size_le
+                  have hGm : GSim d₁
+                      (mkGammaD df.params ((pas ++ pendD).take df.params.length))
+                      (mkGamma df.params
+                        (((pas ++ pendD).take df.params.length).map
+                          fun p => ((d₁.read p.1 : NF), p.2))) :=
+                    gsim_bindFields df.params (gsim_empty d₁)
+                      (fun p hp => hallrange p (List.mem_of_mem_take hp))
+                  obtain ⟨W₂, E₂, L₂, S₂⟩ := ih _ [] df.body
+                    ((pas ++ pendD).drop df.params.length) d₁ d' r ty _ []
+                    W₁ hGm jsimEnv_nil
+                    (fun p hp => hallrange p (List.mem_of_mem_drop hp)) hc
+                  refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+                  rw [S₁, except_bind_ok]
+                  rw [show (pendD.map fun p => ((d.read p.1 : NF), p.2))
+                        = pendD.map fun p => ((d₁.read p.1 : NF), p.2) from
+                      (pend_read_ext E₁ hpend).symm,
+                      ← List.map_append]
+                  simp only [List.length_map, ← List.map_take, ← List.map_drop]
+                  rw [if_pos hlen]
+                  rw [teqAllD_eq d₁] at hteqs
+                  rw [if_pos hteqs, if_pos hsat]
+                  exact S₂
+      | con cty c =>
+          cases pendD with
+          | cons p ps =>
+              dsimp only at hc
+              exact error_ne_ok hc
+          | nil =>
+          simp only [List.map_nil]
+          dsimp only at hc ⊢
+          rw [bind_ok_iff] at hc
+          obtain ⟨dp, hargs, hc⟩ := hc
+          obtain ⟨d₁, pas⟩ := dp
+          dsimp only at hc
+          obtain ⟨W₁, E₁, L₁, S₁⟩ := cargsD_sim ih args d d₁ pas hwf hG hJ hargs
+          split at hc
+          rotate_left
+          · exact error_ne_ok hc
+          rename_i hplen
+          cases hcs : Δ.ctorSig.get? c with
+          | none => rw [hcs] at hc; exact error_ne_ok hc
+          | some sig =>
+          rw [hcs] at hc
+          dsimp only at hc
+          rw [bind_ok_iff] at hc
+          obtain ⟨sub, hsub, hc⟩ := hc
+          split at hc
+          rotate_left
+          · exact error_ne_ok hc
+          rename_i hteqs
+          split at hc
+          rotate_left
+          · exact error_ne_ok hc
+          rename_i hcob
+          rw [bind_ok_iff] at hc
+          obtain ⟨whole, hwhole, hc⟩ := hc
+          rw [bind_ok_iff] at hc
+          obtain ⟨tg, htg, hc⟩ := hc
+          obtain ⟨tag, w⟩ := tg
+          dsimp only at hc
+          rw [bind_ok_iff] at hc
+          obtain ⟨ws, hws, hc⟩ := hc
+          split at hc
+          rotate_left
+          · exact error_ne_ok hc
+          rename_i hwsum
+          rcases hl1 : d₁.mkLit ⟨w, BitVec.ofNat w tag⟩ with ⟨d₂, tl⟩
+          rw [hl1] at hc
+          rcases hl2 : d₂.mkLit ⟨whole - w - ws.sum, 0⟩ with ⟨d₃, pl⟩
+          rw [hl2] at hc
+          dsimp only at hc
+          rcases hcat : catNFD d₃
+              ((tl, w) :: (pl, whole - w - ws.sum) :: (pas.map (·.1)).zip ws)
+            with ⟨d₄, rr⟩
+          rw [hcat] at hc
+          obtain ⟨hd4, hrr, hty⟩ := triple_eq hc
+          subst hd4; subst hrr; subst hty
+          obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (mkLit_spec W₁ _) hl1
+          obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (mkLit_spec W₂ _) hl2
+          obtain ⟨W₄, E₄, L₄, R₄⟩ := mk_out (catNFD_spec W₃ (by
+            intro q hq
+            rcases List.mem_cons.mp hq with rfl | hq
+            · exact Nat.lt_of_lt_of_le L₂ E₃.size_le
+            rcases List.mem_cons.mp hq with rfl | hq
+            · exact L₃
+            · obtain ⟨q1, q2⟩ := q
+              obtain ⟨p, hp, hpq⟩ := List.mem_map.mp (List.of_mem_zip hq).1
+              dsimp only
+              rw [← hpq]
+              exact Nat.lt_of_lt_of_le (L₁ p hp) (E₂.trans E₃).size_le)) hcat
+          refine ⟨W₄, ((E₁.trans E₂).trans E₃).trans E₄, L₄, ?_⟩
+          rw [S₁, except_bind_ok]
+          dsimp only
+          rw [if_pos (show (pas.map fun p => ((d₁.read p.1 : NF), p.2)).length
+                = (Ty.flattenArrow cty).1.length by simpa using hplen)]
+          rw [hsub, except_bind_ok]
+          rw [teqAllD_eq d₁] at hteqs
+          rw [if_pos hteqs, if_pos hcob, hwhole, except_bind_ok, htg, except_bind_ok]
+          dsimp only
+          rw [hws, except_bind_ok, if_pos hwsum, R₄, List.map_cons, List.map_cons]
+          dsimp only
+          rw [read_ext E₃ tl L₂, R₂, R₃, zip_reads (E₂.trans E₃) pas ws L₁]
+      | prim pty b =>
+          cases pendD with
+          | cons p ps =>
+              dsimp only at hc
+              exact error_ne_ok hc
+          | nil =>
+          simp only [List.map_nil]
+          dsimp only at hc ⊢
+          cases b
+          case error =>
+              dsimp only at hc ⊢
+              rw [bind_ok_iff] at hc
+              obtain ⟨sz, hszk, hc⟩ := hc
+              rw [bind_ok_iff] at hc
+              obtain ⟨zv, hzv, hc⟩ := hc
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i hvty
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i bv hrep
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i hbv
+              rcases hml : d.mkLit ⟨sz, 0⟩ with ⟨d₁, r₁⟩
+              rw [hml] at hc
+              dsimp only at hc
+              obtain ⟨hd1, hr1, hty1⟩ := triple_eq hc
+              subst hd1; subst hr1; subst hty1
+              obtain ⟨W, E, L, R⟩ := mk_out (mkLit_spec hwf _) hml
+              refine ⟨W, E, L, ?_⟩
+              rw [hszk, except_bind_ok, hzv, except_bind_ok, if_pos hvty, hrep]
+              dsimp only
+              rw [if_pos hbv, R]
+          case vecFromList =>
+              rcases args with _ | ⟨a1, _ | ⟨a2, rest⟩⟩ <;> dsimp only at hc
+              · exact error_ne_ok hc
+              rotate_left
+              · cases a1 <;> dsimp only at hc <;> exact error_ne_ok hc
+              cases a1 <;> dsimp only at hc <;> try exact error_ne_ok hc
+              rename_i tyL els
+              dsimp only
+              rw [bind_ok_iff] at hc
+              obtain ⟨dp, hargs, hc⟩ := hc
+              obtain ⟨d₁, pas⟩ := dp
+              dsimp only at hc
+              obtain ⟨W₁, E₁, L₁, S₁⟩ := cargsD_sim ih els d d₁ pas hwf hG hJ hargs
+              rw [S₁, except_bind_ok]
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i nt te hflat
+              cases hev : Ty.evalNat nt with
+              | none => rw [hev] at hc; exact error_ne_ok hc
+              | some k =>
+              rw [hev] at hc
+              dsimp only at hc ⊢
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i hlen
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i hteqs
+              rw [bind_ok_iff] at hc
+              obtain ⟨se, hse, hc⟩ := hc
+              rcases hcat : catNFD d₁ ((pas.map (·.1)).map (·, se)) with ⟨d₂, rr⟩
+              rw [hcat] at hc
+              obtain ⟨hd2, hrr, hty⟩ := triple_eq hc
+              subst hd2; subst hrr; subst hty
+              obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (catNFD_spec W₁ (by
+                intro q hq
+                obtain ⟨a, ha, hqa⟩ := List.mem_map.mp hq
+                obtain ⟨p, hp, hap⟩ := List.mem_map.mp ha
+                rw [← hqa]
+                dsimp only
+                rw [← hap]
+                exact L₁ p hp)) hcat
+              refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+              rw [if_pos (by simpa using hlen)]
+              rw [teqAllD_eq d₁] at hteqs
+              rw [if_pos (by
+                    rw [List.length_map]
+                    exact hteqs),
+                  hse, except_bind_ok, R₂, map_se_reads]
+          case bitIndex =>
+              rcases args with _ | ⟨argE, _ | ⟨iE, _ | ⟨a3, rest⟩⟩⟩ <;> dsimp only at hc
+              · exact error_ne_ok hc
+              · exact error_ne_ok hc
+              rotate_left
+              · exact error_ne_ok hc
+              dsimp only
+              cases hfin : finLitE iE with
+              | none => rw [hfin] at hc; exact error_ne_ok hc
+              | some i =>
+              rw [hfin] at hc
+              dsimp only at hc ⊢
+              rw [bind_ok_iff] at hc
+              obtain ⟨dat, hargE, hc⟩ := hc
+              obtain ⟨d₁, a, ta⟩ := dat
+              dsimp only at hc
+              rw [bind_ok_iff] at hc
+              obtain ⟨wa, hwa, hc⟩ := hc
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i hbool
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i hlt
+              rcases hsl : sliceNFD d₁ i 1 a with ⟨d₂, r₂⟩
+              rw [hsl] at hc
+              obtain ⟨hd2, hr2, hty2⟩ := triple_eq hc
+              subst hd2; subst hr2; subst hty2
+              obtain ⟨W₁, E₁, L₁, S₁⟩ := ih ΓD jΓD argE [] d d₁ a ta ΓS jΓS
+                hwf hG hJ (by simp) hargE
+              simp only [List.map_nil] at S₁
+              obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (sliceNFD_spec W₁ i 1 L₁) hsl
+              refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+              rw [S₁, except_bind_ok]
+              dsimp only
+              rw [hwa, except_bind_ok, if_pos hbool, if_pos hlt, R₂]
+          case bitSlice =>
+              rcases args with _ | ⟨argE, _ | ⟨jE, _ | ⟨iE, _ | ⟨a4, rest⟩⟩⟩⟩ <;>
+                dsimp only at hc
+              · exact error_ne_ok hc
+              · exact error_ne_ok hc
+              · exact error_ne_ok hc
+              rotate_left
+              · exact error_ne_ok hc
+              dsimp only
+              cases hfj : finLitE jE with
+              | none => rw [hfj] at hc; exact error_ne_ok hc
+              | some j =>
+              rw [hfj] at hc
+              cases hfi : finLitE iE with
+              | none => rw [hfi] at hc; exact error_ne_ok hc
+              | some i =>
+              rw [hfi] at hc
+              dsimp only at hc ⊢
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i hij
+              rw [bind_ok_iff] at hc
+              obtain ⟨dat, hargE, hc⟩ := hc
+              obtain ⟨d₁, a, ta⟩ := dat
+              dsimp only at hc
+              rw [bind_ok_iff] at hc
+              obtain ⟨wa, hwa, hc⟩ := hc
+              rw [bind_ok_iff] at hc
+              obtain ⟨mr, hmr, hc⟩ := hc
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i hguard
+              rcases hsl : sliceNFD d₁ i (j + 1 - i) a with ⟨d₂, r₂⟩
+              rw [hsl] at hc
+              obtain ⟨hd2, hr2, hty2⟩ := triple_eq hc
+              subst hd2; subst hr2; subst hty2
+              obtain ⟨W₁, E₁, L₁, S₁⟩ := ih ΓD jΓD argE [] d d₁ a ta ΓS jΓS
+                hwf hG hJ (by simp) hargE
+              simp only [List.map_nil] at S₁
+              obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (sliceNFD_spec W₁ i (j + 1 - i) L₁) hsl
+              refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+              rw [if_pos hij, S₁, except_bind_ok]
+              dsimp only
+              rw [hwa, except_bind_ok, hmr, except_bind_ok, if_pos hguard, R₂]
+          case vecMap =>
+              rcases args with _ | ⟨fE, _ | ⟨argE, _ | ⟨a3, rest⟩⟩⟩ <;> dsimp only at hc
+              · exact error_ne_ok hc
+              · exact error_ne_ok hc
+              rotate_left
+              · exact error_ne_ok hc
+              dsimp only
+              rw [bind_ok_iff] at hc
+              obtain ⟨nte, hvle, hc⟩ := hc
+              obtain ⟨nElems, teO⟩ := nte
+              dsimp only at hc
+              rw [bind_ok_iff] at hc
+              obtain ⟨seO, hseO, hc⟩ := hc
+              rw [bind_ok_iff] at hc
+              obtain ⟨dat, hargE, hc⟩ := hc
+              obtain ⟨d₁, a, ta⟩ := dat
+              dsimp only at hc
+              rw [bind_ok_iff] at hc
+              obtain ⟨lte, hvle2, hc⟩ := hc
+              obtain ⟨len, teI⟩ := lte
+              dsimp only at hc
+              rw [bind_ok_iff] at hc
+              obtain ⟨seI, hseI, hc⟩ := hc
+              rw [bind_ok_iff] at hc
+              obtain ⟨szV, hszV, hc⟩ := hc
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i hlenE
+              obtain ⟨W₁, E₁, L₁, S₁⟩ := ih ΓD jΓD argE [] d d₁ a ta ΓS jΓS
+                hwf hG hJ (by simp) hargE
+              simp only [List.map_nil] at S₁
+              rcases hpends : cpendVecD d₁ szV seI a (List.range nElems) with ⟨d₂, pends⟩
+              rw [hpends] at hc
+              dsimp only at hc
+              have hcp := cpendVecD_spec (szV := szV) (seI := seI) (a := a)
+                (List.range nElems) d₁ W₁ L₁
+              rw [hpends] at hcp
+              dsimp only at hcp
+              obtain ⟨W₂, E₂, Lp, Rp⟩ := hcp
+              rw [bind_ok_iff] at hc
+              obtain ⟨dps, hel, hc⟩ := hc
+              obtain ⟨d₃, ps⟩ := dps
+              dsimp only at hc
+              have hplen : pends.length = (List.range nElems).length := by
+                have := congrArg List.length Rp
+                simpa using this
+              have hreads : ∀ j (h1 : j < pends.length)
+                  (h2 : j < (List.range nElems).length),
+                  d₂.read (pends[j]'h1)
+                    = (fun i => (sliceNF (szV - (i + 1) * seI) seI (d₁.read a) : NF))
+                        ((List.range nElems)[j]'h2) := by
+                intro j h1 h2
+                have hj := List.getElem_of_eq Rp (by simpa using h1)
+                simpa using hj
+              obtain ⟨W₃, E₃, L₃, S₃⟩ := celemsD_sim (fE := fE) (teI := teI) (teO := teO)
+                (seO := seO) (pf := fun i => sliceNF (szV - (i + 1) * seI) seI (d₁.read a))
+                (emsg := "rwPrimVecMap: element result-type mismatch")
+                (ΓS := ΓS) (jΓS := jΓS) ih
+                (List.range nElems) pends d₂ d₃ ps W₂ (hG.mono (E₁.trans E₂))
+                (jsimEnv_mono hJ (E₁.trans E₂)) Lp hplen hreads hel
+              rcases hcat : catNFD d₃ ps with ⟨d₄, rr⟩
+              rw [hcat] at hc
+              obtain ⟨hd4, hrr, hty4⟩ := triple_eq hc
+              subst hd4; subst hrr; subst hty4
+              obtain ⟨W₄, E₄, L₄, R₄⟩ := mk_out (catNFD_spec W₃ L₃) hcat
+              refine ⟨W₄, ((E₁.trans E₂).trans E₃).trans E₄, L₄, ?_⟩
+              rw [hvle, except_bind_ok]
+              dsimp only
+              rw [hseO, except_bind_ok, S₁, except_bind_ok]
+              dsimp only
+              rw [hvle2, except_bind_ok]
+              dsimp only
+              rw [hseI, except_bind_ok, hszV, except_bind_ok, if_pos hlenE,
+                  S₃, except_bind_ok, R₄]
+          case vecGenerate =>
+              rcases args with _ | ⟨fE, _ | ⟨a2, rest⟩⟩ <;> dsimp only at hc
+              · exact error_ne_ok hc
+              rotate_left
+              · exact error_ne_ok hc
+              dsimp only
+              rw [bind_ok_iff] at hc
+              obtain ⟨nte, hvle, hc⟩ := hc
+              obtain ⟨nElems, teO⟩ := nte
+              dsimp only at hc
+              rw [bind_ok_iff] at hc
+              obtain ⟨seO, hseO, hc⟩ := hc
+              rw [bind_ok_iff] at hc
+              obtain ⟨ft, hft, hc⟩ := hc
+              cases ft <;> dsimp only at hc <;> try exact error_ne_ok hc
+              rename_i tFin tRes
+              rw [bind_ok_iff] at hc
+              obtain ⟨nb, hnb, hc⟩ := hc
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i hnbE
+              rcases hpends : cpendGenD d nElems (List.range nElems) with ⟨d₁, pends⟩
+              rw [hpends] at hc
+              dsimp only at hc
+              have hcp := cpendGenD_spec (nElems := nElems) (List.range nElems) d hwf
+              rw [hpends] at hcp
+              dsimp only at hcp
+              obtain ⟨W₁, E₁, Lp, Rp⟩ := hcp
+              rw [bind_ok_iff] at hc
+              obtain ⟨dps, hel, hc⟩ := hc
+              obtain ⟨d₂, ps⟩ := dps
+              dsimp only at hc
+              have hplen : pends.length = (List.range nElems).length := by
+                have := congrArg List.length Rp
+                simpa using this
+              have hreads : ∀ j (h1 : j < pends.length)
+                  (h2 : j < (List.range nElems).length),
+                  d₁.read (pends[j]'h1)
+                    = (fun i => (NF.lit ⟨nbits nElems, BitVec.ofNat (nbits nElems) i⟩ : NF))
+                        ((List.range nElems)[j]'h2) := by
+                intro j h1 h2
+                have hj := List.getElem_of_eq Rp (by simpa using h1)
+                simpa using hj
+              obtain ⟨W₂, E₂, L₂, S₂⟩ := celemsD_sim (fE := fE) (teI := tFin) (teO := teO)
+                (seO := seO)
+                (pf := fun i => (.lit ⟨nbits nElems, BitVec.ofNat (nbits nElems) i⟩ : NF))
+                (emsg := "rwPrimVecGenerate: element result-type mismatch")
+                (ΓS := ΓS) (jΓS := jΓS) ih
+                (List.range nElems) pends d₁ d₂ ps W₁ (hG.mono E₁)
+                (jsimEnv_mono hJ E₁) Lp hplen hreads hel
+              rcases hcat : catNFD d₂ ps with ⟨d₃, rr⟩
+              rw [hcat] at hc
+              obtain ⟨hd3, hrr, hty3⟩ := triple_eq hc
+              subst hd3; subst hrr; subst hty3
+              obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (catNFD_spec W₂ L₂) hcat
+              refine ⟨W₃, (E₁.trans E₂).trans E₃, L₃, ?_⟩
+              rw [hvle, except_bind_ok]
+              dsimp only
+              rw [hseO, except_bind_ok, hft, except_bind_ok]
+              dsimp only
+              rw [hnb, except_bind_ok, if_pos hnbE, S₂, except_bind_ok, R₃]
+          all_goals
+            dsimp only at hc ⊢
+            rw [bind_ok_iff] at hc
+            obtain ⟨dp, hargs, hc⟩ := hc
+            obtain ⟨d₁, pas⟩ := dp
+            dsimp only at hc
+            obtain ⟨W₁, E₁, L₁, S₁⟩ := cargsD_sim ih args d d₁ pas hwf hG hJ hargs
+            obtain ⟨W₂, E₂, L₂, S₂⟩ := cprimFD_sim W₁ L₁ hc
+            exact ⟨W₂, E₁.trans E₂, L₂, by rw [S₁, except_bind_ok]; exact S₂⟩
+      | litInt ty0 n =>
+          cases args with
+          | cons a as =>
+              dsimp only at hc
+              exact error_ne_ok hc
+          | nil =>
+              cases pendD with
+              | cons p ps =>
+                  dsimp only at hc
+                  exact error_ne_ok hc
+              | nil =>
+                  dsimp only at hc ⊢
+                  simp only [List.map_nil]
+                  obtain ⟨W, E, L, R⟩ := clitIntD_sim hwf hc
+                  exact ⟨W, E, L, R⟩
+      | litStr s =>
+          dsimp only at hc
+          exact error_ne_ok hc
+      | litList tyl es =>
+          dsimp only at hc
+          exact error_ne_ok hc
+      | litVec vty es =>
+          cases args with
+          | cons a as =>
+              dsimp only at hc
+              exact error_ne_ok hc
+          | nil =>
+              cases pendD with
+              | cons p ps =>
+                  dsimp only at hc
+                  exact error_ne_ok hc
+              | nil =>
+                  dsimp only at hc ⊢
+                  simp only [List.map_nil]
+                  rw [bind_ok_iff] at hc
+                  obtain ⟨dp, hargs, hc⟩ := hc
+                  obtain ⟨d₁, pas⟩ := dp
+                  dsimp only at hc
+                  obtain ⟨W₁, E₁, L₁, S₁⟩ := cargsD_sim ih es d d₁ pas hwf hG hJ hargs
+                  rw [S₁, except_bind_ok]
+                  split at hc
+                  rotate_left
+                  · exact error_ne_ok hc
+                  rename_i nt te hflat
+                  cases hev : Ty.evalNat nt with
+                  | none => rw [hev] at hc; exact error_ne_ok hc
+                  | some k =>
+                  rw [hev] at hc
+                  dsimp only at hc ⊢
+                  split at hc
+                  rotate_left
+                  · exact error_ne_ok hc
+                  rename_i hlen
+                  split at hc
+                  rotate_left
+                  · exact error_ne_ok hc
+                  rename_i hteqs
+                  rw [bind_ok_iff] at hc
+                  obtain ⟨se, hse, hc⟩ := hc
+                  rcases hcat : catNFD d₁ ((pas.map (·.1)).map (·, se)) with ⟨d₂, rr⟩
+                  rw [hcat] at hc
+                  obtain ⟨hd2, hrr, hty⟩ := triple_eq hc
+                  subst hd2; subst hrr; subst hty
+                  obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (catNFD_spec W₁ (by
+                    intro q hq
+                    obtain ⟨a, ha, hqa⟩ := List.mem_map.mp hq
+                    obtain ⟨p, hp, hap⟩ := List.mem_map.mp ha
+                    rw [← hqa]
+                    dsimp only
+                    rw [← hap]
+                    exact L₁ p hp)) hcat
+                  refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+                  rw [if_pos (by simpa using hlen)]
+                  rw [teqAllD_eq d₁] at hteqs
+                  rw [if_pos (by
+                        rw [List.length_map]
+                        exact hteqs),
+                      hse, except_bind_ok, R₂, map_se_reads]
+      | lam x b =>
+          dsimp only at hc ⊢
+          rw [bind_ok_iff] at hc
+          obtain ⟨dp, hargs, hc⟩ := hc
+          obtain ⟨d₁, pas⟩ := dp
+          dsimp only at hc
+          obtain ⟨W₁, E₁, L₁, S₁⟩ := cargsD_sim ih args d d₁ pas hwf hG hJ hargs
+          rw [S₁, except_bind_ok]
+          rw [show (pendD.map fun p => ((d.read p.1 : NF), p.2))
+                = pendD.map fun p => ((d₁.read p.1 : NF), p.2) from
+              (pend_read_ext E₁ hpend).symm,
+              ← List.map_append]
+          cases hpp : pas ++ pendD with
+          | nil =>
+              rw [hpp] at hc
+              exact error_ne_ok hc
+          | cons nt rest =>
+              rw [hpp] at hc
+              obtain ⟨ni, t0⟩ := nt
+              have hrange : ∀ p ∈ (ni, t0) :: rest, p.1 < d₁.size := by
+                rw [← hpp]
+                intro p hp
+                rcases List.mem_append.mp hp with hp | hp
+                · exact L₁ p hp
+                · exact Nat.lt_of_lt_of_le (hpend p hp) E₁.size_le
+              have hni : ni < d₁.size := hrange (ni, t0) List.mem_cons_self
+              obtain ⟨W₂, E₂, L₂, S₂⟩ := ih (ΓD.insert x.uniq (ni, t0)) [] b rest d₁ d' r ty
+                (ΓS.insert x.uniq (d₁.read ni, t0)) []
+                W₁ ((hG.mono E₁).insert x.uniq hni) jsimEnv_nil
+                (fun p hp => hrange p (List.mem_cons_of_mem _ hp)) hc
+              refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+              rw [List.map_cons]
+              exact S₂
+      | letE bnd body =>
+          cases bnd with
+          | recB bs =>
+              dsimp only at hc
+              exact error_ne_ok hc
+          | nonRec x rhs =>
+              dsimp only at hc ⊢
+              rw [bind_ok_iff] at hc
+              obtain ⟨dpr, hrhs, hc⟩ := hc
+              obtain ⟨d₁, r0, t0⟩ := dpr
+              dsimp only at hc
+              rw [bind_ok_iff] at hc
+              obtain ⟨dp, hargs, hc⟩ := hc
+              obtain ⟨d₂, pas⟩ := dp
+              dsimp only at hc
+              obtain ⟨W₁, E₁, L₁, S₁⟩ := ih ΓD jΓD rhs [] d d₁ r0 t0 ΓS jΓS
+                hwf hG hJ (by simp) hrhs
+              simp only [List.map_nil] at S₁
+              obtain ⟨W₂, E₂, L₂, S₂⟩ := cargsD_sim ih args d₁ d₂ pas W₁
+                (hG.mono E₁) (jsimEnv_mono hJ E₁) hargs
+              have hr0 : r0 < d₂.size := Nat.lt_of_lt_of_le L₁ E₂.size_le
+              have hrange : ∀ p ∈ pas ++ pendD, p.1 < d₂.size := by
+                intro p hp
+                rcases List.mem_append.mp hp with hp | hp
+                · exact L₂ p hp
+                · exact Nat.lt_of_lt_of_le (hpend p hp) (E₁.trans E₂).size_le
+              obtain ⟨W₃, E₃, L₃, S₃⟩ := ih (ΓD.insert x.uniq (r0, t0)) jΓD body
+                (pas ++ pendD) d₂ d' r ty
+                (ΓS.insert x.uniq (d₂.read r0, t0)) jΓS
+                W₂ ((hG.mono (E₁.trans E₂)).insert x.uniq hr0)
+                (jsimEnv_mono hJ (E₁.trans E₂)) hrange hc
+              refine ⟨W₃, (E₁.trans E₂).trans E₃, L₃, ?_⟩
+              rw [S₁, except_bind_ok, S₂, except_bind_ok]
+              rw [show (pendD.map fun p => ((d.read p.1 : NF), p.2))
+                    = pendD.map fun p => ((d₂.read p.1 : NF), p.2) from
+                  (pend_read_ext (E₁.trans E₂) hpend).symm,
+                  ← List.map_append,
+                  show d₁.read r0 = d₂.read r0 from (read_ext E₂ r0 L₁).symm]
+              exact S₃
+          | join l ps jb =>
+              dsimp only at hc ⊢
+              rw [bind_ok_iff] at hc
+              obtain ⟨dp, hargs, hc⟩ := hc
+              obtain ⟨d₁, pas⟩ := dp
+              dsimp only at hc
+              obtain ⟨W₁, E₁, L₁, S₁⟩ := cargsD_sim ih args d d₁ pas hwf hG hJ hargs
+              have hrange : ∀ p ∈ pas ++ pendD, p.1 < d₁.size := by
+                intro p hp
+                rcases List.mem_append.mp hp with hp | hp
+                · exact L₁ p hp
+                · exact Nat.lt_of_lt_of_le (hpend p hp) E₁.size_le
+              obtain ⟨W₂, E₂, L₂, S₂⟩ := ih ΓD ((l.uniq, .mk ps ΓD jΓD jb) :: jΓD) body
+                (pas ++ pendD) d₁ d' r ty ΓS ((l.uniq, .mk ps ΓS jΓS jb) :: jΓS)
+                W₁ (hG.mono E₁)
+                (jsimEnv_cons (jsimEnv_mono hJ E₁)
+                  (jsimC_intro (hG.mono E₁) (jsimEnv_mono hJ E₁)))
+                hrange hc
+              refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+              rw [S₁, except_bind_ok]
+              rw [show (pendD.map fun p => ((d.read p.1 : NF), p.2))
+                    = pendD.map fun p => ((d₁.read p.1 : NF), p.2) from
+                  (pend_read_ext E₁ hpend).symm,
+                  ← List.map_append]
+              exact S₂
+      | jump l es =>
+          cases args with
+          | cons a as =>
+              dsimp only at hc
+              exact error_ne_ok hc
+          | nil =>
+              dsimp only at hc ⊢
+              rw [bind_ok_iff] at hc
+              obtain ⟨dp, hargs, hc⟩ := hc
+              obtain ⟨d₁, pas⟩ := dp
+              dsimp only at hc
+              obtain ⟨W₁, E₁, L₁, S₁⟩ := cargsD_sim ih es d d₁ pas hwf hG hJ hargs
+              rw [S₁, except_bind_ok]
+              cases hjx : jΓD.lookup l.uniq with
+              | none => rw [hjx] at hc; exact error_ne_ok hc
+              | some cj =>
+                  rw [hjx] at hc
+                  obtain ⟨cjS, hjS, hsim⟩ := hJ l.uniq cj hjx
+                  rw [hjS]
+                  obtain ⟨ps, ΓcD, jcD, jb⟩ := cj
+                  dsimp only at hc
+                  split at hc
+                  rotate_left
+                  · exact error_ne_ok hc
+                  rename_i hteqs
+                  cases hsim with
+                  | mk hGc hcov hpt =>
+                  dsimp only
+                  rw [teqAllD_eq d₁] at hteqs
+                  rw [if_pos hteqs]
+                  have hJc : JSimEnv d₁ jcD _ :=
+                    jsimEnv_mono (jsimEnv_of_jsimC
+                      (JSimC.mk (ps := ps) (body := jb) hGc hcov hpt)) E₁
+                  obtain ⟨W₂, E₂, L₂, S₂⟩ := ih (bindFieldsΓD ps pas ΓcD) jcD jb
+                    pendD d₁ d' r ty _ _
+                    W₁ (gsim_bindFields ps (hGc.mono E₁) L₁) hJc
+                    (fun p hp => Nat.lt_of_lt_of_le (hpend p hp) E₁.size_le) hc
+                  refine ⟨W₂, E₁.trans E₂, L₂, ?_⟩
+                  rw [show (pendD.map fun p => ((d.read p.1 : NF), p.2))
+                        = pendD.map fun p => ((d₁.read p.1 : NF), p.2) from
+                      (pend_read_ext E₁ hpend).symm]
+                  exact S₂
+      | cases resTy scrut binder alts =>
+          dsimp only at hc ⊢
+          rw [bind_ok_iff] at hc
+          obtain ⟨dnt, hscrut, hc⟩ := hc
+          obtain ⟨d₁, dn, dty⟩ := dnt
+          dsimp only at hc
+          rw [bind_ok_iff] at hc
+          obtain ⟨szT, hsz, hc⟩ := hc
+          rw [bind_ok_iff] at hc
+          obtain ⟨dp, hargs, hc⟩ := hc
+          obtain ⟨d₂, pas⟩ := dp
+          dsimp only at hc
+          rw [bind_ok_iff] at hc
+          obtain ⟨resTy', hpeel, hc⟩ := hc
+          obtain ⟨W₁, E₁, L₁, S₁⟩ := ih ΓD jΓD scrut [] d d₁ dn dty ΓS jΓS
+            hwf hG hJ (by simp) hscrut
+          simp only [List.map_nil] at S₁
+          obtain ⟨W₂, E₂, L₂, S₂⟩ := cargsD_sim ih args d₁ d₂ pas W₁
+            (hG.mono E₁) (jsimEnv_mono hJ E₁) hargs
+          have hdn2 : dn < d₂.size := Nat.lt_of_lt_of_le L₁ E₂.size_le
+          have hrange : ∀ p ∈ pas ++ pendD, p.1 < d₂.size := by
+            intro p hp
+            rcases List.mem_append.mp hp with hp | hp
+            · exact L₂ p hp
+            · exact Nat.lt_of_lt_of_le (hpend p hp) (E₁.trans E₂).size_le
+          rw [S₁, except_bind_ok]
+          dsimp only
+          rw [hsz, except_bind_ok, S₂, except_bind_ok]
+          rw [show d₁.read dn = d₂.read dn from (read_ext E₂ dn L₁).symm,
+              show (pendD.map fun p => ((d.read p.1 : NF), p.2))
+                = pendD.map fun p => ((d₂.read p.1 : NF), p.2) from
+              (pend_read_ext (E₁.trans E₂) hpend).symm,
+              ← List.map_append, List.length_map, hpeel, except_bind_ok]
+          have hGins : GSim d₂ (ΓD.insert binder.uniq (dn, dty))
+              (ΓS.insert binder.uniq (d₂.read dn, dty)) :=
+            (hG.mono (E₁.trans E₂)).insert binder.uniq hdn2
+          rcases alts with _ | ⟨⟨con0, bs0, dbody⟩, rest⟩
+          · dsimp only at hc
+            rw [cchainJD] at hc
+            exact error_ne_ok hc
+          · cases con0 with
+            | default =>
+                dsimp only at hc ⊢
+                rw [bind_ok_iff] at hc
+                obtain ⟨dnt2, hdb, hc⟩ := hc
+                obtain ⟨d₃, dnf, dbt⟩ := dnt2
+                dsimp only at hc
+                split at hc
+                rotate_left
+                · exact error_ne_ok hc
+                rename_i hdteq
+                obtain ⟨W₃, E₃, L₃, S₃⟩ := ih (ΓD.insert binder.uniq (dn, dty)) jΓD
+                  dbody (pas ++ pendD) d₂ d₃ dnf dbt _ jΓS
+                  W₂ hGins (jsimEnv_mono hJ (E₁.trans E₂)) hrange hdb
+                obtain ⟨W₄, E₄, L₄, S₄⟩ := cchainJD_sim ih rest (some dnf)
+                  (some (d₃.read dnf)) d₃ d' r ty
+                  W₃ (hGins.mono E₃) (jsimEnv_mono hJ ((E₁.trans E₂).trans E₃))
+                  (fun p hp => Nat.lt_of_lt_of_le (hrange p hp) E₃.size_le)
+                  (Nat.lt_of_lt_of_le hdn2 E₃.size_le) ⟨L₃, rfl⟩ hc
+                refine ⟨W₄, ((E₁.trans E₂).trans E₃).trans E₄, L₄, ?_⟩
+                rw [S₃, except_bind_ok]
+                dsimp only
+                rw [if_pos hdteq]
+                rw [read_ext E₃ dn hdn2] at S₄
+                rw [show ((pas ++ pendD).map fun p => ((d₂.read p.1 : NF), p.2))
+                      = (pas ++ pendD).map fun p => ((d₃.read p.1 : NF), p.2) from
+                    (pend_read_ext E₃ hrange).symm]
+                exact S₄
+            | dataAlt cn =>
+                dsimp only at hc ⊢
+                obtain ⟨W₄, E₄, L₄, S₄⟩ := cchainJD_sim ih
+                  (Alt.mk (.dataAlt cn) bs0 dbody :: rest) none none d₂ d' r ty
+                  W₂ hGins (jsimEnv_mono hJ (E₁.trans E₂)) hrange hdn2 trivial hc
+                refine ⟨W₄, (E₁.trans E₂).trans E₄, L₄, ?_⟩
+                exact S₄
+            | litAlt i =>
+                dsimp only at hc ⊢
+                obtain ⟨W₄, E₄, L₄, S₄⟩ := cchainJD_sim ih
+                  (Alt.mk (.litAlt i) bs0 dbody :: rest) none none d₂ d' r ty
+                  W₂ hGins (jsimEnv_mono hJ (E₁.trans E₂)) hrange hdn2 trivial hc
+                refine ⟨W₄, (E₁.trans E₂).trans E₄, L₄, ?_⟩
+                exact S₄
+      | app f' a' =>
+          dsimp only at hc
+          exact error_ne_ok hc
+
+/-- `cexpFullD`'s simulation, at the top level (empty join
+environment, no pending arguments): a successful DAG compilation
+certifies the tree compilation whose normal form is the reading of
+the returned index. -/
+theorem cexpFullD_sim {Δ : DEnv} {dmap : HashMap Int Defn} {fuel : Nat}
+    {ΓD : DGamma} {ΓS : HashMap Int (NF × Ty)} {e : Exp} {d d' : Dag} {r : Nat}
+    {ty : Ty} (hwf : d.WF) (hG : GSim d ΓD ΓS)
+    (hc : cexpFullD Δ dmap fuel ΓD e d = .ok (d', r, ty)) :
+    d'.WF ∧ d.Ext d' ∧ r < d'.size ∧
+      cexpFull Δ dmap fuel ΓS e = .ok (d'.read r, ty) := by
+  obtain ⟨W, E, L, S⟩ := cexpJD_sim fuel ΓD [] e [] d d' r ty ΓS []
+    hwf hG jsimEnv_nil (by simp) hc
+  simp only [List.map_nil] at S
+  exact ⟨W, E, L, S⟩
+
+/-! ### The per-definition DAG leg (Phase 4d): compile both sides into
+one shared store over pushed parameter variables and compare by index
+after three `renorm` sweeps (the store-level `cfoldW3`). Soundness is
+a reduction to the tree legs: a `true` verdict certifies both tree
+compilations and the `cfoldW3` equality of their normal forms, so
+`checkDefnPair_sound`'s width-aware argument applies unchanged. -/
+
+/-- Push a run of variable nodes (name/width pairs), keeping the
+returned indices in order. -/
+def pushVars (d : Dag) : List (String × Nat) → Dag × List Nat
+  | [] => (d, [])
+  | (x, w) :: rest =>
+      let (d₁, i) := d.mkVar w x
+      let (d₂, is) := pushVars d₁ rest
+      (d₂, i :: is)
+
+private theorem pushVars_spec :
+    ∀ (prs : List (String × Nat)) (d : Dag), d.WF →
+      (pushVars d prs).1.WF ∧ d.Ext (pushVars d prs).1 ∧
+      (∀ i ∈ (pushVars d prs).2, i < (pushVars d prs).1.size) ∧
+      (pushVars d prs).2.map (pushVars d prs).1.read
+        = prs.map (fun p => (.var p.2 p.1 : NF)) := by
+  intro prs
+  induction prs with
+  | nil =>
+      intro d hwf
+      exact ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, by simp [pushVars], by simp [pushVars]⟩
+  | cons p rest ih =>
+      intro d hwf
+      obtain ⟨x, w⟩ := p
+      show _ ∧ _ ∧ _ ∧ _
+      rw [pushVars]
+      rcases hv : d.mkVar w x with ⟨d₁, i⟩
+      obtain ⟨W₁, E₁, L₁, R₁⟩ := mk_out (mkVar_spec hwf w x) hv
+      obtain ⟨W₂, E₂, L₂, R₂⟩ := ih d₁ W₁
+      rcases hr : pushVars d₁ rest with ⟨d₂, is⟩
+      rw [hr] at W₂ E₂ L₂ R₂
+      simp only [hv, hr]
+      refine ⟨W₂, E₁.trans E₂, ?_, ?_⟩
+      · intro q hq
+        rcases List.mem_cons.mp hq with hq | hq
+        · subst hq
+          exact Nat.lt_of_lt_of_le L₁ E₂.size_le
+        · exact L₂ q hq
+      · rw [List.map_cons, List.map_cons, R₂, read_ext E₂ i L₁, R₁]
+
+/-- The parameter environment's simulation (`mkParamGamma`'s fold with
+indices whose readings are the parameter variables). -/
+private theorem gsim_paramFold {d : Dag} :
+    ∀ (eps : List Id) (is : List Nat) (nfs : List NF),
+      (∀ i ∈ is, i < d.size) →
+      is.map d.read = nfs →
+      GSim d ((eps.zip is).foldr (fun pr m => m.insert pr.1.uniq (pr.2, pr.1.sig.ty)) ∅)
+        ((eps.zip nfs).foldr (fun pr m => m.insert pr.1.uniq (pr.2, pr.1.sig.ty)) ∅) := by
+  intro eps
+  induction eps with
+  | nil =>
+      intro is nfs _ _
+      simpa using gsim_empty d
+  | cons e eps ih =>
+      intro is nfs hlt hmap
+      cases is with
+      | nil =>
+          rw [← hmap]
+          simpa using gsim_empty d
+      | cons i irest =>
+          cases nfs with
+          | nil => exact absurd hmap (by simp)
+          | cons nf nrest =>
+              rw [List.map_cons] at hmap
+              injection hmap with h1 h2
+              simp only [List.zip_cons_cons, List.foldr_cons]
+              rw [← h1]
+              exact GSim.insert
+                (ih irest nrest (fun q hq => hlt q (List.mem_cons_of_mem _ hq)) h2)
+                e.uniq (hlt i List.mem_cons_self)
+
+/-- The Hyle-side parameter environment's simulation (`mkParamRho`'s
+fold with indices whose readings are the parameter variables). -/
+private theorem envsim_paramFold {d : Dag} :
+    ∀ (prs : List (String × Nat)) (is : List Nat)
+      (mD : HashMap String Nat) (mS : HashMap String NF),
+      Rwv.Hyle.BridgeDag.EnvSim d mD mS →
+      (∀ i ∈ is, i < d.size) →
+      is.map d.read = prs.map (fun p => (.var p.2 p.1 : NF)) →
+      Rwv.Hyle.BridgeDag.EnvSim d
+        ((prs.zip is).foldl (fun m pr => m.insert pr.1.1 pr.2) mD)
+        (prs.foldl (fun m pr => m.insert pr.1 (.var pr.2 pr.1)) mS) := by
+  intro prs
+  induction prs with
+  | nil =>
+      intro is mD mS hsim _ _
+      simpa using hsim
+  | cons p rest ih =>
+      intro is mD mS hsim hlt hmap
+      cases is with
+      | nil => exact absurd hmap (by simp)
+      | cons i irest =>
+          simp only [List.map_cons] at hmap
+          injection hmap with h1 h2
+          simp only [List.zip_cons_cons, List.foldl_cons]
+          refine ih irest _ _ ?_ (fun q hq => hlt q (List.mem_cons_of_mem _ hq)) h2
+          have := hsim.insert p.1 (hlt i List.mem_cons_self)
+          rw [h1] at this
+          exact this
+
+/-- The DAG comparison leg of the per-definition validator. -/
+def checkDefnPairDag (Δ : DEnv) (edm : HashMap Int Defn)
+    (hdm : HashMap String Rwv.Hyle.Defn) (fuelE fuelH : Nat)
+    (ed : Defn) (hd : Rwv.Hyle.Defn) : Bool :=
+  let prs := hd.params.zip hd.sig.params
+  let (d₀, is) := pushVars Rwv.Hyle.BridgeDag.Dag.empty prs
+  let ΓD : DGamma :=
+    (ed.params.zip is).foldr (fun pr m => m.insert pr.1.uniq (pr.2, pr.1.sig.ty)) ∅
+  let ρD : HashMap String Nat :=
+    (prs.zip is).foldl (fun m pr => m.insert pr.1.1 pr.2) ∅
+  match Rwv.Hyle.BridgeDag.symExpDag hdm fuelH ρD hd.body d₀ with
+  | .error _ => false
+  | .ok (d₁, iH) =>
+      match cexpFullD Δ edm fuelE ΓD ed.body d₁ with
+      | .error _ => false
+      | .ok (d₂, iE, _) =>
+          match Rwv.Hyle.BridgeDag.renorm d₂ with
+          | .error _ => false
+          | .ok (e₁, m₁) =>
+              match Rwv.Hyle.BridgeDag.renorm e₁ with
+              | .error _ => false
+              | .ok (e₂, m₂) =>
+                  match Rwv.Hyle.BridgeDag.renorm e₂ with
+                  | .error _ => false
+                  | .ok (_, m₃) =>
+                      mIdx m₃ (mIdx m₂ (mIdx m₁ iE))
+                        == mIdx m₃ (mIdx m₂ (mIdx m₁ iH))
+
+/-- Soundness of the DAG leg, by reduction: a `true` verdict certifies
+both tree compilations and the `cfoldW3` equality of their normal
+forms (`renorm_spec` three times = the store-level `cfoldW3`). -/
+theorem checkDefnPairDag_sound {Δ : DEnv} {edm : HashMap Int Defn}
+    {hdm : HashMap String Rwv.Hyle.Defn} {fuelE fuelH : Nat} {ed : Defn}
+    {hd : Rwv.Hyle.Defn}
+    (h : checkDefnPairDag Δ edm hdm fuelE fuelH ed hd = true) :
+    ∃ ne tyE nh,
+      cexpFull Δ edm fuelE (mkParamGamma ed.params hd.params hd.sig.params) ed.body
+        = .ok (ne, tyE)
+      ∧ Rwv.Hyle.Bridge.symExp hdm fuelH (mkParamRho hd.params hd.sig.params) hd.body
+        = .ok nh
+      ∧ Rwv.Hyle.Bridge.cfoldW3 ne = Rwv.Hyle.Bridge.cfoldW3 nh := by
+  rw [checkDefnPairDag] at h
+  rcases hpv : pushVars Rwv.Hyle.BridgeDag.Dag.empty (hd.params.zip hd.sig.params)
+    with ⟨d₀, is⟩
+  rw [hpv] at h
+  dsimp only at h
+  have hps := pushVars_spec (hd.params.zip hd.sig.params) Rwv.Hyle.BridgeDag.Dag.empty
+    Rwv.Hyle.BridgeDag.Dag.WF.empty
+  rw [hpv] at hps
+  dsimp only at hps
+  obtain ⟨W₀, _E₀, L₀, R₀⟩ := hps
+  cases hsE : Rwv.Hyle.BridgeDag.symExpDag hdm fuelH
+      ((((hd.params.zip hd.sig.params)).zip is).foldl
+        (fun m pr => m.insert pr.1.1 pr.2) ∅) hd.body d₀ with
+  | error e => rw [hsE] at h; exact absurd h (by simp)
+  | ok res =>
+  obtain ⟨d₁, iH⟩ := res
+  rw [hsE] at h
+  dsimp only at h
+  cases hcE : cexpFullD Δ edm fuelE
+      ((ed.params.zip is).foldr (fun pr m => m.insert pr.1.uniq (pr.2, pr.1.sig.ty)) ∅)
+      ed.body d₁ with
+  | error e => rw [hcE] at h; exact absurd h (by simp)
+  | ok res =>
+  obtain ⟨d₂, iE, tyE⟩ := res
+  rw [hcE] at h
+  dsimp only at h
+  cases hr₁ : Rwv.Hyle.BridgeDag.renorm d₂ with
+  | error e => rw [hr₁] at h; exact absurd h (by simp)
+  | ok res =>
+  obtain ⟨e₁, m₁⟩ := res
+  rw [hr₁] at h
+  dsimp only at h
+  cases hr₂ : Rwv.Hyle.BridgeDag.renorm e₁ with
+  | error e => rw [hr₂] at h; exact absurd h (by simp)
+  | ok res =>
+  obtain ⟨e₂, m₂⟩ := res
+  rw [hr₂] at h
+  dsimp only at h
+  cases hr₃ : Rwv.Hyle.BridgeDag.renorm e₂ with
+  | error e => rw [hr₃] at h; exact absurd h (by simp)
+  | ok res =>
+  obtain ⟨e₃, m₃⟩ := res
+  rw [hr₃] at h
+  dsimp only at h
+  -- the two simulations
+  have hEnvSim : Rwv.Hyle.BridgeDag.EnvSim d₀
+      (((hd.params.zip hd.sig.params).zip is).foldl
+        (fun m pr => m.insert pr.1.1 pr.2) ∅)
+      (mkParamRho hd.params hd.sig.params) :=
+    envsim_paramFold (hd.params.zip hd.sig.params) is ∅ ∅
+      (Rwv.Hyle.BridgeDag.EnvSim.empty d₀) L₀ R₀
+  obtain ⟨W₁, E₁, LH, SH⟩ :=
+    Rwv.Hyle.BridgeDag.symExpDag_sim fuelH hd.body _ _ d₀ d₁ iH W₀ hEnvSim hsE
+  have hGSim : GSim d₀
+      ((ed.params.zip is).foldr (fun pr m => m.insert pr.1.uniq (pr.2, pr.1.sig.ty)) ∅)
+      (mkParamGamma ed.params hd.params hd.sig.params) :=
+    gsim_paramFold ed.params is _ L₀ R₀
+  obtain ⟨W₂, E₂, LE, SE⟩ := cexpFullD_sim W₁ (hGSim.mono E₁) hcE
+  -- the three renormalization sweeps
+  obtain ⟨WR₁, ER₁, hsz₁, hinv₁⟩ := Rwv.Hyle.BridgeDag.renorm_spec W₂ hr₁
+  obtain ⟨WR₂, ER₂, hsz₂, hinv₂⟩ := Rwv.Hyle.BridgeDag.renorm_spec WR₁ hr₂
+  obtain ⟨WR₃, ER₃, hsz₃, hinv₃⟩ := Rwv.Hyle.BridgeDag.renorm_spec WR₂ hr₃
+  have hchain : ∀ i, i < d₂.size →
+      mIdx m₃ (mIdx m₂ (mIdx m₁ i)) < e₃.size ∧
+      e₃.read (mIdx m₃ (mIdx m₂ (mIdx m₁ i))) = Rwv.Hyle.Bridge.cfoldW3 (d₂.read i) := by
+    intro i hi
+    obtain ⟨h1lt, h1eq⟩ := hinv₁ i hi
+    obtain ⟨h2lt, h2eq⟩ := hinv₂ (mIdx m₁ i) h1lt
+    obtain ⟨h3lt, h3eq⟩ := hinv₃ (mIdx m₂ (mIdx m₁ i)) h2lt
+    refine ⟨h3lt, ?_⟩
+    rw [h3eq, h2eq, h1eq]
+    rfl
+  have hIdx : mIdx m₃ (mIdx m₂ (mIdx m₁ iE)) = mIdx m₃ (mIdx m₂ (mIdx m₁ iH)) :=
+    beq_iff_eq.mp h
+  have hiH2 : iH < d₂.size := Nat.lt_of_lt_of_le LH E₂.size_le
+  refine ⟨d₂.read iE, tyE, d₂.read iH, SE, ?_, ?_⟩
+  · rw [SH, read_ext E₂ iH LH]
+  · rw [← (hchain iE LE).2, ← (hchain iH hiH2).2, hIdx]
+
 end DagMirror
 
 /-! ## The per-definition validator, upgraded (Phase 4b)
@@ -11055,13 +13322,18 @@ def checkDefnPair (Δ : DEnv) (edm : HashMap Int Defn)
     (hdm : HashMap String Rwv.Hyle.Defn) (fuelE fuelH : Nat)
     (ed : Defn) (hd : Rwv.Hyle.Defn) : Bool :=
   denvOk Δ &&
-    match cexpFull Δ edm fuelE (mkParamGamma ed.params hd.params hd.sig.params) ed.body,
-          Rwv.Hyle.Bridge.symExp hdm fuelH (mkParamRho hd.params hd.sig.params) hd.body with
-    | .ok (ne, _), .ok nh =>
-        ne.cfold == nh.cfold
-          || (paramsOkW Δ fuelE ed.params hd.params hd.sig.params
-              && (Rwv.Hyle.Bridge.cfoldW3 ne == Rwv.Hyle.Bridge.cfoldW3 nh))
-    | _, _ => false
+    -- The DAG leg first: on the pairs whose tree normal forms blow up,
+    -- a passing store-level comparison short-circuits the tree legs.
+    if paramsOkW Δ fuelE ed.params hd.params hd.sig.params
+        && checkDefnPairDag Δ edm hdm fuelE fuelH ed hd then true
+    else
+      match cexpFull Δ edm fuelE (mkParamGamma ed.params hd.params hd.sig.params) ed.body,
+            Rwv.Hyle.Bridge.symExp hdm fuelH (mkParamRho hd.params hd.sig.params) hd.body with
+      | .ok (ne, _), .ok nh =>
+          ne.cfold == nh.cfold
+            || (paramsOkW Δ fuelE ed.params hd.params hd.sig.params
+                && (Rwv.Hyle.Bridge.cfoldW3 ne == Rwv.Hyle.Bridge.cfoldW3 nh))
+      | _, _ => false
 
 /-- `HashMap.get?` through a `String`-keyed insert. -/
 private theorem get?_insert_str {β : Type} {m : HashMap String β} {k k' : String} {v : β} :
@@ -11201,13 +13473,29 @@ theorem checkDefnPair_sound {Δ : DEnv} {edm : HashMap Int Defn}
     ∃ k bv, Val.rep Δ k v = .ok bv ∧ Rwv.Hyle.evalExp F X ρ' hd.body = .ok bv := by
   rw [checkDefnPair, Bool.and_eq_true] at hck
   obtain ⟨hΔ, hck⟩ := hck
-  rcases hcE : cexpFull Δ edm fuelE (mkParamGamma ed.params hd.params hd.sig.params)
-      ed.body with _ | ⟨ne, tyE⟩
-  · rw [hcE] at hck; exact absurd hck (by simp)
-  rcases hcH : Rwv.Hyle.Bridge.symExp hdm fuelH (mkParamRho hd.params hd.sig.params)
-      hd.body with _ | nh
-  · rw [hcE, hcH] at hck; exact absurd hck (by simp)
-  rw [hcE, hcH] at hck
+  -- both verdict routes produce the tree compilations plus a leg
+  have hlegs : ∃ ne tyE nh,
+      cexpFull Δ edm fuelE (mkParamGamma ed.params hd.params hd.sig.params) ed.body
+        = .ok (ne, tyE)
+      ∧ Rwv.Hyle.Bridge.symExp hdm fuelH (mkParamRho hd.params hd.sig.params) hd.body
+        = .ok nh
+      ∧ (ne.cfold = nh.cfold
+         ∨ (paramsOkW Δ fuelE ed.params hd.params hd.sig.params = true
+            ∧ Rwv.Hyle.Bridge.cfoldW3 ne = Rwv.Hyle.Bridge.cfoldW3 nh)) := by
+    split at hck
+    · rename_i hdag
+      rw [Bool.and_eq_true] at hdag
+      obtain ⟨ne, tyE, nh, hcE, hcH, hW3⟩ := checkDefnPairDag_sound hdag.2
+      exact ⟨ne, tyE, nh, hcE, hcH, Or.inr ⟨hdag.1, hW3⟩⟩
+    · rcases hcE : cexpFull Δ edm fuelE (mkParamGamma ed.params hd.params hd.sig.params)
+          ed.body with _ | ⟨ne, tyE⟩
+      · rw [hcE] at hck; exact absurd hck (by simp)
+      rcases hcH : Rwv.Hyle.Bridge.symExp hdm fuelH (mkParamRho hd.params hd.sig.params)
+          hd.body with _ | nh
+      · rw [hcE, hcH] at hck; exact absurd hck (by simp)
+      rw [hcE, hcH] at hck
+      exact ⟨ne, tyE, nh, rfl, rfl, by simpa using hck⟩
+  obtain ⟨ne, tyE, nh, hcE, hcH, hck2⟩ := hlegs
   obtain ⟨_hvty, k, hrep⟩ :=
     cexpFull_sound hΔ fuelE (mkParamGamma ed.params hd.params hd.sig.params)
       ed.body ne tyE efuel env [] v hcE hev hEnv
@@ -11215,11 +13503,6 @@ theorem checkDefnPair_sound {Δ : DEnv} {edm : HashMap Int Defn}
     (mkParamRho hd.params hd.sig.params) ρ' nh hRho hcH
   refine ⟨k, ne.eval σ, hrep, ?_⟩
   rw [hH]
-  -- the two verdict legs
-  have hck2 : ne.cfold = nh.cfold ∨
-      (paramsOkW Δ fuelE ed.params hd.params hd.sig.params = true ∧
-        Rwv.Hyle.Bridge.cfoldW3 ne = Rwv.Hyle.Bridge.cfoldW3 nh) := by
-    simpa using hck
   rcases hck2 with hfold' | ⟨hpw, hW3'⟩
   · congr 1
     calc nh.eval σ = nh.cfold.eval σ := (Rwv.Hyle.Bridge.cfold_eval σ nh).symm
@@ -11298,5 +13581,9 @@ theorem checkDefnPair_sound {Δ : DEnv} {edm : HashMap Int Defn}
 #print axioms cexpJ_varsWF
 #print axioms cexpFull_varsWF
 #print axioms checkDefnPair_sound
+#print axioms cprimFD_sim
+#print axioms checkDefnPairDag_sound
+#print axioms cexpJD_sim
+#print axioms cexpFullD_sim
 
 end Rwv.Eidos.Cexp
