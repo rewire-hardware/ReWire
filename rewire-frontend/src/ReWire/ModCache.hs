@@ -91,7 +91,9 @@ getDevice conf fp = do
       -- reachable after the block-graph cleanup, so any halt terminator
       -- is a state the device can actually freeze in.
       when (conf^.C.noHalt) $ mapM_ noHaltCheck $ Eidos.progProcs eirPE'
-      when (conf^.C.eidos) $ do
+      -- --certify validates against exactly this dump (the machine-mode
+      -- Eidos IR the fold consumes), so it implies --eidos.
+      when (conf^.C.eidos || conf^.C.certify) $ do
             let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
             verb ("Writing Eidos IR to file: " <> pack eirFile) ()
             liftIO $ T.writeFile eirFile $ prettyProgram eirPE'

@@ -24,16 +24,20 @@ import qualified ReWire.Hyle.ToVHDL    as HyleH
 import qualified ReWire.Hyle.ToVerilog as HyleV
 import qualified ReWire.Hyle.Transform as Hyle
 
+import Control.Applicative ((<|>))
 import Control.Lens ((^.))
 import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State (MonadState)
+import Data.List (isPrefixOf, stripPrefix)
 import Data.Maybe (fromMaybe)
-import System.Directory (doesFileExist)
+import System.Directory (doesFileExist, findExecutable)
 import Data.Text (Text, pack)
 import Numeric.Natural (Natural)
+import System.Environment (lookupEnv, getExecutablePath)
 import System.Exit (exitFailure)
-import System.FilePath (dropExtension, takeExtension, (<.>))
+import System.FilePath (dropExtension, takeDirectory, takeExtension, (<.>), (-<.>), (</>))
+import System.Process (proc, readCreateProcessWithExitCode)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Text.IO        as T
@@ -63,6 +67,8 @@ compileFile conf filename = do
             compile a = do
                   when (conf^.testbench && (conf^.target) `notElem` [VHDL, Verilog]) $
                         warnAt conf noAnn "--testbench: no testbench generated (only the Verilog and VHDL targets support testbench generation)."
+                  when (conf^.Config.certify && conf^.target == Interpret) $
+                        warnAt conf noAnn "--certify: nothing to certify (only device targets are certified)."
                   p <- pass conf filename 10 "Partially evaluating/reducing the Hyle IR (if this is slow, consider --rtl-opt=0)." "rwc" prettyPrint
                         (Hyle.check . Hyle.optimize (conf^.rtlOpt)) a
                   let inline = pass conf filename 11 "Inlining Hyle definitions." "rwc" prettyPrint
@@ -72,19 +78,33 @@ compileFile conf filename = do
                               p' <- inline p
                               HyleH.compileProgram conf p' >>= writeOutput
                               writeTestbench $ HyleH.testbench conf $ progDevice p'
+                              certifyOutput p'
                         Verilog   -> do
                               p' <- inline p
                               HyleV.compileProgram conf p' >>= writeOutput
                               writeTestbench $ HyleV.testbench conf $ progDevice p'
-                        Cryptol   -> HyleCry.compileProgram conf p >>= writeOutput
+                              certifyOutput p'
+                        -- The Cryptol backend consumes the pass-10 program;
+                        -- --certify still certifies the fully inlined
+                        -- (pass-11) form, run here explicitly.
+                        Cryptol   -> do
+                              HyleCry.compileProgram conf p >>= writeOutput
+                              when (conf^.Config.certify) $ inline p >>= certifyOutput
                         -- The .rwc output only carries source locators
                         -- ('--@' lines) under --locators (and not under
                         -- --no-locators, which wins): spans can embed
                         -- absolute paths, which would destabilize golden
                         -- files. Doc ('--|') and 'tag' lines are path-free
                         -- and not gated.
-                        RWCore    | conf^.locators && not (conf^.noLocators) -> writeOutput p
-                                  | otherwise                                -> writeOutput $ scrubSpans p
+                        RWCore    -> do
+                              if conf^.locators && not (conf^.noLocators)
+                                    then writeOutput p
+                                    else writeOutput $ scrubSpans p
+                              -- The .rwc output itself is the pass-10
+                              -- program (what --from-core reoptimizes);
+                              -- certification, as everywhere, covers the
+                              -- final backend-consumed (pass-11) form.
+                              when (conf^.Config.certify) $ inline p >>= certifyOutput
                         Interpret -> do
                               ips  <- loadInputs
                               verb $ "Interpreting hyle: running for " <> showt (length ips) <> " cycles."
@@ -127,6 +147,45 @@ compileFile conf filename = do
                   verb $ "Writing to file: " <> pack fout
                   liftIO $ T.writeFile fout $ if conf^.Config.pretty then prettyPrint a else fastPrint a
 
+            -- | --certify: write the certified pair beside the output --
+            --   the machine-mode Eidos IR (<out>.eir, the --eidos dump,
+            --   written by ReWire.ModCache) and the final backend-consumed
+            --   Hyle program (<out>.certify.rwc) -- run the verified
+            --   validator on it, and surface the verdict: a one-line
+            --   confirmation on VALIDATED, otherwise a warning (fatal
+            --   under -Werror), never a silent pass. See doc/certify.md.
+            certifyOutput :: (MonadError AstError m, MonadIO m) => Program -> m ()
+            certifyOutput p11 = when (conf^.Config.certify) $ case conf^.source of
+                  Haskell -> do
+                        let fout    = fromMaybe filename $ conf^.Config.outFile
+                            eirFile = fout -<.> "eir"
+                            rwcFile = fout -<.> "certify.rwc"
+                        verb $ "certify: writing the final (backend-consumed) Hyle IR to file: " <> pack rwcFile
+                        liftIO $ T.writeFile rwcFile $ prettyPrint p11
+                        liftIO findRwv >>= \ case
+                              Nothing  -> warnAt conf (filePath filename) $ "certify: not validated: the validator (" <> pack rwvExe
+                                    <> ") was not found next to rwc, on the PATH, or in verify/.lake/build/bin; build it with"
+                                    <> " 'cd verify && lake build " <> pack rwvExe <> "' in a ReWire checkout (or set RWC_RWV to its location)."
+                              Just rwv -> do
+                                    verb $ "certify: running the validator: " <> pack rwv <> " " <> pack eirFile <> " " <> pack rwcFile
+                                    (_, out, err) <- liftIO $ readCreateProcessWithExitCode (proc rwv [eirFile, rwcFile]) ""
+                                    case [ s | l <- lines out, Just s <- [stripPrefix "summary: " l] ] of
+                                          s : _ | "VALIDATED" `isPrefixOf` s -> liftIO $ T.putStrLn
+                                                $ "certify: VALIDATED: the compiled device (" <> pack rwcFile
+                                                <> ") implements the Eidos machine (" <> pack eirFile <> ")."
+                                          s : _ -> warnAt conf (filePath filename)
+                                                $ "certify: not validated: " <> pack s
+                                                <> " (artifacts: " <> pack eirFile <> ", " <> pack rwcFile <> ")."
+                                          []    -> warnAt conf (filePath filename)
+                                                $ "certify: not validated: the validator produced no verdict: " <> lastLine out err
+                                                <> " (artifacts: " <> pack eirFile <> ", " <> pack rwcFile <> ")."
+                  -- Under --from-core the Eidos pipeline never runs, so
+                  -- there is no machine IR to validate against.
+                  _       -> warnAt conf noAnn "certify: not validated: nothing to certify (certification requires compiling from Haskell source; no Eidos IR exists under --from-core)."
+                  where lastLine :: String -> String -> Text
+                        lastLine out err = maybe "(no output)" pack
+                              $ lastMaybe (filter (not . null) $ lines out) <|> lastMaybe (filter (not . null) $ lines err)
+
             verb :: MonadIO m => Text -> m ()
             verb = pDebug conf
 
@@ -135,6 +194,29 @@ compileFile conf filename = do
 --   lines.
 scrubSpans :: Program -> Program
 scrubSpans = unAnn
+
+-- | The verified Eidos-to-Hyle validator executable (built from verify/
+--   with Lake; see doc/certify.md).
+rwvExe :: String
+rwvExe = "rwv-cstep-validate"
+
+-- | Locate the validator: RWC_RWV, then next to the rwc executable, then
+--   the PATH, then the in-checkout Lake build directory relative to the
+--   current directory (mirroring the rwcry discovery chain in
+--   ReWire.Eidos.ToHyle).
+findRwv :: IO (Maybe FilePath)
+findRwv = lookupEnv "RWC_RWV" >>= \ case
+      Just r  -> pure $ Just r
+      Nothing -> do
+            cand <- (</> rwvExe) . takeDirectory <$> getExecutablePath
+            doesFileExist cand >>= \ case
+                  True  -> pure $ Just cand
+                  False -> findExecutable rwvExe >>= \ case
+                        Just r  -> pure $ Just r
+                        Nothing -> do
+                              let local = "verify" </> ".lake" </> "build" </> "bin" </> rwvExe
+                              ex <- doesFileExist local
+                              pure $ if ex then Just local else Nothing
 
 -- | The number of cycles to interpret/simulate: the explicit --cycles value if
 --   the user gave one, otherwise the larger of 10 or the number of inputs
