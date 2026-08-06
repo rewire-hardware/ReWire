@@ -1,30 +1,35 @@
 /-
-rwv-cstep-validate: the per-label machine-step measurement driver for
-the Phase 4b-ii validator (Rwv.Eidos.Cstep).
+rwv-cstep-validate: the headline driver for the Phase 4b-ii validator
+(Rwv.Eidos.Cstep), with an optional per-label measurement mode.
 
-    rwv-cstep-validate <file.eir> <file.rwc> [--fuel=N] [-v]
+    rwv-cstep-validate <file.eir> <file.rwc> [--fuel=N] [--measure] [-v]
 
 parses the pass-8 Eidos dump (must contain exactly one proc) and the
-final (post-pass-11) .rwc, recomputes the step-record layout and the
-register/port plan, symbolically evaluates the device step once
-(Bridge.symStep), and then per pause target compiles the Eidos machine
+final (post-pass-11) .rwc and prints the headline VALIDATED/REJECTED
+from the library's validateProcE FIRST, as a `summary:` line (the
+library validator dispatches per label through the DAG leg first,
+falling back to the tree-tier cfold/cfoldW3 legs — checkLabelD).
+
+With --measure it then additionally recomputes the step-record layout
+and the register/port plan, symbolically evaluates the device step
+once (Bridge.symStep), and per pause target compiles the Eidos machine
 step through the goto closure (Cstep.goCmds) and compares it — output
 port for output port, register for register — against the device step
-specialized to the target's tag.
+specialized to the target's tag. This tree-tier loop materializes full
+per-slice NF trees and can exhaust memory on the giant tests, which is
+why it is off by default; the final `summary:` line (the last one
+wins) then carries the tally.
 
-Verdicts per label (worst leg over all compared slices):
+Measurement verdicts per label (worst leg over all compared slices):
   OK-V      every slice equal after NF.cfold (the unconditional leg)
   OK-W      every slice equal after cfoldW3 (width-aware leg)
   OK-DAG    every slice equal after BridgeDag renormalization
-            (untrusted engine leg, measurement only)
   MISMATCH  some slice disagrees on all legs
   GAP:...   the Eidos-side step compiler rejected the block
             (fragment gap, message quoted)
 
 Plus an INIT line (the initial-state check: entry run + encode vs
-declared register initials) and a headline VALIDATED/REJECTED from the
-library's validateProcE (whose comparison legs are cfold/cfoldW3
-only — a test that is OK only through the DAG leg is NOT validated).
+declared register initials).
 
 This driver is UNTRUSTED measurement plumbing; the verified statements
 live in Rwv.Eidos.Cstep.
@@ -108,9 +113,11 @@ structure Tally where
 def main (argv : List String) : IO UInt32 := do
   let mut fuel : Nat := 1000000
   let mut verbose := false
+  let mut measure := false
   let mut pos : List String := []
   for a in argv do
     if a = "-v" then verbose := true
+    else if a = "--measure" then measure := true
     else if a.startsWith "--fuel=" then
       fuel := ((a.drop 7).toNat?).getD fuel
     else pos := pos ++ [a]
@@ -130,6 +137,16 @@ def main (argv : List String) : IO UInt32 := do
         unless Rwv.Eidos.Cexp.denvOk Δ do
           IO.eprintln "cstep-validate: denvOk failed (prim basis discipline)"
           return 1
+        -- Headline FIRST (the library validator: DAG dispatcher with
+        -- tree-tier fallback). The measurement loop below can OOM on
+        -- the giants, so the verdict must be out before it runs.
+        let vres := validateProcE Δ edm pr hp fuel
+        let headline := match vres with
+          | .ok _ => "VALIDATED"
+          | .error e => s!"REJECTED ({e})"
+        IO.println s!"summary: {headline}"
+        unless measure do
+          return (if vres.isOk then 0 else 1)
         -- Layout and plan.
         let lo ← match mkLayoutL Δ fuel pr with
           | .ok lo => pure lo
@@ -205,13 +222,10 @@ def main (argv : List String) : IO UInt32 := do
           | .ok _ => "OK"
           | .error e => s!"FAIL ({e})"
         IO.println s!"INIT      {initV}"
-        -- Headline (the library validator: cfold/cfoldW3 legs only).
-        let headline := match validateProcE Δ edm pr hp fuel with
-          | .ok _ => "VALIDATED"
-          | .error e => s!"REJECTED ({e})"
+        -- Full summary (last summary line wins in the sweep harness).
         IO.println s!"summary: {headline}; {t.okV} ok-v, {t.okW} ok-w, \
           {t.okDag} ok-dag, {t.mismatch} mismatch, {t.gap} gap; init {initV}"
-        return (if t.mismatch > 0 then 1 else 0)
+        return (if t.mismatch > 0 || !vres.isOk then 1 else 0)
       | [] => IO.println "SKIP      (no proc in the Eidos dump)"; return 1
       | _ => IO.println "SKIP      (multiple procs)"; return 1
   | _ =>
