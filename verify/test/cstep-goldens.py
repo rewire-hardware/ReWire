@@ -5,14 +5,16 @@ validator (rwv-cstep-validate, Rwv.Eidos.Cstep).
 For each test with a pass-8 Eidos dump, runs the machine-step
 validator against the FINAL Hyle program (<base>.11.rwc — the
 post-inline program the backends consume; --pass9/--pass10 select the
-earlier dumps), tabulating the per-label verdicts, the initial-state
-check, and the headline VALIDATED/REJECTED. Dumps are the ones
-verify/test/hyle-equiv-goldens.py generates into
-verify/test/out-equiv.
+earlier dumps), tabulating the headline VALIDATED/REJECTED verdicts
+(the driver prints validateProcE's verdict first). With --measure the
+driver additionally runs its per-label tree-tier measurement loop
+(per-label verdicts, initial-state check) — memory-hungry on the giant
+tests. Dumps are the ones verify/test/hyle-equiv-goldens.py generates
+into verify/test/out-equiv.
 
 Usage:
   verify/test/cstep-goldens.py [--only SUBSTR] [--dumps DIR]
-      [--pass9 | --pass10] [--timeout SEC] [-v]
+      [--pass9 | --pass10] [--measure] [--timeout SEC] [-v]
 """
 
 import argparse
@@ -32,6 +34,9 @@ def main():
                     help="validate against the .9.rwc (raw fold) instead of .11.rwc")
     ap.add_argument("--pass10", action="store_true",
                     help="validate against the .10.rwc (post-optimize) instead of .11.rwc")
+    ap.add_argument("--measure", action="store_true",
+                    help="also run the driver's per-label measurement loop "
+                         "(tree-tier; memory-hungry on the giants)")
     ap.add_argument("--timeout", type=float, default=300.0)
     ap.add_argument("-v", "--verbose", action="store_true")
     ap.add_argument("--exe", default=str(VERIFY / ".lake" / "build" / "bin" / "rwv-cstep-validate"))
@@ -58,8 +63,11 @@ def main():
         if not rwc.exists():
             print(f"{t:<20} (no {ext} dump)")
             continue
+        cmd = [str(exe), str(eir), str(rwc)]
+        if args.measure:
+            cmd.append("--measure")
         try:
-            r = subprocess.run([str(exe), str(eir), str(rwc)],
+            r = subprocess.run(cmd,
                                capture_output=True, text=True,
                                timeout=args.timeout)
         except subprocess.TimeoutExpired:
