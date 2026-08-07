@@ -53,12 +53,34 @@ Decisions where the spec leaves latitude (candidates for doc folding):
    dynamically: `rwPrimFinite` range, `rwPrimToFinite` 2^m ≤ n,
    `rwPrimFromFinite` n ≤ 2^m, `rwPrimBitSlice` j+1 ≥ i,
    `rwPrimVecFromList` length = n, min/maxBound n ≥ 1.
-8. Eliminated (`bind`/`ret`/…), foreign (`extern`/`cryptol`), and
-   reserved (`usingExtern`/`vecFoldR`/`vecFoldL`) builtins evaluate to
-   errors naming the builtin — the machine fragment never reaches
-   them; the differential harness skips extern-using programs.
+8. Eliminated (`bind`/`ret`/…) and reserved (`usingExtern`/
+   `vecFoldR`/`vecFoldL`) builtins evaluate to errors naming the
+   builtin — the machine fragment never reaches them.
+9. FOREIGN rows (stage A of the foreign tier, doc/eidos.md §7.5.5
+   with η fixed by the model-carrying trust boundary of the
+   validation plan §1.3): a SATURATED `rwPrimCryptol f n impl ā`
+   (`f`/`n` string literals, as ToHyle requires after inlining)
+   evaluates the value arguments ā, reps them, applies the foreign
+   denotation `Δ.cryF f n τ_impl` — which the drivers instantiate as
+   the Hyle-side denotation of the rwcry-spliced `cry$…` definitions,
+   the definition OF the builtin's semantics under that boundary —
+   and `decode`s the result at the row's result type (both types read
+   off the occurrence's carried instantiated type, τ_impl being its
+   third argument type). The canonicality-checked `decode` makes a
+   non-canonical foreign result a loud error, never a junk value.
+   `rwPrimExtern` gets the same row shape through `Δ.xtF s` (the
+   extern's name, its sixth argument) — the model-carrying
+   combinational extern's semantics is its Hyle-side model definition
+   (doc/hyle.md §6.1). The impl argument is never evaluated (its
+   GHC-side content was neutered before pass 8; at a function type it
+   has no value in this domain), and under-application is an error —
+   the drivers eta-saturate to signature arity first, exactly as
+   rwc's own normalization (ToHyle's etaExpand) does. With the
+   default (empty) foreign hooks both rows error, naming the builtin,
+   as before.
 -/
 import Rwv.Eidos.Value
+import Rwv.Eidos.Decode
 import Rwv.Hyle.Semantics
 import Std.Data.HashMap
 
@@ -257,9 +279,19 @@ def evalCore (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (e : Exp) : Except
         let (dts, resTy) := Ty.flattenArrow ty
         if vs.length == dts.length then pure (.con resTy c vs)
         else throw s!"unsaturated constructor {c} ({vs.length} of {dts.length} arguments)"
-    | (.prim ty b, args) => do
-        let vs ← evalList C fuel env jenv args
-        evalBuiltin C fuel ty b vs
+    | (.prim ty b, args) =>
+        if b == .cryptol then
+          match args with
+          | .litStr f :: .litStr n :: _impl :: rest => evalCry C fuel env jenv ty f n rest
+          | _ => throw "rwPrimCryptol: malformed foreign application"
+        else if b == .«extern» then
+          match args with
+          | _ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: _impl :: _inst :: rest =>
+              evalExt C fuel env jenv ty s rest
+          | _ => throw "rwPrimExtern: malformed foreign application"
+        else do
+          let vs ← evalList C fuel env jenv args
+          evalBuiltin C fuel ty b vs
     | (.lam x body, args) => do
         let vs ← evalList C fuel env jenv args
         applyMany C fuel (.closL x env body) vs
@@ -291,6 +323,49 @@ def evalCore (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (e : Exp) : Except
         let vs ← evalList C fuel env jenv args
         applyMany C fuel v vs
     | (_, _) => throw "ill-formed expression (application of a literal or jump)"
+termination_by fuel
+
+/-- The Cryptol foreign row (decision note 9), after `evalCore`'s
+shape dispatch: evaluate the value arguments `rest`, rep them, apply
+the foreign denotation keyed by the module file `f`, the function
+name `n`, and the impl monotype (the occurrence type's third argument
+type), and decode the result at the impl type's result type. -/
+def evalCry (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (pty : Ty)
+    (f n : String) (rest : List Exp) : Except String Val :=
+  match fuel with
+  | 0 => throw fuelErr
+  | fuel + 1 => do
+      let vs ← evalList C fuel env jenv rest
+      let ity ← domTy "rwPrimCryptol" (Ty.flattenArrow pty).1 2
+      if rest.length = (Ty.flattenArrow ity).1.length then
+        match C.Δ.cryF f n ity with
+        | some den => do
+            let reps ← vs.mapM (fun v => valToBits C.Δ fuel v)
+            let bv ← den reps
+            decode C.Δ fuel (Ty.flattenArrow ity).2 bv
+        | none => throw "rwPrimCryptol: no denotation for this instantiation (no foreign environment?)"
+      else throw "rwPrimCryptol: unsaturated foreign application"
+termination_by fuel
+
+/-- The model-carrying extern row (decision note 9), after
+`evalCore`'s shape dispatch: the same shape as the Cryptol row, keyed
+by the extern's name `s` (the occurrence's sixth argument) with the
+impl monotype at its seventh argument position. -/
+def evalExt (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (pty : Ty)
+    (s : String) (rest : List Exp) : Except String Val :=
+  match fuel with
+  | 0 => throw fuelErr
+  | fuel + 1 => do
+      let vs ← evalList C fuel env jenv rest
+      let ity ← domTy "rwPrimExtern" (Ty.flattenArrow pty).1 6
+      if rest.length = (Ty.flattenArrow ity).1.length then
+        match C.Δ.xtF s with
+        | some den => do
+            let reps ← vs.mapM (fun v => valToBits C.Δ fuel v)
+            let bv ← den reps
+            decode C.Δ fuel (Ty.flattenArrow ity).2 bv
+        | none => throw s!"rwPrimExtern: no model denotation for extern {s}"
+      else throw "rwPrimExtern: unsaturated foreign application"
 termination_by fuel
 
 /-- Evaluate a list of expressions left to right. -/

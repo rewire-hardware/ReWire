@@ -2,13 +2,22 @@
 rwv-cstep-validate: the headline driver for the Phase 4b-ii validator
 (Rwv.Eidos.Cstep), with an optional per-label measurement mode.
 
-    rwv-cstep-validate <file.eir> <file.rwc> [--fuel=N] [--measure] [-v]
+    rwv-cstep-validate <file.eir> <file.rwc> [--fuel=N] [--measure]
+        [--foreign=FILE.rwc] [-v]
 
 parses the pass-8 Eidos dump (must contain exactly one proc) and the
-final (post-pass-11) .rwc and prints the headline VALIDATED/REJECTED
-from the library's validateProcE FIRST, as a `summary:` line (the
-library validator dispatches per label through the DAG leg first,
-falling back to the tree-tier cfold/cfoldW3 legs — checkLabelD).
+final (post-pass-11) .rwc, eta-saturates the Eidos program to
+signature arity (Rwv.Eidos.etaSaturate — the same normalization rwc's
+own pipeline applies before the fold; the validated artifact is the
+saturated proc, matching what the differential harness runs), installs
+the foreign tier (Rwv.Eidos.addForeign — Cryptol splices and extern
+models read from --foreign's program when given, which should be the
+pre-optimization `-d 9` dump so constant-folded splices are still
+present, else from the .rwc itself), and prints the headline
+VALIDATED/REJECTED from the library's validateProcE FIRST, as a
+`summary:` line (the library validator dispatches per label through
+the DAG leg first, falling back to the tree-tier cfold/cfoldW3 legs —
+checkLabelD).
 
 With --measure it then additionally recomputes the step-record layout
 and the register/port plan, symbolically evaluates the device step
@@ -36,6 +45,8 @@ live in Rwv.Eidos.Cstep.
 -/
 import Rwv.Eidos.Parse
 import Rwv.Eidos.PrimBasis
+import Rwv.Eidos.EtaSat
+import Rwv.Eidos.ForeignEnv
 import Rwv.Eidos.Cstep
 import Rwv.Hyle.Parse
 import Rwv.Hyle.Bridge
@@ -114,12 +125,15 @@ def main (argv : List String) : IO UInt32 := do
   let mut fuel : Nat := 1000000
   let mut verbose := false
   let mut measure := false
+  let mut foreignF : Option String := none
   let mut pos : List String := []
   for a in argv do
     if a = "-v" then verbose := true
     else if a = "--measure" then measure := true
     else if a.startsWith "--fuel=" then
       fuel := ((a.drop 7).toNat?).getD fuel
+    else if a.startsWith "--foreign=" then
+      foreignF := some ((a.drop 10).toString)
     else pos := pos ++ [a]
   match pos with
   | [eirFile, rwcFile] => do
@@ -129,10 +143,24 @@ def main (argv : List String) : IO UInt32 := do
     | .error e, _ => IO.eprintln s!"cstep-validate: {eirFile}: {e}"; return 1
     | _, .error e => IO.eprintln s!"cstep-validate: {rwcFile}: {e}"; return 1
     | .ok p₀, .ok hp => do
-      let p := addPrims p₀
+      match etaSaturate 1000000000 (addPrims p₀) with
+      | .error e => IO.eprintln s!"cstep-validate: {eirFile}: eta-saturation: {e}"; return 1
+      | .ok p => do
       match p.procs with
       | [pr] => do
-        let Δ := DEnv.ofDatas p.datas
+        -- The foreign tier: Cryptol splices and extern models, from
+        -- --foreign's program (the pre-optimization dump) when given.
+        let (frTxt, frProg) ←
+          match foreignF with
+          | none => pure (rwcTxt, hp)
+          | some path => do
+              let t ← IO.FS.readFile ⟨path⟩
+              match Rwv.Hyle.parseProgram t path with
+              | .error e =>
+                  IO.eprintln s!"cstep-validate: {path}: parse error: {e}"
+                  return 1
+              | .ok fp => pure (t, fp)
+        let Δ := addForeign (DEnv.ofDatas p.datas) frTxt frProg
         let edm := mkDefnMap p.defns
         unless Rwv.Eidos.Cexp.denvOk Δ do
           IO.eprintln "cstep-validate: denvOk failed (prim basis discipline)"

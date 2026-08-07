@@ -2646,6 +2646,415 @@ theorem vty_rep_total {Δ : DEnv} (hΔ : denvOk Δ = true) :
               | nat n => exact hctor.elim
               | arrow t₁ t₂ => exact hctor.elim
 
+/-! ## The inverse round trip: decode ∘ rep = id on canonical values
+
+The domain is honest and explicit: `VTy`-canonical values that are
+also `Val.RepCanon` (proxy-normal — the prim basis' `Proxy` data
+constructor reps identically to `.proxy`, and `decode` canonically
+produces the latter — with in-range `Finite` values, whose bound `VTy`
+deliberately does not track), at types whose representation totality
+the validator's own `repOkB` certificate checks (which supplies the
+field sizings `decode` recomputes), whose abstract heads are genuinely
+abstract (`denvOk` for `Vec`, `absHeadsOk` for `Finite`/`Integer` —
+a datatype shadowing an abstract head would make the two sides read
+the same bits differently), and which `sizeOf` sizes to the
+representation's width (the `Vec` leg's element sizing, underivable
+from `rep` success alone on empty vectors). -/
+
+/-- `Finite` and `Integer` are genuinely abstract: no datatype shadows
+the bit-reading heads (`denvOk` covers `Vec`; `Proxy` is handled by
+proxy-normality). -/
+def absHeadsOk (Δ : DEnv) : Bool :=
+  (match Δ.ctors.get? "Finite" with | some (_ :: _) => false | _ => true)
+    && (match Δ.ctors.get? "Integer" with | some (_ :: _) => false | _ => true)
+    && !Ty.isTupleCon "Finite" && !Ty.isTupleCon "Integer"
+
+private theorem absHeadsOk_finite {Δ : DEnv} (h : absHeadsOk Δ = true) {cs : List String}
+    (hcs : Δ.ctors.get? "Finite" = some cs) : cs = [] := by
+  rw [absHeadsOk, Bool.and_eq_true, Bool.and_eq_true, Bool.and_eq_true] at h
+  obtain ⟨⟨⟨h1, _⟩, _⟩, _⟩ := h
+  rw [hcs] at h1
+  cases cs with
+  | nil => rfl
+  | cons c cs' => cases h1
+
+private theorem absHeadsOk_integer {Δ : DEnv} (h : absHeadsOk Δ = true) {cs : List String}
+    (hcs : Δ.ctors.get? "Integer" = some cs) : cs = [] := by
+  rw [absHeadsOk, Bool.and_eq_true, Bool.and_eq_true, Bool.and_eq_true] at h
+  obtain ⟨⟨⟨_, h2⟩, _⟩, _⟩ := h
+  rw [hcs] at h2
+  cases cs with
+  | nil => rfl
+  | cons c cs' => cases h2
+
+private theorem absHeadsOk_fin_not_tuple {Δ : DEnv} (h : absHeadsOk Δ = true) :
+    Ty.isTupleCon "Finite" = false := by
+  rw [absHeadsOk, Bool.and_eq_true, Bool.and_eq_true, Bool.and_eq_true] at h
+  obtain ⟨⟨_, h3⟩, _⟩ := h
+  simpa using h3
+
+private theorem absHeadsOk_int_not_tuple {Δ : DEnv} (h : absHeadsOk Δ = true) :
+    Ty.isTupleCon "Integer" = false := by
+  rw [absHeadsOk, Bool.and_eq_true, Bool.and_eq_true, Bool.and_eq_true] at h
+  obtain ⟨_, h4⟩ := h
+  simpa using h4
+
+open Rwv.Eidos.Decode in
+/-- THE inverse round-trip lemma: on the canonical domain, decoding a
+value's representation gives the value back, at the same fuel. -/
+theorem rep_decode {Δ : DEnv} (hΔ : denvOk Δ = true) (habs : absHeadsOk Δ = true) :
+    ∀ {v : Val} {t : Ty}, VTy Δ v t →
+      ∀ {fuel : Nat} {bv : BV}, Val.RepCanon v →
+        repOkB Δ fuel t = true →
+        Val.rep Δ fuel v = .ok bv →
+        Δ.sizeOf fuel [] t = .ok bv.width →
+        decode Δ fuel t bv = .ok v := by
+  intro v t hv
+  induction hv with
+  | vec hfl hn hlen helems ih =>
+      rename_i elems t n te kk
+      intro fuel bv hcanon hok hrep hsz
+      cases fuel with
+      | zero => rw [Val.rep] at hrep; exact error_ne_ok hrep
+      | succ k =>
+          have hecanon : ∀ e ∈ elems, Val.RepCanon e := by
+            cases hcanon with
+            | vec h => exact h
+          rw [Val.rep] at hrep
+          obtain ⟨bs, hbs, hrep⟩ := except_bind_eq_ok hrep
+          rw [mapM_attach_erase] at hbs
+          rw [except_pure_def] at hrep
+          injection hrep with hrep
+          subst hrep
+          obtain ⟨kk2, we, hkk2, hwe, hw⟩ := sizeOf_inv_vec hfl hsz
+          rw [hkk2] at hn
+          injection hn with hn
+          subst hn
+          -- element repOkB
+          rw [repOkB] at hok
+          have hokte : repOkB Δ k te = true := by
+            split at hok
+            case h_1 =>
+                rename_i x te2 heq
+                rw [hfl] at heq
+                have h2 : ([n, te] : List Ty) = [x, te2] := congrArg Prod.snd heq
+                simp only [List.cons.injEq, and_true] at h2
+                rw [h2.2]
+                exact hok
+            case h_2 =>
+                rename_i tc args hnv heq
+                exfalso
+                have hpair := heq.symm.trans hfl
+                have h2 : args = [n, te] := congrArg Prod.snd hpair
+                have h3 : tc = "Vec" := by
+                  have h1 : Ty.con tc = Ty.con "Vec" := congrArg Prod.fst hpair
+                  injection h1
+                exact hnv n te h2 h3
+            case h_3 =>
+                rename_i hnv _
+                exact (hnv n te hfl).elim
+          obtain ⟨hblen, hbpt⟩ := mapM_ok_idx hbs
+          have hbw : ∀ i (hi : i < bs.length), bs[i].width = we := by
+            intro i hi
+            obtain ⟨_, hrepi⟩ := hbpt i (by omega)
+            exact vty_rep_width (helems _ (List.getElem_mem _)) hrepi hwe
+          rw [decode_vec_red hfl, hkk2]
+          dsimp only
+          rw [hwe, except_bind_ok]
+          rw [if_pos hw]
+          rw [decodeFields_intro (List.replicate kk2 (te, we)) elems bs
+            (by simp [hlen]) (by simp [hblen, hlen]) ?_]
+          · rw [except_bind_ok, except_pure_def]
+          · intro tvb htvb
+            obtain ⟨i, hilen, htvbi⟩ := List.getElem_of_mem htvb
+            rw [List.length_zip, List.length_replicate, List.length_zip] at hilen
+            have hie : i < elems.length := by omega
+            have hib : i < bs.length := by omega
+            rw [List.getElem_zip, List.getElem_zip, List.getElem_replicate] at htvbi
+            rw [← htvbi]
+            refine ⟨hbw i hib, ?_⟩
+            obtain ⟨_, hrepi⟩ := hbpt i (by omega)
+            exact ih _ (List.getElem_mem _) (hecanon _ (List.getElem_mem _)) hokte hrepi
+              (by rw [hbw i hib]; exact hwe)
+  | integer hfl =>
+      intro fuel bv _ _ hrep hsz
+      cases fuel with
+      | zero => rw [Val.rep] at hrep; exact error_ne_ok hrep
+      | succ k =>
+          rw [Val.rep, except_pure_def] at hrep
+          injection hrep with hrep
+          subst hrep
+          rw [decode_integer_red hfl, if_pos rfl, BitVec.setWidth_eq, except_pure_def]
+  | finite hfl hn =>
+      rename_i b i t n
+      intro fuel bv hcanon _ hrep hsz
+      cases fuel with
+      | zero => rw [Val.rep] at hrep; exact error_ne_ok hrep
+      | succ k =>
+          have hib : i < b := by
+            cases hcanon with
+            | finite h => exact h
+          rw [Val.rep, except_pure_def] at hrep
+          injection hrep with hrep
+          subst hrep
+          rw [decode_finite_red hfl, hn]
+          dsimp only
+          have hnat : (BV.mk (nbits b) (BitVec.ofNat (nbits b) i)).nat = i := by
+            simp only [BV.nat, BitVec.toNat_ofNat]
+            exact Nat.mod_eq_of_lt (Nat.lt_of_lt_of_le hib (nbits_le b))
+          rw [if_pos rfl, if_pos (by rw [hnat]; exact hib), hnat, except_pure_def]
+  | proxy hfl _ =>
+      intro fuel bv _ _ hrep hsz
+      cases fuel with
+      | zero => rw [Val.rep] at hrep; exact error_ne_ok hrep
+      | succ k =>
+          rw [Val.rep, except_pure_def] at hrep
+          injection hrep with hrep
+          subst hrep
+          rw [decode_proxy_red hfl,
+            if_pos (show Rwv.Hyle.BV.nil.width = 0 from rfl), except_pure_def]
+  | con hsig hmatch hlen hctor hfields ih =>
+      rename_i t c fields sig sub
+      intro fuel bv hcanon hok hrep hsz
+      obtain ⟨k, whole, tag, tagW, bs, hk, hwhole, htg, hbs, hle, hbv⟩ := rep_con_inv hrep
+      subst hk
+      have hfcanon : ∀ f ∈ fields, Val.RepCanon f := by
+        cases hcanon with
+        | con _ h => exact h
+      have hnp : (Ty.flatten t).1 ≠ .con "Proxy" := by
+        cases hcanon with
+        | con h _ => exact h
+      -- repOkB, inverted at our constructor (the vty_rep_total pattern).
+      rw [repOkB] at hok
+      split at hok
+      case h_1 =>
+          rename_i x te heq
+          exfalso
+          rw [Rwv.Eidos.Cexp.ctorOf, heq] at hctor
+          dsimp only at hctor
+          rw [if_neg (by simp [vec_not_tuple hΔ])] at hctor
+          obtain ⟨cs, hcs, hmem⟩ := hctor
+          rw [vec_abstract hΔ hcs] at hmem
+          exact absurd hmem (by simp)
+      case h_3 =>
+          rename_i hnv hne
+          exfalso
+          rw [Rwv.Eidos.Cexp.ctorOf] at hctor
+          rcases hfl2 : Ty.flatten t with ⟨th, args⟩
+          rw [hfl2] at hctor
+          cases th with
+          | con tc => exact hne tc args hfl2
+          | app t₁ t₂ => exact hctor.elim
+          | var a => exact hctor.elim
+          | nat n => exact hctor.elim
+          | arrow t₁ t₂ => exact hctor.elim
+      case h_2 =>
+          rename_i tc args hnotvec heq
+          cases hws0 : Δ.sizeOf (k + 1) [] t with
+          | error e =>
+              rw [hws0] at hok
+              dsimp only at hok
+              cases hok
+          | ok whole2 =>
+          rw [hws0] at hok
+          dsimp only at hok
+          have hwq : whole = whole2 := sizeOf_det hwhole hws0
+          subst hwq
+          have hcmem : c ∈ (if Ty.isTupleCon tc then [tc]
+              else (Δ.ctors.get? tc).getD []) := by
+            rw [Rwv.Eidos.Cexp.ctorOf, heq] at hctor
+            dsimp only at hctor
+            by_cases htup : Ty.isTupleCon tc
+            · rw [if_pos htup] at hctor
+              rw [if_pos htup, hctor]
+              exact List.mem_cons_self
+            · rw [if_neg htup] at hctor
+              rw [if_neg htup]
+              obtain ⟨cs, hcs, hmem⟩ := hctor
+              rw [hcs]
+              exact hmem
+          have hcchk := List.all_eq_true.mp hok c hcmem
+          rw [htg, hsig] at hcchk
+          dsimp only at hcchk
+          rw [hmatch] at hcchk
+          dsimp only at hcchk
+          split at hcchk
+          rotate_left
+          · cases hcchk
+          rename_i ws hws
+          simp only [Bool.and_eq_true, decide_eq_true_eq] at hcchk
+          obtain ⟨hbound, hall⟩ := hcchk
+          obtain ⟨hwlen, hwpt⟩ := mapM_ok_idx hws
+          obtain ⟨hblen, hbpt⟩ := mapM_ok_idx hbs
+          have hwlen2 : ws.length = fields.length := by
+            rw [hwlen, List.length_map, hlen]
+          have hfvty : ∀ i (hi : i < fields.length),
+              VTy Δ (fields[i]'hi)
+                (DEnv.substTv sub ((Ty.flattenArrow sig.ty).1[i]'(by omega))) := by
+            intro i hi
+            have hmem : (((Ty.flattenArrow sig.ty).1[i]'(by omega)), fields[i]'hi)
+                ∈ (Ty.flattenArrow sig.ty).1.zip fields := by
+              rw [show (((Ty.flattenArrow sig.ty).1[i]'(by omega)), fields[i]'hi)
+                    = ((Ty.flattenArrow sig.ty).1.zip fields)[i]'(by
+                      rw [List.length_zip]; omega)
+                  from List.getElem_zip.symm]
+              exact List.getElem_mem _
+            exact hfields _ hmem
+          have hbw : ∀ i (hi : i < bs.length), bs[i].width = ws[i]'(by omega) := by
+            intro i hi
+            obtain ⟨_, hrepi⟩ := hbpt i (by omega)
+            obtain ⟨_, hszi⟩ := hwpt i (by omega)
+            rw [show ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub))[i]'(by omega)
+                  = DEnv.substTv sub ((Ty.flattenArrow sig.ty).1[i]'(by omega))
+                from List.getElem_map _] at hszi
+            exact vty_rep_width (hfvty i (by omega)) hrepi hszi
+          have hsum : (Val.bvConcat bs).width = ws.sum := by
+            rw [bvConcat_eq, catAll_width]
+            congr 1
+            refine List.ext_getElem (by rw [List.length_map]; omega) ?_
+            intro i h1 h2
+            rw [List.getElem_map]
+            exact hbw i (by omega)
+          -- the tag facts
+          obtain ⟨tc2, args2, hfl2, htagd⟩ := ctorTag_inv htg
+          rw [heq] at hfl2
+          injection hfl2 with hA hB
+          injection hA with hA
+          subst hA
+          have htagsmall : tag < 2 ^ tagW := by
+            rcases htagd with ⟨_, htag0, htw0⟩ | ⟨_, cs, hcs, hidx, htw⟩
+            · subst htag0; subst htw0; simp
+            · subst htw
+              exact Nat.lt_of_lt_of_le (idxOf?_lt hidx) (nbits_le cs.length)
+          -- the shape of the representation, in kit form
+          have hbv3 : bv = Rwv.Eidos.Decode.bvCat (⟨tagW, BitVec.ofNat _ tag⟩ : BV)
+              (Rwv.Eidos.Decode.bvCat
+                (⟨whole - tagW - (Val.bvConcat bs).width, 0⟩ : BV)
+                (Val.bvConcat bs)) := by
+            rw [hbv, Rwv.Eidos.Decode.bvConcat_eq, Rwv.Eidos.Decode.catAll_cons,
+              Rwv.Eidos.Decode.catAll_cons, Rwv.Eidos.Decode.catAll_cons,
+              Rwv.Eidos.Decode.catAll_nil,
+              show Rwv.Eidos.Decode.bvCat (Val.bvConcat bs) BV.nil = Val.bvConcat bs
+                from Rwv.Eidos.Decode.bvCat_zero_right rfl]
+          have hbvw : bv.width = whole := by
+            rw [hbv3, Rwv.Eidos.Decode.bvCat_width, Rwv.Eidos.Decode.bvCat_width]
+            dsimp only [BV.width] at hle ⊢
+            omega
+          have htagslice : takeTop tagW bv = (⟨tagW, BitVec.ofNat _ tag⟩ : BV) := by
+            rw [hbv3]
+            exact takeTop_cat
+          have htagnat : (takeTop tagW bv).nat = tag := by
+            rw [htagslice]
+            simp only [BV.nat, BitVec.toNat_ofNat]
+            exact Nat.mod_eq_of_lt htagsmall
+          -- the four abstract-head exclusions
+          have hneVec : tc ≠ "Vec" := by
+            intro hh
+            rw [Rwv.Eidos.Cexp.ctorOf, heq, hh] at hctor
+            dsimp only at hctor
+            rw [if_neg (by simp [vec_not_tuple hΔ])] at hctor
+            obtain ⟨cs, hcs, hmem⟩ := hctor
+            rw [vec_abstract hΔ hcs] at hmem
+            exact absurd hmem (by simp)
+          have hneFin : tc ≠ "Finite" := by
+            intro hh
+            rw [Rwv.Eidos.Cexp.ctorOf, heq, hh] at hctor
+            dsimp only at hctor
+            rw [if_neg (by simp [absHeadsOk_fin_not_tuple habs])] at hctor
+            obtain ⟨cs, hcs, hmem⟩ := hctor
+            rw [absHeadsOk_finite habs hcs] at hmem
+            exact absurd hmem (by simp)
+          have hneInt : tc ≠ "Integer" := by
+            intro hh
+            rw [Rwv.Eidos.Cexp.ctorOf, heq, hh] at hctor
+            dsimp only at hctor
+            rw [if_neg (by simp [absHeadsOk_int_not_tuple habs])] at hctor
+            obtain ⟨cs, hcs, hmem⟩ := hctor
+            rw [absHeadsOk_integer habs hcs] at hmem
+            exact absurd hmem (by simp)
+          have hnePro : tc ≠ "Proxy" := by
+            intro hh
+            rw [heq, hh] at hnp
+            exact hnp rfl
+          -- the decoder, by forward construction
+          rw [decode_con_red heq hneVec hneFin hneInt hnePro]
+          rw [hwhole, except_bind_ok, if_pos hbvw]
+          have hsel : selectCtor Δ tc bv = .ok (c, tagW) := by
+            rw [selectCtor]
+            rcases htagd with ⟨htup, htag0, htw0⟩ | ⟨htup, cs, hcs, hidx, htw⟩
+            · rw [if_pos htup]
+              have hceq : c = tc := by
+                rw [Rwv.Eidos.Cexp.ctorOf, heq] at hctor
+                dsimp only at hctor
+                rw [if_pos htup] at hctor
+                exact hctor
+              rw [hceq, htw0, except_pure_def]
+            · rw [if_neg (by rw [htup]; simp), hcs]
+              dsimp only
+              rw [htw] at htagnat
+              rw [htagnat, idxOf?_getElem? hidx]
+              dsimp only
+              rw [htw, except_pure_def]
+          rw [hsel, except_bind_ok]
+          dsimp only
+          rw [htg, except_bind_ok]
+          dsimp only
+          rw [if_pos ⟨rfl, htagnat.symm⟩, hsig]
+          dsimp only
+          rw [hmatch, except_bind_ok, hws, except_bind_ok]
+          rw [if_pos (show tagW + ws.sum ≤ whole from hbound)]
+          have hpadz : (Rwv.Eidos.Decode.sliceBV bv ws.sum
+              (whole - tagW - ws.sum)).nat = 0 := by
+            have hmid : Rwv.Eidos.Decode.sliceBV bv ws.sum (whole - tagW - ws.sum)
+                = (⟨whole - tagW - (Val.bvConcat bs).width, 0⟩ : BV) := by
+              rw [show (whole - tagW - ws.sum)
+                    = whole - tagW - (Val.bvConcat bs).width by rw [hsum]]
+              rw [show ws.sum = (Val.bvConcat bs).width from hsum.symm]
+              rw [hbv3]
+              exact sliceBV_mid
+            rw [hmid]
+            simp [BV.nat]
+          rw [if_pos hpadz]
+          have hflds : Rwv.Eidos.Decode.sliceBV bv 0 ws.sum = Val.bvConcat bs := by
+            rw [show ws.sum = (Val.bvConcat bs).width from hsum.symm, hbv3,
+              ← Rwv.Eidos.Decode.bvCat_assoc]
+            exact sliceBV_cat_low0
+          rw [hflds]
+          rw [decodeFields_intro
+            (((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)).zip ws) fields bs
+            (by rw [List.length_zip, List.length_map]; omega)
+            (by rw [List.length_zip, List.length_map]; omega) ?_]
+          · rw [except_bind_ok, except_pure_def]
+          · intro tvb htvb
+            obtain ⟨i, hilen, htvbi⟩ := List.getElem_of_mem htvb
+            rw [List.length_zip, List.length_zip, List.length_zip,
+              List.length_map] at hilen
+            have hif : i < fields.length := by omega
+            have hiw : i < ws.length := by omega
+            have hib : i < bs.length := by omega
+            rw [List.getElem_zip, List.getElem_zip, List.getElem_zip] at htvbi
+            rw [← htvbi]
+            dsimp only
+            refine ⟨hbw i hib, ?_⟩
+            obtain ⟨_, hrepi⟩ := hbpt i (by omega)
+            obtain ⟨_, hszi⟩ := hwpt i (by omega)
+            have hokf := List.all_eq_true.mp hall
+              (((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub))[i]'(by omega))
+              (List.getElem_mem _)
+            rw [show ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub))[i]'(by omega)
+                  = DEnv.substTv sub ((Ty.flattenArrow sig.ty).1[i]'(by omega))
+                from List.getElem_map _] at hokf hszi ⊢
+            refine ih (((Ty.flattenArrow sig.ty).1[i]'(by omega)), fields[i]'hif)
+              (by
+                rw [show (((Ty.flattenArrow sig.ty).1[i]'(by omega)), fields[i]'hif)
+                      = ((Ty.flattenArrow sig.ty).1.zip fields)[i]'(by
+                        rw [List.length_zip]; omega)
+                    from List.getElem_zip.symm]
+                exact List.getElem_mem _)
+              (hfcanon _ (List.getElem_mem _)) hokf hrepi ?_
+            rw [hbw i hib]
+            exact hszi
+
 /-! ## `detupleSizes` and `portSplit` characterizations -/
 
 private theorem mapM_sizeOf_mono {Δ : DEnv} {k k' : Nat} (hk : k ≤ k') {vis : List Ty} :
@@ -3798,6 +4207,7 @@ private theorem vty_con_of_ctorOfB {Δ : DEnv} (hΔ : denvOk Δ = true) {v : Val
 layout/plan inversions and the validator's up-front checks). -/
 structure SInv (C : Ctx) (plan : Plan) : Prop where
   hden : denvOk C.Δ = true
+  hfor : ∃ X F, Rwv.Eidos.Cexp.ForeignC C.Δ X F
   outsz : ∃ k, C.Δ.sizeOf k [] C.outTy = .ok C.lo.outW
   tgts : ∀ tgt ∈ C.lo.targets, ∃ blk, C.blocks.get? tgt.uniq = some blk ∧
     tgt.argTys = blk.params.dropLast.map (·.sig.ty) ∧
@@ -3981,7 +4391,7 @@ private theorem pcmds_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
           injection hbody with hbody
           injection hbody with hb1 hb2
           subst hb1; subst hb2
-          obtain ⟨hvty, k, hrep⟩ := Rwv.Eidos.Cexp.cexpFull_sound hS.hden C.cexpFuel Γ e
+          obtain ⟨hvty, k, hrep⟩ := Rwv.Eidos.Cexp.cexpFull_sound hS.hden hS.hfor.choose_spec.choose_spec C.cexpFuel Γ e
             nf₁ ty₁ ef env [] v hnt heval hE
           exact hcmds _ cells rest term rec _ store ef gf so hgo
             (envC_cons hE hvty ⟨k, hrep⟩) hC hrest
@@ -4046,7 +4456,7 @@ private theorem pcmds_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
               injection hbody with hbody
               injection hbody with hb1 hb2
               subst hb1; subst hb2
-              obtain ⟨hvty, k, hrep⟩ := Rwv.Eidos.Cexp.cexpFull_sound hS.hden C.cexpFuel Γ e
+              obtain ⟨hvty, k, hrep⟩ := Rwv.Eidos.Cexp.cexpFull_sound hS.hden hS.hfor.choose_spec.choose_spec C.cexpFuel Γ e
                 nf₁ ty₁ ef env [] v hnt heval hE
               have htyd : ty₁ = d.ty := Rwv.Eidos.Cexp.teq_eq hteq
               subst htyd
@@ -4759,7 +5169,7 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
                 (fun i h1 h2 h3 => by
                   obtain ⟨_, hpi⟩ := hppt i (by omega)
                   obtain ⟨_, hvi⟩ := hvpt i (by omega)
-                  exact Rwv.Eidos.Cexp.cexpFull_sound hS.hden C.cexpFuel Γ (args[i]'(by omega))
+                  exact Rwv.Eidos.Cexp.cexpFull_sound hS.hden hS.hfor.choose_spec.choose_spec C.cexpFuel Γ (args[i]'(by omega))
                     (pas[i]'h2).1 (pas[i]'h2).2 ef env [] (vs[i]'h3) (by
                       rw [show ((pas[i]'h2).1, (pas[i]'h2).2) = pas[i]'h2 from rfl]
                       exact hpi) hvi hE)
@@ -4803,7 +5213,7 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
       subst hconcB
       subst hgoB
       -- output facts
-      obtain ⟨hovty, ko, horep⟩ := Rwv.Eidos.Cexp.cexpFull_sound hS.hden C.cexpFuel Γ out
+      obtain ⟨hovty, ko, horep⟩ := Rwv.Eidos.Cexp.cexpFull_sound hS.hden hS.hfor.choose_spec.choose_spec C.cexpFuel Γ out
         onf oty ef env [] o hot ho hE
       have hotyE : oty = C.outTy := Rwv.Eidos.Cexp.teq_eq hteqo
       subst hotyE
@@ -4830,7 +5240,7 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
         intro i h3
         obtain ⟨_, hpi⟩ := hppt i (by omega)
         obtain ⟨_, hvi⟩ := hvpt i (by omega)
-        exact Rwv.Eidos.Cexp.cexpFull_sound hS.hden C.cexpFuel Γ (args[i]'(by omega))
+        exact Rwv.Eidos.Cexp.cexpFull_sound hS.hden hS.hfor.choose_spec.choose_spec C.cexpFuel Γ (args[i]'(by omega))
           (pas[i]'(by omega)).1 (pas[i]'(by omega)).2 ef env [] (vs[i]'h3) (by
             rw [show ((pas[i]'(by omega)).1, (pas[i]'(by omega)).2)
                   = pas[i]'(by omega) from rfl]
@@ -5001,7 +5411,7 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
       cases gf with
       | zero => exact error_ne_ok hconcB
       | succ gf' =>
-      obtain ⟨hsvty, ksv, hsvrep⟩ := Rwv.Eidos.Cexp.cexpFull_sound hS.hden C.cexpFuel Γ
+      obtain ⟨hsvty, ksv, hsvrep⟩ := Rwv.Eidos.Cexp.cexpFull_sound hS.hden hS.hfor.choose_spec.choose_spec C.cexpFuel Γ
         scrutE dn dty ef env [] sv hdn hsv hE
       rw [selectTAlt_char] at hselr
       cases alts with
@@ -6003,6 +6413,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     (hplan : mkPlan Δ fuel p lo dev = .ok plan)
     (hsym : Rwv.Hyle.Bridge.symStep dmap hfuel dev = .ok ss)
     (hImpl : Rwv.Hyle.Bridge.FImplements dmap X F)
+    (hFor : ∃ Xf Ff, Rwv.Eidos.Cexp.ForeignC Δ Xf Ff)
     (hlabels : ∀ tgt ∈ lo.targets,
       checkLabel { Δ := Δ, edm := edm, lo := lo, blocks := blocks,
                    cexpFuel := fuel, outTy := p.outTy }
@@ -6436,7 +6847,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
   -- The static invariant, and the cell-store correspondence.
   have hSInv : SInv { Δ := Δ, edm := edm, lo := lo, blocks := blocks,
                       cexpFuel := fuel, outTy := p.outTy } plan := by
-    refine ⟨hden, ⟨fuel, li.outsz⟩, ?_, li.paybound, ?_, ?_⟩
+    refine ⟨hden, hFor, ⟨fuel, li.outsz⟩, ?_, li.paybound, ?_, ?_⟩
     · intro tg htg
       obtain ⟨l2, b2, hmem2, huq2, hty2, hws2⟩ := li.tgts tg htg
       refine ⟨b2, ?_, hty2, fuel, hws2⟩
@@ -8509,7 +8920,8 @@ environment, `checkInit_sound` for the initial state, and
 `Rwv.stepObligations_corresponds` to conclude. -/
 theorem validateProc_corresponds {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     {H : Rwv.Hyle.Program} {fuel ef gf : Nat}
-    (hv : validateProc Δ edm p H fuel = true) (hef : fuel ≤ ef) :
+    (hv : validateProc Δ edm p H fuel = true) (hef : fuel ≤ ef)
+    (hFor : ∃ Xf Ff, Rwv.Eidos.Cexp.ForeignC Δ Xf Ff) :
     Rwv.Eidos.Corresponds Δ edm ef gf p H := by
   have hvE : validateProcE Δ edm p H fuel = .ok () := by
     rw [validateProc] at hv
@@ -8594,7 +9006,7 @@ theorem validateProc_corresponds {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
           subst ho2
           subst ht2
           exact checkLabel_sound rfl hden htup hndb hrepok hlo hplan hsym hImpl
-            hlabels hef hRst hP hso hins hpr2
+            hFor hlabels hef hRst hP hso hins hpr2
     · -- The right machine cannot halt first: a device never halts.
       rename_i pr h₁ h₂
       obtain ⟨ins, hins, h₂'⟩ := except_bind_eq_ok h₂
@@ -8629,5 +9041,12 @@ theorem validateProc_corresponds {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
 #print axioms checkLabelDag_toTree
 #print axioms checkLabelD_toTree
 #print axioms validateProc_corresponds
+
+-- The foreign tier (stage A): the decode round trips and the extended
+-- statement's supporting lemmas.
+#print axioms Rwv.Eidos.decode_rep
+#print axioms Rwv.Eidos.decode_mono
+#print axioms Rwv.Eidos.Cexp.decode_vty
+#print axioms rep_decode
 
 end Rwv.Eidos.Cstep
