@@ -7,12 +7,15 @@ import Rwv.Hyle.Parse
 import Rwv.Eidos.Syntax
 import Rwv.Eidos.Types
 import Rwv.Eidos.Value
+import Rwv.Eidos.Decode
 import Rwv.Eidos.PrimBasis
 import Rwv.Eidos.Parse
 import Rwv.Eidos.Check
 import Rwv.Eidos.Eval
 import Rwv.Eidos.Machine
 import Rwv.Eidos.FuelMono
+import Rwv.Eidos.EtaSat
+import Rwv.Eidos.ForeignEnv
 import Rwv.Eidos.Cexp
 import Rwv.Eidos.Cstep
 import Rwv.Sim

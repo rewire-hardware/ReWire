@@ -64,6 +64,11 @@ def main():
             print(f"{t:<20} (no {ext} dump)")
             continue
         cmd = [str(exe), str(eir), str(rwc)]
+        raw9 = dumps / f"{t}.9.rwc"
+        if raw9.exists():
+            # the pre-optimization dump still carries every Cryptol
+            # splice (constant-folded ones are gone from the final .rwc)
+            cmd.append(f"--foreign={raw9}")
         if args.measure:
             cmd.append("--measure")
         try:
