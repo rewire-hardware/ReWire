@@ -83,6 +83,26 @@ uniques are minted from -10⁹ down — far below both the bridge's
 non-negative term uniques and the prim basis' small negatives — so
 they cannot capture.
 
+## The foreign tier (stage A)
+
+Programs using the Cryptol FFI or model-carrying combinational externs
+evaluate through the DEnv foreign hooks (Eval decision note 9): the
+driver instantiates them from the compiled .rwc itself — the trust
+boundary of the validation plan §1.3, under which the rwcry-spliced
+`cry$…` definitions (resp. the extern's model definition) ARE the
+builtin's semantics:
+
+  * `xtF` is the Hyle program's own extern-model composition
+    (`Sem.xenv` then `Sem.mkFEnv`'s denotations), keyed by extern
+    name — exactly `evalExp`'s xcall reading;
+  * `cryF` needs the (file, function, monotype) ↦ entry-name map,
+    which rwc does not emit structurally; the driver scrapes it from
+    the `--| cryptol <file>::<fn> at <cty>` doc lines rwc prints on
+    each spliced entry definition, transcribing ToHyle's `cryTy`
+    rendering to match the use-site monotype against `<cty>`. The
+    scrape is UNTRUSTED plumbing: a wrong entry shows up as a trace
+    mismatch (or a decode canonicality error), never silently.
+
 Exit codes: 0 success (including an early halt, which is reported on
 stderr and prints only the trace prefix), 1 parse/mismatch/evaluation
 failure, 2 usage error.
@@ -91,6 +111,8 @@ import Rwv.Eidos.Parse
 import Rwv.Eidos.PrimBasis
 import Rwv.Eidos.Check
 import Rwv.Eidos.Machine
+import Rwv.Eidos.EtaSat
+import Rwv.Eidos.ForeignEnv
 import Rwv.Hyle.Parse
 import Rwv.Diff
 
@@ -107,9 +129,10 @@ structure Args where
   seed    : Option Nat := none
   stimOut : Option String := none
   fuel    : Nat := 100000000
+  foreignF : Option String := none
 
 def usage : String :=
-  "usage: rwv-eidos-diff <file.eir> <file.rwc> [--cycles N] [--seed S] [--stim FILE] [--fuel N]"
+  "usage: rwv-eidos-diff <file.eir> <file.rwc> [--cycles N] [--seed S] [--stim FILE] [--fuel N] [--foreign FILE.rwc]"
 
 private def natOpt (flag val : String) : Except String Nat :=
   match val.toNat? with
@@ -122,6 +145,7 @@ def parseArgs (argv : List String) : Except String Args := do
   let mut seed : Option Nat := none
   let mut stim : Option String := none
   let mut fuel : Nat := 100000000
+  let mut foreignF : Option String := none
   let mut rest := argv
   repeat
     match rest with
@@ -130,8 +154,9 @@ def parseArgs (argv : List String) : Except String Args := do
     | "--seed"   :: v :: more => seed := some (← natOpt "--seed" v); rest := more
     | "--fuel"   :: v :: more => fuel := (← natOpt "--fuel" v); rest := more
     | "--stim"   :: v :: more => stim := some v; rest := more
+    | "--foreign" :: v :: more => foreignF := some v; rest := more
     | [f] =>
-        if f = "--cycles" || f = "--seed" || f = "--stim" || f = "--fuel" then
+        if f = "--cycles" || f = "--seed" || f = "--stim" || f = "--fuel" || f = "--foreign" then
           throw s!"{f}: missing argument"
         else
           if f.startsWith "-" && f ≠ "-" then throw s!"unknown option: {f}"
@@ -142,11 +167,12 @@ def parseArgs (argv : List String) : Except String Args := do
         else if arg.startsWith "--seed=" then seed := some (← natOpt "--seed" ((arg.drop 7).toString))
         else if arg.startsWith "--fuel=" then fuel := (← natOpt "--fuel" ((arg.drop 7).toString))
         else if arg.startsWith "--stim=" then stim := some ((arg.drop 7).toString)
+        else if arg.startsWith "--foreign=" then foreignF := some ((arg.drop 10).toString)
         else if arg.startsWith "-" && arg ≠ "-" then throw s!"unknown option: {arg}"
         else positional := positional ++ [arg]
         rest := more
   match positional with
-  | [eir, rwc] => return { eirFile := eir, rwcFile := rwc, cycles, seed, stimOut := stim, fuel }
+  | [eir, rwc] => return { eirFile := eir, rwcFile := rwc, cycles, seed, stimOut := stim, fuel, foreignF }
   | _          => throw usage
 
 /-- The base name of a path: strip directories and the last extension
@@ -181,111 +207,6 @@ def drawWords (k : Nat) (s : Rng) : Nat × Rng :=
   (List.range k).foldl (init := (0, s)) fun (v, s) _ =>
     let (x, s) := draw32 s
     (v * 2 ^ 32 + x, s)
-
-/-! ## Eta-saturation (see the header) -/
-
-namespace EtaSat
-
-/-- Fresh-binder supply: the next magnitude; uniques are minted as
-`-(10⁹ + n)`, a range no bridge or basis name occupies. -/
-abbrev M := StateM Nat
-
-def freshId (ty : Ty) : M Id := do
-  let n ← get
-  set (n + 1)
-  pure { occ := s!"$eta{n}", uniq := -(1000000000 + (n : Int)), sig := ⟨[], ty⟩ }
-
-/-- Flatten an application spine keeping every argument (type
-arguments included, in position). -/
-def flattenApp' (e : Exp) : Exp × List Arg := go [] e
-where go (acc : List Arg) : Exp → Exp × List Arg
-  | .app f a => go (a :: acc) f
-  | e => (e, acc)
-
-/-- Wrap `e` (of type `doms → ρ`) in lambdas supplying `doms`. -/
-def wrapLam (doms : List Ty) (e : Exp) : M Exp := do
-  let xs ← doms.mapM freshId
-  pure (xs.foldr (fun x b => .lam x b)
-        (xs.foldl (fun a x => .app a (.eArg (.var x))) e))
-
-mutual
-
-/-- Eta-saturate every constructor/primitive head in `e`. -/
-partial def satExp (e : Exp) : M Exp := do
-  let (h, args) := flattenApp' e
-  let args' ← args.mapM fun
-    | .eArg a => .eArg <$> satExp a
-    | .tArg t => pure (.tArg t)
-  let h' ← satHead h
-  let e' := args'.foldl .app h'
-  let k := (args.filter fun | .eArg _ => true | .tArg _ => false).length
-  match h with
-  | .con ty _ | .prim ty _ =>
-      let doms := (Ty.flattenArrow ty).1
-      if k < doms.length then wrapLam (doms.drop k) e' else pure e'
-  | _ => pure e'
-
-/-- The non-application head forms (an `.app` head is impossible after
-flattening). -/
-partial def satHead : Exp → M Exp
-  | .lam x b            => .lam x <$> satExp b
-  | .letE bnd b         => do pure (.letE (← satBind bnd) (← satExp b))
-  | .jump l es          => .jump l <$> es.mapM satExp
-  | .cases ty sc x alts => do
-      pure (.cases ty (← satExp sc) x (← alts.mapM satAlt))
-  | .litList ty es      => .litList ty <$> es.mapM satExp
-  | .litVec ty es       => .litVec ty <$> es.mapM satExp
-  | e => pure e
-
-partial def satBind : Bind → M Bind
-  | .nonRec x e   => .nonRec x <$> satExp e
-  | .recB bs      => .recB <$> bs.mapM fun (x, e) => do pure (x, ← satExp e)
-  | .join l ps e  => .join l ps <$> satExp e
-
-partial def satAlt : Alt → M Alt
-  | .mk c bs e => .mk c bs <$> satExp e
-
-end
-
-def satCmd : Cmd → M Cmd
-  | .bind x e => .bind x <$> satExp e
-  | .get x c  => pure (.get x c)
-  | .put c e  => .put c <$> satExp e
-
-mutual
-
-partial def satTerm : Term → M Term
-  | .pause o l as => do pure (.pause (← satExp o) l (← as.mapM satExp))
-  | .goto l as    => .goto l <$> as.mapM satExp
-  | .halt e       => .halt <$> satExp e
-  | .cases sc as  => do pure (.cases (← satExp sc) (← as.mapM satTAlt))
-
-partial def satTAlt : TAlt → M TAlt
-  | .mk c bs t => .mk c bs <$> satTerm t
-
-end
-
-def satBlock (b : Block) : M Block := do
-  pure { b with cmds := ← b.cmds.mapM satCmd, term := ← satTerm b.term }
-
-def satProc (p : Proc) : M Proc := do
-  let cells ← p.cells.mapM fun c => do
-    pure { c with init := ← c.init.mapM satExp }
-  let entry ← satBlock p.entry
-  let blocks ← p.blocks.mapM fun (l, b) => do pure (l, ← satBlock b)
-  pure { p with cells, entry, blocks }
-
-end EtaSat
-
-/-- Eta-saturate all definition bodies and processes of a program. -/
-def etaSaturate (p : Program) : Program :=
-  (go p).run' 0
-where
-  go (p : Program) : EtaSat.M Program := do
-    let defns ← p.defns.mapM fun d => do
-      pure { d with body := ← EtaSat.satExp d.body }
-    let procs ← p.procs.mapM EtaSat.satProc
-    pure { p with defns, procs }
 
 /-! ## The stimulus generator -/
 
@@ -386,7 +307,9 @@ def main (argv : List String) : IO UInt32 := do
       match p₁.checkMachine with
       | .error e => err s!"{args.eirFile}: machine-mode well-formedness: {e}"
       | .ok () => do
-      let p := etaSaturate p₁
+      match etaSaturate 1000000000 p₁ with
+      | .error e => err s!"{args.eirFile}: eta-saturation: {e}"
+      | .ok p => do
       let Δ := DEnv.ofDatas p.datas
       let defns := mkDefnMap p.defns
       match p.procs with
@@ -399,6 +322,22 @@ def main (argv : List String) : IO UInt32 := do
         | .error e => err s!"{args.rwcFile}: parse error: {e}"
         | .ok hp => do
           let dev := hp.device
+          -- The foreign tier: hook the Cryptol splices and extern
+          -- models into Δ (stage A) — from --foreign's program when
+          -- given (the pre-optimization dump, where zero-argument
+          -- splices have not yet been constant-folded away), else
+          -- from the compiled program itself.
+          let (frTxt, frProg) ←
+            match args.foreignF with
+            | none => pure (rwcTxt, hp)
+            | some path => do
+                let t ← IO.FS.readFile ⟨path⟩
+                match Rwv.Hyle.parseProgram t path with
+                | .error e =>
+                    IO.eprintln s!"rwv-eidos-diff: {path}: parse error: {e}"
+                    return 1
+                | .ok fp => pure (t, fp)
+          let Δ := addForeign Δ frTxt frProg
           -- Port-convention validation: detupleSizes at τ_I/τ_O must
           -- reproduce the device's declared port widths exactly.
           match Val.detupleSizes Δ repFuel pr.inTy, Val.detupleSizes Δ repFuel pr.outTy with

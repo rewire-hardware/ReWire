@@ -25,11 +25,12 @@ For each tests/golden/<base>.rwc with a <base>.hs source:
      prefix length.
 
 Skips, with explicit reasons: goldens with no .hs source; devices with
-extern instances (pre-detected from the .rwc); programs whose pass-8
-dump uses rwPrimExtern (combinational externs / extern models — the
-Eidos evaluator treats extern as foreign) or rwPrimCryptol (the
-Cryptol FFI is likewise foreign to the machine semantics); and tests
-where rwc's interpreter itself refuses ("cannot evaluate").
+extern instances (pre-detected from the .rwc); programs using
+combinational externs where some extern lacks a model in the .rwc
+(model-LESS externs are the stage-B algebraic tier; model-carrying
+ones — and all Cryptol FFI uses — evaluate through the DEnv foreign
+hooks the Lean driver instantiates from the compiled .rwc itself);
+and tests where rwc's interpreter itself refuses ("cannot evaluate").
 
 Usage:
   verify/test/eidos-diff-goldens.py [--only SUBSTR] [--cycles N]
@@ -60,6 +61,25 @@ def device_has_instances(path: Path) -> bool:
         elif in_dev and re.match(r"\s+instance ", line):
             return True
     return False
+
+
+def modelless_externs(path: Path):
+    """Names of combinational externs declared without a model."""
+    out, cur, has_model = [], None, False
+    for line in open(path):
+        if line.startswith("extern "):
+            if cur is not None and not has_model:
+                out.append(cur)
+            cur, has_model = line.split()[1], False
+        elif cur is not None and re.match(r"\s+model ", line):
+            has_model = True
+        elif cur is not None and not line.startswith(" ") and line.strip():
+            if not has_model:
+                out.append(cur)
+            cur = None
+    if cur is not None and not has_model:
+        out.append(cur)
+    return out
 
 
 # ------------------------------------------------------------------ tools
@@ -186,10 +206,15 @@ def main():
         """Returns (base, status, detail); status None means proceed."""
         base = f.stem
         eir = work / f"{base}.eir"
-        if args.reuse_eir and eir.exists():
+        raw9 = work / f"{base}.9.rwc"
+        if args.reuse_eir and eir.exists() and raw9.exists():
             return base, None, "reused .eir"
         eir.unlink(missing_ok=True)
-        cmd = [rwc, "--eidos", "-o", str(work / f"{base}.sv"),
+        raw9.unlink(missing_ok=True)
+        # -d 9 dumps the raw-fold .rwc beside the output: the pre-optimization
+        # program still carrying every Cryptol splice (zero-argument splices
+        # get constant-folded out of the final .rwc), for --foreign below.
+        cmd = [rwc, "--eidos", "-d", "9", "-o", str(work / f"{base}.sv"),
                str(golden_dir / f"{base}.hs")]
         if args.verbose:
             print("  $", " ".join(cmd))
@@ -238,21 +263,26 @@ def main():
         # `(rwPrimExtern :: ...)`. A bare substring check false-positives:
         # every dump carries rwPrimError stub *definitions* (named
         # rwPrimExtern#9 / rwPrimCryptol#11, unique-suffixed) whose error
-        # strings mention the bare name.
+        # strings mention the bare name. Cryptol uses and model-carrying
+        # externs evaluate through the foreign hooks (stage A); only
+        # model-LESS externs (the stage-B algebraic tier) skip.
         eir = work / f"{base}.eir"
         eir_text = eir.read_text()
-        if "(rwPrimCryptol ::" in eir_text:
-            report(base, "SKIP", "uses the Cryptol FFI (rwPrimCryptol is foreign to the machine semantics)")
-            continue
         if "(rwPrimExtern ::" in eir_text:
-            report(base, "SKIP", "uses an extern (rwPrimExtern is foreign to the machine semantics)")
-            continue
+            missing = modelless_externs(f)
+            if missing:
+                report(base, "SKIP",
+                       f"model-less extern(s) {','.join(missing)} (the stage-B algebraic tier)")
+                continue
 
         # The Lean side: stimulus + Eidos-M trace.
         stim = work / f"{base}.stim.yaml"
         eidos_out = work / f"{base}.eidos.yaml"
         cmd = [lean_exe, str(eir), str(f),
                "--cycles", str(args.cycles), "--stim", str(stim)]
+        raw9 = work / f"{base}.9.rwc"
+        if raw9.exists():
+            cmd += ["--foreign", str(raw9)]
         if args.verbose:
             print("  $", " ".join(cmd))
         try:

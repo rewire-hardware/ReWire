@@ -264,6 +264,102 @@ theorem Val.rep_mono (Δ : DEnv) :
       | closL y env body => rw [Val.rep] at h; exact error_ne_ok h
       | closD f pre => rw [Val.rep] at h; exact error_ne_ok h
 
+/-! ## The decoder (Rwv.Eidos.Decode) -/
+
+private theorem decodeFields_mono_of {Δ : DEnv} {k k' : Nat}
+    (IH : ∀ {t : Ty} {bv : BV} {v : Val},
+      decode Δ k t bv = .ok v → decode Δ k' t bv = .ok v) :
+    ∀ {tws : List (Ty × Nat)} {bv : BV} {vs : List Val},
+      decodeFields Δ k tws bv = .ok vs → decodeFields Δ k' tws bv = .ok vs := by
+  intro tws
+  induction tws with
+  | nil => intro bv vs h; rw [decodeFields] at h ⊢; exact h
+  | cons tw rest ih =>
+      intro bv vs h
+      obtain ⟨t, w⟩ := tw
+      rw [decodeFields] at h ⊢
+      split at h
+      rotate_left
+      · exact error_ne_ok h
+      rename_i hw
+      rw [if_pos hw]
+      obtain ⟨v, hv, h⟩ := except_bind_eq_ok h
+      obtain ⟨vs', hvs, h⟩ := except_bind_eq_ok h
+      exact bind_ok (IH hv) (bind_ok (ih hvs) h)
+
+/-- `decode` is monotone in its fuel: success is stable, with the same
+value, under more fuel. -/
+theorem decode_mono {Δ : DEnv} :
+    ∀ {k k' : Nat}, k ≤ k' → ∀ {t : Ty} {bv : BV} {v : Val},
+      decode Δ k t bv = .ok v → decode Δ k' t bv = .ok v := by
+  intro k
+  induction k with
+  | zero => intro k' _ t bv v h; rw [decode] at h; exact error_ne_ok h
+  | succ k ihk =>
+      intro k' hkk' t bv v h
+      obtain ⟨k', rfl⟩ : ∃ j, k' = j + 1 := ⟨k' - 1, by omega⟩
+      have hk : k ≤ k' := by omega
+      rw [decode] at h ⊢
+      split at h
+      · -- Vec
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        obtain ⟨we, hwe, h⟩ := except_bind_eq_ok h
+        refine bind_ok (Δ.sizeOf_mono hk hwe) ?_
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        rename_i hw
+        rw [if_pos hw]
+        obtain ⟨fields, hfs, h⟩ := except_bind_eq_ok h
+        exact bind_ok (decodeFields_mono_of (fun {t bv v} h' => ihk hk h') hfs) h
+      · -- Finite: fuel-free
+        exact h
+      · -- Integer: fuel-free
+        exact h
+      · -- Proxy: fuel-free
+        exact h
+      · -- Datatype
+        obtain ⟨whole, hwhole, h⟩ := except_bind_eq_ok h
+        refine bind_ok (Δ.sizeOf_mono (Nat.succ_le_succ hk) hwhole) ?_
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        rename_i hbw
+        rw [if_pos hbw]
+        obtain ⟨cw, hcw, h⟩ := except_bind_eq_ok h
+        refine bind_ok hcw ?_
+        obtain ⟨tt, htt, h⟩ := except_bind_eq_ok h
+        refine bind_ok htt ?_
+        obtain ⟨tag, tagW'⟩ := tt
+        dsimp only at h ⊢
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        rename_i htw
+        rw [if_pos htw]
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        obtain ⟨sub, hsub, h⟩ := except_bind_eq_ok h
+        refine bind_ok hsub ?_
+        obtain ⟨ws, hws, h⟩ := except_bind_eq_ok h
+        refine bind_ok (mapM_mono (fun a b hab => Δ.sizeOf_mono hk hab) hws) ?_
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        rename_i hle
+        rw [if_pos hle]
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        rename_i hpad
+        rw [if_pos hpad]
+        obtain ⟨fields, hfs, h⟩ := except_bind_eq_ok h
+        exact bind_ok (decodeFields_mono_of (fun {t bv v} h' => ihk hk h') hfs) h
+      · exact error_ne_ok h
+
 /-! ## The fueled evaluator helpers outside the mutual block -/
 
 /-- `Eval.valToBits` is monotone in its fuel. -/
@@ -331,6 +427,10 @@ private structure EvalMono (C : Eval.Ctx) (k k' : Nat) : Prop where
     Eval.tryAlts C k' env jenv binder sv as dflt = .ok v
   builtin : ∀ ty b vs v, Eval.evalBuiltin C k ty b vs = .ok v →
     Eval.evalBuiltin C k' ty b vs = .ok v
+  cry : ∀ env jenv pty f n rest v, Eval.evalCry C k env jenv pty f n rest = .ok v →
+    Eval.evalCry C k' env jenv pty f n rest = .ok v
+  ext : ∀ env jenv pty s rest v, Eval.evalExt C k env jenv pty s rest = .ok v →
+    Eval.evalExt C k' env jenv pty s rest = .ok v
 
 /-- At fuel 0 every evaluator function throws, so the bundle holds
 vacuously. -/
@@ -343,6 +443,8 @@ private theorem evalMono_zero (C : Eval.Ctx) (k' : Nat) : EvalMono C 0 k' where
   all := by intro f xs ys h; rw [Eval.applyAll] at h; exact error_ne_ok h
   alts := by intro env jenv binder sv as dflt v h; rw [Eval.tryAlts] at h; exact error_ne_ok h
   builtin := by intro ty b vs v h; rw [Eval.evalBuiltin] at h; exact error_ne_ok h
+  cry := by intro env jenv pty f n rest v h; rw [Eval.evalCry] at h; exact error_ne_ok h
+  ext := by intro env jenv pty s rest v h; rw [Eval.evalExt] at h; exact error_ne_ok h
 
 private theorem evalCore_step {C : Eval.Ctx} {k k' : Nat} (_hk : k ≤ k')
     (ih : EvalMono C k k') :
@@ -368,10 +470,23 @@ private theorem evalCore_step {C : Eval.Ctx} {k k' : Nat} (_hk : k ≤ k')
     obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
     refine bind_ok (ih.list _ _ _ _ hvs) ?_
     exact h
-  · -- (.prim ty b, args)
-    obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
-    refine bind_ok (ih.list _ _ _ _ hvs) ?_
-    exact ih.builtin _ _ _ _ h
+  · -- (.prim ty b, args): the foreign dispatch, then the generic row
+    rename_i ty b args _heq
+    by_cases hbc : b == .cryptol
+    · rw [if_pos hbc] at h ⊢
+      split at h
+      · exact ih.cry _ _ _ _ _ _ _ h
+      · exact error_ne_ok h
+    · rw [if_neg hbc] at h ⊢
+      by_cases hbx : b == .«extern»
+      · rw [if_pos hbx] at h ⊢
+        split at h
+        · exact ih.ext _ _ _ _ _ _ h
+        · exact error_ne_ok h
+      · rw [if_neg hbx] at h ⊢
+        obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
+        refine bind_ok (ih.list _ _ _ _ hvs) ?_
+        exact ih.builtin _ _ _ _ h
   · -- (.lam x body, args)
     obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
     refine bind_ok (ih.list _ _ _ _ hvs) ?_
@@ -587,6 +702,56 @@ private theorem evalBuiltin_step {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k')
     refine bind_ok (Eval.valToBits_mono hk hx) ?_
     exact h
 
+private theorem evalCry_step {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k')
+    (ih : EvalMono C k k') :
+    ∀ env jenv pty f n rest v, Eval.evalCry C (k + 1) env jenv pty f n rest = .ok v →
+      Eval.evalCry C (k' + 1) env jenv pty f n rest = .ok v := by
+  intro env jenv pty f n rest v h
+  rw [Eval.evalCry] at h ⊢
+  obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
+  refine bind_ok (ih.list _ _ _ _ hvs) ?_
+  obtain ⟨ity, hity, h⟩ := except_bind_eq_ok h
+  refine bind_ok hity ?_
+  split at h
+  rotate_left
+  · exact error_ne_ok h
+  rename_i hlen
+  rw [if_pos hlen]
+  cases hden : C.Δ.cryF f n ity with
+  | none => rw [hden] at h; exact error_ne_ok h
+  | some den =>
+      rw [hden] at h
+      obtain ⟨reps, hreps, h⟩ := except_bind_eq_ok h
+      refine bind_ok (mapM_mono (fun a b hab => Eval.valToBits_mono hk hab) hreps) ?_
+      obtain ⟨bv, hbv, h⟩ := except_bind_eq_ok h
+      refine bind_ok hbv ?_
+      exact decode_mono hk h
+
+private theorem evalExt_step {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k')
+    (ih : EvalMono C k k') :
+    ∀ env jenv pty s rest v, Eval.evalExt C (k + 1) env jenv pty s rest = .ok v →
+      Eval.evalExt C (k' + 1) env jenv pty s rest = .ok v := by
+  intro env jenv pty s rest v h
+  rw [Eval.evalExt] at h ⊢
+  obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
+  refine bind_ok (ih.list _ _ _ _ hvs) ?_
+  obtain ⟨ity, hity, h⟩ := except_bind_eq_ok h
+  refine bind_ok hity ?_
+  split at h
+  rotate_left
+  · exact error_ne_ok h
+  rename_i hlen
+  rw [if_pos hlen]
+  cases hden : C.Δ.xtF s with
+  | none => rw [hden] at h; exact error_ne_ok h
+  | some den =>
+      rw [hden] at h
+      obtain ⟨reps, hreps, h⟩ := except_bind_eq_ok h
+      refine bind_ok (mapM_mono (fun a b hab => Eval.valToBits_mono hk hab) hreps) ?_
+      obtain ⟨bv, hbv, h⟩ := except_bind_eq_ok h
+      refine bind_ok hbv ?_
+      exact decode_mono hk h
+
 private theorem evalMono_all (C : Eval.Ctx) : ∀ k k', k ≤ k' → EvalMono C k k' := by
   intro k
   induction k with
@@ -598,7 +763,8 @@ private theorem evalMono_all (C : Eval.Ctx) : ∀ k k', k ≤ k' → EvalMono C 
       have ih := ihk k' hk
       exact ⟨evalCore_step hk ih, evalList_step hk ih, callDefn_step hk ih,
         applyValCore_step hk ih, applyMany_step hk ih, applyAll_step hk ih,
-        tryAlts_step hk ih, evalBuiltin_step hk ih⟩
+        tryAlts_step hk ih, evalBuiltin_step hk ih,
+        evalCry_step hk ih, evalExt_step hk ih⟩
 
 /-- `Eval.evalCore` is monotone in its fuel. -/
 theorem Eval.evalCore_mono {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k') {env : Eval.Env}
@@ -647,6 +813,21 @@ theorem Eval.evalBuiltin_mono {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k') {ty : 
     {b : Builtin} {vs : List Val} {v : Val} (h : Eval.evalBuiltin C k ty b vs = .ok v) :
     Eval.evalBuiltin C k' ty b vs = .ok v :=
   (evalMono_all C k k' hk).builtin ty b vs v h
+
+/-- `Eval.evalCry` (the Cryptol foreign row) is monotone in its fuel. -/
+theorem Eval.evalCry_mono {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k') {env : Eval.Env}
+    {jenv : Eval.JEnv} {pty : Ty} {f n : String} {rest : List Exp} {v : Val}
+    (h : Eval.evalCry C k env jenv pty f n rest = .ok v) :
+    Eval.evalCry C k' env jenv pty f n rest = .ok v :=
+  (evalMono_all C k k' hk).cry env jenv pty f n rest v h
+
+/-- `Eval.evalExt` (the model-carrying extern row) is monotone in its
+fuel. -/
+theorem Eval.evalExt_mono {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k') {env : Eval.Env}
+    {jenv : Eval.JEnv} {pty : Ty} {s : String} {rest : List Exp} {v : Val}
+    (h : Eval.evalExt C k env jenv pty s rest = .ok v) :
+    Eval.evalExt C k' env jenv pty s rest = .ok v :=
+  (evalMono_all C k k' hk).ext env jenv pty s rest v h
 
 /-- The exported evaluator entry point `eval` is monotone in its fuel. -/
 theorem eval_mono {Δ : DEnv} {defns : HashMap Int Defn} {k k' : Nat} (hk : k ≤ k')

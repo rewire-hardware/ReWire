@@ -39,12 +39,42 @@ is the exact integer form, `nbits 0 = nbits 1 = 0`). -/
 def nbits (n : Nat) : Nat :=
   if n ≤ 1 then 0 else Nat.log2 (n - 1) + 1
 
-/-- The datatype environment: constructor lists in declaration order
-and constructor signatures, from the program's (prim-basis-extended)
-data declarations. -/
+/-- The static environment of the machine semantics: the datatype
+environment — constructor lists in declaration order and constructor
+signatures, from the program's (prim-basis-extended) data declarations
+— extended (stage A of the foreign tier) with the model-carrying
+foreign interpretations and the syntactic data a validator compiles
+them through. The foreign fields all default to "absent", so a bare
+`DEnv.ofDatas` behaves exactly as before the extension:
+
+  * `cryF f n τ` — the semantic denotation of the Cryptol foreign
+    function `(module file f, function n)` at the impl monotype `τ`
+    (per doc/eidos.md §7.5.5, with η for a Cryptol splice DEFINED as
+    the Hyle-side denotation of the `cry$…` definitions rwcry
+    emitted — the trust boundary of the validation plan §1.3). The
+    drivers build it from the compiled program's own definition
+    environment (`Rwv.Hyle.Sem.mkFEnv`).
+  * `xtF s` — likewise for a model-carrying combinational extern `s`:
+    the Hyle-side denotation of its model definition (doc/hyle.md
+    §6.1, the interpreter's own reading).
+  * `cryD f n τ` — the (untrusted, checked) Hyle entry-definition
+    name for the same key: what the verified expression compiler
+    inlines through. `hyleDefs`/`hyleFuel` are the compiled program's
+    definition map and a symbolic-evaluation fuel for that inlining.
+    The soundness theorems consume these only through an explicit
+    premise tying `cryF` to `hyleDefs`' denotations
+    (`Rwv.Eidos.Cexp.ForeignC`); a wrong map fails validation, never
+    soundness. -/
 structure DEnv where
-  ctors   : HashMap String (List String)
-  ctorSig : HashMap String Sig
+  ctors    : HashMap String (List String)
+  ctorSig  : HashMap String Sig
+  cryF     : String → String → Ty → Option (List Rwv.Hyle.BV → Except String Rwv.Hyle.BV) :=
+    fun _ _ _ => none
+  xtF      : String → Option (List Rwv.Hyle.BV → Except String Rwv.Hyle.BV) :=
+    fun _ => none
+  cryD     : String → String → Ty → Option String := fun _ _ _ => none
+  hyleDefs : HashMap String Rwv.Hyle.Defn := ∅
+  hyleFuel : Nat := 0
 
 def DEnv.ofDatas (datas : List DataDefn) : DEnv where
   ctors   := HashMap.ofList (datas.map fun d => (d.name, d.cons.map (·.name)))

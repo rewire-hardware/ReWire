@@ -2505,6 +2505,23 @@ private theorem sliceNF_eval (σ : String → BV) (off w : Nat) (e : NF) :
     rfl
 
 
+/-! ## Foreign builtins are outside both row tables
+
+The evaluator dispatches `rwPrimCryptol`/`rwPrimExtern` to the foreign
+rows (Eval decision note 9) BEFORE the generic argument-evaluation
+path, so the soundness proofs' prim cases must first pin the builtin
+away from the foreign guards; these inversions supply the
+contradiction from the compiler side (the 4a row table has no foreign
+rows, and `cprimF` delegates the foreign builtins to it). -/
+
+private theorem cprim_cry_err {pty : Ty} {pas : List (NF × Ty)} {r : NF × Ty}
+    (h : cprim pty .cryptol pas = .ok r) : False := by
+  rcases pas with _ | ⟨p, _ | ⟨q, _ | ⟨w, ws⟩⟩⟩ <;> exact error_ne_ok h
+
+private theorem cprim_ext_err {pty : Ty} {pas : List (NF × Ty)} {r : NF × Ty}
+    (h : cprim pty .«extern» pas = .ok r) : False := by
+  rcases pas with _ | ⟨p, _ | ⟨q, _ | ⟨w, ws⟩⟩⟩ <;> exact error_ne_ok h
+
 /-! ## The soundness theorem -/
 
 /-- The main induction hypothesis, packaged: soundness of `cexp` at a
@@ -3330,6 +3347,21 @@ theorem cexp_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
       | prim pty b =>
           dsimp only at hc hev
           obtain ⟨pas, hpas, hc⟩ := except_bind_eq_ok hc
+          have hbc : (b == .cryptol) = false := by
+            cases hbceq : b == .cryptol
+            · rfl
+            · exfalso
+              rw [beq_iff_eq] at hbceq
+              subst hbceq
+              exact cprim_cry_err hc
+          have hbx : (b == .«extern») = false := by
+            cases hbxeq : b == .«extern»
+            · rfl
+            · exfalso
+              rw [beq_iff_eq] at hbxeq
+              subst hbxeq
+              exact cprim_ext_err hc
+          rw [if_neg (by simp [hbc]), if_neg (by simp [hbx])] at hev
           obtain ⟨vs, hvs, hev⟩ := except_bind_eq_ok hev
           obtain ⟨hplen, hpt⟩ := mapM_ok_idx hpas
           obtain ⟨hvlen, hpt2⟩ := evalList_ok_idx hvs
@@ -3901,6 +3933,260 @@ def cprimF (Δ : DEnv) (szf : Nat) (pty : Ty) (b : Builtin) (pas : List (NF × T
   | .natVal => rowNatVal (Ty.flattenArrow pty).1 (Ty.flattenArrow pty).2 pas
   | _ => cprim pty b pas
 
+/-- `cprimF` delegates the foreign builtins to the 4a table, which has
+no rows for them (the inversion `cexpJ_sound`'s prim case pins the
+builtin away from the evaluator's foreign dispatch with). -/
+private theorem cprimF_cry_err {Δ : DEnv} {szf : Nat} {pty : Ty} {pas : List (NF × Ty)}
+    {r : NF × Ty} (h : cprimF Δ szf pty .cryptol pas = .ok r) : False :=
+  cprim_cry_err (show cprim pty .cryptol pas = .ok r from h)
+
+private theorem cprimF_ext_err {Δ : DEnv} {szf : Nat} {pty : Ty} {pas : List (NF × Ty)}
+    {r : NF × Ty} (h : cprimF Δ szf pty .«extern» pas = .ok r) : False :=
+  cprim_ext_err (show cprim pty .«extern» pas = .ok r from h)
+
+/-! ## The foreign tier (stage A): the Cryptol row's environment
+
+The Cryptol builtin's semantics is the Hyle-side denotation of the
+rwcry-spliced definitions (the trust boundary of the validation plan
+§1.3); the evaluator reads it from `Δ.cryF`, and the compiler inlines
+the entry definition `Δ.cryD` designates out of `Δ.hyleDefs` through
+the bridge's `symExp`. `ForeignC` is the honest premise tying the two
+sides together — the final theorems assume it of Δ, and the drivers
+construct Δ so it holds by construction. -/
+
+/-- The denotation of a named definition in a Hyle definition
+environment (what the drivers install in `Δ.cryF`). -/
+def callF (F : Rwv.Hyle.Sem.FEnv) (g : String) (vs : List BV) : Except String BV :=
+  match F.get? g with
+  | some fn => fn vs
+  | none => .error s!"foreign: unknown definition {g}"
+
+/-- The foreign-environment premise (stage A): SOME Hyle definition
+environment `F` implements Δ's foreign definition map, and Δ's
+semantic Cryptol hook is exactly `F`'s denotation of the entry the
+syntactic map designates. -/
+structure ForeignC (Δ : DEnv) (X : Rwv.Hyle.Sem.XEnv) (F : Rwv.Hyle.Sem.FEnv) : Prop where
+  impl : Rwv.Hyle.Bridge.FImplements Δ.hyleDefs X F
+  cry  : ∀ f n t g, Δ.cryD f n t = some g →
+    ∃ den, Δ.cryF f n t = some den ∧ ∀ vs, den vs = callF F g vs
+
+/-- The trivially-empty foreign environment satisfies the premise
+against any implementing pair (no Cryptol keys are mapped). -/
+theorem foreignC_empty {Δ : DEnv} {X : Rwv.Hyle.Sem.XEnv} {F : Rwv.Hyle.Sem.FEnv}
+    (himpl : Rwv.Hyle.Bridge.FImplements Δ.hyleDefs X F)
+    (hnone : ∀ f n t, Δ.cryD f n t = none) : ForeignC Δ X F :=
+  ⟨himpl, fun f n t g hg => absurd hg (by rw [hnone f n t]; simp)⟩
+
+/-! ## HashMap transport for the spliced-call environments (house
+style: Bridge's private helpers, re-proved) -/
+
+private theorem ofList_get?_some' {β : Type} {l : List (String × β)} {k : String} {b : β}
+    (h : (HashMap.ofList l).get? k = some b) : (k, b) ∈ l := by
+  rw [HashMap.get?_eq_getElem?, HashMap.ofList_eq_insertMany_empty,
+      HashMap.getElem?_insertMany_list, HashMap.getElem?_empty, Option.or_none] at h
+  rw [List.findSomeRev?_eq_findSome?_reverse] at h
+  obtain ⟨⟨a, b'⟩, hmem, hab⟩ := List.exists_of_findSome?_eq_some h
+  dsimp only at hab
+  split at hab
+  · rename_i heq
+    injection hab with hab
+    subst hab
+    have : a = k := by simpa using heq
+    subst this
+    exact List.mem_reverse.mp hmem
+  · exact absurd hab (by simp)
+
+private theorem findSome?_option_map' {α β γ : Type} {g : α → Option β} {h : β → γ} :
+    ∀ (l : List α), l.findSome? (fun a => (g a).map h) = (l.findSome? g).map h := by
+  intro l
+  induction l with
+  | nil => rfl
+  | cons a l ih =>
+      rw [List.findSome?_cons, List.findSome?_cons]
+      cases hg : g a with
+      | none => simpa using ih
+      | some b => simp
+
+private theorem get?_ofList_map_snd' {β γ : Type} (h : β → γ) (l : List (String × β))
+    (k : String) :
+    (HashMap.ofList (l.map fun p => (p.1, h p.2))).get? k
+      = ((HashMap.ofList l).get? k).map h := by
+  rw [HashMap.get?_eq_getElem?, HashMap.get?_eq_getElem?,
+      HashMap.ofList_eq_insertMany_empty, HashMap.ofList_eq_insertMany_empty,
+      HashMap.getElem?_insertMany_list, HashMap.getElem?_insertMany_list,
+      HashMap.getElem?_empty, HashMap.getElem?_empty, Option.or_none, Option.or_none,
+      List.findSomeRev?_eq_findSome?_reverse, List.findSomeRev?_eq_findSome?_reverse,
+      ← List.map_reverse, List.findSome?_map]
+  have : ((fun x : String × γ => if x.1 == k then some x.2 else none) ∘
+            fun p : String × β => (p.1, h p.2))
+        = fun p : String × β => ((if p.1 == k then some p.2 else none).map h) := by
+    funext p
+    by_cases hp : p.1 == k <;> simp [Function.comp, hp]
+  rw [this, findSome?_option_map']
+
+/-- The environment correspondence of a spliced call site: binding the
+parameters to compiled normal forms symbolically corresponds to
+binding them to those forms' denotations concretely (Bridge's
+`envCorr_zip`, private there). -/
+private theorem envCorr_zip_eval {σ : String → BV} (ps : List String) (ns : List NF) :
+    Rwv.Hyle.Bridge.EnvCorr σ (HashMap.ofList (ps.zip ns))
+      (HashMap.ofList (ps.zip (ns.map (NF.eval σ)))) := by
+  intro x n hx
+  have hz : ps.zip (ns.map (NF.eval σ)) = (ps.zip ns).map fun p => (p.1, p.2.eval σ) := by
+    rw [List.zip_map_right]
+    rfl
+  rw [hz, get?_ofList_map_snd', hx]
+  rfl
+
+/-! ## Decoded values are canonical (the VTy half of the round trip) -/
+
+open Decode in
+/-- A successful decode's value is canonical at the decoded type: the
+decoder's checks are exactly `VTy`'s demands. -/
+theorem decode_vty {Δ : DEnv} :
+    ∀ {fuel : Nat} {t : Ty} {bv : BV} {v : Val},
+      decode Δ fuel t bv = .ok v → VTy Δ v t := by
+  intro fuel
+  induction fuel with
+  | zero => intro t bv v h; rw [decode] at h; exact error_ne_ok h
+  | succ fuel ih =>
+      intro t bv v h
+      rw [decode] at h
+      split at h
+      · -- Vec
+        rename_i n te hfl
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        rename_i k hk
+        obtain ⟨we, hwe, h⟩ := except_bind_eq_ok h
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        obtain ⟨fields, hfs, h⟩ := except_bind_eq_ok h
+        rw [except_pure_def] at h
+        injection h with h
+        subst h
+        refine VTy.vec hfl hk ?_ ?_
+        · rw [decodeFields_length hfs]
+          simp
+        · intro e he
+          obtain ⟨i, hi, hie⟩ := List.getElem_of_mem he
+          have hi2 : i < (List.replicate k (te, we)).length := by
+            rw [← decodeFields_length hfs]
+            exact hi
+          obtain ⟨bv', hdec⟩ := decodeFields_pointwise hfs i hi hi2
+          rw [← hie]
+          have hrepl : (List.replicate k (te, we))[i] = (te, we) :=
+            List.getElem_replicate ..
+          rw [hrepl] at hdec
+          exact ih hdec
+      · -- Finite
+        rename_i n hfl
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        rename_i k hk
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        rw [except_pure_def] at h
+        injection h with h
+        subst h
+        exact VTy.finite hfl hk
+      · -- Integer
+        rename_i hfl
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        rw [except_pure_def] at h
+        injection h with h
+        subst h
+        exact VTy.integer hfl
+      · -- Proxy
+        rename_i args hfl
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        rw [except_pure_def] at h
+        injection h with h
+        subst h
+        exact VTy.proxy hfl rfl
+      · -- Datatype
+        rename_i hfl
+        obtain ⟨whole, hwhole, h⟩ := except_bind_eq_ok h
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        obtain ⟨cw, hcw, h⟩ := except_bind_eq_ok h
+        obtain ⟨cn, tagW⟩ := cw
+        dsimp only at h
+        obtain ⟨tt, htag, h⟩ := except_bind_eq_ok h
+        obtain ⟨tag, tagW'⟩ := tt
+        dsimp only at h
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        rename_i sig hsig
+        obtain ⟨sub, hsub, h⟩ := except_bind_eq_ok h
+        obtain ⟨ws, hws, h⟩ := except_bind_eq_ok h
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        split at h
+        rotate_left
+        · exact error_ne_ok h
+        obtain ⟨fields, hfs, h⟩ := except_bind_eq_ok h
+        rw [except_pure_def] at h
+        injection h with h
+        subst h
+        have hwsl : ws.length
+            = ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)).length := by
+          obtain ⟨hl, _⟩ := mapM_ok_idx hws
+          exact hl
+        have hflen : fields.length = (Ty.flattenArrow sig.ty).1.length := by
+          rw [decodeFields_length hfs, List.length_zip, hwsl, List.length_map]
+          simp
+        refine VTy.con hsig hsub hflen ?_ ?_
+        · -- ctorOf
+          show ctorOf Δ t cn
+          rw [ctorOf, hfl]
+          dsimp only
+          rcases selectCtor_inv hcw with ⟨htup, hcn, _⟩ | ⟨htup, cs, hcs, hmem, _⟩
+          · rw [if_pos htup]
+            exact hcn
+          · rw [if_neg (by rw [htup]; simp)]
+            exact ⟨cs, hcs, hmem⟩
+        · -- fields pointwise canonical
+          intro p hp
+          obtain ⟨i, hi, hpi⟩ := List.getElem_of_mem hp
+          have hi' := hi
+          rw [List.length_zip] at hi'
+          have hid : i < (Ty.flattenArrow sig.ty).1.length :=
+            Nat.lt_of_lt_of_le hi' (Nat.min_le_left _ _)
+          have hif : i < fields.length := Nat.lt_of_lt_of_le hi' (Nat.min_le_right _ _)
+          have hits : i < (((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)).zip
+              ws).length := by
+            rw [List.length_zip, List.length_map]
+            rw [hwsl, List.length_map] at *
+            omega
+          obtain ⟨bv', hdec⟩ := decodeFields_pointwise hfs i hif hits
+          have hzi : ((((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)).zip
+                ws)[i]'hits).1
+              = DEnv.substTv sub ((Ty.flattenArrow sig.ty).1[i]'hid) := by
+            simp [List.getElem_zip]
+          rw [hzi] at hdec
+          rw [← hpi]
+          simp only [List.getElem_zip]
+          exact ih hdec
+      · exact error_ne_ok h
+
 /-! ## The full compiler -/
 
 mutual
@@ -4130,6 +4416,29 @@ def cexpJ (Δ : DEnv) (dmap : HashMap Int Defn) :
                         else .error "rwPrimVecGenerate: generator domain-bound mismatch"
                     | _ => .error "rwPrimVecGenerate: non-arrow function-argument type"
                 | _ => .error "rwPrimVecGenerate: arity mismatch")
+            | .cryptol =>
+                -- The foreign row (stage A): inline the spliced entry
+                -- definition Δ.cryD designates through the bridge's
+                -- symbolic evaluator — the compiled form is exactly
+                -- what the Hyle side's Call to it inlines to.
+                (match args with
+                | .litStr f :: .litStr n :: _impl :: rest => do
+                    let ity ← Eval.domTy "rwPrimCryptol" (Ty.flattenArrow pty).1 2
+                    if rest.length = (Ty.flattenArrow ity).1.length then
+                      match Δ.cryD f n ity with
+                      | some g =>
+                          (match Δ.hyleDefs.get? g with
+                          | some hd => do
+                              let pas ← rest.mapM (cexpJ Δ dmap fuel Γ jΓ · [])
+                              if pas.length = hd.params.length then do
+                                let nf ← Rwv.Hyle.Bridge.symExp Δ.hyleDefs Δ.hyleFuel
+                                  (HashMap.ofList (hd.params.zip (pas.map (·.1)))) hd.body
+                                .ok (nf, (Ty.flattenArrow ity).2)
+                              else .error "rwPrimCryptol: spliced definition arity mismatch"
+                          | none => .error s!"rwPrimCryptol: unknown spliced definition {g}")
+                      | none => .error "rwPrimCryptol: no entry mapping for this instantiation"
+                    else .error "rwPrimCryptol: unsaturated foreign application"
+                | _ => .error "rwPrimCryptol: malformed foreign application")
             | _ => do
                 let pas ← args.mapM (cexpJ Δ dmap fuel Γ jΓ · [])
                 cprimF Δ (fuel + 1) pty b pas
@@ -6987,7 +7296,9 @@ to values corresponding to the pending arguments succeeds, the result
 is canonical at the synthesized type and its representation is the
 compiled normal form's denotation. -/
 theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
-    (hΔ : denvOk Δ = true) : ∀ (fuel : Nat), SoundAtJ Δ dmap σ fuel := by
+    {X : Rwv.Hyle.Sem.XEnv} {F : Rwv.Hyle.Sem.FEnv}
+    (hΔ : denvOk Δ = true) (hFor : ForeignC Δ X F) :
+    ∀ (fuel : Nat), SoundAtJ Δ dmap σ fuel := by
   intro fuel
   induction fuel with
   | zero =>
@@ -7328,6 +7639,116 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
           have hvf : v = f := applyMany_nil_inv happ
           subst hvf
           dsimp only at hc hev
+          by_cases hbc : (b == .cryptol) = true
+          · -- THE CRYPTOL FOREIGN ROW (stage A): the compiled form is
+            -- the spliced entry definition's symbolic inlining; its
+            -- denotation is the evaluator's foreign result through
+            -- `ForeignC`, `symExp_sound`, and the decode round trip.
+            rw [if_pos hbc] at hev
+            rw [beq_iff_eq] at hbc
+            subst hbc
+            dsimp only at hc hev
+            split at hc
+            all_goals try exact error_ne_ok hc
+            rename_i f' n' impl rest
+            dsimp only at hev
+            cases efuel with
+            | zero => rw [Eval.evalCry] at hev; exact error_ne_ok hev
+            | succ ef2 =>
+            rw [Eval.evalCry] at hev
+            obtain ⟨vs, hvs, hev⟩ := except_bind_eq_ok hev
+            obtain ⟨hvlen, hpt2⟩ := evalList_ok_idx hvs
+            obtain ⟨ityE, hityE, hev⟩ := except_bind_eq_ok hev
+            obtain ⟨ityC, hityC, hc⟩ := except_bind_eq_ok hc
+            rw [hityC] at hityE
+            injection hityE with hity
+            subst hity
+            split at hc
+            rotate_left
+            · exact error_ne_ok hc
+            rename_i hlenC
+            rw [if_pos hlenC] at hev
+            cases hcryD : Δ.cryD f' n' ityC with
+            | none => rw [hcryD] at hc; exact error_ne_ok hc
+            | some g =>
+            rw [hcryD] at hc
+            dsimp only at hc
+            cases hgd : Δ.hyleDefs.get? g with
+            | none => rw [hgd] at hc; exact error_ne_ok hc
+            | some hd =>
+            rw [hgd] at hc
+            dsimp only at hc
+            obtain ⟨pas, hpas, hc⟩ := except_bind_eq_ok hc
+            obtain ⟨hplen, hpt⟩ := mapM_ok_idx hpas
+            split at hc
+            rotate_left
+            · exact error_ne_ok hc
+            rename_i harity
+            obtain ⟨nfS, hsym, hc⟩ := except_bind_eq_ok hc
+            injection hc with hc
+            injection hc with hnf hty
+            subst hnf
+            subst hty
+            obtain ⟨den, hcryF, hden⟩ := hFor.cry f' n' ityC g hcryD
+            rw [hcryF] at hev
+            dsimp only at hev
+            obtain ⟨reps, hreps, hev⟩ := except_bind_eq_ok hev
+            obtain ⟨hrlen, hrpt⟩ := mapM_ok_idx hreps
+            obtain ⟨bv, hbv, hev⟩ := except_bind_eq_ok hev
+            have hptw : ∀ i (h1 : i < pas.length) (h2 : i < vs.length),
+                VTy Δ vs[i] pas[i].2 ∧
+                  ∃ k, Val.rep Δ k vs[i] = .ok (pas[i].1.eval σ) := by
+              intro i h1 h2
+              obtain ⟨hia, hci⟩ := hpt i (by omega)
+              obtain ⟨hia2, ki, hei⟩ := hpt2 i (by omega)
+              exact ih Γ jΓ rest[i] [] (pas[i].1) (pas[i].2) ki 1 env jenv vs[i] [] vs[i]
+                hci hei (applyMany_one ⟨Δ, dmap⟩ 0 vs[i]) hΓ hJ rfl
+                (fun j hj1 _ => absurd hj1 (by simp))
+            have hre : reps = (pas.map (·.1)).map (NF.eval σ) := by
+              refine List.ext_getElem (by rw [List.length_map, List.length_map]; omega) ?_
+              intro i hi1 hi2
+              obtain ⟨hia, hri⟩ := hrpt i (by omega)
+              obtain ⟨hvtyi, ki, hrepi⟩ := hptw i (by omega) (by omega)
+              have hri' : Val.rep Δ ef2 vs[i] = .ok reps[i] := hri
+              rw [List.getElem_map, List.getElem_map]
+              exact rep_det hri' hrepi
+            obtain ⟨fn, hFg, hfn⟩ := hFor.impl g hd hgd
+            have hlenR : reps.length = hd.params.length := by omega
+            have hbv' : Rwv.Hyle.evalExp F X (HashMap.ofList (hd.params.zip reps)) hd.body
+                = .ok bv := by
+              have h1 := hden reps
+              rw [h1, callF, hFg] at hbv
+              dsimp only at hbv
+              rw [hfn reps] at hbv
+              simp only [Rwv.Hyle.Bridge.mkFn] at hbv
+              rw [if_pos hlenR] at hbv
+              exact hbv
+            have hcorr : Rwv.Hyle.Bridge.EnvCorr σ
+                (HashMap.ofList (hd.params.zip (pas.map (·.1))))
+                (HashMap.ofList (hd.params.zip reps)) := by
+              rw [hre]
+              exact envCorr_zip_eval hd.params (pas.map (·.1))
+            have hsem := Rwv.Hyle.Bridge.symExp_sound hFor.impl Δ.hyleFuel hd.body
+              (HashMap.ofList (hd.params.zip (pas.map (·.1))))
+              (HashMap.ofList (hd.params.zip reps)) nfS hcorr hsym
+            have hbvnf : bv = nfS.eval σ := by
+              rw [hsem] at hbv'
+              injection hbv' with h'
+              exact h'.symm
+            exact ⟨decode_vty hev, ef2, hbvnf ▸ decode_rep hev⟩
+          have hbcF : (b == .cryptol) = false := by
+            revert hbc
+            cases b == .cryptol <;> simp
+          have hbx : (b == .«extern») = false := by
+            cases hbxeq : b == .«extern»
+            · rfl
+            · exfalso
+              rw [beq_iff_eq] at hbxeq
+              subst hbxeq
+              dsimp only at hc
+              obtain ⟨pas, _hpas, hc⟩ := except_bind_eq_ok hc
+              exact cprimF_ext_err hc
+          rw [if_neg (by simp [hbcF]), if_neg (by simp [hbx])] at hev
           obtain ⟨vs, hvs, hev⟩ := except_bind_eq_ok hev
           obtain ⟨hvlen, hpt2⟩ := evalList_ok_idx hvs
           split at hc
@@ -7974,6 +8395,8 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
                 exact vty_rep_width hvyj hkyj hseO
               rw [catNF_eval σ _ hpwidths]
               exact bvConcat_eq _
+          · -- the (excluded) cryptol arm: contradicts the dispatch guard
+            simp at hbcF
           · -- the extended row table
             rw [bind_ok_iff] at hc
             obtain ⟨pas, hpas, hc⟩ := hc
@@ -8363,13 +8786,15 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
 statement on the full compiler — the evaluator's join environment is
 arbitrary (the compile-time one is empty), exactly as in Phase 4a. -/
 theorem cexpFull_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
-    (hΔ : denvOk Δ = true) (fuel : Nat) (Γ : HashMap Int (NF × Ty)) (e : Exp)
+    {X : Rwv.Hyle.Sem.XEnv} {F : Rwv.Hyle.Sem.FEnv}
+    (hΔ : denvOk Δ = true) (hFor : ForeignC Δ X F)
+    (fuel : Nat) (Γ : HashMap Int (NF × Ty)) (e : Exp)
     (nf : NF) (ty : Ty) (efuel : Nat) (env : Eval.Env) (jenv : Eval.JEnv) (v : Val)
     (hc : cexpFull Δ dmap fuel Γ e = .ok (nf, ty))
     (hev : Eval.evalCore ⟨Δ, dmap⟩ efuel env jenv e = .ok v)
     (hΓ : EnvC Δ σ Γ env) :
     VTy Δ v ty ∧ ∃ k, Val.rep Δ k v = .ok (nf.eval σ) :=
-  cexpJ_sound hΔ fuel Γ [] e [] nf ty efuel 1 env jenv v [] v hc hev
+  cexpJ_sound hΔ hFor fuel Γ [] e [] nf ty efuel 1 env jenv v [] v hc hev
     (applyMany_one ⟨Δ, dmap⟩ 0 v) hΓ jenvC_nil rfl
     (fun j hj _ => absurd hj (by simp))
 
@@ -9383,6 +9808,48 @@ theorem cexpJ_varsWF {Δ : DEnv} {dmap : HashMap Int Defn} {P : String → Nat �
                 intro q hq
                 obtain rfl := List.mem_singleton.mp hq
                 trivial) hcej
+          · -- the Cryptol foreign row: the spliced inlining's
+            -- variables are the compiled arguments'
+            split at hc
+            all_goals try exact error_ne_ok hc
+            rename_i f' n' impl rest
+            rw [bind_ok_iff] at hc
+            obtain ⟨ity, _hity, hc⟩ := hc
+            split at hc
+            rotate_left
+            · exact error_ne_ok hc
+            split at hc
+            all_goals try exact error_ne_ok hc
+            rename_i g _hcryD
+            split at hc
+            all_goals try exact error_ne_ok hc
+            rename_i hd _hgd
+            rw [bind_ok_iff] at hc
+            obtain ⟨pas, hpas, hc⟩ := hc
+            obtain ⟨hplen, hpt⟩ := mapM_ok_idx hpas
+            have hpasWF : ∀ p ∈ pas, NF.VarsWF P p.1 := by
+              intro p hp
+              obtain ⟨j, hj, hpj⟩ := List.getElem_of_mem hp
+              obtain ⟨hj2, hcj⟩ := hpt j (by omega)
+              rw [← hpj]
+              exact ih Γ jΓ rest[j] [] (pas[j].1) (pas[j].2) hΓ hJ
+                (fun q hq => absurd hq (by simp)) hcj
+            split at hc
+            rotate_left
+            · exact error_ne_ok hc
+            rw [bind_ok_iff] at hc
+            obtain ⟨nfS, hsym, hc⟩ := hc
+            injection hc with hc
+            have h1 := congrArg Prod.fst hc
+            dsimp only at h1
+            rw [← h1]
+            refine Rwv.Hyle.Bridge.symExp_varsWF Δ.hyleFuel hd.body _ nfS ?_ hsym
+            intro x nx hnx
+            have hmem := ofList_get?_some' hnx
+            have hx2 : nx ∈ pas.map (·.1) := (List.of_mem_zip hmem).2
+            obtain ⟨q, hq, hqn⟩ := List.mem_map.mp hx2
+            rw [← hqn]
+            exact hpasWF q hq
           · -- extended rows
             rw [bind_ok_iff] at hc
             obtain ⟨pas, hpas, hc⟩ := hc
@@ -10000,6 +10467,17 @@ def cprimFD (d : Dag) (Δ : DEnv) (szf : Nat) (pty : Ty) (b : Builtin)
           else .error "rwPrimVecIndex: type mismatch"
       | _ => .error "rwPrimVecIndex: arity mismatch")
   | _ => cprimD d pty b pas
+
+/-- The DAG mirror has no Cryptol row (the tree fallback carries the
+foreign tier); its 4a delegation errors on the foreign builtins. -/
+private theorem cprimD_cry_err {d : Dag} {pty : Ty} {pas : List (Nat × Ty)}
+    {r : Dag × Nat × Ty} (h : cprimD d pty .cryptol pas = .ok r) : False := by
+  rcases pas with _ | ⟨p, _ | ⟨q, _ | ⟨w, ws⟩⟩⟩ <;> exact error_ne_ok h
+
+private theorem cprimFD_cry_err {d : Dag} {Δ : DEnv} {szf : Nat} {pty : Ty}
+    {pas : List (Nat × Ty)} {r : Dag × Nat × Ty}
+    (h : cprimFD d Δ szf pty .cryptol pas = .ok r) : False :=
+  cprimD_cry_err (show cprimD d pty .cryptol pas = .ok r from h)
 
 /-- Bind binders over a `DGamma` (`Cexp.bindFieldsΓ`). -/
 def bindFieldsΓD (xs : List Id) (nts : List (Nat × Ty)) (Γ : DGamma) : DGamma :=
@@ -12735,6 +13213,15 @@ theorem cexpJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} :
               rw [hseO, except_bind_ok, hft, except_bind_ok]
               dsimp only
               rw [hnb, except_bind_ok, if_pos hnbE, S₂, except_bind_ok, R₃]
+          case cryptol =>
+            -- no DAG mirror for the foreign row: the DAG leg rejects
+            -- (and the dispatcher falls back to the tree checker)
+            dsimp only at hc ⊢
+            rw [bind_ok_iff] at hc
+            obtain ⟨dp, hargs, hc⟩ := hc
+            obtain ⟨d₁, pas⟩ := dp
+            dsimp only at hc
+            exact (cprimFD_cry_err hc).elim
           all_goals
             dsimp only at hc ⊢
             rw [bind_ok_iff] at hc
@@ -13463,6 +13950,8 @@ theorem checkDefnPair_sound {Δ : DEnv} {edm : HashMap Int Defn}
     {hd : Rwv.Hyle.Defn}
     (hck : checkDefnPair Δ edm hdm fuelE fuelH ed hd = true)
     {σ : String → BV} {X : Rwv.Hyle.Sem.XEnv} {F : Rwv.Hyle.Sem.FEnv}
+    {Xf : Rwv.Hyle.Sem.XEnv} {Ff : Rwv.Hyle.Sem.FEnv}
+    (hFor : ForeignC Δ Xf Ff)
     (hImpl : Rwv.Hyle.Bridge.FImplements hdm X F)
     {env : Eval.Env}
     (hEnv : EnvC Δ σ (mkParamGamma ed.params hd.params hd.sig.params) env)
@@ -13497,7 +13986,7 @@ theorem checkDefnPair_sound {Δ : DEnv} {edm : HashMap Int Defn}
       exact ⟨ne, tyE, nh, rfl, rfl, by simpa using hck⟩
   obtain ⟨ne, tyE, nh, hcE, hcH, hck2⟩ := hlegs
   obtain ⟨_hvty, k, hrep⟩ :=
-    cexpFull_sound hΔ fuelE (mkParamGamma ed.params hd.params hd.sig.params)
+    cexpFull_sound hΔ hFor fuelE (mkParamGamma ed.params hd.params hd.sig.params)
       ed.body ne tyE efuel env [] v hcE hev hEnv
   have hH := Rwv.Hyle.Bridge.symExp_sound hImpl fuelH hd.body
     (mkParamRho hd.params hd.sig.params) ρ' nh hRho hcH
