@@ -1,54 +1,18 @@
---| state dispatch for process main: 0=$x2
-main.$dispatch : ([1024], [1]) -> [2048]
-main.$dispatch disc i =
-      main.$x2 i disc
-
---| block '$L.$x2' of process main (state 0)
-main.$x2 : ([1], [1024]) -> [2048]
-main.$x2 $x s0 =
-      main.nopipeline $x s0
-
---| block '$L.x2' of process main
-main.x2 : ([1024], [1024]) -> [2048]
-main.x2 x s0 =
-      x # s0
-
---| block '$L.x3' of process main
-main.x3 : ([1024], [1024]) -> [2048]
-main.x3 x s0 =
-      let $a = Main.round x in
-      main.arm2 $a
-
---| block '$L.arm' of process main
-main.arm : ([1024]) -> [2048]
-main.arm s0 =
-      main.x3 s0 s0
-
 --| block '$L.arm2' of process main
 --| also: main._unused
 main.arm2 : ([1024]) -> [2048]
 main.arm2 s0 =
-      main.x2 s0 s0
-
---| block '$L.Main.nopipeline' of process main
-main.nopipeline : ([1], [1024]) -> [2048]
-main.nopipeline $ds s0 =
-      if not $ds then main.arm s0
-            else main.arm2 s0
+      s0 # s0
 
 Main.explode5 : ([5]) -> [5]
 Main.explode5 w5 =
       trunc 1 (lshr w5 128'h4) # trunc 1 (lshr w5 128'h3) # trunc 1 (lshr w5 128'h2) # trunc 1 (lshr w5 128'h1) # trunc 1 (lshr w5 128'h0)
 
-Main.rotaccess : ([1024], [5]) -> [33]
-Main.rotaccess s f32 =
-      (let $t0 = Main.explode5 f32 in
-      let h = $t0[4 +: 1] in
-      h) # trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
-
 Main.rot : ([32], [1024], [5]) -> [32]
 Main.rot rc s f32 =
-      let $ds = Main.rotaccess s f32 in
+      let $ds = (let $t0$i0 = Main.explode5 f32 in
+      let h$i1 = $t0$i0[4 +: 1] in
+      h$i1) # trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20)) in
       let w0 = (let w0 = $ds[0 +: 32] in
       w0) in
       let $t0 = (let h = $ds[32 +: 1] in
@@ -56,23 +20,19 @@ Main.rot rc s f32 =
       if not $t0 then or (shl w0 rc) (lshr w0 (sub 32'h20 rc))
             else w0
 
-Main.accesses : ([1024], [5]) -> [65]
-Main.accesses s f32 =
-      let $ds = Main.explode5 f32 in
-      let j = (let j = $ds[3 +: 1] in
-      j) in
-      let k = (let k = $ds[2 +: 1] in
-      k) in
-      let l = (let l = $ds[1 +: 1] in
-      l) in
-      let m = (let m = $ds[0 +: 1] in
-      m) in
-      (let h = $ds[4 +: 1] in
-      h) # trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h0 # j # k # l # m))) 128'h1) 128'h20)) # trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # l # m))) 128'h1) 128'h20))
-
 Main.addix : ([1024], [5]) -> [32]
 Main.addix s f32 =
-      let $ds = Main.accesses s f32 in
+      let $ds = (let $ds$i0 = Main.explode5 f32 in
+      let j$i2 = (let j$i1 = $ds$i0[3 +: 1] in
+      j$i1) in
+      let k$i4 = (let k$i3 = $ds$i0[2 +: 1] in
+      k$i3) in
+      let l$i6 = (let l$i5 = $ds$i0[1 +: 1] in
+      l$i5) in
+      let m$i8 = (let m$i7 = $ds$i0[0 +: 1] in
+      m$i7) in
+      (let h$i9 = $ds$i0[4 +: 1] in
+      h$i9) # trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h0 # j$i2 # k$i4 # l$i6 # m$i8))) 128'h1) 128'h20)) # trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j$i2 # k$i4 # l$i6 # m$i8))) 128'h1) 128'h20))) in
       let v0 = (let v0 = $ds[32 +: 32] in
       v0) in
       let $t0 = (let h = $ds[64 +: 1] in
@@ -108,10 +68,6 @@ Main.swapix1 s f32 =
                   else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (2'h1 # k # l # m))) 128'h1) 128'h20)))
             else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (2'h0 # k # l # m))) 128'h1) 128'h20))
 
-Main.swap1 : ([1024]) -> [1024]
-Main.swap1 s =
-      Main.swapix1 s 5'h0 # Main.swapix1 s 5'h1 # Main.swapix1 s 5'h2 # Main.swapix1 s 5'h3 # Main.swapix1 s 5'h4 # Main.swapix1 s 5'h5 # Main.swapix1 s 5'h6 # Main.swapix1 s 5'h7 # Main.swapix1 s 5'h8 # Main.swapix1 s 5'h9 # Main.swapix1 s 5'ha # Main.swapix1 s 5'hb # Main.swapix1 s 5'hc # Main.swapix1 s 5'hd # Main.swapix1 s 5'he # Main.swapix1 s 5'hf # Main.swapix1 s 5'h10 # Main.swapix1 s 5'h11 # Main.swapix1 s 5'h12 # Main.swapix1 s 5'h13 # Main.swapix1 s 5'h14 # Main.swapix1 s 5'h15 # Main.swapix1 s 5'h16 # Main.swapix1 s 5'h17 # Main.swapix1 s 5'h18 # Main.swapix1 s 5'h19 # Main.swapix1 s 5'h1a # Main.swapix1 s 5'h1b # Main.swapix1 s 5'h1c # Main.swapix1 s 5'h1d # Main.swapix1 s 5'h1e # Main.swapix1 s 5'h1f
-
 Main.swapix2 : ([1024], [5]) -> [32]
 Main.swapix2 s f32 =
       let $ds = Main.explode5 f32 in
@@ -132,10 +88,6 @@ Main.swapix2 s f32 =
             if not $t1 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
                   else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # 1'h0 # m))) 128'h1) 128'h20)))
             else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # 1'h1 # m))) 128'h1) 128'h20))
-
-Main.swap2 : ([1024]) -> [1024]
-Main.swap2 s =
-      Main.swapix2 s 5'h0 # Main.swapix2 s 5'h1 # Main.swapix2 s 5'h2 # Main.swapix2 s 5'h3 # Main.swapix2 s 5'h4 # Main.swapix2 s 5'h5 # Main.swapix2 s 5'h6 # Main.swapix2 s 5'h7 # Main.swapix2 s 5'h8 # Main.swapix2 s 5'h9 # Main.swapix2 s 5'ha # Main.swapix2 s 5'hb # Main.swapix2 s 5'hc # Main.swapix2 s 5'hd # Main.swapix2 s 5'he # Main.swapix2 s 5'hf # Main.swapix2 s 5'h10 # Main.swapix2 s 5'h11 # Main.swapix2 s 5'h12 # Main.swapix2 s 5'h13 # Main.swapix2 s 5'h14 # Main.swapix2 s 5'h15 # Main.swapix2 s 5'h16 # Main.swapix2 s 5'h17 # Main.swapix2 s 5'h18 # Main.swapix2 s 5'h19 # Main.swapix2 s 5'h1a # Main.swapix2 s 5'h1b # Main.swapix2 s 5'h1c # Main.swapix2 s 5'h1d # Main.swapix2 s 5'h1e # Main.swapix2 s 5'h1f
 
 Main.swapix3 : ([1024], [5]) -> [32]
 Main.swapix3 s f32 =
@@ -160,10 +112,6 @@ Main.swapix3 s f32 =
                   else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h0 # j # 1'h0 # l # m))) 128'h1) 128'h20)))
             else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h0 # j # 1'h1 # l # m))) 128'h1) 128'h20))
 
-Main.swap3 : ([1024]) -> [1024]
-Main.swap3 s =
-      Main.swapix3 s 5'h0 # Main.swapix3 s 5'h1 # Main.swapix3 s 5'h2 # Main.swapix3 s 5'h3 # Main.swapix3 s 5'h4 # Main.swapix3 s 5'h5 # Main.swapix3 s 5'h6 # Main.swapix3 s 5'h7 # Main.swapix3 s 5'h8 # Main.swapix3 s 5'h9 # Main.swapix3 s 5'ha # Main.swapix3 s 5'hb # Main.swapix3 s 5'hc # Main.swapix3 s 5'hd # Main.swapix3 s 5'he # Main.swapix3 s 5'hf # Main.swapix3 s 5'h10 # Main.swapix3 s 5'h11 # Main.swapix3 s 5'h12 # Main.swapix3 s 5'h13 # Main.swapix3 s 5'h14 # Main.swapix3 s 5'h15 # Main.swapix3 s 5'h16 # Main.swapix3 s 5'h17 # Main.swapix3 s 5'h18 # Main.swapix3 s 5'h19 # Main.swapix3 s 5'h1a # Main.swapix3 s 5'h1b # Main.swapix3 s 5'h1c # Main.swapix3 s 5'h1d # Main.swapix3 s 5'h1e # Main.swapix3 s 5'h1f
-
 Main.swapix4 : ([1024], [5]) -> [32]
 Main.swapix4 s f32 =
       let $ds = Main.explode5 f32 in
@@ -184,10 +132,6 @@ Main.swapix4 s f32 =
             if not $t1 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
                   else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # l # 1'h0))) 128'h1) 128'h20)))
             else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # l # 1'h1))) 128'h1) 128'h20))
-
-Main.swap4 : ([1024]) -> [1024]
-Main.swap4 s =
-      Main.swapix4 s 5'h0 # Main.swapix4 s 5'h1 # Main.swapix4 s 5'h2 # Main.swapix4 s 5'h3 # Main.swapix4 s 5'h4 # Main.swapix4 s 5'h5 # Main.swapix4 s 5'h6 # Main.swapix4 s 5'h7 # Main.swapix4 s 5'h8 # Main.swapix4 s 5'h9 # Main.swapix4 s 5'ha # Main.swapix4 s 5'hb # Main.swapix4 s 5'hc # Main.swapix4 s 5'hd # Main.swapix4 s 5'he # Main.swapix4 s 5'hf # Main.swapix4 s 5'h10 # Main.swapix4 s 5'h11 # Main.swapix4 s 5'h12 # Main.swapix4 s 5'h13 # Main.swapix4 s 5'h14 # Main.swapix4 s 5'h15 # Main.swapix4 s 5'h16 # Main.swapix4 s 5'h17 # Main.swapix4 s 5'h18 # Main.swapix4 s 5'h19 # Main.swapix4 s 5'h1a # Main.swapix4 s 5'h1b # Main.swapix4 s 5'h1c # Main.swapix4 s 5'h1d # Main.swapix4 s 5'h1e # Main.swapix4 s 5'h1f
 
 Main.xorix : ([1024], [5]) -> [32]
 Main.xorix s f32 =
@@ -211,25 +155,19 @@ Main.xor : ([1024]) -> [1024]
 Main.xor s =
       Main.xorix s 5'h0 # Main.xorix s 5'h1 # Main.xorix s 5'h2 # Main.xorix s 5'h3 # Main.xorix s 5'h4 # Main.xorix s 5'h5 # Main.xorix s 5'h6 # Main.xorix s 5'h7 # Main.xorix s 5'h8 # Main.xorix s 5'h9 # Main.xorix s 5'ha # Main.xorix s 5'hb # Main.xorix s 5'hc # Main.xorix s 5'hd # Main.xorix s 5'he # Main.xorix s 5'hf # Main.xorix s 5'h10 # Main.xorix s 5'h11 # Main.xorix s 5'h12 # Main.xorix s 5'h13 # Main.xorix s 5'h14 # Main.xorix s 5'h15 # Main.xorix s 5'h16 # Main.xorix s 5'h17 # Main.xorix s 5'h18 # Main.xorix s 5'h19 # Main.xorix s 5'h1a # Main.xorix s 5'h1b # Main.xorix s 5'h1c # Main.xorix s 5'h1d # Main.xorix s 5'h1e # Main.xorix s 5'h1f
 
-Main.round : ([1024]) -> [1024]
-Main.round x =
-      Main.swap4 (Main.xor (Main.swap3 (Main.rotate$s576d2c1d (Main.add (Main.swap2 (Main.xor (Main.swap1 (Main.rotate$sbaca246a (Main.add x)))))))))
-
---| partially applied from 'Main.rotate'
-Main.rotate$s576d2c1d : ([1024]) -> [1024]
-Main.rotate$s576d2c1d s =
-      Main.rot 32'hb s 5'h0 # Main.rot 32'hb s 5'h1 # Main.rot 32'hb s 5'h2 # Main.rot 32'hb s 5'h3 # Main.rot 32'hb s 5'h4 # Main.rot 32'hb s 5'h5 # Main.rot 32'hb s 5'h6 # Main.rot 32'hb s 5'h7 # Main.rot 32'hb s 5'h8 # Main.rot 32'hb s 5'h9 # Main.rot 32'hb s 5'ha # Main.rot 32'hb s 5'hb # Main.rot 32'hb s 5'hc # Main.rot 32'hb s 5'hd # Main.rot 32'hb s 5'he # Main.rot 32'hb s 5'hf # Main.rot 32'hb s 5'h10 # Main.rot 32'hb s 5'h11 # Main.rot 32'hb s 5'h12 # Main.rot 32'hb s 5'h13 # Main.rot 32'hb s 5'h14 # Main.rot 32'hb s 5'h15 # Main.rot 32'hb s 5'h16 # Main.rot 32'hb s 5'h17 # Main.rot 32'hb s 5'h18 # Main.rot 32'hb s 5'h19 # Main.rot 32'hb s 5'h1a # Main.rot 32'hb s 5'h1b # Main.rot 32'hb s 5'h1c # Main.rot 32'hb s 5'h1d # Main.rot 32'hb s 5'h1e # Main.rot 32'hb s 5'h1f
-
---| partially applied from 'Main.rotate'
-Main.rotate$sbaca246a : ([1024]) -> [1024]
-Main.rotate$sbaca246a s =
-      Main.rot 32'h7 s 5'h0 # Main.rot 32'h7 s 5'h1 # Main.rot 32'h7 s 5'h2 # Main.rot 32'h7 s 5'h3 # Main.rot 32'h7 s 5'h4 # Main.rot 32'h7 s 5'h5 # Main.rot 32'h7 s 5'h6 # Main.rot 32'h7 s 5'h7 # Main.rot 32'h7 s 5'h8 # Main.rot 32'h7 s 5'h9 # Main.rot 32'h7 s 5'ha # Main.rot 32'h7 s 5'hb # Main.rot 32'h7 s 5'hc # Main.rot 32'h7 s 5'hd # Main.rot 32'h7 s 5'he # Main.rot 32'h7 s 5'hf # Main.rot 32'h7 s 5'h10 # Main.rot 32'h7 s 5'h11 # Main.rot 32'h7 s 5'h12 # Main.rot 32'h7 s 5'h13 # Main.rot 32'h7 s 5'h14 # Main.rot 32'h7 s 5'h15 # Main.rot 32'h7 s 5'h16 # Main.rot 32'h7 s 5'h17 # Main.rot 32'h7 s 5'h18 # Main.rot 32'h7 s 5'h19 # Main.rot 32'h7 s 5'h1a # Main.rot 32'h7 s 5'h1b # Main.rot 32'h7 s 5'h1c # Main.rot 32'h7 s 5'h1d # Main.rot 32'h7 s 5'h1e # Main.rot 32'h7 s 5'h1f
-
 device top_level
       input __in0 : [1]
       output __out0 : [1024]
       register __st0 : [1024] init 1024'h2000000001000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
       tag $x2 = 0
-      let $res = main.$dispatch __st0 __in0
+      let $res = if not __in0 then (let $a$i6 = (let s$i5 = Main.xor (let s$i4 = (let s$i3 = Main.add (let s$i2 = Main.xor (let s$i1 = (let s$i0 = Main.add __st0 in
+                  Main.rot 32'h7 s$i0 5'h0 # Main.rot 32'h7 s$i0 5'h1 # Main.rot 32'h7 s$i0 5'h2 # Main.rot 32'h7 s$i0 5'h3 # Main.rot 32'h7 s$i0 5'h4 # Main.rot 32'h7 s$i0 5'h5 # Main.rot 32'h7 s$i0 5'h6 # Main.rot 32'h7 s$i0 5'h7 # Main.rot 32'h7 s$i0 5'h8 # Main.rot 32'h7 s$i0 5'h9 # Main.rot 32'h7 s$i0 5'ha # Main.rot 32'h7 s$i0 5'hb # Main.rot 32'h7 s$i0 5'hc # Main.rot 32'h7 s$i0 5'hd # Main.rot 32'h7 s$i0 5'he # Main.rot 32'h7 s$i0 5'hf # Main.rot 32'h7 s$i0 5'h10 # Main.rot 32'h7 s$i0 5'h11 # Main.rot 32'h7 s$i0 5'h12 # Main.rot 32'h7 s$i0 5'h13 # Main.rot 32'h7 s$i0 5'h14 # Main.rot 32'h7 s$i0 5'h15 # Main.rot 32'h7 s$i0 5'h16 # Main.rot 32'h7 s$i0 5'h17 # Main.rot 32'h7 s$i0 5'h18 # Main.rot 32'h7 s$i0 5'h19 # Main.rot 32'h7 s$i0 5'h1a # Main.rot 32'h7 s$i0 5'h1b # Main.rot 32'h7 s$i0 5'h1c # Main.rot 32'h7 s$i0 5'h1d # Main.rot 32'h7 s$i0 5'h1e # Main.rot 32'h7 s$i0 5'h1f) in
+                  Main.swapix1 s$i1 5'h0 # Main.swapix1 s$i1 5'h1 # Main.swapix1 s$i1 5'h2 # Main.swapix1 s$i1 5'h3 # Main.swapix1 s$i1 5'h4 # Main.swapix1 s$i1 5'h5 # Main.swapix1 s$i1 5'h6 # Main.swapix1 s$i1 5'h7 # Main.swapix1 s$i1 5'h8 # Main.swapix1 s$i1 5'h9 # Main.swapix1 s$i1 5'ha # Main.swapix1 s$i1 5'hb # Main.swapix1 s$i1 5'hc # Main.swapix1 s$i1 5'hd # Main.swapix1 s$i1 5'he # Main.swapix1 s$i1 5'hf # Main.swapix1 s$i1 5'h10 # Main.swapix1 s$i1 5'h11 # Main.swapix1 s$i1 5'h12 # Main.swapix1 s$i1 5'h13 # Main.swapix1 s$i1 5'h14 # Main.swapix1 s$i1 5'h15 # Main.swapix1 s$i1 5'h16 # Main.swapix1 s$i1 5'h17 # Main.swapix1 s$i1 5'h18 # Main.swapix1 s$i1 5'h19 # Main.swapix1 s$i1 5'h1a # Main.swapix1 s$i1 5'h1b # Main.swapix1 s$i1 5'h1c # Main.swapix1 s$i1 5'h1d # Main.swapix1 s$i1 5'h1e # Main.swapix1 s$i1 5'h1f) in
+                  Main.swapix2 s$i2 5'h0 # Main.swapix2 s$i2 5'h1 # Main.swapix2 s$i2 5'h2 # Main.swapix2 s$i2 5'h3 # Main.swapix2 s$i2 5'h4 # Main.swapix2 s$i2 5'h5 # Main.swapix2 s$i2 5'h6 # Main.swapix2 s$i2 5'h7 # Main.swapix2 s$i2 5'h8 # Main.swapix2 s$i2 5'h9 # Main.swapix2 s$i2 5'ha # Main.swapix2 s$i2 5'hb # Main.swapix2 s$i2 5'hc # Main.swapix2 s$i2 5'hd # Main.swapix2 s$i2 5'he # Main.swapix2 s$i2 5'hf # Main.swapix2 s$i2 5'h10 # Main.swapix2 s$i2 5'h11 # Main.swapix2 s$i2 5'h12 # Main.swapix2 s$i2 5'h13 # Main.swapix2 s$i2 5'h14 # Main.swapix2 s$i2 5'h15 # Main.swapix2 s$i2 5'h16 # Main.swapix2 s$i2 5'h17 # Main.swapix2 s$i2 5'h18 # Main.swapix2 s$i2 5'h19 # Main.swapix2 s$i2 5'h1a # Main.swapix2 s$i2 5'h1b # Main.swapix2 s$i2 5'h1c # Main.swapix2 s$i2 5'h1d # Main.swapix2 s$i2 5'h1e # Main.swapix2 s$i2 5'h1f) in
+                  Main.rot 32'hb s$i3 5'h0 # Main.rot 32'hb s$i3 5'h1 # Main.rot 32'hb s$i3 5'h2 # Main.rot 32'hb s$i3 5'h3 # Main.rot 32'hb s$i3 5'h4 # Main.rot 32'hb s$i3 5'h5 # Main.rot 32'hb s$i3 5'h6 # Main.rot 32'hb s$i3 5'h7 # Main.rot 32'hb s$i3 5'h8 # Main.rot 32'hb s$i3 5'h9 # Main.rot 32'hb s$i3 5'ha # Main.rot 32'hb s$i3 5'hb # Main.rot 32'hb s$i3 5'hc # Main.rot 32'hb s$i3 5'hd # Main.rot 32'hb s$i3 5'he # Main.rot 32'hb s$i3 5'hf # Main.rot 32'hb s$i3 5'h10 # Main.rot 32'hb s$i3 5'h11 # Main.rot 32'hb s$i3 5'h12 # Main.rot 32'hb s$i3 5'h13 # Main.rot 32'hb s$i3 5'h14 # Main.rot 32'hb s$i3 5'h15 # Main.rot 32'hb s$i3 5'h16 # Main.rot 32'hb s$i3 5'h17 # Main.rot 32'hb s$i3 5'h18 # Main.rot 32'hb s$i3 5'h19 # Main.rot 32'hb s$i3 5'h1a # Main.rot 32'hb s$i3 5'h1b # Main.rot 32'hb s$i3 5'h1c # Main.rot 32'hb s$i3 5'h1d # Main.rot 32'hb s$i3 5'h1e # Main.rot 32'hb s$i3 5'h1f) in
+                  Main.swapix3 s$i4 5'h0 # Main.swapix3 s$i4 5'h1 # Main.swapix3 s$i4 5'h2 # Main.swapix3 s$i4 5'h3 # Main.swapix3 s$i4 5'h4 # Main.swapix3 s$i4 5'h5 # Main.swapix3 s$i4 5'h6 # Main.swapix3 s$i4 5'h7 # Main.swapix3 s$i4 5'h8 # Main.swapix3 s$i4 5'h9 # Main.swapix3 s$i4 5'ha # Main.swapix3 s$i4 5'hb # Main.swapix3 s$i4 5'hc # Main.swapix3 s$i4 5'hd # Main.swapix3 s$i4 5'he # Main.swapix3 s$i4 5'hf # Main.swapix3 s$i4 5'h10 # Main.swapix3 s$i4 5'h11 # Main.swapix3 s$i4 5'h12 # Main.swapix3 s$i4 5'h13 # Main.swapix3 s$i4 5'h14 # Main.swapix3 s$i4 5'h15 # Main.swapix3 s$i4 5'h16 # Main.swapix3 s$i4 5'h17 # Main.swapix3 s$i4 5'h18 # Main.swapix3 s$i4 5'h19 # Main.swapix3 s$i4 5'h1a # Main.swapix3 s$i4 5'h1b # Main.swapix3 s$i4 5'h1c # Main.swapix3 s$i4 5'h1d # Main.swapix3 s$i4 5'h1e # Main.swapix3 s$i4 5'h1f) in
+                  Main.swapix4 s$i5 5'h0 # Main.swapix4 s$i5 5'h1 # Main.swapix4 s$i5 5'h2 # Main.swapix4 s$i5 5'h3 # Main.swapix4 s$i5 5'h4 # Main.swapix4 s$i5 5'h5 # Main.swapix4 s$i5 5'h6 # Main.swapix4 s$i5 5'h7 # Main.swapix4 s$i5 5'h8 # Main.swapix4 s$i5 5'h9 # Main.swapix4 s$i5 5'ha # Main.swapix4 s$i5 5'hb # Main.swapix4 s$i5 5'hc # Main.swapix4 s$i5 5'hd # Main.swapix4 s$i5 5'he # Main.swapix4 s$i5 5'hf # Main.swapix4 s$i5 5'h10 # Main.swapix4 s$i5 5'h11 # Main.swapix4 s$i5 5'h12 # Main.swapix4 s$i5 5'h13 # Main.swapix4 s$i5 5'h14 # Main.swapix4 s$i5 5'h15 # Main.swapix4 s$i5 5'h16 # Main.swapix4 s$i5 5'h17 # Main.swapix4 s$i5 5'h18 # Main.swapix4 s$i5 5'h19 # Main.swapix4 s$i5 5'h1a # Main.swapix4 s$i5 5'h1b # Main.swapix4 s$i5 5'h1c # Main.swapix4 s$i5 5'h1d # Main.swapix4 s$i5 5'h1e # Main.swapix4 s$i5 5'h1f) in
+                  main.arm2 $a$i6)
+                  else main.arm2 __st0
       __out0 := $res[1024 +: 1024]
       next __st0 := $res[0 +: 1024]

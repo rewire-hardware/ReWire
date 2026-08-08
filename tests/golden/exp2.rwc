@@ -1,31 +1,6 @@
---| state dispatch for process main: 0=i
-main.$dispatch : ([2000], [100]) -> [2100]
-main.$dispatch disc i =
-      main.i disc[1000 +: 1000] i disc[0 +: 1000]
-
---| block '$L.i' of process main (state 0)
-main.i : ([1000], [100], [1000]) -> [2100]
-main.i ss i s0 =
-      let $a = Main.ss' ss i in
-      main.dev$Identity $a
-
---| block '$L.ss' of process main
-main.ss : ([1000], [1000]) -> [2100]
-main.ss ss s0 =
-      ss[900 +: 100] # ss # s0
-
---| block '$L.Main.dev$Identity' of process main
-main.dev$Identity : ([1000]) -> [2100]
-main.dev$Identity s0 =
-      main.ss s0 s0
-
 Main.x2 : ([100]) -> [100]
 Main.x2 x =
       mul x 100'h2
-
-Main.ss' : ([1000], [100]) -> [1000]
-Main.ss' ss i =
-      Main.x2 ss[800 +: 100] # Main.x2 ss[700 +: 100] # Main.x2 ss[600 +: 100] # Main.x2 ss[500 +: 100] # Main.x2 ss[400 +: 100] # Main.x2 ss[300 +: 100] # Main.x2 ss[200 +: 100] # Main.x2 ss[100 +: 100] # Main.x2 ss[0 +: 100] # Main.x2 i
 
 device top_level
       input __in0 : [100]
@@ -33,7 +8,8 @@ device top_level
       register __resumption_tag : [1000] init 1000'h0
       register __st0 : [1000] init 1000'h0
       tag i = 0
-      let $res = main.$dispatch (__resumption_tag # __st0) __in0
+      let $res = let $a$i3 = Main.x2 __resumption_tag[800 +: 100] # Main.x2 __resumption_tag[700 +: 100] # Main.x2 __resumption_tag[600 +: 100] # Main.x2 __resumption_tag[500 +: 100] # Main.x2 __resumption_tag[400 +: 100] # Main.x2 __resumption_tag[300 +: 100] # Main.x2 __resumption_tag[200 +: 100] # Main.x2 __resumption_tag[100 +: 100] # Main.x2 __resumption_tag[0 +: 100] # Main.x2 __in0 in
+            $a$i3[900 +: 100] # $a$i3 # $a$i3
       __out0 := $res[2000 +: 100]
       next __resumption_tag := $res[1000 +: 1000]
       next __st0 := $res[0 +: 1000]

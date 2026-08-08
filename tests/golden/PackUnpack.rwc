@@ -1,92 +1,3 @@
---| state dispatch for process main: 0=$x
-main.$dispatch : ([8]) -> [32]
-main.$dispatch i =
-      main.$x i
-
---| block '$L.$x' of process main (state 0)
-main.$x : ([8]) -> [32]
-main.$x $x =
-      main.dev $x
-
---| block '$L.Main.dev' of process main
-main.dev : ([8]) -> [32]
-main.dev a =
-      let b = Main.x2 a in
-      let $a = (let $a2 = (let $a2 = trunc 1 (lshr a 128'h7) in
-      $a2) in
-      $a2) # (let $a2 = (let $a2 = trunc 1 (lshr b 128'h7) in
-      $a2) in
-      $a2) # (let $a2 = (let $a2 = trunc 1 (lshr a 128'h6) in
-      $a2) in
-      $a2) # (let $a2 = (let $a2 = trunc 1 (lshr b 128'h6) in
-      $a2) in
-      $a2) # (let $a2 = (let $a2 = trunc 1 (lshr a 128'h5) in
-      $a2) in
-      $a2) # (let $a2 = (let $a2 = trunc 1 (lshr b 128'h5) in
-      $a2) in
-      $a2) # (let $a2 = (let $a2 = trunc 1 (lshr a 128'h4) in
-      $a2) in
-      $a2) # (let $a2 = (let $a2 = trunc 1 (lshr b 128'h4) in
-      $a2) in
-      $a2) in
-      let $a3 = (let $a5 = (let $a5 = trunc 1 (lshr a 128'h3) in
-      $a5) in
-      $a5) # (let $a5 = (let $a5 = trunc 1 (lshr b 128'h3) in
-      $a5) in
-      $a5) # (let $a5 = (let $a5 = trunc 1 (lshr a 128'h2) in
-      $a5) in
-      $a5) # (let $a5 = (let $a5 = trunc 1 (lshr b 128'h2) in
-      $a5) in
-      $a5) # (let $a5 = (let $a5 = trunc 1 (lshr a 128'h1) in
-      $a5) in
-      $a5) # (let $a5 = (let $a5 = trunc 1 (lshr b 128'h1) in
-      $a5) in
-      $a5) # (let $a5 = (let $a5 = trunc 1 (lshr a 128'h0) in
-      $a5) in
-      $a5) # (let $a5 = (let $a5 = trunc 1 (lshr b 128'h0) in
-      $a5) in
-      $a5) in
-      let $a6 = (let $a7 = (let $a7 = trunc 1 (lshr a 128'h7) in
-      $a7) in
-      $a7) # (let $a7 = (let $a7 = trunc 1 (lshr a 128'h5) in
-      $a7) in
-      $a7) # (let $a7 = (let $a7 = trunc 1 (lshr a 128'h3) in
-      $a7) in
-      $a7) # (let $a7 = (let $a7 = trunc 1 (lshr a 128'h1) in
-      $a7) in
-      $a7) # (let $a7 = (let $a7 = trunc 1 (lshr b 128'h7) in
-      $a7) in
-      $a7) # (let $a7 = (let $a7 = trunc 1 (lshr b 128'h5) in
-      $a7) in
-      $a7) # (let $a7 = (let $a7 = trunc 1 (lshr b 128'h3) in
-      $a7) in
-      $a7) # (let $a7 = (let $a7 = trunc 1 (lshr b 128'h1) in
-      $a7) in
-      $a7) in
-      let $a9 = (let $a10 = (let $a10 = trunc 1 (lshr a 128'h6) in
-      $a10) in
-      $a10) # (let $a10 = (let $a10 = trunc 1 (lshr a 128'h4) in
-      $a10) in
-      $a10) # (let $a10 = (let $a10 = trunc 1 (lshr a 128'h2) in
-      $a10) in
-      $a10) # (let $a10 = (let $a10 = trunc 1 (lshr a 128'h0) in
-      $a10) in
-      $a10) # (let $a10 = (let $a10 = trunc 1 (lshr b 128'h6) in
-      $a10) in
-      $a10) # (let $a10 = (let $a10 = trunc 1 (lshr b 128'h4) in
-      $a10) in
-      $a10) # (let $a10 = (let $a10 = trunc 1 (lshr b 128'h2) in
-      $a10) in
-      $a10) # (let $a10 = (let $a10 = trunc 1 (lshr b 128'h0) in
-      $a10) in
-      $a10) in
-      let $a10 = $a # $a3 # $a6 # $a9 in
-      $a10
-
-Main.x2 : ([8]) -> [8]
-Main.x2 x =
-      mul x 8'h2
-
 device top_level
       input __in0 : [8]
       output __out0 : [8]
@@ -94,7 +5,77 @@ device top_level
       output __out2 : [8]
       output __out3 : [8]
       tag $x = 0
-      let $res = main.$dispatch __in0
+      let $res = let b$i0 = mul __in0 8'h2 in
+            let $a$i17 = (let $a2$i2 = (let $a2$i1 = trunc 1 (lshr __in0 128'h7) in
+            $a2$i1) in
+            $a2$i2) # (let $a2$i4 = (let $a2$i3 = trunc 1 (lshr b$i0 128'h7) in
+            $a2$i3) in
+            $a2$i4) # (let $a2$i6 = (let $a2$i5 = trunc 1 (lshr __in0 128'h6) in
+            $a2$i5) in
+            $a2$i6) # (let $a2$i8 = (let $a2$i7 = trunc 1 (lshr b$i0 128'h6) in
+            $a2$i7) in
+            $a2$i8) # (let $a2$i10 = (let $a2$i9 = trunc 1 (lshr __in0 128'h5) in
+            $a2$i9) in
+            $a2$i10) # (let $a2$i12 = (let $a2$i11 = trunc 1 (lshr b$i0 128'h5) in
+            $a2$i11) in
+            $a2$i12) # (let $a2$i14 = (let $a2$i13 = trunc 1 (lshr __in0 128'h4) in
+            $a2$i13) in
+            $a2$i14) # (let $a2$i16 = (let $a2$i15 = trunc 1 (lshr b$i0 128'h4) in
+            $a2$i15) in
+            $a2$i16) in
+            let $a3$i34 = (let $a5$i19 = (let $a5$i18 = trunc 1 (lshr __in0 128'h3) in
+            $a5$i18) in
+            $a5$i19) # (let $a5$i21 = (let $a5$i20 = trunc 1 (lshr b$i0 128'h3) in
+            $a5$i20) in
+            $a5$i21) # (let $a5$i23 = (let $a5$i22 = trunc 1 (lshr __in0 128'h2) in
+            $a5$i22) in
+            $a5$i23) # (let $a5$i25 = (let $a5$i24 = trunc 1 (lshr b$i0 128'h2) in
+            $a5$i24) in
+            $a5$i25) # (let $a5$i27 = (let $a5$i26 = trunc 1 (lshr __in0 128'h1) in
+            $a5$i26) in
+            $a5$i27) # (let $a5$i29 = (let $a5$i28 = trunc 1 (lshr b$i0 128'h1) in
+            $a5$i28) in
+            $a5$i29) # (let $a5$i31 = (let $a5$i30 = trunc 1 (lshr __in0 128'h0) in
+            $a5$i30) in
+            $a5$i31) # (let $a5$i33 = (let $a5$i32 = trunc 1 (lshr b$i0 128'h0) in
+            $a5$i32) in
+            $a5$i33) in
+            let $a6$i51 = (let $a7$i36 = (let $a7$i35 = trunc 1 (lshr __in0 128'h7) in
+            $a7$i35) in
+            $a7$i36) # (let $a7$i38 = (let $a7$i37 = trunc 1 (lshr __in0 128'h5) in
+            $a7$i37) in
+            $a7$i38) # (let $a7$i40 = (let $a7$i39 = trunc 1 (lshr __in0 128'h3) in
+            $a7$i39) in
+            $a7$i40) # (let $a7$i42 = (let $a7$i41 = trunc 1 (lshr __in0 128'h1) in
+            $a7$i41) in
+            $a7$i42) # (let $a7$i44 = (let $a7$i43 = trunc 1 (lshr b$i0 128'h7) in
+            $a7$i43) in
+            $a7$i44) # (let $a7$i46 = (let $a7$i45 = trunc 1 (lshr b$i0 128'h5) in
+            $a7$i45) in
+            $a7$i46) # (let $a7$i48 = (let $a7$i47 = trunc 1 (lshr b$i0 128'h3) in
+            $a7$i47) in
+            $a7$i48) # (let $a7$i50 = (let $a7$i49 = trunc 1 (lshr b$i0 128'h1) in
+            $a7$i49) in
+            $a7$i50) in
+            let $a9$i68 = (let $a10$i53 = (let $a10$i52 = trunc 1 (lshr __in0 128'h6) in
+            $a10$i52) in
+            $a10$i53) # (let $a10$i55 = (let $a10$i54 = trunc 1 (lshr __in0 128'h4) in
+            $a10$i54) in
+            $a10$i55) # (let $a10$i57 = (let $a10$i56 = trunc 1 (lshr __in0 128'h2) in
+            $a10$i56) in
+            $a10$i57) # (let $a10$i59 = (let $a10$i58 = trunc 1 (lshr __in0 128'h0) in
+            $a10$i58) in
+            $a10$i59) # (let $a10$i61 = (let $a10$i60 = trunc 1 (lshr b$i0 128'h6) in
+            $a10$i60) in
+            $a10$i61) # (let $a10$i63 = (let $a10$i62 = trunc 1 (lshr b$i0 128'h4) in
+            $a10$i62) in
+            $a10$i63) # (let $a10$i65 = (let $a10$i64 = trunc 1 (lshr b$i0 128'h2) in
+            $a10$i64) in
+            $a10$i65) # (let $a10$i67 = (let $a10$i66 = trunc 1 (lshr b$i0 128'h0) in
+            $a10$i66) in
+            $a10$i67) in
+            let $a10$i69 = $a$i17 # $a3$i34 # $a6$i51 # $a9$i68 in
+            $a10$i69
       __out0 := $res[24 +: 8]
       __out1 := $res[16 +: 8]
       __out2 := $res[8 +: 8]

@@ -1,38 +1,8 @@
---| state dispatch for process main: 0=$x2
-main.$dispatch : ([8]) -> [8]
-main.$dispatch i =
-      main.$x2 i
-
---| block '$L.$x2' of process main (state 0)
-main.$x2 : ([8]) -> [8]
-main.$x2 $x =
-      main.loop $x
-
---| block '$L.$x3' of process main
-main.$x3 : ([8]) -> [8]
-main.$x3 $x =
-      $x
-
---| block '$L.Main.loop' of process main
-main.loop : ([8]) -> [8]
-main.loop i =
-      let $a = Main.myRotr$s77b1e4f4 i in
-      let $a1 = Main.myArithRotr$s8a0159e $a in
-      main.$x3 $a1
-
---| partially applied from 'Main.myRotr'
-Main.myRotr$s77b1e4f4 : ([8]) -> [8]
-Main.myRotr$s77b1e4f4 w =
-      or (shl w 8'h5) (lshr w 8'h3)
-
---| partially applied from 'Main.myArithRotr'
-Main.myArithRotr$s8a0159e : ([8]) -> [8]
-Main.myArithRotr$s8a0159e w =
-      or (shl w 8'h3) (ashr w 8'h5)
-
 device top_level
       input __in0 : [8]
       output __out0 : [8]
       tag $x2 = 0
-      let $res = main.$dispatch __in0
+      let $res = let $a$i0 = or (shl __in0 8'h5) (lshr __in0 8'h3) in
+            let $a1$i1 = or (shl $a$i0 8'h3) (ashr $a$i0 8'h5) in
+            $a1$i1
       __out0 := $res

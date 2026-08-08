@@ -69,27 +69,26 @@ compileFile conf filename = do
                         warnAt conf noAnn "--testbench: no testbench generated (only the Verilog and VHDL targets support testbench generation)."
                   when (conf^.Config.certify && conf^.target == Interpret) $
                         warnAt conf noAnn "--certify: nothing to certify (only device targets are certified)."
-                  p <- pass conf filename 10 "Partially evaluating/reducing the Hyle IR (if this is slow, consider --rtl-opt=0)." "rwc" prettyPrint
+                  p10 <- pass conf filename 10 "Partially evaluating/reducing the Hyle IR (if this is slow, consider --rtl-opt=0)." "rwc" prettyPrint
                         (Hyle.check . Hyle.optimize (conf^.rtlOpt)) a
-                  let inline = pass conf filename 11 "Inlining Hyle definitions." "rwc" prettyPrint
-                        (Hyle.check . Hyle.inline (conf^.Config.flatten))
+                  -- Pass 11 runs for every device target, so every consumer
+                  -- -- the HDL and Cryptol backends, the interpreter, the
+                  -- .rwc emitted by --core, and the certified artifact --
+                  -- reads the same fully lowered program.
+                  p <- pass conf filename 11 "Inlining Hyle definitions." "rwc" prettyPrint
+                        (Hyle.check . Hyle.inline (conf^.Config.flatten)) p10
                   case conf^.target of
                         VHDL      -> do
-                              p' <- inline p
-                              HyleH.compileProgram conf p' >>= writeOutput
-                              writeTestbench $ HyleH.testbench conf $ progDevice p'
-                              certifyOutput p'
+                              HyleH.compileProgram conf p >>= writeOutput
+                              writeTestbench $ HyleH.testbench conf $ progDevice p
+                              certifyOutput p
                         Verilog   -> do
-                              p' <- inline p
-                              HyleV.compileProgram conf p' >>= writeOutput
-                              writeTestbench $ HyleV.testbench conf $ progDevice p'
-                              certifyOutput p'
-                        -- The Cryptol backend consumes the pass-10 program;
-                        -- --certify still certifies the fully inlined
-                        -- (pass-11) form, run here explicitly.
+                              HyleV.compileProgram conf p >>= writeOutput
+                              writeTestbench $ HyleV.testbench conf $ progDevice p
+                              certifyOutput p
                         Cryptol   -> do
                               HyleCry.compileProgram conf p >>= writeOutput
-                              when (conf^.Config.certify) $ inline p >>= certifyOutput
+                              certifyOutput p
                         -- The .rwc output only carries source locators
                         -- ('--@' lines) under --locators (and not under
                         -- --no-locators, which wins): spans can embed
@@ -100,11 +99,7 @@ compileFile conf filename = do
                               if conf^.locators && not (conf^.noLocators)
                                     then writeOutput p
                                     else writeOutput $ scrubSpans p
-                              -- The .rwc output itself is the pass-10
-                              -- program (what --from-core reoptimizes);
-                              -- certification, as everywhere, covers the
-                              -- final backend-consumed (pass-11) form.
-                              when (conf^.Config.certify) $ inline p >>= certifyOutput
+                              certifyOutput p
                         Interpret -> do
                               ips  <- loadInputs
                               verb $ "Interpreting hyle: running for " <> showt (length ips) <> " cycles."

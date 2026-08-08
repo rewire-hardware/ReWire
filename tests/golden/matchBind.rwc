@@ -1,37 +1,16 @@
---| state dispatch for process main: 0=$ds 1=i2
-main.$dispatch : ([9], [8]) -> [17]
-main.$dispatch disc i =
-      if not disc[8 +: 1] then main.$ds i disc[0 +: 8]
-            else main.i2 i disc[0 +: 8]
-
---| block '$L.$ds' of process main (state 0)
-main.$ds : ([8], [8]) -> [17]
-main.$ds $ds s0 =
-      main.loop s0
-
 --| block '$L.Main.incr' of process main
 main.incr : ([8]) -> [17]
 main.incr s0 =
       9'h4 # s0
 
---| block '$L.i' of process main
-main.i : ([8], [8]) -> [17]
-main.i i s0 =
-      let $a = (let $t0 = trunc 1 i in
-      $t0) in
-      let $a1 = not $a in
-      if not $a1 then main.incr s0
-            else main.incr s0
-
 --| block '$L.Main.loop' of process main
 main.loop : ([8]) -> [17]
 main.loop s0 =
-      main.i s0 s0
-
---| block '$L.i2' of process main (state 1)
-main.i2 : ([8], [8]) -> [17]
-main.i2 i s0 =
-      main.loop i
+      let $a$i1 = (let $t0$i0 = trunc 1 s0 in
+      $t0$i0) in
+      let $a1$i2 = not $a$i1 in
+      if not $a1$i2 then main.incr s0
+            else main.incr s0
 
 device top_level
       input __in0 : [8]
@@ -40,7 +19,8 @@ device top_level
       register __st0 : [8] init 8'h0
       tag $ds = 0
       tag i2 = 1
-      let $res = main.$dispatch (__resumption_tag # __st0) __in0
+      let $res = if not __resumption_tag then main.loop __st0
+                  else main.loop __in0
       __out0 := $res[9 +: 8]
       next __resumption_tag := $res[8 +: 1]
       next __st0 := $res[0 +: 8]

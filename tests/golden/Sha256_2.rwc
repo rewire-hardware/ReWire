@@ -17,445 +17,589 @@ extern xorW32
       input p1 : [32]
       output p2 : [32]
 
---| state dispatch for process main: 0=$x2 1=i 2=_unused11
-main.$dispatch : ([1038], [68]) -> [1103]
-main.$dispatch disc i =
-      if eq disc[1036 +: 2] 2'h0 then main.$x2 i disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
-            else if eq disc[1036 +: 2] 2'h1 then main.i disc[1030 +: 6] i disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6] else main._unused11 i disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
-
---| block '$L.$x2' of process main (state 0)
-main.$x2 : ([68], [256], [512], [256], [6]) -> [1103]
-main.$x2 $x s0 s1 s2 s3 =
-      main.dev $x s0 s1 s2 s3
-
 --| block '$L._unused' of process main
 --| also: main.devsha256'
 main._unused : ([256], [512], [256], [6]) -> [1103]
 main._unused s0 s1 s2 s3 =
       73'h1000000000000000000 # s0 # s1 # s2 # s3
 
---| block '$L.hw' of process main
-main.hw : ([32], [32], [512], [256], [512], [256], [6]) -> [1103]
-main.hw w1 w2 hw s0 s1 s2 s3 =
-      let $a = (let x2 = hw[416 +: 32] in
-      let x3 = hw[384 +: 32] in
-      let x4 = hw[352 +: 32] in
-      let x5 = hw[320 +: 32] in
-      let x6 = hw[288 +: 32] in
-      let x7 = hw[256 +: 32] in
-      let x8 = hw[224 +: 32] in
-      let x9 = hw[192 +: 32] in
-      let xa = hw[160 +: 32] in
-      let xb = hw[128 +: 32] in
-      let xc = hw[96 +: 32] in
-      let xd = hw[64 +: 32] in
-      let xe = hw[32 +: 32] in
-      let xf = hw[0 +: 32] in
-      let $a = w1 # w2 # x2 # x3 # x4 # x5 # x6 # x7 # x8 # x9 # xa # xb # xc # xd # xe # xf in
-      $a) in
-      main._unused s0 $a s2 s3
-
---| block '$L.arm' of process main
-main.arm : ([32], [32], [256], [512], [256], [6]) -> [1103]
-main.arm w1 w2 s0 s1 s2 s3 =
-      main.arm2 w1 w2 s0 s1 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 s3
-
 --| block '$L.arm2' of process main
 --| also: main._unused2
 main.arm2 : ([32], [32], [256], [512], [256], [6]) -> [1103]
 main.arm2 w1 w2 s0 s1 s2 s3 =
-      main.hw w1 w2 s1 s0 s1 s2 s3
-
---| block '$L.hw3' of process main
-main.hw3 : ([32], [32], [512], [256], [512], [256], [6]) -> [1103]
-main.hw3 w1 w2 hw s0 s1 s2 s3 =
-      let $a = (let x0 = hw[480 +: 32] in
-      let x1 = hw[448 +: 32] in
-      let x4 = hw[352 +: 32] in
-      let x5 = hw[320 +: 32] in
-      let x6 = hw[288 +: 32] in
-      let x7 = hw[256 +: 32] in
-      let x8 = hw[224 +: 32] in
-      let x9 = hw[192 +: 32] in
-      let xa = hw[160 +: 32] in
-      let xb = hw[128 +: 32] in
-      let xc = hw[96 +: 32] in
-      let xd = hw[64 +: 32] in
-      let xe = hw[32 +: 32] in
-      let xf = hw[0 +: 32] in
-      let $a = x0 # x1 # w1 # w2 # x4 # x5 # x6 # x7 # x8 # x9 # xa # xb # xc # xd # xe # xf in
-      $a) in
-      main._unused s0 $a s2 s3
-
---| block '$L.arm3' of process main
-main.arm3 : ([32], [32], [256], [512], [256], [6]) -> [1103]
-main.arm3 w1 w2 s0 s1 s2 s3 =
-      main.hw3 w1 w2 s1 s0 s1 s2 s3
-
---| block '$L.hw4' of process main
-main.hw4 : ([32], [32], [512], [256], [512], [256], [6]) -> [1103]
-main.hw4 w1 w2 hw s0 s1 s2 s3 =
-      let $a = (let x0 = hw[480 +: 32] in
-      let x1 = hw[448 +: 32] in
-      let x2 = hw[416 +: 32] in
-      let x3 = hw[384 +: 32] in
-      let x6 = hw[288 +: 32] in
-      let x7 = hw[256 +: 32] in
-      let x8 = hw[224 +: 32] in
-      let x9 = hw[192 +: 32] in
-      let xa = hw[160 +: 32] in
-      let xb = hw[128 +: 32] in
-      let xc = hw[96 +: 32] in
-      let xd = hw[64 +: 32] in
-      let xe = hw[32 +: 32] in
-      let xf = hw[0 +: 32] in
-      let $a = x0 # x1 # x2 # x3 # w1 # w2 # x6 # x7 # x8 # x9 # xa # xb # xc # xd # xe # xf in
-      $a) in
-      main._unused s0 $a s2 s3
-
---| block '$L.arm4' of process main
-main.arm4 : ([32], [32], [256], [512], [256], [6]) -> [1103]
-main.arm4 w1 w2 s0 s1 s2 s3 =
-      main.hw4 w1 w2 s1 s0 s1 s2 s3
-
---| block '$L.hw5' of process main
-main.hw5 : ([32], [32], [512], [256], [512], [256], [6]) -> [1103]
-main.hw5 w1 w2 hw s0 s1 s2 s3 =
-      let $a = (let x0 = hw[480 +: 32] in
-      let x1 = hw[448 +: 32] in
-      let x2 = hw[416 +: 32] in
-      let x3 = hw[384 +: 32] in
-      let x4 = hw[352 +: 32] in
-      let x5 = hw[320 +: 32] in
-      let x8 = hw[224 +: 32] in
-      let x9 = hw[192 +: 32] in
-      let xa = hw[160 +: 32] in
-      let xb = hw[128 +: 32] in
-      let xc = hw[96 +: 32] in
-      let xd = hw[64 +: 32] in
-      let xe = hw[32 +: 32] in
-      let xf = hw[0 +: 32] in
-      let $a = x0 # x1 # x2 # x3 # x4 # x5 # w1 # w2 # x8 # x9 # xa # xb # xc # xd # xe # xf in
-      $a) in
-      main._unused s0 $a s2 s3
-
---| block '$L.arm5' of process main
-main.arm5 : ([32], [32], [256], [512], [256], [6]) -> [1103]
-main.arm5 w1 w2 s0 s1 s2 s3 =
-      main.hw5 w1 w2 s1 s0 s1 s2 s3
-
---| block '$L.hw6' of process main
-main.hw6 : ([32], [32], [512], [256], [512], [256], [6]) -> [1103]
-main.hw6 w1 w2 hw s0 s1 s2 s3 =
-      let $a = (let x0 = hw[480 +: 32] in
-      let x1 = hw[448 +: 32] in
-      let x2 = hw[416 +: 32] in
-      let x3 = hw[384 +: 32] in
-      let x4 = hw[352 +: 32] in
-      let x5 = hw[320 +: 32] in
-      let x6 = hw[288 +: 32] in
-      let x7 = hw[256 +: 32] in
-      let xa = hw[160 +: 32] in
-      let xb = hw[128 +: 32] in
-      let xc = hw[96 +: 32] in
-      let xd = hw[64 +: 32] in
-      let xe = hw[32 +: 32] in
-      let xf = hw[0 +: 32] in
-      let $a = x0 # x1 # x2 # x3 # x4 # x5 # x6 # x7 # w1 # w2 # xa # xb # xc # xd # xe # xf in
-      $a) in
-      main._unused s0 $a s2 s3
-
---| block '$L.arm6' of process main
-main.arm6 : ([32], [32], [256], [512], [256], [6]) -> [1103]
-main.arm6 w1 w2 s0 s1 s2 s3 =
-      main.hw6 w1 w2 s1 s0 s1 s2 s3
-
---| block '$L.hw7' of process main
-main.hw7 : ([32], [32], [512], [256], [512], [256], [6]) -> [1103]
-main.hw7 w1 w2 hw s0 s1 s2 s3 =
-      let $a = (let x0 = hw[480 +: 32] in
-      let x1 = hw[448 +: 32] in
-      let x2 = hw[416 +: 32] in
-      let x3 = hw[384 +: 32] in
-      let x4 = hw[352 +: 32] in
-      let x5 = hw[320 +: 32] in
-      let x6 = hw[288 +: 32] in
-      let x7 = hw[256 +: 32] in
-      let x8 = hw[224 +: 32] in
-      let x9 = hw[192 +: 32] in
-      let xc = hw[96 +: 32] in
-      let xd = hw[64 +: 32] in
-      let xe = hw[32 +: 32] in
-      let xf = hw[0 +: 32] in
-      let $a = x0 # x1 # x2 # x3 # x4 # x5 # x6 # x7 # x8 # x9 # w1 # w2 # xc # xd # xe # xf in
-      $a) in
-      main._unused s0 $a s2 s3
-
---| block '$L.arm7' of process main
-main.arm7 : ([32], [32], [256], [512], [256], [6]) -> [1103]
-main.arm7 w1 w2 s0 s1 s2 s3 =
-      main.hw7 w1 w2 s1 s0 s1 s2 s3
-
---| block '$L.hw8' of process main
-main.hw8 : ([32], [32], [512], [256], [512], [256], [6]) -> [1103]
-main.hw8 w1 w2 hw s0 s1 s2 s3 =
-      let $a = (let x0 = hw[480 +: 32] in
-      let x1 = hw[448 +: 32] in
-      let x2 = hw[416 +: 32] in
-      let x3 = hw[384 +: 32] in
-      let x4 = hw[352 +: 32] in
-      let x5 = hw[320 +: 32] in
-      let x6 = hw[288 +: 32] in
-      let x7 = hw[256 +: 32] in
-      let x8 = hw[224 +: 32] in
-      let x9 = hw[192 +: 32] in
-      let xa = hw[160 +: 32] in
-      let xb = hw[128 +: 32] in
-      let xe = hw[32 +: 32] in
-      let xf = hw[0 +: 32] in
-      let $a = x0 # x1 # x2 # x3 # x4 # x5 # x6 # x7 # x8 # x9 # xa # xb # w1 # w2 # xe # xf in
-      $a) in
-      main._unused s0 $a s2 s3
-
---| block '$L.arm8' of process main
-main.arm8 : ([32], [32], [256], [512], [256], [6]) -> [1103]
-main.arm8 w1 w2 s0 s1 s2 s3 =
-      main.hw8 w1 w2 s1 s0 s1 s2 s3
-
---| block '$L.arm9' of process main
-main.arm9 : ([68], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1103]
-main.arm9 i h1 h2 h3 h4 h5 h6 h7 h8 a b c d e f g h s0 s1 s2 s3 =
-      let $a = Main.plusW32 a h1 in
-      let $a1 = Main.plusW32 b h2 in
-      let $a2 = Main.plusW32 c h3 in
-      let $a3 = Main.plusW32 d h4 in
-      let $a4 = Main.plusW32 e h5 in
-      let $a5 = Main.plusW32 f h6 in
-      let $a6 = Main.plusW32 g h7 in
-      let $a7 = Main.plusW32 h h8 in
-      let $a8 = $a # $a1 # $a2 # $a3 # $a4 # $a5 # $a6 # $a7 in
-      main.dev i s0 s1 $a8 s3
-
---| block '$L.$ds2' of process main
-main.$ds2 : ([68], [32], [32], [32], [32], [32], [32], [32], [32], [256], [256], [512], [256], [6]) -> [1103]
-main.$ds2 i h1 h2 h3 h4 h5 h6 h7 h8 $ds s0 s1 s2 s3 =
-      let a = $ds[224 +: 32] in
-      let b = $ds[192 +: 32] in
-      let c = $ds[160 +: 32] in
-      let d = $ds[128 +: 32] in
-      let e = $ds[96 +: 32] in
-      let f = $ds[64 +: 32] in
-      let g = $ds[32 +: 32] in
-      let h = $ds[0 +: 32] in
-      main.arm9 i h1 h2 h3 h4 h5 h6 h7 h8 a b c d e f g h s0 s1 s2 s3
-
---| block '$L.arm10' of process main
-main.arm10 : ([68], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1103]
-main.arm10 i h1 h2 h3 h4 h5 h6 h7 h8 s0 s1 s2 s3 =
-      main.$ds2 i h1 h2 h3 h4 h5 h6 h7 h8 s0 s0 s1 s2 s3
-
---| block '$L.$ds' of process main
-main.$ds : ([68], [256], [256], [512], [256], [6]) -> [1103]
-main.$ds i $ds s0 s1 s2 s3 =
-      let h1 = $ds[224 +: 32] in
-      let h2 = $ds[192 +: 32] in
-      let h3 = $ds[160 +: 32] in
-      let h4 = $ds[128 +: 32] in
-      let h5 = $ds[96 +: 32] in
-      let h6 = $ds[64 +: 32] in
-      let h7 = $ds[32 +: 32] in
-      let h8 = $ds[0 +: 32] in
-      main.arm10 i h1 h2 h3 h4 h5 h6 h7 h8 s0 s1 s2 s3
-
---| block '$L.arm11' of process main
-main.arm11 : ([68], [256], [512], [256], [6]) -> [1103]
-main.arm11 i s0 s1 s2 s3 =
-      main.$ds i s2 s0 s1 s2 s3
-
---| block '$L.i' of process main (state 1)
-main.i : ([6], [68], [256], [512], [256], [6]) -> [1103]
-main.i ctr i s0 s1 s2 s3 =
-      if eq ctr 6'h3f then main.arm11 i s0 s1 s2 s3
-            else main.genhash' s0 s1 s2 s3
-
---| block '$L.ctr' of process main
-main.ctr : ([6], [256], [512], [256], [6]) -> [1103]
-main.ctr ctr s0 s1 s2 s3 =
-      67'h40000000000000001 # ctr # s0 # s1 # s2 # s3
-
---| block '$L._unused12' of process main
-main._unused12 : ([6], [256], [512], [256], [6]) -> [1103]
-main._unused12 ctr s0 s1 s2 s3 =
-      let $a = Main.incCtr ctr in
-      main.ctr ctr s0 s1 s2 $a
-
---| block '$L.s' of process main
-main.s : ([6], [32], [256], [256], [512], [256], [6]) -> [1103]
-main.s ctr w s s0 s1 s2 s3 =
-      let $a = Main.seed ctr in
-      let $a1 = Main.step256 $a w s in
-      main._unused12 ctr $a1 s1 s2 s3
-
---| block '$L.w' of process main
-main.w : ([6], [32], [256], [512], [256], [6]) -> [1103]
-main.w ctr w s0 s1 s2 s3 =
-      main.s ctr w s0 s0 s1 s2 s3
-
---| block '$L.arm12' of process main
-main.arm12 : ([6], [512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1103]
-main.arm12 ctr s w00 a b c d e f g h i j k l m n o s0 s1 s2 s3 =
-      let $a = Main.updateSched s in
-      main.w ctr w00 s0 $a s2 s3
-
---| block '$L.s2' of process main
-main.s2 : ([6], [512], [256], [512], [256], [6]) -> [1103]
-main.s2 ctr s s0 s1 s2 s3 =
-      let w00 = s[480 +: 32] in
-      let a = s[448 +: 32] in
-      let b = s[416 +: 32] in
-      let c = s[384 +: 32] in
-      let d = s[352 +: 32] in
-      let e = s[320 +: 32] in
-      let f = s[288 +: 32] in
-      let g = s[256 +: 32] in
-      let h = s[224 +: 32] in
-      let i = s[192 +: 32] in
-      let j = s[160 +: 32] in
-      let k = s[128 +: 32] in
-      let l = s[96 +: 32] in
-      let m = s[64 +: 32] in
-      let n = s[32 +: 32] in
-      let o = s[0 +: 32] in
-      main.arm12 ctr s w00 a b c d e f g h i j k l m n o s0 s1 s2 s3
-
---| block '$L.ctr2' of process main
-main.ctr2 : ([6], [256], [512], [256], [6]) -> [1103]
-main.ctr2 ctr s0 s1 s2 s3 =
-      main.s2 ctr s1 s0 s1 s2 s3
+      let $a$i15 = (let x2$i0 = s1[416 +: 32] in
+      let x3$i1 = s1[384 +: 32] in
+      let x4$i2 = s1[352 +: 32] in
+      let x5$i3 = s1[320 +: 32] in
+      let x6$i4 = s1[288 +: 32] in
+      let x7$i5 = s1[256 +: 32] in
+      let x8$i6 = s1[224 +: 32] in
+      let x9$i7 = s1[192 +: 32] in
+      let xa$i8 = s1[160 +: 32] in
+      let xb$i9 = s1[128 +: 32] in
+      let xc$i10 = s1[96 +: 32] in
+      let xd$i11 = s1[64 +: 32] in
+      let xe$i12 = s1[32 +: 32] in
+      let xf$i13 = s1[0 +: 32] in
+      let $a$i14 = w1 # w2 # x2$i0 # x3$i1 # x4$i2 # x5$i3 # x6$i4 # x7$i5 # x8$i6 # x9$i7 # xa$i8 # xb$i9 # xc$i10 # xd$i11 # xe$i12 # xf$i13 in
+      $a$i14) in
+      main._unused s0 $a$i15 s2 s3
 
 --| block '$L.Main.genhash'' of process main
 main.genhash' : ([256], [512], [256], [6]) -> [1103]
 main.genhash' s0 s1 s2 s3 =
-      main.ctr2 s3 s0 s1 s2 s3
-
---| block '$L._unused11' of process main (state 2)
-main._unused11 : ([68], [256], [512], [256], [6]) -> [1103]
-main._unused11 _unused s0 s1 s2 s3 =
-      main.genhash' s0 s1 s2 s3
-
---| block '$L._unused10' of process main
-main._unused10 : ([256], [512], [256], [6]) -> [1103]
-main._unused10 s0 s1 s2 s3 =
-      73'h1000000000000000080 # s0 # s1 # s2 # s3
-
---| block '$L.hw9' of process main
-main.hw9 : ([32], [32], [512], [256], [512], [256], [6]) -> [1103]
-main.hw9 w1 w2 hw s0 s1 s2 s3 =
-      let $a = (let x0 = hw[480 +: 32] in
-      let x1 = hw[448 +: 32] in
-      let x2 = hw[416 +: 32] in
-      let x3 = hw[384 +: 32] in
-      let x4 = hw[352 +: 32] in
-      let x5 = hw[320 +: 32] in
-      let x6 = hw[288 +: 32] in
-      let x7 = hw[256 +: 32] in
-      let x8 = hw[224 +: 32] in
-      let x9 = hw[192 +: 32] in
-      let xa = hw[160 +: 32] in
-      let xb = hw[128 +: 32] in
-      let xc = hw[96 +: 32] in
-      let xd = hw[64 +: 32] in
-      let $a = x0 # x1 # x2 # x3 # x4 # x5 # x6 # x7 # x8 # x9 # xa # xb # xc # xd # w1 # w2 in
-      $a) in
-      main._unused10 s0 $a s2 s3
-
---| block '$L._unused15' of process main
-main._unused15 : ([32], [32], [256], [512], [256], [6]) -> [1103]
-main._unused15 w1 w2 s0 s1 s2 s3 =
-      main.hw9 w1 w2 s1 s0 s1 s2 s3
-
---| block '$L.hi_1' of process main
-main.hi_1 : ([32], [32], [256], [256], [512], [256], [6]) -> [1103]
-main.hi_1 w1 w2 hi_1 s0 s1 s2 s3 =
-      main._unused15 w1 w2 hi_1 s1 s2 s3
-
---| block '$L._unused14' of process main
-main._unused14 : ([32], [32], [256], [512], [256], [6]) -> [1103]
-main._unused14 w1 w2 s0 s1 s2 s3 =
-      main.hi_1 w1 w2 s2 s0 s1 s2 s3
-
---| block '$L.arm13' of process main
-main.arm13 : ([32], [32], [256], [512], [256], [6]) -> [1103]
-main.arm13 w1 w2 s0 s1 s2 s3 =
-      main._unused14 w1 w2 s0 s1 s2 6'h0
-
---| block '$L.h_n' of process main
-main.h_n : ([256], [256], [512], [256], [6]) -> [1103]
-main.h_n h_n s0 s1 s2 s3 =
-      let $a = Main.digest0 h_n in
-      $a # 8'h0 # s0 # s1 # s2 # s3
-
---| block '$L.arm14' of process main
-main.arm14 : ([256], [512], [256], [6]) -> [1103]
-main.arm14 s0 s1 s2 s3 =
-      main.h_n s2 s0 s1 s2 s3
-
---| block '$L.h_n2' of process main
-main.h_n2 : ([256], [256], [512], [256], [6]) -> [1103]
-main.h_n2 h_n s0 s1 s2 s3 =
-      let $a = Main.digest1 h_n in
-      $a # 8'h0 # s0 # s1 # s2 # s3
-
---| block '$L.arm15' of process main
-main.arm15 : ([256], [512], [256], [6]) -> [1103]
-main.arm15 s0 s1 s2 s3 =
-      main.h_n2 s2 s0 s1 s2 s3
-
---| block '$L.h_n3' of process main
-main.h_n3 : ([256], [256], [512], [256], [6]) -> [1103]
-main.h_n3 h_n s0 s1 s2 s3 =
-      let $a = Main.digest2 h_n in
-      $a # 8'h0 # s0 # s1 # s2 # s3
-
---| block '$L.arm16' of process main
-main.arm16 : ([256], [512], [256], [6]) -> [1103]
-main.arm16 s0 s1 s2 s3 =
-      main.h_n3 s2 s0 s1 s2 s3
-
---| block '$L.h_n4' of process main
-main.h_n4 : ([256], [256], [512], [256], [6]) -> [1103]
-main.h_n4 h_n s0 s1 s2 s3 =
-      let $a = Main.digest3 h_n in
-      $a # 8'h0 # s0 # s1 # s2 # s3
-
---| block '$L.arm17' of process main
-main.arm17 : ([256], [512], [256], [6]) -> [1103]
-main.arm17 s0 s1 s2 s3 =
-      main.h_n4 s2 s0 s1 s2 s3
+      let w00$i0 = s1[480 +: 32] in
+      let $a$i211 = (let w00$i16 = s1[480 +: 32] in
+      let w01$i17 = s1[448 +: 32] in
+      let w02$i18 = s1[416 +: 32] in
+      let w03$i19 = s1[384 +: 32] in
+      let w04$i20 = s1[352 +: 32] in
+      let w05$i21 = s1[320 +: 32] in
+      let w06$i22 = s1[288 +: 32] in
+      let w07$i23 = s1[256 +: 32] in
+      let w08$i24 = s1[224 +: 32] in
+      let w09$i25 = s1[192 +: 32] in
+      let w10$i26 = s1[160 +: 32] in
+      let w11$i27 = s1[128 +: 32] in
+      let w12$i28 = s1[96 +: 32] in
+      let w13$i29 = s1[64 +: 32] in
+      let w14$i30 = s1[32 +: 32] in
+      let w15$i31 = s1[0 +: 32] in
+      w01$i17 # w02$i18 # w03$i19 # w04$i20 # w05$i21 # w06$i22 # w07$i23 # w08$i24 # w09$i25 # w10$i26 # w11$i27 # w12$i28 # w13$i29 # w14$i30 # w15$i31 # Main.plusW32 (Main.plusW32 (Main.xorW32 (Main.xorW32 (let b0$i32 = s1[63 +: 1] in
+      let b1$i33 = s1[62 +: 1] in
+      let b2$i34 = s1[61 +: 1] in
+      let b3$i35 = s1[60 +: 1] in
+      let b4$i36 = s1[59 +: 1] in
+      let b5$i37 = s1[58 +: 1] in
+      let b6$i38 = s1[57 +: 1] in
+      let b7$i39 = s1[56 +: 1] in
+      let b8$i40 = s1[55 +: 1] in
+      let b9$i41 = s1[54 +: 1] in
+      let b10$i42 = s1[53 +: 1] in
+      let b11$i43 = s1[52 +: 1] in
+      let b12$i44 = s1[51 +: 1] in
+      let b13$i45 = s1[50 +: 1] in
+      let b14$i46 = s1[49 +: 1] in
+      let b15$i47 = s1[48 +: 1] in
+      let b16$i48 = s1[47 +: 1] in
+      let b17$i49 = s1[46 +: 1] in
+      let b18$i50 = s1[45 +: 1] in
+      let b19$i51 = s1[44 +: 1] in
+      let b20$i52 = s1[43 +: 1] in
+      let b21$i53 = s1[42 +: 1] in
+      let b22$i54 = s1[41 +: 1] in
+      let b23$i55 = s1[40 +: 1] in
+      let b24$i56 = s1[39 +: 1] in
+      let b25$i57 = s1[38 +: 1] in
+      let b26$i58 = s1[37 +: 1] in
+      let b27$i59 = s1[36 +: 1] in
+      let b28$i60 = s1[35 +: 1] in
+      let b29$i61 = s1[34 +: 1] in
+      let b30$i62 = s1[33 +: 1] in
+      let b31$i63 = s1[32 +: 1] in
+      b15$i47 # b16$i48 # b17$i49 # b18$i50 # b19$i51 # b20$i52 # b21$i53 # b22$i54 # b23$i55 # b24$i56 # b25$i57 # b26$i58 # b27$i59 # b28$i60 # b29$i61 # b30$i62 # b31$i63 # b0$i32 # b1$i33 # b2$i34 # b3$i35 # b4$i36 # b5$i37 # b6$i38 # b7$i39 # b8$i40 # b9$i41 # b10$i42 # b11$i43 # b12$i44 # b13$i45 # b14$i46) (let b0$i64 = s1[63 +: 1] in
+      let b1$i65 = s1[62 +: 1] in
+      let b2$i66 = s1[61 +: 1] in
+      let b3$i67 = s1[60 +: 1] in
+      let b4$i68 = s1[59 +: 1] in
+      let b5$i69 = s1[58 +: 1] in
+      let b6$i70 = s1[57 +: 1] in
+      let b7$i71 = s1[56 +: 1] in
+      let b8$i72 = s1[55 +: 1] in
+      let b9$i73 = s1[54 +: 1] in
+      let b10$i74 = s1[53 +: 1] in
+      let b11$i75 = s1[52 +: 1] in
+      let b12$i76 = s1[51 +: 1] in
+      let b13$i77 = s1[50 +: 1] in
+      let b14$i78 = s1[49 +: 1] in
+      let b15$i79 = s1[48 +: 1] in
+      let b16$i80 = s1[47 +: 1] in
+      let b17$i81 = s1[46 +: 1] in
+      let b18$i82 = s1[45 +: 1] in
+      let b19$i83 = s1[44 +: 1] in
+      let b20$i84 = s1[43 +: 1] in
+      let b21$i85 = s1[42 +: 1] in
+      let b22$i86 = s1[41 +: 1] in
+      let b23$i87 = s1[40 +: 1] in
+      let b24$i88 = s1[39 +: 1] in
+      let b25$i89 = s1[38 +: 1] in
+      let b26$i90 = s1[37 +: 1] in
+      let b27$i91 = s1[36 +: 1] in
+      let b28$i92 = s1[35 +: 1] in
+      let b29$i93 = s1[34 +: 1] in
+      let b30$i94 = s1[33 +: 1] in
+      let b31$i95 = s1[32 +: 1] in
+      b13$i77 # b14$i78 # b15$i79 # b16$i80 # b17$i81 # b18$i82 # b19$i83 # b20$i84 # b21$i85 # b22$i86 # b23$i87 # b24$i88 # b25$i89 # b26$i90 # b27$i91 # b28$i92 # b29$i93 # b30$i94 # b31$i95 # b0$i64 # b1$i65 # b2$i66 # b3$i67 # b4$i68 # b5$i69 # b6$i70 # b7$i71 # b8$i72 # b9$i73 # b10$i74 # b11$i75 # b12$i76)) (let b0$i96 = s1[63 +: 1] in
+      let b1$i97 = s1[62 +: 1] in
+      let b2$i98 = s1[61 +: 1] in
+      let b3$i99 = s1[60 +: 1] in
+      let b4$i100 = s1[59 +: 1] in
+      let b5$i101 = s1[58 +: 1] in
+      let b6$i102 = s1[57 +: 1] in
+      let b7$i103 = s1[56 +: 1] in
+      let b8$i104 = s1[55 +: 1] in
+      let b9$i105 = s1[54 +: 1] in
+      let b10$i106 = s1[53 +: 1] in
+      let b11$i107 = s1[52 +: 1] in
+      let b12$i108 = s1[51 +: 1] in
+      let b13$i109 = s1[50 +: 1] in
+      let b14$i110 = s1[49 +: 1] in
+      let b15$i111 = s1[48 +: 1] in
+      let b16$i112 = s1[47 +: 1] in
+      let b17$i113 = s1[46 +: 1] in
+      let b18$i114 = s1[45 +: 1] in
+      let b19$i115 = s1[44 +: 1] in
+      let b20$i116 = s1[43 +: 1] in
+      let b21$i117 = s1[42 +: 1] in
+      10'h0 # b0$i96 # b1$i97 # b2$i98 # b3$i99 # b4$i100 # b5$i101 # b6$i102 # b7$i103 # b8$i104 # b9$i105 # b10$i106 # b11$i107 # b12$i108 # b13$i109 # b14$i110 # b15$i111 # b16$i112 # b17$i113 # b18$i114 # b19$i115 # b20$i116 # b21$i117)) w09$i25) (Main.plusW32 (Main.xorW32 (Main.xorW32 (let b0$i118 = s1[479 +: 1] in
+      let b1$i119 = s1[478 +: 1] in
+      let b2$i120 = s1[477 +: 1] in
+      let b3$i121 = s1[476 +: 1] in
+      let b4$i122 = s1[475 +: 1] in
+      let b5$i123 = s1[474 +: 1] in
+      let b6$i124 = s1[473 +: 1] in
+      let b7$i125 = s1[472 +: 1] in
+      let b8$i126 = s1[471 +: 1] in
+      let b9$i127 = s1[470 +: 1] in
+      let b10$i128 = s1[469 +: 1] in
+      let b11$i129 = s1[468 +: 1] in
+      let b12$i130 = s1[467 +: 1] in
+      let b13$i131 = s1[466 +: 1] in
+      let b14$i132 = s1[465 +: 1] in
+      let b15$i133 = s1[464 +: 1] in
+      let b16$i134 = s1[463 +: 1] in
+      let b17$i135 = s1[462 +: 1] in
+      let b18$i136 = s1[461 +: 1] in
+      let b19$i137 = s1[460 +: 1] in
+      let b20$i138 = s1[459 +: 1] in
+      let b21$i139 = s1[458 +: 1] in
+      let b22$i140 = s1[457 +: 1] in
+      let b23$i141 = s1[456 +: 1] in
+      let b24$i142 = s1[455 +: 1] in
+      let b25$i143 = s1[454 +: 1] in
+      let b26$i144 = s1[453 +: 1] in
+      let b27$i145 = s1[452 +: 1] in
+      let b28$i146 = s1[451 +: 1] in
+      let b29$i147 = s1[450 +: 1] in
+      let b30$i148 = s1[449 +: 1] in
+      let b31$i149 = s1[448 +: 1] in
+      b25$i143 # b26$i144 # b27$i145 # b28$i146 # b29$i147 # b30$i148 # b31$i149 # b0$i118 # b1$i119 # b2$i120 # b3$i121 # b4$i122 # b5$i123 # b6$i124 # b7$i125 # b8$i126 # b9$i127 # b10$i128 # b11$i129 # b12$i130 # b13$i131 # b14$i132 # b15$i133 # b16$i134 # b17$i135 # b18$i136 # b19$i137 # b20$i138 # b21$i139 # b22$i140 # b23$i141 # b24$i142) (let b0$i150 = s1[479 +: 1] in
+      let b1$i151 = s1[478 +: 1] in
+      let b2$i152 = s1[477 +: 1] in
+      let b3$i153 = s1[476 +: 1] in
+      let b4$i154 = s1[475 +: 1] in
+      let b5$i155 = s1[474 +: 1] in
+      let b6$i156 = s1[473 +: 1] in
+      let b7$i157 = s1[472 +: 1] in
+      let b8$i158 = s1[471 +: 1] in
+      let b9$i159 = s1[470 +: 1] in
+      let b10$i160 = s1[469 +: 1] in
+      let b11$i161 = s1[468 +: 1] in
+      let b12$i162 = s1[467 +: 1] in
+      let b13$i163 = s1[466 +: 1] in
+      let b14$i164 = s1[465 +: 1] in
+      let b15$i165 = s1[464 +: 1] in
+      let b16$i166 = s1[463 +: 1] in
+      let b17$i167 = s1[462 +: 1] in
+      let b18$i168 = s1[461 +: 1] in
+      let b19$i169 = s1[460 +: 1] in
+      let b20$i170 = s1[459 +: 1] in
+      let b21$i171 = s1[458 +: 1] in
+      let b22$i172 = s1[457 +: 1] in
+      let b23$i173 = s1[456 +: 1] in
+      let b24$i174 = s1[455 +: 1] in
+      let b25$i175 = s1[454 +: 1] in
+      let b26$i176 = s1[453 +: 1] in
+      let b27$i177 = s1[452 +: 1] in
+      let b28$i178 = s1[451 +: 1] in
+      let b29$i179 = s1[450 +: 1] in
+      let b30$i180 = s1[449 +: 1] in
+      let b31$i181 = s1[448 +: 1] in
+      b14$i164 # b15$i165 # b16$i166 # b17$i167 # b18$i168 # b19$i169 # b20$i170 # b21$i171 # b22$i172 # b23$i173 # b24$i174 # b25$i175 # b26$i176 # b27$i177 # b28$i178 # b29$i179 # b30$i180 # b31$i181 # b0$i150 # b1$i151 # b2$i152 # b3$i153 # b4$i154 # b5$i155 # b6$i156 # b7$i157 # b8$i158 # b9$i159 # b10$i160 # b11$i161 # b12$i162 # b13$i163)) (let b0$i182 = s1[479 +: 1] in
+      let b1$i183 = s1[478 +: 1] in
+      let b2$i184 = s1[477 +: 1] in
+      let b3$i185 = s1[476 +: 1] in
+      let b4$i186 = s1[475 +: 1] in
+      let b5$i187 = s1[474 +: 1] in
+      let b6$i188 = s1[473 +: 1] in
+      let b7$i189 = s1[472 +: 1] in
+      let b8$i190 = s1[471 +: 1] in
+      let b9$i191 = s1[470 +: 1] in
+      let b10$i192 = s1[469 +: 1] in
+      let b11$i193 = s1[468 +: 1] in
+      let b12$i194 = s1[467 +: 1] in
+      let b13$i195 = s1[466 +: 1] in
+      let b14$i196 = s1[465 +: 1] in
+      let b15$i197 = s1[464 +: 1] in
+      let b16$i198 = s1[463 +: 1] in
+      let b17$i199 = s1[462 +: 1] in
+      let b18$i200 = s1[461 +: 1] in
+      let b19$i201 = s1[460 +: 1] in
+      let b20$i202 = s1[459 +: 1] in
+      let b21$i203 = s1[458 +: 1] in
+      let b22$i204 = s1[457 +: 1] in
+      let b23$i205 = s1[456 +: 1] in
+      let b24$i206 = s1[455 +: 1] in
+      let b25$i207 = s1[454 +: 1] in
+      let b26$i208 = s1[453 +: 1] in
+      let b27$i209 = s1[452 +: 1] in
+      let b28$i210 = s1[451 +: 1] in
+      3'h0 # b0$i182 # b1$i183 # b2$i184 # b3$i185 # b4$i186 # b5$i187 # b6$i188 # b7$i189 # b8$i190 # b9$i191 # b10$i192 # b11$i193 # b12$i194 # b13$i195 # b14$i196 # b15$i197 # b16$i198 # b17$i199 # b18$i200 # b19$i201 # b20$i202 # b21$i203 # b22$i204 # b23$i205 # b24$i206 # b25$i207 # b26$i208 # b27$i209 # b28$i210)) w00$i16)) in
+      let $a$i212 = (if eq s3 6'h0 then 32'h428a2f98
+            else if eq s3 6'h1 then 32'h71374491 else if eq s3 6'h2 then 32'hb5c0fbcf else if eq s3 6'h3 then 32'he9b5dba5 else if eq s3 6'h4 then 32'h3956c25b else if eq s3 6'h5 then 32'h59f111f1 else if eq s3 6'h6 then 32'h923f82a4 else if eq s3 6'h7 then 32'hab1c5ed5 else if eq s3 6'h8 then 32'hd807aa98 else if eq s3 6'h9 then 32'h12835b01 else if eq s3 6'ha then 32'h243185be else if eq s3 6'hb then 32'h550c7dc3 else if eq s3 6'hc then 32'h72be5d74 else if eq s3 6'hd then 32'h80deb1fe else if eq s3 6'he then 32'h9bdc06a7 else if eq s3 6'hf then 32'hc19bf174 else if eq s3 6'h10 then 32'he49b69c1 else if eq s3 6'h11 then 32'hefbe4786 else if eq s3 6'h12 then 32'hfc19dc6 else if eq s3 6'h13 then 32'h240ca1cc else if eq s3 6'h14 then 32'h2de92c6f else if eq s3 6'h15 then 32'h4a7484aa else if eq s3 6'h16 then 32'h5cb0a9dc else if eq s3 6'h17 then 32'h76f988da else if eq s3 6'h18 then 32'h983e5152 else if eq s3 6'h19 then 32'ha831c66d else if eq s3 6'h1a then 32'hb00327c8 else if eq s3 6'h1b then 32'hbf597fc7 else if eq s3 6'h1c then 32'hc6e00bf3 else if eq s3 6'h1d then 32'hd5a79147 else if eq s3 6'h1e then 32'h6ca6351 else if eq s3 6'h1f then 32'h14292967 else if eq s3 6'h20 then 32'h27b70a85 else if eq s3 6'h21 then 32'h2e1b2138 else if eq s3 6'h22 then 32'h4d2c6dfc else if eq s3 6'h23 then 32'h53380d13 else if eq s3 6'h24 then 32'h650a7354 else if eq s3 6'h25 then 32'h766a0abb else if eq s3 6'h26 then 32'h81c2c92e else if eq s3 6'h27 then 32'h92722c85 else if eq s3 6'h28 then 32'ha2bfe8a1 else if eq s3 6'h29 then 32'ha81a664b else if eq s3 6'h2a then 32'hc24b8b70 else if eq s3 6'h2b then 32'hc76c51a3 else if eq s3 6'h2c then 32'hd192e819 else if eq s3 6'h2d then 32'hd6990624 else if eq s3 6'h2e then 32'hf40e3585 else if eq s3 6'h2f then 32'h106aa070 else if eq s3 6'h30 then 32'h19a4c116 else if eq s3 6'h31 then 32'h1e376c08 else if eq s3 6'h32 then 32'h2748774c else if eq s3 6'h33 then 32'h34b0bcb5 else if eq s3 6'h34 then 32'h391c0cb3 else if eq s3 6'h35 then 32'h4ed8aa4a else if eq s3 6'h36 then 32'h5b9cca4f else if eq s3 6'h37 then 32'h682e6ff3 else if eq s3 6'h38 then 32'h748f82ee else if eq s3 6'h39 then 32'h78a5636f else if eq s3 6'h3a then 32'h84c87814 else if eq s3 6'h3b then 32'h8cc70208 else if eq s3 6'h3c then 32'h90befffa else if eq s3 6'h3d then 32'ha4506ceb else if eq s3 6'h3e then 32'hbef9a3f7 else 32'hc67178f2) in
+      let $a1$i414 = (let a$i213 = s0[224 +: 32] in
+      let b$i214 = s0[192 +: 32] in
+      let c$i215 = s0[160 +: 32] in
+      let d$i216 = s0[128 +: 32] in
+      let e$i217 = s0[96 +: 32] in
+      let f$i218 = s0[64 +: 32] in
+      let g$i219 = s0[32 +: 32] in
+      let h$i220 = s0[0 +: 32] in
+      let t1$i317 = Main.plusW32 h$i220 (Main.plusW32 (Main.plusW32 (Main.xorW32 (Main.xorW32 (let b0$i221 = s0[127 +: 1] in
+      let b1$i222 = s0[126 +: 1] in
+      let b2$i223 = s0[125 +: 1] in
+      let b3$i224 = s0[124 +: 1] in
+      let b4$i225 = s0[123 +: 1] in
+      let b5$i226 = s0[122 +: 1] in
+      let b6$i227 = s0[121 +: 1] in
+      let b7$i228 = s0[120 +: 1] in
+      let b8$i229 = s0[119 +: 1] in
+      let b9$i230 = s0[118 +: 1] in
+      let b10$i231 = s0[117 +: 1] in
+      let b11$i232 = s0[116 +: 1] in
+      let b12$i233 = s0[115 +: 1] in
+      let b13$i234 = s0[114 +: 1] in
+      let b14$i235 = s0[113 +: 1] in
+      let b15$i236 = s0[112 +: 1] in
+      let b16$i237 = s0[111 +: 1] in
+      let b17$i238 = s0[110 +: 1] in
+      let b18$i239 = s0[109 +: 1] in
+      let b19$i240 = s0[108 +: 1] in
+      let b20$i241 = s0[107 +: 1] in
+      let b21$i242 = s0[106 +: 1] in
+      let b22$i243 = s0[105 +: 1] in
+      let b23$i244 = s0[104 +: 1] in
+      let b24$i245 = s0[103 +: 1] in
+      let b25$i246 = s0[102 +: 1] in
+      let b26$i247 = s0[101 +: 1] in
+      let b27$i248 = s0[100 +: 1] in
+      let b28$i249 = s0[99 +: 1] in
+      let b29$i250 = s0[98 +: 1] in
+      let b30$i251 = s0[97 +: 1] in
+      let b31$i252 = s0[96 +: 1] in
+      b26$i247 # b27$i248 # b28$i249 # b29$i250 # b30$i251 # b31$i252 # b0$i221 # b1$i222 # b2$i223 # b3$i224 # b4$i225 # b5$i226 # b6$i227 # b7$i228 # b8$i229 # b9$i230 # b10$i231 # b11$i232 # b12$i233 # b13$i234 # b14$i235 # b15$i236 # b16$i237 # b17$i238 # b18$i239 # b19$i240 # b20$i241 # b21$i242 # b22$i243 # b23$i244 # b24$i245 # b25$i246) (let b0$i253 = s0[127 +: 1] in
+      let b1$i254 = s0[126 +: 1] in
+      let b2$i255 = s0[125 +: 1] in
+      let b3$i256 = s0[124 +: 1] in
+      let b4$i257 = s0[123 +: 1] in
+      let b5$i258 = s0[122 +: 1] in
+      let b6$i259 = s0[121 +: 1] in
+      let b7$i260 = s0[120 +: 1] in
+      let b8$i261 = s0[119 +: 1] in
+      let b9$i262 = s0[118 +: 1] in
+      let b10$i263 = s0[117 +: 1] in
+      let b11$i264 = s0[116 +: 1] in
+      let b12$i265 = s0[115 +: 1] in
+      let b13$i266 = s0[114 +: 1] in
+      let b14$i267 = s0[113 +: 1] in
+      let b15$i268 = s0[112 +: 1] in
+      let b16$i269 = s0[111 +: 1] in
+      let b17$i270 = s0[110 +: 1] in
+      let b18$i271 = s0[109 +: 1] in
+      let b19$i272 = s0[108 +: 1] in
+      let b20$i273 = s0[107 +: 1] in
+      let b21$i274 = s0[106 +: 1] in
+      let b22$i275 = s0[105 +: 1] in
+      let b23$i276 = s0[104 +: 1] in
+      let b24$i277 = s0[103 +: 1] in
+      let b25$i278 = s0[102 +: 1] in
+      let b26$i279 = s0[101 +: 1] in
+      let b27$i280 = s0[100 +: 1] in
+      let b28$i281 = s0[99 +: 1] in
+      let b29$i282 = s0[98 +: 1] in
+      let b30$i283 = s0[97 +: 1] in
+      let b31$i284 = s0[96 +: 1] in
+      b21$i274 # b22$i275 # b23$i276 # b24$i277 # b25$i278 # b26$i279 # b27$i280 # b28$i281 # b29$i282 # b30$i283 # b31$i284 # b0$i253 # b1$i254 # b2$i255 # b3$i256 # b4$i257 # b5$i258 # b6$i259 # b7$i260 # b8$i261 # b9$i262 # b10$i263 # b11$i264 # b12$i265 # b13$i266 # b14$i267 # b15$i268 # b16$i269 # b17$i270 # b18$i271 # b19$i272 # b20$i273)) (let b0$i285 = s0[127 +: 1] in
+      let b1$i286 = s0[126 +: 1] in
+      let b2$i287 = s0[125 +: 1] in
+      let b3$i288 = s0[124 +: 1] in
+      let b4$i289 = s0[123 +: 1] in
+      let b5$i290 = s0[122 +: 1] in
+      let b6$i291 = s0[121 +: 1] in
+      let b7$i292 = s0[120 +: 1] in
+      let b8$i293 = s0[119 +: 1] in
+      let b9$i294 = s0[118 +: 1] in
+      let b10$i295 = s0[117 +: 1] in
+      let b11$i296 = s0[116 +: 1] in
+      let b12$i297 = s0[115 +: 1] in
+      let b13$i298 = s0[114 +: 1] in
+      let b14$i299 = s0[113 +: 1] in
+      let b15$i300 = s0[112 +: 1] in
+      let b16$i301 = s0[111 +: 1] in
+      let b17$i302 = s0[110 +: 1] in
+      let b18$i303 = s0[109 +: 1] in
+      let b19$i304 = s0[108 +: 1] in
+      let b20$i305 = s0[107 +: 1] in
+      let b21$i306 = s0[106 +: 1] in
+      let b22$i307 = s0[105 +: 1] in
+      let b23$i308 = s0[104 +: 1] in
+      let b24$i309 = s0[103 +: 1] in
+      let b25$i310 = s0[102 +: 1] in
+      let b26$i311 = s0[101 +: 1] in
+      let b27$i312 = s0[100 +: 1] in
+      let b28$i313 = s0[99 +: 1] in
+      let b29$i314 = s0[98 +: 1] in
+      let b30$i315 = s0[97 +: 1] in
+      let b31$i316 = s0[96 +: 1] in
+      b7$i292 # b8$i293 # b9$i294 # b10$i295 # b11$i296 # b12$i297 # b13$i298 # b14$i299 # b15$i300 # b16$i301 # b17$i302 # b18$i303 # b19$i304 # b20$i305 # b21$i306 # b22$i307 # b23$i308 # b24$i309 # b25$i310 # b26$i311 # b27$i312 # b28$i313 # b29$i314 # b30$i315 # b31$i316 # b0$i285 # b1$i286 # b2$i287 # b3$i288 # b4$i289 # b5$i290 # b6$i291)) (Main.xorW32 (Main.andW32 e$i217 f$i218) (Main.andW32 (notW32 e$i217) g$i219))) (Main.plusW32 $a$i212 w00$i0)) in
+      Main.plusW32 t1$i317 (Main.plusW32 (Main.xorW32 (Main.xorW32 (let b0$i318 = s0[255 +: 1] in
+      let b1$i319 = s0[254 +: 1] in
+      let b2$i320 = s0[253 +: 1] in
+      let b3$i321 = s0[252 +: 1] in
+      let b4$i322 = s0[251 +: 1] in
+      let b5$i323 = s0[250 +: 1] in
+      let b6$i324 = s0[249 +: 1] in
+      let b7$i325 = s0[248 +: 1] in
+      let b8$i326 = s0[247 +: 1] in
+      let b9$i327 = s0[246 +: 1] in
+      let b10$i328 = s0[245 +: 1] in
+      let b11$i329 = s0[244 +: 1] in
+      let b12$i330 = s0[243 +: 1] in
+      let b13$i331 = s0[242 +: 1] in
+      let b14$i332 = s0[241 +: 1] in
+      let b15$i333 = s0[240 +: 1] in
+      let b16$i334 = s0[239 +: 1] in
+      let b17$i335 = s0[238 +: 1] in
+      let b18$i336 = s0[237 +: 1] in
+      let b19$i337 = s0[236 +: 1] in
+      let b20$i338 = s0[235 +: 1] in
+      let b21$i339 = s0[234 +: 1] in
+      let b22$i340 = s0[233 +: 1] in
+      let b23$i341 = s0[232 +: 1] in
+      let b24$i342 = s0[231 +: 1] in
+      let b25$i343 = s0[230 +: 1] in
+      let b26$i344 = s0[229 +: 1] in
+      let b27$i345 = s0[228 +: 1] in
+      let b28$i346 = s0[227 +: 1] in
+      let b29$i347 = s0[226 +: 1] in
+      let b30$i348 = s0[225 +: 1] in
+      let b31$i349 = s0[224 +: 1] in
+      b30$i348 # b31$i349 # b0$i318 # b1$i319 # b2$i320 # b3$i321 # b4$i322 # b5$i323 # b6$i324 # b7$i325 # b8$i326 # b9$i327 # b10$i328 # b11$i329 # b12$i330 # b13$i331 # b14$i332 # b15$i333 # b16$i334 # b17$i335 # b18$i336 # b19$i337 # b20$i338 # b21$i339 # b22$i340 # b23$i341 # b24$i342 # b25$i343 # b26$i344 # b27$i345 # b28$i346 # b29$i347) (let b0$i350 = s0[255 +: 1] in
+      let b1$i351 = s0[254 +: 1] in
+      let b2$i352 = s0[253 +: 1] in
+      let b3$i353 = s0[252 +: 1] in
+      let b4$i354 = s0[251 +: 1] in
+      let b5$i355 = s0[250 +: 1] in
+      let b6$i356 = s0[249 +: 1] in
+      let b7$i357 = s0[248 +: 1] in
+      let b8$i358 = s0[247 +: 1] in
+      let b9$i359 = s0[246 +: 1] in
+      let b10$i360 = s0[245 +: 1] in
+      let b11$i361 = s0[244 +: 1] in
+      let b12$i362 = s0[243 +: 1] in
+      let b13$i363 = s0[242 +: 1] in
+      let b14$i364 = s0[241 +: 1] in
+      let b15$i365 = s0[240 +: 1] in
+      let b16$i366 = s0[239 +: 1] in
+      let b17$i367 = s0[238 +: 1] in
+      let b18$i368 = s0[237 +: 1] in
+      let b19$i369 = s0[236 +: 1] in
+      let b20$i370 = s0[235 +: 1] in
+      let b21$i371 = s0[234 +: 1] in
+      let b22$i372 = s0[233 +: 1] in
+      let b23$i373 = s0[232 +: 1] in
+      let b24$i374 = s0[231 +: 1] in
+      let b25$i375 = s0[230 +: 1] in
+      let b26$i376 = s0[229 +: 1] in
+      let b27$i377 = s0[228 +: 1] in
+      let b28$i378 = s0[227 +: 1] in
+      let b29$i379 = s0[226 +: 1] in
+      let b30$i380 = s0[225 +: 1] in
+      let b31$i381 = s0[224 +: 1] in
+      b19$i369 # b20$i370 # b21$i371 # b22$i372 # b23$i373 # b24$i374 # b25$i375 # b26$i376 # b27$i377 # b28$i378 # b29$i379 # b30$i380 # b31$i381 # b0$i350 # b1$i351 # b2$i352 # b3$i353 # b4$i354 # b5$i355 # b6$i356 # b7$i357 # b8$i358 # b9$i359 # b10$i360 # b11$i361 # b12$i362 # b13$i363 # b14$i364 # b15$i365 # b16$i366 # b17$i367 # b18$i368)) (let b0$i382 = s0[255 +: 1] in
+      let b1$i383 = s0[254 +: 1] in
+      let b2$i384 = s0[253 +: 1] in
+      let b3$i385 = s0[252 +: 1] in
+      let b4$i386 = s0[251 +: 1] in
+      let b5$i387 = s0[250 +: 1] in
+      let b6$i388 = s0[249 +: 1] in
+      let b7$i389 = s0[248 +: 1] in
+      let b8$i390 = s0[247 +: 1] in
+      let b9$i391 = s0[246 +: 1] in
+      let b10$i392 = s0[245 +: 1] in
+      let b11$i393 = s0[244 +: 1] in
+      let b12$i394 = s0[243 +: 1] in
+      let b13$i395 = s0[242 +: 1] in
+      let b14$i396 = s0[241 +: 1] in
+      let b15$i397 = s0[240 +: 1] in
+      let b16$i398 = s0[239 +: 1] in
+      let b17$i399 = s0[238 +: 1] in
+      let b18$i400 = s0[237 +: 1] in
+      let b19$i401 = s0[236 +: 1] in
+      let b20$i402 = s0[235 +: 1] in
+      let b21$i403 = s0[234 +: 1] in
+      let b22$i404 = s0[233 +: 1] in
+      let b23$i405 = s0[232 +: 1] in
+      let b24$i406 = s0[231 +: 1] in
+      let b25$i407 = s0[230 +: 1] in
+      let b26$i408 = s0[229 +: 1] in
+      let b27$i409 = s0[228 +: 1] in
+      let b28$i410 = s0[227 +: 1] in
+      let b29$i411 = s0[226 +: 1] in
+      let b30$i412 = s0[225 +: 1] in
+      let b31$i413 = s0[224 +: 1] in
+      b10$i392 # b11$i393 # b12$i394 # b13$i395 # b14$i396 # b15$i397 # b16$i398 # b17$i399 # b18$i400 # b19$i401 # b20$i402 # b21$i403 # b22$i404 # b23$i405 # b24$i406 # b25$i407 # b26$i408 # b27$i409 # b28$i410 # b29$i411 # b30$i412 # b31$i413 # b0$i382 # b1$i383 # b2$i384 # b3$i385 # b4$i386 # b5$i387 # b6$i388 # b7$i389 # b8$i390 # b9$i391)) (Main.xorW32 (Main.xorW32 (Main.andW32 a$i213 b$i214) (Main.andW32 a$i213 c$i215)) (Main.andW32 b$i214 c$i215))) # a$i213 # b$i214 # c$i215 # Main.plusW32 d$i216 t1$i317 # e$i217 # f$i218 # g$i219) in
+      let $a$i415 = (if eq s3 6'h0 then 6'h1
+            else if eq s3 6'h1 then 6'h2 else if eq s3 6'h2 then 6'h3 else if eq s3 6'h3 then 6'h4 else if eq s3 6'h4 then 6'h5 else if eq s3 6'h5 then 6'h6 else if eq s3 6'h6 then 6'h7 else if eq s3 6'h7 then 6'h8 else if eq s3 6'h8 then 6'h9 else if eq s3 6'h9 then 6'ha else if eq s3 6'ha then 6'hb else if eq s3 6'hb then 6'hc else if eq s3 6'hc then 6'hd else if eq s3 6'hd then 6'he else if eq s3 6'he then 6'hf else if eq s3 6'hf then 6'h10 else if eq s3 6'h10 then 6'h11 else if eq s3 6'h11 then 6'h12 else if eq s3 6'h12 then 6'h13 else if eq s3 6'h13 then 6'h14 else if eq s3 6'h14 then 6'h15 else if eq s3 6'h15 then 6'h16 else if eq s3 6'h16 then 6'h17 else if eq s3 6'h17 then 6'h18 else if eq s3 6'h18 then 6'h19 else if eq s3 6'h19 then 6'h1a else if eq s3 6'h1a then 6'h1b else if eq s3 6'h1b then 6'h1c else if eq s3 6'h1c then 6'h1d else if eq s3 6'h1d then 6'h1e else if eq s3 6'h1e then 6'h1f else if eq s3 6'h1f then 6'h20 else if eq s3 6'h20 then 6'h21 else if eq s3 6'h21 then 6'h22 else if eq s3 6'h22 then 6'h23 else if eq s3 6'h23 then 6'h24 else if eq s3 6'h24 then 6'h25 else if eq s3 6'h25 then 6'h26 else if eq s3 6'h26 then 6'h27 else if eq s3 6'h27 then 6'h28 else if eq s3 6'h28 then 6'h29 else if eq s3 6'h29 then 6'h2a else if eq s3 6'h2a then 6'h2b else if eq s3 6'h2b then 6'h2c else if eq s3 6'h2c then 6'h2d else if eq s3 6'h2d then 6'h2e else if eq s3 6'h2e then 6'h2f else if eq s3 6'h2f then 6'h30 else if eq s3 6'h30 then 6'h31 else if eq s3 6'h31 then 6'h32 else if eq s3 6'h32 then 6'h33 else if eq s3 6'h33 then 6'h34 else if eq s3 6'h34 then 6'h35 else if eq s3 6'h35 then 6'h36 else if eq s3 6'h36 then 6'h37 else if eq s3 6'h37 then 6'h38 else if eq s3 6'h38 then 6'h39 else if eq s3 6'h39 then 6'h3a else if eq s3 6'h3a then 6'h3b else if eq s3 6'h3b then 6'h3c else if eq s3 6'h3c then 6'h3d else if eq s3 6'h3d then 6'h3e else if eq s3 6'h3e then 6'h3f else 6'h0) in
+      67'h40000000000000001 # s3 # $a1$i414 # $a$i211 # s2 # $a$i415
 
 --| block '$L.Main.dev' of process main
 main.dev : ([68], [256], [512], [256], [6]) -> [1103]
 main.dev $ds s0 s1 s2 s3 =
       if eq $ds[64 +: 4] 4'h0 then (let w1 = $ds[32 +: 32] in
             let w2 = $ds[0 +: 32] in
-            main.arm w1 w2 s0 s1 s2 s3)
+            main.arm2 w1 w2 s0 s1 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 s3)
             else if eq $ds[64 +: 4] 4'h1 then (let w1 = $ds[32 +: 32] in
             let w2 = $ds[0 +: 32] in
             main.arm2 w1 w2 s0 s1 s2 s3) else if eq $ds[64 +: 4] 4'h2 then (let w1 = $ds[32 +: 32] in
             let w2 = $ds[0 +: 32] in
-            main.arm3 w1 w2 s0 s1 s2 s3) else if eq $ds[64 +: 4] 4'h3 then (let w1 = $ds[32 +: 32] in
+            let $a$i15 = (let x0$i0 = s1[480 +: 32] in
+            let x1$i1 = s1[448 +: 32] in
+            let x4$i2 = s1[352 +: 32] in
+            let x5$i3 = s1[320 +: 32] in
+            let x6$i4 = s1[288 +: 32] in
+            let x7$i5 = s1[256 +: 32] in
+            let x8$i6 = s1[224 +: 32] in
+            let x9$i7 = s1[192 +: 32] in
+            let xa$i8 = s1[160 +: 32] in
+            let xb$i9 = s1[128 +: 32] in
+            let xc$i10 = s1[96 +: 32] in
+            let xd$i11 = s1[64 +: 32] in
+            let xe$i12 = s1[32 +: 32] in
+            let xf$i13 = s1[0 +: 32] in
+            let $a$i14 = x0$i0 # x1$i1 # w1 # w2 # x4$i2 # x5$i3 # x6$i4 # x7$i5 # x8$i6 # x9$i7 # xa$i8 # xb$i9 # xc$i10 # xd$i11 # xe$i12 # xf$i13 in
+            $a$i14) in
+            main._unused s0 $a$i15 s2 s3) else if eq $ds[64 +: 4] 4'h3 then (let w1 = $ds[32 +: 32] in
             let w2 = $ds[0 +: 32] in
-            main.arm4 w1 w2 s0 s1 s2 s3) else if eq $ds[64 +: 4] 4'h4 then (let w1 = $ds[32 +: 32] in
+            let $a$i31 = (let x0$i16 = s1[480 +: 32] in
+            let x1$i17 = s1[448 +: 32] in
+            let x2$i18 = s1[416 +: 32] in
+            let x3$i19 = s1[384 +: 32] in
+            let x6$i20 = s1[288 +: 32] in
+            let x7$i21 = s1[256 +: 32] in
+            let x8$i22 = s1[224 +: 32] in
+            let x9$i23 = s1[192 +: 32] in
+            let xa$i24 = s1[160 +: 32] in
+            let xb$i25 = s1[128 +: 32] in
+            let xc$i26 = s1[96 +: 32] in
+            let xd$i27 = s1[64 +: 32] in
+            let xe$i28 = s1[32 +: 32] in
+            let xf$i29 = s1[0 +: 32] in
+            let $a$i30 = x0$i16 # x1$i17 # x2$i18 # x3$i19 # w1 # w2 # x6$i20 # x7$i21 # x8$i22 # x9$i23 # xa$i24 # xb$i25 # xc$i26 # xd$i27 # xe$i28 # xf$i29 in
+            $a$i30) in
+            main._unused s0 $a$i31 s2 s3) else if eq $ds[64 +: 4] 4'h4 then (let w1 = $ds[32 +: 32] in
             let w2 = $ds[0 +: 32] in
-            main.arm5 w1 w2 s0 s1 s2 s3) else if eq $ds[64 +: 4] 4'h5 then (let w1 = $ds[32 +: 32] in
+            let $a$i47 = (let x0$i32 = s1[480 +: 32] in
+            let x1$i33 = s1[448 +: 32] in
+            let x2$i34 = s1[416 +: 32] in
+            let x3$i35 = s1[384 +: 32] in
+            let x4$i36 = s1[352 +: 32] in
+            let x5$i37 = s1[320 +: 32] in
+            let x8$i38 = s1[224 +: 32] in
+            let x9$i39 = s1[192 +: 32] in
+            let xa$i40 = s1[160 +: 32] in
+            let xb$i41 = s1[128 +: 32] in
+            let xc$i42 = s1[96 +: 32] in
+            let xd$i43 = s1[64 +: 32] in
+            let xe$i44 = s1[32 +: 32] in
+            let xf$i45 = s1[0 +: 32] in
+            let $a$i46 = x0$i32 # x1$i33 # x2$i34 # x3$i35 # x4$i36 # x5$i37 # w1 # w2 # x8$i38 # x9$i39 # xa$i40 # xb$i41 # xc$i42 # xd$i43 # xe$i44 # xf$i45 in
+            $a$i46) in
+            main._unused s0 $a$i47 s2 s3) else if eq $ds[64 +: 4] 4'h5 then (let w1 = $ds[32 +: 32] in
             let w2 = $ds[0 +: 32] in
-            main.arm6 w1 w2 s0 s1 s2 s3) else if eq $ds[64 +: 4] 4'h6 then (let w1 = $ds[32 +: 32] in
+            let $a$i63 = (let x0$i48 = s1[480 +: 32] in
+            let x1$i49 = s1[448 +: 32] in
+            let x2$i50 = s1[416 +: 32] in
+            let x3$i51 = s1[384 +: 32] in
+            let x4$i52 = s1[352 +: 32] in
+            let x5$i53 = s1[320 +: 32] in
+            let x6$i54 = s1[288 +: 32] in
+            let x7$i55 = s1[256 +: 32] in
+            let xa$i56 = s1[160 +: 32] in
+            let xb$i57 = s1[128 +: 32] in
+            let xc$i58 = s1[96 +: 32] in
+            let xd$i59 = s1[64 +: 32] in
+            let xe$i60 = s1[32 +: 32] in
+            let xf$i61 = s1[0 +: 32] in
+            let $a$i62 = x0$i48 # x1$i49 # x2$i50 # x3$i51 # x4$i52 # x5$i53 # x6$i54 # x7$i55 # w1 # w2 # xa$i56 # xb$i57 # xc$i58 # xd$i59 # xe$i60 # xf$i61 in
+            $a$i62) in
+            main._unused s0 $a$i63 s2 s3) else if eq $ds[64 +: 4] 4'h6 then (let w1 = $ds[32 +: 32] in
             let w2 = $ds[0 +: 32] in
-            main.arm7 w1 w2 s0 s1 s2 s3) else if eq $ds[64 +: 4] 4'h7 then (let w1 = $ds[32 +: 32] in
+            let $a$i79 = (let x0$i64 = s1[480 +: 32] in
+            let x1$i65 = s1[448 +: 32] in
+            let x2$i66 = s1[416 +: 32] in
+            let x3$i67 = s1[384 +: 32] in
+            let x4$i68 = s1[352 +: 32] in
+            let x5$i69 = s1[320 +: 32] in
+            let x6$i70 = s1[288 +: 32] in
+            let x7$i71 = s1[256 +: 32] in
+            let x8$i72 = s1[224 +: 32] in
+            let x9$i73 = s1[192 +: 32] in
+            let xc$i74 = s1[96 +: 32] in
+            let xd$i75 = s1[64 +: 32] in
+            let xe$i76 = s1[32 +: 32] in
+            let xf$i77 = s1[0 +: 32] in
+            let $a$i78 = x0$i64 # x1$i65 # x2$i66 # x3$i67 # x4$i68 # x5$i69 # x6$i70 # x7$i71 # x8$i72 # x9$i73 # w1 # w2 # xc$i74 # xd$i75 # xe$i76 # xf$i77 in
+            $a$i78) in
+            main._unused s0 $a$i79 s2 s3) else if eq $ds[64 +: 4] 4'h7 then (let w1 = $ds[32 +: 32] in
             let w2 = $ds[0 +: 32] in
-            main.arm8 w1 w2 s0 s1 s2 s3) else if eq $ds[64 +: 4] 4'h8 then (let w1 = $ds[32 +: 32] in
+            let $a$i95 = (let x0$i80 = s1[480 +: 32] in
+            let x1$i81 = s1[448 +: 32] in
+            let x2$i82 = s1[416 +: 32] in
+            let x3$i83 = s1[384 +: 32] in
+            let x4$i84 = s1[352 +: 32] in
+            let x5$i85 = s1[320 +: 32] in
+            let x6$i86 = s1[288 +: 32] in
+            let x7$i87 = s1[256 +: 32] in
+            let x8$i88 = s1[224 +: 32] in
+            let x9$i89 = s1[192 +: 32] in
+            let xa$i90 = s1[160 +: 32] in
+            let xb$i91 = s1[128 +: 32] in
+            let xe$i92 = s1[32 +: 32] in
+            let xf$i93 = s1[0 +: 32] in
+            let $a$i94 = x0$i80 # x1$i81 # x2$i82 # x3$i83 # x4$i84 # x5$i85 # x6$i86 # x7$i87 # x8$i88 # x9$i89 # xa$i90 # xb$i91 # w1 # w2 # xe$i92 # xf$i93 in
+            $a$i94) in
+            main._unused s0 $a$i95 s2 s3) else if eq $ds[64 +: 4] 4'h8 then (let w1 = $ds[32 +: 32] in
             let w2 = $ds[0 +: 32] in
-            main.arm13 w1 w2 s0 s1 s2 s3) else if eq $ds[64 +: 4] 4'h9 then main.arm14 s0 s1 s2 s3 else if eq $ds[64 +: 4] 4'ha then main.arm15 s0 s1 s2 s3 else if eq $ds[64 +: 4] 4'hb then main.arm16 s0 s1 s2 s3 else main.arm17 s0 s1 s2 s3
+            let $a$i111 = (let x0$i96 = s1[480 +: 32] in
+            let x1$i97 = s1[448 +: 32] in
+            let x2$i98 = s1[416 +: 32] in
+            let x3$i99 = s1[384 +: 32] in
+            let x4$i100 = s1[352 +: 32] in
+            let x5$i101 = s1[320 +: 32] in
+            let x6$i102 = s1[288 +: 32] in
+            let x7$i103 = s1[256 +: 32] in
+            let x8$i104 = s1[224 +: 32] in
+            let x9$i105 = s1[192 +: 32] in
+            let xa$i106 = s1[160 +: 32] in
+            let xb$i107 = s1[128 +: 32] in
+            let xc$i108 = s1[96 +: 32] in
+            let xd$i109 = s1[64 +: 32] in
+            let $a$i110 = x0$i96 # x1$i97 # x2$i98 # x3$i99 # x4$i100 # x5$i101 # x6$i102 # x7$i103 # x8$i104 # x9$i105 # xa$i106 # xb$i107 # xc$i108 # xd$i109 # w1 # w2 in
+            $a$i110) in
+            73'h1000000000000000080 # s2 # $a$i111 # s2 # 6'h0) else if eq $ds[64 +: 4] 4'h9 then (let $a$i114 = (let x0$i112 = s2[224 +: 32] in
+            let x1$i113 = s2[192 +: 32] in
+            1'h0 # x0$i112 # x1$i113) in
+            $a$i114 # 8'h0 # s0 # s1 # s2 # s3) else if eq $ds[64 +: 4] 4'ha then (let $a$i117 = (let x2$i115 = s2[160 +: 32] in
+            let x3$i116 = s2[128 +: 32] in
+            1'h0 # x2$i115 # x3$i116) in
+            $a$i117 # 8'h0 # s0 # s1 # s2 # s3) else if eq $ds[64 +: 4] 4'hb then (let $a$i120 = (let x4$i118 = s2[96 +: 32] in
+            let x5$i119 = s2[64 +: 32] in
+            1'h0 # x4$i118 # x5$i119) in
+            $a$i120 # 8'h0 # s0 # s1 # s2 # s3) else let $a$i123 = (let x6$i121 = s2[32 +: 32] in
+            let x7$i122 = s2[0 +: 32] in
+            1'h0 # x6$i121 # x7$i122) in
+            $a$i123 # 8'h0 # s0 # s1 # s2 # s3
 
 Main.plusW32 : ([32], [32]) -> [32]
 Main.plusW32 $eta0 $eta1 =
@@ -468,520 +612,6 @@ Main.andW32 $eta0 $eta1 =
 Main.xorW32 : ([32], [32]) -> [32]
 Main.xorW32 $eta0 $eta1 =
       xorW32 $eta0 $eta1
-
-Main.maj : ([32], [32], [32]) -> [32]
-Main.maj x y z =
-      Main.xorW32 (Main.xorW32 (Main.andW32 x y) (Main.andW32 x z)) (Main.andW32 y z)
-
-Main.notW32 : ([32]) -> [32]
-Main.notW32 $eta0 =
-      notW32 $eta0
-
-Main.ch : ([32], [32], [32]) -> [32]
-Main.ch x y z =
-      Main.xorW32 (Main.andW32 x y) (Main.andW32 (Main.notW32 x) z)
-
-Main.digest0 : ([256]) -> [65]
-Main.digest0 $ds =
-      let x0 = $ds[224 +: 32] in
-      let x1 = $ds[192 +: 32] in
-      1'h0 # x0 # x1
-
-Main.digest1 : ([256]) -> [65]
-Main.digest1 $ds =
-      let x2 = $ds[160 +: 32] in
-      let x3 = $ds[128 +: 32] in
-      1'h0 # x2 # x3
-
-Main.digest2 : ([256]) -> [65]
-Main.digest2 $ds =
-      let x4 = $ds[96 +: 32] in
-      let x5 = $ds[64 +: 32] in
-      1'h0 # x4 # x5
-
-Main.digest3 : ([256]) -> [65]
-Main.digest3 $ds =
-      let x6 = $ds[32 +: 32] in
-      let x7 = $ds[0 +: 32] in
-      1'h0 # x6 # x7
-
-Main.incCtr : ([6]) -> [6]
-Main.incCtr $ds =
-      if eq $ds 6'h0 then 6'h1
-            else if eq $ds 6'h1 then 6'h2 else if eq $ds 6'h2 then 6'h3 else if eq $ds 6'h3 then 6'h4 else if eq $ds 6'h4 then 6'h5 else if eq $ds 6'h5 then 6'h6 else if eq $ds 6'h6 then 6'h7 else if eq $ds 6'h7 then 6'h8 else if eq $ds 6'h8 then 6'h9 else if eq $ds 6'h9 then 6'ha else if eq $ds 6'ha then 6'hb else if eq $ds 6'hb then 6'hc else if eq $ds 6'hc then 6'hd else if eq $ds 6'hd then 6'he else if eq $ds 6'he then 6'hf else if eq $ds 6'hf then 6'h10 else if eq $ds 6'h10 then 6'h11 else if eq $ds 6'h11 then 6'h12 else if eq $ds 6'h12 then 6'h13 else if eq $ds 6'h13 then 6'h14 else if eq $ds 6'h14 then 6'h15 else if eq $ds 6'h15 then 6'h16 else if eq $ds 6'h16 then 6'h17 else if eq $ds 6'h17 then 6'h18 else if eq $ds 6'h18 then 6'h19 else if eq $ds 6'h19 then 6'h1a else if eq $ds 6'h1a then 6'h1b else if eq $ds 6'h1b then 6'h1c else if eq $ds 6'h1c then 6'h1d else if eq $ds 6'h1d then 6'h1e else if eq $ds 6'h1e then 6'h1f else if eq $ds 6'h1f then 6'h20 else if eq $ds 6'h20 then 6'h21 else if eq $ds 6'h21 then 6'h22 else if eq $ds 6'h22 then 6'h23 else if eq $ds 6'h23 then 6'h24 else if eq $ds 6'h24 then 6'h25 else if eq $ds 6'h25 then 6'h26 else if eq $ds 6'h26 then 6'h27 else if eq $ds 6'h27 then 6'h28 else if eq $ds 6'h28 then 6'h29 else if eq $ds 6'h29 then 6'h2a else if eq $ds 6'h2a then 6'h2b else if eq $ds 6'h2b then 6'h2c else if eq $ds 6'h2c then 6'h2d else if eq $ds 6'h2d then 6'h2e else if eq $ds 6'h2e then 6'h2f else if eq $ds 6'h2f then 6'h30 else if eq $ds 6'h30 then 6'h31 else if eq $ds 6'h31 then 6'h32 else if eq $ds 6'h32 then 6'h33 else if eq $ds 6'h33 then 6'h34 else if eq $ds 6'h34 then 6'h35 else if eq $ds 6'h35 then 6'h36 else if eq $ds 6'h36 then 6'h37 else if eq $ds 6'h37 then 6'h38 else if eq $ds 6'h38 then 6'h39 else if eq $ds 6'h39 then 6'h3a else if eq $ds 6'h3a then 6'h3b else if eq $ds 6'h3b then 6'h3c else if eq $ds 6'h3c then 6'h3d else if eq $ds 6'h3d then 6'h3e else if eq $ds 6'h3e then 6'h3f else 6'h0
-
-Main.rotateR2 : ([32]) -> [32]
-Main.rotateR2 $ds =
-      let b0 = $ds[31 +: 1] in
-      let b1 = $ds[30 +: 1] in
-      let b2 = $ds[29 +: 1] in
-      let b3 = $ds[28 +: 1] in
-      let b4 = $ds[27 +: 1] in
-      let b5 = $ds[26 +: 1] in
-      let b6 = $ds[25 +: 1] in
-      let b7 = $ds[24 +: 1] in
-      let b8 = $ds[23 +: 1] in
-      let b9 = $ds[22 +: 1] in
-      let b10 = $ds[21 +: 1] in
-      let b11 = $ds[20 +: 1] in
-      let b12 = $ds[19 +: 1] in
-      let b13 = $ds[18 +: 1] in
-      let b14 = $ds[17 +: 1] in
-      let b15 = $ds[16 +: 1] in
-      let b16 = $ds[15 +: 1] in
-      let b17 = $ds[14 +: 1] in
-      let b18 = $ds[13 +: 1] in
-      let b19 = $ds[12 +: 1] in
-      let b20 = $ds[11 +: 1] in
-      let b21 = $ds[10 +: 1] in
-      let b22 = $ds[9 +: 1] in
-      let b23 = $ds[8 +: 1] in
-      let b24 = $ds[7 +: 1] in
-      let b25 = $ds[6 +: 1] in
-      let b26 = $ds[5 +: 1] in
-      let b27 = $ds[4 +: 1] in
-      let b28 = $ds[3 +: 1] in
-      let b29 = $ds[2 +: 1] in
-      let b30 = $ds[1 +: 1] in
-      let b31 = $ds[0 +: 1] in
-      b30 # b31 # b0 # b1 # b2 # b3 # b4 # b5 # b6 # b7 # b8 # b9 # b10 # b11 # b12 # b13 # b14 # b15 # b16 # b17 # b18 # b19 # b20 # b21 # b22 # b23 # b24 # b25 # b26 # b27 # b28 # b29
-
-Main.rotateR6 : ([32]) -> [32]
-Main.rotateR6 $ds =
-      let b0 = $ds[31 +: 1] in
-      let b1 = $ds[30 +: 1] in
-      let b2 = $ds[29 +: 1] in
-      let b3 = $ds[28 +: 1] in
-      let b4 = $ds[27 +: 1] in
-      let b5 = $ds[26 +: 1] in
-      let b6 = $ds[25 +: 1] in
-      let b7 = $ds[24 +: 1] in
-      let b8 = $ds[23 +: 1] in
-      let b9 = $ds[22 +: 1] in
-      let b10 = $ds[21 +: 1] in
-      let b11 = $ds[20 +: 1] in
-      let b12 = $ds[19 +: 1] in
-      let b13 = $ds[18 +: 1] in
-      let b14 = $ds[17 +: 1] in
-      let b15 = $ds[16 +: 1] in
-      let b16 = $ds[15 +: 1] in
-      let b17 = $ds[14 +: 1] in
-      let b18 = $ds[13 +: 1] in
-      let b19 = $ds[12 +: 1] in
-      let b20 = $ds[11 +: 1] in
-      let b21 = $ds[10 +: 1] in
-      let b22 = $ds[9 +: 1] in
-      let b23 = $ds[8 +: 1] in
-      let b24 = $ds[7 +: 1] in
-      let b25 = $ds[6 +: 1] in
-      let b26 = $ds[5 +: 1] in
-      let b27 = $ds[4 +: 1] in
-      let b28 = $ds[3 +: 1] in
-      let b29 = $ds[2 +: 1] in
-      let b30 = $ds[1 +: 1] in
-      let b31 = $ds[0 +: 1] in
-      b26 # b27 # b28 # b29 # b30 # b31 # b0 # b1 # b2 # b3 # b4 # b5 # b6 # b7 # b8 # b9 # b10 # b11 # b12 # b13 # b14 # b15 # b16 # b17 # b18 # b19 # b20 # b21 # b22 # b23 # b24 # b25
-
-Main.rotateR7 : ([32]) -> [32]
-Main.rotateR7 $ds =
-      let b0 = $ds[31 +: 1] in
-      let b1 = $ds[30 +: 1] in
-      let b2 = $ds[29 +: 1] in
-      let b3 = $ds[28 +: 1] in
-      let b4 = $ds[27 +: 1] in
-      let b5 = $ds[26 +: 1] in
-      let b6 = $ds[25 +: 1] in
-      let b7 = $ds[24 +: 1] in
-      let b8 = $ds[23 +: 1] in
-      let b9 = $ds[22 +: 1] in
-      let b10 = $ds[21 +: 1] in
-      let b11 = $ds[20 +: 1] in
-      let b12 = $ds[19 +: 1] in
-      let b13 = $ds[18 +: 1] in
-      let b14 = $ds[17 +: 1] in
-      let b15 = $ds[16 +: 1] in
-      let b16 = $ds[15 +: 1] in
-      let b17 = $ds[14 +: 1] in
-      let b18 = $ds[13 +: 1] in
-      let b19 = $ds[12 +: 1] in
-      let b20 = $ds[11 +: 1] in
-      let b21 = $ds[10 +: 1] in
-      let b22 = $ds[9 +: 1] in
-      let b23 = $ds[8 +: 1] in
-      let b24 = $ds[7 +: 1] in
-      let b25 = $ds[6 +: 1] in
-      let b26 = $ds[5 +: 1] in
-      let b27 = $ds[4 +: 1] in
-      let b28 = $ds[3 +: 1] in
-      let b29 = $ds[2 +: 1] in
-      let b30 = $ds[1 +: 1] in
-      let b31 = $ds[0 +: 1] in
-      b25 # b26 # b27 # b28 # b29 # b30 # b31 # b0 # b1 # b2 # b3 # b4 # b5 # b6 # b7 # b8 # b9 # b10 # b11 # b12 # b13 # b14 # b15 # b16 # b17 # b18 # b19 # b20 # b21 # b22 # b23 # b24
-
-Main.rotateR11 : ([32]) -> [32]
-Main.rotateR11 $ds =
-      let b0 = $ds[31 +: 1] in
-      let b1 = $ds[30 +: 1] in
-      let b2 = $ds[29 +: 1] in
-      let b3 = $ds[28 +: 1] in
-      let b4 = $ds[27 +: 1] in
-      let b5 = $ds[26 +: 1] in
-      let b6 = $ds[25 +: 1] in
-      let b7 = $ds[24 +: 1] in
-      let b8 = $ds[23 +: 1] in
-      let b9 = $ds[22 +: 1] in
-      let b10 = $ds[21 +: 1] in
-      let b11 = $ds[20 +: 1] in
-      let b12 = $ds[19 +: 1] in
-      let b13 = $ds[18 +: 1] in
-      let b14 = $ds[17 +: 1] in
-      let b15 = $ds[16 +: 1] in
-      let b16 = $ds[15 +: 1] in
-      let b17 = $ds[14 +: 1] in
-      let b18 = $ds[13 +: 1] in
-      let b19 = $ds[12 +: 1] in
-      let b20 = $ds[11 +: 1] in
-      let b21 = $ds[10 +: 1] in
-      let b22 = $ds[9 +: 1] in
-      let b23 = $ds[8 +: 1] in
-      let b24 = $ds[7 +: 1] in
-      let b25 = $ds[6 +: 1] in
-      let b26 = $ds[5 +: 1] in
-      let b27 = $ds[4 +: 1] in
-      let b28 = $ds[3 +: 1] in
-      let b29 = $ds[2 +: 1] in
-      let b30 = $ds[1 +: 1] in
-      let b31 = $ds[0 +: 1] in
-      b21 # b22 # b23 # b24 # b25 # b26 # b27 # b28 # b29 # b30 # b31 # b0 # b1 # b2 # b3 # b4 # b5 # b6 # b7 # b8 # b9 # b10 # b11 # b12 # b13 # b14 # b15 # b16 # b17 # b18 # b19 # b20
-
-Main.rotateR13 : ([32]) -> [32]
-Main.rotateR13 $ds =
-      let b0 = $ds[31 +: 1] in
-      let b1 = $ds[30 +: 1] in
-      let b2 = $ds[29 +: 1] in
-      let b3 = $ds[28 +: 1] in
-      let b4 = $ds[27 +: 1] in
-      let b5 = $ds[26 +: 1] in
-      let b6 = $ds[25 +: 1] in
-      let b7 = $ds[24 +: 1] in
-      let b8 = $ds[23 +: 1] in
-      let b9 = $ds[22 +: 1] in
-      let b10 = $ds[21 +: 1] in
-      let b11 = $ds[20 +: 1] in
-      let b12 = $ds[19 +: 1] in
-      let b13 = $ds[18 +: 1] in
-      let b14 = $ds[17 +: 1] in
-      let b15 = $ds[16 +: 1] in
-      let b16 = $ds[15 +: 1] in
-      let b17 = $ds[14 +: 1] in
-      let b18 = $ds[13 +: 1] in
-      let b19 = $ds[12 +: 1] in
-      let b20 = $ds[11 +: 1] in
-      let b21 = $ds[10 +: 1] in
-      let b22 = $ds[9 +: 1] in
-      let b23 = $ds[8 +: 1] in
-      let b24 = $ds[7 +: 1] in
-      let b25 = $ds[6 +: 1] in
-      let b26 = $ds[5 +: 1] in
-      let b27 = $ds[4 +: 1] in
-      let b28 = $ds[3 +: 1] in
-      let b29 = $ds[2 +: 1] in
-      let b30 = $ds[1 +: 1] in
-      let b31 = $ds[0 +: 1] in
-      b19 # b20 # b21 # b22 # b23 # b24 # b25 # b26 # b27 # b28 # b29 # b30 # b31 # b0 # b1 # b2 # b3 # b4 # b5 # b6 # b7 # b8 # b9 # b10 # b11 # b12 # b13 # b14 # b15 # b16 # b17 # b18
-
-Main.rotateR17 : ([32]) -> [32]
-Main.rotateR17 $ds =
-      let b0 = $ds[31 +: 1] in
-      let b1 = $ds[30 +: 1] in
-      let b2 = $ds[29 +: 1] in
-      let b3 = $ds[28 +: 1] in
-      let b4 = $ds[27 +: 1] in
-      let b5 = $ds[26 +: 1] in
-      let b6 = $ds[25 +: 1] in
-      let b7 = $ds[24 +: 1] in
-      let b8 = $ds[23 +: 1] in
-      let b9 = $ds[22 +: 1] in
-      let b10 = $ds[21 +: 1] in
-      let b11 = $ds[20 +: 1] in
-      let b12 = $ds[19 +: 1] in
-      let b13 = $ds[18 +: 1] in
-      let b14 = $ds[17 +: 1] in
-      let b15 = $ds[16 +: 1] in
-      let b16 = $ds[15 +: 1] in
-      let b17 = $ds[14 +: 1] in
-      let b18 = $ds[13 +: 1] in
-      let b19 = $ds[12 +: 1] in
-      let b20 = $ds[11 +: 1] in
-      let b21 = $ds[10 +: 1] in
-      let b22 = $ds[9 +: 1] in
-      let b23 = $ds[8 +: 1] in
-      let b24 = $ds[7 +: 1] in
-      let b25 = $ds[6 +: 1] in
-      let b26 = $ds[5 +: 1] in
-      let b27 = $ds[4 +: 1] in
-      let b28 = $ds[3 +: 1] in
-      let b29 = $ds[2 +: 1] in
-      let b30 = $ds[1 +: 1] in
-      let b31 = $ds[0 +: 1] in
-      b15 # b16 # b17 # b18 # b19 # b20 # b21 # b22 # b23 # b24 # b25 # b26 # b27 # b28 # b29 # b30 # b31 # b0 # b1 # b2 # b3 # b4 # b5 # b6 # b7 # b8 # b9 # b10 # b11 # b12 # b13 # b14
-
-Main.rotateR18 : ([32]) -> [32]
-Main.rotateR18 $ds =
-      let b0 = $ds[31 +: 1] in
-      let b1 = $ds[30 +: 1] in
-      let b2 = $ds[29 +: 1] in
-      let b3 = $ds[28 +: 1] in
-      let b4 = $ds[27 +: 1] in
-      let b5 = $ds[26 +: 1] in
-      let b6 = $ds[25 +: 1] in
-      let b7 = $ds[24 +: 1] in
-      let b8 = $ds[23 +: 1] in
-      let b9 = $ds[22 +: 1] in
-      let b10 = $ds[21 +: 1] in
-      let b11 = $ds[20 +: 1] in
-      let b12 = $ds[19 +: 1] in
-      let b13 = $ds[18 +: 1] in
-      let b14 = $ds[17 +: 1] in
-      let b15 = $ds[16 +: 1] in
-      let b16 = $ds[15 +: 1] in
-      let b17 = $ds[14 +: 1] in
-      let b18 = $ds[13 +: 1] in
-      let b19 = $ds[12 +: 1] in
-      let b20 = $ds[11 +: 1] in
-      let b21 = $ds[10 +: 1] in
-      let b22 = $ds[9 +: 1] in
-      let b23 = $ds[8 +: 1] in
-      let b24 = $ds[7 +: 1] in
-      let b25 = $ds[6 +: 1] in
-      let b26 = $ds[5 +: 1] in
-      let b27 = $ds[4 +: 1] in
-      let b28 = $ds[3 +: 1] in
-      let b29 = $ds[2 +: 1] in
-      let b30 = $ds[1 +: 1] in
-      let b31 = $ds[0 +: 1] in
-      b14 # b15 # b16 # b17 # b18 # b19 # b20 # b21 # b22 # b23 # b24 # b25 # b26 # b27 # b28 # b29 # b30 # b31 # b0 # b1 # b2 # b3 # b4 # b5 # b6 # b7 # b8 # b9 # b10 # b11 # b12 # b13
-
-Main.rotateR19 : ([32]) -> [32]
-Main.rotateR19 $ds =
-      let b0 = $ds[31 +: 1] in
-      let b1 = $ds[30 +: 1] in
-      let b2 = $ds[29 +: 1] in
-      let b3 = $ds[28 +: 1] in
-      let b4 = $ds[27 +: 1] in
-      let b5 = $ds[26 +: 1] in
-      let b6 = $ds[25 +: 1] in
-      let b7 = $ds[24 +: 1] in
-      let b8 = $ds[23 +: 1] in
-      let b9 = $ds[22 +: 1] in
-      let b10 = $ds[21 +: 1] in
-      let b11 = $ds[20 +: 1] in
-      let b12 = $ds[19 +: 1] in
-      let b13 = $ds[18 +: 1] in
-      let b14 = $ds[17 +: 1] in
-      let b15 = $ds[16 +: 1] in
-      let b16 = $ds[15 +: 1] in
-      let b17 = $ds[14 +: 1] in
-      let b18 = $ds[13 +: 1] in
-      let b19 = $ds[12 +: 1] in
-      let b20 = $ds[11 +: 1] in
-      let b21 = $ds[10 +: 1] in
-      let b22 = $ds[9 +: 1] in
-      let b23 = $ds[8 +: 1] in
-      let b24 = $ds[7 +: 1] in
-      let b25 = $ds[6 +: 1] in
-      let b26 = $ds[5 +: 1] in
-      let b27 = $ds[4 +: 1] in
-      let b28 = $ds[3 +: 1] in
-      let b29 = $ds[2 +: 1] in
-      let b30 = $ds[1 +: 1] in
-      let b31 = $ds[0 +: 1] in
-      b13 # b14 # b15 # b16 # b17 # b18 # b19 # b20 # b21 # b22 # b23 # b24 # b25 # b26 # b27 # b28 # b29 # b30 # b31 # b0 # b1 # b2 # b3 # b4 # b5 # b6 # b7 # b8 # b9 # b10 # b11 # b12
-
-Main.rotateR22 : ([32]) -> [32]
-Main.rotateR22 $ds =
-      let b0 = $ds[31 +: 1] in
-      let b1 = $ds[30 +: 1] in
-      let b2 = $ds[29 +: 1] in
-      let b3 = $ds[28 +: 1] in
-      let b4 = $ds[27 +: 1] in
-      let b5 = $ds[26 +: 1] in
-      let b6 = $ds[25 +: 1] in
-      let b7 = $ds[24 +: 1] in
-      let b8 = $ds[23 +: 1] in
-      let b9 = $ds[22 +: 1] in
-      let b10 = $ds[21 +: 1] in
-      let b11 = $ds[20 +: 1] in
-      let b12 = $ds[19 +: 1] in
-      let b13 = $ds[18 +: 1] in
-      let b14 = $ds[17 +: 1] in
-      let b15 = $ds[16 +: 1] in
-      let b16 = $ds[15 +: 1] in
-      let b17 = $ds[14 +: 1] in
-      let b18 = $ds[13 +: 1] in
-      let b19 = $ds[12 +: 1] in
-      let b20 = $ds[11 +: 1] in
-      let b21 = $ds[10 +: 1] in
-      let b22 = $ds[9 +: 1] in
-      let b23 = $ds[8 +: 1] in
-      let b24 = $ds[7 +: 1] in
-      let b25 = $ds[6 +: 1] in
-      let b26 = $ds[5 +: 1] in
-      let b27 = $ds[4 +: 1] in
-      let b28 = $ds[3 +: 1] in
-      let b29 = $ds[2 +: 1] in
-      let b30 = $ds[1 +: 1] in
-      let b31 = $ds[0 +: 1] in
-      b10 # b11 # b12 # b13 # b14 # b15 # b16 # b17 # b18 # b19 # b20 # b21 # b22 # b23 # b24 # b25 # b26 # b27 # b28 # b29 # b30 # b31 # b0 # b1 # b2 # b3 # b4 # b5 # b6 # b7 # b8 # b9
-
-Main.bigsigma0 : ([32]) -> [32]
-Main.bigsigma0 x =
-      Main.xorW32 (Main.xorW32 (Main.rotateR2 x) (Main.rotateR13 x)) (Main.rotateR22 x)
-
-Main.rotateR25 : ([32]) -> [32]
-Main.rotateR25 $ds =
-      let b0 = $ds[31 +: 1] in
-      let b1 = $ds[30 +: 1] in
-      let b2 = $ds[29 +: 1] in
-      let b3 = $ds[28 +: 1] in
-      let b4 = $ds[27 +: 1] in
-      let b5 = $ds[26 +: 1] in
-      let b6 = $ds[25 +: 1] in
-      let b7 = $ds[24 +: 1] in
-      let b8 = $ds[23 +: 1] in
-      let b9 = $ds[22 +: 1] in
-      let b10 = $ds[21 +: 1] in
-      let b11 = $ds[20 +: 1] in
-      let b12 = $ds[19 +: 1] in
-      let b13 = $ds[18 +: 1] in
-      let b14 = $ds[17 +: 1] in
-      let b15 = $ds[16 +: 1] in
-      let b16 = $ds[15 +: 1] in
-      let b17 = $ds[14 +: 1] in
-      let b18 = $ds[13 +: 1] in
-      let b19 = $ds[12 +: 1] in
-      let b20 = $ds[11 +: 1] in
-      let b21 = $ds[10 +: 1] in
-      let b22 = $ds[9 +: 1] in
-      let b23 = $ds[8 +: 1] in
-      let b24 = $ds[7 +: 1] in
-      let b25 = $ds[6 +: 1] in
-      let b26 = $ds[5 +: 1] in
-      let b27 = $ds[4 +: 1] in
-      let b28 = $ds[3 +: 1] in
-      let b29 = $ds[2 +: 1] in
-      let b30 = $ds[1 +: 1] in
-      let b31 = $ds[0 +: 1] in
-      b7 # b8 # b9 # b10 # b11 # b12 # b13 # b14 # b15 # b16 # b17 # b18 # b19 # b20 # b21 # b22 # b23 # b24 # b25 # b26 # b27 # b28 # b29 # b30 # b31 # b0 # b1 # b2 # b3 # b4 # b5 # b6
-
-Main.bigsigma1 : ([32]) -> [32]
-Main.bigsigma1 x =
-      Main.xorW32 (Main.xorW32 (Main.rotateR6 x) (Main.rotateR11 x)) (Main.rotateR25 x)
-
-Main.step256 : ([32], [32], [256]) -> [256]
-Main.step256 k w $ds =
-      let a = $ds[224 +: 32] in
-      let b = $ds[192 +: 32] in
-      let c = $ds[160 +: 32] in
-      let d = $ds[128 +: 32] in
-      let e = $ds[96 +: 32] in
-      let f = $ds[64 +: 32] in
-      let g = $ds[32 +: 32] in
-      let h = $ds[0 +: 32] in
-      let t1 = Main.plusW32 h (Main.plusW32 (Main.plusW32 (Main.bigsigma1 e) (Main.ch e f g)) (Main.plusW32 k w)) in
-      Main.plusW32 t1 (Main.plusW32 (Main.bigsigma0 a) (Main.maj a b c)) # a # b # c # Main.plusW32 d t1 # e # f # g
-
-Main.shiftR3 : ([32]) -> [32]
-Main.shiftR3 $ds =
-      let b0 = $ds[31 +: 1] in
-      let b1 = $ds[30 +: 1] in
-      let b2 = $ds[29 +: 1] in
-      let b3 = $ds[28 +: 1] in
-      let b4 = $ds[27 +: 1] in
-      let b5 = $ds[26 +: 1] in
-      let b6 = $ds[25 +: 1] in
-      let b7 = $ds[24 +: 1] in
-      let b8 = $ds[23 +: 1] in
-      let b9 = $ds[22 +: 1] in
-      let b10 = $ds[21 +: 1] in
-      let b11 = $ds[20 +: 1] in
-      let b12 = $ds[19 +: 1] in
-      let b13 = $ds[18 +: 1] in
-      let b14 = $ds[17 +: 1] in
-      let b15 = $ds[16 +: 1] in
-      let b16 = $ds[15 +: 1] in
-      let b17 = $ds[14 +: 1] in
-      let b18 = $ds[13 +: 1] in
-      let b19 = $ds[12 +: 1] in
-      let b20 = $ds[11 +: 1] in
-      let b21 = $ds[10 +: 1] in
-      let b22 = $ds[9 +: 1] in
-      let b23 = $ds[8 +: 1] in
-      let b24 = $ds[7 +: 1] in
-      let b25 = $ds[6 +: 1] in
-      let b26 = $ds[5 +: 1] in
-      let b27 = $ds[4 +: 1] in
-      let b28 = $ds[3 +: 1] in
-      3'h0 # b0 # b1 # b2 # b3 # b4 # b5 # b6 # b7 # b8 # b9 # b10 # b11 # b12 # b13 # b14 # b15 # b16 # b17 # b18 # b19 # b20 # b21 # b22 # b23 # b24 # b25 # b26 # b27 # b28
-
-Main.sigma0 : ([32]) -> [32]
-Main.sigma0 x =
-      Main.xorW32 (Main.xorW32 (Main.rotateR7 x) (Main.rotateR18 x)) (Main.shiftR3 x)
-
-Main.shiftR10 : ([32]) -> [32]
-Main.shiftR10 $ds =
-      let b0 = $ds[31 +: 1] in
-      let b1 = $ds[30 +: 1] in
-      let b2 = $ds[29 +: 1] in
-      let b3 = $ds[28 +: 1] in
-      let b4 = $ds[27 +: 1] in
-      let b5 = $ds[26 +: 1] in
-      let b6 = $ds[25 +: 1] in
-      let b7 = $ds[24 +: 1] in
-      let b8 = $ds[23 +: 1] in
-      let b9 = $ds[22 +: 1] in
-      let b10 = $ds[21 +: 1] in
-      let b11 = $ds[20 +: 1] in
-      let b12 = $ds[19 +: 1] in
-      let b13 = $ds[18 +: 1] in
-      let b14 = $ds[17 +: 1] in
-      let b15 = $ds[16 +: 1] in
-      let b16 = $ds[15 +: 1] in
-      let b17 = $ds[14 +: 1] in
-      let b18 = $ds[13 +: 1] in
-      let b19 = $ds[12 +: 1] in
-      let b20 = $ds[11 +: 1] in
-      let b21 = $ds[10 +: 1] in
-      10'h0 # b0 # b1 # b2 # b3 # b4 # b5 # b6 # b7 # b8 # b9 # b10 # b11 # b12 # b13 # b14 # b15 # b16 # b17 # b18 # b19 # b20 # b21
-
-Main.sigma1 : ([32]) -> [32]
-Main.sigma1 x =
-      Main.xorW32 (Main.xorW32 (Main.rotateR17 x) (Main.rotateR19 x)) (Main.shiftR10 x)
-
-Main.updateSched : ([512]) -> [512]
-Main.updateSched $ds =
-      let w00 = $ds[480 +: 32] in
-      let w01 = $ds[448 +: 32] in
-      let w02 = $ds[416 +: 32] in
-      let w03 = $ds[384 +: 32] in
-      let w04 = $ds[352 +: 32] in
-      let w05 = $ds[320 +: 32] in
-      let w06 = $ds[288 +: 32] in
-      let w07 = $ds[256 +: 32] in
-      let w08 = $ds[224 +: 32] in
-      let w09 = $ds[192 +: 32] in
-      let w10 = $ds[160 +: 32] in
-      let w11 = $ds[128 +: 32] in
-      let w12 = $ds[96 +: 32] in
-      let w13 = $ds[64 +: 32] in
-      let w14 = $ds[32 +: 32] in
-      let w15 = $ds[0 +: 32] in
-      w01 # w02 # w03 # w04 # w05 # w06 # w07 # w08 # w09 # w10 # w11 # w12 # w13 # w14 # w15 # Main.plusW32 (Main.plusW32 (Main.sigma1 w14) w09) (Main.plusW32 (Main.sigma0 w01) w00)
-
-Main.seed : ([6]) -> [32]
-Main.seed $ds =
-      if eq $ds 6'h0 then 32'h428a2f98
-            else if eq $ds 6'h1 then 32'h71374491 else if eq $ds 6'h2 then 32'hb5c0fbcf else if eq $ds 6'h3 then 32'he9b5dba5 else if eq $ds 6'h4 then 32'h3956c25b else if eq $ds 6'h5 then 32'h59f111f1 else if eq $ds 6'h6 then 32'h923f82a4 else if eq $ds 6'h7 then 32'hab1c5ed5 else if eq $ds 6'h8 then 32'hd807aa98 else if eq $ds 6'h9 then 32'h12835b01 else if eq $ds 6'ha then 32'h243185be else if eq $ds 6'hb then 32'h550c7dc3 else if eq $ds 6'hc then 32'h72be5d74 else if eq $ds 6'hd then 32'h80deb1fe else if eq $ds 6'he then 32'h9bdc06a7 else if eq $ds 6'hf then 32'hc19bf174 else if eq $ds 6'h10 then 32'he49b69c1 else if eq $ds 6'h11 then 32'hefbe4786 else if eq $ds 6'h12 then 32'hfc19dc6 else if eq $ds 6'h13 then 32'h240ca1cc else if eq $ds 6'h14 then 32'h2de92c6f else if eq $ds 6'h15 then 32'h4a7484aa else if eq $ds 6'h16 then 32'h5cb0a9dc else if eq $ds 6'h17 then 32'h76f988da else if eq $ds 6'h18 then 32'h983e5152 else if eq $ds 6'h19 then 32'ha831c66d else if eq $ds 6'h1a then 32'hb00327c8 else if eq $ds 6'h1b then 32'hbf597fc7 else if eq $ds 6'h1c then 32'hc6e00bf3 else if eq $ds 6'h1d then 32'hd5a79147 else if eq $ds 6'h1e then 32'h6ca6351 else if eq $ds 6'h1f then 32'h14292967 else if eq $ds 6'h20 then 32'h27b70a85 else if eq $ds 6'h21 then 32'h2e1b2138 else if eq $ds 6'h22 then 32'h4d2c6dfc else if eq $ds 6'h23 then 32'h53380d13 else if eq $ds 6'h24 then 32'h650a7354 else if eq $ds 6'h25 then 32'h766a0abb else if eq $ds 6'h26 then 32'h81c2c92e else if eq $ds 6'h27 then 32'h92722c85 else if eq $ds 6'h28 then 32'ha2bfe8a1 else if eq $ds 6'h29 then 32'ha81a664b else if eq $ds 6'h2a then 32'hc24b8b70 else if eq $ds 6'h2b then 32'hc76c51a3 else if eq $ds 6'h2c then 32'hd192e819 else if eq $ds 6'h2d then 32'hd6990624 else if eq $ds 6'h2e then 32'hf40e3585 else if eq $ds 6'h2f then 32'h106aa070 else if eq $ds 6'h30 then 32'h19a4c116 else if eq $ds 6'h31 then 32'h1e376c08 else if eq $ds 6'h32 then 32'h2748774c else if eq $ds 6'h33 then 32'h34b0bcb5 else if eq $ds 6'h34 then 32'h391c0cb3 else if eq $ds 6'h35 then 32'h4ed8aa4a else if eq $ds 6'h36 then 32'h5b9cca4f else if eq $ds 6'h37 then 32'h682e6ff3 else if eq $ds 6'h38 then 32'h748f82ee else if eq $ds 6'h39 then 32'h78a5636f else if eq $ds 6'h3a then 32'h84c87814 else if eq $ds 6'h3b then 32'h8cc70208 else if eq $ds 6'h3c then 32'h90befffa else if eq $ds 6'h3d then 32'ha4506ceb else if eq $ds 6'h3e then 32'hbef9a3f7 else 32'hc67178f2
 
 device top_level
       input __in0 : [68]
@@ -997,7 +627,42 @@ device top_level
       tag $x2 = 0
       tag i = 1
       tag _unused11 = 2
-      let $res = main.$dispatch (__resumption_tag # __st0 # __st1 # __st2 # __st3 # __st4 # __st5 # __st6) __in0
+      let $res = if eq __resumption_tag[6 +: 2] 2'h0 then (let s0$i1 = __st0 # __st1 in
+                  let s1$i2 = __st2 # __st3 in
+                  let s2$i3 = __st4 # __st5 in
+                  main.dev __in0 s0$i1 s1$i2 s2$i3 __st6)
+                  else if eq __resumption_tag[6 +: 2] 2'h1 then (let ctr$i5 = __resumption_tag[0 +: 6] in
+                  let s0$i6 = __st0 # __st1 in
+                  let s1$i7 = __st2 # __st3 in
+                  let s2$i8 = __st4 # __st5 in
+                  if eq ctr$i5 6'h3f then (let h1$i10 = __st4[192 +: 32] in
+                        let h2$i11 = __st4[160 +: 32] in
+                        let h3$i12 = __st4[128 +: 32] in
+                        let h4$i13 = __st4[96 +: 32] in
+                        let h5$i14 = __st4[64 +: 32] in
+                        let h6$i15 = __st4[32 +: 32] in
+                        let h7$i16 = __st4[0 +: 32] in
+                        let a$i18 = __st0[192 +: 32] in
+                        let b$i19 = __st0[160 +: 32] in
+                        let c$i20 = __st0[128 +: 32] in
+                        let d$i21 = __st0[96 +: 32] in
+                        let e$i22 = __st0[64 +: 32] in
+                        let f$i23 = __st0[32 +: 32] in
+                        let g$i24 = __st0[0 +: 32] in
+                        let $a$i26 = Main.plusW32 a$i18 h1$i10 in
+                        let $a1$i27 = Main.plusW32 b$i19 h2$i11 in
+                        let $a2$i28 = Main.plusW32 c$i20 h3$i12 in
+                        let $a3$i29 = Main.plusW32 d$i21 h4$i13 in
+                        let $a4$i30 = Main.plusW32 e$i22 h5$i14 in
+                        let $a5$i31 = Main.plusW32 f$i23 h6$i15 in
+                        let $a6$i32 = Main.plusW32 g$i24 h7$i16 in
+                        let $a7$i33 = Main.plusW32 __st1 __st5 in
+                        let $a8$i34 = $a$i26 # $a1$i27 # $a2$i28 # $a3$i29 # $a4$i30 # $a5$i31 # $a6$i32 # $a7$i33 in
+                        main.dev __in0 s0$i6 s1$i7 $a8$i34 __st6)
+                        else main.genhash' s0$i6 s1$i7 s2$i8 __st6) else let s0$i35 = __st0 # __st1 in
+                  let s1$i36 = __st2 # __st3 in
+                  let s2$i37 = __st4 # __st5 in
+                  main.genhash' s0$i35 s1$i36 s2$i37 __st6
       __out0 := $res[1038 +: 65]
       next __resumption_tag := $res[1030 +: 8]
       next __st0 := $res[806 +: 224]

@@ -16,37 +16,16 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// main.$dispatch
-rw_main__dispatch : [7] -> [5]
-rw_main__dispatch x0 = rw_main__x2 x0
-
-// main.$x2
-rw_main__x2 : [7] -> [5]
-rw_main__x2 x0 = rw_main_loop x0
-
-// main.$x3
-rw_main__x3 : [5] -> [5]
-rw_main__x3 x0 = x0
-
-// main.loop
-rw_main_loop : [7] -> [5]
-rw_main_loop x0 = rw_main__x3 s0
-  where
-    s0 : [5]
-    s0 = rw_Main_compute x0
-
-// Main.compute
-rw_Main_compute : [7] -> [5]
-rw_Main_compute x0 = rw'resize`{5} (if 0x00000000000000000000000000000014 == zero then ((rw'resize`{128} (if 0b0010100 == zero then x0 else (x0 % 0b0010100))) + 0x00000000000000000000000000000006) else (((rw'resize`{128} (if 0b0010100 == zero then x0 else (x0 % 0b0010100))) + 0x00000000000000000000000000000006) % 0x00000000000000000000000000000014))
-
 // Per-cycle step: outputs # next register values.
 rw_step : [7] -> [5]
-rw_step i = s1
+rw_step i = s2
   where
     s0 : [7]
     s0 = i
     s1 : [5]
-    s1 = rw_main__dispatch s0
+    s1 = rw'resize`{5} (if 0x00000000000000000000000000000014 == zero then ((rw'resize`{128} (if 0b0010100 == zero then s0 else (s0 % 0b0010100))) + 0x00000000000000000000000000000006) else (((rw'resize`{128} (if 0b0010100 == zero then s0 else (s0 % 0b0010100))) + 0x00000000000000000000000000000006) % 0x00000000000000000000000000000014))
+    s2 : [5]
+    s2 = s1
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [7]
