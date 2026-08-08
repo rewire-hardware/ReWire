@@ -143,7 +143,7 @@ theorem addForeign_foreignC {Δ : DEnv} {rwcTxt : String} {hp : Rwv.Hyle.Program
     (hnd : (hp.defns.map (·.name)).Nodup) {F : Rwv.Hyle.Sem.FEnv}
     (hF : Rwv.Hyle.Sem.mkFEnv hp = .ok F) :
     ∃ X F', Rwv.Eidos.Cexp.ForeignC (addForeign Δ rwcTxt hp) X F' := by
-  refine ⟨Rwv.Hyle.Sem.xenv hp, F, ?_, ?_, ?_, ?_⟩
+  refine ⟨Rwv.Hyle.Sem.xenv hp, F, ?_, ?_, ?_, ?_, ?_⟩
   · show Rwv.Hyle.Bridge.FImplements (addForeign Δ rwcTxt hp).hyleDefs
       (Rwv.Hyle.Sem.xenv hp) F
     have hdefs : (addForeign Δ rwcTxt hp).hyleDefs = Rwv.Hyle.Bridge.dmapOf hp := by
@@ -169,6 +169,16 @@ theorem addForeign_foreignC {Δ : DEnv} {rwcTxt : String} {hp : Rwv.Hyle.Program
     rw [addForeign, hF]
     show ((Rwv.Hyle.Sem.xenv hp).get? s).map (Cexp.callF F) = none
     rw [show (Rwv.Hyle.Sem.xenv hp).get? s = none from hs']
+    rfl
+  · intro s g hg
+    have hg' : (addForeign Δ rwcTxt hp).hyleX.get? s = some g := hg
+    rw [addForeign, hF] at hg'
+    refine ⟨Rwv.Eidos.Cexp.callF F g, ?_, fun vs => rfl⟩
+    show (addForeign Δ rwcTxt hp).xtF s = some (Rwv.Eidos.Cexp.callF F g)
+    rw [addForeign, hF]
+    show ((Rwv.Hyle.Sem.xenv hp).get? s).map (Cexp.callF F)
+      = some (Rwv.Eidos.Cexp.callF F g)
+    rw [show (Rwv.Hyle.Sem.xenv hp).get? s = some g from hg']
     rfl
 
 #print axioms Rwv.Eidos.addForeign_foreignC
