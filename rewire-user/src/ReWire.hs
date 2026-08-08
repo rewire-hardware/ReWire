@@ -5,7 +5,7 @@ module ReWire
       ( module RWC.Primitives
       , error, externWithSig, extern
       , put, get, modify
-      , signal, lift, extrude, unfold
+      , signal, lift, extrude
       , natVal, length, len, fromList
       , Bit, W
       ) where
@@ -28,7 +28,7 @@ externWithSig :: [(String, Integer)] -- ^ Module parameters (name and integer li
               -> [(String, Integer)] -- ^ Module outputs (name and integer literal bitwidth).
               -> String              -- ^ Module name.
               -> a                   -- ^ Haskell definition to use when interpreting.
-              -> String              -- ^ Instance name to use in generated Verilog.
+              -> String              -- ^ Reserved: an instance-name hint; currently ignored by the compiler.
               -> a
 externWithSig = rwPrimExtern
 
@@ -60,10 +60,6 @@ lift = rwPrimLift
 {-# INLINE extrude #-}
 extrude :: Monad m => ReacT i o (StateT s m) a -> s -> ReacT i o m a
 extrude = rwPrimExtrude
-
-{-# INLINE unfold #-}
-unfold :: ((R_, s) -> i -> PuRe s o) -> (s -> PuRe s o) -> ReacT i o Identity ()
-unfold = rwPrimUnfold
 
 -- | Produce integer associated with type-level natural.
 {-# INLINE natVal #-}

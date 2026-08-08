@@ -134,7 +134,16 @@ evalOp an op vs = case (op, vs) of
       (Mul   , [a, b]) -> arith a b (*)
       (UDiv  , [a, b]) -> pure $ if nat b == 0 then ones (width a) else mkBV (width a) $ nat a `div` nat b
       (UMod  , [a, b]) -> pure $ if nat b == 0 then a else mkBV (width a) $ nat a `mod` nat b
-      (Pow   , [a, b]) -> arith a b (^)
+      (Pow   , [a, b]) -> pure $ mkBV (width a) $ powMod (nat a) (nat b)
+            where -- Square-and-multiply mod 2^n: plain (^) would build the
+                  -- full Integer power first, which is astronomic for wide
+                  -- dynamic exponents (the result cycles mod 2^n anyway).
+                  powMod :: Integer -> Integer -> Integer
+                  powMod x e | m == 1    = 0
+                             | otherwise = go 1 (x `mod` m) e
+                        where m = 2 ^ width a
+                              go acc _ 0  = acc
+                              go acc s e' = go (if odd e' then acc * s `mod` m else acc) (s * s `mod` m) (e' `div` 2)
       (And   , [a, b]) -> arith a b (.&.)
       (Or    , [a, b]) -> arith a b (.|.)
       (XOr   , [a, b]) -> arith a b xor

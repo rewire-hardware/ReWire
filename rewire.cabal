@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.39.1.
+-- This file has been generated from package.yaml by hpack version 0.39.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -27,6 +27,7 @@ data-files:
     tests/negative/ambiguous-size.hs
     tests/negative/bind-lhs-pause.hs
     tests/negative/bind-lhs-unbounded.hs
+    tests/negative/bitSliceWidth.hs
     tests/negative/cryptol-badtype.hs
     tests/negative/cryptol-clocked-extern.hs
     tests/negative/cryptol-enum-boundary.hs
@@ -54,6 +55,7 @@ data-files:
     tests/negative/finite-zero-maxbound.hs
     tests/negative/finite-zero-minbound.hs
     tests/negative/from-finite-not-representable.hs
+    tests/negative/fromListLength.hs
     tests/negative/illtyped-dead-code.hs
     tests/negative/illtyped-use.hs
     tests/negative/import-unexported-symbol.hs
@@ -191,6 +193,7 @@ data-files:
     tests/golden/wordShift.hs
     tests/golden/wordSlice.hs
     tests/golden/zerowidth.hs
+    tests/golden/zerowidthRed.hs
     tests/golden/case1.sv
     tests/golden/case2.sv
     tests/golden/caseBindBug.sv
@@ -271,6 +274,7 @@ data-files:
     tests/golden/wordShift.sv
     tests/golden/wordSlice.sv
     tests/golden/zerowidth.sv
+    tests/golden/zerowidthRed.sv
     tests/golden/case1.rwc
     tests/golden/case2.rwc
     tests/golden/caseBindBug.rwc
@@ -351,6 +355,7 @@ data-files:
     tests/golden/wordShift.rwc
     tests/golden/wordSlice.rwc
     tests/golden/zerowidth.rwc
+    tests/golden/zerowidthRed.rwc
     tests/golden/case1.vhdl
     tests/golden/case2.vhdl
     tests/golden/caseBindBug.vhdl
@@ -431,6 +436,7 @@ data-files:
     tests/golden/wordShift.vhdl
     tests/golden/wordSlice.vhdl
     tests/golden/zerowidth.vhdl
+    tests/golden/zerowidthRed.vhdl
     tests/golden/case1.cry
     tests/golden/case2.cry
     tests/golden/caseBindBug.cry
@@ -510,6 +516,7 @@ data-files:
     tests/golden/wordShift.cry
     tests/golden/wordSlice.cry
     tests/golden/zerowidth.cry
+    tests/golden/zerowidthRed.cry
     tests/golden/cry/cryfield.cry
     tests/golden/cry/cryho.cry
     tests/golden/cry/crymix.cry
@@ -665,6 +672,7 @@ data-files:
     tests/golden/wordSlice.input.yaml
     tests/golden/wordSlice.yaml
     tests/golden/zerowidth.yaml
+    tests/golden/zerowidthRed.yaml
     tests/integration/aes128.hs
     tests/integration/MiniISA.hs
     tests/integration/aes128.sv

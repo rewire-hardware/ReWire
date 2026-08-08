@@ -23,7 +23,6 @@ import ReWire.Pretty (Pretty (..), TextShow, FromGeneric(..))
 import ReWire.Unbound (Alpha)
 
 -- | Note: this is not injective (e.g., VecConcat has two notations)
--- | Note: there are rwPrim defs in ReWire that don't have Builtins (e.g. ToInteger)
 -- | Note: there are Builtins that don't have direct corresponding notations (e.g. Bits is used in lit, but not directly)
 builtinUserQName :: [(Builtin,Text)]
 builtinUserQName = [
@@ -31,17 +30,16 @@ builtinUserQName = [
       (Error, "ReWire.error"), (Extern, "ReWire.externWithSig"),
       (NatVal, "ReWire.natVal"),
       (Put, "ReWire.put"), (Get, "ReWire.get"), (Signal, "ReWire.signal"),
-      (Lift, "ReWire.lift"), (Extrude, "ReWire.extrude"), (Unfold, "ReWire.unfold"),
-      (VecFromList,"ReWire.fromList"),      
+      (Lift, "ReWire.lift"), (Extrude, "ReWire.extrude"),
+      (VecFromList,"ReWire.fromList"),
       -- | Prelude
       (Bind, "ReWire.Prelude.>>="), (Return, "ReWire.Prelude.return"), (Return, "ReWire.Prelude.pure"),
       -- | Vectors
-      (VecReplicate, "ReWire.Vectors.replicate"), (VecReverse, "ReWire.Vectors.reverse"), 
-      (VecSlice, "ReWire.Vectors.slice"), (VecRSlice, "ReWire.Vectors.rslice"), (VecIndex, "ReWire.Vectors.index"), 
+      (VecReplicate, "ReWire.Vectors.replicate"), (VecReverse, "ReWire.Vectors.reverse"),
+      (VecSlice, "ReWire.Vectors.slice"), (VecRSlice, "ReWire.Vectors.rslice"), (VecIndex, "ReWire.Vectors.index"),
       (VecIndexProxy, "ReWire.Vectors.index'"), (VecIndexProxy, "ReWire.Vectors.!"),
       (VecConcat, "ReWire.Vectors.++"), (VecMap, "ReWire.Vectors.map"), (VecGenerate, "ReWire.Vectors.generate"),
-      -- Missing prims: VecUpdate, VecBulkUpdate, VecIterate, VecZip,
-      -- Missing Builtins: VecFoldR, VecFoldL, VecFromList
+      -- Missing prims: VecUpdate, VecBulkUpdate, VecIterate, VecZip
       -- | Finites
       (Finite, "ReWire.Finite.finite"), (FiniteMinBound, "ReWire.Finite.minBound"), (FiniteMaxBound, "ReWire.Finite.maxBound"), 
       (ToFinite, "ReWire.Finite.toFinite"), (ToFiniteMod, "ReWire.Finite.toFinite'"), (FromFinite, "ReWire.Finite.fromFinite"),
@@ -64,17 +62,16 @@ builtinUserName = [
       (Error, "error"), (Extern, "externWithSig"),
       (NatVal, "natVal"),
       (Put, "put"), (Get, "get"), (Signal, "signal"),
-      (Lift, "lift"), (Extrude, "extrude"), (Unfold, "unfold"),
-      (VecFromList,"fromList"),      
+      (Lift, "lift"), (Extrude, "extrude"),
+      (VecFromList,"fromList"),
       -- | Prelude
       (Bind, ">>="), (Return, "return"), (Return, "pure"),
       -- | Vectors
-      (VecReplicate, "replicate"), (VecReverse, "reverse"), 
-      (VecSlice, "slice"), (VecRSlice, "rslice"), (VecIndex, "index"), 
+      (VecReplicate, "replicate"), (VecReverse, "reverse"),
+      (VecSlice, "slice"), (VecRSlice, "rslice"), (VecIndex, "index"),
       (VecIndexProxy, "index'"), (VecIndexProxy, "!"),
       (VecConcat, "++"), (VecMap, "map"), (VecGenerate, "generate"),
-      -- Missing prims: VecUpdate, VecBulkUpdate, VecIterate, VecZip,
-      -- Missing Builtins: VecFoldR, VecFoldL, VecFromList
+      -- Missing prims: VecUpdate, VecBulkUpdate, VecIterate, VecZip
       -- | Finites
       (Finite, "finite"), (FiniteMinBound, "minBound"), (FiniteMaxBound, "maxBound"), 
       (ToFinite, "toFinite"), (ToFiniteMod, "toFinite'"), (FromFinite, "fromFinite"),
@@ -204,11 +201,11 @@ qn2rwu = \ case
 
 -- | Type builtins
 -- type (+), type GHC.Monad, type GHC.MonadTrans, KnownNat
--- Identity, ReacT, A_, R_, StateT, Vec, Finite, PuRe, Ref (..), Proxy (..)
+-- Identity, ReacT, StateT, Vec, Finite, Ref (..), Proxy (..)
 -- Maybe, Either, Bool
 -- Products?
 -- | Primitives
--- Defined Types/Data structs: Monad, MonadTrans, A_=, R_=, PuRe s o=Done(A_,s)|Pause(o,(R_,s)), Ref a=Ref String, Proxy (n::Nat)=Proxy
+-- Defined Types/Data structs: Monad, MonadTrans, Ref a=Ref String, Proxy (n::Nat)=Proxy
 -- Imported Types/Data structs: type(+),type(Nat),Identity, ReacT, StateT, Integer, String, Bool, Vec=Vector, KnownNat, Finite
       
 data TyBuiltin =

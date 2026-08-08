@@ -630,9 +630,14 @@ Names are legalized per target at print time (Verilog and VHDL:
 `Hyle.Mangle` z-encoding, plus VHDL extended identifiers for anything that
 isn't a safe basic identifier; Cryptol: sanitize + `rw_` prefix + dedup),
 never in the IR. Zero-width wires, ports, registers, lets, and expression
-positions are erased entirely by every printer (sound by §7); a defn or
-extern whose result is [0], or a device port of width [0], simply vanishes
-from interfaces.
+positions whose own width is zero are erased entirely by every printer
+(sound by §7); a defn or extern whose result is [0], or a device port of
+width [0], simply vanishes from interfaces. A zero-width operand of a
+value-consuming primitive with a non-zero-width result — a reduction, or
+a comparison — cannot be erased; those applications are constant-folded
+to the §5.2 n = 0 identities instead (in the optimizer, and again by the
+Verilog printer for reductions, which is what makes `--rtl-opt=0` output
+printable).
 
 ## 9. Design rationale: an expression language, not a netlist
 

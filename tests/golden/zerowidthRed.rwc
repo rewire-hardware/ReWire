@@ -1,0 +1,7 @@
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      tag $x2 = 0
+      let $res = let $a$i0 = add __in0 8'h1 in
+            $a$i0
+      __out0 := $res

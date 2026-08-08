@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* Removed unused primitives `rwPrimUnfold`, `rwPrimUsingExtern`,
+  `rwPrimVecFoldR`, `rwPrimVecFoldL`. Refactored and fixed several remaining
+  primitive definitions.
 * New GHC front end: `rwc` now compiles ReWire programs with an in-process
   GHC session (parse, rename, typecheck, and desugar over the whole module
   graph), translating the resulting Core to the new Eidos IR. Programs are

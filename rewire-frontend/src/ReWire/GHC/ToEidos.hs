@@ -533,8 +533,7 @@ bridgeConApp ctx an v dc args vargs
 --   dictionary (ordinary data, via a single-alternative case); >>=, >>,
 --   return, pure at ReacT/StateT/Identity or at an unresolved monad type
 --   become Bind/Return primitives (dictionary discarded; a concrete monad
---   off the reactive stack is rejected); == at Integer becomes the Eq
---   primitive.
+--   off the reactive stack is rejected).
 bridgeClassOp :: MonadError AstError m => Ctx -> Annote -> Var -> [CoreExpr] -> [CoreExpr] -> BM m E.Exp
 bridgeClassOp ctx an v args vargs
       | Just cls <- isClassOpId_maybe v
@@ -598,9 +597,6 @@ bridgeClassOp ctx an v args vargs
                   _     -> do -- return/pure
                         t <- opTy
                         mkApp an (E.Prim an t B.Return) . eargs <$> mapM (bridgeExp ctx an) vargs
-      | occ == "==", Just "Integer" <- tyArgHead = do
-            t <- opTy
-            mkApp an (E.Prim an t B.Eq) . eargs <$> mapM (bridgeExp ctx an) vargs
       | otherwise = failAt an $ "ghc-frontend: unsupported use of a type class method: " <> occ
       where occ :: Text
             occ = pack $ getOccString v

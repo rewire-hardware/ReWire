@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ConstraintKinds #-}
 module RWC.Primitives
-      ( Identity, ReacT, A_, R_, StateT, Vec, Finite, PuRe, Proxy (..)
+      ( Identity, ReacT, StateT, Vec, Finite, Proxy (..)
       , rwPrimAdd
       , rwPrimAnd
       , rwPrimBind
@@ -46,9 +46,7 @@ module RWC.Primitives
       , rwPrimResize
       , rwPrimReturn
       , rwPrimSignal
-      , rwPrimSignextend
       , rwPrimSub
-      , rwPrimUnfold
       , rwPrimFinite
       , rwPrimFiniteMinBound
       , rwPrimFiniteMaxBound
@@ -70,7 +68,7 @@ module RWC.Primitives
       , rwPrimVecSlice
       , rwPrimXNor
       , rwPrimXOr
-      , rwPrimToInteger
+      , toIntegerV
       , type (+), type GHC.Monad, type GHC.MonadTrans, KnownNat
       ) where
 
@@ -113,10 +111,7 @@ type Finite     = F.Finite
 -- data (a, b) = (a, b)
 -- ...
 
-data R_ -- Ctors generated during program build.
-data A_ -- Ctors generated during program build.
 data Proxy (n :: Nat) = Proxy
-data PuRe s o = Done (A_, s) | Pause (o, (R_, s))
 
 -- Definitions in this file are for ghc compat and ignored by rwc.
 
@@ -133,7 +128,7 @@ rwPrimExtern :: [(String, Integer)] -- ^ Module parameters (name and integer lit
              -> [(String, Integer)] -- ^ Module outputs (name and integer literal bitwidth).
              -> String              -- ^ Module name.
              -> a                   -- ^ Haskell definition to use when interpreting.
-             -> String              -- ^ Instance name to use in generated Verilog.
+             -> String              -- ^ Reserved: an instance-name hint; currently ignored by the compiler.
              -> a
 rwPrimExtern _ _ _ _ _ _ f _ = f
 
@@ -178,16 +173,6 @@ rwPrimExtrude (GHC.ReacT (GHC.StateT m)) s =
             GHC.Left y -> GHC.return (GHC.Left y)
             GHC.Right (o,k) -> GHC.return (GHC.Right (o, \ i -> rwPrimExtrude (k i) s'))
 
--- | The seed is a function of the initial state so that a device may pause
---   before its state registers are initialized (by extrude); the registers
---   are unobservable until then (the compiler zero-fills them).
-{-# OPAQUE rwPrimUnfold #-}
-rwPrimUnfold :: ((R_, s) -> i -> PuRe s o) -> (s -> PuRe s o) -> ReacT i o Identity ()
-rwPrimUnfold f s0 = go (s0 (GHC.error "rwPrimUnfold: the initial state is unobservable"))
-      where go (Done _)      = GHC.return ()
-            go (Pause (o,b)) = do i <- GHC.signal o
-                                  go (f b i)
-
 -- | Convert an Integer into a @'Finite' n@, throws an error if >= @n@.
 {-# OPAQUE rwPrimFinite #-}
 rwPrimFinite :: KnownNat n => Integer -> Finite n
@@ -211,7 +196,7 @@ rwPrimToFiniteMod v = F.finite (BW.toInteger' v `GHC.mod` (natVal (Proxy :: Prox
 
 {-# OPAQUE rwPrimFromFinite #-}
 rwPrimFromFinite :: KnownNat m => Finite n -> Vec m Bool
-rwPrimFromFinite = rwPrimResize . rwPrimBits . F.getFinite
+rwPrimFromFinite = bitsAt . F.getFinite
 
 -- *** Built-in Vec functions. ***
 
@@ -267,14 +252,16 @@ rwPrimVecGenerate = V.generate
 rwPrimVecConcat :: Vec n a -> Vec m a -> Vec (n + m) a
 rwPrimVecConcat = (V.++)
 
+-- | Materialize an Integer at exactly the result width, reducing mod 2^n
+--   (the shared kernel of the arithmetic reference models, exact at any
+--   width).
+bitsAt :: forall n . KnownNat n => Integer -> Vec n Bool
+bitsAt = rwPrimVecFromList . BW.intToBits' (GHC.fromEnum (natVal (Proxy :: Proxy n)))
+
 -- | Interpret an Integer as a bit vector.
 {-# OPAQUE rwPrimBits #-}
 rwPrimBits :: Integer -> Vec 128 Bool
-rwPrimBits =
-      rwPrimVecFromList . BW.padTrunc' i
-                        . GHC.reverse . BW.int2bits'
-        where
-          i = GHC.fromIntegral (natVal (Proxy :: Proxy 128))
+rwPrimBits = bitsAt
 
 -- | Truncates or zero-pads most significant bits.
 {-# OPAQUE rwPrimResize #-}
@@ -283,13 +270,6 @@ rwPrimResize v = rwPrimVecFromList vs'
     where
       vs = V.toList v
       vs' = BW.resize' (GHC.fromEnum (natVal (Proxy :: Proxy m))) vs
-
-{-# OPAQUE rwPrimSignextend #-}
-rwPrimSignextend :: forall m n . KnownNat m => Vec n Bool -> Vec m Bool
-rwPrimSignextend v = rwPrimVecFromList vs'
-    where
-      vs = V.toList v
-      vs' = BW.signextend (GHC.fromEnum (natVal (Proxy :: Proxy m))) vs
 
 -- | Update multiple indices
 -- rwPrimVecBulkUpdate :: KnownNat n => Vec n a -> Vec m (Finite n,a) -> Vec n a
@@ -320,31 +300,38 @@ rwPrimBitIndex v i = V.fromSized v VU.! (VU.length (V.fromSized v) GHC.- 1 GHC.-
 
 -- *** Primitive bitwise operations based on Verilog operators. ***
 
--- | Add.
+-- | Add (wrapping mod 2^n).
 {-# OPAQUE rwPrimAdd #-}
 rwPrimAdd :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimAdd v w = rwPrimResize $ rwPrimBits $ BW.toInteger' v GHC.+ BW.toInteger' w
+rwPrimAdd v w = bitsAt $ BW.toInteger' v GHC.+ BW.toInteger' w
 
--- | Subtract.
+-- | Subtract (wrapping mod 2^n).
 {-# OPAQUE rwPrimSub #-}
 rwPrimSub :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimSub v w = rwPrimResize $ rwPrimBits $ BW.toInteger' v GHC.- BW.toInteger' w
+rwPrimSub v w = bitsAt $ BW.toInteger' v GHC.- BW.toInteger' w
 
--- | Multiply.
+-- | Multiply (wrapping mod 2^n).
 {-# OPAQUE rwPrimMul #-}
 rwPrimMul :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimMul v w = rwPrimResize $ rwPrimBits $ BW.toInteger' v GHC.* BW.toInteger' w
+rwPrimMul v w = bitsAt $ BW.toInteger' v GHC.* BW.toInteger' w
 
--- | Divide.
+-- | Unsigned division. Division by zero yields all-ones (2^n - 1),
+--   following the SMT-LIB convention implemented by the compiled RTL and
+--   the interpreter.
 {-# OPAQUE rwPrimDiv #-}
 rwPrimDiv :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimDiv v w = rwPrimResize $ rwPrimBits $ rwPrimToInteger v `GHC.div` rwPrimToInteger w
+rwPrimDiv v w
+      | BW.toInteger' w GHC.== 0 = bitsAt (GHC.negate 1)
+      | GHC.otherwise            = bitsAt $ BW.toInteger' v `GHC.div` BW.toInteger' w
 
-
--- | Modulus.
+-- | Unsigned modulus. A zero divisor yields the dividend, following the
+--   SMT-LIB convention implemented by the compiled RTL and the
+--   interpreter.
 {-# OPAQUE rwPrimMod #-}
 rwPrimMod :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimMod v w = rwPrimResize $ rwPrimBits $ BW.toInteger' v `GHC.mod` BW.toInteger' w
+rwPrimMod v w
+      | BW.toInteger' w GHC.== 0 = v
+      | GHC.otherwise            = bitsAt $ BW.toInteger' v `GHC.mod` BW.toInteger' w
 
 -- | Exponentiation.
 {-# OPAQUE rwPrimPow #-}
@@ -466,9 +453,10 @@ rwPrimRXNor = GHC.not . V.foldl1 GHC.xor
 rwPrimMSBit :: Vec (1 + n) Bool -> Bool
 rwPrimMSBit = V.head
 
--- rwPrimToInteger :: Vec n Bool -> Integer
--- rwPrimToInteger = V.foldr (\ b iacc -> if b then 1 GHC.+ 2 GHC.* iacc else 2 GHC.* iacc) 0
-
-{-# OPAQUE rwPrimToInteger #-}
-rwPrimToInteger :: Vec n Bool -> Integer
-rwPrimToInteger = V.foldl (\ iacc b -> if b then 1 GHC.+ 2 GHC.* iacc else 2 GHC.* iacc) 0
+-- | The unsigned value of a bit vector, as an Integer. Not a primitive:
+--   GHC-only simulation support backing ReWire.Bits.toInteger (Integer is
+--   a compile-time-literal-only type in the compiled fragment). It lives
+--   here because this module's imports are ignored by both front ends.
+{-# OPAQUE toIntegerV #-}
+toIntegerV :: Vec n Bool -> Integer
+toIntegerV = BW.toInteger'

@@ -412,6 +412,7 @@ getSmokeTests = do
                   ]
             , smoke dir "onestate.hs" "vhdl"      "vhdl" ["--vhdl", "-p", "ieee.std_logic_1164.all"]
             , smoke dir "fibo1.hs"    "noclock"   "sv"   ["--no-clock", "--no-reset"]
+            , smoke dir "zerowidthRed.hs" "rtlopt0" "sv" ["--rtl-opt", "0"]
             , smoke dir "fibo1.hs"    "interp"    "yaml" ["--interpret", "--cycles", "3"]
             , smoke dir "fibo1.hs"    "debuglint" "rwc"  ["--debug-lint", "--core"]
             , smoke dir "fibo1.hs"    "eirdump"   "rwc"  ["--eidos", "--core"]

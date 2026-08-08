@@ -402,7 +402,8 @@ printApp e args = printApp' e args
 
 
 rwOpText :: RWUserOp -> Text
-rwOpText op = fromMaybe (fromMaybe "rwOpText: unimplemented op" (rwu2s op)) (lookup op textListRWOp)
+rwOpText op = fromMaybe (fromMaybe err (rwu2s op)) (lookup op textListRWOp)
+      where err = error $ "rwOpText: no Isabelle notation for op: " <> show op
 
 pOp :: RWUserOp -> [Term] -> Doc ann
 pOp op args@(arg:args') | isInfix op = case args' of
@@ -440,7 +441,7 @@ instance Pretty Term where
 
 
       -- | Primitives
-      -- -- Defined Types/Data structs: Monad, MonadTrans, A_=, R_=, PuRe s o=Done(A_,s)|Pause(o,(R_,s)), Ref a=Ref String, Proxy (n::Nat)=Proxy
+      -- -- Defined Types/Data structs: Monad, MonadTrans, Ref a=Ref String, Proxy (n::Nat)=Proxy
       -- -- Imported Types/Data structs: type(+),type(Nat),Identity, ReacT, StateT, Integer, String, Bool, Vec=Vector, KnownNat, Finite
       -- | Prelude
       -- -- Data structures: Maybe a = Nothing | Just a, Either a b = Left a | Right b, Bool = True | False

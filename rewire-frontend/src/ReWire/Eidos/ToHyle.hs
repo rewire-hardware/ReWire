@@ -720,8 +720,12 @@ transBuiltin env sc an' t' an theExp = case theExp of
       (BitSlice, [arg, finLit -> Just j, finLit -> Just i]) -> do
             unless (j + 1 >= i) $ failAt (ann arg)
                   $ "invalid bit slice (j: " <> showt j <> ", i: " <> showt i <> ")."
+            sz <- sizeOf env "rwPrimBitSlice" an t'
             let nBits = fromIntegral $ j + 1 - i
                 off   = (-i) - fromIntegral nBits
+            unless (toInteger nBits == toInteger sz) $ failAt (ann arg)
+                  $ "bit slice of width " <> showt nBits <> " (j: " <> showt j <> ", i: " <> showt i
+                  <> ") does not match the declared result width " <> showt sz <> "."
             subElems an arg off nBits
       (BitSlice, _) -> failAt an' "rwPrimBitSlice must have arguments (finite j) (finite i) with LitInts"
       (VecIndex, [arg, i]) -> vecIndex arg i
@@ -773,7 +777,12 @@ transBuiltin env sc an' t' an theExp = case theExp of
             A.cat <$> mapM (\ i -> applyFn an szElemO f [A.Lit an $ bitVec finW i])
                   [0 .. toInteger nElems - 1]
       (VecConcat, [arg1, arg2]) -> A.cat <$> mapM (transExp env sc) [arg1, arg2]
-      (VecFromList, [LitList _ _ els]) -> A.cat <$> mapM (transExp env sc) els
+      (VecFromList, [LitList _ _ els]) -> do
+            nElems <- checkVecArgSize "rwPrimVecFromList" t'
+            unless (length els == fromIntegral nElems) $ failAt an'
+                  $ "rwPrimVecFromList: list literal has " <> showt (length els)
+                  <> " elements, but the result type expects " <> showt nElems <> "."
+            A.cat <$> mapM (transExp env sc) els
       (VecFromList, _) -> failAt an' "rwPrimVecFromList: argument must be a list literal."
       (Finite, [arg]) -> do
             arg' <- transExp env sc arg
@@ -865,7 +874,13 @@ transBuiltin env sc an' t' an theExp = case theExp of
                         let sc' = sc { scMap = IM.insert (idUniq p) (A.Var an'' (A.sizeOf arg') x) $ scMap sc }
                         b' <- transExp env sc' b
                         pure $ A.Let an'' (A.sizeOf b') x arg' b'
-                  _ -> failAt an'' "unsupported function argument to a built-in vector operation."
+                  -- An eta-reduced operator builtin (e.g. @map bnot@):
+                  -- apply it directly. Width-directed builtins (resize and
+                  -- the like) still need a lambda or a named definition.
+                  (Prim _ _ b, pre) | Just _ <- toPrim b 0 0 -> do
+                        pre' <- mapM (transExp env sc) [ e | EArg e <- pre ]
+                        applyPrim an'' szOut b (pre' <> args')
+                  _ -> failAt an'' "unsupported function argument to a built-in vector operation (a builtin must be wrapped in a lambda or a named definition unless it is a plain operator)."
 
             subElems :: Annote -> Exp -> Integer -> Natural -> TM m A.Exp
             subElems an'' arg i nElems = do
