@@ -93,6 +93,26 @@
   dumps every pass, and adding `-v` appends the IR's show output to each
   dump, indented for readability, in a comment -- dumps remain valid
   `.eir`/`.rwc` syntax.
+* New `rwc --certify` flag: emit a per-compilation, machine-checked proof
+  that the compiled device implements its source state machine. Alongside
+  the output it writes the machine-level Eidos IR (`<out>.eir`) and the
+  final Hyle IR (`<out>.certify.rwc`), runs the formally verified
+  validator (`rwv-cstep-validate`, built from the Lean development in
+  `verify/`) on the pair, and prints a one-line `VALIDATED` verdict --
+  backed by a Lean-kernel-checked theorem covering cycle-for-cycle
+  agreement, spliced Cryptol FFI code, extern models, and (universally,
+  over all implementations) combinational externs -- or a warning (fatal
+  under `-Werror`), never a silent pass. See `doc/certify.md`.
+* The Hyle inline pass now runs for every device target, so the HDL and
+  Cryptol backends, the interpreter, `--core` output, and the certified
+  artifact all consume the same fully lowered program. `--core` and
+  `--cryptol` output now have single-use definitions inlined (previously
+  only the Verilog/VHDL backends did); interpreter traces are unchanged.
+* New `install.sh`: one-step build and install of the executables (`rwc`,
+  `rwcry`, `rwe`) plus the `--certify` validator, offering to set up the
+  Lean toolchain (build-time only) and finishing with a
+  compile-and-certify smoke test. The README's installation section now
+  documents all dependencies.
 
 ## 2.8 (2026-07)
 
