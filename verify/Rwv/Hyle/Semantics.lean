@@ -109,8 +109,55 @@ abbrev FEnv := HashMap String (List BV → Except String BV)
 
 /-- The static extern table: extern name ↦ model definition name, for
 model-carrying combinational externs. A lookup miss is a model-less
-extern, which evaluation rejects (doc/hyle.md §6.1). -/
+extern, whose interpretation (if any) comes from the extern
+environment `EEnv` below (stage B of the foreign tier). -/
 abbrev XEnv := HashMap String String
+
+/-- Bit-level interpretations of MODEL-LESS combinational externs
+(stage B, the η tier): per extern name, a function of the
+CONCATENATION of the input ports (MSB-first, in port order). The
+correspondence statement quantifies over this environment with both
+semantics reading the SAME one — the algebraic η_alg enters by
+instantiating it at `rep ∘ η ∘ decode` (Rwv.Eidos.Cstep.etaB). -/
+abbrev EEnv := String → Option (BV → Except String BV)
+
+/-- The empty extern environment: every model-less extern
+uninterpreted. The default everywhere, under which every definition
+and theorem means exactly what it meant before the extension. -/
+def eEmpty : EEnv := fun _ => none
+
+/-- Concatenate bit vectors, left = most significant (the Eidos side's
+`Val.bvConcat`, transcribed). -/
+def bvcat (xs : List BV) : BV :=
+  xs.foldl (fun acc x => ⟨_, acc.bits ++ x.bits⟩) BV.nil
+
+/-- The TOTAL reading of a model-less extern application at a cached
+result width: the interpretation's value when it exists, has a value,
+and carries the cached width; the zero vector otherwise. Totality (the
+width clamp included) is what keeps the symbolic evaluator's strong
+soundness — and every annotation-width fact — unconditional in `E`;
+the Eidos-side row (`Eval.evalExt`) keeps loud errors and a decode
+canonicality gate, so the clamp is inert wherever the correspondence
+statement has content. -/
+def xapply (E : EEnv) (ext : String) (w : Nat) (bv : BV) : BV :=
+  match E ext with
+  | some f =>
+      match f bv with
+      | .ok r => if r.width = w then r else BV.zero w
+      | .error _ => BV.zero w
+  | none => BV.zero w
+
+/-- `xapply` always returns the cached width. -/
+theorem xapply_width (E : EEnv) (ext : String) (w : Nat) (bv : BV) :
+    (xapply E ext w bv).width = w := by
+  rw [xapply]
+  split
+  · split
+    · split
+      · assumption
+      · rfl
+    · rfl
+  · rfl
 
 end Sem
 
@@ -120,8 +167,14 @@ open Sem
 evaluation against an environment of already-denoted definitions. The
 mux is short-circuiting, as in the interpreter (mathematically eager —
 both arms denote, and evaluation is effect-free on checked programs, so
-the difference is unobservable). -/
-def evalExp (F : Sem.FEnv) (X : Sem.XEnv) (ρ : HashMap String BV) : Exp → Except String BV
+the difference is unobservable). The trailing extern environment `E`
+(stage B, defaulted empty) interprets MODEL-LESS extern calls — with a
+model the §6.1 model path is unchanged, errors included; without one,
+generic-free calls read TOTALLY through `Sem.xapply` (the configuration
+the committed semantics previously rejected outright). -/
+def evalExp (F : Sem.FEnv) (X : Sem.XEnv) (ρ : HashMap String BV) (e : Exp)
+    (E : Sem.EEnv := Sem.eEmpty) : Except String BV :=
+  match e with
   | .lit v    => .ok v
   | .undef w  => .ok (BV.zero w)   -- undef denotes zero (§5.1)
   | .var _ x  =>
@@ -129,34 +182,36 @@ def evalExp (F : Sem.FEnv) (X : Sem.XEnv) (ρ : HashMap String BV) : Exp → Exc
       | some v => .ok v
       | none   => .error s!"unbound variable {x}"
   | .cat e₁ e₂ => do
-      let v₁ ← evalExp F X ρ e₁
-      let v₂ ← evalExp F X ρ e₂
+      let v₁ ← evalExp F X ρ e₁ E
+      let v₂ ← evalExp F X ρ e₂ E
       .ok ⟨_, v₁.bits ++ v₂.bits⟩
   | .slice i w e => do
-      let v ← evalExp F X ρ e
+      let v ← evalExp F X ρ e E
       .ok ⟨w, v.bits.extractLsb' i w⟩
   | .prim _ op args => do
-      let vs ← args.attach.mapM fun ⟨a, _⟩ => evalExp F X ρ a
+      let vs ← args.attach.mapM fun ⟨a, _⟩ => evalExp F X ρ a E
       evalOp op vs
   | .call _ f args => do
-      let vs ← args.attach.mapM fun ⟨a, _⟩ => evalExp F X ρ a
+      let vs ← args.attach.mapM fun ⟨a, _⟩ => evalExp F X ρ a E
       match F.get? f with
       | some fn => fn vs
       | none    => .error s!"unknown definition {f}"
-  | .xcall _ ext _ args => do
-      let vs ← args.attach.mapM fun ⟨a, _⟩ => evalExp F X ρ a
+  | .xcall w ext gs args => do
+      let vs ← args.attach.mapM fun ⟨a, _⟩ => evalExp F X ρ a E
       match X.get? ext with
       | some model =>
           match F.get? model with
           | some fn => fn vs
           | none    => .error s!"extern {ext}: unknown model {model}"
-      | none => .error s!"cannot evaluate model-less extern {ext}"
+      | none =>
+          if gs.isEmpty then .ok (Sem.xapply E ext w (Sem.bvcat vs))
+          else .error s!"cannot evaluate model-less extern {ext} (generic instantiation)"
   | .ite _ c t e => do
-      let vc ← evalExp F X ρ c
-      if vc.nat ≠ 0 then evalExp F X ρ t else evalExp F X ρ e
+      let vc ← evalExp F X ρ c E
+      if vc.nat ≠ 0 then evalExp F X ρ t E else evalExp F X ρ e E
   | .letE _ x rhs body => do
-      let v ← evalExp F X ρ rhs
-      evalExp F X (ρ.insert x v) body
+      let v ← evalExp F X ρ rhs E
+      evalExp F X (ρ.insert x v) body E
 
 namespace Sem
 
@@ -203,14 +258,16 @@ def xenv (p : Program) : XEnv :=
 
 /-- 𝔉⟦·⟧ (doc/hyle.md §6.2): denote every definition, folding in
 dependency order so each body evaluates against an environment that
-already contains its callees. -/
-def mkFEnv (p : Program) : Except String FEnv := do
+already contains its callees. The extern environment threads into
+every closure — a definition's meaning depends on the interpretations
+of the model-less externs it calls. -/
+def mkFEnv (p : Program) (E : EEnv := eEmpty) : Except String FEnv := do
   let X := xenv p
   let ordered ← topoDefns X p.defns
   ordered.foldlM (init := (∅ : FEnv)) fun F d =>
     let fn : List BV → Except String BV := fun vs =>
       if vs.length = d.params.length then
-        evalExp F X (HashMap.ofList (d.params.zip vs)) d.body
+        evalExp F X (HashMap.ofList (d.params.zip vs)) d.body E
       else
         .error s!"{d.name}: arity mismatch (expected {d.params.length}, got {vs.length})"
     pure (F.insert d.name fn)
@@ -226,8 +283,8 @@ inputs and registers, fold the statements in order, and read off the
 outputs and next register values — each assigned exactly once on
 checked programs (missing or duplicated assignments are errors here).
 Instance statements are outside the instance-free fragment. -/
-def step (F : FEnv) (X : XEnv) (dev : Device) (regs : HashMap String BV) (ins : List BV) :
-    Except String (List BV × HashMap String BV) := do
+def step (F : FEnv) (X : XEnv) (dev : Device) (regs : HashMap String BV) (ins : List BV)
+    (E : EEnv := eEmpty) : Except String (List BV × HashMap String BV) := do
   if ins.length ≠ dev.inputs.length then
     .error s!"stimulus arity: got {ins.length} inputs, device has {dev.inputs.length}"
   let ρ₀ := HashMap.ofList ((dev.inputs.map Prod.fst).zip ins) |>.union regs
@@ -236,15 +293,15 @@ def step (F : FEnv) (X : XEnv) (dev : Device) (regs : HashMap String BV) (ins : 
       fun (ρ, outs, nexts) stmt => do
         match stmt with
         | .sLet x e => do
-            let v ← evalExp F X ρ e
+            let v ← evalExp F X ρ e E
             pure (ρ.insert x v, outs, nexts)
         | .sOutput o e => do
             if outs.contains o then .error s!"output {o} assigned twice"
-            let v ← evalExp F X ρ e
+            let v ← evalExp F X ρ e E
             pure (ρ, outs.insert o v, nexts)
         | .sNext r e => do
             if nexts.contains r then .error s!"register {r} assigned twice"
-            let v ← evalExp F X ρ e
+            let v ← evalExp F X ρ e E
             pure (ρ, outs, nexts.insert r v)
         | .sInstIn inst _ _ => .error s!"device instance {inst}: outside the instance-free fragment"
   let outVals ← dev.outputs.mapM fun (o, _) =>
@@ -266,27 +323,28 @@ the device from the current register store, pushing the cycle's
 outputs onto the (reversed) trace accumulator. Named (rather than
 inline in `run`) so proofs can reason about the fold by its
 equations. -/
-def foldStep (F : FEnv) (X : XEnv) (dev : Device) :
+def foldStep (F : FEnv) (X : XEnv) (dev : Device) (E : EEnv := eEmpty) :
     HashMap String BV × List (List BV) → List BV →
     Except String (HashMap String BV × List (List BV))
   | (regs, acc), ins => do
-      let (outs, regs') ← step F X dev regs ins
+      let (outs, regs') ← step F X dev regs ins E
       pure (regs', outs :: acc)
 
 /-- The n-prefix of 𝔇⟦device⟧ (doc/hyle.md §6.4, instance-free): the
 Mealy unfolding from the declared initials over a finite stimulus, the
 semantics `--interpret` and the golden traces realize. -/
-def run (F : FEnv) (X : XEnv) (dev : Device) (stimulus : List (List BV)) :
-    Except String (List (List BV)) := do
-  let (_, outsRev) ← stimulus.foldlM (init := (initRegs dev, ([] : List (List BV)))) (foldStep F X dev)
+def run (F : FEnv) (X : XEnv) (dev : Device) (stimulus : List (List BV))
+    (E : EEnv := eEmpty) : Except String (List (List BV)) := do
+  let (_, outsRev) ← stimulus.foldlM (init := (initRegs dev, ([] : List (List BV)))) (foldStep F X dev E)
   pure outsRev.reverse
 
 end Sem
 
 /-- Run a whole program on a finite stimulus (inputs positionally per
 the device's input ports, one list per cycle). -/
-def Program.run (p : Program) (stimulus : List (List BV)) : Except String (List (List BV)) := do
-  let F ← Sem.mkFEnv p
-  Sem.run F (Sem.xenv p) p.device stimulus
+def Program.run (p : Program) (stimulus : List (List BV))
+    (E : Sem.EEnv := Sem.eEmpty) : Except String (List (List BV)) := do
+  let F ← Sem.mkFEnv p E
+  Sem.run F (Sem.xenv p) p.device stimulus E
 
 end Rwv.Hyle

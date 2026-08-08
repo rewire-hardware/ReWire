@@ -271,6 +271,9 @@ partial def nfToDag (d : Rwv.Hyle.BridgeDag.Dag) : NF →
       let (d, rt) := nfToDag d t
       let (d, re) := nfToDag d e
       Rwv.Hyle.BridgeDag.Dag.mkIteD d rc rt re
+  | .xcall w x a =>
+      let (d, ra) := nfToDag d a
+      Rwv.Hyle.BridgeDag.Dag.mkXcallD d w x ra
 
 /-- DAG-engine comparison of two normal forms over shared variables. -/
 def dagEq (n₁ n₂ : NF) : Bool :=
@@ -327,6 +330,7 @@ def main (argv : List String) : IO UInt32 := do
       let names := buildNameMap [] p.defns
       let hyleFuel := Rwv.Hyle.Bridge.progFuel hp
       let hDmap := Rwv.Hyle.Bridge.dmapOf hp
+      let hX := Rwv.Hyle.Sem.xenv hp
       let mut t : Tally := {}
       for d in p.defns do
         let nm := s!"{d.name.occ}#{d.name.uniq}"
@@ -349,13 +353,13 @@ def main (argv : List String) : IO UInt32 := do
                     IO.println s!"GAP       {nm}  ({msg})"
                     t := { t with gap := t.gap + 1 }
                 | .ok (ne, _ty) =>
-                    match Rwv.Hyle.Bridge.symExp hDmap hyleFuel
+                    match Rwv.Hyle.Bridge.symExp hDmap hX hyleFuel
                             (mkParamRho h.params h.sig.params) h.body with
                     | .error msg =>
                         IO.println s!"SKIP      {nm}  (Hyle symExp: {msg})"
                         t := { t with skip := t.skip + 1 }
                     | .ok nh =>
-                        if checkDefnPair Δ edm hDmap fuel hyleFuel d h then do
+                        if checkDefnPair Δ edm hDmap hX fuel hyleFuel d h then do
                           -- the leg the VERIFIED checkDefnPair certifies
                           if verbose then IO.println s!"OK-V      {nm}"
                           t := { t with okV := t.okV + 1 }

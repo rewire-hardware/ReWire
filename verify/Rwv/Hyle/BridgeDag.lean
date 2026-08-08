@@ -30,6 +30,21 @@ The store invariant (`Dag.WF`):
   indices), which aligns the node-level "same base" index test in
   adjacent-slice merging with the tree-level structural equality test.
 
+Stage B (the η tier): `DNode` mirrors Bridge's uninterpreted
+extern-call node as `xcall w ext a` — one packed-argument child, built
+by `xpackD` (the node-level `NF.xpack`, a left `mkCatD` fold from the
+empty literal) under `mkXcallD`, whose `width_coh` obligation is free
+(`annWidth` answers the cached width unconditionally, by the `xapply`
+clamp). `symExpDag` carries the extern table `X` exactly as `symExp`
+does — model-carrying calls and generic instantiations reject, sharing
+the tree evaluator's messages — and the simulation extends node for
+node, so `checkEquivDag`/`checkEquivDagRaw` inherit Bridge's ∀E run
+equality. The renormalizer passes the node through, renormalizing only
+the packed child, mirroring `cfoldW`. `xcallFreeIdx` is the store-side
+`NF.xcallFree` (guard-else branches answer `true`, matching `read`'s
+empty-literal reading), certified by `xcallFreeIdx_read` — the gate the
+Cryptol splice-inlining mirror consumes.
+
 Per house style, the `Except`/`HashMap.ofList` helpers private to
 Bridge are re-proved locally.
 -/
@@ -59,6 +74,7 @@ inductive DNode where
   | cat   (w : Nat) (a b : Nat)
   | slice (i w : Nat) (e : Nat)
   | ite   (w : Nat) (c t e : Nat)
+  | xcall (w : Nat) (ext : String) (a : Nat)
 deriving DecidableEq, Hashable, Repr
 
 namespace DNode
@@ -72,6 +88,7 @@ def width : DNode → Nat
   | .cat w _ _ => w
   | .slice _ w _ => w
   | .ite w _ _ _ => w
+  | .xcall w _ _ => w
 
 /-- Child indices. -/
 def children : DNode → List Nat
@@ -81,6 +98,7 @@ def children : DNode → List Nat
   | .cat _ a b => [a, b]
   | .slice _ _ e => [e]
   | .ite _ c t e => [c, t, e]
+  | .xcall _ _ a => [a]
 
 /-- The one-level tree reading: children through `f`. The cached
 width is dropped exactly where `NF` carries none. -/
@@ -93,6 +111,7 @@ def toNF (n : DNode) (f : Nat → NF) : NF :=
   | .cat _ a b => .cat (f a) (f b)
   | .slice i w e => .slice i w (f e)
   | .ite _ c t e => .ite (f c) (f t) (f e)
+  | .xcall w ext a => .xcall w ext (f a)
 
 theorem toNF_congr {n : DNode} {f g : Nat → NF} (h : ∀ j ∈ n.children, f j = g j) :
     n.toNF f = n.toNF g := by
@@ -141,6 +160,8 @@ def read (d : Dag) (i : Nat) : NF :=
       .ite (if _h : c < i then d.read c else .lit BV.nil)
            (if _h : t < i then d.read t else .lit BV.nil)
            (if _h : e < i then d.read e else .lit BV.nil)
+  | some (.xcall w ext a) =>
+      .xcall w ext (if _h : a < i then d.read a else .lit BV.nil)
   | none => .lit BV.nil
 termination_by i
 
@@ -221,6 +242,11 @@ theorem read_eq {d : Dag} {i : Nat} {n : DNode}
           dif_pos (hlt t (by simp [DNode.children])),
           dif_pos (hlt e (by simp [DNode.children]))]
       rfl
+  | xcall w ext a =>
+      rw [read, h]
+      show NF.xcall w ext (if _h : a < i then d.read a else .lit BV.nil) = _
+      rw [dif_pos (hlt a (by simp [DNode.children]))]
+      rfl
 
 /-- Readings of in-range indices are stable under extension. -/
 theorem read_ext {d₁ d₂ : Dag} (hext : Ext d₁ d₂) :
@@ -244,6 +270,188 @@ theorem read_ext {d₁ d₂ : Dag} (hext : Ext d₁ d₂) :
           · exact hstep j hj
           · rw [dif_neg hj, dif_neg hj]
         cases n <;> simp only [hstep']
+
+/-- No uninterpreted extern node in the sub-dag of an index: the
+decidable mirror of `NF.xcallFree` on the reading (stage B; the
+Cryptol splice-inlining mirror gates on it). Guard-else and
+out-of-range branches answer `true`, matching `read`'s `.lit BV.nil`
+reading there. -/
+def xcallFreeIdx (d : Dag) (i : Nat) : Bool :=
+  match d.nodes[i]? with
+  | some (.var _ _) => true
+  | some (.lit _) => true
+  | some (.prim1 _ _ a) => if _h : a < i then d.xcallFreeIdx a else true
+  | some (.prim2 _ _ a b) =>
+      (if _h : a < i then d.xcallFreeIdx a else true)
+        && (if _h : b < i then d.xcallFreeIdx b else true)
+  | some (.cat _ a b) =>
+      (if _h : a < i then d.xcallFreeIdx a else true)
+        && (if _h : b < i then d.xcallFreeIdx b else true)
+  | some (.slice _ _ e) => if _h : e < i then d.xcallFreeIdx e else true
+  | some (.ite _ c t e) =>
+      (if _h : c < i then d.xcallFreeIdx c else true)
+        && (if _h : t < i then d.xcallFreeIdx t else true)
+        && (if _h : e < i then d.xcallFreeIdx e else true)
+  | some (.xcall _ _ _) => false
+  | none => true
+termination_by i
+
+/-- A `true` `xcallFreeIdx` verdict certifies `NF.xcallFree` of the
+reading. -/
+theorem xcallFreeIdx_read {d : Dag} :
+    ∀ i, d.xcallFreeIdx i = true → (d.read i).xcallFree = true := by
+  intro i
+  induction i using Nat.strongRecOn with
+  | _ i ih =>
+    intro h
+    rw [xcallFreeIdx] at h
+    rw [read]
+    cases hn : d.nodes[i]? with
+    | none => rfl
+    | some n =>
+        rw [hn] at h
+        have step : ∀ j, (if _h : j < i then d.xcallFreeIdx j else true) = true →
+            ((if _h : j < i then d.read j else .lit BV.nil)).xcallFree = true := by
+          intro j hj
+          by_cases hji : j < i
+          · rw [dif_pos hji] at hj ⊢
+            exact ih j hji hj
+          · rw [dif_neg hji]
+            rfl
+        cases n with
+        | var w x => rfl
+        | lit v => rfl
+        | prim1 w op a =>
+            dsimp only at h
+            exact step a h
+        | prim2 w op a b =>
+            dsimp only at h
+            rw [Bool.and_eq_true] at h
+            show ((if _h : a < i then d.read a else .lit BV.nil).xcallFree
+              && (if _h : b < i then d.read b else .lit BV.nil).xcallFree) = true
+            rw [Bool.and_eq_true]
+            exact ⟨step a h.1, step b h.2⟩
+        | cat w a b =>
+            dsimp only at h
+            rw [Bool.and_eq_true] at h
+            show ((if _h : a < i then d.read a else .lit BV.nil).xcallFree
+              && (if _h : b < i then d.read b else .lit BV.nil).xcallFree) = true
+            rw [Bool.and_eq_true]
+            exact ⟨step a h.1, step b h.2⟩
+        | slice j w e =>
+            dsimp only at h
+            exact step e h
+        | ite w c t e =>
+            dsimp only at h
+            rw [Bool.and_eq_true, Bool.and_eq_true] at h
+            show ((if _h : c < i then d.read c else .lit BV.nil).xcallFree
+              && (if _h : t < i then d.read t else .lit BV.nil).xcallFree
+              && (if _h : e < i then d.read e else .lit BV.nil).xcallFree) = true
+            rw [Bool.and_eq_true, Bool.and_eq_true]
+            exact ⟨⟨step c h.1.1, step t h.1.2⟩, step e h.2⟩
+        | xcall w ext a =>
+            dsimp only at h
+            exact absurd h (by simp)
+
+/-- One row of the memoized `xcallFreeIdx` table: the verdict for the
+node at index `i`, reading children's verdicts from the accumulated
+prefix table (children outside the table answer `true`, matching the
+recursion's out-of-range arms). -/
+def xcallFreeStep (d : Dag) (i : Nat) (acc : Array Bool) : Bool :=
+  match d.nodes[i]? with
+  | some (.var _ _) => true
+  | some (.lit _) => true
+  | some (.prim1 _ _ a) => if _h : a < acc.size then acc[a] else true
+  | some (.prim2 _ _ a b) =>
+      (if _h : a < acc.size then acc[a] else true)
+        && (if _h : b < acc.size then acc[b] else true)
+  | some (.cat _ a b) =>
+      (if _h : a < acc.size then acc[a] else true)
+        && (if _h : b < acc.size then acc[b] else true)
+  | some (.slice _ _ e) => if _h : e < acc.size then acc[e] else true
+  | some (.ite _ c t e) =>
+      (if _h : c < acc.size then acc[c] else true)
+        && (if _h : t < acc.size then acc[t] else true)
+        && (if _h : e < acc.size then acc[e] else true)
+  | some (.xcall _ _ _) => false
+  | none => true
+
+/-- The bottom-up `xcallFreeIdx` table over the store prefix `[0, n)`:
+entry `j` is `d.xcallFreeIdx j` (`xcallFreeTab_get`). The bare
+recursion re-walks shared children — exponential on stores with heavy
+sharing (the SHA-256 splice) — while this pass is linear. -/
+def xcallFreeTab (d : Dag) : Nat → Array Bool
+  | 0 => #[]
+  | i + 1 =>
+      let acc := d.xcallFreeTab i
+      acc.push (d.xcallFreeStep i acc)
+
+theorem xcallFreeTab_size (d : Dag) : ∀ n, (d.xcallFreeTab n).size = n := by
+  intro n
+  induction n with
+  | zero => rfl
+  | succ i ih =>
+      show ((d.xcallFreeTab i).push (d.xcallFreeStep i (d.xcallFreeTab i))).size = i + 1
+      rw [Array.size_push, ih]
+
+/-- A row computed against a faithful prefix table is the recursion's
+verdict. -/
+theorem xcallFreeStep_eq (d : Dag) {i : Nat} {acc : Array Bool} (hsz : acc.size = i)
+    (hget : ∀ j (hj : j < acc.size), acc[j] = d.xcallFreeIdx j) :
+    d.xcallFreeStep i acc = d.xcallFreeIdx i := by
+  subst hsz
+  have step : ∀ a, (if _h : a < acc.size then acc[a] else true)
+      = (if _h : a < acc.size then d.xcallFreeIdx a else true) := by
+    intro a
+    by_cases h : a < acc.size
+    · rw [dif_pos h, dif_pos h]
+      exact hget a h
+    · rw [dif_neg h, dif_neg h]
+  rw [xcallFreeStep, xcallFreeIdx]
+  cases hn : d.nodes[acc.size]? with
+  | none => rfl
+  | some n =>
+      cases n with
+      | var w x => rfl
+      | lit v => rfl
+      | prim1 w op a => exact step a
+      | prim2 w op a b => dsimp only; rw [step a, step b]
+      | cat w a b => dsimp only; rw [step a, step b]
+      | slice j w e => exact step e
+      | ite w c t e => dsimp only; rw [step c, step t, step e]
+      | xcall w ext a => rfl
+
+/-- Every table entry is the recursion's verdict. -/
+theorem xcallFreeTab_get (d : Dag) : ∀ n j (hj : j < (d.xcallFreeTab n).size),
+    (d.xcallFreeTab n)[j] = d.xcallFreeIdx j := by
+  intro n
+  induction n with
+  | zero => intro j hj; exact absurd hj (by simp [xcallFreeTab])
+  | succ i ih =>
+      intro j hj
+      have hsz := d.xcallFreeTab_size i
+      have hj' : j < ((d.xcallFreeTab i).push (d.xcallFreeStep i (d.xcallFreeTab i))).size := hj
+      show ((d.xcallFreeTab i).push (d.xcallFreeStep i (d.xcallFreeTab i)))[j]'hj'
+        = d.xcallFreeIdx j
+      by_cases hji : j < (d.xcallFreeTab i).size
+      · rw [Array.getElem_push_lt hji]
+        exact ih j hji
+      · have hje : j = (d.xcallFreeTab i).size := by
+          rw [Array.size_push] at hj'
+          omega
+        subst hje
+        rw [Array.getElem_push_eq, hsz]
+        exact xcallFreeStep_eq d hsz ih
+
+/-- Memoized `xcallFreeIdx`: build the bottom-up table below the root,
+then read the root's row — linear where the bare recursion
+tree-unfolds the sharing. Equal to `xcallFreeIdx` (`xcallFreeM_eq`);
+the executable gates use this form. -/
+def xcallFreeM (d : Dag) (i : Nat) : Bool :=
+  (d.xcallFreeTab (i + 1))[i]'(by rw [xcallFreeTab_size]; omega)
+
+theorem xcallFreeM_eq (d : Dag) (i : Nat) : d.xcallFreeM i = d.xcallFreeIdx i :=
+  xcallFreeTab_get d (i + 1) i (by rw [xcallFreeTab_size]; omega)
 
 /-- The cached width is the reading's `annWidth`, in range. -/
 theorem widthOf_eq {d : Dag} (hwf : d.WF) {i : Nat} (hi : i < d.size) :
@@ -422,7 +630,7 @@ theorem WF.canon {d : Dag} (hwf : d.WF) :
     apply finish
     cases ni <;> cases nj <;>
       simp only [DNode.toNF, NF.var.injEq, NF.lit.injEq, NF.prim1.injEq, NF.prim2.injEq,
-        NF.cat.injEq, NF.slice.injEq, NF.ite.injEq, DNode.width, reduceCtorEq]
+        NF.cat.injEq, NF.slice.injEq, NF.ite.injEq, NF.xcall.injEq, DNode.width, reduceCtorEq]
         at heq hwidth <;>
       first
       -- lit: the literal is the whole node
@@ -574,6 +782,61 @@ theorem rawIte_spec {d : Dag} (hwf : d.WF) {c t e : Nat} (hc : c < d.size) (ht :
     simp only [annWidth, widthOf_eq hwf ht, widthOf_eq hwf he, ← harm]
     simp
 
+/-- The uninterpreted extern-call node (stage B): the cached width is
+`annWidth`'s unconditional answer, so `width_coh` is free. Serves both
+the raw alphabet and the renormalizer (`cfoldW` passes the node
+through, recursing only into the packed argument). -/
+def mkXcallD (d : Dag) (w : Nat) (ext : String) (a : Nat) : Dag × Nat :=
+  d.push (.xcall w ext a)
+
+theorem mkXcallD_spec {d : Dag} (hwf : d.WF) {w : Nat} {ext : String} {a : Nat}
+    (ha : a < d.size) :
+    Mk d (d.mkXcallD w ext a) (.xcall w ext (d.read a)) := by
+  refine push_mk hwf ?_ rfl
+  intro j hj
+  rw [mem1 hj]
+  exact ha
+
+/-- The packed-argument concatenation, node-level: mirrors `NF.xpack`
+(a left fold of `cat` from the empty literal) reading for reading. -/
+def xpackD (d : Dag) (ns : List Nat) : Dag × Nat :=
+  ns.foldl (fun acc n => acc.1.rawCat acc.2 n) (d.mkLit BV.nil)
+
+private theorem xpackD_go {d : Dag} :
+    ∀ (ns : List Nat) (dacc : Dag) (racc : Nat) (nf : NF),
+      dacc.WF → d.Ext dacc → racc < dacc.size → dacc.read racc = nf →
+      (∀ n ∈ ns, n < d.size) →
+      Mk dacc (ns.foldl (fun acc n => acc.1.rawCat acc.2 n) (dacc, racc))
+        ((ns.map d.read).foldl .cat nf) := by
+  intro ns
+  induction ns with
+  | nil =>
+      intro dacc racc nf hwf hext hr hread hns
+      rw [List.foldl_nil, List.map_nil, List.foldl_nil, ← hread]
+      exact self_mk hwf hr
+  | cons n ns ih =>
+      intro dacc racc nf hwf hext hr hread hns
+      rw [List.foldl_cons, List.map_cons, List.foldl_cons]
+      have hn : n < dacc.size :=
+        Nat.lt_of_lt_of_le (hns n List.mem_cons_self) hext.size_le
+      have M := rawCat_spec hwf hr hn
+      have hcast : dacc.read racc = nf := hread
+      have hreads : (dacc.rawCat racc n).1.read (dacc.rawCat racc n).2
+          = NF.cat nf (d.read n) := by
+        rw [M.read, hcast, read_ext hext n (hns n List.mem_cons_self)]
+      have := ih (dacc.rawCat racc n).1 (dacc.rawCat racc n).2 (.cat nf (d.read n))
+        M.wf (hext.trans M.ext) M.lt hreads
+        (fun q hq => hns q (List.mem_cons_of_mem _ hq))
+      exact ⟨this.wf, M.ext.trans this.ext, this.lt, this.read⟩
+
+theorem xpackD_spec {d : Dag} (hwf : d.WF) {ns : List Nat}
+    (hns : ∀ n ∈ ns, n < d.size) :
+    Mk d (d.xpackD ns) (.xpack (ns.map d.read)) := by
+  have M := mkLit_spec hwf BV.nil
+  have hgo := xpackD_go ns (d.mkLit BV.nil).1 (d.mkLit BV.nil).2 (.lit BV.nil)
+    M.wf M.ext M.lt M.read hns
+  exact ⟨hgo.wf, M.ext.trans hgo.ext, hgo.lt, hgo.read⟩
+
 /-! ### The `cfoldW` rewrite constructors -/
 
 /-- Local port of Bridge's `mk1W` unfoldings (its per-case content is
@@ -683,6 +946,13 @@ theorem mk1D_spec {d : Dag} (hwf : d.WF) {op : Op} {a : Nat} (ha : a < d.size)
       refine (rawPrim1_spec hwf ha hop).cast ?_
       rw [hra]
       show NF.prim1 op (NF.ite (d.read c) (d.read t) (d.read e)) = _
+      by_cases hn : op = .not
+      · subst hn; rfl
+      · rw [mk1W_ne_not hn]; rfl
+  | xcall w' ext c =>
+      refine (rawPrim1_spec hwf ha hop).cast ?_
+      rw [hra]
+      show NF.prim1 op (NF.xcall w' ext (d.read c)) = _
       by_cases hn : op = .not
       · subst hn; rfl
       · rw [mk1W_ne_not hn]; rfl
@@ -885,6 +1155,14 @@ theorem mk2eqL_spec {d : Dag} (hwf : d.WF) {a b : Nat} (ha : a < d.size) (hb : b
       show Mk d (d.mk2fold .eq a b) (NF.mk2W .eq (d.read a) (d.read b))
       rw [mk2W_eq_default _ _ hane hbne]
       exact mk2fold_spec hwf ha hb rfl
+  | xcall w ext c =>
+      have hane : ∀ u, d.read a ≠ NF.lit u := by
+        intro u hc
+        rw [hra] at hc
+        simp [DNode.toNF] at hc
+      show Mk d (d.mk2fold .eq a b) (NF.mk2W .eq (d.read a) (d.read b))
+      rw [mk2W_eq_default _ _ hane hbne]
+      exact mk2fold_spec hwf ha hb rfl
 
 /-- `mk2W`, node-level: modulus by a zero literal is the identity; the
 1-bit equality peepholes read the cached operand width; everything
@@ -970,6 +1248,12 @@ theorem mk2D_spec {d : Dag} (hwf : d.WF) {op : Op} {a b : Nat} (ha : a < d.size)
         rw [mk2W_umod_default _ _ hne]
         exact mk2fold_spec hwf ha hb hop
     | ite w' c t e =>
+        show Mk d (d.mk2fold .umod a b) (NF.mk2W .umod (d.read a) (d.read b))
+        have hne : ∀ u, d.read b ≠ NF.lit u := by
+          intro u hc; rw [hrb] at hc; simp [DNode.toNF] at hc
+        rw [mk2W_umod_default _ _ hne]
+        exact mk2fold_spec hwf ha hb hop
+    | xcall w' ext c =>
         show Mk d (d.mk2fold .umod a b) (NF.mk2W .umod (d.read a) (d.read b))
         have hne : ∀ u, d.read b ≠ NF.lit u := by
           intro u hc; rw [hrb] at hc; simp [DNode.toNF] at hc
@@ -1340,6 +1624,25 @@ theorem mkSliceD_spec :
           (if i = 0 ∧ w = iw then NF.ite (d.read c) (d.read t) (d.read u)
            else NF.slice i w (NF.ite (d.read c) (d.read t) (d.read u)))
         by_cases hid : i = 0 ∧ w = iw
+        · rw [if_pos hid, if_pos hid, ← hre']
+          exact self_mk hwf he
+        · rw [if_neg hid, if_neg hid]
+          refine (rawSlice_spec hwf i w he).cast ?_
+          rw [hre']
+    | xcall xw ext a =>
+        have hre' : d.read e = NF.xcall xw ext (d.read a) := hre
+        have hann : annWidth (d.read e) = some xw := hwf.width_coh e _ hne
+        rw [hre']
+        rw [hre'] at hann
+        show Mk d (if i = 0 ∧ w = (DNode.xcall xw ext a).width then (d, e)
+                   else d.push (.slice i w e))
+          (NF.mkSliceW i w (NF.xcall xw ext (d.read a)))
+        simp only [NF.mkSliceW, DNode.width]
+        rw [hann]
+        show Mk d (if i = 0 ∧ w = xw then (d, e) else d.push (.slice i w e))
+          (if i = 0 ∧ w = xw then NF.xcall xw ext (d.read a)
+           else NF.slice i w (NF.xcall xw ext (d.read a)))
+        by_cases hid : i = 0 ∧ w = xw
         · rw [if_pos hid, if_pos hid, ← hre']
           exact self_mk hwf he
         · rw [if_neg hid, if_neg hid]
@@ -1815,7 +2118,7 @@ hash-consing replaces `symExp`'s tree duplication. The only additions
 are the width-discipline checks that keep the store's `width_coh`
 (`symExp` has no analogous checks, so they can only make the DAG
 evaluator fail more often — never differently). -/
-def symExpDag (dmap : HashMap String Defn) :
+def symExpDag (dmap : HashMap String Defn) (X : Sem.XEnv) :
     Nat → HashMap String Nat → Exp → Dag → Except String (Dag × Nat)
   | 0, _, _, _ => .error "symExpDag: out of fuel"
   | fuel + 1, ρ, e, d =>
@@ -1827,14 +2130,14 @@ def symExpDag (dmap : HashMap String Defn) :
         | some i => .ok (d, i)
         | none => .error s!"unbound variable {x}"
     | .cat e₁ e₂ => do
-        let (d₁, n₁) ← symExpDag dmap fuel ρ e₁ d
-        let (d₂, n₂) ← symExpDag dmap fuel ρ e₂ d₁
+        let (d₁, n₁) ← symExpDag dmap X fuel ρ e₁ d
+        let (d₂, n₂) ← symExpDag dmap X fuel ρ e₂ d₁
         .ok (d₂.rawCat n₁ n₂)
     | .slice i w e => do
-        let (d₁, n) ← symExpDag dmap fuel ρ e d
+        let (d₁, n) ← symExpDag dmap X fuel ρ e d
         .ok (d₁.rawSlice i w n)
     | .prim _ op args => do
-        let (d₁, ns) ← mapDag (symExpDag dmap fuel ρ) args d
+        let (d₁, ns) ← mapDag (symExpDag dmap X fuel ρ) args d
         match ns with
         | [a] =>
             if opArity op = 1 then .ok (d₁.rawPrim1 op a) else .error "prim: arity mismatch"
@@ -1842,23 +2145,32 @@ def symExpDag (dmap : HashMap String Defn) :
             if opArity op = 2 then .ok (d₁.rawPrim2 op a b) else .error "prim: arity mismatch"
         | _ => .error "prim: arity mismatch"
     | .call _ f args => do
-        let (d₁, ns) ← mapDag (symExpDag dmap fuel ρ) args d
+        let (d₁, ns) ← mapDag (symExpDag dmap X fuel ρ) args d
         match dmap.get? f with
         | none => .error s!"unknown definition {f}"
         | some dn =>
             if ns.length = dn.params.length then
-              symExpDag dmap fuel (HashMap.ofList (dn.params.zip ns)) dn.body d₁
+              symExpDag dmap X fuel (HashMap.ofList (dn.params.zip ns)) dn.body d₁
             else .error s!"{f}: arity mismatch"
-    | .xcall _ ext _ _ => .error s!"extern call to {ext}: out of scope"
+    | .xcall w ext gs args => do
+        let (d₁, ns) ← mapDag (symExpDag dmap X fuel ρ) args d
+        match X.get? ext with
+        | some _ =>
+            .error s!"extern {ext} has a model: the model-carrying validator row is out of scope"
+        | none =>
+            if gs.isEmpty then
+              let (d₂, pk) := d₁.xpackD ns
+              .ok (d₂.mkXcallD w ext pk)
+            else .error s!"extern {ext}: generic model-less externs are out of scope"
     | .ite _ c t e => do
-        let (d₁, nc) ← symExpDag dmap fuel ρ c d
-        let (d₂, nt) ← symExpDag dmap fuel ρ t d₁
-        let (d₃, nu) ← symExpDag dmap fuel ρ e d₂
+        let (d₁, nc) ← symExpDag dmap X fuel ρ c d
+        let (d₂, nt) ← symExpDag dmap X fuel ρ t d₁
+        let (d₃, nu) ← symExpDag dmap X fuel ρ e d₂
         if d₃.widthOf nt = d₃.widthOf nu then .ok (d₃.rawIte nc nt nu)
         else .error "ite: arm width mismatch"
     | .letE _ x rhs body => do
-        let (d₁, n) ← symExpDag dmap fuel ρ rhs d
-        symExpDag dmap fuel (ρ.insert x n) body d₁
+        let (d₁, n) ← symExpDag dmap X fuel ρ rhs d
+        symExpDag dmap X fuel (ρ.insert x n) body d₁
 
 /-- Repackage a constructor contract at a destructured result pair. -/
 private theorem mk_out {d d' : Dag} {r : Nat} {res : Dag × Nat} {nf : NF}
@@ -1868,21 +2180,22 @@ private theorem mk_out {d d' : Dag} {r : Nat} {res : Dag × Nat} {nf : NF}
   exact ⟨h.wf, h.ext, h.lt, h.read⟩
 
 /-- The simulation conclusion bundle. -/
-private def SimOut (dmap : HashMap String Defn) (fuel : Nat) (ρS : HashMap String NF)
+private def SimOut (dmap : HashMap String Defn) (X : Sem.XEnv) (fuel : Nat)
+    (ρS : HashMap String NF)
     (e : Exp) (d d' : Dag) (r : Nat) : Prop :=
-  d'.WF ∧ d.Ext d' ∧ r < d'.size ∧ symExp dmap fuel ρS e = .ok (d'.read r)
+  d'.WF ∧ d.Ext d' ∧ r < d'.size ∧ symExp dmap X fuel ρS e = .ok (d'.read r)
 
 /-- The `mapDag` leg of the simulation, parameterized by the pointwise
 simulation of the elements. -/
-private theorem mapDag_sim {dmap : HashMap String Defn} {fuel : Nat}
+private theorem mapDag_sim {dmap : HashMap String Defn} {X : Sem.XEnv} {fuel : Nat}
     {ρD : HashMap String Nat} {ρS : HashMap String NF}
     (hpt : ∀ e (d d' : Dag) (r : Nat), d.WF → EnvSim d ρD ρS →
-        symExpDag dmap fuel ρD e d = .ok (d', r) →
-        SimOut dmap fuel ρS e d d' r) :
+        symExpDag dmap X fuel ρD e d = .ok (d', r) →
+        SimOut dmap X fuel ρS e d d' r) :
     ∀ (es : List Exp) (d d' : Dag) (ns : List Nat), d.WF → EnvSim d ρD ρS →
-      mapDag (symExpDag dmap fuel ρD) es d = .ok (d', ns) →
+      mapDag (symExpDag dmap X fuel ρD) es d = .ok (d', ns) →
       d'.WF ∧ d.Ext d' ∧ (∀ n ∈ ns, n < d'.size) ∧
-        es.mapM (symExp dmap fuel ρS) = .ok (ns.map d'.read) := by
+        es.mapM (symExp dmap X fuel ρS) = .ok (ns.map d'.read) := by
   intro es
   induction es with
   | nil =>
@@ -1915,11 +2228,11 @@ private theorem mapDag_sim {dmap : HashMap String Defn} {fuel : Nat}
 
 /-- THE simulation: a successful DAG evaluation certifies a successful
 tree evaluation whose result is the reading of the returned index. -/
-theorem symExpDag_sim {dmap : HashMap String Defn} :
+theorem symExpDag_sim {dmap : HashMap String Defn} {X : Sem.XEnv} :
     ∀ (fuel : Nat) (e : Exp) (ρD : HashMap String Nat) (ρS : HashMap String NF)
       (d d' : Dag) (r : Nat), d.WF → EnvSim d ρD ρS →
-      symExpDag dmap fuel ρD e d = .ok (d', r) →
-      d'.WF ∧ d.Ext d' ∧ r < d'.size ∧ symExp dmap fuel ρS e = .ok (d'.read r) := by
+      symExpDag dmap X fuel ρD e d = .ok (d', r) →
+      d'.WF ∧ d.Ext d' ∧ r < d'.size ∧ symExp dmap X fuel ρS e = .ok (d'.read r) := by
   intro fuel
   induction fuel with
   | zero =>
@@ -2028,7 +2341,28 @@ theorem symExpDag_sim {dmap : HashMap String Defn} :
               · exact absurd hs (by simp)
       | xcall w ext gs args =>
           simp only [symExpDag] at hs
-          exact absurd hs (by simp)
+          obtain ⟨⟨d₁, ns⟩, h₁, hs⟩ := except_bind_eq_ok hs
+          obtain ⟨W₁, E₁, L₁, S₁⟩ := mapDag_sim (fun e d d' r hw he hx => ih e ρD ρS d d' r hw he hx)
+            args d d₁ ns hwf henv h₁
+          rw [symExp]
+          rw [S₁, except_bind_ok]
+          cases hX : X.get? ext with
+          | some m => rw [hX] at hs; exact absurd hs (by simp)
+          | none =>
+              rw [hX] at hs
+              dsimp only at hs ⊢
+              split at hs
+              · rename_i hgs
+                rw [if_pos hgs]
+                rcases hxp : d₁.xpackD ns with ⟨d₂, pk⟩
+                rw [hxp] at hs
+                dsimp only at hs
+                injection hs with hs
+                obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (xpackD_spec W₁ L₁) hxp
+                obtain ⟨W, E, L, R⟩ := mk_out (mkXcallD_spec W₂ L₂) hs
+                refine ⟨W, (E₁.trans E₂).trans E, L, ?_⟩
+                rw [R, R₂]
+              · exact absurd hs (by simp)
       | ite w c t e =>
           simp only [symExpDag] at hs
           obtain ⟨⟨d₁, nc⟩, h₁, hs⟩ := except_bind_eq_ok hs
@@ -2061,21 +2395,21 @@ theorem symExpDag_sim {dmap : HashMap String Defn} :
 /-- `symBody`, DAG-level: the store rides in the fold state; the three
 name maps hold indices. Decision structure and order mirror `symBody`
 exactly. -/
-def symBodyDag (dmap : HashMap String Defn) (fuel : Nat) :
+def symBodyDag (dmap : HashMap String Defn) (X : Sem.XEnv) (fuel : Nat) :
     Dag × HashMap String Nat × HashMap String Nat × HashMap String Nat → Stmt →
     Except String (Dag × HashMap String Nat × HashMap String Nat × HashMap String Nat) :=
   fun (d, ρ, outs, nexts) stmt => do
     match stmt with
     | .sLet x e => do
-        let (d₁, n) ← symExpDag dmap fuel ρ e d
+        let (d₁, n) ← symExpDag dmap X fuel ρ e d
         pure (d₁, ρ.insert x n, outs, nexts)
     | .sOutput o e => do
         if outs.contains o then .error s!"output {o} assigned twice"
-        let (d₁, n) ← symExpDag dmap fuel ρ e d
+        let (d₁, n) ← symExpDag dmap X fuel ρ e d
         pure (d₁, ρ, outs.insert o n, nexts)
     | .sNext r e => do
         if nexts.contains r then .error s!"register {r} assigned twice"
-        let (d₁, n) ← symExpDag dmap fuel ρ e d
+        let (d₁, n) ← symExpDag dmap X fuel ρ e d
         pure (d₁, ρ, outs, nexts.insert r n)
     | .sInstIn inst _ _ =>
         .error s!"device instance {inst}: outside the instance-free fragment"
@@ -2104,9 +2438,10 @@ def initSymEnvDag (dev : Device) (d : Dag) : Dag × HashMap String Nat :=
 
 /-- The DAG device step: seed the shared store `d` with the interface
 variables, fold the body, read off outputs and register nexts. -/
-def symStepDag (dmap : HashMap String Defn) (fuel : Nat) (dev : Device) (d : Dag) :
+def symStepDag (dmap : HashMap String Defn) (X : Sem.XEnv) (fuel : Nat) (dev : Device)
+    (d : Dag) :
     Except String (Dag × List (String × Nat) × List (String × Nat)) :=
-  dev.body.foldlM (symBodyDag dmap fuel)
+  dev.body.foldlM (symBodyDag dmap X fuel)
     ((initSymEnvDag dev d).1, (initSymEnvDag dev d).2, ∅, ∅) >>= symFinishDag dev
 
 /-- `contains` transports along the simulation relation. -/
@@ -2156,14 +2491,14 @@ private theorem initFold_sim :
 
 /-- The body fold, simulated: a successful DAG fold certifies a
 successful tree fold with corresponding components. -/
-private theorem bodyFold_sim {dmap : HashMap String Defn} {fuel : Nat} :
+private theorem bodyFold_sim {dmap : HashMap String Defn} {X : Sem.XEnv} {fuel : Nat} :
     ∀ (stmts : List Stmt) (d : Dag) (ρD outsD nextsD : HashMap String Nat)
       (ρS outsS nextsS : HashMap String NF)
       (res : Dag × HashMap String Nat × HashMap String Nat × HashMap String Nat),
       d.WF → EnvSim d ρD ρS → EnvSim d outsD outsS → EnvSim d nextsD nextsS →
-      stmts.foldlM (symBodyDag dmap fuel) (d, ρD, outsD, nextsD) = .ok res →
+      stmts.foldlM (symBodyDag dmap X fuel) (d, ρD, outsD, nextsD) = .ok res →
       ∃ ρS' outsS' nextsS',
-        stmts.foldlM (symBody dmap fuel) (ρS, outsS, nextsS) = .ok (ρS', outsS', nextsS') ∧
+        stmts.foldlM (symBody dmap X fuel) (ρS, outsS, nextsS) = .ok (ρS', outsS', nextsS') ∧
         res.1.WF ∧ d.Ext res.1 ∧ EnvSim res.1 res.2.1 ρS' ∧
         EnvSim res.1 res.2.2.1 outsS' ∧ EnvSim res.1 res.2.2.2 nextsS' := by
   intro stmts
@@ -2358,11 +2693,12 @@ private theorem nexts_mapM_sim {d : Dag} {mD : HashMap String Nat} {mS : HashMap
 /-- The step simulation: a successful DAG step certifies a successful
 tree `symStep` whose per-output and per-next trees are the readings of
 the returned indices. -/
-theorem symStepDag_sim {dmap : HashMap String Defn} {fuel : Nat} {dev : Device}
+theorem symStepDag_sim {dmap : HashMap String Defn} {X : Sem.XEnv} {fuel : Nat}
+    {dev : Device}
     {d d' : Dag} {outsL nextsL : List (String × Nat)} (hwf : d.WF)
-    (h : symStepDag dmap fuel dev d = .ok (d', outsL, nextsL)) :
+    (h : symStepDag dmap X fuel dev d = .ok (d', outsL, nextsL)) :
     d'.WF ∧ d.Ext d' ∧ (∀ p ∈ outsL, p.2 < d'.size) ∧ (∀ p ∈ nextsL, p.2 < d'.size) ∧
-    symStep dmap fuel dev
+    symStep dmap X fuel dev
       = .ok ⟨outsL.map (fun p => (p.1, d'.read p.2)),
              nextsL.map (fun p => (p.1, d'.read p.2))⟩ := by
   rw [symStepDag] at h
@@ -2432,6 +2768,7 @@ def renormNode (d : Dag) (m : Array Nat) : DNode → Except String (Dag × Nat)
       if d.widthOf (mIdx m t) = d.widthOf (mIdx m e) then
         .ok (d.mkIteD (mIdx m c) (mIdx m t) (mIdx m e))
       else .error "renorm: ite arm widths"
+  | .xcall w ext a => .ok (d.mkXcallD w ext (mIdx m a))
 
 def renormGo : Nat → Dag → Array Nat → Except String (Dag × Array Nat)
   | 0, d, m => .ok (d, m)
@@ -2546,6 +2883,17 @@ private theorem renormNode_spec {d₀ dc : Dag} {m : Array Nat} {n : DNode} {i :
           = NF.cfoldW (NF.ite (d₀.read c) (d₀.read t) (d₀.read e))
         simp only [NF.cfoldW]
       · exact absurd h (by simp)
+  | xcall w ext a =>
+      rw [renormNode] at h
+      injection h with h
+      have ha : a < m.size := hchild a (by simp [DNode.children])
+      obtain ⟨hra, hca⟩ := hinv a ha
+      rw [mIdx_eq ha] at h
+      obtain ⟨W, E, L, R⟩ := mk_out (mkXcallD_spec hwfc hra) h
+      refine ⟨W, E, L, ?_⟩
+      rw [R, hca, hread]
+      show NF.xcall w ext (NF.cfoldW (d₀.read a)) = NF.cfoldW (NF.xcall w ext (d₀.read a))
+      simp only [NF.cfoldW]
 
 private theorem renormGo_spec :
     ∀ (k : Nat) (d₀ dc : Dag) (m : Array Nat) (d' : Dag) (m' : Array Nat),
@@ -2622,9 +2970,9 @@ comparisons become index comparisons after renormalization, and the
 indices. -/
 def checkEquivDag (p₁ p₂ : Program) : Bool :=
   match Sem.mkFEnv p₁, Sem.mkFEnv p₂,
-        symStepDag (dmapOf p₁) (progFuel p₁) p₁.device Dag.empty with
+        symStepDag (dmapOf p₁) (Sem.xenv p₁) (progFuel p₁) p₁.device Dag.empty with
   | .ok _, .ok _, .ok (d₁, outs₁, nexts₁) =>
-    (match symStepDag (dmapOf p₂) (progFuel p₂) p₂.device d₁ with
+    (match symStepDag (dmapOf p₂) (Sem.xenv p₂) (progFuel p₂) p₂.device d₁ with
     | .ok (d₂, outs₂, nexts₂) =>
       (match renorm d₂ with
       | .ok (e₁, m₁) =>
@@ -2658,9 +3006,9 @@ def checkEquivDag (p₁ p₂ : Program) : Bool :=
 `checkEquiv`'s gates). -/
 def checkEquivDagRaw (p₁ p₂ : Program) : Bool :=
   match Sem.mkFEnv p₁, Sem.mkFEnv p₂,
-        symStepDag (dmapOf p₁) (progFuel p₁) p₁.device Dag.empty with
+        symStepDag (dmapOf p₁) (Sem.xenv p₁) (progFuel p₁) p₁.device Dag.empty with
   | .ok _, .ok _, .ok (d₁, outs₁, nexts₁) =>
-    (match symStepDag (dmapOf p₂) (progFuel p₂) p₂.device d₁ with
+    (match symStepDag (dmapOf p₂) (Sem.xenv p₂) (progFuel p₂) p₂.device d₁ with
     | .ok (_, outs₂, nexts₂) =>
            okB p₁.check && okB p₂.check
         && p₁.externs.isEmpty && p₂.externs.isEmpty
@@ -2695,13 +3043,13 @@ theorem checkEquivDag_toW {p₁ p₂ : Program} (h : checkEquivDag p₁ p₂ = t
   cases hF₂ : Sem.mkFEnv p₂ with
   | error e => rw [hF₁, hF₂] at h; simp at h
   | ok F₂ =>
-  cases hs₁ : symStepDag (dmapOf p₁) (progFuel p₁) p₁.device Dag.empty with
+  cases hs₁ : symStepDag (dmapOf p₁) (Sem.xenv p₁) (progFuel p₁) p₁.device Dag.empty with
   | error e => rw [hF₁, hF₂, hs₁] at h; simp at h
   | ok res₁ =>
   obtain ⟨d₁, outs₁, nexts₁⟩ := res₁
   rw [hF₁, hF₂, hs₁] at h
   dsimp only at h
-  cases hs₂ : symStepDag (dmapOf p₂) (progFuel p₂) p₂.device d₁ with
+  cases hs₂ : symStepDag (dmapOf p₂) (Sem.xenv p₂) (progFuel p₂) p₂.device d₁ with
   | error e => rw [hs₂] at h; simp at h
   | ok res₂ =>
   obtain ⟨d₂, outs₂, nexts₂⟩ := res₂
@@ -2807,13 +3155,13 @@ theorem checkEquivDagRaw_toA {p₁ p₂ : Program} (h : checkEquivDagRaw p₁ p�
   cases hF₂ : Sem.mkFEnv p₂ with
   | error e => rw [hF₁, hF₂] at h; simp at h
   | ok F₂ =>
-  cases hs₁ : symStepDag (dmapOf p₁) (progFuel p₁) p₁.device Dag.empty with
+  cases hs₁ : symStepDag (dmapOf p₁) (Sem.xenv p₁) (progFuel p₁) p₁.device Dag.empty with
   | error e => rw [hF₁, hF₂, hs₁] at h; simp at h
   | ok res₁ =>
   obtain ⟨d₁, outs₁, nexts₁⟩ := res₁
   rw [hF₁, hF₂, hs₁] at h
   dsimp only at h
-  cases hs₂ : symStepDag (dmapOf p₂) (progFuel p₂) p₂.device d₁ with
+  cases hs₂ : symStepDag (dmapOf p₂) (Sem.xenv p₂) (progFuel p₂) p₂.device d₁ with
   | error e => rw [hs₂] at h; simp at h
   | ok res₂ =>
   obtain ⟨d₂, outs₂, nexts₂⟩ := res₂
@@ -2847,13 +3195,13 @@ run equality on every stimulus that drives the declared input widths
 (`checkEquivW_sound`'s honest side condition, inherited through the
 reduction). -/
 theorem checkEquivDag_sound {p₁ p₂ : Program} (h : checkEquivDag p₁ p₂ = true) :
-    ∀ stim, StimWF p₁.device stim → p₁.run stim = p₂.run stim :=
+    ∀ stim, StimWF p₁.device stim → ∀ (E : Sem.EEnv), p₁.run stim E = p₂.run stim E :=
   fun stim hs => checkEquivW_sound (checkEquivDag_toW h) stim hs
 
 /-- Soundness of the rewrite-free DAG checker: UNCONDITIONAL run
 equality, inherited from `checkEquiv_sound`. -/
 theorem checkEquivDagRaw_sound {p₁ p₂ : Program} (h : checkEquivDagRaw p₁ p₂ = true) :
-    ∀ stim, p₁.run stim = p₂.run stim :=
+    ∀ stim (E : Sem.EEnv), p₁.run stim E = p₂.run stim E :=
   fun stim => checkEquiv_sound (checkEquivDagRaw_toA h) stim
 
 end Rwv.Hyle.BridgeDag

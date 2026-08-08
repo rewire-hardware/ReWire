@@ -124,13 +124,31 @@ proved; nothing anywhere in this file is `sorry`d):
     zip-walk (`run_shift`/`cells_walk`) across `PlanInv.regsplit`.
   * `validateProc_corresponds` — THE end-to-end statement:
     `validateProc Δ edm p H fuel = true → fuel ≤ ef →
-    Rwv.Eidos.Corresponds Δ edm ef gf p H` (every goto fuel), by
+    Rwv.Eidos.Corresponds Δ edm ef gf p H E` (every goto fuel, and —
+    stage B — every extern environment E: the ∀η statement), by
     constructing the schema's `SimP` from `checkLabel_sound` (the
     input-precomposed device never returns a halt, so the right
     machine never stops first), `hasTy_vty` under the checked
     `tupleCtorsOk`, `mkFEnv_implements` under the checked
     definition-name distinctness, `checkInit_sound` for the initial
     state, and `Rwv.stepObligations_corresponds` to conclude.
+
+Stage B (the η tier): the whole statement stack is parameterized by
+the bit-level model-less-extern environment `E` (a section implicit;
+both semantics read the SAME one), and the final theorem quantifies
+over it — ONE validator run, executed with the semantic hooks empty,
+certifies the correspondence at EVERY `E`. The three pillars: the
+per-label extern discharge is uninterpreted-`xcall`-node equality
+after normalization (sound for any interpretation, since equal
+argument images feed the same `Sem.xapply`); the compiled Cryptol
+splices are checked extern-free (`NF.xcallFree`), pinning their
+denotations across environments; and the initial-state check runs
+once at the empty environment and transports by `Rwv.Eidos.FuelMono`'s
+eta family (a successful empty-environment run never consulted the
+hooks). The §Eta section at the file's tail gives the algebraic
+reading (`EtaAlg`/`WFEta`/`etaB`, `validateProc_corresponds_eta`);
+model-carrying externs (`xtF`) remain outside the validator row, and
+generic model-less externs are rejected honestly.
 -/
 import Rwv.Eidos.Cexp
 import Rwv.Eidos.Machine
@@ -145,6 +163,12 @@ open Std (HashMap)
 open Rwv.Hyle (BV Op)
 open Rwv.Hyle.Bridge (NF)
 open Rwv.Eidos.Cexp (teq teqAll cexp catNF sliceNF denvOk VTy ctorOfB)
+
+/- The extern environment of the stage-B η tier: a section-implicit
+threaded through every denotational statement (Cexp's convention).
+The validator itself stays E-free — its verdict certifies the
+correspondence at EVERY E, which is the ∀η reading. -/
+variable {E : Rwv.Hyle.Sem.EEnv}
 
 /-! ## Widths and offsets -/
 
@@ -472,6 +496,7 @@ def substNF (θ : String → Option NF) : NF → NF
   | .cat a b => .cat (substNF θ a) (substNF θ b)
   | .slice i w e => .slice i w (substNF θ e)
   | .ite c t e => .ite (substNF θ c) (substNF θ t) (substNF θ e)
+  | .xcall w x a => .xcall w x (substNF θ a)
 
 /-- The label specialization: rewrite the resumption-tag register to
 `tag-literal | its own low rPayW bits`. Denotation-preserving exactly
@@ -1030,6 +1055,7 @@ def substNodeD (plan : Plan) (lo : Layout) (tag : Nat) (d : Dag) (m : Array Nat)
       if d.widthOf (mIdx m t) = d.widthOf (mIdx m e) then
         .ok (d.rawIte (mIdx m c) (mIdx m t) (mIdx m e))
       else .error "substD: ite arm widths"
+  | .xcall w x a => .ok (d.mkXcallD w x (mIdx m a))
 
 def substGoD (plan : Plan) (lo : Layout) (tag : Nat) :
     Nat → Dag → Array Nat → Except String (Dag × Array Nat)
@@ -1227,13 +1253,14 @@ def validateProcE (Δ : DEnv) (edm : HashMap Int Defn) (p : Proc)
     HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b))
   let C : Ctx := { Δ, edm, lo, blocks, cexpFuel := fuel, outTy := p.outTy }
   let ss ← Rwv.Hyle.Bridge.symStep (Rwv.Hyle.Bridge.dmapOf H)
-    (Rwv.Hyle.Bridge.progFuel H) H.device
+    (Rwv.Hyle.Sem.xenv H) (Rwv.Hyle.Bridge.progFuel H) H.device
   -- The DAG leg's shared store: the device step evaluated once by
   -- `symStepDag`; a per-label DAG-leg failure falls back to the tree
   -- checker inside `checkLabelD`, so the tree validator's verdict is
   -- never lost (`checkLabelD_toTree` reduces either route to it).
   let dss := match Rwv.Hyle.BridgeDag.symStepDag (Rwv.Hyle.Bridge.dmapOf H)
-      (Rwv.Hyle.Bridge.progFuel H) H.device Rwv.Hyle.BridgeDag.Dag.empty with
+      (Rwv.Hyle.Sem.xenv H) (Rwv.Hyle.Bridge.progFuel H) H.device
+      Rwv.Hyle.BridgeDag.Dag.empty with
     | .ok r => some r
     | .error _ => none
   let _ ← forAllM (checkLabelD C plan H.device dss ss p.inTy fuel) lo.targets
@@ -1399,8 +1426,8 @@ theorem vtyB_sound {Δ : DEnv} : ∀ (fuel : Nat) {v : Val} {t : Ty},
 private theorem initCells_det {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     {a b : Nat} {x y : HashMap String Val}
     (h₁ : Machine.initCells Δ edm a p = .ok x)
-    (h₂ : Machine.initCells Δ edm b p = .ok y) : x = y := by
-  have k₁ := Machine.initCells_mono (Nat.le_max_left a b) h₁
+    (h₂ : Machine.initCells Δ edm b p E = .ok y) : x = y := by
+  have k₁ := Machine.initCells_mono (Nat.le_max_left a b) (Machine.initCells_eta E h₁)
   have k₂ := Machine.initCells_mono (Nat.le_max_right a b) h₂
   exact Except.ok.inj (k₁.symm.trans k₂)
 
@@ -1408,8 +1435,9 @@ private theorem execBlock_det {Δ : DEnv} {edm : HashMap Int Defn}
     {blocks : HashMap Int Block} {ef₁ gf₁ ef₂ gf₂ : Nat} {env : Eval.Env}
     {cells : HashMap String Val} {b : Block} {r₁ r₂ : StepOut}
     (h₁ : Machine.execBlock Δ edm blocks ef₁ gf₁ env cells b = .ok r₁)
-    (h₂ : Machine.execBlock Δ edm blocks ef₂ gf₂ env cells b = .ok r₂) : r₁ = r₂ := by
-  have k₁ := Machine.execBlock_mono (Nat.le_max_left ef₁ ef₂) (Nat.le_max_left gf₁ gf₂) h₁
+    (h₂ : Machine.execBlock Δ edm blocks ef₂ gf₂ env cells b E = .ok r₂) : r₁ = r₂ := by
+  have k₁ := Machine.execBlock_mono (Nat.le_max_left ef₁ ef₂) (Nat.le_max_left gf₁ gf₂)
+    (Machine.execBlock_eta E h₁)
   have k₂ := Machine.execBlock_mono (Nat.le_max_right ef₁ ef₂) (Nat.le_max_right gf₁ gf₂) h₂
   exact Except.ok.inj (k₁.symm.trans k₂)
 
@@ -1495,8 +1523,8 @@ theorem checkInit_sound {C : Ctx} {plan : Plan} {dev : Rwv.Hyle.Device} {p : Pro
       (dev.inputs.map (·.1) ++ dev.registers.map (·.name)) = true)
     (hck : checkInit C plan dev p ef gf vf = .ok ()) :
     ∀ (ef' gf' : Nat) (σ₀ : HashMap String Val) (o : Val) (s₀ : MState),
-      Machine.initCells C.Δ C.edm ef' p = .ok σ₀ →
-      Machine.execBlock C.Δ C.edm C.blocks ef' gf' [] σ₀ p.entry = .ok (.step o s₀) →
+      Machine.initCells C.Δ C.edm ef' p E = .ok σ₀ →
+      Machine.execBlock C.Δ C.edm C.blocks ef' gf' [] σ₀ p.entry E = .ok (.step o s₀) →
       stateRel C.Δ C.lo plan C.blocks s₀ (Rwv.Hyle.Sem.initRegs dev) := by
   intro ef' gf' σ₀ o s₀ hinitC hexecC
   rw [checkInit] at hck
@@ -1523,8 +1551,8 @@ theorem checkInit_sound {C : Ctx} {plan : Plan} {dev : Rwv.Hyle.Device} {p : Pro
 /-- Substitution is denotation-preserving at valuations that fix every
 substituted image. -/
 theorem substNF_eval {σ : String → BV} {θ : String → Option NF}
-    (hθ : ∀ x n, θ x = some n → n.eval σ = σ x) :
-    ∀ nf : NF, (substNF θ nf).eval σ = nf.eval σ := by
+    (hθ : ∀ x n, θ x = some n → n.eval σ E = σ x) :
+    ∀ nf : NF, (substNF θ nf).eval σ E = nf.eval σ E := by
   intro nf
   induction nf with
   | var w x =>
@@ -1540,15 +1568,16 @@ theorem substNF_eval {σ : String → BV} {θ : String → Option NF}
       -- literal; present the clause as a two-argument function of
       -- whole bundled values first (the recorded house trap).
       show (fun u v : BV => (⟨u.width + v.width, u.bits ++ v.bits⟩ : BV))
-          ((substNF θ a).eval σ) ((substNF θ b).eval σ)
+          ((substNF θ a).eval σ E) ((substNF θ b).eval σ E)
         = (fun u v : BV => (⟨u.width + v.width, u.bits ++ v.bits⟩ : BV))
-          (a.eval σ) (b.eval σ)
+          (a.eval σ E) (b.eval σ E)
       rw [iha, ihb]
   | slice i w e ihe =>
-      show (fun u : BV => (⟨w, u.bits.extractLsb' i w⟩ : BV)) ((substNF θ e).eval σ)
-        = (fun u : BV => (⟨w, u.bits.extractLsb' i w⟩ : BV)) (e.eval σ)
+      show (fun u : BV => (⟨w, u.bits.extractLsb' i w⟩ : BV)) ((substNF θ e).eval σ E)
+        = (fun u : BV => (⟨w, u.bits.extractLsb' i w⟩ : BV)) (e.eval σ E)
       rw [ihe]
   | ite c t e ihc iht ihe => simp only [substNF, NF.eval, ihc, iht, ihe]
+  | xcall w x a iha => simp only [substNF, NF.eval, iha]
 
 /-- Substitution preserves the width discipline when every substituted
 image satisfies it. -/
@@ -1569,6 +1598,7 @@ theorem substNF_varsWF {P : String → Nat → Prop} {θ : String → Option NF}
   | cat a b iha ihb => exact fun h => ⟨iha h.1, ihb h.2⟩
   | slice i w e ihe => exact fun h => ihe h
   | ite c t e ihc iht ihe => exact fun h => ⟨ihc h.1, iht h.2.1, ihe h.2.2⟩
+  | xcall w x a iha => exact fun h => iha h
 
 /-- The tag specialization is denotation-preserving at valuations
 whose tag-register value is fixed by the specialization image (the
@@ -1577,8 +1607,8 @@ target's own tag). -/
 theorem tagSubst_eval {σ : String → BV} {plan : Plan} {lo : Layout} {tag : Nat}
     (hfix : ∀ r w, plan.tagReg = some (r, w) → 0 < lo.rTagW →
       (NF.cat (.lit ⟨lo.rTagW, BitVec.ofNat _ tag⟩)
-        (sliceNF 0 lo.rPayW (.var w r))).eval σ = σ r) :
-    ∀ nf, (substNF (tagSubst plan lo tag) nf).eval σ = nf.eval σ := by
+        (sliceNF 0 lo.rPayW (.var w r))).eval σ E = σ r) :
+    ∀ nf, (substNF (tagSubst plan lo tag) nf).eval σ E = nf.eval σ E := by
   refine substNF_eval ?_
   intro x n hx
   rw [tagSubst] at hx
@@ -1614,8 +1644,8 @@ theorem tagFix_of_store {σ : String → BV} {r : String} {w wt wl tag : Nat}
     (htop : ∀ j, j < wt →
       (σ r).bits.getLsbD (wl + j) = (BitVec.ofNat wt tag).getLsbD j) :
     (NF.cat (.lit ⟨wt, BitVec.ofNat wt tag⟩)
-      (sliceNF 0 wl (.var w r))).eval σ = σ r := by
-  have hslice : (sliceNF 0 wl (.var w r)).eval σ
+      (sliceNF 0 wl (.var w r))).eval σ E = σ r := by
+  have hslice : (sliceNF 0 wl (.var w r)).eval σ E
       = ⟨wl, (σ r).bits.extractLsb' 0 wl⟩ := by
     rw [sliceNF]
     split
@@ -1626,7 +1656,7 @@ theorem tagFix_of_store {σ : String → BV} {r : String} {w wt wl tag : Nat}
       cases hi
     · rfl
   show (fun u v : BV => (⟨u.width + v.width, u.bits ++ v.bits⟩ : BV))
-      ((NF.lit ⟨wt, BitVec.ofNat wt tag⟩).eval σ) ((sliceNF 0 wl (.var w r)).eval σ)
+      ((NF.lit ⟨wt, BitVec.ofNat wt tag⟩).eval σ E) ((sliceNF 0 wl (.var w r)).eval σ E)
     = σ r
   rw [hslice]
   show (⟨wt + wl, BitVec.ofNat wt tag ++ (σ r).bits.extractLsb' 0 wl⟩ : BV) = σ r
@@ -1973,22 +2003,22 @@ private theorem drop_sum_le {l : List Nat} {i : Nat} (h : i < l.length) :
 /-! ## Evaluation of the construction helpers -/
 
 private theorem catList_eval (σ : String → BV) :
-    ∀ (xs : List NF), (Rwv.Eidos.Cexp.catList xs).eval σ = catAll (xs.map (NF.eval σ)) := by
+    ∀ (xs : List NF), (Rwv.Eidos.Cexp.catList xs).eval σ E = catAll (xs.map (NF.eval σ E)) := by
   intro xs
   match xs with
   | [] => rfl
   | [x] =>
-      show x.eval σ = catAll [x.eval σ]
+      show x.eval σ E = catAll [x.eval σ E]
       rw [catAll_cons, catAll_nil, bvCat_zero_right rfl]
   | x :: y :: rest =>
-      show bvCat (x.eval σ) ((Rwv.Eidos.Cexp.catList (y :: rest)).eval σ) = _
+      show bvCat (x.eval σ E) ((Rwv.Eidos.Cexp.catList (y :: rest)).eval σ E) = _
       rw [catList_eval σ (y :: rest)]
-      rw [show (x :: y :: rest).map (NF.eval σ) = x.eval σ :: (y :: rest).map (NF.eval σ)
+      rw [show (x :: y :: rest).map (NF.eval σ E) = x.eval σ E :: (y :: rest).map (NF.eval σ E)
             from rfl, catAll_cons]
 
 private theorem catNF_eval (σ : String → BV)
-    (xs : List (NF × Nat)) (hw : ∀ p ∈ xs, (p.1.eval σ).width = p.2) :
-    (catNF xs).eval σ = catAll (xs.map (fun p => p.1.eval σ)) := by
+    (xs : List (NF × Nat)) (hw : ∀ p ∈ xs, (p.1.eval σ E).width = p.2) :
+    (catNF xs).eval σ E = catAll (xs.map (fun p => p.1.eval σ E)) := by
   rw [catNF, catList_eval, List.map_map]
   induction xs with
   | nil => rfl
@@ -2001,12 +2031,12 @@ private theorem catNF_eval (σ : String → BV)
       · rw [if_neg hx, List.map_cons, catAll_cons,
             ih (fun a ha => hw a (List.mem_cons_of_mem _ ha))]
         refine (bvCat_zero_left ?_).symm
-        show (x.1.eval σ).width = 0
+        show (x.1.eval σ E).width = 0
         rw [hw x List.mem_cons_self]
         simpa using hx
 
 private theorem sliceNF_eval (σ : String → BV) (off w : Nat) (e : NF) :
-    (sliceNF off w e).eval σ = sliceBV (e.eval σ) off w := by
+    (sliceNF off w e).eval σ E = sliceBV (e.eval σ E) off w := by
   rw [sliceNF]
   by_cases hw : w = 0
   · rw [if_pos hw]
@@ -3876,7 +3906,7 @@ private theorem get?_insert {β : Type} {m : HashMap Int β} {k k' : Int} {v : �
 
 open Rwv.Eidos.Cexp (EnvC) in
 private theorem envC_empty {Δ : DEnv} {σ : String → BV} :
-    EnvC Δ σ (∅ : HashMap Int (NF × Ty)) ([] : Eval.Env) := by
+    EnvC (E := E) Δ σ (∅ : HashMap Int (NF × Ty)) ([] : Eval.Env) := by
   constructor
   · intro x nt h
     rw [HashMap.get?_eq_getElem?] at h
@@ -3886,9 +3916,9 @@ private theorem envC_empty {Δ : DEnv} {σ : String → BV} :
 
 open Rwv.Eidos.Cexp (EnvC) in
 private theorem envC_cons {Δ : DEnv} {σ : String → BV} {Γ : HashMap Int (NF × Ty)}
-    {env : Eval.Env} (h : EnvC Δ σ Γ env) {u : Int} {n : NF} {t : Ty} {v : Val}
-    (hv : VTy Δ v t) (hrep : ∃ k, Val.rep Δ k v = .ok (n.eval σ)) :
-    EnvC Δ σ (Γ.insert u (n, t)) ((u, v) :: env) := by
+    {env : Eval.Env} (h : EnvC (E := E) Δ σ Γ env) {u : Int} {n : NF} {t : Ty} {v : Val}
+    (hv : VTy Δ v t) (hrep : ∃ k, Val.rep Δ k v = .ok (n.eval σ E)) :
+    EnvC (E := E) Δ σ (Γ.insert u (n, t)) ((u, v) :: env) := by
   constructor
   · intro x nt hx
     rw [get?_insert] at hx
@@ -3919,12 +3949,12 @@ concrete side (both later-wins). -/
 private theorem envC_foldl_zip {Δ : DEnv} {σ : String → BV} :
     ∀ (params : List Id) (pas : List (NF × Ty)) (vs : List Val)
       {Γ₀ : HashMap Int (NF × Ty)} {env₀ : Eval.Env},
-      EnvC Δ σ Γ₀ env₀ →
+      EnvC (E := E) Δ σ Γ₀ env₀ →
       pas.length = params.length → vs.length = params.length →
       (∀ i (h1 : i < params.length) (h2 : i < pas.length) (h3 : i < vs.length),
         VTy Δ (vs[i]'h3) ((pas[i]'h2).2) ∧
-        ∃ k, Val.rep Δ k (vs[i]'h3) = .ok ((pas[i]'h2).1.eval σ)) →
-      EnvC Δ σ
+        ∃ k, Val.rep Δ k (vs[i]'h3) = .ok ((pas[i]'h2).1.eval σ E)) →
+      EnvC (E := E) Δ σ
         ((params.zip pas).foldl (fun m (x, nt) => m.insert x.uniq nt) Γ₀)
         ((params.zip vs).foldl (fun e (p, v) => (p.uniq, v) :: e) env₀) := by
   intro params
@@ -3940,7 +3970,7 @@ private theorem envC_foldl_zip {Δ : DEnv} {σ : String → BV} :
       | nt :: nts, v :: vv =>
           have hhead := hpt 0 (by simp) (by simp) (by simp)
           rw [List.zip_cons_cons, List.zip_cons_cons, List.foldl_cons, List.foldl_cons]
-          have hbase : EnvC Δ σ (Γ₀.insert p.uniq nt) ((p.uniq, v) :: env₀) := by
+          have hbase : EnvC (E := E) Δ σ (Γ₀.insert p.uniq nt) ((p.uniq, v) :: env₀) := by
             obtain ⟨n0, t0⟩ := nt
             exact envC_cons h0 (by simpa using hhead.1) (by simpa using hhead.2)
           exact ih nts vv hbase (by simpa using hl1) (by simpa using hl2)
@@ -4099,17 +4129,17 @@ private theorem ofNat_beq_false {w a b : Nat} (hne : a ≠ b) (ha : a < 2 ^ w)
   | true => exact absurd (ofNat_beq_true ha hb hh) hne
 
 private theorem ite_eval_of_cond {σ : String → BV} {c t e : NF} {b : Bool}
-    (hc : c.eval σ = Rwv.Hyle.Sem.b1 b) :
-    (NF.ite c t e).eval σ = if b then t.eval σ else e.eval σ := by
-  show (if (c.eval σ).nat ≠ 0 then t.eval σ else e.eval σ) = _
+    (hc : c.eval σ E = Rwv.Hyle.Sem.b1 b) :
+    (NF.ite c t e).eval σ E = if b then t.eval σ E else e.eval σ E := by
+  show (if (c.eval σ E).nat ≠ 0 then t.eval σ E else e.eval σ E) = _
   rw [hc]
   cases b with
   | true => rw [if_pos (by decide), if_pos rfl]
   | false => rw [if_neg (by decide), if_neg (by simp)]
 
 private theorem eq_eval (σ : String → BV) (a b : NF) :
-    (NF.prim2 .eq a b).eval σ
-      = Rwv.Hyle.Sem.b1 ((a.eval σ).bits == (b.eval σ).bits.setWidth (a.eval σ).width) :=
+    (NF.prim2 .eq a b).eval σ E
+      = Rwv.Hyle.Sem.b1 ((a.eval σ E).bits == (b.eval σ E).bits.setWidth (a.eval σ E).width) :=
   rfl
 
 private theorem goAlt1_default {C : Ctx} {N : Nat} {Γ : HashMap Int (NF × Ty)}
@@ -4225,7 +4255,7 @@ def CellsC (C : Ctx) (plan : Plan) (σ : String → BV) (cells : List CellNF)
       = plan.cells.map (fun c => (c.name, c.ty, c.width)) ∧
   (cells.map (·.name)).Nodup ∧
   ∀ d ∈ cells, ∃ v k, store.get? d.name = some v ∧ VTy C.Δ v d.ty ∧
-    Val.rep C.Δ k v = .ok (d.nf.eval σ) ∧ (d.nf.eval σ).width = d.width
+    Val.rep C.Δ k v = .ok (d.nf.eval σ E) ∧ (d.nf.eval σ E).width = d.width
 
 /-- The step-record correspondence: what a compiled record's value
 says about a machine-step outcome. A halt is unconstrained (the
@@ -4253,83 +4283,83 @@ def StepValC (C : Ctx) (plan : Plan) (σ : String → BV) (rv : BV) : StepOut �
 def PCmds (C : Ctx) (plan : Plan) (σ : String → BV) (N : Nat) : Prop :=
   ∀ Γ cells cmds term rec env store ef gf so,
     goCmds C N Γ cells cmds term = .ok rec →
-    Rwv.Eidos.Cexp.EnvC C.Δ σ Γ env →
-    CellsC C plan σ cells store →
+    Rwv.Eidos.Cexp.EnvC (E := E) C.Δ σ Γ env →
+    CellsC (E := E) C plan σ cells store →
     (do
-      let (env', store') ← Machine.runCmds C.Δ C.edm ef env store cmds
-      Machine.execBlock.runTerm C.Δ C.edm C.blocks ef gf env' store' term) = .ok so →
-    StepValC C plan σ (rec.eval σ) so
+      let (env', store') ← Machine.runCmds C.Δ C.edm ef env store cmds E
+      Machine.execBlock.runTerm C.Δ C.edm C.blocks ef E gf env' store' term) = .ok so →
+    StepValC C plan σ (rec.eval σ E) so
 
 /-- Soundness of the terminator compiler at a fuel. -/
 def PTerm (C : Ctx) (plan : Plan) (σ : String → BV) (N : Nat) : Prop :=
   ∀ Γ cells term rec env store ef gf so,
     goTerm C N Γ cells term = .ok rec →
-    Rwv.Eidos.Cexp.EnvC C.Δ σ Γ env →
-    CellsC C plan σ cells store →
-    Machine.execBlock.runTerm C.Δ C.edm C.blocks ef gf env store term = .ok so →
-    StepValC C plan σ (rec.eval σ) so
+    Rwv.Eidos.Cexp.EnvC (E := E) C.Δ σ Γ env →
+    CellsC (E := E) C plan σ cells store →
+    Machine.execBlock.runTerm C.Δ C.edm C.blocks ef E gf env store term = .ok so →
+    StepValC C plan σ (rec.eval σ E) so
 
 /-- Soundness of the terminator if-chain at a fuel. -/
 def PAlts (C : Ctx) (plan : Plan) (σ : String → BV) (N : Nat) : Prop :=
   ∀ Γ cells dty szT dn alts macc rec env store sv
     (after : Except String (List Id × Term)) ef gf so,
     goAlts C N Γ cells dty szT dn alts macc = .ok rec →
-    Rwv.Eidos.Cexp.EnvC C.Δ σ Γ env →
-    CellsC C plan σ cells store →
+    Rwv.Eidos.Cexp.EnvC (E := E) C.Δ σ Γ env →
+    CellsC (E := E) C plan σ cells store →
     VTy C.Δ sv dty →
-    (∃ ks, Val.rep C.Δ ks sv = .ok (dn.eval σ)) →
+    (∃ ks, Val.rep C.Δ ks sv = .ok (dn.eval σ E)) →
     (∃ kt, C.Δ.sizeOf kt [] dty = .ok szT) →
     (∀ els, macc = some els → ∀ bs t', after = .ok (bs, t') → bs = [] ∧
        ∀ ef' gf' so',
-         Machine.execBlock.runTerm C.Δ C.edm C.blocks ef' gf' env store t' = .ok so' →
-         StepValC C plan σ (els.eval σ) so') →
+         Machine.execBlock.runTerm C.Δ C.edm C.blocks ef' E gf' env store t' = .ok so' →
+         StepValC C plan σ (els.eval σ E) so') →
     (macc = none → ∀ bs t', after ≠ .ok (bs, t')) →
     ∀ bs t', selSpec C.Δ ef sv alts after = .ok (bs, t') →
-    Machine.execBlock.runTerm C.Δ C.edm C.blocks ef gf
+    Machine.execBlock.runTerm C.Δ C.edm C.blocks ef E gf
       (Machine.bindFields env sv bs) store t' = .ok so →
-    StepValC C plan σ (rec.eval σ) so
+    StepValC C plan σ (rec.eval σ E) so
 
 /-- Soundness of a single chain link at a fuel. -/
 def PAlt1 (C : Ctx) (plan : Plan) (σ : String → BV) (N : Nat) : Prop :=
   ∀ Γ cells dty szT dn alt rest macc bnf env store sv
     (after : Except String (List Id × Term)) ef gf so,
     goAlt1 C N Γ cells dty szT dn alt macc = .ok bnf →
-    Rwv.Eidos.Cexp.EnvC C.Δ σ Γ env →
-    CellsC C plan σ cells store →
+    Rwv.Eidos.Cexp.EnvC (E := E) C.Δ σ Γ env →
+    CellsC (E := E) C plan σ cells store →
     VTy C.Δ sv dty →
-    (∃ ks, Val.rep C.Δ ks sv = .ok (dn.eval σ)) →
+    (∃ ks, Val.rep C.Δ ks sv = .ok (dn.eval σ E)) →
     (∃ kt, C.Δ.sizeOf kt [] dty = .ok szT) →
     (macc = none → rest = [] ∧ ∀ bs t', after ≠ .ok (bs, t')) →
     (∀ acc, macc = some acc → ∀ bs t' so',
        selSpec C.Δ ef sv rest after = .ok (bs, t') →
-       Machine.execBlock.runTerm C.Δ C.edm C.blocks ef gf
+       Machine.execBlock.runTerm C.Δ C.edm C.blocks ef E gf
          (Machine.bindFields env sv bs) store t' = .ok so' →
-       StepValC C plan σ (acc.eval σ) so') →
+       StepValC C plan σ (acc.eval σ E) so') →
     ∀ bs t', selSpec C.Δ ef sv (alt :: rest) after = .ok (bs, t') →
-    Machine.execBlock.runTerm C.Δ C.edm C.blocks ef gf
+    Machine.execBlock.runTerm C.Δ C.edm C.blocks ef E gf
       (Machine.bindFields env sv bs) store t' = .ok so →
-    StepValC C plan σ (bnf.eval σ) so
+    StepValC C plan σ (bnf.eval σ E) so
 
 private theorem pcmds_zero {C : Ctx} {plan : Plan} {σ : String → BV} :
-    PCmds C plan σ 0 := by
+    PCmds (E := E) C plan σ 0 := by
   intro Γ cells cmds term rec env store ef gf so h
   rw [goCmds] at h
   exact error_ne_ok h
 
 private theorem pterm_zero {C : Ctx} {plan : Plan} {σ : String → BV} :
-    PTerm C plan σ 0 := by
+    PTerm (E := E) C plan σ 0 := by
   intro Γ cells term rec env store ef gf so h
   rw [goTerm] at h
   exact error_ne_ok h
 
 private theorem palts_zero {C : Ctx} {plan : Plan} {σ : String → BV} :
-    PAlts C plan σ 0 := by
+    PAlts (E := E) C plan σ 0 := by
   intro Γ cells dty szT dn alts macc rec env store sv after ef gf so h
   rw [goAlts] at h
   exact error_ne_ok h
 
 private theorem palt1_zero {C : Ctx} {plan : Plan} {σ : String → BV} :
-    PAlt1 C plan σ 0 := by
+    PAlt1 (E := E) C plan σ 0 := by
   intro Γ cells dty szT dn alt rest macc bnf env store sv after ef gf so h
   rw [goAlt1] at h
   exact error_ne_ok h
@@ -4357,13 +4387,13 @@ private theorem nodup_map_mem_eq {α : Type} {f : α → String} :
 /-- The command step: bind extends both environments, get reads the
 corresponding cell, put updates the corresponding cell. -/
 private theorem pcmds_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat}
-    (hS : SInv C plan) (hterm : PTerm C plan σ N) (hcmds : PCmds C plan σ N) :
-    PCmds C plan σ (N + 1) := by
+    (hS : SInv C plan) (hterm : PTerm (E := E) C plan σ N) (hcmds : PCmds (E := E) C plan σ N) :
+    PCmds (E := E) C plan σ (N + 1) := by
   intro Γ cells cmds term rec env store ef gf so hgo hE hC hconc
   cases cmds with
   | nil =>
       rw [show goCmds C (N + 1) Γ cells [] term = goTerm C N Γ cells term from rfl] at hgo
-      rw [show Machine.runCmds C.Δ C.edm ef env store [] = pure (env, store) from rfl,
+      rw [show Machine.runCmds C.Δ C.edm ef env store [] E = pure (env, store) from rfl,
           except_pure_def, except_bind_ok] at hconc
       exact hterm Γ cells term rec env store ef gf so hgo hE hC hconc
   | cons cmd rest =>
@@ -4373,8 +4403,8 @@ private theorem pcmds_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
       obtain ⟨st1, hbody, hfold⟩ := except_bind_eq_ok hcmds1
       obtain ⟨env₁, store₁⟩ := st1
       have hrest : (do
-          let (env', store') ← Machine.runCmds C.Δ C.edm ef env₁ store₁ rest
-          Machine.execBlock.runTerm C.Δ C.edm C.blocks ef gf env' store' term)
+          let (env', store') ← Machine.runCmds C.Δ C.edm ef env₁ store₁ rest E
+          Machine.execBlock.runTerm C.Δ C.edm C.blocks ef E gf env' store' term)
           = .ok so := by
         rw [Machine.runCmds, hfold, except_bind_ok]
         exact hkont
@@ -4499,7 +4529,7 @@ private theorem pcmds_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
                     rw [hdname, HashMap.get?_eq_getElem?]
                     exact HashMap.getElem?_insert_self
                   · -- the new width, from the cell's declared size
-                    show (nf₁.eval σ).width = d₀.width
+                    show (nf₁.eval σ E).width = d₀.width
                     have hd₀tr : (d₀.name, d₀.ty, d₀.width)
                         ∈ plan.cells.map (fun c => (c.name, c.ty, c.width)) := by
                       rw [← hC.1]
@@ -4538,13 +4568,13 @@ private theorem len_le_one_mem_eq {α : Type} {l : List α} (h : l.length ≤ 1)
 /-- One chain link: the compiled tag test fires exactly when the
 machine's constructor-name (or literal) match does. -/
 private theorem palt1_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat}
-    (hS : SInv C plan) (hterm : PTerm C plan σ N) :
-    PAlt1 C plan σ (N + 1) := by
+    (hS : SInv C plan) (hterm : PTerm (E := E) C plan σ N) :
+    PAlt1 (E := E) C plan σ (N + 1) := by
   intro Γ cells dty szT dn alt rest macc bnf env store sv after ef gf so
     hgo hE hC hvty hrepE hszE hnone hcont bs t' hsel hrun
   obtain ⟨ks, hks⟩ := hrepE
   obtain ⟨kt, hkt⟩ := hszE
-  have hw : (dn.eval σ).width = szT := vty_rep_width hvty hks hkt
+  have hw : (dn.eval σ E).width = szT := vty_rep_width hvty hks hkt
   obtain ⟨con, abs, at'⟩ := alt
   cases con with
   | default => exact (goAlt1_default hgo).elim
@@ -4568,20 +4598,20 @@ private theorem palt1_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
       obtain ⟨x, hx, hlm⟩ := except_bind_eq_ok hlm
       rw [except_pure_def] at hlm
       injection hlm with hlm
-      have hxd : x = dn.eval σ := rep_det hx hks
+      have hxd : x = dn.eval σ E := rep_det hx hks
       subst hxd
       subst hlm
       -- the compiled test's value
-      have hcondv : (NF.prim2 .eq dn (.lit ⟨szT, BitVec.ofInt szT n⟩)).eval σ
-          = Rwv.Hyle.Sem.b1 ((dn.eval σ).bits == BitVec.ofInt (dn.eval σ).width n) := by
+      have hcondv : (NF.prim2 .eq dn (.lit ⟨szT, BitVec.ofInt szT n⟩)).eval σ E
+          = Rwv.Hyle.Sem.b1 ((dn.eval σ E).bits == BitVec.ofInt (dn.eval σ E).width n) := by
         rw [eq_eval]
-        rw [show ((NF.lit ⟨szT, BitVec.ofInt szT n⟩).eval σ) = ⟨szT, BitVec.ofInt szT n⟩
+        rw [show ((NF.lit ⟨szT, BitVec.ofInt szT n⟩).eval σ E) = ⟨szT, BitVec.ofInt szT n⟩
               from rfl]
-        rw [show (BV.mk szT (BitVec.ofInt szT n)).bits.setWidth (dn.eval σ).width
-              = BitVec.ofInt (dn.eval σ).width n by
+        rw [show (BV.mk szT (BitVec.ofInt szT n)).bits.setWidth (dn.eval σ E).width
+              = BitVec.ofInt (dn.eval σ E).width n by
             rw [hw]
             exact BitVec.setWidth_eq _]
-      cases hb : ((dn.eval σ).bits == BitVec.ofInt (dn.eval σ).width n) with
+      cases hb : ((dn.eval σ E).bits == BitVec.ofInt (dn.eval σ E).width n) with
       | true =>
           rw [hb, if_pos rfl, except_pure_def] at hsel
           injection hsel with hsel
@@ -4599,8 +4629,8 @@ private theorem palt1_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
               rw [except_pure_def] at hgoL
               injection hgoL with hgoL
               subst hgoL
-              rw [show (NF.ite (.prim2 .eq dn (.lit ⟨szT, BitVec.ofInt szT n⟩)) bnf' acc).eval σ
-                    = if true then bnf'.eval σ else acc.eval σ from
+              rw [show (NF.ite (.prim2 .eq dn (.lit ⟨szT, BitVec.ofInt szT n⟩)) bnf' acc).eval σ E
+                    = if true then bnf'.eval σ E else acc.eval σ E from
                     ite_eval_of_cond (by rw [hcondv, hb])]
               rw [if_pos rfl]
               exact hmain
@@ -4616,8 +4646,8 @@ private theorem palt1_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
               rw [except_pure_def] at hgoL
               injection hgoL with hgoL
               subst hgoL
-              rw [show (NF.ite (.prim2 .eq dn (.lit ⟨szT, BitVec.ofInt szT n⟩)) bnf' acc).eval σ
-                    = if false then bnf'.eval σ else acc.eval σ from
+              rw [show (NF.ite (.prim2 .eq dn (.lit ⟨szT, BitVec.ofInt szT n⟩)) bnf' acc).eval σ E
+                    = if false then bnf'.eval σ E else acc.eval σ E from
                     ite_eval_of_cond (by rw [hcondv, hb])]
               rw [if_neg (by simp)]
               exact hmain
@@ -4729,7 +4759,7 @@ private theorem palt1_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
         show szT - tagWv - (Val.bvConcat bsR).width + (Val.bvConcat bsR).width
           = szT - tagWv
         omega
-      have hslice : sliceBV (dn.eval σ) (szT - tagWv) tagWv
+      have hslice : sliceBV (dn.eval σ E) (szT - tagWv) tagWv
           = (⟨tagWv, BitVec.ofNat tagWv tagv⟩ : BV) := by
         rw [hbv, bvConcat3, sliceBV_cat_high (Nat.le_of_eq hFw), hFw, Nat.sub_self]
         exact sliceBV_all _
@@ -4788,7 +4818,7 @@ private theorem palt1_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
           rw [List.getElem_map]
           exact hfw i (by rw [List.length_map] at h1; omega)
         -- the extended environment corresponds
-        have hE' : Rwv.Eidos.Cexp.EnvC C.Δ σ
+        have hE' : Rwv.Eidos.Cexp.EnvC (E := E) C.Δ σ
             ((abs.zip ((((szXs.zip (offsetsOf szXs)).map fun (sz, off) =>
                 sliceNF off sz dn).zip
                 ((Ty.flattenArrow sigv.ty).1.map (DEnv.substTv subv))))).foldl
@@ -4890,7 +4920,7 @@ private theorem palt1_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
               have htt : tagv = tag := hcniff.1 hcc
               subst htt
               have hcond : (NF.prim2 .eq (sliceNF (szT - (w0 + 1)) (w0 + 1) dn)
-                  (.lit ⟨w0 + 1, BitVec.ofNat (w0 + 1) tagv⟩)).eval σ
+                  (.lit ⟨w0 + 1, BitVec.ofNat (w0 + 1) tagv⟩)).eval σ E
                   = Rwv.Hyle.Sem.b1 ((BitVec.ofNat (w0 + 1) tagv)
                       == BitVec.ofNat (w0 + 1) tagv) := by
                 rw [eq_eval, sliceNF_eval, hslice]
@@ -4898,8 +4928,8 @@ private theorem palt1_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
                     == (BitVec.ofNat (w0 + 1) tagv).setWidth (w0 + 1)) = _
                 rw [BitVec.setWidth_eq]
               rw [show (NF.ite (.prim2 .eq (sliceNF (szT - (w0 + 1)) (w0 + 1) dn)
-                    (.lit ⟨w0 + 1, BitVec.ofNat (w0 + 1) tagv⟩)) bnf' acc).eval σ
-                  = if true then bnf'.eval σ else acc.eval σ from
+                    (.lit ⟨w0 + 1, BitVec.ofNat (w0 + 1) tagv⟩)) bnf' acc).eval σ E
+                  = if true then bnf'.eval σ E else acc.eval σ E from
                   ite_eval_of_cond (by rw [hcond, beq_self_eq_true])]
               rw [if_pos rfl]
               exact hmain
@@ -4922,7 +4952,7 @@ private theorem palt1_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
                 have htagne : tagv ≠ tag := fun h => hcc (hcniff.2 h)
                 obtain ⟨hbt, hbtv⟩ := hbounds w0 rfl
                 have hcond : (NF.prim2 .eq (sliceNF (szT - (w0 + 1)) (w0 + 1) dn)
-                    (.lit ⟨w0 + 1, BitVec.ofNat (w0 + 1) tag⟩)).eval σ
+                    (.lit ⟨w0 + 1, BitVec.ofNat (w0 + 1) tag⟩)).eval σ E
                     = Rwv.Hyle.Sem.b1 ((BitVec.ofNat (w0 + 1) tagv)
                         == BitVec.ofNat (w0 + 1) tag) := by
                   rw [eq_eval, sliceNF_eval, hslice]
@@ -4930,16 +4960,16 @@ private theorem palt1_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
                       == (BitVec.ofNat (w0 + 1) tag).setWidth (w0 + 1)) = _
                   rw [BitVec.setWidth_eq]
                 rw [show (NF.ite (.prim2 .eq (sliceNF (szT - (w0 + 1)) (w0 + 1) dn)
-                      (.lit ⟨w0 + 1, BitVec.ofNat (w0 + 1) tag⟩)) bnf' acc).eval σ
-                    = if false then bnf'.eval σ else acc.eval σ from
+                      (.lit ⟨w0 + 1, BitVec.ofNat (w0 + 1) tag⟩)) bnf' acc).eval σ E
+                    = if false then bnf'.eval σ E else acc.eval σ E from
                     ite_eval_of_cond (by rw [hcond, ofNat_beq_false htagne hbtv hbt])]
                 rw [if_neg (by simp)]
                 exact hmain
 
 /-- The chain step: fold `palt1_step` along the alternatives. -/
 private theorem palts_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat}
-    (halts : PAlts C plan σ N) (halt1 : PAlt1 C plan σ N) :
-    PAlts C plan σ (N + 1) := by
+    (halts : PAlts (E := E) C plan σ N) (halt1 : PAlt1 (E := E) C plan σ N) :
+    PAlts (E := E) C plan σ (N + 1) := by
   intro Γ cells dty szT dn alts macc rec env store sv after ef gf so
     hgo hE hC hvty hrep hsz hafter hnone bs t' hsel hrun
   cases alts with
@@ -5120,8 +5150,8 @@ private theorem pause_slices (lo : Layout) (e3 : BV) (tag : Nat) (argWs : List N
 through the block, halt is vacuous, cases dispatches through the
 chain. -/
 private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat}
-    (hS : SInv C plan) (hcmds : PCmds C plan σ N) (hterm : PTerm C plan σ N)
-    (halts : PAlts C plan σ N) : PTerm C plan σ (N + 1) := by
+    (hS : SInv C plan) (hcmds : PCmds (E := E) C plan σ N) (hterm : PTerm (E := E) C plan σ N)
+    (halts : PAlts (E := E) C plan σ N) : PTerm (E := E) C plan σ (N + 1) := by
   intro Γ cells term rec env store ef gf so hgo hE hC hconc
   cases term with
   | halt e =>
@@ -5175,7 +5205,7 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
                       exact hpi) hvi hE)
               have hst' : Machine.runCmds C.Δ C.edm ef
                   ((blk.params.zip vs).foldl (fun e (p, v) => (p.uniq, v) :: e) [])
-                  store blk.cmds = .ok (env₂, store₂) := hst
+                  store blk.cmds E = .ok (env₂, store₂) := hst
               refine hcmds _ cells blk.cmds blk.term rec _ store ef gf' so hgoA hE' hC ?_
               rw [hst', except_bind_ok]
               exact hconcB
@@ -5218,7 +5248,7 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
       have hotyE : oty = C.outTy := Rwv.Eidos.Cexp.teq_eq hteqo
       subst hotyE
       obtain ⟨kout, hkout⟩ := hS.outsz
-      have hbw : (onf.eval σ).width = C.lo.outW := vty_rep_width hovty horep hkout
+      have hbw : (onf.eval σ E).width = C.lo.outW := vty_rep_width hovty horep hkout
       -- target facts
       have htgtmem : tgt ∈ C.lo.targets := List.mem_of_find?_eq_some hfind
       have htgtuq : tgt.uniq = l.uniq := by
@@ -5236,7 +5266,7 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
         simpa using this
       have hargpt : ∀ i (h3 : i < vs.length),
           VTy C.Δ (vs[i]'h3) ((pas[i]'(by omega)).2) ∧
-          ∃ k, Val.rep C.Δ k (vs[i]'h3) = .ok ((pas[i]'(by omega)).1.eval σ) := by
+          ∃ k, Val.rep C.Δ k (vs[i]'h3) = .ok ((pas[i]'(by omega)).1.eval σ E) := by
         intro i h3
         obtain ⟨_, hpi⟩ := hppt i (by omega)
         obtain ⟨_, hvi⟩ := hvpt i (by omega)
@@ -5253,14 +5283,14 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
         exact Option.some.inj h1
       -- per-argument sizes and rep widths
       have hrepw : ∀ i (hi : i < pas.length),
-          ((pas[i]'hi).1.eval σ).width = tgt.argWs[i]'(by omega) := by
+          ((pas[i]'hi).1.eval σ E).width = tgt.argWs[i]'(by omega) := by
         intro i hi
         obtain ⟨_, hszi⟩ := hApt i (by omega)
         obtain ⟨hvt, k, hrp⟩ := hargpt i (by omega)
         rw [hatys i hi] at hvt
         exact vty_rep_width hvt hrp hszi
       -- the record's piece widths
-      have hcw : ∀ d ∈ cells, (d.nf.eval σ).width = d.width := by
+      have hcw : ∀ d ∈ cells, (d.nf.eval σ E).width = d.width := by
         intro d hd
         obtain ⟨_, _, _, _, _, hwd⟩ := hC.2.2 d hd
         exact hwd
@@ -5272,7 +5302,7 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
               ((NF.lit ⟨C.lo.rPayW - tgt.argWs.sum, 0⟩ : NF), C.lo.rPayW - tgt.argWs.sum)]
             ++ (pas.map (·.1)).zip tgt.argWs
             ++ cells.map fun c => (c.nf, c.width)),
-          (p.1.eval σ).width = p.2 := by
+          (p.1.eval σ E).width = p.2 := by
         intro p hp
         rcases List.mem_append.mp hp with hp | hp
         · rcases List.mem_append.mp hp with hp | hp
@@ -5293,7 +5323,7 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
           subst hcp
           exact hcw c hcm
       -- widths of the compiled argument representations
-      have hrw : (pas.map (fun p => p.1.eval σ)).map (·.width) = tgt.argWs := by
+      have hrw : (pas.map (fun p => p.1.eval σ E)).map (·.width) = tgt.argWs := by
         refine List.ext_getElem (by rw [List.length_map, List.length_map]; omega) ?_
         intro i h1 h2
         rw [List.getElem_map, List.getElem_map]
@@ -5306,14 +5336,14 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
               ((NF.lit ⟨C.lo.rTagW, BitVec.ofNat _ tgt.tag⟩ : NF), C.lo.rTagW),
               ((NF.lit ⟨C.lo.rPayW - tgt.argWs.sum, 0⟩ : NF), C.lo.rPayW - tgt.argWs.sum)]
             ++ (pas.map (·.1)).zip tgt.argWs
-            ++ cells.map fun c => (c.nf, c.width)).map (fun p => p.1.eval σ))
+            ++ cells.map fun c => (c.nf, c.width)).map (fun p => p.1.eval σ E))
           = ([(⟨C.lo.pTagW, 1⟩ : BV),
               (⟨C.lo.recW - C.lo.pTagW - C.lo.outW - C.lo.rW - C.lo.cellsW, 0⟩ : BV),
-              onf.eval σ, (⟨C.lo.rTagW, BitVec.ofNat _ tgt.tag⟩ : BV),
+              onf.eval σ E, (⟨C.lo.rTagW, BitVec.ofNat _ tgt.tag⟩ : BV),
               (⟨C.lo.rPayW - tgt.argWs.sum, 0⟩ : BV)]
-             ++ pas.map (fun p => p.1.eval σ) ++ cells.map (fun c => c.nf.eval σ)) := by
+             ++ pas.map (fun p => p.1.eval σ E) ++ cells.map (fun c => c.nf.eval σ E)) := by
         rw [List.map_append, List.map_append,
-            zip_map_fst (NF.eval σ) (pas.map (·.1)) tgt.argWs (by
+            zip_map_fst (NF.eval σ E) (pas.map (·.1)) tgt.argWs (by
               rw [List.length_map]
               omega),
             List.map_map, List.map_map]
@@ -5322,8 +5352,8 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
         have h := congrArg (List.map (fun t : String × Ty × Nat => t.2.2)) hC.1
         rw [List.map_map, List.map_map] at h
         exact h
-      obtain ⟨hsl1, hsl2, hsl3⟩ := pause_slices C.lo (onf.eval σ) tgt.tag tgt.argWs
-        (pas.map (fun p => p.1.eval σ)) (cells.map (fun c => c.nf.eval σ))
+      obtain ⟨hsl1, hsl2, hsl3⟩ := pause_slices C.lo (onf.eval σ E) tgt.tag tgt.argWs
+        (pas.map (fun p => p.1.eval σ E)) (cells.map (fun c => c.nf.eval σ E))
         (plan.cells.map (·.width)) hbw hrw
         (by
           rw [List.map_map]
@@ -5332,7 +5362,7 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
           exact hcw d hd)
         hS.cellsw hpay
       rw [pauseRec, catNF_eval σ _ hw, hmapev]
-      refine ⟨hovty, ⟨onf.eval σ, ko, horep, hbw, hsl1⟩, tgt, htgtmem, htgtuq, ?_, ?_, ?_, ?_⟩
+      refine ⟨hovty, ⟨onf.eval σ E, ko, horep, hbw, hsl1⟩, tgt, htgtmem, htgtuq, ?_, ?_, ?_, ?_⟩
       · show vs.length = tgt.argTys.length
         omega
       · intro pr hpr
@@ -5345,13 +5375,13 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
         rw [hatys i (by omega)] at hvt
         exact hvt
       · obtain ⟨K, hK⟩ := mapM_rep_exists (Δ := C.Δ) (vs := vs)
-          (bs := pas.map (fun p => p.1.eval σ)) (by rw [List.length_map]; omega)
+          (bs := pas.map (fun p => p.1.eval σ E)) (by rw [List.length_map]; omega)
           (fun i h1 h2 => by
             obtain ⟨_, k, hrp⟩ := hargpt i h1
             refine ⟨k, ?_⟩
             rw [List.getElem_map]
             exact hrp)
-        exact ⟨pas.map (fun p => p.1.eval σ), K, hK, hrw, hsl2⟩
+        exact ⟨pas.map (fun p => p.1.eval σ E), K, hK, hrw, hsl2⟩
       · intro pr hpr
         obtain ⟨i, hi, hpri⟩ := List.getElem_of_mem hpr
         rw [List.length_zip, offsetsOf_length, List.length_map, Nat.min_self] at hi
@@ -5373,7 +5403,7 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
           exact ⟨e1, e2, e3⟩
         obtain ⟨v, k, hget, hvty, hrep, hwid⟩ :=
           hC.2.2 (cells[i]'(by omega)) (List.getElem_mem _)
-        refine ⟨v, (cells[i]'(by omega)).nf.eval σ, k, ?_, ?_, hrep, ?_, ?_⟩
+        refine ⟨v, (cells[i]'(by omega)).nf.eval σ E, k, ?_, ?_, hrep, ?_, ?_⟩
         · rw [← hpri]
           show store.get? (plan.cells[i]'hi).name = some v
           rw [← htri.1]
@@ -5383,13 +5413,13 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
           rw [← htri.2.1]
           exact hvty
         · rw [← hpri]
-          show ((cells[i]'(by omega)).nf.eval σ).width = (plan.cells[i]'hi).width
+          show ((cells[i]'(by omega)).nf.eval σ E).width = (plan.cells[i]'hi).width
           rw [← htri.2.2]
           exact hwid
         · rw [← hpri]
           have h3 := hsl3 i (by rw [List.length_map]; omega)
-          rw [show (cells.map (fun c => c.nf.eval σ))[i]'(by rw [List.length_map]; omega)
-                = (cells[i]'(by omega)).nf.eval σ from List.getElem_map _] at h3
+          rw [show (cells.map (fun c => c.nf.eval σ E))[i]'(by rw [List.length_map]; omega)
+                = (cells[i]'(by omega)).nf.eval σ E from List.getElem_map _] at h3
           rw [show (plan.cells.map (·.width))[i]'(by rw [List.length_map]; exact hi)
                 = (plan.cells[i]'hi).width from List.getElem_map _] at h3
           exact h3
@@ -5527,7 +5557,7 @@ resumption-tag field the next state's `encTag`, and the cell fields
 the next cells' representations — for EVERY concrete evaluation and
 goto fuel. -/
 theorem cstep_sound {C : Ctx} {plan : Plan} {σ : String → BV} (hS : SInv C plan) :
-    ∀ N, PCmds C plan σ N ∧ PTerm C plan σ N ∧ PAlts C plan σ N ∧ PAlt1 C plan σ N := by
+    ∀ N, PCmds (E := E) C plan σ N ∧ PTerm (E := E) C plan σ N ∧ PAlts (E := E) C plan σ N ∧ PAlt1 (E := E) C plan σ N := by
   intro N
   induction N with
   | zero => exact ⟨pcmds_zero, pterm_zero, palts_zero, palt1_zero⟩
@@ -6059,9 +6089,10 @@ private theorem getElem_last_concat {α : Type} {l : List α} {a : α} {j : Nat}
 per declared output and one next entry per declared register, names
 agreeing pointwise in order (`symFinish` reads them off the device's
 port and register lists). -/
-private theorem symStep_shape {dmap : Std.HashMap String Rwv.Hyle.Defn} {hfuel : Nat}
+private theorem symStep_shape {dmap : Std.HashMap String Rwv.Hyle.Defn}
+    {X : Rwv.Hyle.Sem.XEnv} {hfuel : Nat}
     {dev : Rwv.Hyle.Device} {ss : Rwv.Hyle.Bridge.StepNF}
-    (h : Rwv.Hyle.Bridge.symStep dmap hfuel dev = .ok ss) :
+    (h : Rwv.Hyle.Bridge.symStep dmap X hfuel dev = .ok ss) :
     (ss.outs.length = dev.outputs.length ∧
       ∀ i (hi : i < dev.outputs.length) (hi' : i < ss.outs.length),
         (ss.outs[i]'hi').1 = (dev.outputs[i]'hi).1) ∧
@@ -6108,7 +6139,7 @@ private theorem symStep_shape {dmap : Std.HashMap String Rwv.Hyle.Defn} {hfuel :
 private theorem foldl_insert_get?_skip {σ : String → BV} :
     ∀ (l : List (String × NF)) (m : Std.HashMap String BV) (x : String),
       x ∉ l.map Prod.fst →
-      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ)) m).get? x = m.get? x := by
+      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) m).get? x = m.get? x := by
   intro l
   induction l with
   | nil => intro m x _; rfl
@@ -6124,7 +6155,7 @@ private theorem foldl_insert_get?_skip {σ : String → BV} :
 private theorem foldl_insert_get?_mem {σ : String → BV} :
     ∀ (l : List (String × NF)) (m : Std.HashMap String BV) {x : String} {n : NF},
       (l.map Prod.fst).Nodup → (x, n) ∈ l →
-      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ)) m).get? x = some (n.eval σ) := by
+      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) m).get? x = some (n.eval σ E) := by
   intro l
   induction l with
   | nil => intro m x n _ hmem; cases hmem
@@ -6142,7 +6173,7 @@ private theorem foldl_insert_get?_mem {σ : String → BV} :
 /-- `stepNextsVal`'s fold holds nothing beyond the recorded names. -/
 private theorem foldl_insert_contains' {σ : String → BV} :
     ∀ (l : List (String × NF)) (m : Std.HashMap String BV) {x : String},
-      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ)) m).contains x = true →
+      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) m).contains x = true →
       x ∈ l.map Prod.fst ∨ m.contains x = true := by
   intro l
   induction l with
@@ -6163,11 +6194,11 @@ private theorem foldl_insert_contains' {σ : String → BV} :
 valuations. -/
 private theorem ceqB_eval {σ : String → BV} {a b : NF} (h : ceqB a b = true)
     (ha : a.VarsWF (Rwv.Hyle.Bridge.WP σ)) (hb : b.VarsWF (Rwv.Hyle.Bridge.WP σ)) :
-    a.eval σ = b.eval σ := by
+    a.eval σ E = b.eval σ E := by
   rw [ceqB, Bool.or_eq_true] at h
   rcases h with h | h
   · have he : a.cfold = b.cfold := eq_of_beq h
-    rw [← Rwv.Hyle.Bridge.cfold_eval σ a, ← Rwv.Hyle.Bridge.cfold_eval σ b, he]
+    rw [← Rwv.Hyle.Bridge.cfold_eval σ E a, ← Rwv.Hyle.Bridge.cfold_eval σ E b, he]
   · have he : Rwv.Hyle.Bridge.cfoldW3 a = Rwv.Hyle.Bridge.cfoldW3 b := eq_of_beq h
     rw [← Rwv.Hyle.Bridge.cfoldW3_eval ha, ← Rwv.Hyle.Bridge.cfoldW3_eval hb, he]
 
@@ -6411,8 +6442,8 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     (hrep : repOkB Δ fuel p.outTy = true)
     (hlo : mkLayoutL Δ fuel p = .ok lo)
     (hplan : mkPlan Δ fuel p lo dev = .ok plan)
-    (hsym : Rwv.Hyle.Bridge.symStep dmap hfuel dev = .ok ss)
-    (hImpl : Rwv.Hyle.Bridge.FImplements dmap X F)
+    (hsym : Rwv.Hyle.Bridge.symStep dmap X hfuel dev = .ok ss)
+    (hImpl : Rwv.Hyle.Bridge.FImplements dmap X F E)
     (hFor : ∃ Xf Ff, Rwv.Eidos.Cexp.ForeignC Δ Xf Ff)
     (hlabels : ∀ tgt ∈ lo.targets,
       checkLabel { Δ := Δ, edm := edm, lo := lo, blocks := blocks,
@@ -6423,10 +6454,10 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     (hR : stateRel Δ lo plan blocks s t)
     (hty : Val.HasTy Δ i p.inTy)
     {o₁ : Val} {s' : MState}
-    (hm : Machine.step Δ edm blocks ef gf s i = .ok (.step o₁ s'))
+    (hm : Machine.step Δ edm blocks ef gf s i E = .ok (.step o₁ s'))
     {ins : List BV} (hsplit : Val.portSplit Δ ef p.inTy i = .ok ins)
     {outs : List BV} {t' : HashMap String BV}
-    (hd : Rwv.Hyle.Sem.step F X dev t ins = .ok (outs, t')) :
+    (hd : Rwv.Hyle.Sem.step F X dev t ins E = .ok (outs, t')) :
     Val.portSplit Δ ef p.outTy o₁ = .ok outs ∧ stateRel Δ lo plan blocks s' t' := by
   have li := mkLayoutL_inv hlo
   have pinv := mkPlan_inv hplan
@@ -6565,8 +6596,8 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
   have hstepEq := Rwv.Hyle.Bridge.symStep_sound hImpl hsym t ins hinsLen hdomReg
   rw [hd] at hstepEq
   injection hstepEq with hstepEq
-  have hOuts : outs = Rwv.Hyle.Bridge.stepOutsVal (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) ss := congrArg Prod.fst hstepEq
-  have hT' : t' = Rwv.Hyle.Bridge.stepNextsVal (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) ss := congrArg Prod.snd hstepEq
+  have hOuts : outs = Rwv.Hyle.Bridge.stepOutsVal (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) ss E := congrArg Prod.fst hstepEq
+  have hT' : t' = Rwv.Hyle.Bridge.stepNextsVal (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) ss E := congrArg Prod.snd hstepEq
   -- The tag specialization is sound at (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins).
   have hσtag : ∀ r w, plan.tagReg = some (r, w) →
       (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) r = encTag lo tgt.tag tgt.argWs reps := by
@@ -6577,7 +6608,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     exact hσreg _ hmem
   have hfix : ∀ r w, plan.tagReg = some (r, w) → 0 < lo.rTagW →
       (NF.cat (.lit ⟨lo.rTagW, BitVec.ofNat _ tgt.tag⟩)
-        (sliceNF 0 lo.rPayW (.var w r))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) = (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) r := by
+        (sliceNF 0 lo.rPayW (.var w r))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E = (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) r := by
     intro r w htr _
     refine tagFix_of_store ?_ ?_
     · rw [hσtag r w htr]
@@ -6585,7 +6616,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     · intro jj hjj
       rw [hσtag r w htr]
       exact encTag_top hwreps (li.paybound tgt htgtMem) jj hjj
-  have hsubstE : ∀ nf, (substNF (tagSubst plan lo tgt.tag) nf).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) = nf.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) :=
+  have hsubstE : ∀ nf, (substNF (tagSubst plan lo tgt.tag) nf).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E = nf.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E :=
     tagSubst_eval hfix
   -- Width discipline: Γ₀, the cell store, the compiled record, the
   -- symbolic step, and the specialization images all respect (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins).
@@ -6693,7 +6724,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
         (tgt.argWs[j]'hj)
         (match plan.tagReg with
          | some (r, w) => NF.var w r
-         | none => NF.lit BV.nil)).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)
+         | none => NF.lit BV.nil)).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E
       = reps[j]'(by
           have := congrArg List.length hwreps
           rw [List.length_map] at this
@@ -6703,7 +6734,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     cases htr : plan.tagReg with
     | some rw =>
         obtain ⟨r, w⟩ := rw
-        show sliceBV ((NF.var w r).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) _ _ = _
+        show sliceBV ((NF.var w r).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E) _ _ = _
         show sliceBV ((Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) r) _ _ = _
         rw [hσtag r w htr]
         exact encTag_arg hwreps (li.paybound tgt htgtMem) j hj
@@ -6725,7 +6756,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
           rw [List.getElem_map] at hg
           omega
         exact bv_eq_of_width_zero (by rw [sliceBV_width]; omega) hrw
-  have hEnvC : Rwv.Eidos.Cexp.EnvC Δ (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)
+  have hEnvC : Rwv.Eidos.Cexp.EnvC (E := E) Δ (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)
       ((blk.params.zip
         ((((tgt.argWs.zip (offsetsOf tgt.argWs)).map fun (w, off) =>
             sliceNF off w
@@ -6787,7 +6818,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     · -- The resumed input: the input-port concatenation vs the input.
       have hjEq : j = tgt.argWs.length := by omega
       have hinEval : (catNF (plan.inPorts.map fun (x, w) =>
-          ((.var w x : NF), w))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) = bvIn := by
+          ((.var w x : NF), w))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E = bvIn := by
         rw [pinv.inports]
         rw [catNF_eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) _ (by
           intro q hq
@@ -6797,7 +6828,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
           rw [← hqe]
           exact hWPin x w hxw)]
         have hlist : ((dev.inputs.map fun (x, w) => ((NF.var w x : NF), w)).map
-            (fun q => q.1.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)))
+            (fun q => q.1.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E))
             = (((dev.inputs.map (·.2)).zip (offsetsOf (dev.inputs.map (·.2)))).map
                 fun q => sliceBV bvIn q.2 q.1) := by
           refine List.ext_getElem (by
@@ -6863,8 +6894,8 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     · show (plan.cells.map (·.width)).sum = (lo.cells.map (·.2.2)).sum
       rw [← pinv.cellshape, List.map_map]
       rfl
-  have hCellsC : CellsC { Δ := Δ, edm := edm, lo := lo, blocks := blocks,
-                          cexpFuel := fuel, outTy := p.outTy }
+  have hCellsC : CellsC (E := E) { Δ := Δ, edm := edm, lo := lo, blocks := blocks,
+                                   cexpFuel := fuel, outTy := p.outTy }
       plan (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) (cells0 plan) s.cells := by
     refine ⟨?_, ?_, ?_⟩
     · rw [cells0, List.map_map]
@@ -6893,7 +6924,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
         rw [hencSh]
         refine List.mem_append.mpr (.inr ?_)
         exact List.mem_flatten.mpr ⟨parts[j]'hjp, List.getElem_mem hjp, hq⟩
-      have hnfe : (catNF (c.regs.map fun (r, w) => ((.var w r : NF), w))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) = bv := by
+      have hnfe : (catNF (c.regs.map fun (r, w) => ((.var w r : NF), w))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E = bv := by
         rw [catNF_eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) _ (by
           intro q hq
           obtain ⟨rw2, hrw2, hqe⟩ := List.mem_map.mp hq
@@ -6906,7 +6937,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
           refine List.mem_append.mpr (.inr ?_)
           exact List.mem_flatten.mpr ⟨c.regs, List.mem_map.mpr ⟨c, hc, rfl⟩, hrw2⟩)]
         have hlist2 : ((c.regs.map fun (r, w) => ((NF.var w r : NF), w)).map
-            (fun q => q.1.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)))
+            (fun q => q.1.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E))
             = (((c.regs.map (·.2)).zip (offsetsOf (c.regs.map (·.2)))).map
                 fun q => sliceBV bv q.2 q.1) := by
           refine List.ext_getElem (by
@@ -6950,11 +6981,11 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
         exact hv2ty
       · rw [← hdc]
         show Val.rep Δ kR v = .ok ((catNF (c.regs.map fun (r, w) =>
-            ((.var w r : NF), w))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+            ((.var w r : NF), w))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E)
         rw [hnfe]
         exact hvrep
       · rw [← hdc]
-        show ((catNF (c.regs.map fun (r, w) => ((.var w r : NF), w))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)).width
+        show ((catNF (c.regs.map fun (r, w) => ((.var w r : NF), w))).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E).width
             = c.width
         rw [hnfe]
         exact hbw
@@ -6962,14 +6993,14 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
   have hSV : StepValC { Δ := Δ, edm := edm, lo := lo, blocks := blocks,
                         cexpFuel := fuel, outTy := p.outTy }
       plan (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)
-      (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) (.step o₁ s') :=
+      (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E) (.step o₁ s') :=
     (cstep_sound hSInv fuel).1 _ _ _ _ _ _ _ ef gf _ hgo hEnvC hCellsC hm
   obtain ⟨hVTyO, ⟨bo, ko, hrepO, hboW, hsliceO⟩, tgt', htgt'Mem, htgt'Uq, hargsLen',
     hvty', ⟨reps', kr', hreps'M, hwreps', hsliceTag⟩, hcells'⟩ := hSV
-  have hsliceO' : sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+  have hsliceO' : sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E)
       (lo.cellsW + lo.rW) lo.outW = bo := hsliceO
   have hboW' : bo.width = lo.outW := hboW
-  have hsliceTag' : sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+  have hsliceTag' : sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E)
       lo.cellsW lo.rW = encTag lo tgt'.tag tgt'.argWs reps' := hsliceTag
   -- The interface shape of the symbolic step.
   obtain ⟨⟨houtsLen, houtsFst⟩, ⟨hnextsLen, hnextsFst⟩⟩ := symStep_shape hsym
@@ -6992,8 +7023,8 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     exact hboW'.symm
   have hQlist := portSplit_intro hrepOef hszsOut hsumOut
   have hout_val : ∀ j (hj : j < dev.outputs.length),
-      ((ss.outs[j]'(by omega)).2).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)
-        = sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+      ((ss.outs[j]'(by omega)).2).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E
+        = sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E)
             (((offsetsOf (dev.outputs.map (·.2)))[j]'(by
                 rw [offsetsOf_length, List.length_map]; omega)) + lo.rW + lo.cellsW)
             ((dev.outputs[j]'hj).2) := by
@@ -7013,12 +7044,12 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     rotate_left
     · exact error_ne_ok hchk
     rename_i hnm hceq
-    have hev := ceqB_eval hceq (sliceNF_varsWF hrecWF)
+    have hev := ceqB_eval (E := E) hceq (sliceNF_varsWF hrecWF)
       (substNF_varsWF hθWF (hssWF _ (List.mem_append.mpr
         (.inl (List.getElem_mem (by omega))))))
     rw [sliceNF_eval, hsubstE] at hev
     exact hev.symm
-  have hQeq : Rwv.Hyle.Bridge.stepOutsVal (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) ss
+  have hQeq : Rwv.Hyle.Bridge.stepOutsVal (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) ss E
       = (((dev.outputs.map (·.2)).zip (offsetsOf (dev.outputs.map (·.2)))).map
           fun q => sliceBV bo q.2 q.1) := by
     rw [Rwv.Hyle.Bridge.stepOutsVal]
@@ -7039,19 +7070,19 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
       rw [List.getElem_map] at hds
       rw [← pinv.outsum]
       omega
-    have hkey : ((ss.outs[j]'(by omega)).2).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)
+    have hkey : ((ss.outs[j]'(by omega)).2).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E
         = sliceBV bo
             ((offsetsOf (dev.outputs.map (·.2)))[j]'(by
               rw [offsetsOf_length, List.length_map]; omega))
             ((dev.outputs[j]'hjO).2) := by
       rw [hout_val j hjO]
       have hb2 : sliceBV
-            (sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+            (sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E)
               (lo.cellsW + lo.rW) lo.outW)
             ((offsetsOf (dev.outputs.map (·.2)))[j]'(by
               rw [offsetsOf_length, List.length_map]; omega))
             ((dev.outputs[j]'hjO).2)
-          = sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+          = sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E)
               (lo.cellsW + lo.rW
                 + ((offsetsOf (dev.outputs.map (·.2)))[j]'(by
                     rw [offsetsOf_length, List.length_map]; omega)))
@@ -7175,7 +7206,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     -- The next-state store, read register by register.
     have hT'get : ∀ idx (hidx : idx < dev.registers.length),
         t'.get? ((dev.registers[idx]'hidx).name)
-          = some (((ss.nexts[idx]'(by omega)).2).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) := by
+          = some (((ss.nexts[idx]'(by omega)).2).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E) := by
       intro idx hidx
       rw [hT', Rwv.Hyle.Bridge.stepNextsVal]
       have hnn : (ss.nexts.map Prod.fst).Nodup := by
@@ -7187,8 +7218,8 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
         rw [← hnextsFst idx hidx (by omega)]
       exact hmm ▸ List.getElem_mem _
     have hreg_val : ∀ idx (hidx : idx < dev.registers.length),
-        ((ss.nexts[idx]'(by omega)).2).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)
-          = sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+        ((ss.nexts[idx]'(by omega)).2).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E
+          = sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E)
               ((offsetsOf (dev.registers.map (·.width)))[idx]'(by
                 rw [offsetsOf_length, List.length_map]; omega))
               ((dev.registers[idx]'hidx).width) := by
@@ -7207,7 +7238,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
       rotate_left
       · exact error_ne_ok hchk
       rename_i hnm hceq
-      have hev := ceqB_eval hceq (sliceNF_varsWF hrecWF)
+      have hev := ceqB_eval (E := E) hceq (sliceNF_varsWF hrecWF)
         (substNF_varsWF hθWF (hssWF _ (List.mem_append.mpr
           (.inr (List.getElem_mem (by omega))))))
       rw [sliceNF_eval, hsubstE] at hev
@@ -7216,8 +7247,8 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     have hwalkTail : parts'.flatten
         = (((plan.cells.map (·.regs)).flatten).zip
             (offsetsOf (((plan.cells.map (·.regs)).flatten).map (·.2)))).map
-            (fun q => (q.1.1, sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) q.2 q.1.2)) := by
-      refine cells_walk (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) plan.cells parts' hplen'.symm ?_
+            (fun q => (q.1.1, sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E) q.2 q.1.2)) := by
+      refine cells_walk (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E) plan.cells parts' hplen'.symm ?_
       intro jc hjc
       obtain ⟨hjp', hpj'⟩ := hppt' jc hjc
       obtain ⟨v3, bv3, hg4, hr4, hbw4, hsum4, hshape4⟩ := encCellE_inv hpj'
@@ -7248,7 +7279,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
           | some (r, _) => [(r, encTag lo tgt'.tag tgt'.argWs reps')]) ++ parts'.flatten
         = ((dev.registers.map (fun r => (r.name, r.width))).zip
             (offsetsOf (dev.registers.map (·.width)))).map
-            (fun q => (q.1.1, sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins)) q.2 q.1.2)) := by
+            (fun q => (q.1.1, sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E) q.2 q.1.2)) := by
       cases htr : plan.tagReg with
       | none =>
           have hR0 : dev.registers.map (fun r => (r.name, r.width))
@@ -7278,7 +7309,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
               List.singleton_append]
           dsimp only
           rw [show encTag lo tgt'.tag tgt'.argWs reps'
-              = sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins))
+              = sliceBV (rv0.eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E)
                   ((((plan.cells.map (·.regs)).flatten).map (·.2)).sum) w from by
             rw [hw2s, show w = lo.rW from pinv.tagw r w htr]
             exact hsliceTag'.symm]
@@ -7348,7 +7379,7 @@ section DagLegSound
 
 open Rwv.Hyle.BridgeDag (Dag DNode mIdx Mk)
 open Rwv.Hyle.BridgeDag.Dag (read_ext read_eq mkLit_spec mkVar_spec rawCat_spec
-  rawSlice_spec rawPrim1_spec rawPrim2_spec rawIte_spec self_mk node_of_lt
+  rawSlice_spec rawPrim1_spec rawPrim2_spec rawIte_spec mkXcallD_spec self_mk node_of_lt
   lt_of_node widthOf_eq)
 open Rwv.Eidos.Cexp (teqAllD DGamma cexpFullD GSim gsim_empty cexpFullD_sim mk_out
   mk_trans altSlices_spec catNFD_spec sliceNFD_spec pend_read_ext teqAllD_eq
@@ -8393,6 +8424,16 @@ private theorem substNodeD_spec {plan : Plan} {lo : Layout} {tag : Nat}
       refine ⟨W, E, L, ?_⟩
       rw [R, hca, hread]
       rfl
+  | xcall w x a =>
+      rw [substNodeD] at h
+      injection h with h
+      have ha : a < m.size := hchild a (by simp [DNode.children])
+      obtain ⟨hra, hca⟩ := hinv a ha
+      rw [mIdx_eq' ha] at h
+      obtain ⟨W, E, L, R⟩ := mk_out (mkXcallD_spec hwfc hra) h
+      refine ⟨W, E, L, ?_⟩
+      rw [R, hca, hread]
+      rfl
   | prim2 w op a b =>
       rw [substNodeD] at h
       split at h
@@ -8622,12 +8663,12 @@ device step evaluated into the store by `symStepDag`) certifies a
 passing `checkLabel` run over the tree symbolic step, so
 `checkLabel_sound` applies unchanged. -/
 theorem checkLabelDag_toTree {C : Ctx} {plan : Plan} {dev : Rwv.Hyle.Device}
-    {dmap : HashMap String Rwv.Hyle.Defn} {hfuel : Nat}
+    {dmap : HashMap String Rwv.Hyle.Defn} {X : Rwv.Hyle.Sem.XEnv} {hfuel : Nat}
     {d0 : Dag} {outsL nextsL : List (String × Nat)} {ss : Rwv.Hyle.Bridge.StepNF}
     {inTy : Ty} {fuel : Nat} {tgt : LTarget}
-    (hsd : Rwv.Hyle.BridgeDag.symStepDag dmap hfuel dev Rwv.Hyle.BridgeDag.Dag.empty
+    (hsd : Rwv.Hyle.BridgeDag.symStepDag dmap X hfuel dev Rwv.Hyle.BridgeDag.Dag.empty
       = .ok (d0, outsL, nextsL))
-    (hsym : Rwv.Hyle.Bridge.symStep dmap hfuel dev = .ok ss)
+    (hsym : Rwv.Hyle.Bridge.symStep dmap X hfuel dev = .ok ss)
     (h : checkLabelDag C plan dev d0 outsL nextsL inTy fuel tgt = .ok ()) :
     checkLabel C plan dev ss inTy fuel tgt = .ok () := by
   obtain ⟨W0, _E0, Lo, Ln, hT⟩ :=
@@ -8881,16 +8922,16 @@ theorem checkLabelDag_toTree {C : Ctx} {plan : Plan} {dev : Rwv.Hyle.Device}
 /-- The dispatcher's reduction: a passing `checkLabelD` run (however
 the DAG leg went) certifies the tree checker's verdict. -/
 theorem checkLabelD_toTree {C : Ctx} {plan : Plan} {dev : Rwv.Hyle.Device}
-    {dmap : HashMap String Rwv.Hyle.Defn} {hfuel : Nat}
+    {dmap : HashMap String Rwv.Hyle.Defn} {X : Rwv.Hyle.Sem.XEnv} {hfuel : Nat}
     {ss : Rwv.Hyle.Bridge.StepNF} {inTy : Ty} {fuel : Nat} {tgt : LTarget}
-    (hsym : Rwv.Hyle.Bridge.symStep dmap hfuel dev = .ok ss)
+    (hsym : Rwv.Hyle.Bridge.symStep dmap X hfuel dev = .ok ss)
     (h : checkLabelD C plan dev
-      (match Rwv.Hyle.BridgeDag.symStepDag dmap hfuel dev
+      (match Rwv.Hyle.BridgeDag.symStepDag dmap X hfuel dev
           Rwv.Hyle.BridgeDag.Dag.empty with
        | .ok r => some r
        | .error _ => none) ss inTy fuel tgt = .ok ()) :
     checkLabel C plan dev ss inTy fuel tgt = .ok () := by
-  cases hsd : Rwv.Hyle.BridgeDag.symStepDag dmap hfuel dev
+  cases hsd : Rwv.Hyle.BridgeDag.symStepDag dmap X hfuel dev
       Rwv.Hyle.BridgeDag.Dag.empty with
   | error e =>
       rw [hsd] at h
@@ -8922,7 +8963,7 @@ theorem validateProc_corresponds {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     {H : Rwv.Hyle.Program} {fuel ef gf : Nat}
     (hv : validateProc Δ edm p H fuel = true) (hef : fuel ≤ ef)
     (hFor : ∃ Xf Ff, Rwv.Eidos.Cexp.ForeignC Δ Xf Ff) :
-    Rwv.Eidos.Corresponds Δ edm ef gf p H := by
+    Rwv.Eidos.Corresponds Δ edm ef gf p H E := by
   have hvE : validateProcE Δ edm p H fuel = .ok () := by
     rw [validateProc] at hv
     split at hv
@@ -8930,12 +8971,12 @@ theorem validateProc_corresponds {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
       cases u
       exact heq
     · exact absurd hv (by simp)
-  cases hF : Rwv.Hyle.Sem.mkFEnv H with
+  cases hF : Rwv.Hyle.Sem.mkFEnv H E with
   | error e =>
       intro ins hty encIns hmapM mt hmrun ht hhrun
       have hrun : (do
-          let F ← Rwv.Hyle.Sem.mkFEnv H
-          Rwv.Hyle.Sem.run F (Rwv.Hyle.Sem.xenv H) H.device encIns) = .ok ht := hhrun
+          let F ← Rwv.Hyle.Sem.mkFEnv H E
+          Rwv.Hyle.Sem.run F (Rwv.Hyle.Sem.xenv H) H.device encIns E) = .ok ht := hhrun
       rw [hF] at hrun
       exact error_ne_ok hrun
   | ok F =>
@@ -9020,6 +9061,108 @@ theorem validateProc_corresponds {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     intro σ₀ o s₀ hic hexec
     exact checkInit_sound (mkPlan_nodup hplan) hinitCk ef gf σ₀ o s₀ hic hexec
 
+
+/-! ## The algebraic extern tier (η_alg)
+
+The library statement quantifies over BIT-LEVEL extern environments
+(`Corresponds … E`, concluded for every `E` by
+`validateProc_corresponds`). The algebraic reading the plan staked —
+"for every algebraic extern interpretation η with canonical results,
+machine ≡ device" — is that statement at `rep ∘ η ∘ decode`
+instantiations: `etaB` builds the bit-level image of an algebraic η
+against a per-extern signature assignment Ξ, and
+`validateProc_corresponds_eta` specializes the ∀E theorem to it.
+
+`WFEta` (VTy-canonical results at the declared result types) is
+deliberately NOT a hypothesis of the correspondence: agreement is
+E-unconditional — the machine side's decode gate (`Eval.evalExt`)
+confines the quantification to representation images all by itself,
+failing loudly on a non-canonical foreign result. `WFEta`'s genuine
+content is non-vacuity: `etaB_width` shows an η_alg-instantiated
+interpretation is width-stable at the declared result size, so the
+device side's `Sem.xapply` clamp never fires and the extern's
+bit-level behavior is exactly `rep (η (decode …))`, cycle for
+cycle. -/
+
+/-- Algebraic extern environments: per extern name, an interpretation
+on machine values (doc/eidos.md §7.5.5's η, for the model-less
+combinational tier). -/
+def EtaAlg := String → Option (List Val → Except String Val)
+
+/-- The extern signature assignment: per extern name, the declared
+argument types and result type (the impl monotype's arrow spine). -/
+def EtaSig := String → Option (List Ty × Ty)
+
+/-- Well-formedness of an algebraic extern environment against a
+signature assignment: results are canonical inhabitants of the
+declared result types. -/
+def WFEta (Δ : DEnv) (Ξ : EtaSig) (η : EtaAlg) : Prop :=
+  ∀ s doms res g, Ξ s = some (doms, res) → η s = some g →
+    ∀ vs v, g vs = .ok v → VTy Δ v res
+
+/-- Split a concatenated argument image at the declared types' sizes
+(MSB-first, in argument order) and decode each piece; the whole input
+must be covered exactly. -/
+def decodeSeq (Δ : DEnv) (K : Nat) : List Ty → BV → Except String (List Val)
+  | [], bv =>
+      if bv.width = 0 then pure []
+      else throw "decodeSeq: leftover argument bits"
+  | t :: ts, bv => do
+      let w ← Δ.sizeOf K [] t
+      if w ≤ bv.width then do
+        let v ← Rwv.Eidos.decode Δ K t ⟨w, bv.bits.extractLsb' (bv.width - w) w⟩
+        let rest ← decodeSeq Δ K ts ⟨bv.width - w, bv.bits.extractLsb' 0 (bv.width - w)⟩
+        pure (v :: rest)
+      else throw "decodeSeq: argument image too narrow"
+
+/-- The bit-level image of an algebraic extern environment:
+`rep ∘ η ∘ decode` at the signature assignment's types, at a fixed
+structural fuel `K`. This is the instantiation the ∀η reading of the
+correspondence quantifies through. -/
+def etaB (Δ : DEnv) (K : Nat) (Ξ : EtaSig) (η : EtaAlg) : Rwv.Hyle.Sem.EEnv :=
+  fun s =>
+    match Ξ s, η s with
+    | some (doms, _res), some g =>
+        some (fun bv => do
+          let vs ← decodeSeq Δ K doms bv
+          let v ← g vs
+          Val.rep Δ K v)
+    | _, _ => none
+
+/-- Width stability of an η_alg-instantiated interpretation: under
+`WFEta`, a successful result carries the declared result type's size —
+the device side's `Sem.xapply` width clamp is inert on `etaB`
+environments (the non-vacuity half of the η story; the agreement half
+needs no `WFEta` at all). -/
+theorem etaB_width {Δ : DEnv} {K : Nat} {Ξ : EtaSig} {η : EtaAlg}
+    (hη : WFEta Δ Ξ η) {s : String} {doms : List Ty} {res : Ty}
+    {g : List Val → Except String Val} {f : BV → Except String BV}
+    (hΞ : Ξ s = some (doms, res)) (hg : η s = some g)
+    (hf : etaB Δ K Ξ η s = some f) {bv r : BV} (hr : f bv = .ok r)
+    {k' w : Nat} (hsz : Δ.sizeOf k' [] res = .ok w) : r.width = w := by
+  rw [etaB, hΞ, hg] at hf
+  injection hf with hf
+  subst hf
+  obtain ⟨vs, hvs, hr⟩ := except_bind_eq_ok hr
+  obtain ⟨v, hv, hr⟩ := except_bind_eq_ok hr
+  exact vty_rep_width (hη s doms res g hΞ hg vs v hv) hr hsz
+
+/-- THE ∀η headline: a passing `validateProc` run certifies the
+correspondence at EVERY algebraic extern interpretation — the ∀E
+statement (`validateProc_corresponds`) instantiated at the
+`rep ∘ η ∘ decode` image. One validator run, executed at the default
+(empty) extern environment, certifies the whole family: the validator
+never consults the semantic hooks, the per-label extern discharge is
+uninterpreted-node equality (sound for any interpretation), and the
+initial-state check transports from the empty environment by
+`Rwv.Eidos.FuelMono`'s eta family. -/
+theorem validateProc_corresponds_eta {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
+    {H : Rwv.Hyle.Program} {fuel ef gf K : Nat} {Ξ : EtaSig} {η : EtaAlg}
+    (hv : validateProc Δ edm p H fuel = true) (hef : fuel ≤ ef)
+    (hFor : ∃ Xf Ff, Rwv.Eidos.Cexp.ForeignC Δ Xf Ff) :
+    Rwv.Eidos.Corresponds Δ edm ef gf p H (etaB Δ K Ξ η) :=
+  validateProc_corresponds hv hef hFor
+
 /-! ## Axiom audit -/
 
 #print axioms vtyB_sound
@@ -9041,6 +9184,11 @@ theorem validateProc_corresponds {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
 #print axioms checkLabelDag_toTree
 #print axioms checkLabelD_toTree
 #print axioms validateProc_corresponds
+
+-- The stage-B η tier: the ∀η headline and the WFEta width-stability
+-- fact (the non-vacuity half).
+#print axioms validateProc_corresponds_eta
+#print axioms etaB_width
 
 -- The foreign tier (stage A): the decode round trips and the extended
 -- statement's supporting lemmas.

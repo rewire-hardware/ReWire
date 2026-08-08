@@ -259,69 +259,70 @@ mutual
 spines are flattened (type arguments erased); heads dispatch to
 environment/definition lookup, constructor values, or the builtin
 table. -/
-def evalCore (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (e : Exp) : Except String Val :=
+def evalCore (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (e : Exp)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=
   match fuel with
   | 0 => throw fuelErr
   | fuel + 1 =>
     match flattenApp e with
     | (.var x, args) => do
-        let vs ← evalList C fuel env jenv args
+        let vs ← evalList C fuel env jenv args E
         match env.lookup x.uniq with
-        | some v => applyMany C fuel v vs
+        | some v => applyMany C fuel v vs E
         | none =>
             match C.defns.get? x.uniq with
-            | some d => callDefn C fuel d vs
+            | some d => callDefn C fuel d vs E
             | none   => throw s!"unbound variable {x.occ}#{x.uniq}"
     | (.con ty c, args) => do
         -- The Con node carries the full instantiated function type;
         -- the value's type is the result type after the arrows.
-        let vs ← evalList C fuel env jenv args
+        let vs ← evalList C fuel env jenv args E
         let (dts, resTy) := Ty.flattenArrow ty
         if vs.length == dts.length then pure (.con resTy c vs)
         else throw s!"unsaturated constructor {c} ({vs.length} of {dts.length} arguments)"
     | (.prim ty b, args) =>
         if b == .cryptol then
           match args with
-          | .litStr f :: .litStr n :: _impl :: rest => evalCry C fuel env jenv ty f n rest
+          | .litStr f :: .litStr n :: _impl :: rest => evalCry C fuel env jenv ty f n rest E
           | _ => throw "rwPrimCryptol: malformed foreign application"
         else if b == .«extern» then
           match args with
           | _ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: _impl :: _inst :: rest =>
-              evalExt C fuel env jenv ty s rest
+              evalExt C fuel env jenv ty s rest E
           | _ => throw "rwPrimExtern: malformed foreign application"
         else do
-          let vs ← evalList C fuel env jenv args
-          evalBuiltin C fuel ty b vs
+          let vs ← evalList C fuel env jenv args E
+          evalBuiltin C fuel ty b vs E
     | (.lam x body, args) => do
-        let vs ← evalList C fuel env jenv args
-        applyMany C fuel (.closL x env body) vs
+        let vs ← evalList C fuel env jenv args E
+        applyMany C fuel (.closL x env body) vs E
     | (.litInt ty n, []) => litIntVal ty n
     | (.litStr s, [])    => pure (.str s)
-    | (.litVec _ es, []) => do pure (.vec (← evalList C fuel env jenv es))
-    | (.litList _ es, []) => do pure (.vec (← evalList C fuel env jenv es))
+    | (.litVec _ es, []) => do pure (.vec (← evalList C fuel env jenv es E))
+    | (.litList _ es, []) => do pure (.vec (← evalList C fuel env jenv es E))
     | (.letE bnd body, args) => do
         let v ← (match bnd with
           | .nonRec x rhs => do
-              let rv ← evalCore C fuel env jenv rhs
-              evalCore C fuel ((x.uniq, rv) :: env) jenv body
+              let rv ← evalCore C fuel env jenv rhs E
+              evalCore C fuel ((x.uniq, rv) :: env) jenv body E
           | .recB _ => throw "recursive let binding (outside the machine fragment)"
           | .join l ps jbody =>
-              evalCore C fuel env ((l.uniq, JoinClos.mk ps env jenv jbody) :: jenv) body)
-        let vs ← evalList C fuel env jenv args
-        applyMany C fuel v vs
+              evalCore C fuel env ((l.uniq, JoinClos.mk ps env jenv jbody) :: jenv) body E)
+        let vs ← evalList C fuel env jenv args E
+        applyMany C fuel v vs E
     | (.jump l es, []) => do
-        let vs ← evalList C fuel env jenv es
+        let vs ← evalList C fuel env jenv es E
         match jenv.lookup l.uniq with
         | some (.mk ps cenv cjenv body) =>
             if vs.length == ps.length then
-              evalCore C fuel (((ps.map (·.uniq)).zip vs) ++ cenv) cjenv body
+              evalCore C fuel (((ps.map (·.uniq)).zip vs) ++ cenv) cjenv body E
             else throw s!"jump to {l.occ}: arity mismatch ({vs.length} of {ps.length} arguments)"
         | none => throw s!"jump to an unbound join point {l.occ}#{l.uniq}"
     | (.cases _ scrut binder alts, args) => do
-        let sv ← evalCore C fuel env jenv scrut
-        let v  ← tryAlts C fuel env jenv binder sv alts none
-        let vs ← evalList C fuel env jenv args
-        applyMany C fuel v vs
+        let sv ← evalCore C fuel env jenv scrut E
+        let v  ← tryAlts C fuel env jenv binder sv alts none E
+        let vs ← evalList C fuel env jenv args E
+        applyMany C fuel v vs E
     | (_, _) => throw "ill-formed expression (application of a literal or jump)"
 termination_by fuel
 
@@ -331,11 +332,12 @@ the foreign denotation keyed by the module file `f`, the function
 name `n`, and the impl monotype (the occurrence type's third argument
 type), and decode the result at the impl type's result type. -/
 def evalCry (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (pty : Ty)
-    (f n : String) (rest : List Exp) : Except String Val :=
+    (f n : String) (rest : List Exp)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=
   match fuel with
   | 0 => throw fuelErr
   | fuel + 1 => do
-      let vs ← evalList C fuel env jenv rest
+      let vs ← evalList C fuel env jenv rest E
       let ity ← domTy "rwPrimCryptol" (Ty.flattenArrow pty).1 2
       if rest.length = (Ty.flattenArrow ity).1.length then
         match C.Δ.cryF f n ity with
@@ -352,11 +354,12 @@ termination_by fuel
 by the extern's name `s` (the occurrence's sixth argument) with the
 impl monotype at its seventh argument position. -/
 def evalExt (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (pty : Ty)
-    (s : String) (rest : List Exp) : Except String Val :=
+    (s : String) (rest : List Exp)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=
   match fuel with
   | 0 => throw fuelErr
   | fuel + 1 => do
-      let vs ← evalList C fuel env jenv rest
+      let vs ← evalList C fuel env jenv rest E
       let ity ← domTy "rwPrimExtern" (Ty.flattenArrow pty).1 6
       if rest.length = (Ty.flattenArrow ity).1.length then
         match C.Δ.xtF s with
@@ -364,19 +367,32 @@ def evalExt (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (pty : Ty)
             let reps ← vs.mapM (fun v => valToBits C.Δ fuel v)
             let bv ← den reps
             decode C.Δ fuel (Ty.flattenArrow ity).2 bv
-        | none => throw s!"rwPrimExtern: no model denotation for extern {s}"
+        | none =>
+            -- Stage B (the η tier): a MODEL-LESS extern reads through
+            -- the bit-level extern environment — rep the arguments at
+            -- the current fuel, apply the interpretation to their
+            -- concatenation (errors are loud), and decode the result
+            -- at the row's result type. The canonicality-checked
+            -- decode is the gate that confines the bit-level
+            -- quantification to representation images.
+            match E s with
+            | some f => do
+                let reps ← vs.mapM (fun v => valToBits C.Δ fuel v)
+                let bv ← f (Rwv.Hyle.Sem.bvcat reps)
+                decode C.Δ fuel (Ty.flattenArrow ity).2 bv
+            | none => throw s!"rwPrimExtern: no model denotation for extern {s}"
       else throw "rwPrimExtern: unsaturated foreign application"
 termination_by fuel
 
 /-- Evaluate a list of expressions left to right. -/
-def evalList (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (es : List Exp) :
-    Except String (List Val) :=
+def evalList (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (es : List Exp)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String (List Val) :=
   match fuel, es with
   | 0, _ => throw fuelErr
   | _ + 1, [] => pure []
   | fuel + 1, e :: rest => do
-      let v  ← evalCore C fuel env jenv e
-      let vs ← evalList C fuel env jenv rest
+      let v  ← evalCore C fuel env jenv e E
+      let vs ← evalList C fuel env jenv rest E
       pure (v :: vs)
 termination_by fuel
 
@@ -384,51 +400,55 @@ termination_by fuel
 `closD` partial application; saturation evaluates the body with the
 parameters bound in a fresh environment (definitions are closed);
 over-application applies the result to the leftover arguments. -/
-def callDefn (C : Ctx) (fuel : Nat) (d : Defn) (vs : List Val) : Except String Val :=
+def callDefn (C : Ctx) (fuel : Nat) (d : Defn) (vs : List Val)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=
   match fuel with
   | 0 => throw fuelErr
   | fuel + 1 =>
       if vs.length < d.params.length then pure (.closD d.name vs)
       else do
         let env' := (d.params.map (·.uniq)).zip vs
-        let v ← evalCore C fuel env' [] d.body
-        applyMany C fuel v (vs.drop d.params.length)
+        let v ← evalCore C fuel env' [] d.body E
+        applyMany C fuel v (vs.drop d.params.length) E
 termination_by fuel
 
 /-- Apply a function value — a lambda closure or a (possibly partial)
 definition application — to one argument. -/
-def applyValCore (C : Ctx) (fuel : Nat) (f a : Val) : Except String Val :=
+def applyValCore (C : Ctx) (fuel : Nat) (f a : Val)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=
   match fuel with
   | 0 => throw fuelErr
   | fuel + 1 =>
       match f with
-      | .closL x cenv body => evalCore C fuel ((x.uniq, a) :: cenv) [] body
+      | .closL x cenv body => evalCore C fuel ((x.uniq, a) :: cenv) [] body E
       | .closD g pre =>
           match C.defns.get? g.uniq with
-          | some d => callDefn C fuel d (pre ++ [a])
+          | some d => callDefn C fuel d (pre ++ [a]) E
           | none   => throw s!"closure over an unknown definition {g.occ}#{g.uniq}"
       | _ => throw "cannot apply a non-function value"
 termination_by fuel
 
 /-- Apply a function value to arguments left to right. -/
-def applyMany (C : Ctx) (fuel : Nat) (f : Val) (as' : List Val) : Except String Val :=
+def applyMany (C : Ctx) (fuel : Nat) (f : Val) (as' : List Val)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=
   match fuel, as' with
   | 0, _ => throw fuelErr
   | _ + 1, [] => pure f
   | fuel + 1, a :: rest => do
-      let v ← applyValCore C fuel f a
-      applyMany C fuel v rest
+      let v ← applyValCore C fuel f a E
+      applyMany C fuel v rest E
 termination_by fuel
 
 /-- Map a function value over argument values (`VecMap`,
 `VecGenerate`: "applied semantically, element by element"). -/
-def applyAll (C : Ctx) (fuel : Nat) (f : Val) (xs : List Val) : Except String (List Val) :=
+def applyAll (C : Ctx) (fuel : Nat) (f : Val) (xs : List Val)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String (List Val) :=
   match fuel, xs with
   | 0, _ => throw fuelErr
   | _ + 1, [] => pure []
   | fuel + 1, x :: rest => do
-      let y  ← applyValCore C fuel f x
-      let ys ← applyAll C fuel f rest
+      let y  ← applyValCore C fuel f x E
+      let ys ← applyAll C fuel f rest E
       pure (y :: ys)
 termination_by fuel
 
@@ -438,38 +458,39 @@ and the field binders to its components; the default (syntactically
 first when present) fires only when no other alternative matches,
 binding only the case binder. -/
 def tryAlts (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (binder : Id) (v : Val)
-    (alts : List Alt) (dflt : Option Alt) : Except String Val :=
+    (alts : List Alt) (dflt : Option Alt)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=
   match fuel, alts with
   | 0, _ => throw fuelErr
   | fuel + 1, [] =>
       match dflt with
-      | some (.mk _ _ body) => evalCore C fuel ((binder.uniq, v) :: env) jenv body
+      | some (.mk _ _ body) => evalCore C fuel ((binder.uniq, v) :: env) jenv body E
       | none => throw "case: no matching alternative (and no default)"
   | fuel + 1, alt :: rest =>
       match alt with
       | .mk .default _ _ =>
-          tryAlts C fuel env jenv binder v rest (dflt.orElse fun _ => some alt)
+          tryAlts C fuel env jenv binder v rest (dflt.orElse fun _ => some alt) E
       | .mk (.dataAlt cn) bs body =>
           match v with
           | .con _ cv fields =>
               if cn == cv then
                 if bs.length == fields.length then
-                  evalCore C fuel (((bs.map (·.uniq)).zip fields) ++ (binder.uniq, v) :: env) jenv body
+                  evalCore C fuel (((bs.map (·.uniq)).zip fields) ++ (binder.uniq, v) :: env) jenv body E
                 else throw s!"case: constructor {cn} arity mismatch ({bs.length} binders, {fields.length} fields)"
-              else tryAlts C fuel env jenv binder v rest dflt
+              else tryAlts C fuel env jenv binder v rest dflt E
           | _ => throw "case: constructor pattern against a non-constructor value"
       | .mk (.litAlt n) _ body => do
           if (← litMatches C.Δ fuel v n) then
-            evalCore C fuel ((binder.uniq, v) :: env) jenv body
-          else tryAlts C fuel env jenv binder v rest dflt
+            evalCore C fuel ((binder.uniq, v) :: env) jenv body E
+          else tryAlts C fuel env jenv binder v rest dflt E
 termination_by fuel
 
 /-- The builtin denotation table of §7.6, complete (all 64 rows). The
 occurrence's carried instantiated type `pty` supplies the static data:
 result widths and bounds from the result type, Proxy indices from the
 argument types. -/
-def evalBuiltin (C : Ctx) (fuel : Nat) (pty : Ty) (b : Builtin) (vs : List Val) :
-    Except String Val :=
+def evalBuiltin (C : Ctx) (fuel : Nat) (pty : Ty) (b : Builtin) (vs : List Val)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=
   match fuel with
   | 0 => throw fuelErr
   | fuel + 1 =>
@@ -574,11 +595,11 @@ def evalBuiltin (C : Ctx) (fuel : Nat) (pty : Ty) (b : Builtin) (vs : List Val) 
         pure (.vec (xs ++ ys))
     | .vecMap, [f, v] => do
         let xs ← vecVal "rwPrimVecMap" v
-        let ys ← applyAll C fuel f xs
+        let ys ← applyAll C fuel f xs E
         pure (.vec ys)
     | .vecGenerate, [f] => do
         let n  ← vecLen "rwPrimVecGenerate" res
-        let ys ← applyAll C fuel f ((List.range n).map fun i => .finite n i)
+        let ys ← applyAll C fuel f ((List.range n).map fun i => .finite n i) E
         pure (.vec ys)
     -- Bit-vector operations (through the Hyle op denotations —
     -- SMT-LIB division/modulus by zero, zero-filling shifts).
@@ -657,15 +678,15 @@ datatype environment, the global definitions (keyed by name unique —
 see `mkDefnMap`), and a value environment; the join environment starts
 empty. Fuel is consumed on every evaluator step (it bounds total work);
 pass a generous amount (e.g. 10^6). -/
-def eval (Δ : DEnv) (defns : HashMap Int Defn) (fuel : Nat) (env : Eval.Env) (e : Exp) :
-    Except String Val :=
-  Eval.evalCore ⟨Δ, defns⟩ fuel env [] e
+def eval (Δ : DEnv) (defns : HashMap Int Defn) (fuel : Nat) (env : Eval.Env) (e : Exp)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=
+  Eval.evalCore ⟨Δ, defns⟩ fuel env [] e E
 
 /-- Apply a function value (`Val.closL`/`Val.closD`) to an argument
 (§7.5.2's semantic application, needed by the machine semantics and
 used internally by `VecMap`/`VecGenerate`). -/
-def applyVal (Δ : DEnv) (defns : HashMap Int Defn) (fuel : Nat) (f a : Val) :
-    Except String Val :=
-  Eval.applyValCore ⟨Δ, defns⟩ fuel f a
+def applyVal (Δ : DEnv) (defns : HashMap Int Defn) (fuel : Nat) (f a : Val)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=
+  Eval.applyValCore ⟨Δ, defns⟩ fuel f a E
 
 end Rwv.Eidos

@@ -414,27 +414,42 @@ function consumes one unit of fuel on entry and passes the decrement
 to every recursive call, so the step lemma at `k+1 ≤ k'+1` needs
 exactly the bundle at `k ≤ k'`. -/
 
-private structure EvalMono (C : Eval.Ctx) (k k' : Nat) : Prop where
-  core : ∀ env jenv e v, Eval.evalCore C k env jenv e = .ok v →
-    Eval.evalCore C k' env jenv e = .ok v
-  list : ∀ env jenv es vs, Eval.evalList C k env jenv es = .ok vs →
-    Eval.evalList C k' env jenv es = .ok vs
-  defn : ∀ d vs v, Eval.callDefn C k d vs = .ok v → Eval.callDefn C k' d vs = .ok v
-  app1 : ∀ f a v, Eval.applyValCore C k f a = .ok v → Eval.applyValCore C k' f a = .ok v
-  many : ∀ f as v, Eval.applyMany C k f as = .ok v → Eval.applyMany C k' f as = .ok v
-  all : ∀ f xs ys, Eval.applyAll C k f xs = .ok ys → Eval.applyAll C k' f xs = .ok ys
-  alts : ∀ env jenv binder sv as dflt v, Eval.tryAlts C k env jenv binder sv as dflt = .ok v →
-    Eval.tryAlts C k' env jenv binder sv as dflt = .ok v
-  builtin : ∀ ty b vs v, Eval.evalBuiltin C k ty b vs = .ok v →
-    Eval.evalBuiltin C k' ty b vs = .ok v
-  cry : ∀ env jenv pty f n rest v, Eval.evalCry C k env jenv pty f n rest = .ok v →
-    Eval.evalCry C k' env jenv pty f n rest = .ok v
-  ext : ∀ env jenv pty s rest v, Eval.evalExt C k env jenv pty s rest = .ok v →
-    Eval.evalExt C k' env jenv pty s rest = .ok v
+/-- Extern-environment extension: every interpreted extern keeps its
+interpretation. The transport hypothesis of the generalized bundle —
+instantiated at `E E` for pure fuel monotonicity, and at
+`Sem.eEmpty E` (vacuously true) for the stage-B eta transport (a
+successful run at the empty environment never consulted it, since the
+empty environment's model-less row throws). -/
+private def EExt (E E' : Rwv.Hyle.Sem.EEnv) : Prop :=
+  ∀ s f, E s = some f → E' s = some f
+
+private theorem eext_refl (E : Rwv.Hyle.Sem.EEnv) : EExt E E := fun _ _ h => h
+
+private theorem eext_empty (E : Rwv.Hyle.Sem.EEnv) : EExt Rwv.Hyle.Sem.eEmpty E :=
+  fun _ _ h => by simp [Rwv.Hyle.Sem.eEmpty] at h
+
+private structure EvalMono (C : Eval.Ctx) (E E' : Rwv.Hyle.Sem.EEnv) (k k' : Nat) : Prop where
+  core : ∀ env jenv e v, Eval.evalCore C k env jenv e E = .ok v →
+    Eval.evalCore C k' env jenv e E' = .ok v
+  list : ∀ env jenv es vs, Eval.evalList C k env jenv es E = .ok vs →
+    Eval.evalList C k' env jenv es E' = .ok vs
+  defn : ∀ d vs v, Eval.callDefn C k d vs E = .ok v → Eval.callDefn C k' d vs E' = .ok v
+  app1 : ∀ f a v, Eval.applyValCore C k f a E = .ok v → Eval.applyValCore C k' f a E' = .ok v
+  many : ∀ f as v, Eval.applyMany C k f as E = .ok v → Eval.applyMany C k' f as E' = .ok v
+  all : ∀ f xs ys, Eval.applyAll C k f xs E = .ok ys → Eval.applyAll C k' f xs E' = .ok ys
+  alts : ∀ env jenv binder sv as dflt v, Eval.tryAlts C k env jenv binder sv as dflt E = .ok v →
+    Eval.tryAlts C k' env jenv binder sv as dflt E' = .ok v
+  builtin : ∀ ty b vs v, Eval.evalBuiltin C k ty b vs E = .ok v →
+    Eval.evalBuiltin C k' ty b vs E' = .ok v
+  cry : ∀ env jenv pty f n rest v, Eval.evalCry C k env jenv pty f n rest E = .ok v →
+    Eval.evalCry C k' env jenv pty f n rest E' = .ok v
+  ext : ∀ env jenv pty s rest v, Eval.evalExt C k env jenv pty s rest E = .ok v →
+    Eval.evalExt C k' env jenv pty s rest E' = .ok v
 
 /-- At fuel 0 every evaluator function throws, so the bundle holds
 vacuously. -/
-private theorem evalMono_zero (C : Eval.Ctx) (k' : Nat) : EvalMono C 0 k' where
+private theorem evalMono_zero (C : Eval.Ctx) (E E' : Rwv.Hyle.Sem.EEnv) (k' : Nat) :
+    EvalMono C E E' 0 k' where
   core := by intro env jenv e v h; rw [Eval.evalCore] at h; exact error_ne_ok h
   list := by intro env jenv es vs h; rw [Eval.evalList] at h; exact error_ne_ok h
   defn := by intro d vs v h; rw [Eval.callDefn] at h; exact error_ne_ok h
@@ -446,10 +461,10 @@ private theorem evalMono_zero (C : Eval.Ctx) (k' : Nat) : EvalMono C 0 k' where
   cry := by intro env jenv pty f n rest v h; rw [Eval.evalCry] at h; exact error_ne_ok h
   ext := by intro env jenv pty s rest v h; rw [Eval.evalExt] at h; exact error_ne_ok h
 
-private theorem evalCore_step {C : Eval.Ctx} {k k' : Nat} (_hk : k ≤ k')
-    (ih : EvalMono C k k') :
-    ∀ env jenv e v, Eval.evalCore C (k + 1) env jenv e = .ok v →
-      Eval.evalCore C (k' + 1) env jenv e = .ok v := by
+private theorem evalCore_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (_hk : k ≤ k') (ih : EvalMono C E E' k k') :
+    ∀ env jenv e v, Eval.evalCore C (k + 1) env jenv e E = .ok v →
+      Eval.evalCore C (k' + 1) env jenv e E' = .ok v := by
   intro env jenv e v h
   rw [Eval.evalCore] at h ⊢
   split at h
@@ -547,10 +562,10 @@ private theorem evalCore_step {C : Eval.Ctx} {k k' : Nat} (_hk : k ≤ k')
     exact ih.many _ _ _ h
   all_goals exact error_ne_ok h
 
-private theorem evalList_step {C : Eval.Ctx} {k k' : Nat} (_hk : k ≤ k')
-    (ih : EvalMono C k k') :
-    ∀ env jenv es vs, Eval.evalList C (k + 1) env jenv es = .ok vs →
-      Eval.evalList C (k' + 1) env jenv es = .ok vs := by
+private theorem evalList_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (_hk : k ≤ k') (ih : EvalMono C E E' k k') :
+    ∀ env jenv es vs, Eval.evalList C (k + 1) env jenv es E = .ok vs →
+      Eval.evalList C (k' + 1) env jenv es E' = .ok vs := by
   intro env jenv es vs h
   cases es with
   | nil => rw [Eval.evalList] at h ⊢; exact h
@@ -562,10 +577,10 @@ private theorem evalList_step {C : Eval.Ctx} {k k' : Nat} (_hk : k ≤ k')
       refine bind_ok (ih.list _ _ _ _ hws) ?_
       exact h
 
-private theorem callDefn_step {C : Eval.Ctx} {k k' : Nat} (_hk : k ≤ k')
-    (ih : EvalMono C k k') :
-    ∀ d vs v, Eval.callDefn C (k + 1) d vs = .ok v →
-      Eval.callDefn C (k' + 1) d vs = .ok v := by
+private theorem callDefn_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (_hk : k ≤ k') (ih : EvalMono C E E' k k') :
+    ∀ d vs v, Eval.callDefn C (k + 1) d vs E = .ok v →
+      Eval.callDefn C (k' + 1) d vs E' = .ok v := by
   intro d vs v h
   rw [Eval.callDefn] at h ⊢
   split at h <;> rename_i hlt
@@ -576,10 +591,10 @@ private theorem callDefn_step {C : Eval.Ctx} {k k' : Nat} (_hk : k ≤ k')
     refine bind_ok (ih.core _ _ _ _ hw) ?_
     exact ih.many _ _ _ h
 
-private theorem applyValCore_step {C : Eval.Ctx} {k k' : Nat} (_hk : k ≤ k')
-    (ih : EvalMono C k k') :
-    ∀ f a v, Eval.applyValCore C (k + 1) f a = .ok v →
-      Eval.applyValCore C (k' + 1) f a = .ok v := by
+private theorem applyValCore_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (_hk : k ≤ k') (ih : EvalMono C E E' k k') :
+    ∀ f a v, Eval.applyValCore C (k + 1) f a E = .ok v →
+      Eval.applyValCore C (k' + 1) f a E' = .ok v := by
   intro f a v h
   cases f
   case closL x cenv body =>
@@ -592,10 +607,10 @@ private theorem applyValCore_step {C : Eval.Ctx} {k k' : Nat} (_hk : k ≤ k')
     | none => rw [hD] at h; exact error_ne_ok h
   all_goals simp [Eval.applyValCore] at h
 
-private theorem applyMany_step {C : Eval.Ctx} {k k' : Nat} (_hk : k ≤ k')
-    (ih : EvalMono C k k') :
-    ∀ f as v, Eval.applyMany C (k + 1) f as = .ok v →
-      Eval.applyMany C (k' + 1) f as = .ok v := by
+private theorem applyMany_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (_hk : k ≤ k') (ih : EvalMono C E E' k k') :
+    ∀ f as v, Eval.applyMany C (k + 1) f as E = .ok v →
+      Eval.applyMany C (k' + 1) f as E' = .ok v := by
   intro f as v h
   cases as with
   | nil => rw [Eval.applyMany] at h ⊢; exact h
@@ -605,10 +620,10 @@ private theorem applyMany_step {C : Eval.Ctx} {k k' : Nat} (_hk : k ≤ k')
       refine bind_ok (ih.app1 _ _ _ hw) ?_
       exact ih.many _ _ _ h
 
-private theorem applyAll_step {C : Eval.Ctx} {k k' : Nat} (_hk : k ≤ k')
-    (ih : EvalMono C k k') :
-    ∀ f xs ys, Eval.applyAll C (k + 1) f xs = .ok ys →
-      Eval.applyAll C (k' + 1) f xs = .ok ys := by
+private theorem applyAll_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (_hk : k ≤ k') (ih : EvalMono C E E' k k') :
+    ∀ f xs ys, Eval.applyAll C (k + 1) f xs E = .ok ys →
+      Eval.applyAll C (k' + 1) f xs E' = .ok ys := by
   intro f xs ys h
   cases xs with
   | nil => rw [Eval.applyAll] at h ⊢; exact h
@@ -620,10 +635,10 @@ private theorem applyAll_step {C : Eval.Ctx} {k k' : Nat} (_hk : k ≤ k')
       refine bind_ok (ih.all _ _ _ hys) ?_
       exact h
 
-private theorem tryAlts_step {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k')
-    (ih : EvalMono C k k') :
-    ∀ env jenv binder sv as dflt v, Eval.tryAlts C (k + 1) env jenv binder sv as dflt = .ok v →
-      Eval.tryAlts C (k' + 1) env jenv binder sv as dflt = .ok v := by
+private theorem tryAlts_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') (ih : EvalMono C E E' k k') :
+    ∀ env jenv binder sv as dflt v, Eval.tryAlts C (k + 1) env jenv binder sv as dflt E = .ok v →
+      Eval.tryAlts C (k' + 1) env jenv binder sv as dflt E' = .ok v := by
   intro env jenv binder sv as dflt v h
   cases as with
   | nil =>
@@ -662,10 +677,10 @@ private theorem tryAlts_step {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k')
           · exact ih.core _ _ _ _ h
 
 set_option maxHeartbeats 1000000 in
-private theorem evalBuiltin_step {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k')
-    (ih : EvalMono C k k') :
-    ∀ ty b vs v, Eval.evalBuiltin C (k + 1) ty b vs = .ok v →
-      Eval.evalBuiltin C (k' + 1) ty b vs = .ok v := by
+private theorem evalBuiltin_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') (ih : EvalMono C E E' k k') :
+    ∀ ty b vs v, Eval.evalBuiltin C (k + 1) ty b vs E = .ok v →
+      Eval.evalBuiltin C (k' + 1) ty b vs E' = .ok v := by
   intro ty b vs v h
   rw [Eval.evalBuiltin] at h ⊢
   split at h  -- let (doms, res) := Ty.flattenArrow ty
@@ -702,10 +717,10 @@ private theorem evalBuiltin_step {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k')
     refine bind_ok (Eval.valToBits_mono hk hx) ?_
     exact h
 
-private theorem evalCry_step {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k')
-    (ih : EvalMono C k k') :
-    ∀ env jenv pty f n rest v, Eval.evalCry C (k + 1) env jenv pty f n rest = .ok v →
-      Eval.evalCry C (k' + 1) env jenv pty f n rest = .ok v := by
+private theorem evalCry_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') (ih : EvalMono C E E' k k') :
+    ∀ env jenv pty f n rest v, Eval.evalCry C (k + 1) env jenv pty f n rest E = .ok v →
+      Eval.evalCry C (k' + 1) env jenv pty f n rest E' = .ok v := by
   intro env jenv pty f n rest v h
   rw [Eval.evalCry] at h ⊢
   obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
@@ -727,10 +742,10 @@ private theorem evalCry_step {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k')
       refine bind_ok hbv ?_
       exact decode_mono hk h
 
-private theorem evalExt_step {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k')
-    (ih : EvalMono C k k') :
-    ∀ env jenv pty s rest v, Eval.evalExt C (k + 1) env jenv pty s rest = .ok v →
-      Eval.evalExt C (k' + 1) env jenv pty s rest = .ok v := by
+private theorem evalExt_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') (hE : EExt E E') (ih : EvalMono C E E' k k') :
+    ∀ env jenv pty s rest v, Eval.evalExt C (k + 1) env jenv pty s rest E = .ok v →
+      Eval.evalExt C (k' + 1) env jenv pty s rest E' = .ok v := by
   intro env jenv pty s rest v h
   rw [Eval.evalExt] at h ⊢
   obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
@@ -743,7 +758,18 @@ private theorem evalExt_step {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k')
   rename_i hlen
   rw [if_pos hlen]
   cases hden : C.Δ.xtF s with
-  | none => rw [hden] at h; exact error_ne_ok h
+  | none =>
+      rw [hden] at h
+      cases hEs : E s with
+      | none => rw [hEs] at h; exact error_ne_ok h
+      | some f =>
+          rw [hEs] at h
+          rw [hE s f hEs]
+          obtain ⟨reps, hreps, h⟩ := except_bind_eq_ok h
+          refine bind_ok (mapM_mono (fun a b hab => Eval.valToBits_mono hk hab) hreps) ?_
+          obtain ⟨bv, hbv, h⟩ := except_bind_eq_ok h
+          refine bind_ok hbv ?_
+          exact decode_mono hk h
   | some den =>
       rw [hden] at h
       obtain ⟨reps, hreps, h⟩ := except_bind_eq_ok h
@@ -752,10 +778,11 @@ private theorem evalExt_step {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k')
       refine bind_ok hbv ?_
       exact decode_mono hk h
 
-private theorem evalMono_all (C : Eval.Ctx) : ∀ k k', k ≤ k' → EvalMono C k k' := by
+private theorem evalMono_all (C : Eval.Ctx) {E E' : Rwv.Hyle.Sem.EEnv} (hE : EExt E E') :
+    ∀ k k', k ≤ k' → EvalMono C E E' k k' := by
   intro k
   induction k with
-  | zero => intro k' _; exact evalMono_zero C k'
+  | zero => intro k' _; exact evalMono_zero C E E' k'
   | succ k ihk =>
       intro k' hkk'
       obtain ⟨k', rfl⟩ : ∃ j, k' = j + 1 := ⟨k' - 1, by omega⟩
@@ -764,81 +791,103 @@ private theorem evalMono_all (C : Eval.Ctx) : ∀ k k', k ≤ k' → EvalMono C 
       exact ⟨evalCore_step hk ih, evalList_step hk ih, callDefn_step hk ih,
         applyValCore_step hk ih, applyMany_step hk ih, applyAll_step hk ih,
         tryAlts_step hk ih, evalBuiltin_step hk ih,
-        evalCry_step hk ih, evalExt_step hk ih⟩
+        evalCry_step hk ih, evalExt_step hk hE ih⟩
 
 /-- `Eval.evalCore` is monotone in its fuel. -/
-theorem Eval.evalCore_mono {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k') {env : Eval.Env}
-    {jenv : Eval.JEnv} {e : Exp} {v : Val} (h : Eval.evalCore C k env jenv e = .ok v) :
-    Eval.evalCore C k' env jenv e = .ok v :=
-  (evalMono_all C k k' hk).core env jenv e v h
+theorem Eval.evalCore_mono {C : Eval.Ctx} {E : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') {env : Eval.Env}
+    {jenv : Eval.JEnv} {e : Exp} {v : Val} (h : Eval.evalCore C k env jenv e E = .ok v) :
+    Eval.evalCore C k' env jenv e E = .ok v :=
+  (evalMono_all C (eext_refl E) k k' hk).core env jenv e v h
 
 /-- `Eval.evalList` is monotone in its fuel. -/
-theorem Eval.evalList_mono {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k') {env : Eval.Env}
+theorem Eval.evalList_mono {C : Eval.Ctx} {E : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') {env : Eval.Env}
     {jenv : Eval.JEnv} {es : List Exp} {vs : List Val}
-    (h : Eval.evalList C k env jenv es = .ok vs) : Eval.evalList C k' env jenv es = .ok vs :=
-  (evalMono_all C k k' hk).list env jenv es vs h
+    (h : Eval.evalList C k env jenv es E = .ok vs) :
+    Eval.evalList C k' env jenv es E = .ok vs :=
+  (evalMono_all C (eext_refl E) k k' hk).list env jenv es vs h
 
 /-- `Eval.callDefn` is monotone in its fuel. -/
-theorem Eval.callDefn_mono {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k') {d : Defn}
-    {vs : List Val} {v : Val} (h : Eval.callDefn C k d vs = .ok v) :
-    Eval.callDefn C k' d vs = .ok v :=
-  (evalMono_all C k k' hk).defn d vs v h
+theorem Eval.callDefn_mono {C : Eval.Ctx} {E : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') {d : Defn}
+    {vs : List Val} {v : Val} (h : Eval.callDefn C k d vs E = .ok v) :
+    Eval.callDefn C k' d vs E = .ok v :=
+  (evalMono_all C (eext_refl E) k k' hk).defn d vs v h
 
 /-- `Eval.applyValCore` is monotone in its fuel. -/
-theorem Eval.applyValCore_mono {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k') {f a v : Val}
-    (h : Eval.applyValCore C k f a = .ok v) : Eval.applyValCore C k' f a = .ok v :=
-  (evalMono_all C k k' hk).app1 f a v h
+theorem Eval.applyValCore_mono {C : Eval.Ctx} {E : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') {f a v : Val}
+    (h : Eval.applyValCore C k f a E = .ok v) : Eval.applyValCore C k' f a E = .ok v :=
+  (evalMono_all C (eext_refl E) k k' hk).app1 f a v h
 
 /-- `Eval.applyMany` is monotone in its fuel. -/
-theorem Eval.applyMany_mono {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k') {f v : Val}
-    {as : List Val} (h : Eval.applyMany C k f as = .ok v) :
-    Eval.applyMany C k' f as = .ok v :=
-  (evalMono_all C k k' hk).many f as v h
+theorem Eval.applyMany_mono {C : Eval.Ctx} {E : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') {f v : Val}
+    {as : List Val} (h : Eval.applyMany C k f as E = .ok v) :
+    Eval.applyMany C k' f as E = .ok v :=
+  (evalMono_all C (eext_refl E) k k' hk).many f as v h
 
 /-- `Eval.applyAll` is monotone in its fuel. -/
-theorem Eval.applyAll_mono {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k') {f : Val}
-    {xs ys : List Val} (h : Eval.applyAll C k f xs = .ok ys) :
-    Eval.applyAll C k' f xs = .ok ys :=
-  (evalMono_all C k k' hk).all f xs ys h
+theorem Eval.applyAll_mono {C : Eval.Ctx} {E : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') {f : Val}
+    {xs ys : List Val} (h : Eval.applyAll C k f xs E = .ok ys) :
+    Eval.applyAll C k' f xs E = .ok ys :=
+  (evalMono_all C (eext_refl E) k k' hk).all f xs ys h
 
 /-- `Eval.tryAlts` is monotone in its fuel. -/
-theorem Eval.tryAlts_mono {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k') {env : Eval.Env}
+theorem Eval.tryAlts_mono {C : Eval.Ctx} {E : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') {env : Eval.Env}
     {jenv : Eval.JEnv} {binder : Id} {sv : Val} {as : List Alt} {dflt : Option Alt} {v : Val}
-    (h : Eval.tryAlts C k env jenv binder sv as dflt = .ok v) :
-    Eval.tryAlts C k' env jenv binder sv as dflt = .ok v :=
-  (evalMono_all C k k' hk).alts env jenv binder sv as dflt v h
+    (h : Eval.tryAlts C k env jenv binder sv as dflt E = .ok v) :
+    Eval.tryAlts C k' env jenv binder sv as dflt E = .ok v :=
+  (evalMono_all C (eext_refl E) k k' hk).alts env jenv binder sv as dflt v h
 
 /-- `Eval.evalBuiltin` is monotone in its fuel. -/
-theorem Eval.evalBuiltin_mono {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k') {ty : Ty}
-    {b : Builtin} {vs : List Val} {v : Val} (h : Eval.evalBuiltin C k ty b vs = .ok v) :
-    Eval.evalBuiltin C k' ty b vs = .ok v :=
-  (evalMono_all C k k' hk).builtin ty b vs v h
+theorem Eval.evalBuiltin_mono {C : Eval.Ctx} {E : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') {ty : Ty}
+    {b : Builtin} {vs : List Val} {v : Val} (h : Eval.evalBuiltin C k ty b vs E = .ok v) :
+    Eval.evalBuiltin C k' ty b vs E = .ok v :=
+  (evalMono_all C (eext_refl E) k k' hk).builtin ty b vs v h
 
 /-- `Eval.evalCry` (the Cryptol foreign row) is monotone in its fuel. -/
-theorem Eval.evalCry_mono {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k') {env : Eval.Env}
+theorem Eval.evalCry_mono {C : Eval.Ctx} {E : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') {env : Eval.Env}
     {jenv : Eval.JEnv} {pty : Ty} {f n : String} {rest : List Exp} {v : Val}
-    (h : Eval.evalCry C k env jenv pty f n rest = .ok v) :
-    Eval.evalCry C k' env jenv pty f n rest = .ok v :=
-  (evalMono_all C k k' hk).cry env jenv pty f n rest v h
+    (h : Eval.evalCry C k env jenv pty f n rest E = .ok v) :
+    Eval.evalCry C k' env jenv pty f n rest E = .ok v :=
+  (evalMono_all C (eext_refl E) k k' hk).cry env jenv pty f n rest v h
 
 /-- `Eval.evalExt` (the model-carrying extern row) is monotone in its
 fuel. -/
-theorem Eval.evalExt_mono {C : Eval.Ctx} {k k' : Nat} (hk : k ≤ k') {env : Eval.Env}
+theorem Eval.evalExt_mono {C : Eval.Ctx} {E : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') {env : Eval.Env}
     {jenv : Eval.JEnv} {pty : Ty} {s : String} {rest : List Exp} {v : Val}
-    (h : Eval.evalExt C k env jenv pty s rest = .ok v) :
-    Eval.evalExt C k' env jenv pty s rest = .ok v :=
-  (evalMono_all C k k' hk).ext env jenv pty s rest v h
+    (h : Eval.evalExt C k env jenv pty s rest E = .ok v) :
+    Eval.evalExt C k' env jenv pty s rest E = .ok v :=
+  (evalMono_all C (eext_refl E) k k' hk).ext env jenv pty s rest v h
 
 /-- The exported evaluator entry point `eval` is monotone in its fuel. -/
-theorem eval_mono {Δ : DEnv} {defns : HashMap Int Defn} {k k' : Nat} (hk : k ≤ k')
-    {env : Eval.Env} {e : Exp} {v : Val} (h : eval Δ defns k env e = .ok v) :
-    eval Δ defns k' env e = .ok v :=
+theorem eval_mono {Δ : DEnv} {defns : HashMap Int Defn} {E : Rwv.Hyle.Sem.EEnv}
+    {k k' : Nat} (hk : k ≤ k')
+    {env : Eval.Env} {e : Exp} {v : Val} (h : eval Δ defns k env e E = .ok v) :
+    eval Δ defns k' env e E = .ok v :=
   Eval.evalCore_mono hk h
+
+/-- The generalized transport (fuel AND extern-environment extension
+at once): the private form the machine layer threads. -/
+private theorem eval_trans {Δ : DEnv} {defns : HashMap Int Defn}
+    {E E' : Rwv.Hyle.Sem.EEnv} (hE : EExt E E') {k k' : Nat} (hk : k ≤ k')
+    {env : Eval.Env} {e : Exp} {v : Val} (h : eval Δ defns k env e E = .ok v) :
+    eval Δ defns k' env e E' = .ok v :=
+  (evalMono_all ⟨Δ, defns⟩ hE k k' hk).core env [] e v h
 
 /-- The exported application entry point `applyVal` is monotone in its
 fuel. -/
-theorem applyVal_mono {Δ : DEnv} {defns : HashMap Int Defn} {k k' : Nat} (hk : k ≤ k')
-    {f a v : Val} (h : applyVal Δ defns k f a = .ok v) : applyVal Δ defns k' f a = .ok v :=
+theorem applyVal_mono {Δ : DEnv} {defns : HashMap Int Defn} {E : Rwv.Hyle.Sem.EEnv}
+    {k k' : Nat} (hk : k ≤ k')
+    {f a v : Val} (h : applyVal Δ defns k f a E = .ok v) :
+    applyVal Δ defns k' f a E = .ok v :=
   Eval.applyValCore_mono hk h
 
 /-! ## The machine layer (Rwv.Eidos.Machine)
@@ -866,11 +915,12 @@ theorem Machine.selectTAlt_mono {Δ : DEnv} {k k' : Nat} (hk : k ≤ k') {scrut 
     | default => exact hb
   · exact h
 
-/-- `Machine.runCmds` is monotone in its evaluation fuel. -/
-theorem Machine.runCmds_mono {Δ : DEnv} {defns : HashMap Int Defn} {k k' : Nat}
+private theorem runCmds_trans {Δ : DEnv} {defns : HashMap Int Defn}
+    {E E' : Rwv.Hyle.Sem.EEnv} (hE : EExt E E') {k k' : Nat}
     (hk : k ≤ k') {env₀ : Eval.Env} {cells₀ : HashMap String Val} {cmds : List Cmd}
-    {r : Eval.Env × HashMap String Val} (h : Machine.runCmds Δ defns k env₀ cells₀ cmds = .ok r) :
-    Machine.runCmds Δ defns k' env₀ cells₀ cmds = .ok r := by
+    {r : Eval.Env × HashMap String Val}
+    (h : Machine.runCmds Δ defns k env₀ cells₀ cmds E = .ok r) :
+    Machine.runCmds Δ defns k' env₀ cells₀ cmds E' = .ok r := by
   unfold Machine.runCmds at h ⊢
   refine foldlM_mono ?_ h
   intro s cmd r' hb
@@ -878,24 +928,33 @@ theorem Machine.runCmds_mono {Δ : DEnv} {defns : HashMap Int Defn} {k k' : Nat}
   cases cmd with
   | bind x e =>
       obtain ⟨w, hw, hb⟩ := except_bind_eq_ok hb
-      refine bind_ok (eval_mono hk hw) ?_
+      refine bind_ok (eval_trans hE hk hw) ?_
       exact hb
   | get x s => exact hb
   | put s a =>
       obtain ⟨w, hw, hb⟩ := except_bind_eq_ok hb
-      refine bind_ok (eval_mono hk hw) ?_
+      refine bind_ok (eval_trans hE hk hw) ?_
       exact hb
+
+/-- `Machine.runCmds` is monotone in its evaluation fuel. -/
+theorem Machine.runCmds_mono {Δ : DEnv} {defns : HashMap Int Defn}
+    {E : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') {env₀ : Eval.Env} {cells₀ : HashMap String Val} {cmds : List Cmd}
+    {r : Eval.Env × HashMap String Val}
+    (h : Machine.runCmds Δ defns k env₀ cells₀ cmds E = .ok r) :
+    Machine.runCmds Δ defns k' env₀ cells₀ cmds E = .ok r :=
+  runCmds_trans (eext_refl E) hk h
 
 /-- `Machine.execBlock`'s terminator runner is monotone in both fuels:
 the goto fuel bounds intra-cycle transfer (goto chains and
 terminator-case descent both decrement it), the evaluation fuel the
 pure evaluation inside commands and terminators. -/
 private theorem runTerm_mono (Δ : DEnv) (defns : HashMap Int Defn)
-    (blocks : HashMap Int Block) :
+    (blocks : HashMap Int Block) {E E' : Rwv.Hyle.Sem.EEnv} (hE : EExt E E') :
     ∀ {gf gf' ef ef' : Nat}, gf ≤ gf' → ef ≤ ef' →
       ∀ {env : Eval.Env} {cells : HashMap String Val} {t : Term} {r : StepOut},
-      Machine.execBlock.runTerm Δ defns blocks ef gf env cells t = .ok r →
-      Machine.execBlock.runTerm Δ defns blocks ef' gf' env cells t = .ok r := by
+      Machine.execBlock.runTerm Δ defns blocks ef E gf env cells t = .ok r →
+      Machine.execBlock.runTerm Δ defns blocks ef' E' gf' env cells t = .ok r := by
   intro gf
   induction gf with
   | zero =>
@@ -905,8 +964,8 @@ private theorem runTerm_mono (Δ : DEnv) (defns : HashMap Int Defn)
           rw [Machine.execBlock.runTerm] at h ⊢
           obtain ⟨o, ho, h⟩ := except_bind_eq_ok h
           obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
-          refine bind_ok (eval_mono hef ho) ?_
-          refine bind_ok (mapM_mono (fun a b hab => eval_mono hef hab) hvs) ?_
+          refine bind_ok (eval_trans hE hef ho) ?_
+          refine bind_ok (mapM_mono (fun a b hab => eval_trans hE hef hab) hvs) ?_
           exact h
       | goto l args =>
           rw [Machine.execBlock.runTerm] at h
@@ -922,7 +981,7 @@ private theorem runTerm_mono (Δ : DEnv) (defns : HashMap Int Defn)
       | halt e =>
           rw [Machine.execBlock.runTerm] at h ⊢
           obtain ⟨a, ha, h⟩ := except_bind_eq_ok h
-          refine bind_ok (eval_mono hef ha) ?_
+          refine bind_ok (eval_trans hE hef ha) ?_
           exact h
       | cases scrutE alts =>
           rw [Machine.execBlock.runTerm] at h
@@ -939,8 +998,8 @@ private theorem runTerm_mono (Δ : DEnv) (defns : HashMap Int Defn)
           rw [Machine.execBlock.runTerm] at h ⊢
           obtain ⟨o, ho, h⟩ := except_bind_eq_ok h
           obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
-          refine bind_ok (eval_mono hef ho) ?_
-          refine bind_ok (mapM_mono (fun a b hab => eval_mono hef hab) hvs) ?_
+          refine bind_ok (eval_trans hE hef ho) ?_
+          refine bind_ok (mapM_mono (fun a b hab => eval_trans hE hef hab) hvs) ?_
           exact h
       | goto l args =>
           rw [Machine.execBlock.runTerm] at h ⊢
@@ -949,7 +1008,7 @@ private theorem runTerm_mono (Δ : DEnv) (defns : HashMap Int Defn)
           | some blk =>
               rw [hB] at h
               obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
-              refine bind_ok (mapM_mono (fun a b hab => eval_mono hef hab) hvs) ?_
+              refine bind_ok (mapM_mono (fun a b hab => eval_trans hE hef hab) hvs) ?_
               dsimp only [] at h ⊢
               split at h
               · exact error_ne_ok h
@@ -957,39 +1016,49 @@ private theorem runTerm_mono (Δ : DEnv) (defns : HashMap Int Defn)
                 rw [if_neg hlen]
                 obtain ⟨p, hp, h⟩ := except_bind_eq_ok h
                 obtain ⟨env'', cells'⟩ := p
-                refine bind_ok (Machine.runCmds_mono hef hp) ?_
+                refine bind_ok (runCmds_trans hE hef hp) ?_
                 exact ihg hgf' hef h
       | halt e =>
           rw [Machine.execBlock.runTerm] at h ⊢
           obtain ⟨a, ha, h⟩ := except_bind_eq_ok h
-          refine bind_ok (eval_mono hef ha) ?_
+          refine bind_ok (eval_trans hE hef ha) ?_
           exact h
       | cases scrutE alts =>
           rw [Machine.execBlock.runTerm] at h ⊢
           obtain ⟨sv, hsv, h⟩ := except_bind_eq_ok h
           obtain ⟨sel, hsel, h⟩ := except_bind_eq_ok h
           obtain ⟨bs, t'⟩ := sel
-          refine bind_ok (eval_mono hef hsv) ?_
+          refine bind_ok (eval_trans hE hef hsv) ?_
           refine bind_ok (Machine.selectTAlt_mono hef hsel) ?_
           exact ihg hgf' hef h
+
+private theorem execBlock_trans {Δ : DEnv} {defns : HashMap Int Defn}
+    {blocks : HashMap Int Block} {E E' : Rwv.Hyle.Sem.EEnv} (hE : EExt E E')
+    {ef ef' gf gf' : Nat} (hef : ef ≤ ef') (hgf : gf ≤ gf')
+    {env₀ : Eval.Env} {cells₀ : HashMap String Val} {b : Block} {r : StepOut}
+    (h : Machine.execBlock Δ defns blocks ef gf env₀ cells₀ b E = .ok r) :
+    Machine.execBlock Δ defns blocks ef' gf' env₀ cells₀ b E' = .ok r := by
+  unfold Machine.execBlock at h ⊢
+  obtain ⟨p, hp, h⟩ := except_bind_eq_ok h
+  obtain ⟨env, cells⟩ := p
+  refine bind_ok (runCmds_trans hE hef hp) ?_
+  exact runTerm_mono Δ defns blocks hE hgf hef h
 
 /-- `Machine.execBlock` is monotone in the evaluation fuel and the goto
 fuel separately. -/
 theorem Machine.execBlock_mono {Δ : DEnv} {defns : HashMap Int Defn}
-    {blocks : HashMap Int Block} {ef ef' gf gf' : Nat} (hef : ef ≤ ef') (hgf : gf ≤ gf')
+    {blocks : HashMap Int Block} {E : Rwv.Hyle.Sem.EEnv}
+    {ef ef' gf gf' : Nat} (hef : ef ≤ ef') (hgf : gf ≤ gf')
     {env₀ : Eval.Env} {cells₀ : HashMap String Val} {b : Block} {r : StepOut}
-    (h : Machine.execBlock Δ defns blocks ef gf env₀ cells₀ b = .ok r) :
-    Machine.execBlock Δ defns blocks ef' gf' env₀ cells₀ b = .ok r := by
-  unfold Machine.execBlock at h ⊢
-  obtain ⟨p, hp, h⟩ := except_bind_eq_ok h
-  obtain ⟨env, cells⟩ := p
-  refine bind_ok (Machine.runCmds_mono hef hp) ?_
-  exact runTerm_mono Δ defns blocks hgf hef h
+    (h : Machine.execBlock Δ defns blocks ef gf env₀ cells₀ b E = .ok r) :
+    Machine.execBlock Δ defns blocks ef' gf' env₀ cells₀ b E = .ok r :=
+  execBlock_trans (eext_refl E) hef hgf h
 
-/-- `Machine.initCells` is monotone in its evaluation fuel. -/
-theorem Machine.initCells_mono {Δ : DEnv} {defns : HashMap Int Defn} {k k' : Nat}
+private theorem initCells_trans {Δ : DEnv} {defns : HashMap Int Defn}
+    {E E' : Rwv.Hyle.Sem.EEnv} (hE : EExt E E') {k k' : Nat}
     (hk : k ≤ k') {p : Proc} {σ : HashMap String Val}
-    (h : Machine.initCells Δ defns k p = .ok σ) : Machine.initCells Δ defns k' p = .ok σ := by
+    (h : Machine.initCells Δ defns k p E = .ok σ) :
+    Machine.initCells Δ defns k' p E' = .ok σ := by
   unfold Machine.initCells at h ⊢
   refine foldlM_mono ?_ h
   intro s c r' hb
@@ -998,7 +1067,7 @@ theorem Machine.initCells_mono {Δ : DEnv} {defns : HashMap Int Defn} {k k' : Na
   | some e =>
       rw [hI] at hb
       obtain ⟨w, hw, hb⟩ := except_bind_eq_ok hb
-      refine bind_ok (eval_mono hk hw) ?_
+      refine bind_ok (eval_trans hE hk hw) ?_
       exact hb
   | none =>
       rw [hI] at hb
@@ -1006,13 +1075,20 @@ theorem Machine.initCells_mono {Δ : DEnv} {defns : HashMap Int Defn} {k k' : Na
       refine bind_ok (DEnv.zeroVal_mono Δ hk hw) ?_
       exact hb
 
-/-- `Machine.step` is monotone in the evaluation fuel and the goto fuel
-separately. -/
-theorem Machine.step_mono {Δ : DEnv} {defns : HashMap Int Defn}
-    {blocks : HashMap Int Block} {ef ef' gf gf' : Nat} (hef : ef ≤ ef') (hgf : gf ≤ gf')
+/-- `Machine.initCells` is monotone in its evaluation fuel. -/
+theorem Machine.initCells_mono {Δ : DEnv} {defns : HashMap Int Defn}
+    {E : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
+    (hk : k ≤ k') {p : Proc} {σ : HashMap String Val}
+    (h : Machine.initCells Δ defns k p E = .ok σ) :
+    Machine.initCells Δ defns k' p E = .ok σ :=
+  initCells_trans (eext_refl E) hk h
+
+private theorem step_trans {Δ : DEnv} {defns : HashMap Int Defn}
+    {blocks : HashMap Int Block} {E E' : Rwv.Hyle.Sem.EEnv} (hE : EExt E E')
+    {ef ef' gf gf' : Nat} (hef : ef ≤ ef') (hgf : gf ≤ gf')
     {s : MState} {input : Val} {r : StepOut}
-    (h : Machine.step Δ defns blocks ef gf s input = .ok r) :
-    Machine.step Δ defns blocks ef' gf' s input = .ok r := by
+    (h : Machine.step Δ defns blocks ef gf s input E = .ok r) :
+    Machine.step Δ defns blocks ef' gf' s input E' = .ok r := by
   unfold Machine.step at h ⊢
   cases hB : blocks.get? s.label with
   | none => rw [hB] at h; exact error_ne_ok h
@@ -1023,16 +1099,27 @@ theorem Machine.step_mono {Δ : DEnv} {defns : HashMap Int Defn}
       · exact error_ne_ok h
       · rename_i hlen
         rw [if_neg hlen]
-        exact Machine.execBlock_mono hef hgf h
+        exact execBlock_trans hE hef hgf h
+
+/-- `Machine.step` is monotone in the evaluation fuel and the goto fuel
+separately. -/
+theorem Machine.step_mono {Δ : DEnv} {defns : HashMap Int Defn}
+    {blocks : HashMap Int Block} {E : Rwv.Hyle.Sem.EEnv}
+    {ef ef' gf gf' : Nat} (hef : ef ≤ ef') (hgf : gf ≤ gf')
+    {s : MState} {input : Val} {r : StepOut}
+    (h : Machine.step Δ defns blocks ef gf s input E = .ok r) :
+    Machine.step Δ defns blocks ef' gf' s input E = .ok r :=
+  step_trans (eext_refl E) hef hgf h
 
 /-- `Machine.foldStep` is monotone in the evaluation fuel and the goto
 fuel separately. -/
-theorem Machine.foldStep_mono {Δ : DEnv} {defns : HashMap Int Defn}
-    {blocks : HashMap Int Block} {ef ef' gf gf' : Nat} (hef : ef ≤ ef') (hgf : gf ≤ gf')
+private theorem foldStep_trans {Δ : DEnv} {defns : HashMap Int Defn}
+    {blocks : HashMap Int Block} {E E' : Rwv.Hyle.Sem.EEnv} (hE : EExt E E')
+    {ef ef' gf gf' : Nat} (hef : ef ≤ ef') (hgf : gf ≤ gf')
     {acc : List Val × Option Val × Option MState} {i : Val}
     {r : List Val × Option Val × Option MState}
-    (h : Machine.foldStep Δ defns blocks ef gf acc i = .ok r) :
-    Machine.foldStep Δ defns blocks ef' gf' acc i = .ok r := by
+    (h : Machine.foldStep Δ defns blocks ef gf E acc i = .ok r) :
+    Machine.foldStep Δ defns blocks ef' gf' E' acc i = .ok r := by
   obtain ⟨outs, halted, s?⟩ := acc
   cases s? with
   | none => exact h
@@ -1041,26 +1128,43 @@ theorem Machine.foldStep_mono {Δ : DEnv} {defns : HashMap Int Defn}
       | some a => exact h
       | none =>
           obtain ⟨so, hso, h⟩ := except_bind_eq_ok h
-          refine bind_ok (Machine.step_mono hef hgf hso) ?_
+          refine bind_ok (step_trans hE hef hgf hso) ?_
           exact h
+
+theorem Machine.foldStep_mono {Δ : DEnv} {defns : HashMap Int Defn}
+    {blocks : HashMap Int Block} {E : Rwv.Hyle.Sem.EEnv}
+    {ef ef' gf gf' : Nat} (hef : ef ≤ ef') (hgf : gf ≤ gf')
+    {acc : List Val × Option Val × Option MState} {i : Val}
+    {r : List Val × Option Val × Option MState}
+    (h : Machine.foldStep Δ defns blocks ef gf E acc i = .ok r) :
+    Machine.foldStep Δ defns blocks ef' gf' E acc i = .ok r :=
+  foldStep_trans (eext_refl E) hef hgf h
 
 /-- `Proc.run` is monotone in the evaluation fuel and the goto fuel
 separately. -/
-theorem Proc.run_mono {Δ : DEnv} {defns : HashMap Int Defn} {ef ef' gf gf' : Nat}
+private theorem run_trans {Δ : DEnv} {defns : HashMap Int Defn}
+    {E E' : Rwv.Hyle.Sem.EEnv} (hE : EExt E E') {ef ef' gf gf' : Nat}
     (hef : ef ≤ ef') (hgf : gf ≤ gf') {p : Proc} {inputs : List Val} {mt : MTrace}
-    (h : Proc.run Δ defns ef gf p inputs = .ok mt) :
-    Proc.run Δ defns ef' gf' p inputs = .ok mt := by
+    (h : Proc.run Δ defns ef gf p inputs E = .ok mt) :
+    Proc.run Δ defns ef' gf' p inputs E' = .ok mt := by
   unfold Proc.run at h ⊢
   obtain ⟨σ₀, hσ, h⟩ := except_bind_eq_ok h
   obtain ⟨so, hso, h⟩ := except_bind_eq_ok h
-  refine bind_ok (Machine.initCells_mono hef hσ) ?_
-  refine bind_ok (Machine.execBlock_mono hef hgf hso) ?_
+  refine bind_ok (initCells_trans hE hef hσ) ?_
+  refine bind_ok (execBlock_trans hE hef hgf hso) ?_
   cases so with
   | halt a => exact h
   | step o s₀ =>
       obtain ⟨tri, htri, h⟩ := except_bind_eq_ok h
-      refine bind_ok (foldlM_mono (fun s a r hb => Machine.foldStep_mono hef hgf hb) htri) ?_
+      refine bind_ok (foldlM_mono (fun s a r hb => foldStep_trans hE hef hgf hb) htri) ?_
       exact h
+
+theorem Proc.run_mono {Δ : DEnv} {defns : HashMap Int Defn} {E : Rwv.Hyle.Sem.EEnv}
+    {ef ef' gf gf' : Nat}
+    (hef : ef ≤ ef') (hgf : gf ≤ gf') {p : Proc} {inputs : List Val} {mt : MTrace}
+    (h : Proc.run Δ defns ef gf p inputs E = .ok mt) :
+    Proc.run Δ defns ef' gf' p inputs E = .ok mt :=
+  run_trans (eext_refl E) hef hgf h
 
 /-! ## The fuel-independence corollaries -/
 
@@ -1075,11 +1179,67 @@ theorem Proc.run_fuel_stable {Δ : DEnv} {defns : HashMap Int Defn} {ef gf : Nat
 /-- Any two successful `Proc.run`s agree, whatever their fuels: "∃
 fuel, the run succeeds" is a fuel-independent semantics. -/
 theorem Proc.run_fuel_deterministic {Δ : DEnv} {defns : HashMap Int Defn}
+    {E : Rwv.Hyle.Sem.EEnv}
     {ef₁ gf₁ ef₂ gf₂ : Nat} {p : Proc} {ins : List Val} {mt₁ mt₂ : MTrace}
-    (h₁ : Proc.run Δ defns ef₁ gf₁ p ins = .ok mt₁)
-    (h₂ : Proc.run Δ defns ef₂ gf₂ p ins = .ok mt₂) : mt₁ = mt₂ := by
+    (h₁ : Proc.run Δ defns ef₁ gf₁ p ins E = .ok mt₁)
+    (h₂ : Proc.run Δ defns ef₂ gf₂ p ins E = .ok mt₂) : mt₁ = mt₂ := by
   have k₁ := Proc.run_mono (Nat.le_max_left ef₁ ef₂) (Nat.le_max_left gf₁ gf₂) h₁
   have k₂ := Proc.run_mono (Nat.le_max_right ef₁ ef₂) (Nat.le_max_right gf₁ gf₂) h₂
   exact Except.ok.inj (k₁.symm.trans k₂)
+
+/-! ## The extern-environment transport (stage B)
+
+A successful evaluation at the EMPTY extern environment never
+consulted it — the empty environment's model-less row throws — so the
+run succeeds identically at EVERY extern environment. This is what
+lets the validator discharge the initial-state obligation ONCE, at
+the default environment, and certify it at the statement's
+∀-quantified one (`checkInit_sound`'s transport). All are `EExt`
+instances of the generalized bundle above. -/
+
+/-- `evalCore` at the empty extern environment transports to any. -/
+theorem Eval.evalCore_eta {C : Eval.Ctx} (E : Rwv.Hyle.Sem.EEnv) {k : Nat}
+    {env : Eval.Env} {jenv : Eval.JEnv} {e : Exp} {v : Val}
+    (h : Eval.evalCore C k env jenv e = .ok v) :
+    Eval.evalCore C k env jenv e E = .ok v :=
+  (evalMono_all C (eext_empty E) k k (Nat.le_refl k)).core env jenv e v h
+
+/-- `eval` at the empty extern environment transports to any. -/
+theorem eval_eta {Δ : DEnv} {defns : HashMap Int Defn} (E : Rwv.Hyle.Sem.EEnv)
+    {k : Nat} {env : Eval.Env} {e : Exp} {v : Val}
+    (h : eval Δ defns k env e = .ok v) : eval Δ defns k env e E = .ok v :=
+  Eval.evalCore_eta E h
+
+/-- `Machine.initCells` at the empty extern environment transports to
+any. -/
+theorem Machine.initCells_eta {Δ : DEnv} {defns : HashMap Int Defn}
+    (E : Rwv.Hyle.Sem.EEnv) {k : Nat} {p : Proc} {σ : HashMap String Val}
+    (h : Machine.initCells Δ defns k p = .ok σ) :
+    Machine.initCells Δ defns k p E = .ok σ :=
+  initCells_trans (eext_empty E) (Nat.le_refl k) h
+
+/-- `Machine.execBlock` at the empty extern environment transports to
+any. -/
+theorem Machine.execBlock_eta {Δ : DEnv} {defns : HashMap Int Defn}
+    {blocks : HashMap Int Block} (E : Rwv.Hyle.Sem.EEnv) {ef gf : Nat}
+    {env₀ : Eval.Env} {cells₀ : HashMap String Val} {b : Block} {r : StepOut}
+    (h : Machine.execBlock Δ defns blocks ef gf env₀ cells₀ b = .ok r) :
+    Machine.execBlock Δ defns blocks ef gf env₀ cells₀ b E = .ok r :=
+  execBlock_trans (eext_empty E) (Nat.le_refl ef) (Nat.le_refl gf) h
+
+/-- `Machine.step` at the empty extern environment transports to any. -/
+theorem Machine.step_eta {Δ : DEnv} {defns : HashMap Int Defn}
+    {blocks : HashMap Int Block} (E : Rwv.Hyle.Sem.EEnv) {ef gf : Nat}
+    {s : MState} {input : Val} {r : StepOut}
+    (h : Machine.step Δ defns blocks ef gf s input = .ok r) :
+    Machine.step Δ defns blocks ef gf s input E = .ok r :=
+  step_trans (eext_empty E) (Nat.le_refl ef) (Nat.le_refl gf) h
+
+/-- `Proc.run` at the empty extern environment transports to any. -/
+theorem Proc.run_eta {Δ : DEnv} {defns : HashMap Int Defn} (E : Rwv.Hyle.Sem.EEnv)
+    {ef gf : Nat} {p : Proc} {ins : List Val} {mt : MTrace}
+    (h : Proc.run Δ defns ef gf p ins = .ok mt) :
+    Proc.run Δ defns ef gf p ins E = .ok mt :=
+  run_trans (eext_empty E) (Nat.le_refl ef) (Nat.le_refl gf) h
 
 end Rwv.Eidos

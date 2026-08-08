@@ -285,16 +285,17 @@ namespace Hyle
 /-- The induced step, without exposing the structure literal
 (Correspond2's identical lemma is private there). -/
 private theorem inducedMealy_step' (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device)
-    (regs : HashMap String BV) (ins : List BV) :
-    (inducedMealy F X dev).step regs ins = (do
-      let (outs, regs') ← Sem.step F X dev regs ins
+    (E : Sem.EEnv) (regs : HashMap String BV) (ins : List BV) :
+    (inducedMealy F X dev E).step regs ins = (do
+      let (outs, regs') ← Sem.step F X dev regs ins E
       pure (some (outs, regs'))) := rfl
 
 /-- The induced Hyle machine never halts: its step wraps `some`
 unconditionally (Hyle devices run forever, doc/hyle.md §6.4). -/
-private theorem inducedMealy_no_halt (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device) :
+private theorem inducedMealy_no_halt (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device)
+    (E : Sem.EEnv) :
     ∀ (regs : HashMap String BV) (ins : List BV),
-      (inducedMealy F X dev).step regs ins ≠ .ok none := by
+      (inducedMealy F X dev E).step regs ins ≠ .ok none := by
   intro regs ins hc
   rw [inducedMealy_step'] at hc
   obtain ⟨pr, _hpr, hc'⟩ := except_bind_eq_ok hc
@@ -306,11 +307,11 @@ private theorem inducedMealy_no_halt (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device
 
 /-- A successful device run covers the whole stimulus, cycle for
 cycle. -/
-theorem run_length {F : Sem.FEnv} {X : Sem.XEnv} {dev : Device}
-    {stim ht : List (List BV)} (h : Sem.run F X dev stim = .ok ht) :
+theorem run_length {F : Sem.FEnv} {X : Sem.XEnv} {dev : Device} {E : Sem.EEnv}
+    {stim ht : List (List BV)} (h : Sem.run F X dev stim E = .ok ht) :
     ht.length = stim.length := by
-  rw [run_eq_mealy] at h
-  exact Rwv.Sim.MealyE.run_length_of_no_halt (inducedMealy_no_halt F X dev)
+  rw [run_eq_mealy F X dev stim E] at h
+  exact Rwv.Sim.MealyE.run_length_of_no_halt (inducedMealy_no_halt F X dev E)
     stim (Sem.initRegs dev) h
 
 end Hyle
@@ -322,10 +323,10 @@ namespace Eidos
 /-- Once `Proc.run`'s fold has no live state, the remaining inputs are
 consumed as no-ops (Correspond2's dead-state lemma, private there). -/
 private theorem fold_dead (Δ : DEnv) (defns : HashMap Int Defn)
-    (blocks : HashMap Int Block) (evalFuel gotoFuel : Nat) :
+    (blocks : HashMap Int Block) (evalFuel gotoFuel : Nat) (E : Hyle.Sem.EEnv) :
     ∀ (inputs : List Val) (acc : List Val) (halted : Option Val),
     inputs.foldlM (init := (acc, halted, (none : Option MState)))
-      (Machine.foldStep Δ defns blocks evalFuel gotoFuel)
+      (Machine.foldStep Δ defns blocks evalFuel gotoFuel E)
     = .ok (acc, halted, none) := by
   intro inputs
   induction inputs with
@@ -342,11 +343,11 @@ pushed one output per input: the length invariant of `Proc.run`'s
 fold. (A halt mid-fold is impossible here — the halted flag is sticky
 by `fold_dead`, so it would survive to the final state.) -/
 private theorem fold_live_length (Δ : DEnv) (defns : HashMap Int Defn)
-    (blocks : HashMap Int Block) (evalFuel gotoFuel : Nat) :
+    (blocks : HashMap Int Block) (evalFuel gotoFuel : Nat) (E : Hyle.Sem.EEnv) :
     ∀ (inputs : List Val) (acc : List Val) (s : MState)
       (outsRev : List Val) (s? : Option MState),
     inputs.foldlM (init := (acc, (none : Option Val), some s))
-      (Machine.foldStep Δ defns blocks evalFuel gotoFuel) = .ok (outsRev, none, s?) →
+      (Machine.foldStep Δ defns blocks evalFuel gotoFuel E) = .ok (outsRev, none, s?) →
     outsRev.length = inputs.length + acc.length := by
   intro inputs
   induction inputs with
@@ -360,7 +361,7 @@ private theorem fold_live_length (Δ : DEnv) (defns : HashMap Int Defn)
   | cons i is ih =>
       intro acc s outsRev s? h
       rw [List.foldlM_cons] at h
-      cases hstep : Machine.step Δ defns blocks evalFuel gotoFuel s i with
+      cases hstep : Machine.step Δ defns blocks evalFuel gotoFuel s i E with
       | error e =>
           simp only [Machine.foldStep, hstep, except_bind_error] at h
           exact absurd h (by simp)
@@ -382,20 +383,21 @@ private theorem fold_live_length (Δ : DEnv) (defns : HashMap Int Defn)
 Eidos-side length lemma, by the fold invariant. -/
 theorem run_no_halt_length {Δ : DEnv} {defns : HashMap Int Defn}
     {evalFuel gotoFuel : Nat} {p : Proc} {inputs : List Val} {mt : MTrace}
-    (h : Proc.run Δ defns evalFuel gotoFuel p inputs = .ok mt)
+    {E : Hyle.Sem.EEnv}
+    (h : Proc.run Δ defns evalFuel gotoFuel p inputs E = .ok mt)
     (hnone : mt.halted = none) : mt.outs.length = inputs.length := by
   have h' : (do
-      let σ₀ ← Machine.initCells Δ defns evalFuel p
+      let σ₀ ← Machine.initCells Δ defns evalFuel p E
       match ← Machine.execBlock Δ defns
           (HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b)))
-          evalFuel gotoFuel [] σ₀ p.entry with
+          evalFuel gotoFuel [] σ₀ p.entry E with
       | .halt a => pure ⟨[], some a⟩
       | .step _o s₀ => do
           let (outsRev, halted, _) ← inputs.foldlM
               (init := (([] : List Val), (Option.none : Option Val), some s₀))
               (Machine.foldStep Δ defns
                 (HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b)))
-                evalFuel gotoFuel)
+                evalFuel gotoFuel E)
           pure ⟨outsRev.reverse, halted⟩
       : Except String MTrace) = .ok mt := h
   clear h
@@ -419,7 +421,7 @@ theorem run_no_halt_length {Δ : DEnv} {defns : HashMap Int Defn}
       -- The blocks argument is `_`: re-elaborating the `HashMap.ofList`
       -- expression here mints a fresh pattern-match matcher, and unifying
       -- it against `hf`'s copy diverges inside `HashMap.ofList`.
-      have hlen := fold_live_length Δ defns _ evalFuel gotoFuel inputs [] s₀ outsRev s? hf
+      have hlen := fold_live_length Δ defns _ evalFuel gotoFuel E inputs [] s₀ outsRev s? hf
       simpa using hlen
 
 end Eidos
@@ -439,9 +441,10 @@ a validator discharges per label (by combinational equivalence);
 def StepObligations (Δ : Eidos.DEnv) (defns : HashMap Int Eidos.Defn)
     (evalFuel gotoFuel : Nat) (blocks : HashMap Int Eidos.Block)
     (F : Hyle.Sem.FEnv) (X : Hyle.Sem.XEnv) (dev : Hyle.Device) (p : Eidos.Proc)
-    (R : Eidos.MState → HashMap String Hyle.BV → Prop) : Prop :=
-  Rwv.Sim.SimP (Eidos.inducedMealy Δ defns evalFuel gotoFuel blocks)
-      ((Hyle.inducedMealy F X dev).mapIn (Eidos.Val.portSplit Δ evalFuel p.inTy))
+    (R : Eidos.MState → HashMap String Hyle.BV → Prop)
+    (E : Hyle.Sem.EEnv := Hyle.Sem.eEmpty) : Prop :=
+  Rwv.Sim.SimP (Eidos.inducedMealy Δ defns evalFuel gotoFuel blocks E)
+      ((Hyle.inducedMealy F X dev E).mapIn (Eidos.Val.portSplit Δ evalFuel p.inTy))
       R
       (fun v bs => Eidos.Val.portSplit Δ evalFuel p.outTy v = .ok bs)
       (fun v => Eidos.Val.HasTy Δ v p.inTy)
@@ -458,31 +461,32 @@ theorem stepObligations_corresponds
     {Δ : Eidos.DEnv} {defns : HashMap Int Eidos.Defn} {evalFuel gotoFuel : Nat}
     {p : Eidos.Proc} {H : Hyle.Program} {F : Hyle.Sem.FEnv} {X : Hyle.Sem.XEnv}
     {dev : Hyle.Device} {blocks : HashMap Int Eidos.Block}
-    {R : Eidos.MState → HashMap String Hyle.BV → Prop}
-    (hF : Hyle.Sem.mkFEnv H = .ok F)
+    {R : Eidos.MState → HashMap String Hyle.BV → Prop} {E : Hyle.Sem.EEnv}
+    (hF : Hyle.Sem.mkFEnv H E = .ok F)
     (hX : X = Hyle.Sem.xenv H)
     (hdev : dev = H.device)
     (hblocks : blocks = HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b)))
-    (hR : StepObligations Δ defns evalFuel gotoFuel blocks F X dev p R)
-    (hinit : ∀ σ₀ o s₀, Eidos.Machine.initCells Δ defns evalFuel p = .ok σ₀ →
-        Eidos.Machine.execBlock Δ defns blocks evalFuel gotoFuel [] σ₀ p.entry
+    (hR : StepObligations Δ defns evalFuel gotoFuel blocks F X dev p R E)
+    (hinit : ∀ σ₀ o s₀, Eidos.Machine.initCells Δ defns evalFuel p E = .ok σ₀ →
+        Eidos.Machine.execBlock Δ defns blocks evalFuel gotoFuel [] σ₀ p.entry E
           = .ok (.step o s₀) →
         R s₀ (Hyle.Sem.initRegs dev)) :
-    Eidos.Corresponds Δ defns evalFuel gotoFuel p H := by
+    Eidos.Corresponds Δ defns evalFuel gotoFuel p H E := by
   subst hX hdev
   intro ins hty encIns hmapM mt hmrun ht hhrun
   -- Expose the stream semantics inside `Program.run`.
   have hrunF : (do
-      let F' ← Hyle.Sem.mkFEnv H
-      Hyle.Sem.run F' (Hyle.Sem.xenv H) H.device encIns) = .ok ht := hhrun
+      let F' ← Hyle.Sem.mkFEnv H E
+      Hyle.Sem.run F' (Hyle.Sem.xenv H) H.device encIns E) = .ok ht := hhrun
   rw [hF] at hrunF
-  have hsem : Hyle.Sem.run F (Hyle.Sem.xenv H) H.device encIns = .ok ht := hrunF
+  have hsem : Hyle.Sem.run F (Hyle.Sem.xenv H) H.device encIns E = .ok ht := hrunF
   have hlenHt : ht.length = encIns.length := Hyle.run_length hsem
   -- The Hyle side as the precomposed induced machine.
-  have hmealyH : ((Hyle.inducedMealy F (Hyle.Sem.xenv H) H.device).mapIn
+  have hmealyH : ((Hyle.inducedMealy F (Hyle.Sem.xenv H) H.device E).mapIn
       (Eidos.Val.portSplit Δ evalFuel p.inTy)).run (Hyle.Sem.initRegs H.device) ins
       = .ok ht := by
-    rw [Sim.MealyE.run_mapIn _ _ ins encIns _ hmapM, ← Hyle.run_eq_mealy]
+    rw [Sim.MealyE.run_mapIn _ _ ins encIns _ hmapM,
+        ← Hyle.run_eq_mealy F (Hyle.Sem.xenv H) H.device encIns E]
     exact hsem
   -- The Eidos side as its induced machine.
   obtain ⟨σ₀, hσ, hcase⟩ :=
