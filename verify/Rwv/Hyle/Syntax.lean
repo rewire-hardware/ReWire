@@ -138,7 +138,7 @@ inductive Stmt where
 deriving Repr
 
 /-- The device: ports, registers, instances, and a body of statements
-processed in order (doc/hyle.md §6.3). -/
+processed in order (doc/hyle.md §3.6; the step order is §6.3). -/
 structure Device where
   name      : String
   inputs    : List (String × Nat)

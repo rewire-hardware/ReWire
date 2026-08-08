@@ -177,8 +177,8 @@ flattenBind = \ case
       Rec bs       -> bs
 
 -- | Transitive closure of top-level binds reachable from the roots, with
---   the same erasures the translation performs. (Identical to the Crust
---   bridge's walk; it dies with that bridge.)
+--   the same erasures the translation performs. (Carried over unchanged
+--   from the retired Crust bridge.)
 reachable :: IM.IntMap (Var, CoreExpr, ModuleName) -> [Var] -> IS.IntSet
 reachable bindMap = go mempty
       where go :: IS.IntSet -> [Var] -> IS.IntSet

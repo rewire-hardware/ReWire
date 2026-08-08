@@ -1,7 +1,6 @@
 /-
-The per-label machine-step validator (Phase 4b-ii of the
-translation-validation plan): the MACHINE-STEP half of the verified
-reference lowering. Where Rwv.Eidos.Cexp (Phase 4a) validates pure
+The per-label machine-step validator: the MACHINE-STEP half of the
+verified reference lowering. Where Rwv.Eidos.Cexp validates pure
 definition bodies, this file validates the machine step itself — the
 piece of ReWire.Eidos.ToHyle that assembles the step record and wires
 the device:
@@ -34,8 +33,8 @@ the device:
     are chased through the block graph intra-cycle (the goto closure;
     fuel-structural like `cexp`), and terminator cases compile to the
     same tag-slice if-chains as `Cexp.cchain`. Pure expressions
-    compile through `Cexp.cexpFull` (the Phase 4b-i compiler — joins,
-    the extended first-order rows, live `error`), which bounds this
+    compile through `Cexp.cexpFull` (the full compiler — joins, the
+    extended first-order rows, live `error`), which bounds this
     fragment. The pause-output type check compares with `Cexp.teqN`
     (type-level nat arithmetic evaluated on Vec/Finite spines, e.g.
     `Vec (+ 8 8) Bool` against the declared `Vec 16 Bool`), with
@@ -76,11 +75,11 @@ not stated):
     theorem: a passing `checkInit` discharges the `hinit` hypothesis
     of `stepObligations_corresponds` for `R := stateRel …`, for EVERY
     evaluation/goto fuel (by the FuelMono determinism argument).
-  * The slice toolkit (Phase 4c): `catAll`/`sliceBV` extraction at the
-    `offsetsOf` positions, segment extraction, slice reconstruction,
-    and the `portSplit`/`detupleSizes`/`encTag`/`encCellRegs`/
-    `encodeList` characterizations — the store-side accounting that
-    connects `stateRel`'s encoding to the device's registers.
+  * The slice toolkit: `catAll`/`sliceBV` extraction at the `offsetsOf`
+    positions, segment extraction, slice reconstruction, and the
+    `portSplit`/`detupleSizes`/`encTag`/`encCellRegs`/`encodeList`
+    characterizations — the store-side accounting that connects
+    `stateRel`'s encoding to the device's registers.
   * `repOkB` / `vty_rep_total` — representation totality: a canonical
     value at a `repOkB`-checked type `rep`s at the checked fuel (the
     per-(type, constructor) payload bound is discharged statically, so
@@ -104,8 +103,8 @@ not stated):
     cells' representations, and a halt is unconstrained (`SimP` never
     inspects the right machine on a left halt).
 
-The Phase 4c composition, completing the file (everything below is
-proved; nothing anywhere in this file is `sorry`d):
+The composition completing the file (everything below is proved;
+nothing anywhere in this file is `sorry`d):
 
   * `goCmds_varsWF` — the step compiler's width discipline (`VarsWF
     (WP σ)` of the compiled record, the term-level mirror of
@@ -128,19 +127,19 @@ proved; nothing anywhere in this file is `sorry`d):
     zip-walk (`run_shift`/`cells_walk`) across `PlanInv.regsplit`.
   * `validateProc_corresponds` — THE end-to-end statement:
     `validateProc Δ edm p H fuel = true → fuel ≤ ef →
-    Rwv.Eidos.Corresponds Δ edm ef gf p H E` (every goto fuel, and —
-    stage B — every extern environment E: the ∀η statement), by
-    constructing the schema's `SimP` from `checkLabel_sound` (the
-    input-precomposed device never returns a halt, so the right
-    machine never stops first), `hasTy_vty` under the checked
-    `tupleCtorsOk`, `mkFEnv_implements` under the checked
-    definition-name distinctness, `checkInit_sound` for the initial
-    state, and `Rwv.stepObligations_corresponds` to conclude.
+    Rwv.Eidos.Corresponds Δ edm ef gf p H E` (every goto fuel, and
+    every extern environment E: the ∀η statement), by constructing the
+    schema's `SimP` from `checkLabel_sound` (the input-precomposed
+    device never returns a halt, so the right machine never stops
+    first), `hasTy_vty` under the checked `tupleCtorsOk`,
+    `mkFEnv_implements` under the checked definition-name
+    distinctness, `checkInit_sound` for the initial state, and
+    `Rwv.stepObligations_corresponds` to conclude.
 
-Stage B (the η tier): the whole statement stack is parameterized by
-the bit-level model-less-extern environment `E` (a section implicit;
-both semantics read the SAME one), and the final theorem quantifies
-over it — ONE validator run, executed with the semantic hooks empty,
+The η tier: the whole statement stack is parameterized by the
+bit-level model-less-extern environment `E` (a section implicit; both
+semantics read the SAME one), and the final theorem quantifies over
+it — ONE validator run, executed with the semantic hooks empty,
 certifies the correspondence at EVERY `E`. The three pillars: the
 per-label extern discharge is uninterpreted-`xcall`-node equality
 after normalization (sound for any interpretation, since equal
@@ -149,9 +148,10 @@ splices are checked extern-free (`NF.xcallFree`), pinning their
 denotations across environments; and the initial-state check runs
 once at the empty environment and transports by `Rwv.Eidos.FuelMono`'s
 eta family (a successful empty-environment run never consulted the
-hooks). The §Eta section at the file's tail gives the algebraic
-reading (`EtaAlg`/`WFEta`/`etaB`, `validateProc_corresponds_eta`);
-model-carrying externs (`xtF`) remain outside the validator row, and
+hooks). The algebraic extern tier (η_alg) section at the file's tail
+gives that reading (`EtaAlg`/`WFEta`/`etaB`, and the specialization
+`validateProc_corresponds_eta`); model-carrying externs (`xtF`)
+compile by inlining their model definition through the bridge, and
 generic model-less externs are rejected honestly.
 -/
 import Rwv.Eidos.Cexp
@@ -168,7 +168,7 @@ open Rwv.Hyle (BV Op)
 open Rwv.Hyle.Bridge (NF)
 open Rwv.Eidos.Cexp (teq teqAll teqN vty_teqN cexp catNF sliceNF denvOk VTy ctorOfB)
 
-/- The extern environment of the stage-B η tier: a section-implicit
+/- The extern environment of the η tier: a section-implicit
 threaded through every denotational statement (Cexp's convention).
 The validator itself stays E-free — its verdict certifies the
 correspondence at EVERY E, which is the ∀η reading. -/
@@ -783,7 +783,7 @@ def checkLabel (C : Ctx) (plan : Plan) (dev : Rwv.Hyle.Device)
       else throw "checkLabel: resumed-input parameter is not at the process input type"
   else throw "checkLabel: block arity does not match the layout target"
 
-/-! # The DAG comparison leg (Phase 4d)
+/-! # The DAG comparison leg
 
 `checkLabel`'s comparisons run on tree normal forms; for the pairs
 whose trees blow up (gfmult, MiniISA), a hash-consed leg mirrors the
@@ -2686,15 +2686,15 @@ theorem vty_rep_total {Δ : DEnv} (hΔ : denvOk Δ = true) :
 The domain is honest and explicit: `VTy`-canonical values that are
 also `Val.RepCanon` (proxy-normal — the prim basis' `Proxy` data
 constructor reps identically to `.proxy`, and `decode` canonically
-produces the latter — with in-range `Finite` values, whose bound `VTy`
-deliberately does not track), at types whose representation totality
-the validator's own `repOkB` certificate checks (which supplies the
-field sizings `decode` recomputes), whose abstract heads are genuinely
-abstract (`denvOk` for `Vec`, `absHeadsOk` for `Finite`/`Integer` —
-a datatype shadowing an abstract head would make the two sides read
-the same bits differently), and which `sizeOf` sizes to the
-representation's width (the `Vec` leg's element sizing, underivable
-from `rep` success alone on empty vectors). -/
+produces the latter — with in-range `Finite` values, which `VTy`
+also tracks), at types whose representation totality the validator's
+own `repOkB` certificate checks (which supplies the field sizings
+`decode` recomputes), whose abstract heads are genuinely abstract
+(`denvOk` for `Vec`, `absHeadsOk` for `Finite`/`Integer` — a datatype
+shadowing an abstract head would make the two sides read the same bits
+differently), and which `sizeOf` sizes to the representation's width
+(the `Vec` leg's element sizing, underivable from `rep` success alone
+on empty vectors). -/
 
 /-- `Finite` and `Integer` are genuinely abstract: no datatype shadows
 the bit-reading heads (`denvOk` covers `Vec`; `Proxy` is handled by
@@ -6026,9 +6026,9 @@ theorem goCmds_varsWF {C : Ctx} {P : String → Nat → Prop} :
 /-! ## The per-label composition: plumbing helpers
 
 Everything from here to the end assembles already-proved layers; no
-new semantic content. The helpers are the mechanical needs the staking
-flagged: the `forAllM` inversion, the `symStep` interface shape, the
-`stepNextsVal` store reads, the `ceqB` evaluation bridge, and the
+new semantic content. The helpers are the mechanical needs of the
+composition: the `forAllM` inversion, the `symStep` interface shape,
+the `stepNextsVal` store reads, the `ceqB` evaluation bridge, and the
 `offsetsOf_append` zip-walk across `PlanInv.regsplit`. -/
 
 /-- A passing `forAllM` passed each element. -/
@@ -7354,7 +7354,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
       · rw [HashMap.contains_eq_isSome_getElem?] at hx
         simp at hx
 
-/-! # Soundness of the DAG comparison leg (Phase 4d)
+/-! # Soundness of the DAG comparison leg
 
 The reduction promised in §DagLeg: a passing `checkLabelDag` run
 certifies a passing `checkLabel` run over the same symbolic device
@@ -9070,12 +9070,12 @@ theorem validateProc_corresponds {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
 
 The library statement quantifies over BIT-LEVEL extern environments
 (`Corresponds … E`, concluded for every `E` by
-`validateProc_corresponds`). The algebraic reading the plan staked —
-"for every algebraic extern interpretation η with canonical results,
-machine ≡ device" — is that statement at `rep ∘ η ∘ decode`
-instantiations: `etaB` builds the bit-level image of an algebraic η
-against a per-extern signature assignment Ξ, and
-`validateProc_corresponds_eta` specializes the ∀E theorem to it.
+`validateProc_corresponds`). The algebraic reading — "for every
+algebraic extern interpretation η with canonical results, machine ≡
+device" — is that statement at `rep ∘ η ∘ decode` instantiations:
+`etaB` builds the bit-level image of an algebraic η against a
+per-extern signature assignment Ξ, and `validateProc_corresponds_eta`
+specializes the ∀E theorem to it.
 
 `WFEta` (VTy-canonical results at the declared result types) is
 deliberately NOT a hypothesis of the correspondence: agreement is
@@ -9189,12 +9189,12 @@ theorem validateProc_corresponds_eta {Δ : DEnv} {edm : HashMap Int Defn} {p : P
 #print axioms checkLabelD_toTree
 #print axioms validateProc_corresponds
 
--- The stage-B η tier: the ∀η headline and the WFEta width-stability
+-- The η tier: the ∀η headline and the WFEta width-stability
 -- fact (the non-vacuity half).
 #print axioms validateProc_corresponds_eta
 #print axioms etaB_width
 
--- The foreign tier (stage A): the decode round trips and the extended
+-- The foreign tier: the decode round trips and the extended
 -- statement's supporting lemmas.
 #print axioms Rwv.Eidos.decode_rep
 #print axioms Rwv.Eidos.decode_mono

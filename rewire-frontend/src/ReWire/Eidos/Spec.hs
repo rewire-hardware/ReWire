@@ -11,8 +11,9 @@
 --   the clone is pure type substitution through the audited clone
 --   primitive ('ReWire.Eidos.Subst.instantiateDefn'), memoized on the
 --   normalized argument list. Clones carry their provenance ('SpecOrigin')
---   and are named @origin$i@ with a per-origin counter, in discovery
---   order (deterministic).
+--   and are named @origin$tag@, where the tag renders the type arguments
+--   ('ReWire.Eidos.Naming.originTag') — so an unrelated instantiation
+--   elsewhere never renames a clone.
 --
 --   Polymorphic definitions are templates: they are dropped from the
 --   output (their instantiations replace them), so the result is

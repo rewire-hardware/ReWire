@@ -25,7 +25,7 @@ import qualified Data.Text as T
 type Name = Text
 type Size = Word
 
--- | Maps a Core name to a valid Cryptol identifier body: any character
+-- | Maps a Hyle name to a valid Cryptol identifier body: any character
 --   outside @[A-Za-z0-9_]@ becomes an underscore. Callers are expected to
 --   prepend a prefix (@rw_@), so the first character doesn't matter and the
 --   result can never collide with a Cryptol keyword, a Prelude name, or the
@@ -81,8 +81,8 @@ ppParams ps = nest 2 $ vsep $ text "parameter" : map ppParam ps
       where ppParam :: Param -> Doc an
             ppParam (Param n args res) = text n <+> text ":" <+> ppFun (map TBits args) (TBits res)
 
--- | Sequence lengths in types: the device's quantified variable @n@, @1 + n@,
---   or a literal.
+-- | Sequence lengths in types: the device's quantified variable @n@, or
+--   @1 + n@.
 data Len = LenVar | LenSucc
       deriving (Eq, Show)
 
@@ -207,8 +207,8 @@ slice w off k e = takeE $ dropE e
             dropE e' | off == 0  = e'
                      | otherwise = TCall "drop" (fromIntegral off) [e']
 
--- | Truncate-or-zero-extend to the given width (Verilog assignment
---   semantics), as implemented by the emitted @rw'resize@ helper.
+-- | Truncate-or-zero-extend to the given width (the @trunc@ and @zext@
+--   coercions), as implemented by the emitted @rw'resize@ helper.
 resize :: Size -> Exp -> Exp
 resize sz = \ case
       TCall "rw'resize" _ [e] -> TCall "rw'resize" (fromIntegral sz) [e]

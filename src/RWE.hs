@@ -13,14 +13,12 @@ options =
        , Option ['v'] ["verbose"]       (NoArg  FlagVerbose)                       "More verbose output."
        , Option ['w'] ["no-warn"]       (NoArg  FlagNoWarn)                        "Suppress warnings."
        , Option ['W'] []                (ReqArg FlagW           "error")           "-Werror: treat warnings as errors."
-       , Option ['d'] ["dump"]          (ReqArg FlagDump        "1,2,...")         "Dump the intermediate form of the corresponding pass number (1-13; see -v output)."
+       , Option ['d'] ["dump"]          (ReqArg FlagDump        "1,2,...")         "Dump the intermediate form of the corresponding pass number (1-3; see -v output)."
        , Option []    ["dump-all"]      (NoArg  FlagDumpAll)                       "Dump the intermediate form of every pass (see -d)."
-       , Option []    ["flatten"]       (NoArg  FlagFlatten)                       "Flatten RTL output into a single module (currently slow, memory-intensive)."
-       , Option ['o'] []                (ReqArg FlagO           "filename.vhdl")   "Name for output file."
+       , Option ['o'] []                (ReqArg FlagO           "filename.thy")    "Name for output file."
        , Option []    ["start"]         (ReqArg FlagStart       "name")            "Symbol to use for the definition of the top-level module (default: Main.start)."
-       , Option []    ["top"]           (ReqArg FlagTop         "name")            "Name to use for the top-level module in generated RTL (default: top_level)."
        , Option []    ["loadpath"]      (ReqArg FlagLoadPath    "dir1,dir2,...")   "Additional directories for loadpath."
-       , Option []    ["pretty"]        (NoArg  FlagPretty)                        "Attempt to output prettier RTL at the expense of performance."
+       , Option []    ["pretty"]        (NoArg  FlagPretty)                        "Attempt to output a prettier Isabelle theory at the expense of performance."
        ]
 
 main :: IO ()

@@ -18,9 +18,9 @@ Proof structure:
   each function consumes one unit on entry and passes the decrement to
   every recursive call, so the induction hypothesis at the decrement
   covers every recursive position.
-- The evaluator's eight-function mutual block by one simultaneous
+- The evaluator's ten-function mutual block by one simultaneous
   induction on the smaller fuel, packaged as an `EvalMono` bundle (the
-  eight monotonicity statements at a fuel pair); the 64-row builtin
+  ten monotonicity statements at a fuel pair); the 64-row builtin
   dispatch reduces to the value-layer lemmas and the bundle.
 - The machine layer compositionally, monotone in the evaluation fuel
   and the goto fuel separately (`execBlock`'s terminator runner by
@@ -409,7 +409,7 @@ theorem Eval.bvRed_mono {Δ : DEnv} {k k' : Nat} (hk : k ≤ k') {op : Rwv.Hyle.
 /-! ## The evaluator's mutual block (Rwv.Eidos.Eval)
 
 One simultaneous induction on the smaller fuel: `EvalMono C k k'`
-bundles the eight monotonicity statements at a fuel pair; every
+bundles the ten monotonicity statements at a fuel pair; every
 function consumes one unit of fuel on entry and passes the decrement
 to every recursive call, so the step lemma at `k+1 ≤ k'+1` needs
 exactly the bundle at `k ≤ k'`. -/
@@ -417,7 +417,7 @@ exactly the bundle at `k ≤ k'`. -/
 /-- Extern-environment extension: every interpreted extern keeps its
 interpretation. The transport hypothesis of the generalized bundle —
 instantiated at `E E` for pure fuel monotonicity, and at
-`Sem.eEmpty E` (vacuously true) for the stage-B eta transport (a
+`Sem.eEmpty E` (vacuously true) for the η-tier eta transport (a
 successful run at the empty environment never consulted it, since the
 empty environment's model-less row throws). -/
 private def EExt (E E' : Rwv.Hyle.Sem.EEnv) : Prop :=
@@ -1187,7 +1187,7 @@ theorem Proc.run_fuel_deterministic {Δ : DEnv} {defns : HashMap Int Defn}
   have k₂ := Proc.run_mono (Nat.le_max_right ef₁ ef₂) (Nat.le_max_right gf₁ gf₂) h₂
   exact Except.ok.inj (k₁.symm.trans k₂)
 
-/-! ## The extern-environment transport (stage B)
+/-! ## The extern-environment transport (the η tier)
 
 A successful evaluation at the EMPTY extern environment never
 consulted it — the empty environment's model-less row throws — so the

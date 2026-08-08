@@ -96,7 +96,8 @@ builtinUserName = [
 --    a. We can't define a single operator over different monads (or can we?)
 --    b. We need to differentiate between vector and word operations
 -- 3. We include Builtins because we handle them at the same junctures
--- We can handle other cases by writing a function or synonym in rewire-isabelle
+-- We can handle other cases by writing a function or synonym in the Isabelle
+-- ReWire session (rewire-embedder/targets/isabelle/thys)
 data RWUserOp = 
       -- No need to repeat most builtins
       RWBuiltin Builtin
@@ -115,7 +116,7 @@ data RWUserOp =
       -- + Finites
       -- + Vectors
       -- constructors from haskell prelude for builtin datatypes
-      -- Data structures: Embedder.Prelude: Maybe a = Nothing | Just a, Either a b = Left a | Right b, Bool = True | False
+      -- Data structures: ReWire.Prelude: Maybe a = Nothing | Just a, Either a b = Left a | Right b, Bool = True | False
       -- ops for builtin datatypes
       | BAnd | BOr | BXOr 
       | FinAdd | FinSub | FinMul | FinDiv | FinEq | FinLt
@@ -124,7 +125,7 @@ data RWUserOp =
       -- (+), (-), (*), (div), (==), (<)
       -- `xor`, (@@)=bitSlice, (@.)=bitIndex, (/=)=not Eq, (!=)=update
       -- Additional notations:
-      -- wordconcat: (VecConcat, "Embedder.Vectors.<>")
+      -- wordconcat: (VecConcat, "ReWire.Bits.<>")
       -- Prelude: id, const, flip, not, otherwise, maybe, either, fst, snd, curry, uncurry, undefined, 
       -- rewire-user notations that do not directly inline to builtins
       -- ReWire: Bit=Bool, W n=Vec n Bit, extern, modify, length, len

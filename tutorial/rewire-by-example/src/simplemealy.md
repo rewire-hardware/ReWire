@@ -47,7 +47,7 @@ We'll return to the types of ``si``, ``s0``, and ``s1`` momentarily.
 Finally, we need to designate a start state, just as with any state machine definition.
 ```haskell
 start :: ReacT Alphabet Alphabet Identity ()
-start = signal Zero >>= si
+start = signal Zero >>= s0
 ```
 
 #### Why this type ``ReacT Alphabet Alphabet Identity ()``?

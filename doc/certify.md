@@ -54,7 +54,8 @@ mechanized Eidos-M machine semantics produces a trace and the mechanized
 Hyle stream semantics produces a trace on the port-split encodings of
 those inputs, the device trace *is* the encoding of the machine trace,
 cycle for cycle — in full when the machine never halts, and up to (and
-excluding) the halting cycle when it does (the §7.5.4 prefix reading).
+excluding) the halting cycle when it does (the doc/eidos.md §7.5.4
+prefix reading).
 
 The trust base of a VALIDATED verdict is exactly:
 

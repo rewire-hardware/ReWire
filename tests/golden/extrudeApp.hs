@@ -1,6 +1,6 @@
 -- Extrude applied to a parameterized device: the device expression reaching
--- purification is an application of a lifted definition, exercising the App
--- branch of purify's RExtrude case.
+-- procify (ReWire.Eidos.Procify) is an application of a lifted definition,
+-- exercising the application case of its rwPrimExtrude handling.
 {-# LANGUAGE DataKinds #-}
 import Prelude hiding ((+))
 import ReWire

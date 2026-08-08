@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Safe #-}
--- | Scaffolding for running, tracing, and dumping pipeline passes, shared
---   between the compiler (ReWire.ModCache, ReWire.FrontEnd) and the embedder
---   (Embedder.ModCache).
+-- | Scaffolding for running, tracing, and dumping pipeline passes, used by
+--   the compiler (ReWire.ModCache, ReWire.FrontEnd) and, for 'printHeader'
+--   alone, by the embedder (ReWire.HSE.PassInfo).
 module ReWire.Pass
       ( pass
       , printHeader

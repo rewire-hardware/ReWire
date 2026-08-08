@@ -35,15 +35,15 @@ Haskell linter does not enforce yet but §7.4 states normatively:
   translation's sizing in Rwv.Eidos.Value) — so `Integer` = 128 bits,
   recursive datatypes are rejected, open widths are rejected.
 
-Carrier-definition tolerance (doc/eidos.md §4.1; the plan's §1.2
-caveat): the pass-8 program dump is a superset of the fragment the fold
-lowers. Definitions that are builtin-named (`rwPrim*` signature
-carriers), have polymorphic signatures, or have reactive
-(`ReacT`/`StateT`/`Identity`-mentioning) types are *skipped* — the
-fold's `emit` filters them out, so they are not part of the checked
-fragment (divergence from the Haskell whole-program lint, which checks
-carriers in poly mode and would reject reactive definitions in machine
-mode; the pipeline's pass-8 check is `lintProc`, which checks neither).
+Carrier-definition tolerance (doc/eidos.md §4.1): the pass-8 program
+dump is a superset of the fragment the fold lowers. Definitions that
+are builtin-named (`rwPrim*` signature carriers), have polymorphic
+signatures, or have reactive (`ReacT`/`StateT`/`Identity`-mentioning)
+types are *skipped* — the fold's `emit` filters them out, so they are
+not part of the checked fragment (divergence from the Haskell
+whole-program lint, which checks carriers in poly mode and would
+reject reactive definitions in machine mode; the pipeline's pass-8
+check is `lintProc`, which checks neither).
 Skipped definitions still contribute their names to scope and *all*
 their binding sites to the global-uniqueness rule, exactly as in the
 reference. Relatedly, the global-uniqueness rule covers the
@@ -150,9 +150,9 @@ otherwise — deliberately partial there (sound: it never rejects a
 correct instance).
 
 A builtin with no recorded signature (`none`) has its occurrence types
-trusted: `extern` (legacy-shaped parameter-list type), `unfold` (the
-retired purifier's `PuRe`/`R_` types), and the reserved enum entries
-(`usingExtern`, `vecFoldR`, `vecFoldL`). -/
+trusted: `extern` (legacy-shaped parameter-list type) and the four
+retired enum entries (`unfold`, `vecFoldR`, `vecFoldL`,
+`usingExtern`). -/
 
 namespace BuiltinSigs
 

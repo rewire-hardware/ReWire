@@ -120,13 +120,7 @@ inputs = (_40 , _25 , _20)
        : (_40 , _25 , _20)  : []
 ```
 
-*Pro-tip.* Because ReWire doesn't know about things likes lists, `ReWire.Interactive` and the definition of `inputs` need to be commented out *before* compiling with `rwc`. Otherwise, you will receive a non-informative error message like this:
-```haskell
-$ rwc CSA.hs --verilog
-Control/Monad/Identity.hs:
-Error: File not found in load-path
-$ 
-```
+*Pro-tip.* Because ReWire doesn't know about things likes lists, `ReWire.Interactive` and the definition of `inputs` need to be commented out *before* compiling with `rwc`.
 
 Assuming these are now commented out, you can proceed to compile CSA.hs with:
 ```haskell

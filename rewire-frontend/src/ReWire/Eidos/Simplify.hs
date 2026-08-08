@@ -33,10 +33,11 @@
 --     closed values.
 --
 --   * 'purge': definitions unreachable from the device root (plus the
---     builtin signature carriers, which the retained pipeline needs).
+--     builtin signature carriers, which carry the builtins' type
+--     assumptions to the Eidos-to-Hyle fold).
 --
 --   Join points are preserved (dead ones are dropped); datatypes are left
---   untouched (the retained pipeline prunes them).
+--   untouched.
 module ReWire.Eidos.Simplify (simplify, purge, reduceProgram, reduceExp, SimpT, runSimpT) where
 
 import ReWire.Annotation (Annote, noAnn)

@@ -22,7 +22,7 @@ cp ./thys/testing/ROOT ./thys/testing/originalROOT.temp
 for haskell_file in "${@:1}"; do
     echo ""
     echo " - RWE: $haskell_file"
-    # Compile and embed the Haskell file using rwc
+    # Compile and embed the Haskell file using rwe
     rwe "../cases/$haskell_file"
 
     # Move the resulting .thy file to the 'thys/testing' directory

@@ -99,9 +99,10 @@ knowing when adapting a Haskell program for `rwc`:
   them off leads to error messages pointing at surprising places.)
 
 - **GHC-only code.** Anything `rwc` can't compile -- lists used at the top
-  level, `ReWire.Interactive` imports for GHCi experimentation, class
-  instances -- needs to be commented out (or moved to a separate file) before
-  compiling. The `main` definition is the one exception: `rwc` ignores it.
+  level, `ReWire.Interactive` imports for GHCi experimentation, instances of
+  single-method classes (multi-method classes are fine) -- needs to be
+  commented out (or moved to a separate file) before compiling. The `main`
+  definition is the one exception: `rwc` ignores it.
 
 Once that's settled, compile with the ReWire compiler `rwc`:
 

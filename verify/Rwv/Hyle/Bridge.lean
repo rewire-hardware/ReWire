@@ -1,8 +1,8 @@
 /-
-The verified reflection bridge (Phase 3): a Hyle≃Hyle equivalence
-checker whose `true` verdict is connected by proof to the committed
-semantics (Rwv.Hyle.Semantics), replacing the untrusted-generator trust
-of `rwv-hyle-equiv`.
+The verified reflection bridge: a Hyle≃Hyle equivalence checker whose
+`true` verdict is connected by proof to the committed semantics
+(Rwv.Hyle.Semantics), replacing the untrusted-generator trust of
+`rwv-hyle-equiv`.
 
 The pieces:
 
@@ -52,12 +52,12 @@ The pieces:
   depends only on the shared interface).
 
 Everything here is proved against the committed semantics without
-modifying it (stage B extends the committed semantics itself — see
+modifying it (the η tier extends the committed semantics itself — see
 below); per house style (Rwv.Schema), small `Except`/list helpers are
 re-proved locally rather than exported from committed files.
 
-STAGE B (the comb-extern η tier): `NF` gains the uninterpreted-function
-node `xcall w ext a` — a MODEL-LESS combinational extern call over the
+THE COMB-EXTERN η TIER: `NF` gains the uninterpreted-function node
+`xcall w ext a` — a MODEL-LESS combinational extern call over the
 packed (concatenated, MSB-first) compiled arguments (`NF.xpack`),
 denoted through the committed semantics' own total reading
 `Sem.xapply E ext w` at the extern environment `E : Sem.EEnv` that now
@@ -83,11 +83,11 @@ decidable gate under which a denotation cannot consult `E` at all
 denotations pinned at the empty environment (spliced Cryptol
 definitions) valid at every environment.
 
-STAGE C (the model-carrying extern row): a MODEL-CARRYING xcall (an
-X-hit) reads in `evalExp` as a call to its model definition through
-`F` — ignoring the generics and the declared width, exactly the
-committed semantics — so `symExp` INLINES the model definition's body
-the way it inlines a `.call` (fuel-decremented, params zipped), and
+THE MODEL-CARRYING EXTERN ROW: a MODEL-CARRYING xcall (an X-hit)
+reads in `evalExp` as a call to its model definition through `F` —
+ignoring the generics and the declared width, exactly the committed
+semantics — so `symExp` INLINES the model definition's body the way
+it inlines a `.call` (fuel-decremented, params zipped), and
 `symExp_sound`'s xcall case gains a sub-case that is its call case
 verbatim keyed through `X`. The compiled forms this arm produces
 contain no xcall node for the extern itself (the model body is
@@ -106,18 +106,18 @@ open Rwv.Hyle
 /-! ## The normal-form term language -/
 
 /-- Normal forms over a device's free variables: no lets (sharing is
-by tree duplication — DAG sharing is later-phase work), no calls
-(inlined by the symbolic evaluator). A MODEL-LESS extern call (stage B
-of the foreign tier) is an uninterpreted-function node `xcall` whose
-single child is the CONCATENATION of the compiled arguments
-(`NF.xpack`), read through the extern environment's total `Sem.xapply`
-— one child keeps the type non-nested, so decidable equality and the
-induction principle stay free, and the checker's discharge (same name,
-same cached width, equal packed argument) is sound for ANY
-interpretation. The width on `var`/`slice` is carried for interface
-sanity only and the denotation does not consult it; the width on
-`xcall` IS consulted — `xapply` clamps to it, which keeps every
-annotation-width fact unconditional in the extern environment. -/
+by tree duplication — the hash-consed DAG tier is Rwv.Hyle.BridgeDag),
+no calls (inlined by the symbolic evaluator). A MODEL-LESS extern call
+is an uninterpreted-function node `xcall` whose single child is the
+CONCATENATION of the compiled arguments (`NF.xpack`), read through the
+extern environment's total `Sem.xapply` — one child keeps the type
+non-nested, so decidable equality and the induction principle stay
+free, and the checker's discharge (same name, same cached width, equal
+packed argument) is sound for ANY interpretation. The width on
+`var`/`slice` is carried for interface sanity only and the denotation
+does not consult it; the width on `xcall` IS consulted — `xapply`
+clamps to it, which keeps every annotation-width fact unconditional in
+the extern environment. -/
 inductive NF where
   | var   (w : Nat) (x : String)
   | lit   (v : BV)
@@ -133,9 +133,9 @@ deriving DecidableEq, Repr
 value and default to `BV.nil` on its (arity) error cases — unreachable
 for `symExp`-produced terms, which are arity-checked at construction.
 The mux is mathematically eager, like the §6.2 denotation. The
-trailing extern environment `E` (stage B, defaulted empty) is
-consulted only by `xcall` nodes, through the same total `Sem.xapply`
-reading the committed semantics gives a model-less extern call. -/
+trailing extern environment `E` (defaulted empty) is consulted only
+by `xcall` nodes, through the same total `Sem.xapply` reading the
+committed semantics gives a model-less extern call. -/
 def NF.eval (σ : String → BV) (E : Sem.EEnv := Sem.eEmpty) : NF → BV
   | .var _ x => σ x
   | .lit v => v
@@ -339,7 +339,8 @@ def mkIte : NF → NF → NF → NF
 `Sem.evalOp`, literal concatenations and slices fold to literals, and
 literal mux conditions select. This absorbs the constant-folding leg
 of `Hyle.Transform` (which folds via the interpreter's evaluator);
-the `partialEval` rewrite set is later-phase work. -/
+the `partialEval` rewrite set is `cfoldW`, in the width-aware
+normalizer below. -/
 def cfold : NF → NF
   | .var w x => .var w x
   | .lit v => .lit v
@@ -2067,7 +2068,7 @@ theorem checkEquiv_sound {p₁ p₂ : Program} (h : checkEquiv p₁ p₂ = true)
   rw [Program.run, Program.run, hF₁E, hF₂E, except_bind_ok, except_bind_ok,
       Sem.run, Sem.run, hfold]
 
-/-! ## Stage B: the width layer
+/-! ## The width layer
 
 The `Transform.partialEval` rewrites that relocate slice boundaries
 (slice-of-concatenation, identity slices, the width-1 peepholes) are
@@ -2558,7 +2559,7 @@ theorem symStep_varsWF {dmap : HashMap String Defn} {X : Sem.XEnv} {fuel : Nat} 
         subst hb
         exact hnWF r.name n hget
 
-/-! ## Stage B: the width-aware normalizer
+/-! ## The width-aware normalizer
 
 The `Transform.partialEval` rewrite set over normal forms. Rewrites
 that need an operand's width read it from `annWidth` and are sound at

@@ -1,8 +1,7 @@
 /-
-The DAG tier of the verified equivalence checker (Phase 3): a
-hash-consed node store that scales the Rwv.Hyle.Bridge checker to the
-pairs whose tree normal forms blow up (MiniISA, TinyISA, gfmult,
-sha256ffi).
+The DAG tier of the verified equivalence checker: a hash-consed node
+store that scales the Rwv.Hyle.Bridge checker to the pairs whose tree
+normal forms blow up (MiniISA, TinyISA, gfmult, sha256ffi).
 
 Design: soundness is a REDUCTION to the tree checker. `symExpDag`
 mirrors `symExp` raw-node-for-raw-node (hash-consing is invisible to
@@ -30,15 +29,15 @@ The store invariant (`Dag.WF`):
   indices), which aligns the node-level "same base" index test in
   adjacent-slice merging with the tree-level structural equality test.
 
-Stage B (the η tier): `DNode` mirrors Bridge's uninterpreted
-extern-call node as `xcall w ext a` — one packed-argument child, built
-by `xpackD` (the node-level `NF.xpack`, a left `mkCatD` fold from the
-empty literal) under `mkXcallD`, whose `width_coh` obligation is free
-(`annWidth` answers the cached width unconditionally, by the `xapply`
-clamp). `symExpDag` carries the extern table `X` exactly as `symExp`
-does — model-carrying calls and generic instantiations reject, sharing
-the tree evaluator's messages — and the simulation extends node for
-node, so `checkEquivDag`/`checkEquivDagRaw` inherit Bridge's ∀E run
+The η tier: `DNode` mirrors Bridge's uninterpreted extern-call node as
+`xcall w ext a` — one packed-argument child, built by `xpackD` (the
+node-level `NF.xpack`, a left `mkCatD` fold from the empty literal)
+under `mkXcallD`, whose `width_coh` obligation is free (`annWidth`
+answers the cached width unconditionally, by the `xapply` clamp).
+`symExpDag` carries the extern table `X` exactly as `symExp` does —
+model-carrying calls and generic instantiations reject, sharing the
+tree evaluator's messages — and the simulation extends node for node,
+so `checkEquivDag`/`checkEquivDagRaw` inherit Bridge's ∀E run
 equality. The renormalizer passes the node through, renormalizing only
 the packed child, mirroring `cfoldW`. `xcallFreeIdx` is the store-side
 `NF.xcallFree` (guard-else branches answer `true`, matching `read`'s
@@ -277,10 +276,10 @@ theorem read_ext {d₁ d₂ : Dag} (hext : Ext d₁ d₂) :
         cases n <;> simp only [hstep']
 
 /-- No uninterpreted extern node in the sub-dag of an index: the
-decidable mirror of `NF.xcallFree` on the reading (stage B; the
-Cryptol splice-inlining mirror gates on it). Guard-else and
-out-of-range branches answer `true`, matching `read`'s `.lit BV.nil`
-reading there. -/
+decidable mirror of `NF.xcallFree` on the reading (the Cryptol
+splice-inlining mirror gates on it). Guard-else and out-of-range
+branches answer `true`, matching `read`'s `.lit BV.nil` reading
+there. -/
 def xcallFreeIdx (d : Dag) (i : Nat) : Bool :=
   match d.nodes[i]? with
   | some (.var _ _) => true
@@ -787,10 +786,10 @@ theorem rawIte_spec {d : Dag} (hwf : d.WF) {c t e : Nat} (hc : c < d.size) (ht :
     simp only [annWidth, widthOf_eq hwf ht, widthOf_eq hwf he, ← harm]
     simp
 
-/-- The uninterpreted extern-call node (stage B): the cached width is
-`annWidth`'s unconditional answer, so `width_coh` is free. Serves both
-the raw alphabet and the renormalizer (`cfoldW` passes the node
-through, recursing only into the packed argument). -/
+/-- The uninterpreted extern-call node for a MODEL-LESS extern: the
+cached width is `annWidth`'s unconditional answer, so `width_coh` is
+free. Serves both the raw alphabet and the renormalizer (`cfoldW`
+passes the node through, recursing only into the packed argument). -/
 def mkXcallD (d : Dag) (w : Nat) (ext : String) (a : Nat) : Dag × Nat :=
   d.push (.xcall w ext a)
 

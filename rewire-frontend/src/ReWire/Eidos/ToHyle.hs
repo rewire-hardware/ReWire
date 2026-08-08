@@ -109,11 +109,10 @@ scope0 :: Scope
 scope0 = Scope mempty mempty
 
 -- | Bind a local to a readable Hyle name derived from its source name,
---   disambiguating collisions with a numeric suffix (cf. the retained
---   producer's uniquifyLocals). Local names may carry the compiler-owned
---   @$@ prefix (machine binders marked by the bridge, and the generated
---   @$t@\/@$in@\/@$res@ names); the numeric suffixing keeps all of them
---   apart regardless of provenance.
+--   disambiguating collisions with a numeric suffix. Local names may
+--   carry the compiler-owned @$@ prefix (machine binders marked by the
+--   bridge, and the generated @$t@\/@$in@\/@$res@ names); the numeric
+--   suffixing keeps all of them apart regardless of provenance.
 bindLocal :: Annote -> Scope -> Id -> A.Size -> (Scope, A.Name)
 bindLocal an sc x sz = bindLocalText an sc (idUniq x) (idOcc x) sz
 

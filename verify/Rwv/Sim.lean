@@ -1,17 +1,18 @@
 /-
-The simulation metatheorem skeleton (the plan's M1), at the abstract
-level: Mealy machines with halt (the shared shape of the Eidos-M
-machine semantics, doc/eidos.md §7.5.3–§7.5.4, and the Hyle device
+The simulation metatheorem skeleton, at the abstract level: Mealy
+machines with halt (the shared shape of the Eidos-M machine
+semantics, doc/eidos.md §7.5.3–§7.5.4, and the Hyle device
 semantics, doc/hyle.md §6.4, restricted to finite stimulus), and the
 forward-simulation theorem — related initial states plus per-step
 agreement give equal observable traces, up to and excluding the halt.
 
-The concrete instantiation (later phases) takes S = Eidos machine
-states with outputs composed through the representation function,
-T = Hyle register stores, R = the canonicality-invariant graph of the
-state encoding, and discharges `Sim.agree` per label by combinational
-equivalence — turning per-label obligations into trace equality,
-which is the top-level theorem's shape.
+The concrete instantiation (Rwv.Correspond2, Rwv.Schema) takes S =
+Eidos machine states with outputs composed through the
+representation function, T = Hyle register stores, R = the
+canonicality-invariant graph of the state encoding, and discharges
+`Sim.agree` per label by combinational equivalence — turning
+per-label obligations into trace equality, which is the top-level
+theorem's shape.
 -/
 
 namespace Rwv.Sim

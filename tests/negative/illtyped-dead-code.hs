@@ -1,6 +1,7 @@
 -- EXPECT-ERROR: Couldn't match type ‘Bool’
 -- Same as illtyped-use, but the ill-typed defn is unreachable from start:
--- still caught, since specialization runs before purging.
+-- still caught, since GHC typechecks every top-level definition whether or
+-- not it is reachable.
 {-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Bits

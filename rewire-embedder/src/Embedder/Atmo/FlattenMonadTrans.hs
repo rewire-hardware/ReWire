@@ -18,7 +18,7 @@ import Embedder.Atmo.Types (nilTy, pairTy)
 --     to  `State (s,(t,(u,()))) a`
 -- Convert `ReacT i o m a`
 --     to  `Re i o s a`
---     where s = stateOf (transStateT m)
+--     where s = mkState an (getStates m)
 transMonadT :: Ty -> Ty
 transMonadT = \ case
       TyApp an (TyBuiltin _ TyReacT) [i,o,m@(TyVar {}),a] -> 

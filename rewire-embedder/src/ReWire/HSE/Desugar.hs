@@ -5,8 +5,8 @@
 module ReWire.HSE.Desugar
       ( desugar, addMainModuleHead
       -- | The 'Desugar' machinery and individual sub-passes, exported so
-      --   that alternative front ends (e.g., the rewire-embedder package)
-      --   can compose their own desugaring pipelines.
+      --   that Embedder.HSE.Desugar can compose its own desugaring
+      --   pipeline.
       , Desugar (..), pass, Fresh, fresh, err, mkTuple
       , desugarRecords, normIds, deparenify, desugarInfix, desugarNegLitPats
       , desugarTuples, desugarFuns, liftDiscriminator, flattenAlts
@@ -365,10 +365,10 @@ neg = \ case
       n                -> n
 
 -- AFTER: desugarFuns
--- | Turns tuples into applications of a TupleN constructor (also in types and pats):
+-- | Turns tuples into applications of a tuple constructor (also in types and pats):
 -- > (x, y, z)
 -- becomes
--- > (Tuple3 x y z)
+-- > ((,,) x y z)
 desugarTuples :: Monad m => Desugar m
 desugarTuples = mempty
       { dsExp = T $ \ case

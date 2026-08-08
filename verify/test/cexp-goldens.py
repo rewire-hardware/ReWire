@@ -4,12 +4,10 @@ expression compiler (rwv-cexp-validate, Rwv.Eidos.Cexp).
 
 For each test with a pass-8 Eidos dump, runs the per-defn validator
 against the RAW fold output (<base>.9.rwc — every definition present,
-the purest cexp-vs-transExp measurement) and, when present, against
-the post-optimize dump (<base>.10.rwc) or the committed golden
-(tests/golden/<base>.rwc), tabulating the verdicts. Dumps are the ones
-verify/test/hyle-equiv-goldens.py generates into verify/test/out-equiv
-(pass 8/9/10) and verify/test/eidos-diff-goldens.py into
-verify/test/out-eidos (pass 8 only).
+the purest cexp-vs-transExp measurement) or, with --pass10, against
+the post-optimize dump (<base>.10.rwc), tabulating the verdicts. Dumps
+are the ones verify/test/hyle-equiv-goldens.py generates into
+verify/test/out-equiv (pass 8/9/10).
 
 Usage:
   verify/test/cexp-goldens.py [--only SUBSTR] [--dumps DIR] [--pass10]

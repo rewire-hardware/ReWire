@@ -2,10 +2,10 @@
 #
 # Device (extrudeApp.hs): dev k = do { s <- lift get; i <- signal (s + k); lift (put i); dev k }
 #   top n = extrude (dev n) (lit 0); start = top (lit 3).
-# After purification (extrudeApp.rwc / extrudeApp.sv):
+# After compilation (extrudeApp.rwc / extrudeApp.sv):
 #   register __resumption_tag holds k = 3 (constant), __st0 holds the previous input.
 #   Each cycle:  __out0 := (__in0 + __resumption_tag) mod 256 = (__in0 + 3) mod 256.
-#   The signaled value is s + k where s is the PREVIOUS input; but the purified
+#   The signaled value is s + k where s is the PREVIOUS input; but the generated
 #   output wire emits the freshly-supplied input plus k, so __out0 = __in0 + 3 every
 #   cycle. __st0 (= previous __in0) is carried but never observable on the output.
 #

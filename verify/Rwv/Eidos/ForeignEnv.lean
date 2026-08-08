@@ -1,9 +1,9 @@
 /-
-The drivers' foreign-environment construction (stage A): instantiate
-the DEnv foreign hooks from a compiled Hyle program — the trust
-boundary of the validation plan §1.3, under which the rwcry-spliced
-`cry$…` definitions (resp. a combinational extern's model definition)
-ARE the foreign builtin's semantics.
+The drivers' foreign-environment construction: instantiate the DEnv
+foreign hooks from a compiled Hyle program — the model-carrying trust
+boundary, under which the rwcry-spliced `cry$…` definitions (resp. a
+combinational extern's model definition) ARE the foreign builtin's
+semantics.
 
   * `xtF` is the program's own extern-model composition (`Sem.xenv`
     then the definition denotations) keyed by extern name — exactly
@@ -137,8 +137,8 @@ premise: `cryF` is definitionally `F`'s denotation of the entry `cryD`
 designates, `F` implements the installed definition map by the
 bridge's `mkFEnv` characterization at the installed extern table
 (`hyleX` is `Sem.xenv` of the same program, by construction), and the
-stage-B extern clause holds because `xtF` is populated exactly on the
-extern table's domain. -/
+model-less extern clause holds because `xtF` is populated exactly on
+the extern table's domain. -/
 theorem addForeign_foreignC {Δ : DEnv} {rwcTxt : String} {hp : Rwv.Hyle.Program}
     (hnd : (hp.defns.map (·.name)).Nodup) {F : Rwv.Hyle.Sem.FEnv}
     (hF : Rwv.Hyle.Sem.mkFEnv hp = .ok F) :

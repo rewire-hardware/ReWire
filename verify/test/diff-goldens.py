@@ -22,11 +22,10 @@ reason: devices with instances (clocked externs) are pre-detected from
 the .rwc device header; model-less combinational externs are detected
 by the interpreter's own "cannot evaluate" rejection.
 
-If the Lean executable cannot be built (e.g. Rwv/Hyle/Parse.lean has
-not landed yet), the harness degrades to running the Haskell side only
-(as --haskell-only does explicitly), leaving stimulus and reference
-traces in the work directory so the Lean side can be integrated
-turnkey.
+If the Lean executable cannot be built (e.g. no lake on PATH), the
+harness degrades to running the Haskell side only (as --haskell-only
+does explicitly), leaving stimulus and reference traces in the work
+directory.
 
 Usage:
   verify/test/diff-goldens.py [--only SUBSTR] [--cycles N] [--gen]

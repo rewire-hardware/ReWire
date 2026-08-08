@@ -42,18 +42,18 @@ def nbits (n : Nat) : Nat :=
 /-- The static environment of the machine semantics: the datatype
 environment — constructor lists in declaration order and constructor
 signatures, from the program's (prim-basis-extended) data declarations
-— extended (stage A of the foreign tier) with the model-carrying
-foreign interpretations and the syntactic data a validator compiles
-them through. The foreign fields all default to "absent", so a bare
+— extended (the foreign tier) with the model-carrying foreign
+interpretations and the syntactic data a validator compiles them
+through. The foreign fields all default to "absent", so a bare
 `DEnv.ofDatas` behaves exactly as before the extension:
 
   * `cryF f n τ` — the semantic denotation of the Cryptol foreign
     function `(module file f, function n)` at the impl monotype `τ`
     (per doc/eidos.md §7.5.5, with η for a Cryptol splice DEFINED as
     the Hyle-side denotation of the `cry$…` definitions rwcry
-    emitted — the trust boundary of the validation plan §1.3). The
-    drivers build it from the compiled program's own definition
-    environment (`Rwv.Hyle.Sem.mkFEnv`).
+    emitted — the model-carrying trust boundary). The drivers build
+    it from the compiled program's own definition environment
+    (`Rwv.Hyle.Sem.mkFEnv`).
   * `xtF s` — likewise for a model-carrying combinational extern `s`:
     the Hyle-side denotation of its model definition (doc/hyle.md
     §6.1, the interpreter's own reading).
@@ -65,14 +65,14 @@ them through. The foreign fields all default to "absent", so a bare
     premise tying `cryF` to `hyleDefs`' denotations
     (`Rwv.Eidos.Cexp.ForeignC`); a wrong map fails validation, never
     soundness.
-  * `hyleX` (stage B) — the compiled program's syntactic extern→model
-    table (`Rwv.Hyle.Sem.xenv` of the foreign program, structurally):
-    the verified compiler's DECIDABLE gate for "model-less" — its
-    extern row compiles an uninterpreted-call node only when the
-    extern is absent here (`ForeignC`'s extern clause ties a miss to
-    `xtF` being unpopulated, so the evaluator's row is then the
-    η-tier's decode-gated bit path), and its Cryptol row inlines
-    spliced definitions through the bridge at exactly this table. -/
+  * `hyleX` — the compiled program's syntactic extern→model table
+    (`Rwv.Hyle.Sem.xenv` of the foreign program, structurally): the
+    verified compiler's DECIDABLE gate for "model-less" — its extern
+    row compiles an uninterpreted-call node only when the extern is
+    absent here (`ForeignC`'s extern clause ties a miss to `xtF`
+    being unpopulated, so the evaluator's row is then the η-tier's
+    decode-gated bit path), and its Cryptol row inlines spliced
+    definitions through the bridge at exactly this table. -/
 structure DEnv where
   ctors    : HashMap String (List String)
   ctorSig  : HashMap String Sig

@@ -1,15 +1,16 @@
 /-
 The per-label step-obligation schema and its glue theorem — the final
-M1 composition. `SimP` refines the abstract simulation layer (Rwv.Sim)
-to the concrete correspondence shape: the two machines have different
-output types related by an output relation Q (the representation
-function's graph) rather than equality, and the right machine may run
-past the left machine's halt (the §7.5.4 prefix reading). Composed
-with the induced-machine run equivalences (Rwv.Correspond2), a `SimP`
-between the Eidos-M machine and the input-precomposed Hyle device —
-`StepObligations`, the package a validator discharges per label — plus
-the initial-state obligation concludes the top-level `Corresponds`
-statement (Rwv.Correspond, doc/eidos.md §7.5.6).
+composition of the simulation metatheorem. `SimP` refines the abstract
+simulation layer (Rwv.Sim) to the concrete correspondence shape: the
+two machines have different output types related by an output relation
+Q (the representation function's graph) rather than equality, and the
+right machine may run past the left machine's halt (the doc/eidos.md
+§7.5.4 prefix reading). Composed with the induced-machine run equivalences
+(Rwv.Correspond2), a `SimP` between the Eidos-M machine and the
+input-precomposed Hyle device — `StepObligations`, the package a
+validator discharges per label — plus the initial-state obligation
+concludes the top-level `Corresponds` statement (Rwv.Correspond,
+doc/eidos.md §7.5.6).
 -/
 import Rwv.Correspond
 import Rwv.Correspond2
@@ -451,7 +452,7 @@ def StepObligations (Δ : Eidos.DEnv) (defns : HashMap Int Eidos.Defn)
 
 /-- The glue theorem: the step obligations, plus the initial-state
 obligation (the entry block's post-reset state is `R`-related to the
-declared register initials), conclude the top-level §7.5.6
+declared register initials), conclude the top-level doc/eidos.md §7.5.6
 correspondence. The composition: expose `Sem.run` inside
 `Program.run`, present both sides as induced machines (Correspond2),
 transport the device to algebraic inputs (`run_mapIn`), run the prefix

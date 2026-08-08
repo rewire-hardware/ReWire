@@ -93,14 +93,18 @@ across all backends, and certification:
 $ stack test rewire:rwc-test
 ```
 
-The cosimulation legs use whichever of these are on the `PATH` and skip
-(with a note) otherwise: [Icarus Verilog](http://iverilog.icarus.com/)
-(`iverilog`), [Verilator](https://www.veripool.org/verilator/),
-[GHDL](https://ghdl.github.io/ghdl/), and
-[Cryptol](https://cryptol.net/) (plus `z3` and `rwcry` for the FFI tests,
-and the validator for the certify group). `stack test rewire-user` checks
-GHC compatibility of the user-facing library, and `stack test
-rewire:rwe-test` runs the embedder tests (requires Isabelle and the AFP).
+The cosimulation legs run whichever of these are on the `PATH` and are
+silently omitted otherwise: [Icarus Verilog](http://iverilog.icarus.com/)
+(`iverilog`/`vvp`), [GHDL](https://ghdl.github.io/ghdl/) (`ghdl`), and
+[Cryptol](https://cryptol.net/) (`cryptol`); the certify group instead
+records a placeholder skip when the validator is missing. The Verilog
+lint checks are *not* gated on availability — they need `iverilog` and
+[Verilator](https://www.veripool.org/verilator/), so pass
+`--test-arguments=--no-check` (which also disables cosimulation) if those
+are not installed. The Cryptol FFI tests additionally need `z3` and
+`rwcry`. `stack test rewire-user` checks GHC compatibility of the
+user-facing library, and `stack test rewire:rwe-test` runs the embedder
+tests (requires Isabelle and the AFP).
 
 ## Usage
 

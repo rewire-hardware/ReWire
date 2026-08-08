@@ -153,7 +153,7 @@ tool. Prefer table lookups to large `Z p` inverses, and keep unrolled
 dimensions concrete and modest. As a reference point, a full AES-128 block
 encryption and a SHA-256 block compression each translate to a few hundred
 Hyle definitions and lint and simulate without trouble
-(`tests/golden/aes128.hs`, `tests/golden/sha256ffi.hs`).
+(`tests/integration/aes128.hs`, `tests/golden/sha256ffi.hs`).
 
 ## 9. Under the hood
 
@@ -162,7 +162,8 @@ once per distinct `(file, function, use-site type)`. `rwcry` loads and
 typechecks the module, elaborates the instantiation `fn : type`,
 monomorphizes it with Cryptol's specializer, and translates the resulting
 closure of monomorphic definitions to a defns-only Hyle fragment, which `rwc`
-splices into the program under `cry$<fn>$<i>`-prefixed names. The Cryptol
-library is pinned to a specific commit (the typechecked-AST surface is not a
-stable API); `rwcry` lives in the `rewire-cryptol` package, and `rwc` does
-not depend on it. See `rewire-cryptol/src/ReWire/Cryptol/Translate.hs`.
+splices into the program under `cry$<fn>$<monotype>`-prefixed names (e.g.
+`cry$encrypt$128_128_128`). The Cryptol library is pinned to a specific
+commit (the typechecked-AST surface is not a stable API); `rwcry` lives in
+the `rewire-cryptol` package, and `rwc` does not depend on it. See
+`rewire-cryptol/src/ReWire/Cryptol/Translate.hs`.

@@ -91,10 +91,10 @@ fresh _l = do
 
 
 -- AFTER: desugarFuns
--- | Turns tuples into applications of a TupleN constructor (also in types and pats):
+-- | Turns tuples into applications of a tuple constructor (also in types and pats):
 -- > (x, y, z)
 -- becomes
--- > (Tuple3 x y z)
+-- > ((,,) x y z)
 desugarTuples :: Monad m => Desugar m
 desugarTuples = mempty
       { dsExp = T $ \ case

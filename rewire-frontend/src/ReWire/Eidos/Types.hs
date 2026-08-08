@@ -123,7 +123,7 @@ flattenApp = go []
 -- | The type of an expression. Total on lint-clean programs; 'error' (with
 --   the offending annotation) otherwise. Type arguments may only be applied
 --   to 'Var' heads, must precede all term arguments, and must saturate the
---   head's quantifier list (doc/eidos.md §5). One tolerance: a bare
+--   head's quantifier list (doc/eidos.md §4.2). One tolerance: a bare
 --   (argument-less) reference to a polymorphic name returns its open
 --   signature type — the linter rejects such references outside
 --   fully-instantiated spines, but the specializer reads them.

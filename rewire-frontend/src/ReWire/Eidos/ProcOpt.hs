@@ -1,7 +1,8 @@
 {-# LANGUAGE Safe #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
--- | Process-level cleanups (doc/eidos.md §6.5 of the migration plan):
+-- | Process-level cleanups of the block graph, between procify and the
+--   machine-mode lint:
 --
 --   * /Epsilon-block inlining/: a block with no commands whose terminator
 --     is a single goto is glue; references to it re-target its successor
@@ -15,7 +16,7 @@
 --     (binders renumbered; labels and cells compared by identity) merge,
 --     and references redirect to the survivor. Iterated to a fixpoint:
 --     each round of merging can unify the targets of further blocks.
---     This is what restores state-count parity — an INLINE-duplicated
+--     This is what keeps the state count minimal — an INLINE-duplicated
 --     continuation mints many identical pause targets.
 --
 --   * /Unreachable-block purge/: procify drops the continuation of a
@@ -48,7 +49,7 @@ optimizeProc = fixpoint (purgeUnreachable . mergeBlocks . inlineEpsilon)
 
 -- | The machine accounting (doc/eidos.md §7.3): states are the pause
 --   targets plus the entry (reset) state; the tag is their count's bit
---   width. This is the M-level side of the tag-parity gate.
+--   width. Printed as a verbose diagnostic by ReWire.ModCache.
 machineSummary :: Proc -> Text
 machineSummary pr = "proc " <> procName pr
       <> ": blocks=" <> tshow (length $ procBlocks pr)
@@ -59,7 +60,7 @@ machineSummary pr = "proc " <> procName pr
       where -- The blocks/states a coarsest-partition (bisimulation-style)
             -- merge would remove beyond the alpha-equal merge: iterated
             -- partition refinement with label occurrences keyed by their
-            -- current class (plan §12 Q5's measurement).
+            -- current class.
             hBlocks, hStates :: Int
             (hBlocks, hStates) = ( length blocks - IM.size (classesOf final)
                                  , nStates - length (nubClasses [ IM.findWithDefault (-1) u final | b <- procEntry pr : map snd blocks, u <- pt (blkTerm b) ])

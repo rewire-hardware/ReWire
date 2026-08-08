@@ -25,14 +25,14 @@ import Data.Maybe (mapMaybe)
 --------------------------------------------------------------
 
 -- Graph with vertices that are free variables
--- The variables we care about are of type:
-      -- Name TyConId (global type variables)
+-- The variables we care about are:
+      -- type constructor names (global type variables)
             -- defined in type synonyms and datatypes
             -- occur in type signatures everywhere
-      -- Name DataConId (global term variables)
+      -- data constructor names (global term variables)
             -- defined in datatypes
             -- occur in Exps in Defns
-      -- Name Exp (global term variables)
+      -- definition names (global term variables)
             -- defined in Defns
             -- occur in Exps in Defns
 -- Edges point from a function to its free variables

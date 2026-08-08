@@ -24,10 +24,8 @@
 --     turns it into a terminator case; a pure-resulted case is let-bound
 --     like any other computation.
 --
---   Runs after the partial evaluator, behind @--procify@; the retained
---   shim lowers the introduced lets like any others (beta-redexes decoded
---   by the retained lift), which is how the lowering is validated against
---   the trace oracle before procify exists.
+--   Runs after the partial evaluator (ReWire.ModCache pass 6),
+--   immediately before procify.
 module ReWire.Eidos.ANF (normalize, hasJump) where
 
 import ReWire.Annotation (Annote)
@@ -38,13 +36,10 @@ import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, hasArrow, reacOrSta
 
 import Control.Monad.State.Strict (StateT, evalStateT, get, put)
 
--- | Only the reactive fragment normalizes at this stage: procify
---   consumes the reactive skeleton, and the adapter lowers pure
---   expressions in any shape. Normalizing the pure fragment here would
---   feed its (large, partially-evaluated) bodies through the retained
---   pipeline's let decoding one lifted definition per let — the measured
---   M2 cliff. The pure fragment's ANF arrives with the machine-level
---   Hyle translation, which consumes it directly.
+-- | Only the reactive fragment normalizes: procify consumes the reactive
+--   skeleton, and the Eidos-to-Hyle fold lowers pure expressions in any
+--   shape, so naming every intermediate of the large,
+--   partially-evaluated pure bodies would cost compile time for nothing.
 normalize :: forall m. MonadError AstError m => Program -> m Program
 normalize p@(Program datas defns procs top) = evalStateT go $ nextUniq p
       where go :: StateT Uniq m Program
@@ -109,8 +104,8 @@ reactive = reacOrStateT . typeOf
 --   non-jump alternative, through let bodies, and into join bodies (the
 --   join's signature and its jumps' carried ids are rebuilt to the
 --   applied type). Scope-safe under the uniqueness discipline: the
---   arguments predate the binders. The retained pipeline's reactive
---   passes used to perform this; the machine path normalizes it here.
+--   arguments predate the binders. Commuting here is what puts the
+--   reactive case or spine back in tail position for procify.
 commuteCaseApp :: Exp -> Maybe Exp
 commuteCaseApp e = case flattenApp e of
       (h@Case {}, args@(_ : _)) -> Just $ pushE h args

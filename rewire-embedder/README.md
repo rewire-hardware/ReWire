@@ -63,7 +63,7 @@ select a specific list of cases to test together in a batch.
 
 `stack test rewire:rwe-test --test-arguments="--cases=<case1>.hs,<case2>.hs,<case3>.hs"` 
 
-### Changes to rewire-isabelle
+### Changes to the ReWire Isabelle session (targets/isabelle/thys)
 
 If the ReWire session has been changed, you need to rebuild the session before running tests. Use the `--rebuild` flag for this.
 

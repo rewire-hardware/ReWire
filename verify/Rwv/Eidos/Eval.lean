@@ -56,9 +56,9 @@ Decisions where the spec leaves latitude (candidates for doc folding):
 8. Eliminated (`bind`/`ret`/…) and reserved (`usingExtern`/
    `vecFoldR`/`vecFoldL`) builtins evaluate to errors naming the
    builtin — the machine fragment never reaches them.
-9. FOREIGN rows (stage A of the foreign tier, doc/eidos.md §7.5.5
-   with η fixed by the model-carrying trust boundary of the
-   validation plan §1.3): a SATURATED `rwPrimCryptol f n impl ā`
+9. FOREIGN rows (doc/eidos.md §7.5.5, with η fixed by the
+   model-carrying trust boundary — the spliced and model definitions
+   ARE the builtin's semantics): a SATURATED `rwPrimCryptol f n impl ā`
    (`f`/`n` string literals, as ToHyle requires after inlining)
    evaluates the value arguments ā, reps them, applies the foreign
    denotation `Δ.cryF f n τ_impl` — which the drivers instantiate as
@@ -368,9 +368,9 @@ def evalExt (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (pty : Ty)
             let bv ← den reps
             decode C.Δ fuel (Ty.flattenArrow ity).2 bv
         | none =>
-            -- Stage B (the η tier): a MODEL-LESS extern reads through
-            -- the bit-level extern environment — rep the arguments at
-            -- the current fuel, apply the interpretation to their
+            -- The η tier: a MODEL-LESS extern reads through the
+            -- bit-level extern environment — rep the arguments at the
+            -- current fuel, apply the interpretation to their
             -- concatenation (errors are loud), and decode the result
             -- at the row's result type. The canonicality-checked
             -- decode is the gate that confines the bit-level
@@ -485,9 +485,10 @@ def tryAlts (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (binder : Id) (v : 
           else tryAlts C fuel env jenv binder v rest dflt E
 termination_by fuel
 
-/-- The builtin denotation table of §7.6, complete (all 64 rows). The
-occurrence's carried instantiated type `pty` supplies the static data:
-result widths and bounds from the result type, Proxy indices from the
+/-- The builtin denotation table of §7.6, complete (all 60 rows),
+plus error arms for the four retired enum entries. The occurrence's
+carried instantiated type `pty` supplies the static data: result
+widths and bounds from the result type, Proxy indices from the
 argument types. -/
 def evalBuiltin (C : Ctx) (fuel : Nat) (pty : Ty) (b : Builtin) (vs : List Val)
     (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=
@@ -654,8 +655,9 @@ def evalBuiltin (C : Ctx) (fuel : Nat) (pty : Ty) (b : Builtin) (vs : List Val)
     -- these; none may be reachable from a process.
     | .bind, _ | .ret, _ | .put, _ | .get, _ | .signal, _ | .lift, _ | .extrude, _ | .unfold, _ =>
         throw s!"{b.name}: eliminated before the machine level (must not appear in an evaluated program)"
-    -- Foreign mechanisms: denoted by η (§7.5.5), outside this pure
-    -- evaluator (the differential harness skips extern programs).
+    -- Foreign mechanisms: denoted by η (§7.5.5), not by this table —
+    -- `evalCore` routes their occurrences to the foreign rows above,
+    -- so this arm is unreachable from it.
     | .«extern», _ | .cryptol, _ =>
         throw s!"{b.name}: foreign builtin (not evaluable by the pure evaluator)"
     -- Reserved enum entries: no denotation.

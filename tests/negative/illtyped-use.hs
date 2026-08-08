@@ -1,6 +1,6 @@
 -- EXPECT-ERROR: Couldn't match type ‘Bool’
--- An unsigned defn (assumed forall a. a) used at an incompatible type:
--- caught when specialization re-typechecks the body at the use's type.
+-- A signature-less defn used at an incompatible type: rejected by GHC's
+-- typechecker in the front end.
 {-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Bits

@@ -15,7 +15,7 @@ loop :: Input -> ReacT Input Output Identity ()
 loop (v,w) = return (compute v w) >>= signal >>= loop
 
 -- | Vectors
--- `index'/(!), lastIndex', `rslice, zipWith
+-- index'/(!), rslice, map
 compute :: Vec 16 (Vec 8 (W 8)) -> Vec 4 (W 8) -> Output
 compute v w = map (\ v' -> (w ! (Proxy :: Proxy 3)) + (v' ! (Proxy :: Proxy 3)))
                         (rslice (Proxy :: Proxy 8) v)

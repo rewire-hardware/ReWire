@@ -22,10 +22,10 @@ import Data.Foldable (foldrM)
 import Data.Text (pack)
 import Language.Haskell.Exts.Syntax
 
--- | Desugar into lambdas then normalize the lambdas. This differs from the
---   rewire-frontend pipeline: tuples, records, case flattening, and discriminator
---   lifting are deferred to the Atmo IR, and unguarded multi-clause function
---   bindings are kept intact (see 'desugarFuns').
+-- | Desugar into lambdas then normalize the lambdas. This differs from
+--   ReWire.HSE.Desugar's pipeline: tuples, records, case flattening, and
+--   discriminator lifting are deferred to the Atmo IR, and unguarded
+--   multi-clause function bindings are kept intact (see 'desugarFuns').
 desugar :: MonadError AstError m => Renamer -> Module Annote -> m (Module Annote)
 desugar _rn = flip evalStateT 0 .
       ( pure
@@ -57,7 +57,7 @@ desugar _rn = flip evalStateT 0 .
       >=> pass desugarAsPats
       )
 
--- | Like rewire-frontend's desugarFuns, except that unguarded multi-clause
+-- | Like ReWire.HSE.Desugar's desugarFuns, except that unguarded multi-clause
 --   function bindings are kept intact (Atmo represents them directly) and
 --   pattern variables are annotated with their declared types.
 -- > f p1 p2 = rhs1
@@ -110,7 +110,7 @@ desugarFuns = mempty
             allUnguarded _ = error "Infix should be desugered by now."
 
 -- TODO(chathhorn): recursive bindings?
--- | Like rewire-frontend's desugarLets, but annotates pattern variables with
+-- | Like ReWire.HSE.Desugar's desugarLets, but annotates pattern variables with
 --   their declared types. Turns Lets into Cases. Assumes functions in Lets
 --   are already desugared. E.g.:
 -- > let p = e1

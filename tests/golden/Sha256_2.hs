@@ -182,8 +182,7 @@ digest3 (Oct x0 x1 x2 x3 x4 x5 x6 x7) = DigestR x6 x7
 --- "cut and pasted" directly into the definition of dev below. In particular,
 --- the highlighted lines are copied and lifted into ReacT. Calling this device
 --- with the correctly formatted I-signals is an "unrolling" of the reference
---- semantics which can, I believe, be captured equationally. Compare the two
---- "go" functions in TestingSHA256.hs.
+--- semantics which can, I believe, be captured equationally.
 -------------------------------------------------------------------------------------------
 
 main = undefined

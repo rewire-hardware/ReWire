@@ -11,8 +11,8 @@
 #
 # Output: __out0 = W 8. Because BOTH branches of loop's `if even i` run `incr`,
 # and incr always does `signal (lit 2)`, every runtime output is the constant 2.
-# The input value only feeds the internal state register (__st0) and flips the
-# purified resumption tag (even input -> next tag 1, odd input -> next tag 0),
+# The input value only feeds the internal state register (__st0) and flips
+# the resumption tag (even input -> next tag 1, odd input -> next tag 0),
 # neither of which is ever reflected in __out0. So inputAffectsOutput = false:
 # the trace is 0x02 every cycle no matter what we feed.
 #

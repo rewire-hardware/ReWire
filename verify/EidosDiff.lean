@@ -5,7 +5,7 @@ Hyle program — the §7.5.6 correspondence, checked per test by trace
 comparison.
 
     rwv-eidos-diff <file.eir> <file.rwc> [--cycles N] [--seed S]
-        [--stim FILE] [--fuel N]
+        [--stim FILE] [--fuel N] [--foreign FILE.rwc] [--eta-synth]
 
 parses the pass-8 Eidos dump (`rwc --eidos`; must contain exactly one
 proc), parses the compiled .rwc to obtain the device's port names and
@@ -83,14 +83,13 @@ uniques are minted from -10⁹ down — far below both the bridge's
 non-negative term uniques and the prim basis' small negatives — so
 they cannot capture.
 
-## The foreign tier (stage A)
+## The foreign tier (Cryptol splices and extern models)
 
 Programs using the Cryptol FFI or model-carrying combinational externs
 evaluate through the DEnv foreign hooks (Eval decision note 9): the
 driver instantiates them from the compiled .rwc itself — the trust
-boundary of the validation plan §1.3, under which the rwcry-spliced
-`cry$…` definitions (resp. the extern's model definition) ARE the
-builtin's semantics:
+boundary under which the rwcry-spliced `cry$…` definitions (resp. the
+extern's model definition) ARE the builtin's semantics:
 
   * `xtF` is the Hyle program's own extern-model composition
     (`Sem.xenv` then `Sem.mkFEnv`'s denotations), keyed by extern
@@ -183,7 +182,8 @@ def parseArgs (argv : List String) : Except String Args := do
   | _          => throw usage
 
 /-- The base name of a path: strip directories and the last extension
-(`tests/golden/fibo1.eir` ↦ `fibo1`) — the default PRNG seed key. -/
+(`verify/test/out-eidos/fibo1.eir` ↦ `fibo1`) — the default PRNG seed
+key. -/
 def baseName (path : String) : String :=
   let name := ((path.splitOn "/").getLast?.getD path)
   match name.splitOn "." with
@@ -287,7 +287,7 @@ def stimText (names : List String) (cycles : List (List BV)) : String :=
 where
   entry (p : String × BV) : String := s!"{p.1}: {p.2.nat}"
 
-/-! ## The synthesized η (--eta-synth, stage B)
+/-! ## The synthesized η (--eta-synth)
 
 For model-less combinational externs the Haskell interpreter refuses
 the program, so no external reference trace exists. Under --eta-synth
@@ -406,10 +406,10 @@ def main (argv : List String) : IO UInt32 := do
         | .ok hp => do
           let dev := hp.device
           -- The foreign tier: hook the Cryptol splices and extern
-          -- models into Δ (stage A) — from --foreign's program when
-          -- given (the pre-optimization dump, where zero-argument
-          -- splices have not yet been constant-folded away), else
-          -- from the compiled program itself.
+          -- models into Δ — from --foreign's program when given (the
+          -- pre-optimization dump, where zero-argument splices have
+          -- not yet been constant-folded away), else from the
+          -- compiled program itself.
           let (frTxt, frProg) ←
             match args.foreignF with
             | none => pure (rwcTxt, hp)
@@ -421,7 +421,7 @@ def main (argv : List String) : IO UInt32 := do
                     return 1
                 | .ok fp => pure (t, fp)
           let Δ := addForeign Δ frTxt frProg
-          -- Stage B: the synthesized η for model-less externs.
+          -- The synthesized η for model-less externs.
           let etaTys ← if args.etaSynth then
               match scanProgram p with
               | .error e => return ← err e
@@ -460,8 +460,8 @@ def main (argv : List String) : IO UInt32 := do
                     IO.print (Rwv.Diff.printTrace (dev.outputs.map (·.1)) outBVs)
                     if tr.halted.isSome then
                       IO.eprintln s!"rwv-eidos-diff: note: halted after {tr.outs.length} observable cycle(s) (of {args.cycles} inputs); the trace is the halt prefix"
-                    -- Stage B: the internal correspondence check — the
-                    -- mechanized Hyle device at the SAME synthesized η.
+                    -- The internal correspondence check — the mechanized
+                    -- Hyle device at the SAME synthesized η.
                     if args.etaSynth then
                       match hp.run inBVs E with
                       | .error e =>

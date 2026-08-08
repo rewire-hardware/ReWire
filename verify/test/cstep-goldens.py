@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Per-label machine-step validation harness for the Phase 4b-ii
+"""Per-label validation harness for the verified machine-step
 validator (rwv-cstep-validate, Rwv.Eidos.Cstep).
 
 For each test with a pass-8 Eidos dump, runs the machine-step

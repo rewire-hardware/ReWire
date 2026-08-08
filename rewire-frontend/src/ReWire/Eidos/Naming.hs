@@ -1,10 +1,11 @@
 {-# LANGUAGE Safe #-}
 {-# LANGUAGE OverloadedStrings #-}
 -- | The shared naming and ordering conventions for compiler-minted
---   definitions and (later) machine-level labels: one function per naming
+--   definitions and machine-level labels: one function per naming
 --   decision, so independently-minted artifacts that must correspond
---   (stage 1's lifted join continuations; stage 2's procify block labels)
---   agree by construction, and regenerated goldens drift minimally.
+--   (procify's block labels; the join continuations the machine fold
+--   lifts) agree by construction, and regenerated goldens drift
+--   minimally.
 --
 --   Names are /occurrence-stable/: derived from the enclosing
 --   definition's display name, the bound occurrence's display name, and a

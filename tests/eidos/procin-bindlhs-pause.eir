@@ -1,8 +1,8 @@
--- Procify input shape (positive since the plan's Q3 relaxation): a
--- pausing reactive callee in bind-LHS position splices its block graph
--- once per continuation — sequential machine composition. The callee's
--- internal tail recursion re-enters under the same continuation and
--- closes through the (definition, continuation) memo.
+-- Procify input shape (accepted): a pausing reactive callee in bind-LHS
+-- position splices its block graph once per continuation — sequential
+-- machine composition. The callee's internal tail recursion re-enters
+-- under the same continuation and closes through the (definition,
+-- continuation) memo.
 data Bool * {
       False :: Bool;
       True :: Bool

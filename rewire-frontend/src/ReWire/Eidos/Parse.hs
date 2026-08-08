@@ -2,11 +2,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Safe #-}
--- | Parser for the Eidos concrete syntax (.eir; doc/eidos.md, section 9),
---   P level. 'ReWire.Eidos.Pretty' is the other half of the round-trip
---   contract: @parse . pretty@ is the identity on programs modulo
---   annotations, and @pretty . parse . pretty == pretty@ is a tested
---   fixpoint.
+-- | Parser for the Eidos concrete syntax (.eir; doc/eidos.md, section 9).
+--   'ReWire.Eidos.Pretty' is the other half of the round-trip contract:
+--   @parse . pretty@ is the identity on programs modulo annotations, and
+--   @pretty . parse . pretty == pretty@ is a tested fixpoint.
 --
 --   The concrete syntax does not carry a type for every binder occurrence,
 --   so (as in ReWire.Hyle.Parse) parsing is followed by an elaboration pass

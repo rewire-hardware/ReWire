@@ -1,8 +1,7 @@
 /-
-The verified Eidos-side expression compiler (Phase 4a of the
-translation-validation plan): `cexp` compiles the CORE machine-mode
-pure fragment of Eidos (doc/eidos.md §7.5.2, §7.6) into the Hyle-side
-normal-form language of the verified reflection bridge
+The verified Eidos-side expression compiler: `cexp` compiles the CORE
+machine-mode pure fragment of Eidos (doc/eidos.md §7.5.2, §7.6) into
+the Hyle-side normal-form language of the verified reflection bridge
 (Rwv.Hyle.Bridge.NF), mirroring the reference lowering
 (rewire-frontend ReWire.Eidos.ToHyle: transExp / caseChain / toPrim)
 construct for construct:
@@ -26,7 +25,7 @@ construct for construct:
     LtEq, LAnd LOr LNot (redor expansions), RAnd RNAnd ROr RNor RXOr
     RXNor, MSBit, plus Bits (the identity) and Resize (zext/trunc).
 
-Phase 4b-i (the second half of this file) completes the fragment
+The second half of this file finishes the machine-mode fragment
 with the FULL compiler `cexpJ`/`cexpFull`: join points and jumps in
 pure bodies (a compile-time join environment mirroring the
 evaluator's `JEnv`), ToHyle's commuting rewrites (lambda applied,
@@ -48,7 +47,7 @@ leg and a join-environment correspondence (`JEnvC`), and
 `cexpJ_varsWF`/`cexpFull_varsWF` establish the bridge's `VarsWF`
 discipline for compiled forms, upgrading `checkDefnPair`'s verified
 verdict with the width-aware `cfoldW3` leg (guarded by `paramsOkW`).
-Stage B (the η tier) closes the foreign rows in the FULL compiler:
+The Cryptol and η tiers close the foreign rows in the FULL compiler:
 `cexpJ`'s Cryptol arm inlines the spliced entry through the bridge at
 Δ's syntactic extern table, gated extern-free on both the compiled
 arguments and the inlined form (the spliced denotations `ForeignC`
@@ -63,7 +62,7 @@ making the width clamp inert. Every soundness statement is
 ∀-quantified over the ambient extern environment `E` (the section
 variable below); the compilers are syntactic and never consult it.
 
-Stage C closes three recorded residues:
+Three further gaps are closed:
 
   * MODEL-CARRYING extern occurrences compile exactly like the
     Cryptol row keyed by the syntactic extern table (`Δ.hyleX`
@@ -113,7 +112,7 @@ Honest side conditions, stated exactly:
     inhabitant of the (representable) type `t`, with constructor
     values carrying exactly `t` and fields canonical at the
     instantiated field types. This is the "Val.HasTy-style
-    canonicality" the plan's §3.2 anticipated: the case-chain proof
+    canonicality" the soundness argument needs: the case-chain proof
     needs the scrutinee's dynamic constructor to live in the static
     discriminant type's constructor list (rep success alone does not
     pin the carried type of the scrutinee to the static type, and with
@@ -160,8 +159,8 @@ open Std (HashMap)
 open Rwv.Hyle (BV Op)
 open Rwv.Hyle.Bridge (NF annWidth WP)
 
-/- Stage B: the ambient extern environment. Every soundness statement
-below that mentions a denotation or an evaluator run is implicitly
+/- The ambient extern environment. Every soundness statement below
+that mentions a denotation or an evaluator run is implicitly
 ∀-quantified over it (auto-bound); the compilers are syntactic and
 never consult it. -/
 variable {E : Rwv.Hyle.Sem.EEnv}
@@ -456,7 +455,7 @@ list, or the head itself for the tagless tuple family), and their
 fields are canonical at the instantiated field types (via the same
 lenient `matchTy` the sizing functions use — determinism of `matchTy`
 makes the compiler's and the predicate's substitutions coincide).
-Finite values track `i < bound` (matching `Val.HasTy`, stage 4d) —
+Finite values track `i < bound` (matching `Val.HasTy`) —
 the fact that makes `rwPrimFromFinite`'s resize value-preserving at
 every §7.6-legal width. -/
 
@@ -706,7 +705,7 @@ def cprim (pty : Ty) (b : Builtin) (pas : List (NF × Ty)) : Except String (NF �
         if wa ≥ 1 then pure (.slice (wa - 1) 1 a, res)
         else .error "rwPrimMSBit: zero-width argument"
       else .error "rwPrimMSBit: non-Bool result type"
-  | _, _ => .error s!"cexp: unsupported builtin {b.name} (outside the Phase 4a fragment)"
+  | _, _ => .error s!"cexp: unsupported builtin {b.name} (outside the core compiler's fragment)"
 
 /-! ## The compiler -/
 
@@ -892,7 +891,7 @@ def cexp (Δ : DEnv) (dmap : HashMap Int Defn) :
             if teq dbt resTy then cchain Δ dmap fuel Γ' dty szT dn resTy rest (some dnf)
             else .error "cexp: default alternative result-type mismatch"
         | rest => cchain Δ dmap fuel Γ' dty szT dn resTy rest none
-    | (_, _) => .error "cexp: unsupported expression (outside the Phase 4a fragment)"
+    | (_, _) => .error "cexp: unsupported expression (outside the core compiler's fragment)"
 termination_by fuel _ _ => (fuel, 0, 0)
 
 end
@@ -2845,8 +2844,8 @@ The evaluator dispatches `rwPrimCryptol`/`rwPrimExtern` to the foreign
 rows (Eval decision note 9) BEFORE the generic argument-evaluation
 path, so the soundness proofs' prim cases must first pin the builtin
 away from the foreign guards; these inversions supply the
-contradiction from the compiler side (the 4a row table has no foreign
-rows, and `cprimF` delegates the foreign builtins to it). -/
+contradiction from the compiler side (the core row table has no
+foreign rows, and `cprimF` delegates the foreign builtins to it). -/
 
 private theorem cprim_cry_err {pty : Ty} {pas : List (NF × Ty)} {r : NF × Ty}
     (h : cprim pty .cryptol pas = .ok r) : False := by
@@ -3921,11 +3920,10 @@ at its declared width), symbolically evaluates the Hyle body with the
 bridge's `symExp`, and compares the two normal forms syntactically
 after `NF.cfold` — the σ-independent constant folder, whose
 `cfold_eval` is UNCONDITIONAL, so the composition needs no
-width-discipline side condition. (The measurement driver additionally
-reports the `cfoldW3` and DAG-normalized verdicts; upgrading the
-verified leg to those normalizers needs a `VarsWF` invariant for
-`cexp`'s output — future work, exactly as recorded for the bridge's
-width-aware checker.) -/
+width-discipline side condition. (The upgraded validator below adds
+the width-aware `cfoldW3` leg and a DAG-normalized leg, both verified:
+`paramsOkW` plus `cexpFull_varsWF` supply the `VarsWF` invariant
+the bridge's width-aware checker needs.) -/
 
 /-- The compile-time environment for a definition pair: the i-th Eidos
 parameter is the i-th Hyle parameter's variable at its declared width,
@@ -3941,9 +3939,9 @@ def mkParamRho (hps : List String) (hws : List Nat) : HashMap String NF :=
   (hps.zip hws).foldl (fun m pr => m.insert pr.1 (.var pr.2 pr.1)) ∅
 
 
-/-! # Phase 4b: the full compiler
+/-! # The full compiler
 
-The 4a fragment extended with the remaining machine-mode pure forms,
+The core fragment extended with the remaining machine-mode pure forms,
 mirroring the reference lowering construct for construct:
 
   * join points and jumps in pure bodies (`letE join` binds a
@@ -3960,8 +3958,8 @@ mirroring the reference lowering construct for construct:
     body's result, mirroring `applyMany`);
   * the remaining first-order §7.6 rows: Finite (literal,
     range-checked), FiniteMin/MaxBound, ToFinite, ToFiniteMod,
-    FromFinite (at the exact width — Finite canonicality is not
-    tracked by `VTy`, so the widening case is rejected),
+    FromFinite (at any §7.6-legal width, n ≤ 2^m — `VTy.finite`'s
+    tracked bound makes the resize value-preserving),
     VecReplicate, VecConcat, VecReverse, VecSlice, VecRSlice,
     VecIndexProxy, VecIndex (the dynamic shift construction),
     VecFromList (list-literal argument), NatVal, BitSlice/BitIndex
@@ -3978,12 +3976,11 @@ mirroring the reference lowering construct for construct:
     spine) consumes it as its final argument and inlines.
 
 Still outside: strings, local-variable application, bare lambdas,
-model-CARRYING extern occurrences, and generic extern instantiations
-(the foreign rows proper — Cryptol splices and model-less
-combinational externs — are in scope as of stage B, see the module
-header).
+and generic extern instantiations (the foreign rows proper — Cryptol
+splices, model-carrying externs, and model-less combinational
+externs — are in scope, see the module header).
 
-The original 4a `cexp`/`cAlt`/`cchain`/`cprim` and every theorem about
+The original `cexp`/`cAlt`/`cchain`/`cprim` and every theorem about
 them are unchanged above; `cexpFull` (= `cexpJ` with empty join
 environment and no pending arguments) strictly extends `cexp`'s
 success set and is what the validator now uses. -/
@@ -4090,7 +4087,7 @@ def vtyB (Δ : DEnv) : Nat → Val → Ty → Bool
     | .closL _ _ _ => false
     | .closD _ _ => false
 
-/-! ## The extended row table (delegating the 4a rows to `cprim`) -/
+/-! ## The extended row table (delegating the core rows to `cprim`) -/
 
 /-- The Finite-literal row (ToHyle's `Finite` case: the compiled
 argument must be a literal; the value is range-checked and re-emitted
@@ -4250,9 +4247,9 @@ def rowNatVal (doms : List Ty) (res : Ty) : List (NF × Ty) → Except String (N
       | _ => .error "rwPrimNatVal: non-Integer result type"
   | _ => .error "rwPrimNatVal: arity mismatch"
 
-/-- The Phase 4b builtin rows over compiled arguments: the Finite
+/-- The extended builtin rows over compiled arguments: the Finite
 family, the first-order Vec family, and NatVal; every other builtin
-delegates to the 4a table `cprim`. `szf` is the `sizeOf` fuel. -/
+delegates to the core table `cprim`. `szf` is the `sizeOf` fuel. -/
 def cprimF (Δ : DEnv) (szf : Nat) (pty : Ty) (b : Builtin) (pas : List (NF × Ty)) :
     Except String (NF × Ty) :=
   match b with
@@ -4272,8 +4269,8 @@ def cprimF (Δ : DEnv) (szf : Nat) (pty : Ty) (b : Builtin) (pas : List (NF × T
   | .natVal => rowNatVal (Ty.flattenArrow pty).1 (Ty.flattenArrow pty).2 pas
   | _ => cprim pty b pas
 
-/-- `cprimF` delegates the foreign builtins to the 4a table, which has
-no rows for them (the inversion `cexpJ_sound`'s prim case pins the
+/-- `cprimF` delegates the foreign builtins to the core table, which
+has no rows for them (the inversion `cexpJ_sound`'s prim case pins the
 builtin away from the evaluator's foreign dispatch with). -/
 private theorem cprimF_cry_err {Δ : DEnv} {szf : Nat} {pty : Ty} {pas : List (NF × Ty)}
     {r : NF × Ty} (h : cprimF Δ szf pty .cryptol pas = .ok r) : False :=
@@ -4283,13 +4280,13 @@ private theorem cprimF_ext_err {Δ : DEnv} {szf : Nat} {pty : Ty} {pas : List (N
     {r : NF × Ty} (h : cprimF Δ szf pty .«extern» pas = .ok r) : False :=
   cprim_ext_err (show cprim pty .«extern» pas = .ok r from h)
 
-/-! ## The foreign tier (stage A): the Cryptol row's environment
+/-! ## The foreign tier: the Cryptol row's environment
 
 The Cryptol builtin's semantics is the Hyle-side denotation of the
-rwcry-spliced definitions (the trust boundary of the validation plan
-§1.3); the evaluator reads it from `Δ.cryF`, and the compiler inlines
-the entry definition `Δ.cryD` designates out of `Δ.hyleDefs` through
-the bridge's `symExp`. `ForeignC` is the honest premise tying the two
+rwcry-spliced definitions (the validator's trust boundary); the
+evaluator reads it from `Δ.cryF`, and the compiler inlines the entry
+definition `Δ.cryD` designates out of `Δ.hyleDefs` through the
+bridge's `symExp`. `ForeignC` is the honest premise tying the two
 sides together — the final theorems assume it of Δ, and the drivers
 construct Δ so it holds by construction. -/
 
@@ -4300,17 +4297,17 @@ def callF (F : Rwv.Hyle.Sem.FEnv) (g : String) (vs : List BV) : Except String BV
   | some fn => fn vs
   | none => .error s!"foreign: unknown definition {g}"
 
-/-- The foreign-environment premise (stage A, extended by stage B):
+/-- The foreign-environment premise (the Cryptol and extern rows):
 SOME Hyle definition environment `F` implements Δ's foreign definition
 map at Δ's own syntactic extern table (`hX` pins the table — the
 compiler's Cryptol row inlines spliced definitions through `symExp` at
 exactly `Δ.hyleX`, so the premise must speak about the same table),
 Δ's semantic Cryptol hook is exactly `F`'s denotation of the entry the
-syntactic map designates, and — the stage-B extern clause — an extern
+syntactic map designates, and — the η tier's `ext` clause — an extern
 ABSENT from the syntactic table carries no model denotation, so the
 evaluator's extern row is forced onto the η tier's bit path exactly
 where the compiler emits an uninterpreted-call node; dually (the
-stage-C clause `xt`) an extern PRESENT in the table denotes exactly
+model clause `xt`) an extern PRESENT in the table denotes exactly
 `F` on its model definition, which is what lets the compiler's
 model-carrying row inline that definition through the bridge. `impl`
 is pinned at the EMPTY extern environment (the drivers build `F` by
@@ -4780,15 +4777,15 @@ def cexpJ (Δ : DEnv) (dmap : HashMap Int Defn) :
                     | _ => .error "rwPrimVecGenerate: non-arrow function-argument type"
                 | _ => .error "rwPrimVecGenerate: arity mismatch")
             | .cryptol =>
-                -- The foreign row (stage A): inline the spliced entry
+                -- The Cryptol foreign row: inline the spliced entry
                 -- definition Δ.cryD designates through the bridge's
                 -- symbolic evaluator — the compiled form is exactly
                 -- what the Hyle side's Call to it inlines to. The
                 -- inlining runs at Δ's syntactic extern table, and the
-                -- result is gated `xcallFree` (stage B): the spliced
-                -- denotations `ForeignC` pins live at the EMPTY extern
-                -- environment, and extern-free normal forms are the
-                -- ones whose denotation cannot see the difference.
+                -- result is gated `xcallFree`: the spliced denotations
+                -- `ForeignC` pins live at the EMPTY extern environment,
+                -- and extern-free normal forms are the ones whose
+                -- denotation cannot see the difference.
                 (match args with
                 | .litStr f :: .litStr n :: _impl :: rest => do
                     let ity ← Eval.domTy "rwPrimCryptol" (Ty.flattenArrow pty).1 2
@@ -4812,25 +4809,25 @@ def cexpJ (Δ : DEnv) (dmap : HashMap Int Defn) :
                     else .error "rwPrimCryptol: unsaturated foreign application"
                 | _ => .error "rwPrimCryptol: malformed foreign application")
             | .«extern» =>
-                -- The model-less combinational extern row (stage B,
-                -- the η tier): compile the value arguments, pack their
+                -- The model-less combinational extern row (the η
+                -- tier): compile the value arguments, pack their
                 -- concatenation, and emit the uninterpreted-call node
                 -- at the result type's width. The syntactic gate
                 -- `Δ.hyleX.get? s = none` is what `ForeignC`'s extern
                 -- clause converts into "the evaluator takes the η
-                -- path"; a model-carrying extern is the (rejected)
-                -- stage-A residue.
+                -- path"; a model-carrying extern takes the
+                -- model-inlining arm below.
                 (match args with
                 | _ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: _impl :: _inst :: rest => do
                     let ity ← Eval.domTy "rwPrimExtern" (Ty.flattenArrow pty).1 6
                     if rest.length = (Ty.flattenArrow ity).1.length then
                       match Δ.hyleX.get? s with
                       | some g =>
-                          -- The MODEL-CARRYING extern row (stage C):
-                          -- exactly the Cryptol row keyed by the
-                          -- extern table — inline the model definition
-                          -- through the bridge at Δ's syntactic extern
-                          -- table, gated extern-free on the compiled
+                          -- The MODEL-CARRYING extern row: exactly the
+                          -- Cryptol row keyed by the extern table —
+                          -- inline the model definition through the
+                          -- bridge at Δ's syntactic extern table,
+                          -- gated extern-free on the compiled
                           -- arguments and the inlined form (the model
                           -- denotations `ForeignC.xt` pins live at the
                           -- empty extern environment).
@@ -4914,7 +4911,7 @@ def cexpJ (Δ : DEnv) (dmap : HashMap Int Defn) :
             if teqN Δ dbt resTy' then cchainJ Δ dmap fuel Γ' jΓ dty szT dn resTy' pall rest (some dnf)
             else .error "cexp: default alternative result-type mismatch"
         | rest => cchainJ Δ dmap fuel Γ' jΓ dty szT dn resTy' pall rest none
-    | (_, _) => .error "cexp: unsupported expression (outside the Phase 4b fragment)"
+    | (_, _) => .error "cexp: unsupported expression (outside the full compiler's fragment)"
 termination_by fuel _ _ _ _ => (fuel, 0, 0)
 
 end
@@ -7041,7 +7038,7 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
           rw [sliceBV_getLsbD] at h10
           rw [← h10, haev]
 
-/-! ## The full compiler's soundness (Phase 4b)
+/-! ## The full compiler's soundness
 
 The statement generalizes `SoundAt` to "compile `e` applied to the
 pending arguments": whenever the evaluator produces `e`'s value `f`
@@ -8059,7 +8056,7 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
           subst hvf
           dsimp only at hc hev
           by_cases hbc : (b == .cryptol) = true
-          · -- THE CRYPTOL FOREIGN ROW (stage A): the compiled form is
+          · -- THE CRYPTOL FOREIGN ROW: the compiled form is
             -- the spliced entry definition's symbolic inlining; its
             -- denotation is the evaluator's foreign result through
             -- `ForeignC`, `symExp_sound`, and the decode round trip.
@@ -8183,7 +8180,7 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
             revert hbc
             cases b == .cryptol <;> simp
           by_cases hbx : (b == .«extern») = true
-          · -- THE MODEL-LESS EXTERN ROW (stage B, the η tier): the
+          · -- THE MODEL-LESS EXTERN ROW (the η tier): the
             -- compiled form is the uninterpreted-call node over the
             -- packed arguments. Both sides read the SAME bit-level
             -- interpretation E on the SAME bits (the argument IH),
@@ -8216,9 +8213,9 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
             rw [if_pos hlenC] at hev
             cases hhx : Δ.hyleX.get? s with
             | some g =>
-              -- THE MODEL-CARRYING EXTERN ROW (stage C): the Cryptol
-              -- case's argument verbatim, keyed by the extern table —
-              -- the compiled form is the model definition's symbolic
+              -- THE MODEL-CARRYING EXTERN ROW: the Cryptol case's
+              -- argument verbatim, keyed by the extern table — the
+              -- compiled form is the model definition's symbolic
               -- inlining; its denotation is the evaluator's `Δ.xtF`
               -- result through `ForeignC.xt`, `symExp_sound`, and the
               -- decode round trip, with the extern-free gates pinning
@@ -9396,7 +9393,7 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
 
 /-- Soundness at the top level (`cexpFull`): the `cexp_sound`-shaped
 statement on the full compiler — the evaluator's join environment is
-arbitrary (the compile-time one is empty), exactly as in Phase 4a. -/
+arbitrary (the compile-time one is empty), exactly as for `cexp`. -/
 theorem cexpFull_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
     {X : Rwv.Hyle.Sem.XEnv} {F : Rwv.Hyle.Sem.FEnv}
     (hΔ : denvOk Δ = true) (hFor : ForeignC Δ X F)
@@ -9525,7 +9522,7 @@ private theorem resizeNF_varsWF {P : String → Nat → Prop} {m wa : Nat} {a : 
   · exact h
   · exact h
 
-/-- The 4a row table preserves the discipline. -/
+/-- The core row table preserves the discipline. -/
 private theorem cprim_varsWF {P : String → Nat → Prop} {pty : Ty} {b : Builtin}
     {pas : List (NF × Ty)} {nf : NF} {ty : Ty}
     (hc : cprim pty b pas = .ok (nf, ty)) (h : ∀ p ∈ pas, NF.VarsWF P p.1) :
@@ -10792,7 +10789,7 @@ theorem cexpFull_varsWF {Δ : DEnv} {dmap : HashMap Int Defn} {P : String → Na
     (fun p hp => absurd hp (by simp)) hc
 
 
-/-! # The DAG mirror of the full compiler (Phase 4d)
+/-! # The DAG mirror of the full compiler
 
 `cexpJD` compiles the same fragment as `cexpJ` into
 `Rwv.Hyle.BridgeDag`'s hash-consed node store, raw node for raw node
@@ -10876,7 +10873,7 @@ def clitIntD (d : Dag) (ty : Ty) (n : Int) : Except String (Dag × Nat × Ty) :=
       .ok (dr.1, dr.2, rty)
   | _ => .error "cexpD: non-literal integer-literal image"
 
-/-- The 4a row table on indices (`Cexp.cprim`, row for row; the rows
+/-- The core row table on indices (`Cexp.cprim`, row for row; the rows
 build only `prim1`/`prim2`/`slice` nodes over the argument indices). -/
 def cprimD (d : Dag) (pty : Ty) (b : Builtin) (pas : List (Nat × Ty)) :
     Except String (Dag × Nat × Ty) :=
@@ -10978,7 +10975,7 @@ def cprimD (d : Dag) (pty : Ty) (b : Builtin) (pas : List (Nat × Ty)) :
           .ok (d₁, r, res)
         else .error "rwPrimMSBit: zero-width argument"
       else .error "rwPrimMSBit: non-Bool result type"
-  | _, _ => .error s!"cexp: unsupported builtin {b.name} (outside the Phase 4a fragment)"
+  | _, _ => .error s!"cexp: unsupported builtin {b.name} (outside the core compiler's fragment)"
 
 /-- Push a list of (offset, width) slices of a base index, keeping the
 widths. -/
@@ -11184,7 +11181,7 @@ def cprimFD (d : Dag) (Δ : DEnv) (szf : Nat) (pty : Ty) (b : Builtin)
   | _ => cprimD d pty b pas
 
 /-- The DAG mirror has no Cryptol row (the tree fallback carries the
-foreign tier); its 4a delegation errors on the foreign builtins. -/
+foreign tier); its core-table delegation errors on foreign builtins. -/
 private theorem cprimD_cry_err {d : Dag} {pty : Ty} {pas : List (Nat × Ty)}
     {r : Dag × Nat × Ty} (h : cprimD d pty .cryptol pas = .ok r) : False := by
   rcases pas with _ | ⟨p, _ | ⟨q, _ | ⟨w, ws⟩⟩⟩ <;> exact error_ne_ok h
@@ -11474,7 +11471,7 @@ def cexpJD (Δ : DEnv) (dmap : HashMap Int Defn) :
                     | _ => .error "rwPrimVecGenerate: non-arrow function-argument type"
                 | _ => .error "rwPrimVecGenerate: arity mismatch")
             | .cryptol =>
-                -- The foreign row's DAG mirror (stage B): the spliced
+                -- The foreign row's DAG mirror: the spliced
                 -- entry inlined by `symExpDag` over the shared store,
                 -- gated extern-free exactly like the tree arm.
                 (match args with
@@ -11501,7 +11498,7 @@ def cexpJD (Δ : DEnv) (dmap : HashMap Int Defn) :
                     else .error "rwPrimCryptol: unsaturated foreign application"
                 | _ => .error "rwPrimCryptol: malformed foreign application")
             | .«extern» =>
-                -- The model-less extern row's DAG mirror (stage B).
+                -- The model-less extern row's DAG mirror.
                 (match args with
                 | _ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: _impl :: _inst :: rest => do
                     let ity ← Eval.domTy "rwPrimExtern" (Ty.flattenArrow pty).1 6
@@ -11576,7 +11573,7 @@ def cexpJD (Δ : DEnv) (dmap : HashMap Int Defn) :
               cchainJD Δ dmap fuel Γ' jΓ dty szT dn resTy' pall rest (some dnf) d₃
             else .error "cexp: default alternative result-type mismatch"
         | rest => cchainJD Δ dmap fuel Γ' jΓ dty szT dn resTy' pall rest none d₂
-    | (_, _) => .error "cexp: unsupported expression (outside the Phase 4b fragment)"
+    | (_, _) => .error "cexp: unsupported expression (outside the full compiler's fragment)"
 termination_by fuel _ _ _ _ _ => (fuel, 0, 0)
 
 end
@@ -11928,8 +11925,8 @@ theorem triple_eq {d₁ d₂ : Dag} {r₁ r₂ : Nat} {t₁ t₂ : Ty}
   exact ⟨h1, h2, h3⟩
 
 set_option maxHeartbeats 3200000 in
-/-- The 4a row table's simulation: a successful `cprimD` run certifies
-the `cprim` row over the read-back arguments. -/
+/-- The core row table's simulation: a successful `cprimD` run
+certifies the `cprim` row over the read-back arguments. -/
 theorem cprimD_sim {d : Dag} (hwf : d.WF) {pty : Ty} {b : Builtin}
     {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
     (hpas : ∀ p ∈ pas, p.1 < d.size)
@@ -12264,7 +12261,7 @@ theorem clitIntD_sim {d : Dag} (hwf : d.WF) {ty : Ty} {n : Int}
   rw [hnt, R]
 
 
-/-! ### The cexpJD simulation groundwork (Phase 4d, the landing) -/
+/-! ### The cexpJD simulation groundwork -/
 
 /-- Readings of in-range pend pairs are extension-stable. -/
 theorem pend_read_ext {d d' : Dag} (hext : d.Ext d') {ps : List (Nat × Ty)}
@@ -13505,10 +13502,10 @@ private theorem map_se_reads {d : Dag} (se : Nat) (pas : List (Nat × Ty)) :
   rfl
 
 set_option maxHeartbeats 3200000 in
-/-- THE simulation theorem for the DAG mirror (Phase 4d): a successful
-`cexpJD` compilation certifies a successful `cexpJ` compilation whose
-normal form is the reading of the returned index, at read-back
-environments, join closures, and pending arguments. -/
+/-- THE simulation theorem for the DAG mirror: a successful `cexpJD`
+compilation certifies a successful `cexpJ` compilation whose normal
+form is the reading of the returned index, at read-back environments,
+join closures, and pending arguments. -/
 theorem cexpJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} :
     ∀ (fuel : Nat), DSimAt Δ dmap fuel := by
   intro fuel
@@ -13992,7 +13989,7 @@ theorem cexpJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} :
               dsimp only
               rw [hnb, except_bind_ok, if_pos hnbE, S₂, except_bind_ok, R₃]
           case cryptol =>
-            -- The foreign row's DAG mirror (stage B): `symExpDag` over
+            -- The foreign row's DAG mirror: `symExpDag` over
             -- the shared store certifies the tree arm's `symExp` run
             -- (`symExpDag_sim` through the zip environment simulation),
             -- and the store-level extern-freedom gates transport to
@@ -14077,7 +14074,7 @@ theorem cexpJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} :
             subst hd2; subst hri; subst hty2
             exact ⟨W₂, E₁.trans E₂, L₂, rfl⟩
           case «extern» =>
-            -- The model-less extern row's DAG mirror (stage B): the
+            -- The model-less extern row's DAG mirror: the
             -- packed-argument node is built by the hash-consed
             -- constructors, whose specs read back to exactly the tree
             -- arm's normal form.
@@ -14457,11 +14454,11 @@ theorem cexpFullD_sim {Δ : DEnv} {dmap : HashMap Int Defn} {fuel : Nat}
   simp only [List.map_nil] at S
   exact ⟨W, E, L, S⟩
 
-/-! ### The per-definition DAG leg (Phase 4d): compile both sides into
-one shared store over pushed parameter variables and compare by index
-after three `renorm` sweeps (the store-level `cfoldW3`). Soundness is
-a reduction to the tree legs: a `true` verdict certifies both tree
-compilations and the `cfoldW3` equality of their normal forms, so
+/-! ### The per-definition DAG leg: compile both sides into one shared
+store over pushed parameter variables and compare by index after three
+`renorm` sweeps (the store-level `cfoldW3`). Soundness is a reduction
+to the tree legs: a `true` verdict certifies both tree compilations
+and the `cfoldW3` equality of their normal forms, so
 `checkDefnPair_sound`'s width-aware argument applies unchanged. -/
 
 /-- Push a run of variable nodes (name/width pairs), keeping the
@@ -14685,7 +14682,7 @@ theorem checkDefnPairDag_sound {Δ : DEnv} {edm : HashMap Int Defn}
 
 end DagMirror
 
-/-! ## The per-definition validator, upgraded (Phase 4b)
+/-! ## The per-definition validator, upgraded
 
 `checkDefnPair` now compiles with the FULL compiler and accepts
 either the unconditional `cfold` leg or the width-aware `cfoldW3` leg

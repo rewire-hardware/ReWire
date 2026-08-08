@@ -3,13 +3,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE Safe #-}
--- | Hyle-to-Hyle transformations. Currently: defn inlining (the
---   uses-at-most-once heuristic that used to live in each RTL backend, plus
---   flatten-everything) and dead-defn purging. Inlining is sound by the
---   substitution property (doc/hyle.md, section 7); bound names in inlined
---   bodies are freshened to avoid capture. Defns are processed callee-first
---   (the call graph is acyclic), so chains of single-use defns collapse
---   fully.
+-- | Hyle-to-Hyle transformations: defn inlining (the uses-at-most-once
+--   heuristic, plus flatten-everything), dead-defn purging, the @--rtl-opt@
+--   optimization fixpoint (partial evaluation, zero-width purging, dedupe),
+--   and hoisting clocked-extern calls into device instances. Inlining is
+--   sound by the substitution property (doc/hyle.md, section 7); bound
+--   names in inlined bodies are freshened to avoid capture. Defns are
+--   processed callee-first (the call graph is acyclic), so chains of
+--   single-use defns collapse fully.
 module ReWire.Hyle.Transform (inline, inlineBy, purgeUnused, partialEval, purgeDevLets, purgeZeroWidth, dedupe, optimize, hoistInstances) where
 
 import ReWire.Annotation (Annote)

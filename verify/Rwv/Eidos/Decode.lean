@@ -15,9 +15,10 @@ input, which is what `decode_rep` says with no side conditions.
 
 The companion lemmas live downstream of their dependencies:
   * `decode_mono` (fuel monotonicity) in Rwv.Eidos.FuelMono;
-  * `decode_vty` (decoded values are `VTy`-canonical) and
-    `rep_decode` (decode ∘ rep = id on canonical, proxy-normal
-    values) in Rwv.Eidos.Cexp, where `VTy` lives.
+  * `decode_vty` (decoded values are `VTy`-canonical) in
+    Rwv.Eidos.Cexp, where `VTy` lives;
+  * `rep_decode` (decode ∘ rep = id on canonical, proxy-normal
+    values) in Rwv.Eidos.Cstep.
 
 `Val.RepCanon` (defined here — it needs only `Val`) carves out the
 domain on which `rep` is injective, for `rep_decode` (the inverse
@@ -25,9 +26,8 @@ direction, proved in Rwv.Eidos.Cstep): proxy-normal constructor forms
 — the prim basis declares an actual `Proxy` data constructor, so both
 `.proxy` and `.con _ "Proxy" []` inhabit `Proxy n` with the same
 (empty) representation, and `decode` canonically produces `.proxy` —
-and in-range `Finite` values (`VTy` deliberately does not track the
-Finite bound, but `rep` wraps out-of-range values to their nbits-width
-residue, which decodes to the wrapped value).
+and in-range `Finite` values (`rep` wraps an out-of-range value to
+its nbits-width residue, which decodes to the wrapped value).
 
 Per house style, the BV concatenation/slice kit is re-proved locally
 (the committed files' copies are private); it is exported from this

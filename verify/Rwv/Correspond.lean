@@ -5,8 +5,9 @@ device trace through the representation function (up to and excluding
 the halting cycle), and the top-level correspondence Prop over the two
 mechanized semantics. This is the statement the differential harness
 tests empirically per golden, and the statement the validator's
-soundness theorem concludes in later phases (with `Rwv.Sim.sim_run`
-as the induction connecting per-step obligations to it).
+soundness theorem concludes (`validateProc_corresponds` and its ∀η
+variant in Rwv.Eidos.Cstep, with `Rwv.Sim.simP_run` as the induction
+connecting per-step obligations to it).
 -/
 import Rwv.Eidos.Machine
 import Rwv.Hyle.Semantics
@@ -66,9 +67,9 @@ well-typed input trace, whenever both sides run successfully — the
 machine on the algebraic inputs, the device on their port-split
 encodings — the traces agree through the representation function.
 (Totality of both runs at sufficient fuel on well-formed programs is a
-separate, later obligation; this is the agreement half.)
+separate obligation, not mechanized; this is the agreement half.)
 
-Stage B (the η tier): the statement is parameterized by the bit-level
+The η tier: the statement is parameterized by the bit-level
 model-less-extern environment `E`, with BOTH runs reading the SAME
 one — the machine through `Eval.evalExt`'s decode-gated foreign row,
 the device through `evalExp`'s total `Sem.xapply` reading. The

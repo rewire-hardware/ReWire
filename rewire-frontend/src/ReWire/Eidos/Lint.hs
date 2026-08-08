@@ -48,10 +48,6 @@
 --   TODO(eidos): type arguments and constructor fields are not kind-checked
 --   (there is no kind table for built-in type constructors); type-variable
 --   occurrences are checked against their binders' kinds.
---   TODO(eidos): there is no built-in datatype basis yet — 'Con' occurrences
---   of (), the tuple family, and Bool lint only if the program declares
---   them; the bridge stage supplies the prim basis (as Crust's addPrims
---   does today).
 --   TODO(eidos): the builtin signature check ('ReWire.Eidos.BuiltinSigs')
 --   is partial on type-level arithmetic: scheme subterms like
 --   @Vec ((i + n) + m) a@ become deferred equations, checked only when
@@ -501,19 +497,18 @@ checkDataDefn env (DataDefn an t k cs) = do
 -- | Parameters match a prefix of the signature's arrow spine; the body
 --   checks against the remainder. In mono mode the signature quantifies
 --   nothing — except the builtin-named definitions (rwPrim*), which are
---   the builtins' type assumptions riding to the retained pipeline as
+--   the builtins' type assumptions riding to the Eidos-to-Hyle fold as
 --   polymorphic signature carriers (error-stub bodies, never referenced
---   as variables); they check in poly mode until the Eidos-level builtin
---   signature table lands. In mono+ANF mode the body must additionally be
---   in the ANF shape of doc/eidos.md §6 ('checkANF').
+--   as variables); they check in poly mode. In mono+ANF mode the body
+--   must additionally be in the ANF shape of doc/eidos.md §6
+--   ('checkANF').
 checkDefn :: MonadError AstError m => Env -> Defn -> m ()
 checkDefn env0 d@(Defn _ x0 _ _ _ _)
       | envMode env0 >= LintMono, Set.member (idOcc x0) primNames = checkDefn' (env0 { envMode = LintPoly }) d
       | otherwise = do
             checkDefn' env0 d
-            -- Only the reactive fragment is A-normalized at this stage
-            -- (the pure fragment's ANF arrives with the machine-level
-            -- Hyle translation).
+            -- Only the reactive fragment is A-normalized (the fold
+            -- lowers pure expressions in any shape).
             when (envMode env0 == LintMonoANF && reacOrStateT (sigTy $ idSig x0)) $ checkANF d
       where primNames :: HashSet Text
             primNames = Set.fromList $ map fst builtins

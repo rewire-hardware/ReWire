@@ -1,6 +1,6 @@
 /-
-rwv-hyle-equiv: the Hyle≃Hyle equivalence-certificate generator
-(eidos-hyle-validation-plan.md §3.2 (M3), Phase 3 gate).
+rwv-hyle-equiv: the Hyle≃Hyle equivalence-certificate generator (the
+raw-fold vs optimized Hyle check, discharged by Lean's bv_decide).
 
     rwv-hyle-equiv <raw.rwc> <final.rwc> [--out FILE.lean]
         [--defn-name NAME] [--timeout SEC] [--no-check] [--lake-dir DIR]
@@ -13,8 +13,8 @@ file containing each side's whole-step function over fixed-width
 `BitVec` arguments (one per nonzero-width device input and register,
 shared names and order across sides).
 
-Default mode — the normalization/cancellation layer (Phase 3 M3): both
-sides' step terms are built into ONE hash-consed DAG (inlining calls at
+Default mode — the normalization/cancellation layer: both sides'
+step terms are built into ONE hash-consed DAG (inlining calls at
 generation time, memoized per (defn, argument-node) instantiation), so
 structurally identical subterms — within a side and ACROSS sides — are
 one node. Construction constant-folds through the mechanized semantics'
@@ -78,16 +78,15 @@ behavior, both:
     bv_decide's per-computation compiler axiom for LRAT checking).
 
 Zero-width (BV 0) policy — exactly the semantics' unit treatment
-(doc/hyle.md §5.2 edge-case column; same convention as the Phase-0.5
-SMT spike): width-0 expressions translate to a unit marker and are
-eliminated. Width-0 lets bind unit, width-0 defn params/args are
-dropped from signatures/applications, width-0 defns are dropped
-entirely (calls to them are unit), width-0 outputs/nexts are dropped
-from the step concatenation, Cat with a unit side is the other side,
-width-0 slices/lits/undefs are unit, and primitives at width 0 follow
-the table: eq/ule/uge/sle/sge = 1, ne/ult/ugt/slt/sgt = 0, redand = 1,
-redor = redxor = 0, shift by a unit amount is the value unchanged,
-zext m of unit is 0#m.
+(doc/hyle.md §5.2 edge-case column): width-0 expressions translate to
+a unit marker and are eliminated. Width-0 lets bind unit, width-0 defn
+params/args are dropped from signatures/applications, width-0 defns
+are dropped entirely (calls to them are unit), width-0 outputs/nexts
+are dropped from the step concatenation, Cat with a unit side is the
+other side, width-0 slices/lits/undefs are unit, and primitives at
+width 0 follow the table: eq/ule/uge/sle/sge = 1,
+ne/ult/ugt/slt/sgt = 0, redand = 1, redor = redxor = 0, shift by a
+unit amount is the value unchanged, zext m of unit is 0#m.
 
 Op mapping mirrors Rwv.Hyle.Semantics.evalOp construct for construct
 (see the comment on each case of `transPrim`).

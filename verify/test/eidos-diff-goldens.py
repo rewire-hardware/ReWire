@@ -6,16 +6,16 @@ correspondence, checked per test by trace comparison.
 
 For each tests/golden/<base>.rwc with a <base>.hs source:
 
-  1. generate the pass-8 Eidos dump:
-       rwc --eidos -o <work>/<base>.sv tests/golden/<base>.hs
-     (writes <base>.eir beside the output; parallelized with a small
-     pool — this is the expensive phase);
+  1. generate the pass-8 Eidos dump and the raw-fold .rwc:
+       rwc --eidos -d 9 -o <work>/<base>.sv tests/golden/<base>.hs
+     (writes <base>.eir and <base>.9.rwc beside the output;
+     parallelized with a small pool — this is the expensive phase);
   2. run the Lean side, which generates the canonical algebraic
      stimulus (deterministic xorshift32 keyed on the base name),
      validates the port convention against the .rwc device, writes the
      stimulus in rwc's inputs format, and prints the machine trace:
        rwv-eidos-diff <base>.eir <base>.rwc --cycles N
-           --stim <stim> > <eidos.yaml>
+           --stim <stim> --foreign <base>.9.rwc > <eidos.yaml>
   3. run the Haskell reference on the SAME stimulus and the COMPILED
      .rwc golden:
        rwc <base>.rwc --from-core --interpret=<stim> --cycles N
@@ -29,7 +29,7 @@ extern instances (pre-detected from the .rwc); and tests where rwc's
 interpreter itself refuses ("cannot evaluate"). Model-carrying
 externs — and all Cryptol FFI uses — evaluate through the DEnv foreign
 hooks the Lean driver instantiates from the compiled .rwc itself.
-Programs with model-LESS combinational externs (the stage-B η tier)
+Programs with model-LESS combinational externs (the η tier)
 run under --eta-synth: rwc cannot interpret them at all, so the driver
 synthesizes a deterministic algebraic η and checks the correspondence
 INTERNALLY — the Eidos-M machine trace against the mechanized Hyle
@@ -268,9 +268,9 @@ def main():
         # every dump carries rwPrimError stub *definitions* (named
         # rwPrimExtern#9 / rwPrimCryptol#11, unique-suffixed) whose error
         # strings mention the bare name. Cryptol uses and model-carrying
-        # externs evaluate through the foreign hooks (stage A);
-        # model-LESS externs run the stage-B --eta-synth internal check
-        # (rwc cannot interpret them, so there is no external reference).
+        # externs evaluate through the foreign hooks; model-LESS externs
+        # run the --eta-synth internal check (rwc cannot interpret them,
+        # so there is no external reference).
         eir = work / f"{base}.eir"
         eir_text = eir.read_text()
         eta_synth = []

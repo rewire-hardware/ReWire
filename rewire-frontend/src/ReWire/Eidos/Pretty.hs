@@ -24,8 +24,8 @@
 --   line — the @defn@ production's newline between the signature line and
 --   the equation line is what terminates the signature's type.
 --
---   M-level 'proc' declarations (§7.1) are reserved in the grammar but do
---   not exist in the AST yet; see the marker in 'ppProgram'.
+--   M-level 'proc' declarations print via 'ppProc' (§7.1, §9), after the
+--   program's datatypes and definitions.
 module ReWire.Eidos.Pretty
       ( prettyProgram
       , ppProgram, ppDataDefn, ppDefn

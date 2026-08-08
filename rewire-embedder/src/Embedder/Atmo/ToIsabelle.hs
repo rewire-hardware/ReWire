@@ -33,7 +33,7 @@ import Data.Text (Text, pack)
 
 
 ---------- Todos/Questions --------------
--- TODO: Implement Case translation in ReWire-Isabelle [and modify this translation to suit]
+-- TODO: Implement Case translation in the Isabelle ReWire session (targets/isabelle/thys) [and modify this translation to suit]
 -- TODO: Implement translation of Builtins/Prims (hopefully can be ported over from the Source translation)
 -- TODO: Readability concerns?
 
@@ -66,7 +66,7 @@ embedFreeProgram filename prog = do
     return $ Theory thyname ["Main","ReWire.Atmo"] decls
 
 
-{- type FreeProgram = ([DataDefn], [TypeSynonym], [Defn]) -}
+{- type FreeProgram = ([DataDefn], [RecDefn], [TypeSynonym], [Defn]) -}
 tFreeProgram :: (MonadError AstError m) => A.FreeProgram -> m ([Isa.Decl], Graph, [Tree Vertex] )
 tFreeProgram (data_defs, rec_defs, type_syns, definitions) =
       let ddfs = filter (not . isReWire . dataName) data_defs
@@ -93,20 +93,6 @@ tModule (A.Module data_defs rec_defs type_syns definitions) =
 
 -- Translating Declarations
 
-{- data Decl =
-    Datatype {
-      datatypeName :: T.Text,
-      datatypeTVars :: [Typ],
-      datatypeConstructors :: [DatatypeConstructor] }
-  | TypeSynonym T.Text [Text] Typ
-  | Definition {
-     definitionName :: T.Text,
-     definitionType :: Typ,
-     definitionVars :: [Term],
-     definitionTerm :: Term }
-  | Fun { funEquations :: [(Text, Typ, [([Term], Term)])] } -}
-
-
 tDeclaration :: (MonadError AstError m) => Declaration -> m Isa.Decl
 tDeclaration = \ case
      DDecl d -> tDataDefn d
@@ -118,22 +104,12 @@ tDeclaration = \ case
 
 
 
-{- data TypeSynonym = TypeSynonym
-      { typeSynAnnote :: Annote
-      , typeSynName   :: !(Name TyConId)
-      , typeSynType   :: !Poly) } -}
 tTypeSynonym :: Monad m => A.TypeSynonym -> m Isa.Decl
 tTypeSynonym (A.TypeSynonym _a name poly) = do
      (tvs, t) <- tPoly poly
      return $ Isa.TypeSynonym (tGlobal name) tvs t
 
 
-{- data Defn = Defn
-      { defnAnnote :: Annote
-      , defnName   :: !(Name Exp)
-      , defnPolyTy :: !Poly)
-      , defnAttr   :: !(Maybe DefnAttr)
-      , defnBody   :: !(Bind [Name Exp] Exp)) } -}
 tDefn :: (MonadError AstError m) => A.Defn -> m Isa.Decl
 tDefn =  \ case
    Defn a _name _poly _defnattr [] -> failAt a "should not have empty definitions"
@@ -166,11 +142,6 @@ tRDefns ds = do
             fs <- mapM tFun ds
             return $ Isa.Fun fs
 
-{- data DataDefn = DataDefn
-      { dataAnnote :: Annote
-      , dataName   :: !(Name TyConId)
-      , dataVars   :: ![Name Ty]
-      , dataCons   :: ![DataCon] } -}
 tDataDefn :: Monad m => A.DataDefn -> m Isa.Decl
 tDataDefn (DataDefn _a name _tvs cons@(A.DataCon _ _ p:_)) = do
       constrs <- mapM tDataCon cons
@@ -183,13 +154,6 @@ tRecDefn (RecDefn _ name tvs _poly fields) =
   return $ Isa.Record (tGlobal name) (map tLocal tvs) (map (second tType) fields)
 
 
-{- data DataCon = DataCon Annote !(Name DataConId) !Poly) -}
-{- data DatatypeConstructor = DatatypeConstructor {
-      constructorName :: T.Text,
-      constructorType :: Typ,
-      constructorArgs :: [Typ] } |
-     DatatypeNoConstructor {
-      constructorArgs :: [Typ] } -}
 tDataCon :: Monad m => A.DataCon -> m Isa.DatatypeConstructor
 tDataCon (A.DataCon _a name poly) = do
       (_tvs, TypSig ts _cod) <- tPolySig poly  -- TODO: Might need to use the codomain and tvs to rename args variables
@@ -200,16 +164,6 @@ tDataCon (A.DataCon _a name poly) = do
 
 --- Translating Types
 
-{- data Typ = Type { typeId :: TName,
-                   typeArgs :: [Typ] }
-         | TNum { typeN :: Int }
-         | TVar { typeId :: TName } -}
-
-
-{- data Ty = TyApp Annote !Ty !Ty
-        | TyCon Annote !(Name TyConId)
-        | TyVar Annote !(Name Ty)
-        | TyNat Annote !Natural -}
 tType :: A.Ty -> Isa.Typ
 tType (flattenTyTuple . transMonadT -> t') = case flattenTy t' of
         (TyBuiltin _a tb,ts) -> Isa.TBuiltin tb (map tType ts)
@@ -226,7 +180,6 @@ tTypeSig :: A.Ty -> Isa.TypSig
 tTypeSig t = let (args,cod) = flattenSig t
              in TypSig (map tType args) (tType cod)
 
-{- newtype Poly = Poly (Bind [Name Ty] Ty) -}
 tPoly :: Monad m => A.Poly -> m ([TName], Isa.Typ)
 tPoly (Poly tvs t) = return (map tLocal tvs, tType t)
 
@@ -251,41 +204,6 @@ flattenTy t = (t,[])
 
 --- Translating Expressions
 
-{- data Term =
-        LitString T.Text
-      | LitNum Integer
-      | LitWord Int Integer
-      | LitVec [Term]
-      | Free { termName :: VName }
-      | Prim { primId :: Prim }
-      | Abs { absVar :: Term,
-                termId :: Term }  -- lambda abstraction
-      | App { funId :: Term,
-               argIds :: [Term] }    -- application
-      | If { ifId :: Term,
-             thenId :: Term,
-             elseId :: Term }
-      | Case { termId :: Term,
-               caseSubst :: [(Term, Term)] }
-      | Let { letSubst :: [(Term, Term)],
-              inId :: Term }
-      | IsaEq { firstTerm :: Term,
-                secondTerm :: Term }
-      | Tuplex [Term]
-      | List   [Term]  -}
-
-
--- Expressions
-{- data Exp = App     Annote !(Maybe Poly) !(Maybe Ty) !Exp !Exp
-         | Lam     Annote !(Maybe Poly) !(Maybe Ty) !(Bind (Name Exp) Exp)
-         | Var     Annote !(Maybe Poly) !(Maybe Ty) !(Name Exp)
-         | Con     Annote !(Maybe Poly) !(Maybe Ty) !(Name DataConId)
-         | Case    Annote !(Maybe Poly) !(Maybe Ty) !Exp !(Bind Pat Exp) !(Maybe Exp)
-         | Builtin Annote !(Maybe Poly) !(Maybe Ty) !Builtin
-         | LitInt  Annote !(Maybe Poly) !Integer
-         | LitStr  Annote !(Maybe Poly) !Text
-         | LitVec  Annote !(Maybe Poly) !(Maybe Ty) ![Exp]
-         | LitList Annote !(Maybe Poly) !(Maybe Ty) ![Exp] -}
 tExp :: Monad m => A.Exp -> m Isa.Term
 tExp e | Just pt <- tyAnn e = do
       e' <- tExp (setTyAnn Nothing e)
@@ -355,7 +273,7 @@ tPatBind (A.PatBind p e) = do
       e' <- tExp e
       return (p',e')
 
--- | Case Annote !(Maybe Poly) !(Maybe Ty) !Exp !(Bind Pat Exp) !(Maybe Exp)
+-- | Case Annote !(Maybe Poly) !(Maybe Ty) !Exp ![PatBind]
 flattenCase :: A.Exp -> (A.Exp, [(Pat,Exp)])
 flattenCase (A.Case _ _ _ e pbs) = (e,map (\ (A.PatBind p e') -> (p,e')) pbs)
 flattenCase _ = error "flattenCase: should prevent this case"

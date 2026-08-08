@@ -17,8 +17,9 @@
 -- is for tracking and comparing, not gating.
 --
 -- Extra rwc flags may be supplied via the RWC_PERF_FLAGS environment
--- variable (whitespace-separated), e.g. to benchmark a flag-gated pipeline:
---           RWC_PERF_FLAGS="--eidos" stack bench rewire:rwc-perf
+-- variable (whitespace-separated), e.g. to benchmark an alternate
+-- optimization setting:
+--           RWC_PERF_FLAGS="--rtl-opt 0" stack bench rewire:rwc-perf
 module Main (main) where
 
 import qualified RWC
@@ -99,9 +100,10 @@ goldenCases :: [String]
 goldenCases = ["gfmult", "Sha256", "OD19Filter", "cubehash"]
 
 -- | A single definition containing a chain of n let-bindings, each used
---   twice by the next (the gfmult shape). Stresses type inference: the
---   unifier rewrites types under the entire accumulated substitution on
---   every unification, so cost grows super-linearly with chain length.
+--   twice by the next (the gfmult shape). Stresses the passes that have
+--   to preserve sharing: Eidos.Simplify's let-preserving reduce and the
+--   Hyle inliner's uses-at-most-once heuristic -- substituting a binding
+--   instead of sharing it would grow exponentially in the chain length.
 genLetChain :: Int -> String
 genLetChain n = unlines $
       [ "{-# LANGUAGE DataKinds #-}"
@@ -194,7 +196,7 @@ genWhenChain n = unlines $
       ]
 
 -- | A stateful device whose state is an n-tuple of words, updated each
---   cycle. Stresses Purify (state threading) and ToHyle (tuple sizing).
+--   cycle. Stresses procify (state cells) and ToHyle (tuple sizing).
 genStateVars :: Int -> String
 genStateVars n = unlines $
       [ "{-# LANGUAGE DataKinds #-}"

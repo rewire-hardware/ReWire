@@ -164,8 +164,8 @@ untype :: Data d => d -> d
 untype = transform $ \ (_ :: Maybe Ty) -> Nothing
 
 ---
--- | Records
--- (not yet)
+-- | Records: see the RecVal, RecSel, and RecUpd expressions, the PatRec
+-- pattern, and the RecDefn declaration below.
 
 
 

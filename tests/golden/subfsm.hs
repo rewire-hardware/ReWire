@@ -1,9 +1,9 @@
--- Sequential machine composition (the plan's Q3 relaxation): a reactive
--- sub-machine on the left-hand side of a bind runs to completion --
--- pausing internally as often as it likes -- and its result is consumed
--- by the continuation. procify splices the sub-machine's block graph
--- once per continuation; its internal tail recursion closes through the
--- (definition, continuation) memo.
+-- Sequential machine composition: a reactive sub-machine on the
+-- left-hand side of a bind runs to completion -- pausing internally as
+-- often as it likes -- and its result is consumed by the continuation.
+-- procify splices the sub-machine's block graph once per continuation;
+-- its internal tail recursion closes through the (definition,
+-- continuation) memo.
 {-# LANGUAGE DataKinds #-}
 import Prelude hiding ((+))
 import ReWire

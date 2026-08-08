@@ -435,8 +435,8 @@ instance Pretty Term where
       -- -- Additional notation: iter, iterSt
       -- -- Additional notation: id, const, (.), flip, ($), (&&), (||), not, otherwise, maybe, either, fst, snd, curry, uncurry, undefined, (=<<), (>>)
       -- Additional notation: empty, singleton, cons, snoc, head, lastIndex, lastIndex', take, drop, init, tail, zipWith, zipWith3, packlo, packhi, unpacklo, unpackhi, (!=) ; update
-      --  -- Additional notation: Embedder.FiniteComp: +, -, *, div, ==, <, even, odd
-      -- Additional notation: Embedder.Bits: zero, one, bit, lit, `xor`, (@@) ; bitSlice, (@.) ; bitIndex, rotR, rotL, (/=), even, odd, Lit=W128
+      --  -- Additional notation: ReWire.FiniteComp: +, -, *, div, ==, <, even, odd
+      -- Additional notation: ReWire.Bits: zero, one, bit, lit, `xor`, (@@) ; bitSlice, (@.) ; bitIndex, rotR, rotL, (/=), even, odd, Lit=W128
       -- 
 
 

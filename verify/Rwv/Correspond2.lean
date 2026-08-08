@@ -1,12 +1,13 @@
 /-
-The concrete instantiation legs of M1: the two stream semantics
-(`Rwv.Eidos.Proc.run`, doc/eidos.md §7.5.4, and `Rwv.Hyle.Sem.run`,
-doc/hyle.md §6.4) presented as induced `Rwv.Sim.MealyE` machines, with
-proved run-equivalence lemmas connecting each concrete run function to
-`MealyE.run` of its induced machine. With these, the abstract
-simulation metatheorem (`Rwv.Sim.simE_run`) speaks directly about the
-concrete semantics: a `SimE` between the induced machines gives
-equality of the concrete successful traces.
+The concrete instantiation legs of the simulation metatheorem: the two
+stream semantics (`Rwv.Eidos.Proc.run`, doc/eidos.md §7.5.4, and
+`Rwv.Hyle.Sem.run`, doc/hyle.md §6.4) presented as induced
+`Rwv.Sim.MealyE` machines, with proved run-equivalence lemmas
+connecting each concrete run function to `MealyE.run` of its induced
+machine. With these, the abstract simulation metatheorem
+(`Rwv.Sim.simE_run`) speaks directly about the concrete semantics: a
+`SimE` between the induced machines gives equality of the concrete
+successful traces.
 -/
 import Rwv.Eidos.Machine
 import Rwv.Hyle.Semantics
@@ -110,7 +111,8 @@ theorem run_eq_mealy (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device)
 
 end Hyle
 
-/-! ## The Eidos-M process as an induced Mealy machine (§7.5.3–§7.5.4) -/
+/-! ## The Eidos-M process as an induced Mealy machine
+     (doc/eidos.md §7.5.3–§7.5.4) -/
 
 namespace Eidos
 

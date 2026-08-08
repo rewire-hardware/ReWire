@@ -32,21 +32,21 @@ The code below does just that
 readX :: StateT Int Maybe Int
 readX = get
 
-eval3 :: Exp -> StateT Int Maybe Int
-eval3 (Const i)   = return i
-eval3 (Neg e)     = do
-                      v <- eval3 e
+eval4 :: Exp -> StateT Int Maybe Int
+eval4 (Const i)   = return i
+eval4 (Neg e)     = do
+                      v <- eval4 e
                       return (- v)
-eval3 (Add e1 e2) = do
-                      v1 <- eval3 e1
-                      v2 <- eval3 e2
+eval4 (Add e1 e2) = do
+                      v1 <- eval4 e1
+                      v2 <- eval4 e2
                       return (v1 + v2)
-eval3 (Div e1 e2) = do
-                      v1 <- eval3 e1
-                      v2 <- eval3 e2
+eval4 (Div e1 e2) = do
+                      v1 <- eval4 e1
+                      v2 <- eval4 e2
                       if v2==0 then lift Nothing else return (v1 `div` v2)
                                  -- N.b., this is new.
 
-eval3 X           = readX
+eval4 X           = readX
 ```
 

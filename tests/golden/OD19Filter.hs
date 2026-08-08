@@ -11,7 +11,8 @@ zeroW32 = lit 0
 -- Tests 1-4.
 -------
 
--- Each of the following is implemented in VHDL in vhdl/filterprims.vhd.
+-- Each of the following is implemented in verilog/filterprims.sv and
+-- vhdl/filterprims.vhdl.
 
 test1 :: W32 -> W32 -> Bit
 -- test1 i s = let tot = w32sTodouble s i in bool2bit $ ckrange 0 86401 tot

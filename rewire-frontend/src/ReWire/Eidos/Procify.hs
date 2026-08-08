@@ -3,11 +3,10 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
--- | procify (doc/eidos.md §7; the plan's one hard pass): convert the
---   reactive fragment of a monomorphic ANF program into one process. The
---   traversal is CPS-shaped — @compile e k@ compiles a reactive
---   computation under a continuation — which right-associates binds by
---   construction:
+-- | procify (doc/eidos.md §7): convert the reactive fragment of a
+--   monomorphic ANF program into one process. The traversal is
+--   CPS-shaped — @compile e k@ compiles a reactive computation under a
+--   continuation — which right-associates binds by construction:
 --
 --   * @rwPrimSignal o >>= k@ becomes @pause o -> L_k@ (the continuation
 --     block's last parameter is the resumed input);
@@ -38,10 +37,9 @@
 --   parameters, with every pause/goto site supplying them (this is the
 --   machine record's @args@ field).
 --
---   This stage constructs and lint-checks the process; the compiled
---   output still lowers through the P-level shim (dump-and-fall-through,
---   like the bridge before it) until the machine-step fold and its
---   adapter land.
+--   This stage constructs the process; the block graph is then cleaned
+--   by 'ReWire.Eidos.ProcOpt', checked by the machine-mode lint, and
+--   lowered by the Eidos-to-Hyle fold ('ReWire.Eidos.ToHyle').
 module ReWire.Eidos.Procify (procify) where
 
 import ReWire.Annotation (Annote, ann, noAnn)
@@ -236,7 +234,7 @@ procify p@(Program datas defns procs top)
                               _            -> t
 
             -- A reactive call: compiled once per continuation (memoized
-            -- block-graph splicing; plan §12 Q3 resolved as accept).
+            -- block-graph splicing).
             -- Rejected: NOINLINE at bind-LHS (the splicing opt-out), and
             -- re-entry into a definition whose splice is still open under
             -- a fresh continuation (recursion through a bind's LHS needs

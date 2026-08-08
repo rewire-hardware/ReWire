@@ -8,8 +8,7 @@
 --   next-register values are computed from the body's equations each cycle.
 --
 --   Programs containing instances (sequential externs) or calls to
---   model-less combinational externs cannot be evaluated, as with the Core
---   interpreter today.
+--   model-less combinational externs cannot be evaluated.
 module ReWire.Hyle.Interp (interp, evalExp, evalOp, IEnv (..), Ins, Outs, run, subRange, inputValue, yamlPrefixes) where
 
 import ReWire.Annotation (Annote, Annotated (ann))

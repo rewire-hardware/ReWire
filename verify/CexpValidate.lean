@@ -1,8 +1,8 @@
 /-
 rwv-cexp-validate: the per-definition measurement driver for the
-verified Eidos-side expression compiler (Rwv.Eidos.Cexp, Phase 4a/4b).
+verified Eidos-side expression compiler (Rwv.Eidos.Cexp).
 
-    rwv-cexp-validate <file.eir> <file.rwc> [--fuel N] [-v]
+    rwv-cexp-validate <file.eir> <file.rwc> [--fuel=N] [-v]
 
 parses the pass-8 Eidos dump and the compiled .rwc, mirrors the
 reference translation's definition normalization (transDefn: peel
@@ -235,9 +235,8 @@ where
     else (cand, ((if cand == s then used else used.insert cand 1).insert s (k + 1)))
 
 /-- The Hyle names of the emitted definitions, in definition order
-(ToHyle.buildNameMap; the used map is seeded with the Hyle program's
-non-`Main.`-derived names as an approximation of the Cryptol-fragment
-and extern seeding). -/
+(ToHyle.buildNameMap; `seed` pre-populates the used map — the driver
+passes none, see the call site). -/
 def buildNameMap (seed : List String) (defns : List Defn) : HashMap Int String :=
   (defns.filter emitB).foldl (init := (∅, seed.foldl (fun m s => m.insert s 1) ∅))
     (fun (m, used) d =>

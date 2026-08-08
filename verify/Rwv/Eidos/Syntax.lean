@@ -14,9 +14,11 @@ import Std.Data.HashMap
 
 namespace Rwv.Eidos
 
-/-- The 64 builtins (ReWire.Builtins); occurrences print as
-`rwPrim<Name>`. Signatures and machine-level denotations:
-doc/eidos.md §7.6. -/
+/-- The 60 builtins of ReWire.Builtins, plus four retired names
+(`unfold`, `vecFoldR`, `vecFoldL`, `usingExtern`) the parser still
+accepts so older dumps load — they have no §7.6 signature and no
+denotation. Occurrences print as `rwPrim<Name>`; signatures and
+machine-level denotations: doc/eidos.md §7.6. -/
 inductive Builtin where
   | error | «extern» | cryptol
   | bind | ret
@@ -141,7 +143,7 @@ deriving DecidableEq, Repr
 
 mutual
 
-/-- Expressions (§3.3): 11 constructors. Constructor, primitive, and
+/-- Expressions (§3.3): 12 constructors. Constructor, primitive, and
 integer-literal occurrences carry their full instantiated types. -/
 inductive Exp where
   | var     (x : Id)

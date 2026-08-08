@@ -19,7 +19,7 @@ loop :: Input -> ReacT Input Output Identity ()
 loop i = return (compute i) >>= signal >>= loop
 
 -- | Vectors
--- reverse, `(++), empty, singleton, take, drop
+-- packlo, packhi, unpacklo, unpackhi
 compute :: Input -> Output
 compute (v,w) = let (lo,hi) = (packlo v w, packhi v w)
                     (lo',hi') = (packlo hi lo, packhi hi lo)
@@ -27,9 +27,3 @@ compute (v,w) = let (lo,hi) = (packlo v w, packhi v w)
                 in (v',w')
 
 main = undefined
-
-
-
-
--- | Vectors
--- packlo, packhi, unpacklo, unpackhi

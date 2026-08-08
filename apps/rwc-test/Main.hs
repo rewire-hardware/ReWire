@@ -1,7 +1,7 @@
 -- | rwc-test: the compiler golden test suite. Each tests/golden/*.hs is a
 --   ReWire program with golden files alongside it; this driver compiles it
 --   (with GHC and with rwc), interprets it, lowers it to Verilog/VHDL/Cryptol,
---   lints the HDL, and cosimulates the backends against each other (see
+--   lints the Verilog, and cosimulates the backends against each other (see
 --   "Cosim"). It also runs the expected-error (tests/negative) and
 --   expected-warning (tests/warning) suites and a flag-combination smoke group.
 module Main (main) where
@@ -116,10 +116,8 @@ testCompiler flags fn = do
             -- reference the cosimulation tests check the HDL backends against.
             -- With a per-test inputs file (<base>.input.yaml), rwc defaults
             -- --cycles to max(10, #inputs), driving the interpreter for one
-            -- cycle per listed input (the regenerate_expected_output.sh script
-            -- relies on the same default, so the two stay in agreement);
-            -- otherwise --interp drives all-zero inputs for the default 10
-            -- cycles.
+            -- cycle per listed input; otherwise --interp drives all-zero
+            -- inputs for the default 10 cycles.
             do
                   let inF = fn -<.> "input.yaml"
                   hasIn <- doesFileExist inF
@@ -524,7 +522,8 @@ main = do
             pure $ testGroup "negative" $ map testNegative files
       warnTests  <- testsFrom "warning"    (\ f -> pure [testWarning f])
       -- Eidos .eir fixtures: the parse/print fixpoint property of
-      -- doc/eidos.md §9, plus a poly-mode lint of both parses.
+      -- doc/eidos.md §9, plus a lint of both parses in the fixture's mode
+      -- (machine when it declares processes, poly otherwise).
       eirTests   <- do
             dir      <- getDataFileName ("tests" </> "eidos")
             files    <- map (dir </>) . filter (".eir" `isSuffixOf`) <$> listDirectory dir

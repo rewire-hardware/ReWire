@@ -219,9 +219,9 @@ t = 0 registers hold their `init` values. §6.4 makes this precise.
 
 Clock and reset are *not* inputs: the semantics is synchronous and
 cycle-indexed. The device carries emission metadata (clock and reset port
-names, reset synchronicity and polarity — the `--clock-name` /
-`--reset-name` / `--sync-reset` / `--invert-reset` configuration) that
-affects only the RTL realization, with a refinement obligation in §8.5.
+names, reset synchronicity and polarity — the `--clock` / `--reset` /
+`--sync-reset` / `--invert-reset` configuration) that affects only the RTL
+realization, with a refinement obligation in §8.5.
 
 ### 3.7 Programs
 
@@ -577,11 +577,13 @@ exactly at the explicit coercions.
 
 ### 8.3 Devices
 
-- **Verilog**: one top module; each register ↦ declared `reg` with
+- **Verilog**: one top module; each register ↦ declared `logic` with
   `initial`, all updated in one `always @(posedge clk, …)` block (reset
   branch loads the initials); each device `let` ↦ named wire + assign; each
-  instance ↦ module instantiation with named port connections; outputs ↦
-  continuous assigns.
+  instance ↦ module instantiation with named generic parameters and
+  *positional* port connections (clock, reset, inputs, outputs, in
+  declaration order — the hand-written implementations do not know the
+  synthesized port names); outputs ↦ continuous assigns.
 - **VHDL**: entity + architecture; registers ↦ signals with `:=` initials
   updated in one `process (clk, rst)`; lets ↦ signals + concurrent
   assignments; instances ↦ component instantiations (named association;
@@ -622,7 +624,8 @@ the configured reset protocol (assert reset for ≥ 1 cycle, deassert; sync or
 async, either polarity), the post-deassertion sampled trace of the emitted
 design equals 𝔇⟦device⟧ applied to the post-deassertion sampled inputs, and
 likewise the no-reset power-on trace (via `initial`/`:=` initials) — this is
-exactly what the cosimulation harness checks, per register.
+exactly what the cosimulation harness checks, cycle by cycle, on the device
+outputs.
 
 ### 8.6 Names and zero-width values
 
@@ -717,8 +720,9 @@ definition from backend inlining (including `--flatten`). A `tag` line
 gives a display name for one value of the `__resumption_tag` register
 (display metadata; not part of structural equality). An extern is
 sequential iff it declares a `clock` or `reset` name. (Other annotations
-are not part of the concrete syntax; the parser, `Hyle.Parse`, fills them
-with file positions.) Example:
+are not part of the concrete syntax; the parser, `Hyle.Parse`, leaves them
+empty except where a `--@` locator line or the parse position of an
+instance or a slice supplies one.) Example:
 
 ```
 -- f computes (x + y) zero-extended, unless x < y.

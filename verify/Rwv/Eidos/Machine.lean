@@ -7,15 +7,15 @@ halt-prefix stream semantics.
 Termination is by fuel: goto chains (and terminator-case nesting,
 which shares the goto fuel) are bounded by guardedness and the block
 structure, pure evaluation by pure-acyclicity, on well-formed
-processes; the fuel-freeness theorem is later-phase work. The goto
+processes; the fuel-freeness theorem is not proved here. The goto
 fuel and the pure evaluator's fuel are separate parameters.
 
-Stage B (the η tier): the whole layer threads the bit-level extern
-environment `E` (defaulted empty) into the pure evaluator, so a
-machine's meaning is parameterized by the interpretations of the
-model-less combinational externs it calls — the same environment the
-Hyle device run reads, which is what "both runs at the same η" means
-in the correspondence statement.
+The η tier: the whole layer threads the bit-level extern environment
+`E` (defaulted empty) into the pure evaluator, so a machine's meaning
+is parameterized by the interpretations of the model-less
+combinational externs it calls — the same environment the Hyle device
+run reads, which is what "both runs at the same η" means in the
+correspondence statement.
 -/
 import Rwv.Eidos.Eval
 import Std.Data.HashMap

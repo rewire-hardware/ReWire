@@ -67,8 +67,8 @@ Non-goals at this writing (deliberately deferred, with their seams named):
 multi-clock semantics (procs carry an optional clock-domain annotation,
 default the single implicit domain); multiple processes and process
 composition operators (the program grammar admits a proc list and a `top`
-designation; the singleton restriction is a removable lint rule,
-`single-top-proc`, not a grammar or parser rule); memory primitives.
+designation; the singleton restriction is only a property of what procify
+mints, not a grammar, parser, or lint rule); memory primitives.
 
 ## 2. Metavariables and annotations
 
@@ -148,7 +148,7 @@ Constructor, primitive, and integer-literal occurrences carry their full
 signature; everything else synthesizes. Type arguments (`@τ`) may be
 applied only to variable heads, must precede all term arguments in a
 spine, and must saturate the head's quantifier list — so the specializer
-reads instantiations directly off spines and `typeOf` is total (§5.2).
+reads instantiations directly off spines and `typeOf` is total (§5).
 
 The case binder `x` names the scrutinee's value in every alternative
 (the Core convention); the default alternative, when present, comes first.
@@ -170,13 +170,15 @@ shared block, i.e. one resumption state instead of one per reference.
 ### 3.5 Definitions
 
     defn ::= f :: sig ; attrs? f (x₁ :: τ₁) … (x_k :: τ_k) = e
-    attrs ::= (inline | noinline)? (from f₀ (τ̄))?
+    attrs ::= (inline | noinline)? (from f₀ (τ̄) | baked f₀)?
 
 A definition's parameter telescope matches a prefix of its signature's
 arrow spine (arity is structural). `inline`/`noinline` carry over GHC
-pragmas; `from f₀ (τ̄)` is *provenance* — the origin definition and type
-instantiation of a specializer-minted clone, carried for dumps, error
-messages, and stable generated-HDL naming.
+pragmas; `from f₀ (τ̄)` and `baked f₀` are *provenance* — the origin
+definition of a compiler-minted clone, with the type instantiation for a
+specializer clone and nothing further for a partial-evaluator clone whose
+baked arguments are terms — carried for dumps, error messages, and stable
+generated-HDL naming.
 
 ### 3.6 Datatypes
 
@@ -194,8 +196,9 @@ applications at use sites by first-order matching.
 A program designates one *device root* with `top`. The `proc` productions
 belong to the M level (§7); at the P level the list is empty. The
 restriction that the reactive root set is the singleton `{top}` is a
-named, removable lint rule (`single-top-proc`) — enforced neither by the
-grammar nor by the parser — reserving the seam for process composition.
+property of the current pipeline — procify mints exactly one proc, and
+neither the grammar, the parser, nor the linter imposes the restriction —
+reserving the seam for process composition.
 
 ## 4. Static semantics: Eidos-P
 
@@ -306,7 +309,6 @@ restriction, not a new syntax): in mono+ANF mode every definition body is
 
     e ::= let x :: τ = r in e  |  ret a  |  jump L (ā)
     r ::= a  |  x a₁ … a_k  |  C ā  |  p ā  |  case a of x { alt; … } :: τ
-        | proj_i a  |  xcall …            (M-level forms, §7)
     a ::= x  |  lit :: τ                  atoms
 
 Join points survive into this form (their bodies are ANF like any other;
@@ -395,9 +397,9 @@ Purification proper is a fold over a proc's label table producing:
 - one n-ary dispatch over labels;
 - register initials and the initial label, by compile-time evaluation of
   `entry` to its first pause (total by §7.4 guardedness);
-- a `halted` flag bit if `halt` is reachable, occupying the position of
-  the legacy `PuRe` tag (post-halt outputs are unspecified, as today; a
-  strict lint mode rejects reachable halt).
+- a `halted` flag bit if `halt` is reachable, occupying the record's
+  most-significant bit (post-halt outputs are unspecified; the strict
+  mode `--no-halt` rejects reachable halt).
 
 Tag width is `nbits(#labels)`; label constructor names derive from
 `(proc name, source continuation name)` under one shared, deterministic
@@ -667,9 +669,6 @@ fixed by the type):
 | `rwPrimMul` | ″ | as hyle `mul` |
 | `rwPrimDiv` | ″ | as hyle `udiv`: y = 0 ⇒ 2ⁿ−1 (SMT-LIB) |
 | `rwPrimMod` | ″ | as hyle `umod`: y = 0 ⇒ x (SMT-LIB) |
-
-*(The GHC reference models of every row in this table — including the
-SMT-LIB division-by-zero equations — are exact at every width.)*
 | `rwPrimPow` | ″ | as hyle `pow`: `⟨x^y⟩ₙ`, 0⁰ = 1 |
 | `rwPrimAnd`, `rwPrimOr`, `rwPrimXOr` | ″ | bitwise |
 | `rwPrimXNor` | ″ | `⟨2ⁿ−1⟩ − (x ⊕ y)` (bitwise complement of xor) |
@@ -689,6 +688,9 @@ SMT-LIB division-by-zero equations — are exact at every width.)*
 | `rwPrimRXOr` | ″ | as hyle `redxor`: parity of x |
 | `rwPrimRXNor` | ″ | ¬ parity |
 | `rwPrimMSBit` | ″ | the head element (bit n, LSB-numbered — the MSB) |
+
+*(The GHC reference models of every row in this table — including the
+SMT-LIB division-by-zero equations — are exact at every width.)*
 
 **Conversions, `Finite`, and miscellany**:
 
@@ -742,22 +744,26 @@ Every pass over Eidos:
    (the pipeline is monotone through poly → mono → mono+ANF → machine);
 4. is annotation-transparent (annotations propagate; never compared).
 
-`--debug-lint` re-lints between passes in the mode of the pipeline
-position, including after purification (machine mode) — the predecessor
-pipeline's back half was uncheckable by construction.
+`--debug-lint` fills the gaps the standing lints leave, so that every
+front-half pass is followed by a lint in the mode of its pipeline
+position; the machine-mode lint after purification runs unconditionally —
+the predecessor pipeline's back half was uncheckable by construction.
 
 **Specialization** (poly → mono) is a worklist over instantiation
 requests. A request is a spine `f @τ̄ …` in a monomorphic body whose head
 is a polymorphic definition; since local binders are monomorphic and type
 arguments saturate quantifier lists (§4.2), every request's `τ̄` is closed.
 Each new `(f, natNorm τ̄)` mints a clone by pure type substitution through
-the refreshing clone primitive, named `f$i` (per-origin counter, discovery
-order) with provenance `from f (τ̄)`; requesting spines rewrite to the
-clone with the type arguments erased; the clone's own body is scanned for
-further requests. Polymorphic definitions are templates and are dropped.
-The worklist runs in generations, bounded by the instantiation budget
-(`--depth`): only an instantiation *chain* deeper than the budget — poly
-recursion — is rejected; fan-out is unbounded.
+the refreshing clone primitive, named `f$<rendered type arguments>`
+(e.g. `ReWire.get$StateTW8Identity`; `ReWire.Eidos.Naming.originTag`
+sanitizes the rendering and hashes it when it is too long — so an
+unrelated instantiation elsewhere never renames this one) with provenance
+`from f (τ̄)`; requesting spines rewrite to the clone with the type
+arguments erased; the clone's own body is scanned for further requests.
+Polymorphic definitions are templates and are dropped. The worklist runs
+in generations, bounded by the instantiation budget (`--depth`): only an
+instantiation *chain* deeper than the budget — poly recursion — is
+rejected; fan-out is unbounded.
 
 **INLINE inlining** (mono; before further lowering) replaces every
 occurrence of an `inline`-attributed definition with its body as a lambda
@@ -803,7 +809,9 @@ type constructors are likewise the usual `"(,)"`-family names, and `[]`
 and `[_]` the list type constructors, applied via `tyatom` spines.
 
     defn  ::= var '::' sig NL attrs? var param* '=' exp
-    attrs ::= ('inline' | 'noinline')? ('from' name '(' (ty (',' ty)*)? ')')?
+    attrs ::= ('inline' | 'noinline')?
+              ( 'from' name '(' (ty (',' ty)*)? ')'
+              | 'baked' name )?
     param ::= '(' var '::' ty ')'
 
     exp   ::= '\\' param+ '->' exp
@@ -877,12 +885,12 @@ clone primitive and one lint rule.
 ReWire's essential transformation; no comparable compiler has one (Clash
 rejects recursion; FSM DSLs make states explicit in the source). Giving
 its output a first-class calculus turns the compiler's hardest contract
-(the purify input invariants) into a grammar, makes the whenchain class of
-divergence a static error (guardedness), deletes the layout
+(purification's input invariants) into a grammar, makes the whenchain
+class of divergence a static error (guardedness), deletes the layout
 reverse-engineering in the Hyle translation (the step record is declared,
 not inferred), and reserves clean seams for multiple processes and
-pipeline composition operators — the singular-ReacT restriction becomes
-one removable lint rule instead of an axiom of the unifier.
+pipeline composition operators — the singular-ReacT restriction becomes a
+removable property of the pipeline instead of an axiom of the unifier.
 
 ## 11. Correspondence to the implementation
 

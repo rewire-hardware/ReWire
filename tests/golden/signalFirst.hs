@@ -1,7 +1,7 @@
 -- The start device pauses (signals) before extruding its state: the state
 -- registers have no program-determined initial values (they're zero-filled
--- and unobservable until the extrude), and the first input is captured as an
--- argument of the generated R_ continuation constructor.
+-- and unobservable until the extrude), and the first input is captured as
+-- a saved parameter of the generated machine block.
 {-# LANGUAGE DataKinds #-}
 import Prelude hiding ((+))
 import ReWire

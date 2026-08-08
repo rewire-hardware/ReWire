@@ -52,7 +52,8 @@ getModule conf = getModuleWith translate conf
                       whenDump :: Applicative m => Natural -> (Bool -> a -> m a) -> a -> m a
                       whenDump n f = if (conf^.dump) n then f $ conf^.verbose else pure
 
-                  -- Phase 1 (haskell-src-exts) transformations.
+                  -- The haskell-src-exts passes, then the translation to Atmo
+                  -- and the embedding into Isabelle.
                   (m', exps) <- pure
                             >=> pDebug' "Fixing fixity."
                             >=> lift . fixFixity rn
@@ -64,9 +65,9 @@ getModule conf = getModuleWith translate conf
                             >=> desugar rn
                             >=> pDebug' "[Pass 2] Post-desugaring."
                             >=> whenDump 2 (printInfoHSE "[Pass 2] Haskell: Post-desugaring" rn (showtImps imps))
-                            >=> pDebug' "[Pass 51] Translating to atmo."
+                            >=> pDebug' "[Pass 3] Translating to atmo."
                             >=> toAtmo rn
-                            >=> whenDump 3 (printInfoAtmo "[Pass 51] Atmo: Pre-embedding" rn imps)
+                            >=> whenDump 3 (printInfoAtmo "[Pass 3] Atmo: Pre-embedding" rn imps)
                             >=> embedAtmo (getEmbedFile conf filename)
                             $ m
 

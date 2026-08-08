@@ -8,7 +8,7 @@ including extern-model edges.
 
 On programs this checker accepts, the semantics (Rwv.Hyle.Semantics)
 hits none of its error cases except the deliberate ones (model-less
-externs, instances); making that a theorem is later-phase work.
+externs, instances); that is not mechanized as a theorem.
 -/
 import Rwv.Hyle.Syntax
 import Std.Data.HashMap

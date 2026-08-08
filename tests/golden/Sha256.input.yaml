@@ -1,4 +1,4 @@
-# Per-cycle inputs for the Sha256_1 golden (consumed by `rwc --interpret`).
+# Per-cycle inputs for the Sha256 golden (consumed by `rwc --interpret`).
 # Input  Inp = Init (Hex W32) | Load (Hex W32) | DigestQ  (tags 0,1,2; 2 bits).
 #   __in0 (514 bits) = tag(2) ++ block(512), MSB-first; block = Hex w0..w15 with
 #   w0 the most-significant 32-bit word. Init/Load carry a 512-bit message block;

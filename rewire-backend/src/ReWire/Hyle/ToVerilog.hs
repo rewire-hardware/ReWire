@@ -5,11 +5,11 @@
 {-# LANGUAGE Safe #-}
 -- | The Verilog backend on Hyle. With widths explicit and exact in the IR
 --   (doc/hyle.md, G1), expression emission is a per-construct template: no
---   context-width reconstruction (the old @wcast@/@expWidth@), no pattern
---   compilation, no clock plumbing through the module tree (Hyle defns are
---   always pure -- sequential externs are device-level instances), and the
---   state machine is built from the device's explicit registers rather than
---   reconstructed from the resumption layout.
+--   context-width reconstruction, no pattern compilation, no clock plumbing
+--   through the module tree (Hyle defns are always pure -- sequential
+--   externs are device-level instances), and the state machine is built
+--   from the device's explicit registers rather than reconstructed from the
+--   resumption layout.
 --
 --   Defns are emitted one module each (inlining decisions are made upstream
 --   by ReWire.Hyle.Transform.inline); the device becomes the top module:
@@ -626,7 +626,7 @@ mkSignal (n, sz) = Logic [fromIntegral sz] n []
 toLit :: Natural -> V.Exp
 toLit v = LitBits $ bitVec (fromIntegral $ szBitRep v) v
 
--- | Break up giant literals (as the Core backend does).
+-- | Break up giant literals (mirrored by the VHDL backend's 'litExp').
 bvToExp :: BV -> V.Exp
 bvToExp bv | width bv == 0         = V.nil
            | width bv < maxLit     = LitBits bv
@@ -645,7 +645,7 @@ bvToExp bv | width bv == 0         = V.nil
 
 -- | A testbench driving the device with interp-style inputs and printing
 --   outputs each cycle in the interpreter's YAML format (same protocol and
---   timing as the Core backend's testbench).
+--   timing as the VHDL testbench).
 testbench :: Config -> M.Device -> [Ins] -> V.Module
 testbench conf dev inps = V.Module "tb" [] []
       (  map mkSignal (clkRst <> ins)

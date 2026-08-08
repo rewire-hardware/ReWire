@@ -59,7 +59,7 @@ toAtmo rn = \ case
       Module _ (Just (ModuleHead _ (ModuleName _ mname) _ exps)) _ _ (reverse -> ds) -> do
             tyDefs <- foldM (transData rn) [] ds
             (recDefs,recEnv) <- transRecs rn ds
-            tySyns <- if isPrimMod mname then pure [] -- TODO(chathhorn): ignore type synonyms in Embedder.hs module.
+            tySyns <- if isPrimMod mname then pure [] -- TODO(chathhorn): ignore type synonyms in the ReWire.hs module.
                       else foldM (transTyDecl rn) [] ds
             tySigs <- foldM (transTySig rn) [] ds
             fnDefs <- foldM (transDef rn recEnv tySigs inls) [] ds

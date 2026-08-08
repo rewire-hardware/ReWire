@@ -100,7 +100,7 @@ def build_equiv(explicit):
 # ------------------------------------------------------------- dump phase
 
 def gen_dumps(rwc, src: Path, work: Path, force: bool, verbose: bool):
-    """Compile src with --core --dump-all; return (base, raw, final, err)."""
+    """Compile src to .sv with --dump-all; return (base, raw, final, err)."""
     base = src.stem
     raw_cached = work / f"{base}.9.rwc"
     if not force and raw_cached.exists() \

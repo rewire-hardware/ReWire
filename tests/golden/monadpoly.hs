@@ -1,9 +1,10 @@
 -- Helpers polymorphic over the monad, with monadic operators at a bare type
--- variable: 'whenB' (no pragma) must be monomorphized by the typechecker's
--- specializer; 'unlessB' (INLINE) instead dissolves in inlineAnnotated;
--- 'thenB' exercises (>>) at a type variable. The helpers are instantiated at
--- two concrete monads (the inner StateT and the full ReacT stack). The state
--- bit toggles when the input is low and latches high otherwise.
+-- variable: 'whenB' (no pragma) must be monomorphized by the Eidos
+-- specializer (ReWire.Eidos.Spec); 'unlessB' (INLINE) instead dissolves in
+-- inlineAnnotated; 'thenB' exercises (>>) at a type variable. The helpers
+-- are instantiated at two concrete monads (the inner StateT and the full
+-- ReacT stack). The state bit toggles when the input is low and latches
+-- high otherwise.
 import ReWire
 
 whenB :: Monad m => Bit -> m () -> m ()

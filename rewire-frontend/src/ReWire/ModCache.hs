@@ -97,9 +97,8 @@ getDevice conf fp = do
             let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
             verb ("Writing Eidos IR to file: " <> pack eirFile) ()
             liftIO $ T.writeFile eirFile $ prettyProgram eirPE'
-      -- The machine adapter owns the lowering (the retired purifier's
-      -- output shape). Every well-formed device has a reactive root
-      -- (the mono lint's device rule), hence a process.
+      -- Every well-formed device has a reactive root (the mono lint's
+      -- device rule), hence a process.
       when (null $ Eidos.progProcs eirPE') $ failAt noAnn
             "no process was constructed for the device root (rwc bug)."
       -- The fold owns the lowering: Eidos straight to Hyle

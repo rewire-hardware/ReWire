@@ -6,7 +6,7 @@ reference interpreter (rewire-backend ReWire.Hyle.Interp) construct for
 construct.
 
 Definitions are denoted in dependency order — the program's acyclic
-call graph (doc/hyle.md §4.4) makes §6.2 a well-founded definition, and
+call graph (doc/hyle.md §4.3) makes §6.2 a well-founded definition, and
 here that shows up as `topoDefns` ordering the fold that builds the
 definition environment, after which expression evaluation is
 structurally recursive.
@@ -110,15 +110,15 @@ abbrev FEnv := HashMap String (List BV → Except String BV)
 /-- The static extern table: extern name ↦ model definition name, for
 model-carrying combinational externs. A lookup miss is a model-less
 extern, whose interpretation (if any) comes from the extern
-environment `EEnv` below (stage B of the foreign tier). -/
+environment `EEnv` below. -/
 abbrev XEnv := HashMap String String
 
 /-- Bit-level interpretations of MODEL-LESS combinational externs
-(stage B, the η tier): per extern name, a function of the
-CONCATENATION of the input ports (MSB-first, in port order). The
-correspondence statement quantifies over this environment with both
-semantics reading the SAME one — the algebraic η_alg enters by
-instantiating it at `rep ∘ η ∘ decode` (Rwv.Eidos.Cstep.etaB). -/
+(the η tier): per extern name, a function of the CONCATENATION of
+the input ports (MSB-first, in port order). The correspondence
+statement quantifies over this environment with both semantics
+reading the SAME one — the algebraic η_alg enters by instantiating
+it at `rep ∘ η ∘ decode` (Rwv.Eidos.Cstep.etaB). -/
 abbrev EEnv := String → Option (BV → Except String BV)
 
 /-- The empty extern environment: every model-less extern
@@ -168,8 +168,8 @@ evaluation against an environment of already-denoted definitions. The
 mux is short-circuiting, as in the interpreter (mathematically eager —
 both arms denote, and evaluation is effect-free on checked programs, so
 the difference is unobservable). The trailing extern environment `E`
-(stage B, defaulted empty) interprets MODEL-LESS extern calls — with a
-model the §6.1 model path is unchanged, errors included; without one,
+(defaulted empty) interprets MODEL-LESS extern calls — with a model
+the §6.1 model path is unchanged, errors included; without one,
 generic-free calls read TOTALLY through `Sem.xapply` (the configuration
 the committed semantics previously rejected outright). -/
 def evalExp (F : Sem.FEnv) (X : Sem.XEnv) (ρ : HashMap String BV) (e : Exp)
@@ -232,7 +232,7 @@ def deps (X : XEnv) : Exp → List String
 /-- Order the definitions so every definition follows its dependencies:
 the §6.2 well-founded order made explicit. Kahn-style selection with a
 pass counter; failure to progress means recursion, which the checker
-rejects (doc/hyle.md §4.4). -/
+rejects (doc/hyle.md §4.3). -/
 def topoDefns (X : XEnv) (defns : List Defn) : Except String (List Defn) :=
   go defns.length [] defns
 where

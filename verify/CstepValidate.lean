@@ -1,5 +1,5 @@
 /-
-rwv-cstep-validate: the headline driver for the Phase 4b-ii validator
+rwv-cstep-validate: the headline driver for the machine-step validator
 (Rwv.Eidos.Cstep), with an optional per-label measurement mode.
 
     rwv-cstep-validate <file.eir> <file.rwc> [--fuel=N] [--measure]
