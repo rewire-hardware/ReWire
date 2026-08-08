@@ -64,7 +64,15 @@ them through. The foreign fields all default to "absent", so a bare
     The soundness theorems consume these only through an explicit
     premise tying `cryF` to `hyleDefs`' denotations
     (`Rwv.Eidos.Cexp.ForeignC`); a wrong map fails validation, never
-    soundness. -/
+    soundness.
+  * `hyleX` (stage B) — the compiled program's syntactic extern→model
+    table (`Rwv.Hyle.Sem.xenv` of the foreign program, structurally):
+    the verified compiler's DECIDABLE gate for "model-less" — its
+    extern row compiles an uninterpreted-call node only when the
+    extern is absent here (`ForeignC`'s extern clause ties a miss to
+    `xtF` being unpopulated, so the evaluator's row is then the
+    η-tier's decode-gated bit path), and its Cryptol row inlines
+    spliced definitions through the bridge at exactly this table. -/
 structure DEnv where
   ctors    : HashMap String (List String)
   ctorSig  : HashMap String Sig
@@ -75,6 +83,7 @@ structure DEnv where
   cryD     : String → String → Ty → Option String := fun _ _ _ => none
   hyleDefs : HashMap String Rwv.Hyle.Defn := ∅
   hyleFuel : Nat := 0
+  hyleX    : HashMap String String := ∅
 
 def DEnv.ofDatas (datas : List DataDefn) : DEnv where
   ctors   := HashMap.ofList (datas.map fun d => (d.name, d.cons.map (·.name)))

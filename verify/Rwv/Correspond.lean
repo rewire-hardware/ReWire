@@ -66,13 +66,24 @@ well-typed input trace, whenever both sides run successfully — the
 machine on the algebraic inputs, the device on their port-split
 encodings — the traces agree through the representation function.
 (Totality of both runs at sufficient fuel on well-formed programs is a
-separate, later obligation; this is the agreement half.) -/
+separate, later obligation; this is the agreement half.)
+
+Stage B (the η tier): the statement is parameterized by the bit-level
+model-less-extern environment `E`, with BOTH runs reading the SAME
+one — the machine through `Eval.evalExt`'s decode-gated foreign row,
+the device through `evalExp`'s total `Sem.xapply` reading. The
+algebraic quantification (∀ η_alg) is this parameter at
+`rep ∘ η ∘ decode` instantiations (`Rwv.Eidos.Cstep.etaB`); the
+validator's soundness theorem concludes the statement for EVERY `E`,
+which is the ∀η reading. At the default (empty) environment the
+definition is exactly the pre-extension statement. -/
 def Corresponds (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel gotoFuel : Nat)
-    (p : Proc) (H : Rwv.Hyle.Program) : Prop :=
+    (p : Proc) (H : Rwv.Hyle.Program)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Prop :=
   ∀ (ins : List Val), (∀ v ∈ ins, Val.HasTy Δ v p.inTy) →
     ∀ encIns, ins.mapM (Val.portSplit Δ evalFuel p.inTy) = .ok encIns →
-    ∀ mt, Proc.run Δ defns evalFuel gotoFuel p ins = .ok mt →
-    ∀ ht, H.run encIns = .ok ht →
+    ∀ mt, Proc.run Δ defns evalFuel gotoFuel p ins E = .ok mt →
+    ∀ ht, H.run encIns E = .ok ht →
     TraceAgrees Δ evalFuel p.outTy mt ht
 
 end Rwv.Eidos

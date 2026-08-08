@@ -25,12 +25,16 @@ For each tests/golden/<base>.rwc with a <base>.hs source:
      prefix length.
 
 Skips, with explicit reasons: goldens with no .hs source; devices with
-extern instances (pre-detected from the .rwc); programs using
-combinational externs where some extern lacks a model in the .rwc
-(model-LESS externs are the stage-B algebraic tier; model-carrying
-ones — and all Cryptol FFI uses — evaluate through the DEnv foreign
-hooks the Lean driver instantiates from the compiled .rwc itself);
-and tests where rwc's interpreter itself refuses ("cannot evaluate").
+extern instances (pre-detected from the .rwc); and tests where rwc's
+interpreter itself refuses ("cannot evaluate"). Model-carrying
+externs — and all Cryptol FFI uses — evaluate through the DEnv foreign
+hooks the Lean driver instantiates from the compiled .rwc itself.
+Programs with model-LESS combinational externs (the stage-B η tier)
+run under --eta-synth: rwc cannot interpret them at all, so the driver
+synthesizes a deterministic algebraic η and checks the correspondence
+INTERNALLY — the Eidos-M machine trace against the mechanized Hyle
+device run at the same η (the ∀η statement at one concrete η); the
+harness reports these as OK (eta self-test) on driver success.
 
 Usage:
   verify/test/eidos-diff-goldens.py [--only SUBSTR] [--cycles N]
@@ -264,16 +268,14 @@ def main():
         # every dump carries rwPrimError stub *definitions* (named
         # rwPrimExtern#9 / rwPrimCryptol#11, unique-suffixed) whose error
         # strings mention the bare name. Cryptol uses and model-carrying
-        # externs evaluate through the foreign hooks (stage A); only
-        # model-LESS externs (the stage-B algebraic tier) skip.
+        # externs evaluate through the foreign hooks (stage A);
+        # model-LESS externs run the stage-B --eta-synth internal check
+        # (rwc cannot interpret them, so there is no external reference).
         eir = work / f"{base}.eir"
         eir_text = eir.read_text()
+        eta_synth = []
         if "(rwPrimExtern ::" in eir_text:
-            missing = modelless_externs(f)
-            if missing:
-                report(base, "SKIP",
-                       f"model-less extern(s) {','.join(missing)} (the stage-B algebraic tier)")
-                continue
+            eta_synth = modelless_externs(f)
 
         # The Lean side: stimulus + Eidos-M trace.
         stim = work / f"{base}.stim.yaml"
@@ -283,6 +285,8 @@ def main():
         raw9 = work / f"{base}.9.rwc"
         if raw9.exists():
             cmd += ["--foreign", str(raw9)]
+        if eta_synth:
+            cmd += ["--eta-synth"]
         if args.verbose:
             print("  $", " ".join(cmd))
         try:
@@ -295,6 +299,14 @@ def main():
             report(base, "LEAN-FAIL", stderr_tail(r.stderr))
             continue
         halted = "halted after" in r.stderr
+
+        if eta_synth:
+            # No rwc leg: the driver checked the two mechanized
+            # semantics against each other at the synthesized η.
+            report(base, "OK",
+                   f"eta self-test ({args.cycles} cycles; model-less extern(s) "
+                   f"{','.join(eta_synth)})")
+            continue
 
         # The Haskell reference on the compiled .rwc.
         hs_out = work / f"{base}.hs.yaml"

@@ -130,9 +130,10 @@ structure Args where
   stimOut : Option String := none
   fuel    : Nat := 100000000
   foreignF : Option String := none
+  etaSynth : Bool := false
 
 def usage : String :=
-  "usage: rwv-eidos-diff <file.eir> <file.rwc> [--cycles N] [--seed S] [--stim FILE] [--fuel N] [--foreign FILE.rwc]"
+  "usage: rwv-eidos-diff <file.eir> <file.rwc> [--cycles N] [--seed S] [--stim FILE] [--fuel N] [--foreign FILE.rwc] [--eta-synth]"
 
 private def natOpt (flag val : String) : Except String Nat :=
   match val.toNat? with
@@ -146,17 +147,22 @@ def parseArgs (argv : List String) : Except String Args := do
   let mut stim : Option String := none
   let mut fuel : Nat := 100000000
   let mut foreignF : Option String := none
+  let mut etaSynth : Bool := false
   let mut rest := argv
   repeat
     match rest with
     | [] => break
+    | "--eta-synth" :: more => etaSynth := true; rest := more
     | "--cycles" :: v :: more => cycles := (← natOpt "--cycles" v); rest := more
     | "--seed"   :: v :: more => seed := some (← natOpt "--seed" v); rest := more
     | "--fuel"   :: v :: more => fuel := (← natOpt "--fuel" v); rest := more
     | "--stim"   :: v :: more => stim := some v; rest := more
     | "--foreign" :: v :: more => foreignF := some v; rest := more
     | [f] =>
-        if f = "--cycles" || f = "--seed" || f = "--stim" || f = "--fuel" || f = "--foreign" then
+        if f = "--eta-synth" then
+          etaSynth := true
+          rest := []
+        else if f = "--cycles" || f = "--seed" || f = "--stim" || f = "--fuel" || f = "--foreign" then
           throw s!"{f}: missing argument"
         else
           if f.startsWith "-" && f ≠ "-" then throw s!"unknown option: {f}"
@@ -172,7 +178,8 @@ def parseArgs (argv : List String) : Except String Args := do
         else positional := positional ++ [arg]
         rest := more
   match positional with
-  | [eir, rwc] => return { eirFile := eir, rwcFile := rwc, cycles, seed, stimOut := stim, fuel, foreignF }
+  | [eir, rwc] => return { eirFile := eir, rwcFile := rwc, cycles, seed, stimOut := stim, fuel,
+                           foreignF, etaSynth }
   | _          => throw usage
 
 /-- The base name of a path: strip directories and the last extension
@@ -280,6 +287,82 @@ def stimText (names : List String) (cycles : List (List BV)) : String :=
 where
   entry (p : String × BV) : String := s!"{p.1}: {p.2.nat}"
 
+/-! ## The synthesized η (--eta-synth, stage B)
+
+For model-less combinational externs the Haskell interpreter refuses
+the program, so no external reference trace exists. Under --eta-synth
+the driver synthesizes a DETERMINISTIC pseudorandom algebraic
+interpretation per extern (a canonical value of the occurrence's
+result type, drawn from a seed mixing the extern's name and the
+argument bits, then `rep`ped — canonical by construction, so the
+decode gate always passes), installs it as the bit-level extern
+environment `E` for BOTH mechanized semantics, and checks the §7.5.6
+correspondence INTERNALLY: the Eidos-M trace against the mechanized
+Hyle device run at the same `E` (the ∀η statement at one concrete η).
+The result types are scraped from the .eir's own rwPrimExtern
+occurrences (the impl monotype, argument 7). -/
+
+/-- Collect `(extern name, impl monotype)` from every saturated
+rwPrimExtern occurrence. -/
+partial def scanExp (acc : List (String × Ty)) (e : Exp) : List (String × Ty) :=
+  let (hd, args) := Eval.flattenApp e
+  let acc := match hd, args with
+    | .prim ty .«extern»,
+      _ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: _impl :: _inst :: _rest =>
+        match (Ty.flattenArrow ty).1[6]? with
+        | some ity => (s, ity) :: acc
+        | none => acc
+    | _, _ => acc
+  let acc := args.foldl scanExp acc
+  match hd with
+  | .lam _ b => scanExp acc b
+  | .letE (.nonRec _ rhs) b => scanExp (scanExp acc rhs) b
+  | .letE (.recB bs) b => scanExp (bs.foldl (fun a pr => scanExp a pr.2) acc) b
+  | .letE (.join _ _ jb) b => scanExp (scanExp acc jb) b
+  | .jump _ es => es.foldl scanExp acc
+  | .cases _ scrut _ alts =>
+      alts.foldl (fun a alt => match alt with | .mk _ _ body => scanExp a body)
+        (scanExp acc scrut)
+  | .litVec _ es => es.foldl scanExp acc
+  | .litList _ es => es.foldl scanExp acc
+  | _ => acc
+
+partial def scanTerm (acc : List (String × Ty)) : Term → List (String × Ty)
+  | .pause out _ args => (out :: args).foldl scanExp acc
+  | .goto _ args => args.foldl scanExp acc
+  | .halt e => scanExp acc e
+  | .cases scrut alts =>
+      alts.foldl (fun a alt => match alt with | .mk _ _ t => scanTerm a t)
+        (scanExp acc scrut)
+
+def scanCmd (acc : List (String × Ty)) : Cmd → List (String × Ty)
+  | .bind _ e => scanExp acc e
+  | .get _ _ => acc
+  | .put _ e => scanExp acc e
+
+/-- All extern occurrences of a program, deduplicated per name with a
+consistency check on the impl monotypes. -/
+def scanProgram (p : Program) : Except String (List (String × Ty)) := do
+  let occs := p.procs.foldl (init := p.defns.foldl (fun a d => scanExp a d.body) [])
+    fun a pr => pr.blocks.foldl (init := a) fun a (_, b) =>
+      scanTerm (b.cmds.foldl scanCmd a) b.term
+  occs.foldlM (init := []) fun acc (s, ity) =>
+    match acc.lookup s with
+    | some ity' =>
+        if Cexp.teq ity ity' then pure acc
+        else throw s!"--eta-synth: extern {s} used at two impl monotypes"
+    | none => pure ((s, ity) :: acc)
+
+/-- The synthesized bit-level extern environment: per scraped extern,
+a canonical value of the result type drawn deterministically from the
+name and the argument bits, `rep`ped. -/
+def synthEta (Δ : DEnv) (repFuel : Nat) (etaTys : List (String × Ty)) :
+    Rwv.Hyle.Sem.EEnv := fun s =>
+  (etaTys.lookup s).map fun ity bv => do
+    let res := (Ty.flattenArrow ity).2
+    let (v, _) ← genVal Δ res (seed0 s!"{s}/{bv.width}/{bv.bits.toNat}")
+    Val.rep Δ repFuel v
+
 /-! ## Main -/
 
 /-- Structural fuel for rep/sizeOf/detupleSizes (bounds type/value
@@ -338,6 +421,13 @@ def main (argv : List String) : IO UInt32 := do
                     return 1
                 | .ok fp => pure (t, fp)
           let Δ := addForeign Δ frTxt frProg
+          -- Stage B: the synthesized η for model-less externs.
+          let etaTys ← if args.etaSynth then
+              match scanProgram p with
+              | .error e => return ← err e
+              | .ok tys => pure tys
+            else pure []
+          let E := synthEta Δ repFuel etaTys
           -- Port-convention validation: detupleSizes at τ_I/τ_O must
           -- reproduce the device's declared port widths exactly.
           match Val.detupleSizes Δ repFuel pr.inTy, Val.detupleSizes Δ repFuel pr.outTy with
@@ -361,7 +451,7 @@ def main (argv : List String) : IO UInt32 := do
                 if let some path := args.stimOut then
                   IO.FS.writeFile ⟨path⟩ (stimText (dev.inputs.map (·.1)) inBVs)
                 -- The machine run and the trace.
-                match pr.run Δ defns args.fuel 100000 inputs with
+                match pr.run Δ defns args.fuel 100000 inputs E with
                 | .error e => err s!"machine run: {e}"
                 | .ok tr => do
                   match tr.outs.mapM (Val.portSplit Δ repFuel pr.outTy) with
@@ -370,4 +460,15 @@ def main (argv : List String) : IO UInt32 := do
                     IO.print (Rwv.Diff.printTrace (dev.outputs.map (·.1)) outBVs)
                     if tr.halted.isSome then
                       IO.eprintln s!"rwv-eidos-diff: note: halted after {tr.outs.length} observable cycle(s) (of {args.cycles} inputs); the trace is the halt prefix"
+                    -- Stage B: the internal correspondence check — the
+                    -- mechanized Hyle device at the SAME synthesized η.
+                    if args.etaSynth then
+                      match hp.run inBVs E with
+                      | .error e =>
+                          return ← err s!"eta self-test: mechanized Hyle run failed: {e}"
+                      | .ok hyTrace =>
+                          if outBVs == hyTrace.take outBVs.length then
+                            IO.eprintln s!"rwv-eidos-diff: eta self-test OK ({outBVs.length} cycle(s), externs: {String.intercalate "," (etaTys.map (·.1))})"
+                          else
+                            return ← err "eta self-test: the Eidos-M trace and the mechanized Hyle trace DISAGREE at the synthesized η"
                     return 0
