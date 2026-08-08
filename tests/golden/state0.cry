@@ -16,47 +16,22 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// main.$dispatch
-rw_main__dispatch : [6] -> [3] -> [10]
-rw_main__dispatch x0 x1 = if (take`{3} x0) == 0b000 then (rw_main__x2 x1) else (if (take`{3} x0) == 0b001 then (rw_main__unused (drop`{3} x0) x1) else (if (take`{3} x0) == 0b010 then (rw_main__unused2 (drop`{3} x0) x1) else (if (take`{3} x0) == 0b011 then (rw_main__unused3 x1) else (rw_main__unused4 x1))))
-
-// main.$x2
-rw_main__x2 : [3] -> [10]
-rw_main__x2 x0 = rw_main_dev x0
-
-// main._unused
-rw_main__unused : [3] -> [3] -> [10]
-rw_main__unused x0 x1 = s0 # 0b000000
-  where
-    s0 : [4]
-    s0 = 0b1 # x0
-
-// main._unused2
-rw_main__unused2 : [3] -> [3] -> [10]
-rw_main__unused2 x0 x1 = 0b0000001 # x0
-
-// main.dev
-rw_main_dev : [3] -> [10]
-rw_main_dev x0 = 0b0000010 # x0
-
-// main._unused3
-rw_main__unused3 : [3] -> [10]
-rw_main__unused3 x0 = 0b1000000000
-
-// main._unused4
-rw_main__unused4 : [3] -> [10]
-rw_main__unused4 x0 = 0b0000011000
-
 // Per-cycle step: outputs # next register values.
 rw_step : [6] -> [3] -> [10]
-rw_step st i = (take`{1} s2) # ((take`{3} (drop`{1} s2)) # (drop`{4} s2))
+rw_step st i = (take`{1} s5) # ((take`{3} (drop`{1} s5)) # (drop`{4} s5))
   where
     s0 : [6]
     s0 = st
     s1 : [3]
     s1 = i
-    s2 : [10]
-    s2 = rw_main__dispatch s0 s1
+    s2 : [3]
+    s2 = drop`{3} s0
+    s3 : [4]
+    s3 = 0b1 # s2
+    s4 : [3]
+    s4 = drop`{3} s0
+    s5 : [10]
+    s5 = if (take`{3} s0) == 0b000 then (0b0000010 # s1) else (if (take`{3} s0) == 0b001 then (s3 # 0b000000) else (if (take`{3} s0) == 0b010 then (0b0000001 # s4) else (if (take`{3} s0) == 0b011 then 0b1000000000 else 0b0000011000)))
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [3]

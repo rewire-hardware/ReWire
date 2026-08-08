@@ -1,46 +1,19 @@
---| state dispatch for process main: 0=i
-main.$dispatch : ([16], [1]) -> [24]
-main.$dispatch disc i =
-      main.i i disc
-
---| block '$L.r1' of process main
-main.r1 : ([8], [8], [16]) -> [24]
-main.r1 r0 r1 s0 =
-      let $a = add r0 r1 in
-      let s01 = r1 # $a in
-      main.first2 s01
-
---| block '$L.Main.second' of process main
-main.second : ([8], [16]) -> [24]
-main.second r0 s0 =
-      main.r1 r0 (trunc 8 (lshr s0 128'h0)) s0
-
---| block '$L.Main.first' of process main
-main.first : ([16]) -> [24]
-main.first s0 =
-      main.second s0[8 +: 8] s0
-
---| block '$L.i' of process main (state 0)
-main.i : ([1], [16]) -> [24]
-main.i i s0 =
-      if not i then main.first s0
-            else main.first2 s0
-
---| block '$L.r0' of process main
-main.r0 : ([8], [16]) -> [24]
-main.r0 r0 s0 =
-      r0 # s0
-
 --| block '$L.Main.first2' of process main
 main.first2 : ([16]) -> [24]
 main.first2 s0 =
-      main.r0 s0[8 +: 8] s0
+      let r0$i0 = s0[8 +: 8] in
+      r0$i0 # s0
 
 device top_level
       input __in0 : [1]
       output __out0 : [8]
       register __st0 : [16] init 16'h1
       tag i = 0
-      let $res = main.$dispatch __st0 __in0
+      let $res = if not __in0 then (let r0$i0 = __st0[8 +: 8] in
+                  let r1$i1 = trunc 8 (lshr __st0 128'h0) in
+                  let $a$i2 = add r0$i0 r1$i1 in
+                  let s01$i3 = r1$i1 # $a$i2 in
+                  main.first2 s01$i3)
+                  else main.first2 __st0
       __out0 := $res[16 +: 8]
       next __st0 := $res[0 +: 16]

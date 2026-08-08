@@ -16,309 +16,89 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// main.$dispatch
-rw_main__dispatch : [1038] -> [514] -> [1296]
-rw_main__dispatch x0 x1 = if (take`{2} x0) == 0b00 then (rw_main_i (take`{6} (drop`{2} x0)) x1 (take`{256} (drop`{8} x0)) (take`{512} (drop`{264} x0)) (take`{256} (drop`{776} x0)) (drop`{1032} x0)) else (if (take`{2} x0) == 0b01 then (rw_main__unused2 x1 (take`{256} (drop`{8} x0)) (take`{512} (drop`{264} x0)) (take`{256} (drop`{776} x0)) (drop`{1032} x0)) else (rw_main__x2 x1 (take`{256} (drop`{8} x0)) (take`{512} (drop`{264} x0)) (take`{256} (drop`{776} x0)) (drop`{1032} x0)))
-
-// main.arm
-rw_main_arm : [514] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_arm x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 = rw_main_dev x0 x17 x18 s0 x20
-  where
-    s0 : [256]
-    s0 = (x9 + x1) # ((x10 + x2) # ((x11 + x3) # ((x12 + x4) # ((x13 + x5) # ((x14 + x6) # ((x15 + x7) # (x16 + x8)))))))
-
-// main.$ds3
-rw_main__ds3 : [514] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main__ds3 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 = rw_main_arm x0 x1 x2 x3 x4 x5 x6 x7 x8 s0 s1 s2 s3 s4 s5 s6 s7 x10 x11 x12 x13
-  where
-    s0 : [32]
-    s0 = take`{32} x9
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x9)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x9)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x9)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x9)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x9)
-    s6 : [32]
-    s6 = take`{32} (drop`{192} x9)
-    s7 : [32]
-    s7 = drop`{224} x9
-
-// main.arm2
-rw_main_arm2 : [514] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_arm2 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 = rw_main__ds3 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x9 x10 x11 x12
-
-// main.$ds2
-rw_main__ds2 : [514] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main__ds2 x0 x1 x2 x3 x4 x5 = rw_main_arm2 x0 s0 s1 s2 s3 s4 s5 s6 s7 x2 x3 x4 x5
-  where
-    s0 : [32]
-    s0 = take`{32} x1
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x1)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x1)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x1)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x1)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x1)
-    s6 : [32]
-    s6 = take`{32} (drop`{192} x1)
-    s7 : [32]
-    s7 = drop`{224} x1
-
-// main.arm3
-rw_main_arm3 : [514] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_arm3 x0 x1 x2 x3 x4 = rw_main__ds2 x0 x3 x1 x2 x3 x4
-
-// main.i
-rw_main_i : [6] -> [514] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_i x0 x1 x2 x3 x4 x5 = if ~ (s0 @ 0) then (rw_main_loop x2 x3 x4 x5) else (rw_main_arm3 x1 x2 x3 x4 x5)
-  where
-    s0 : [1]
-    s0 = [x0 == 0b111111]
-
-// main.ctr
-rw_main_ctr : [6] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_ctr x0 x1 x2 x3 x4 = 0x80000000000000000000000000000000000000000000000000000000000000000 # (x0 # (x1 # (x2 # (x3 # x4))))
-
-// main._unused3
-rw_main__unused3 : [6] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main__unused3 x0 x1 x2 x3 x4 = rw_main_ctr x0 x1 x2 x3 s0
-  where
-    s0 : [6]
-    s0 = rw_Main_incCtr x0
-
-// main.s
-rw_main_s : [6] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_s x0 x1 x2 x3 x4 x5 x6 = rw_main__unused3 x0 s1 x4 x5 x6
-  where
-    s0 : [32]
-    s0 = rw_Main_seed x0
-    s1 : [256]
-    s1 = rw_Main_step256 s0 x1 x2
-
-// main.w
-rw_main_w : [6] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_w x0 x1 x2 x3 x4 x5 = rw_main_s x0 x1 x2 x2 x3 x4 x5
-
-// main.arm4
-rw_main_arm4 : [6] -> [512] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_arm4 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 = rw_main_w x0 x2 x18 s0 x20 x21
-  where
-    s0 : [512]
-    s0 = rw_Main_updateSched x1
-
-// main.s2
-rw_main_s2 : [6] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_s2 x0 x1 x2 x3 x4 x5 = rw_main_arm4 x0 x1 s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 x2 x3 x4 x5
-  where
-    s0 : [32]
-    s0 = take`{32} x1
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x1)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x1)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x1)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x1)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x1)
-    s6 : [32]
-    s6 = take`{32} (drop`{192} x1)
-    s7 : [32]
-    s7 = take`{32} (drop`{224} x1)
-    s8 : [32]
-    s8 = take`{32} (drop`{256} x1)
-    s9 : [32]
-    s9 = take`{32} (drop`{288} x1)
-    s10 : [32]
-    s10 = take`{32} (drop`{320} x1)
-    s11 : [32]
-    s11 = take`{32} (drop`{352} x1)
-    s12 : [32]
-    s12 = take`{32} (drop`{384} x1)
-    s13 : [32]
-    s13 = take`{32} (drop`{416} x1)
-    s14 : [32]
-    s14 = take`{32} (drop`{448} x1)
-    s15 : [32]
-    s15 = drop`{480} x1
-
-// main.ctr2
-rw_main_ctr2 : [6] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_ctr2 x0 x1 x2 x3 x4 = rw_main_s2 x0 x2 x1 x2 x3 x4
-
 // main.loop
 rw_main_loop : [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_loop x0 x1 x2 x3 = rw_main_ctr2 x3 x0 x1 x2 x3
-
-// main._unused2
-rw_main__unused2 : [514] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main__unused2 x0 x1 x2 x3 x4 = rw_main_loop x1 x2 x3 x4
-
-// main._unused
-rw_main__unused : [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main__unused x0 x1 x2 x3 = 0b01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000 # (x0 # (x1 # (x2 # x3)))
+rw_main_loop x0 x1 x2 x3 = 0x80000000000000000000000000000000000000000000000000000000000000000 # (x3 # (s28 # (s17 # (x2 # s29))))
+  where
+    s0 : [32]
+    s0 = take`{32} x1
+    s1 : [32]
+    s1 = take`{32} x1
+    s2 : [32]
+    s2 = take`{32} (drop`{32} x1)
+    s3 : [32]
+    s3 = take`{32} (drop`{64} x1)
+    s4 : [32]
+    s4 = take`{32} (drop`{96} x1)
+    s5 : [32]
+    s5 = take`{32} (drop`{128} x1)
+    s6 : [32]
+    s6 = take`{32} (drop`{160} x1)
+    s7 : [32]
+    s7 = take`{32} (drop`{192} x1)
+    s8 : [32]
+    s8 = take`{32} (drop`{224} x1)
+    s9 : [32]
+    s9 = take`{32} (drop`{256} x1)
+    s10 : [32]
+    s10 = take`{32} (drop`{288} x1)
+    s11 : [32]
+    s11 = take`{32} (drop`{320} x1)
+    s12 : [32]
+    s12 = take`{32} (drop`{352} x1)
+    s13 : [32]
+    s13 = take`{32} (drop`{384} x1)
+    s14 : [32]
+    s14 = take`{32} (drop`{416} x1)
+    s15 : [32]
+    s15 = take`{32} (drop`{448} x1)
+    s16 : [32]
+    s16 = drop`{480} x1
+    s17 : [512]
+    s17 = s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # ((((((s15 >> 0x00000011) || (s15 << 0x0000000f)) ^ ((s15 >> 0x00000013) || (s15 << 0x0000000d))) ^ (s15 >> 0x0000000a)) + s10) + (((((s2 >> 0x00000007) || (s2 << 0x00000019)) ^ ((s2 >> 0x00000012) || (s2 << 0x0000000e))) ^ (s2 >> 0x00000003)) + s1))))))))))))))))
+    s18 : [32]
+    s18 = rw'resize`{32} (0x428a2f9871374491b5c0fbcfe9b5dba53956c25b59f111f1923f82a4ab1c5ed5d807aa9812835b01243185be550c7dc372be5d7480deb1fe9bdc06a7c19bf174e49b69c1efbe47860fc19dc6240ca1cc2de92c6f4a7484aa5cb0a9dc76f988da983e5152a831c66db00327c8bf597fc7c6e00bf3d5a7914706ca63511429296727b70a852e1b21384d2c6dfc53380d13650a7354766a0abb81c2c92e92722c85a2bfe8a1a81a664bc24b8b70c76c51a3d192e819d6990624f40e3585106aa07019a4c1161e376c082748774c34b0bcb5391c0cb34ed8aa4a5b9cca4f682e6ff3748f82ee78a5636f84c878148cc7020890befffaa4506cebbef9a3f7c67178f2 >> (((0x00000000000000000000000000000040 - (rw'resize`{128} x3)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))
+    s19 : [32]
+    s19 = take`{32} x0
+    s20 : [32]
+    s20 = take`{32} (drop`{32} x0)
+    s21 : [32]
+    s21 = take`{32} (drop`{64} x0)
+    s22 : [32]
+    s22 = take`{32} (drop`{96} x0)
+    s23 : [32]
+    s23 = take`{32} (drop`{128} x0)
+    s24 : [32]
+    s24 = take`{32} (drop`{160} x0)
+    s25 : [32]
+    s25 = take`{32} (drop`{192} x0)
+    s26 : [32]
+    s26 = drop`{224} x0
+    s27 : [32]
+    s27 = s26 + ((((((s23 >> 0x00000006) || (s23 << 0x0000001a)) ^ ((s23 >> 0x0000000b) || (s23 << 0x00000015))) ^ ((s23 >> 0x00000019) || (s23 << 0x00000007))) + ((s23 && s24) ^ ((~ s23) && s25))) + (s18 + s0))
+    s28 : [256]
+    s28 = (s27 + (((((s19 >> 0x00000002) || (s19 << 0x0000001e)) ^ ((s19 >> 0x0000000d) || (s19 << 0x00000013))) ^ ((s19 >> 0x00000016) || (s19 << 0x0000000a))) + (((s19 && s20) ^ (s19 && s21)) ^ (s20 && s21)))) # (s19 # (s20 # (s21 # ((s22 + s27) # (s23 # (s24 # s25))))))
+    s29 : [6]
+    s29 = x3 + 0b000001
 
 // main._unused7
 rw_main__unused7 : [512] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main__unused7 x0 x1 x2 x3 x4 = rw_main__unused x1 x0 x3 x4
-
-// main.hi_1
-rw_main_hi_1 : [512] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_hi_1 x0 x1 x2 x3 x4 x5 = rw_main__unused7 x0 x1 x3 x4 x5
-
-// main._unused6
-rw_main__unused6 : [512] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main__unused6 x0 x1 x2 x3 x4 = rw_main_hi_1 x0 x3 x1 x2 x3 x4
-
-// main._unused5
-rw_main__unused5 : [512] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main__unused5 x0 x1 x2 x3 x4 = rw_main__unused6 x0 x1 x2 x3 0b000000
-
-// main.arm5
-rw_main_arm5 : [512] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_arm5 x0 x1 x2 x3 x4 = rw_main__unused5 x0 x1 x2 0x6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 x4
-
-// main._unused10
-rw_main__unused10 : [512] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main__unused10 x0 x1 x2 x3 x4 = rw_main__unused7 x0 x1 x2 x3 0b000000
-
-// main.hi_12
-rw_main_hi_12 : [512] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_hi_12 x0 x1 x2 x3 x4 x5 = rw_main__unused10 x0 x1 x3 x4 x5
-
-// main.arm6
-rw_main_arm6 : [512] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_arm6 x0 x1 x2 x3 x4 = rw_main_hi_12 x0 x3 x1 x2 x3 x4
-
-// main.$x2
-rw_main__x2 : [514] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main__x2 x0 x1 x2 x3 x4 = rw_main_dev x0 x1 x2 x3 x4
-
-// main.h_n
-rw_main_h_n : [256] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_h_n x0 x1 x2 x3 x4 = s0 # (0x80 # (x1 # (x2 # (x3 # x4))))
-  where
-    s0 : [258]
-    s0 = 0b00 # x0
-
-// main.arm7
-rw_main_arm7 : [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_arm7 x0 x1 x2 x3 = rw_main_h_n x2 x0 x1 x2 x3
+rw_main__unused7 x0 x1 x2 x3 x4 = 0b01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000 # (x1 # (x0 # (x3 # x4)))
 
 // main.dev
 rw_main_dev : [514] -> [256] -> [512] -> [256] -> [6] -> [1296]
-rw_main_dev x0 x1 x2 x3 x4 = if (take`{2} x0) == 0b00 then (rw_main_arm5 s0 x1 x2 x3 x4) else (if (take`{2} x0) == 0b01 then (rw_main_arm6 s1 x1 x2 x3 x4) else (rw_main_arm7 x1 x2 x3 x4))
+rw_main_dev x0 x1 x2 x3 x4 = if (take`{2} x0) == 0b00 then (rw_main__unused7 s0 0x6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 x2 0x6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 0b000000) else (if (take`{2} x0) == 0b01 then (rw_main__unused7 s1 x3 x2 x3 0b000000) else (s2 # (0x80 # (x1 # (x2 # (x3 # x4))))))
   where
     s0 : [512]
     s0 = drop`{2} x0
     s1 : [512]
     s1 = drop`{2} x0
-
-// Main.ch
-rw_Main_ch : [32] -> [32] -> [32] -> [32]
-rw_Main_ch x0 x1 x2 = (x0 && x1) ^ ((~ x0) && x2)
-
-// Main.maj
-rw_Main_maj : [32] -> [32] -> [32] -> [32]
-rw_Main_maj x0 x1 x2 = ((x0 && x1) ^ (x0 && x2)) ^ (x1 && x2)
-
-// Main.incCtr
-rw_Main_incCtr : [6] -> [6]
-rw_Main_incCtr x0 = x0 + 0b000001
-
-// Main.sigma1
-rw_Main_sigma1 : [32] -> [32]
-rw_Main_sigma1 x0 = (((x0 >> 0x00000011) || (x0 << 0x0000000f)) ^ ((x0 >> 0x00000013) || (x0 << 0x0000000d))) ^ (x0 >> 0x0000000a)
-
-// Main.sigma0
-rw_Main_sigma0 : [32] -> [32]
-rw_Main_sigma0 x0 = (((x0 >> 0x00000007) || (x0 << 0x00000019)) ^ ((x0 >> 0x00000012) || (x0 << 0x0000000e))) ^ (x0 >> 0x00000003)
-
-// Main.updateSched
-rw_Main_updateSched : [512] -> [512]
-rw_Main_updateSched x0 = s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (((rw_Main_sigma1 s14) + s9) + ((rw_Main_sigma0 s1) + s0))))))))))))))))
-  where
-    s0 : [32]
-    s0 = take`{32} x0
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x0)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x0)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x0)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x0)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x0)
-    s6 : [32]
-    s6 = take`{32} (drop`{192} x0)
-    s7 : [32]
-    s7 = take`{32} (drop`{224} x0)
-    s8 : [32]
-    s8 = take`{32} (drop`{256} x0)
-    s9 : [32]
-    s9 = take`{32} (drop`{288} x0)
-    s10 : [32]
-    s10 = take`{32} (drop`{320} x0)
-    s11 : [32]
-    s11 = take`{32} (drop`{352} x0)
-    s12 : [32]
-    s12 = take`{32} (drop`{384} x0)
-    s13 : [32]
-    s13 = take`{32} (drop`{416} x0)
-    s14 : [32]
-    s14 = take`{32} (drop`{448} x0)
-    s15 : [32]
-    s15 = drop`{480} x0
-
-// Main.bigsigma1
-rw_Main_bigsigma1 : [32] -> [32]
-rw_Main_bigsigma1 x0 = (((x0 >> 0x00000006) || (x0 << 0x0000001a)) ^ ((x0 >> 0x0000000b) || (x0 << 0x00000015))) ^ ((x0 >> 0x00000019) || (x0 << 0x00000007))
-
-// Main.bigsigma0
-rw_Main_bigsigma0 : [32] -> [32]
-rw_Main_bigsigma0 x0 = (((x0 >> 0x00000002) || (x0 << 0x0000001e)) ^ ((x0 >> 0x0000000d) || (x0 << 0x00000013))) ^ ((x0 >> 0x00000016) || (x0 << 0x0000000a))
-
-// Main.step256
-rw_Main_step256 : [32] -> [32] -> [256] -> [256]
-rw_Main_step256 x0 x1 x2 = (s8 + ((rw_Main_bigsigma0 s0) + (rw_Main_maj s0 s1 s2))) # (s0 # (s1 # (s2 # ((s3 + s8) # (s4 # (s5 # s6))))))
-  where
-    s0 : [32]
-    s0 = take`{32} x2
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x2)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x2)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x2)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x2)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x2)
-    s6 : [32]
-    s6 = take`{32} (drop`{192} x2)
-    s7 : [32]
-    s7 = drop`{224} x2
-    s8 : [32]
-    s8 = s7 + (((rw_Main_bigsigma1 s4) + (rw_Main_ch s4 s5 s6)) + (x0 + x1))
-
-// Main.seed
-rw_Main_seed : [6] -> [32]
-rw_Main_seed x0 = rw'resize`{32} (0x428a2f9871374491b5c0fbcfe9b5dba53956c25b59f111f1923f82a4ab1c5ed5d807aa9812835b01243185be550c7dc372be5d7480deb1fe9bdc06a7c19bf174e49b69c1efbe47860fc19dc6240ca1cc2de92c6f4a7484aa5cb0a9dc76f988da983e5152a831c66db00327c8bf597fc7c6e00bf3d5a7914706ca63511429296727b70a852e1b21384d2c6dfc53380d13650a7354766a0abb81c2c92e92722c85a2bfe8a1a81a664bc24b8b70c76c51a3d192e819d6990624f40e3585106aa07019a4c1161e376c082748774c34b0bcb5391c0cb34ed8aa4a5b9cca4f682e6ff3748f82ee78a5636f84c878148cc7020890befffaa4506cebbef9a3f7c67178f2 >> (((0x00000000000000000000000000000040 - (rw'resize`{128} x0)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))
+    s2 : [258]
+    s2 = 0b00 # x3
 
 // Per-cycle step: outputs # next register values.
 rw_step : [1038] -> [514] -> [1296]
-rw_step st i = (take`{258} s9) # ((take`{8} (drop`{258} s9)) # ((take`{224} (drop`{266} s9)) # ((take`{32} (drop`{490} s9)) # ((take`{480} (drop`{522} s9)) # ((take`{32} (drop`{1002} s9)) # ((take`{224} (drop`{1034} s9)) # ((take`{32} (drop`{1258} s9)) # (drop`{1290} s9))))))))
+rw_step st i = (take`{258} s35) # ((take`{8} (drop`{258} s35)) # ((take`{224} (drop`{266} s35)) # ((take`{32} (drop`{490} s35)) # ((take`{480} (drop`{522} s35)) # ((take`{32} (drop`{1002} s35)) # ((take`{224} (drop`{1034} s35)) # ((take`{32} (drop`{1258} s35)) # (drop`{1290} s35))))))))
   where
     s0 : [8]
     s0 = take`{8} st
@@ -338,8 +118,60 @@ rw_step st i = (take`{258} s9) # ((take`{8} (drop`{258} s9)) # ((take`{224} (dro
     s7 = drop`{1032} st
     s8 : [514]
     s8 = i
-    s9 : [1296]
-    s9 = rw_main__dispatch (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # s7))))))) s8
+    s9 : [6]
+    s9 = drop`{2} s0
+    s10 : [256]
+    s10 = s1 # s2
+    s11 : [512]
+    s11 = s3 # s4
+    s12 : [256]
+    s12 = s5 # s6
+    s13 : [1]
+    s13 = [s9 == 0b111111]
+    s14 : [32]
+    s14 = take`{32} s5
+    s15 : [32]
+    s15 = take`{32} (drop`{32} s5)
+    s16 : [32]
+    s16 = take`{32} (drop`{64} s5)
+    s17 : [32]
+    s17 = take`{32} (drop`{96} s5)
+    s18 : [32]
+    s18 = take`{32} (drop`{128} s5)
+    s19 : [32]
+    s19 = take`{32} (drop`{160} s5)
+    s20 : [32]
+    s20 = drop`{192} s5
+    s21 : [32]
+    s21 = take`{32} s1
+    s22 : [32]
+    s22 = take`{32} (drop`{32} s1)
+    s23 : [32]
+    s23 = take`{32} (drop`{64} s1)
+    s24 : [32]
+    s24 = take`{32} (drop`{96} s1)
+    s25 : [32]
+    s25 = take`{32} (drop`{128} s1)
+    s26 : [32]
+    s26 = take`{32} (drop`{160} s1)
+    s27 : [32]
+    s27 = drop`{192} s1
+    s28 : [256]
+    s28 = (s21 + s14) # ((s22 + s15) # ((s23 + s16) # ((s24 + s17) # ((s25 + s18) # ((s26 + s19) # ((s27 + s20) # (s2 + s6)))))))
+    s29 : [256]
+    s29 = s1 # s2
+    s30 : [512]
+    s30 = s3 # s4
+    s31 : [256]
+    s31 = s5 # s6
+    s32 : [256]
+    s32 = s1 # s2
+    s33 : [512]
+    s33 = s3 # s4
+    s34 : [256]
+    s34 = s5 # s6
+    s35 : [1296]
+    s35 = if (take`{2} s0) == 0b00 then (if ~ (s13 @ 0) then (rw_main_loop s10 s11 s12 s7) else (rw_main_dev s8 s10 s11 s28 s7)) else (if (take`{2} s0) == 0b01 then (rw_main_loop s29 s30 s31 s7) else (rw_main_dev s8 s32 s33 s34 s7))
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [514]

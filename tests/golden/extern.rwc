@@ -4,16 +4,10 @@ extern mymod
       input x : [16]
       output out : [8]
 
---| block '$L.$x3' of process main
-main.$x3 : ([8]) -> [8]
-main.$x3 $x =
-      $x
-
 device top_level
       input __in0 : [16]
       output __out0 : [8]
       tag $x2 = 0
       instance mymod$x1 of mymod
       mymod$x1.x := __in0
-      let $res = main.$x3 mymod$x1.out
-      __out0 := $res
+      __out0 := mymod$x1.out

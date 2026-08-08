@@ -16,33 +16,16 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// main.$dispatch
-rw_main__dispatch : [1] -> [1]
-rw_main__dispatch x0 = rw_main__x2 x0
-
-// main.$x2
-rw_main__x2 : [1] -> [1]
-rw_main__x2 x0 = rw_main_iter_Bool_Bool_sMain_f x0
-
-// main.iter$Bool$Bool$sMain_f
-rw_main_iter_Bool_Bool_sMain_f : [1] -> [1]
-rw_main_iter_Bool_Bool_sMain_f x0 = s0
-  where
-    s0 : [1]
-    s0 = rw_Main_f x0
-
-// Main.f
-rw_Main_f : [1] -> [1]
-rw_Main_f x0 = ~ x0
-
 // Per-cycle step: outputs # next register values.
 rw_step : [1] -> [1]
-rw_step i = s1
+rw_step i = s2
   where
     s0 : [1]
     s0 = i
     s1 : [1]
-    s1 = rw_main__dispatch s0
+    s1 = ~ s0
+    s2 : [1]
+    s2 = s1
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1]

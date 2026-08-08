@@ -1,40 +1,8 @@
---| state dispatch for process main: 0=$x2
-main.$dispatch : ([1056]) -> [64]
-main.$dispatch i =
-      main.$x2 i
-
---| block '$L.$x2' of process main (state 0)
-main.$x2 : ([1056]) -> [64]
-main.$x2 $x =
-      main.loop $x
-
---| block '$L.$x3' of process main
-main.$x3 : ([64]) -> [64]
-main.$x3 $x =
-      $x
-
---| block '$L.arm' of process main
-main.arm : ([1024], [32]) -> [64]
-main.arm v w =
-      let $a = Main.compute v w in
-      main.$x3 $a
-
---| block '$L.Main.loop' of process main
-main.loop : ([1056]) -> [64]
-main.loop $ds =
-      let v = $ds[32 +: 1024] in
-      let w = $ds[0 +: 32] in
-      main.arm v w
-
-Main.compute : ([1024], [32]) -> [64]
-Main.compute v w =
-      add w[0 +: 8] v[992 +: 8] # add w[0 +: 8] v[928 +: 8] # add w[0 +: 8] v[864 +: 8] # add w[0 +: 8] v[800 +: 8] # add w[0 +: 8] v[736 +: 8] # add w[0 +: 8] v[672 +: 8] # add w[0 +: 8] v[608 +: 8] # add w[0 +: 8] v[544 +: 8]
-
 device top_level
       input __in0 : [1024]
       input __in1 : [32]
       output __out0 : [64]
       tag $x2 = 0
-      let $in = __in0 # __in1
-      let $res = main.$dispatch $in
+      let $res = let $a$i2 = add __in1[0 +: 8] __in0[992 +: 8] # add __in1[0 +: 8] __in0[928 +: 8] # add __in1[0 +: 8] __in0[864 +: 8] # add __in1[0 +: 8] __in0[800 +: 8] # add __in1[0 +: 8] __in0[736 +: 8] # add __in1[0 +: 8] __in0[672 +: 8] # add __in1[0 +: 8] __in0[608 +: 8] # add __in1[0 +: 8] __in0[544 +: 8] in
+            $a$i2
       __out0 := $res

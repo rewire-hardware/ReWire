@@ -1,64 +1,24 @@
---| state dispatch for process main: 0=$x2
-main.$dispatch : ([16]) -> [8]
-main.$dispatch i =
-      main.$x2 i
-
---| block '$L.$x2' of process main (state 0)
-main.$x2 : ([16]) -> [8]
-main.$x2 $x =
-      main.iter$W8W8$W8$sMain_go $x
-
---| block '$L.ReWire.Monad.iter$W8W8$W8$sMain_go' of process main
-main.iter$W8W8$W8$sMain_go : ([16]) -> [8]
-main.iter$W8W8$W8$sMain_go i =
-      let $a = Main.go i in
-      $a
-
-Main.inv : ([8]) -> [8]
-Main.inv $eta0 =
-      cry$inv$8_8 $eta0
-
-Main.divz : ([8], [8]) -> [8]
-Main.divz $eta0 $eta1 =
-      cry$divz$8_8_8 $eta0 $eta1
-
-Main.go : ([16]) -> [8]
-Main.go $ds =
-      let a = $ds[8 +: 8] in
-      let b = $ds[0 +: 8] in
-      add (Main.inv a) (Main.divz a b)
-
---| cryptol cry/cryfield.cry::inv at [8] -> [8]
-cry$inv$8_8 : ([8]) -> [8]
-cry$inv$8_8 a$0 =
-      let zr$b$0 = trunc 8 (umod a$0 8'hfb) in
-      let zr$b$1 = trunc 8 (umod (mul (zext 16 zr$b$0) (zext 16 zr$b$0)) 16'hfb) in
-      let zr$b$2 = trunc 8 (umod (mul (zext 16 zr$b$1) (zext 16 zr$b$1)) 16'hfb) in
-      let zr$b$3 = trunc 8 (umod (mul (zext 16 zr$b$2) (zext 16 zr$b$2)) 16'hfb) in
-      let zr$b$4 = trunc 8 (umod (mul (zext 16 zr$b$3) (zext 16 zr$b$3)) 16'hfb) in
-      let zr$b$5 = trunc 8 (umod (mul (zext 16 zr$b$4) (zext 16 zr$b$4)) 16'hfb) in
-      let zr$b$6 = trunc 8 (umod (mul (zext 16 zr$b$5) (zext 16 zr$b$5)) 16'hfb) in
-      let zr$b$7 = trunc 8 (umod (mul (zext 16 zr$b$6) (zext 16 zr$b$6)) 16'hfb) in
-      trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul 16'h1 (zext 16 zr$b$0)) 16'hfb))) (zext 16 zr$b$3)) 16'hfb))) (zext 16 zr$b$4)) 16'hfb))) (zext 16 zr$b$5)) 16'hfb))) (zext 16 zr$b$6)) 16'hfb))) (zext 16 zr$b$7)) 16'hfb)
-
---| cryptol cry/cryfield.cry::divz at [8] -> [8] -> [8]
-cry$divz$8_8_8 : ([8], [8]) -> [8]
-cry$divz$8_8_8 a$0 b$1 =
-      trunc 8 (umod (mul (zext 16 (trunc 8 (umod a$0 8'hfb))) (zext 16 (let zr$b$0 = trunc 8 (umod b$1 8'hfb) in
-      let zr$b$1 = trunc 8 (umod (mul (zext 16 zr$b$0) (zext 16 zr$b$0)) 16'hfb) in
-      let zr$b$2 = trunc 8 (umod (mul (zext 16 zr$b$1) (zext 16 zr$b$1)) 16'hfb) in
-      let zr$b$3 = trunc 8 (umod (mul (zext 16 zr$b$2) (zext 16 zr$b$2)) 16'hfb) in
-      let zr$b$4 = trunc 8 (umod (mul (zext 16 zr$b$3) (zext 16 zr$b$3)) 16'hfb) in
-      let zr$b$5 = trunc 8 (umod (mul (zext 16 zr$b$4) (zext 16 zr$b$4)) 16'hfb) in
-      let zr$b$6 = trunc 8 (umod (mul (zext 16 zr$b$5) (zext 16 zr$b$5)) 16'hfb) in
-      let zr$b$7 = trunc 8 (umod (mul (zext 16 zr$b$6) (zext 16 zr$b$6)) 16'hfb) in
-      trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul 16'h1 (zext 16 zr$b$0)) 16'hfb))) (zext 16 zr$b$3)) 16'hfb))) (zext 16 zr$b$4)) 16'hfb))) (zext 16 zr$b$5)) 16'hfb))) (zext 16 zr$b$6)) 16'hfb))) (zext 16 zr$b$7)) 16'hfb)))) 16'hfb)
-
 device top_level
       input __in0 : [8]
       input __in1 : [8]
       output __out0 : [8]
       tag $x2 = 0
-      let $in = __in0 # __in1
-      let $res = main.$dispatch $in
+      let $res = let $a$i18 = add (let zr$b$0$i2 = trunc 8 (umod __in0 8'hfb) in
+            let zr$b$1$i3 = trunc 8 (umod (mul (zext 16 zr$b$0$i2) (zext 16 zr$b$0$i2)) 16'hfb) in
+            let zr$b$2$i4 = trunc 8 (umod (mul (zext 16 zr$b$1$i3) (zext 16 zr$b$1$i3)) 16'hfb) in
+            let zr$b$3$i5 = trunc 8 (umod (mul (zext 16 zr$b$2$i4) (zext 16 zr$b$2$i4)) 16'hfb) in
+            let zr$b$4$i6 = trunc 8 (umod (mul (zext 16 zr$b$3$i5) (zext 16 zr$b$3$i5)) 16'hfb) in
+            let zr$b$5$i7 = trunc 8 (umod (mul (zext 16 zr$b$4$i6) (zext 16 zr$b$4$i6)) 16'hfb) in
+            let zr$b$6$i8 = trunc 8 (umod (mul (zext 16 zr$b$5$i7) (zext 16 zr$b$5$i7)) 16'hfb) in
+            let zr$b$7$i9 = trunc 8 (umod (mul (zext 16 zr$b$6$i8) (zext 16 zr$b$6$i8)) 16'hfb) in
+            trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul 16'h1 (zext 16 zr$b$0$i2)) 16'hfb))) (zext 16 zr$b$3$i5)) 16'hfb))) (zext 16 zr$b$4$i6)) 16'hfb))) (zext 16 zr$b$5$i7)) 16'hfb))) (zext 16 zr$b$6$i8)) 16'hfb))) (zext 16 zr$b$7$i9)) 16'hfb)) (trunc 8 (umod (mul (zext 16 (trunc 8 (umod __in0 8'hfb))) (zext 16 (let zr$b$0$i10 = trunc 8 (umod __in1 8'hfb) in
+            let zr$b$1$i11 = trunc 8 (umod (mul (zext 16 zr$b$0$i10) (zext 16 zr$b$0$i10)) 16'hfb) in
+            let zr$b$2$i12 = trunc 8 (umod (mul (zext 16 zr$b$1$i11) (zext 16 zr$b$1$i11)) 16'hfb) in
+            let zr$b$3$i13 = trunc 8 (umod (mul (zext 16 zr$b$2$i12) (zext 16 zr$b$2$i12)) 16'hfb) in
+            let zr$b$4$i14 = trunc 8 (umod (mul (zext 16 zr$b$3$i13) (zext 16 zr$b$3$i13)) 16'hfb) in
+            let zr$b$5$i15 = trunc 8 (umod (mul (zext 16 zr$b$4$i14) (zext 16 zr$b$4$i14)) 16'hfb) in
+            let zr$b$6$i16 = trunc 8 (umod (mul (zext 16 zr$b$5$i15) (zext 16 zr$b$5$i15)) 16'hfb) in
+            let zr$b$7$i17 = trunc 8 (umod (mul (zext 16 zr$b$6$i16) (zext 16 zr$b$6$i16)) 16'hfb) in
+            trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul (zext 16 (trunc 8 (umod (mul 16'h1 (zext 16 zr$b$0$i10)) 16'hfb))) (zext 16 zr$b$3$i13)) 16'hfb))) (zext 16 zr$b$4$i14)) 16'hfb))) (zext 16 zr$b$5$i15)) 16'hfb))) (zext 16 zr$b$6$i16)) 16'hfb))) (zext 16 zr$b$7$i17)) 16'hfb)))) 16'hfb)) in
+            $a$i18
       __out0 := $res

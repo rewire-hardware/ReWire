@@ -453,12 +453,13 @@ getCertifyTests = findValidator >>= \ case
                   , "state.hs", "multireg.hs", "records.hs", "subfsm.hs"
                   , "UpCounter1.hs", "wordArith.hs", "PreludeTest.hs"
                   , "Sha256.hs", "zerowidth.hs", "TinyISA.hs"
+                  , "externModel.hs" -- model-carrying externs are in scope
                   ]
 
-            -- Devices outside the validator's scope (device instances and
-            -- extern calls): rwc must warn rather than claim VALIDATED.
+            -- Devices outside the validator's scope (device instances):
+            -- rwc must warn rather than claim VALIDATED.
             notValidated :: [FilePath]
-            notValidated = [ "extern.hs", "externModel.hs" ]
+            notValidated = [ "extern.hs" ]
 
             certifyTest :: FilePath -> Bool -> FilePath -> TestTree
             certifyTest dir expectValid file = testCase (takeBaseName file <> " (certify)") $ do

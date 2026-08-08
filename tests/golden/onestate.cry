@@ -16,40 +16,14 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// main.$dispatch
-rw_main__dispatch : [8] -> [1] -> [16]
-rw_main__dispatch x0 x1 = rw_main__unused2 x1 x0
-
-// main._unused2
-rw_main__unused2 : [1] -> [8] -> [16]
-rw_main__unused2 x0 x1 = rw_main_grunt x1
-
-// main.x
-rw_main_x : [8] -> [8] -> [16]
-rw_main_x x0 x1 = x0 # x1
-
-// main._unused
-rw_main__unused : [8] -> [16]
-rw_main__unused x0 = rw_main_x x0 x0
-
-// main.$x
-rw_main__x : [8] -> [8] -> [16]
-rw_main__x x0 x1 = rw_main__unused x0
-
-// main.grunt
-rw_main_grunt : [8] -> [16]
-rw_main_grunt x0 = rw_main__x x0 x0
-
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [1] -> [16]
-rw_step st i = (take`{8} s2) # (drop`{8} s2)
+rw_step st i = s0 # s0
   where
     s0 : [8]
     s0 = st
     s1 : [1]
     s1 = i
-    s2 : [16]
-    s2 = rw_main__dispatch s0 s1
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1]

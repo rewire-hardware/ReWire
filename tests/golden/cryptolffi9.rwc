@@ -1,138 +1,43 @@
---| state dispatch for process main: 0=$x2
-main.$dispatch : ([16]) -> [8]
-main.$dispatch i =
-      main.$x2 i
-
---| block '$L.$x2' of process main (state 0)
-main.$x2 : ([16]) -> [8]
-main.$x2 $x =
-      main.iter$W8W8$W8$sMain_go $x
-
---| block '$L.ReWire.Monad.iter$W8W8$W8$sMain_go' of process main
-main.iter$W8W8$W8$sMain_go : ([16]) -> [8]
-main.iter$W8W8$W8$sMain_go i =
-      let $a = Main.go i in
-      $a
-
-Main.tk : ([8]) -> [40]
-Main.tk $eta0 =
-      cry$tkw$8_40 $eta0
-
-Main.idx : ([8]) -> [8]
-Main.idx $eta0 =
-      cry$idx$8_8 $eta0
-
-Main.dt : ([8]) -> [24]
-Main.dt $eta0 =
-      cry$dtw$8_24 $eta0
-
-Main.lfsr : ([8]) -> [48]
-Main.lfsr $eta0 =
-      cry$lfsrw$8_48 $eta0
-
-Main.fz : ([32]) -> [32]
-Main.fz $eta0 =
-      cry$fzw$32_32 $eta0
-
-Main.rep : ([8]) -> [32]
-Main.rep $eta0 =
-      cry$repw$8_32 $eta0
-
-Main.go : ([16]) -> [8]
-Main.go $ds =
-      let a = $ds[8 +: 8] in
-      let b = $ds[0 +: 8] in
-      add (add (add (add (add (trunc 8 (Main.tk a)) (Main.idx a)) (trunc 8 (Main.dt b))) (trunc 8 (Main.lfsr b))) (trunc 8 (Main.fz (zext 32 a)))) (trunc 8 (Main.rep b))
-
-cry$tkw$8_40.tk$0 : ([8]) -> [40]
-cry$tkw$8_40.tk$0 x$0 =
-      x$0 # add x$0 8'h1 # add x$0 8'h2 # add x$0 8'h3 # add x$0 8'h4
-
---| cryptol cry/crystream.cry::tkw at [8] -> [40]
-cry$tkw$8_40 : ([8]) -> [40]
-cry$tkw$8_40 x$0 =
-      cry$tkw$8_40.tk$0 x$0
-
---| cryptol cry/crystream.cry::idx at [8] -> [8]
-cry$idx$8_8 : ([8]) -> [8]
-cry$idx$8_8 x$0 =
-      let iter$0$1 = add (mul x$0 8'h3) 8'h1 in
-      let iter$0$2 = add (mul iter$0$1 8'h3) 8'h1 in
-      let iter$0$3 = add (mul iter$0$2 8'h3) 8'h1 in
-      let iter$0$4 = add (mul iter$0$3 8'h3) 8'h1 in
-      iter$0$4
-
-cry$dtw$8_24.dt$0 : ([8]) -> [24]
-cry$dtw$8_24.dt$0 x$0 =
-      add x$0 (mul 8'h2 (sub (add x$0 8'h2) x$0)) # add x$0 (mul 8'h3 (sub (add x$0 8'h2) x$0)) # add x$0 (mul 8'h4 (sub (add x$0 8'h2) x$0))
-
---| cryptol cry/crystream.cry::dtw at [8] -> [24]
-cry$dtw$8_24 : ([8]) -> [24]
-cry$dtw$8_24 x$0 =
-      cry$dtw$8_24.dt$0 x$0
-
-cry$lfsrw$8_48.lfsr$0 : ([8]) -> [48]
-cry$lfsrw$8_48.lfsr$0 seed$0 =
-      seed$0 # (let s$4714$1 = xor (shl seed$0 1'h1) (if seed$0[7 +: 1] then 8'h1d
-            else 8'h0) in
-      s$4714$1) # (let s$4714$1 = xor (shl seed$0 1'h1) (if seed$0[7 +: 1] then 8'h1d
-            else 8'h0) in
-      let s$4714$2 = xor (shl s$4714$1 1'h1) (if s$4714$1[7 +: 1] then 8'h1d
-            else 8'h0) in
-      s$4714$2) # (let s$4714$1 = xor (shl seed$0 1'h1) (if seed$0[7 +: 1] then 8'h1d
-            else 8'h0) in
-      let s$4714$2 = xor (shl s$4714$1 1'h1) (if s$4714$1[7 +: 1] then 8'h1d
-            else 8'h0) in
-      let s$4714$3 = xor (shl s$4714$2 1'h1) (if s$4714$2[7 +: 1] then 8'h1d
-            else 8'h0) in
-      s$4714$3) # (let s$4714$1 = xor (shl seed$0 1'h1) (if seed$0[7 +: 1] then 8'h1d
-            else 8'h0) in
-      let s$4714$2 = xor (shl s$4714$1 1'h1) (if s$4714$1[7 +: 1] then 8'h1d
-            else 8'h0) in
-      let s$4714$3 = xor (shl s$4714$2 1'h1) (if s$4714$2[7 +: 1] then 8'h1d
-            else 8'h0) in
-      let s$4714$4 = xor (shl s$4714$3 1'h1) (if s$4714$3[7 +: 1] then 8'h1d
-            else 8'h0) in
-      s$4714$4) # (let s$4714$1 = xor (shl seed$0 1'h1) (if seed$0[7 +: 1] then 8'h1d
-            else 8'h0) in
-      let s$4714$2 = xor (shl s$4714$1 1'h1) (if s$4714$1[7 +: 1] then 8'h1d
-            else 8'h0) in
-      let s$4714$3 = xor (shl s$4714$2 1'h1) (if s$4714$2[7 +: 1] then 8'h1d
-            else 8'h0) in
-      let s$4714$4 = xor (shl s$4714$3 1'h1) (if s$4714$3[7 +: 1] then 8'h1d
-            else 8'h0) in
-      let s$4714$5 = xor (shl s$4714$4 1'h1) (if s$4714$4[7 +: 1] then 8'h1d
-            else 8'h0) in
-      s$4714$5)
-
---| cryptol cry/crystream.cry::lfsrw at [8] -> [48]
-cry$lfsrw$8_48 : ([8]) -> [48]
-cry$lfsrw$8_48 x$0 =
-      cry$lfsrw$8_48.lfsr$0 x$0
-
-cry$fzw$32_32.fz$0 : ([32]) -> [32]
-cry$fzw$32_32.fz$0 xs$0 =
-      add xs$0[24 +: 8] 8'h0 # add xs$0[16 +: 8] 8'h1 # add xs$0[8 +: 8] 8'h2 # add xs$0[0 +: 8] 8'h3
-
---| cryptol cry/crystream.cry::fzw at [32] -> [32]
-cry$fzw$32_32 : ([32]) -> [32]
-cry$fzw$32_32 x$0 =
-      cry$fzw$32_32.fz$0 x$0
-
-cry$repw$8_32.repeat$0 : ([8]) -> [32]
-cry$repw$8_32.repeat$0 x$0 =
-      x$0 # x$0 # x$0 # x$0
-
---| cryptol cry/crystream.cry::repw at [8] -> [32]
-cry$repw$8_32 : ([8]) -> [32]
-cry$repw$8_32 x$0 =
-      cry$repw$8_32.repeat$0 x$0
-
 device top_level
       input __in0 : [8]
       input __in1 : [8]
       output __out0 : [8]
       tag $x2 = 0
-      let $in = __in0 # __in1
-      let $res = main.$dispatch $in
+      let $res = let $a$i22 = add (add (add (add (add (trunc 8 (__in0 # add __in0 8'h1 # add __in0 8'h2 # add __in0 8'h3 # add __in0 8'h4)) (let iter$0$1$i2 = add (mul __in0 8'h3) 8'h1 in
+            let iter$0$2$i3 = add (mul iter$0$1$i2 8'h3) 8'h1 in
+            let iter$0$3$i4 = add (mul iter$0$2$i3 8'h3) 8'h1 in
+            let iter$0$4$i5 = add (mul iter$0$3$i4 8'h3) 8'h1 in
+            iter$0$4$i5)) (trunc 8 (add __in1 (mul 8'h2 (sub (add __in1 8'h2) __in1)) # add __in1 (mul 8'h3 (sub (add __in1 8'h2) __in1)) # add __in1 (mul 8'h4 (sub (add __in1 8'h2) __in1))))) (trunc 8 (__in1 # (let s$4714$1$i6 = xor (shl __in1 1'h1) (if __in1[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            s$4714$1$i6) # (let s$4714$1$i7 = xor (shl __in1 1'h1) (if __in1[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            let s$4714$2$i8 = xor (shl s$4714$1$i7 1'h1) (if s$4714$1$i7[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            s$4714$2$i8) # (let s$4714$1$i9 = xor (shl __in1 1'h1) (if __in1[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            let s$4714$2$i10 = xor (shl s$4714$1$i9 1'h1) (if s$4714$1$i9[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            let s$4714$3$i11 = xor (shl s$4714$2$i10 1'h1) (if s$4714$2$i10[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            s$4714$3$i11) # (let s$4714$1$i12 = xor (shl __in1 1'h1) (if __in1[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            let s$4714$2$i13 = xor (shl s$4714$1$i12 1'h1) (if s$4714$1$i12[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            let s$4714$3$i14 = xor (shl s$4714$2$i13 1'h1) (if s$4714$2$i13[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            let s$4714$4$i15 = xor (shl s$4714$3$i14 1'h1) (if s$4714$3$i14[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            s$4714$4$i15) # (let s$4714$1$i16 = xor (shl __in1 1'h1) (if __in1[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            let s$4714$2$i17 = xor (shl s$4714$1$i16 1'h1) (if s$4714$1$i16[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            let s$4714$3$i18 = xor (shl s$4714$2$i17 1'h1) (if s$4714$2$i17[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            let s$4714$4$i19 = xor (shl s$4714$3$i18 1'h1) (if s$4714$3$i18[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            let s$4714$5$i20 = xor (shl s$4714$4$i19 1'h1) (if s$4714$4$i19[7 +: 1] then 8'h1d
+                  else 8'h0) in
+            s$4714$5$i20)))) (trunc 8 (let $eta0$i21 = zext 32 __in0 in
+            add $eta0$i21[24 +: 8] 8'h0 # add $eta0$i21[16 +: 8] 8'h1 # add $eta0$i21[8 +: 8] 8'h2 # add $eta0$i21[0 +: 8] 8'h3))) (trunc 8 (__in1 # __in1 # __in1 # __in1)) in
+            $a$i22
       __out0 := $res
