@@ -44,17 +44,18 @@ namespace Hyle
 /-- The Mealy machine induced by a Hyle device (instance-free
 fragment): states are register stores, one step is `Sem.step`, and the
 machine never halts — Hyle devices run forever (doc/hyle.md §6.4). -/
-def inducedMealy (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device) :
+def inducedMealy (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device)
+    (E : Sem.EEnv := Sem.eEmpty) :
     Rwv.Sim.MealyE (HashMap String BV) (List BV) (List BV) where
   step regs ins := do
-    let (outs, regs') ← Sem.step F X dev regs ins
+    let (outs, regs') ← Sem.step F X dev regs ins E
     pure (some (outs, regs'))
 
 /-- The induced step, without exposing the structure literal. -/
 private theorem inducedMealy_step (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device)
-    (regs : HashMap String BV) (ins : List BV) :
-    (inducedMealy F X dev).step regs ins = (do
-      let (outs, regs') ← Sem.step F X dev regs ins
+    (E : Sem.EEnv) (regs : HashMap String BV) (ins : List BV) :
+    (inducedMealy F X dev E).step regs ins = (do
+      let (outs, regs') ← Sem.step F X dev regs ins E
       pure (some (outs, regs'))) := rfl
 
 /-- The fold inside `Sem.run`, related to the induced machine's run
@@ -62,13 +63,14 @@ from the same register store: the fold's reversed accumulator, once
 re-reversed, is the accumulator so far followed by the machine's
 trace. The standard fold-to-recursion correspondence, by list
 induction with the store and accumulator generalized. -/
-private theorem fold_eq_mealy (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device) :
+private theorem fold_eq_mealy (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device)
+    (E : Sem.EEnv) :
     ∀ (stim : List (List BV)) (regs : HashMap String BV) (acc : List (List BV)),
     (do
-      let (_, outsRev) ← stim.foldlM (init := (regs, acc)) (Sem.foldStep F X dev)
+      let (_, outsRev) ← stim.foldlM (init := (regs, acc)) (Sem.foldStep F X dev E)
       pure outsRev.reverse : Except String (List (List BV)))
     = (do
-        let os ← (inducedMealy F X dev).run regs stim
+        let os ← (inducedMealy F X dev E).run regs stim
         pure (acc.reverse ++ os)) := by
   intro stim
   induction stim with
@@ -79,7 +81,7 @@ private theorem fold_eq_mealy (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device) :
   | cons ins stim ih =>
       intro regs acc
       rw [List.foldlM_cons]
-      cases hstep : Sem.step F X dev regs ins with
+      cases hstep : Sem.step F X dev regs ins E with
       | error e =>
           simp only [Sem.foldStep, hstep, Rwv.Sim.MealyE.run, inducedMealy_step,
             except_bind_error]
@@ -87,7 +89,7 @@ private theorem fold_eq_mealy (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device) :
           obtain ⟨outs, regs'⟩ := p
           refine Eq.trans ?_ (Eq.trans (ih regs' (outs :: acc)) ?_)
           · simp only [Sem.foldStep, hstep, except_bind_ok, except_pure_def]
-          · cases hrun : (inducedMealy F X dev).run regs' stim with
+          · cases hrun : (inducedMealy F X dev E).run regs' stim with
             | error e =>
                 simp only [hrun, Rwv.Sim.MealyE.run, inducedMealy_step, hstep,
                   except_bind_ok, except_pure_def, except_bind_error]
@@ -99,10 +101,10 @@ private theorem fold_eq_mealy (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device) :
 /-- Run equivalence, Hyle leg: the §6.4 stream semantics is exactly
 the induced machine's run from the declared register initials. -/
 theorem run_eq_mealy (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device)
-    (stim : List (List BV)) :
-    Sem.run F X dev stim = (inducedMealy F X dev).run (Sem.initRegs dev) stim := by
-  refine Eq.trans (fold_eq_mealy F X dev stim (Sem.initRegs dev) []) ?_
-  cases (inducedMealy F X dev).run (Sem.initRegs dev) stim with
+    (stim : List (List BV)) (E : Sem.EEnv := Sem.eEmpty) :
+    Sem.run F X dev stim E = (inducedMealy F X dev E).run (Sem.initRegs dev) stim := by
+  refine Eq.trans (fold_eq_mealy F X dev E stim (Sem.initRegs dev) []) ?_
+  cases (inducedMealy F X dev E).run (Sem.initRegs dev) stim with
   | error e => rfl
   | ok os => simp only [except_bind_ok, except_pure_def, List.reverse_nil, List.nil_append]
 
@@ -117,17 +119,19 @@ states are machine states, one step is `Machine.step`, and a halt
 terminator halts the machine — the halt answer is not part of the
 observable output trace (doc/eidos.md §7.5.4). -/
 def inducedMealy (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel gotoFuel : Nat)
-    (blocks : HashMap Int Block) : Rwv.Sim.MealyE MState Val Val where
+    (blocks : HashMap Int Block)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Rwv.Sim.MealyE MState Val Val where
   step s i := do
-    match ← Machine.step Δ defns blocks evalFuel gotoFuel s i with
+    match ← Machine.step Δ defns blocks evalFuel gotoFuel s i E with
     | .step o s' => pure (some (o, s'))
     | .halt _    => pure none
 
 /-- The induced step, without exposing the structure literal. -/
 private theorem inducedMealy_step (Δ : DEnv) (defns : HashMap Int Defn)
-    (evalFuel gotoFuel : Nat) (blocks : HashMap Int Block) (s : MState) (i : Val) :
-    (inducedMealy Δ defns evalFuel gotoFuel blocks).step s i = (do
-      match ← Machine.step Δ defns blocks evalFuel gotoFuel s i with
+    (evalFuel gotoFuel : Nat) (blocks : HashMap Int Block)
+    (E : Rwv.Hyle.Sem.EEnv) (s : MState) (i : Val) :
+    (inducedMealy Δ defns evalFuel gotoFuel blocks E).step s i = (do
+      match ← Machine.step Δ defns blocks evalFuel gotoFuel s i E with
       | .step o s' => pure (some (o, s'))
       | .halt _    => pure none) := rfl
 
@@ -135,10 +139,11 @@ private theorem inducedMealy_step (Δ : DEnv) (defns : HashMap Int Defn)
 remaining inputs are consumed as no-ops: the accumulator never changes
 (the dead-state lemma). -/
 private theorem fold_dead (Δ : DEnv) (defns : HashMap Int Defn)
-    (blocks : HashMap Int Block) (evalFuel gotoFuel : Nat) :
+    (blocks : HashMap Int Block) (evalFuel gotoFuel : Nat)
+    (E : Rwv.Hyle.Sem.EEnv) :
     ∀ (inputs : List Val) (acc : List Val) (halted : Option Val),
     inputs.foldlM (init := (acc, halted, (none : Option MState)))
-      (Machine.foldStep Δ defns blocks evalFuel gotoFuel)
+      (Machine.foldStep Δ defns blocks evalFuel gotoFuel E)
     = .ok (acc, halted, none) := by
   intro inputs
   induction inputs with
@@ -157,15 +162,16 @@ a halt the fold keeps consuming inputs as no-ops (`fold_dead`), while
 `MealyE.run` stops at the halt — the outputs agree because neither
 adds anything past the halt. -/
 private theorem fold_outs_eq_mealy (Δ : DEnv) (defns : HashMap Int Defn)
-    (blocks : HashMap Int Block) (evalFuel gotoFuel : Nat) :
+    (blocks : HashMap Int Block) (evalFuel gotoFuel : Nat)
+    (E : Rwv.Hyle.Sem.EEnv) :
     ∀ (inputs : List Val) (s : MState) (acc : List Val),
     (do
       let (outsRev, _, _) ← inputs.foldlM
         (init := (acc, (Option.none : Option Val), some s))
-        (Machine.foldStep Δ defns blocks evalFuel gotoFuel)
+        (Machine.foldStep Δ defns blocks evalFuel gotoFuel E)
       pure outsRev.reverse : Except String (List Val))
     = (do
-        let os ← (inducedMealy Δ defns evalFuel gotoFuel blocks).run s inputs
+        let os ← (inducedMealy Δ defns evalFuel gotoFuel blocks E).run s inputs
         pure (acc.reverse ++ os)) := by
   intro inputs
   induction inputs with
@@ -176,7 +182,7 @@ private theorem fold_outs_eq_mealy (Δ : DEnv) (defns : HashMap Int Defn)
   | cons i is ih =>
       intro s acc
       rw [List.foldlM_cons]
-      cases hstep : Machine.step Δ defns blocks evalFuel gotoFuel s i with
+      cases hstep : Machine.step Δ defns blocks evalFuel gotoFuel s i E with
       | error e =>
           simp only [Machine.foldStep, hstep, Rwv.Sim.MealyE.run, inducedMealy_step,
             except_bind_error]
@@ -185,7 +191,7 @@ private theorem fold_outs_eq_mealy (Δ : DEnv) (defns : HashMap Int Defn)
           | step o s' =>
               refine Eq.trans ?_ (Eq.trans (ih s' (o :: acc)) ?_)
               · simp only [Machine.foldStep, hstep, except_bind_ok, except_pure_def]
-              · cases hrun : (inducedMealy Δ defns evalFuel gotoFuel blocks).run s' is with
+              · cases hrun : (inducedMealy Δ defns evalFuel gotoFuel blocks E).run s' is with
                 | error e =>
                     simp only [hrun, Rwv.Sim.MealyE.run, inducedMealy_step, hstep,
                       except_bind_ok, except_pure_def, except_bind_error]
@@ -210,30 +216,30 @@ run past this — the halt answer is not part of the observable output
 trace (doc/eidos.md §7.5.4). -/
 theorem run_outs_eq_mealy (Δ : DEnv) (defns : HashMap Int Defn)
     (evalFuel gotoFuel : Nat) (p : Proc) (inputs : List Val) (mt : MTrace)
-    (blocks : HashMap Int Block)
+    (blocks : HashMap Int Block) {E : Rwv.Hyle.Sem.EEnv}
     (hblocks : blocks = HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b)))
-    (h : Proc.run Δ defns evalFuel gotoFuel p inputs = .ok mt) :
-    ∃ σ₀, Machine.initCells Δ defns evalFuel p = .ok σ₀ ∧
-      ((∃ a, Machine.execBlock Δ defns blocks evalFuel gotoFuel [] σ₀ p.entry
+    (h : Proc.run Δ defns evalFuel gotoFuel p inputs E = .ok mt) :
+    ∃ σ₀, Machine.initCells Δ defns evalFuel p E = .ok σ₀ ∧
+      ((∃ a, Machine.execBlock Δ defns blocks evalFuel gotoFuel [] σ₀ p.entry E
               = .ok (.halt a)
             ∧ mt = ⟨[], some a⟩) ∨
-       (∃ o s₀, Machine.execBlock Δ defns blocks evalFuel gotoFuel [] σ₀ p.entry
+       (∃ o s₀, Machine.execBlock Δ defns blocks evalFuel gotoFuel [] σ₀ p.entry E
               = .ok (.step o s₀)
-            ∧ (inducedMealy Δ defns evalFuel gotoFuel blocks).run s₀ inputs
+            ∧ (inducedMealy Δ defns evalFuel gotoFuel blocks E).run s₀ inputs
               = .ok mt.outs)) := by
   subst hblocks
   have h' : (do
-      let σ₀ ← Machine.initCells Δ defns evalFuel p
+      let σ₀ ← Machine.initCells Δ defns evalFuel p E
       match ← Machine.execBlock Δ defns
           (HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b)))
-          evalFuel gotoFuel [] σ₀ p.entry with
+          evalFuel gotoFuel [] σ₀ p.entry E with
       | .halt a => pure ⟨[], some a⟩
       | .step _o s₀ => do
           let (outsRev, halted, _) ← inputs.foldlM
               (init := (([] : List Val), (Option.none : Option Val), some s₀))
               (Machine.foldStep Δ defns
                 (HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b)))
-                evalFuel gotoFuel)
+                evalFuel gotoFuel E)
           pure ⟨outsRev.reverse, halted⟩
       : Except String MTrace) = .ok mt := h
   clear h
@@ -253,10 +259,10 @@ theorem run_outs_eq_mealy (Δ : DEnv) (defns : HashMap Int Defn)
       injection h₄ with hmt
       have hfold := fold_outs_eq_mealy Δ defns
         (HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b)))
-        evalFuel gotoFuel inputs s₀ []
+        evalFuel gotoFuel E inputs s₀ []
       rw [hf] at hfold
       cases hrun : (inducedMealy Δ defns evalFuel gotoFuel
-          (HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b)))).run s₀ inputs with
+          (HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b))) E).run s₀ inputs with
       | error e =>
           rw [hrun] at hfold
           exact absurd hfold (by simp [except_bind_ok, except_pure_def,

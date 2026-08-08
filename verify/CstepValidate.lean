@@ -84,6 +84,9 @@ partial def nfToDag (d : Rwv.Hyle.BridgeDag.Dag) : NF →
       let (d, rt) := nfToDag d t
       let (d, re) := nfToDag d e
       Rwv.Hyle.BridgeDag.Dag.mkIteD d rc rt re
+  | .xcall w x a =>
+      let (d, ra) := nfToDag d a
+      Rwv.Hyle.BridgeDag.Dag.mkXcallD d w x ra
 
 /-- DAG-engine comparison of two normal forms over shared variables. -/
 def dagEq (n₁ n₂ : NF) : Bool :=
@@ -189,8 +192,8 @@ def main (argv : List String) : IO UInt32 := do
             halts={lo.halts.length}"
         -- The device step, symbolically, once.
         let hyleFuel := Rwv.Hyle.Bridge.progFuel hp
-        let ss ← match Rwv.Hyle.Bridge.symStep (Rwv.Hyle.Bridge.dmapOf hp) hyleFuel
-            hp.device with
+        let ss ← match Rwv.Hyle.Bridge.symStep (Rwv.Hyle.Bridge.dmapOf hp)
+            (Rwv.Hyle.Sem.xenv hp) hyleFuel hp.device with
           | .ok ss => pure ss
           | .error e => IO.println s!"SKIP      (symStep: {e})"; return 1
         let blocks : HashMap Int Block :=

@@ -52,9 +52,36 @@ The pieces:
   depends only on the shared interface).
 
 Everything here is proved against the committed semantics without
-modifying it; per house style (Rwv.Schema), small `Except`/list
-helpers are re-proved locally rather than exported from committed
-files.
+modifying it (stage B extends the committed semantics itself — see
+below); per house style (Rwv.Schema), small `Except`/list helpers are
+re-proved locally rather than exported from committed files.
+
+STAGE B (the comb-extern η tier): `NF` gains the uninterpreted-function
+node `xcall w ext a` — a MODEL-LESS combinational extern call over the
+packed (concatenated, MSB-first) compiled arguments (`NF.xpack`),
+denoted through the committed semantics' own total reading
+`Sem.xapply E ext w` at the extern environment `E : Sem.EEnv` that now
+threads (defaulted empty) through `NF.eval`, `evalExp`, `mkFn`,
+`FImplements`, `EnvCorr`, and every denotation lemma in this file. The
+symbolic evaluator takes the program's extern table `X : Sem.XEnv` and
+BUILDS the node exactly where `evalExp` would consult `E` (model-less,
+generic-free; a model-carrying xcall stays out of scope), so the strong
+soundness statements survive verbatim: the model-less extern reading is
+total (the width clamp included), so `symExp` success still forces
+`evalExp` success — both sides are literally `Sem.xapply` of the same
+packed bits (`xpack_eval`). The equivalence checkers discharge xcall
+nodes by structural equality — same extern name, same cached width,
+equal packed argument after normalization — which is sound for ANY
+interpretation (`checkEquiv_sound`/`checkEquivW_sound` now conclude run
+equality at EVERY extern environment, both runs at the same one). The
+width layer is E-unconditional: `xapply` clamps to the cached width, so
+`annWidth (.xcall w _ _) = some w` holds at every valuation and every
+environment, and the width-aware rewrites treat the node as an opaque
+atom while recursing into its packed argument. `NF.xcallFree` is the
+decidable gate under which a denotation cannot consult `E` at all
+(`xcallFree_eval`) — what downstream compilation uses to keep
+denotations pinned at the empty environment (spliced Cryptol
+definitions) valid at every environment.
 -/
 import Rwv.Hyle.Syntax
 import Rwv.Hyle.Semantics
@@ -70,9 +97,17 @@ open Rwv.Hyle
 
 /-- Normal forms over a device's free variables: no lets (sharing is
 by tree duplication — DAG sharing is later-phase work), no calls
-(inlined by the symbolic evaluator), no externs (out of scope). The
-width on `var`/`slice` is carried for interface sanity only; the
-denotation does not consult it. -/
+(inlined by the symbolic evaluator). A MODEL-LESS extern call (stage B
+of the foreign tier) is an uninterpreted-function node `xcall` whose
+single child is the CONCATENATION of the compiled arguments
+(`NF.xpack`), read through the extern environment's total `Sem.xapply`
+— one child keeps the type non-nested, so decidable equality and the
+induction principle stay free, and the checker's discharge (same name,
+same cached width, equal packed argument) is sound for ANY
+interpretation. The width on `var`/`slice` is carried for interface
+sanity only and the denotation does not consult it; the width on
+`xcall` IS consulted — `xapply` clamps to it, which keeps every
+annotation-width fact unconditional in the extern environment. -/
 inductive NF where
   | var   (w : Nat) (x : String)
   | lit   (v : BV)
@@ -81,26 +116,50 @@ inductive NF where
   | cat   (a b : NF)
   | slice (i w : Nat) (e : NF)
   | ite   (c t e : NF)
+  | xcall (w : Nat) (ext : String) (a : NF)
 deriving DecidableEq, Repr
 
 /-- The total denotation. Primitive applications take `Sem.evalOp`'s
 value and default to `BV.nil` on its (arity) error cases — unreachable
 for `symExp`-produced terms, which are arity-checked at construction.
-The mux is mathematically eager, like the §6.2 denotation. -/
-def NF.eval (σ : String → BV) : NF → BV
+The mux is mathematically eager, like the §6.2 denotation. The
+trailing extern environment `E` (stage B, defaulted empty) is
+consulted only by `xcall` nodes, through the same total `Sem.xapply`
+reading the committed semantics gives a model-less extern call. -/
+def NF.eval (σ : String → BV) (E : Sem.EEnv := Sem.eEmpty) : NF → BV
   | .var _ x => σ x
   | .lit v => v
   | .prim1 op a =>
-      match Sem.evalOp op [a.eval σ] with
+      match Sem.evalOp op [a.eval σ E] with
       | .ok v => v
       | .error _ => BV.nil
   | .prim2 op a b =>
-      match Sem.evalOp op [a.eval σ, b.eval σ] with
+      match Sem.evalOp op [a.eval σ E, b.eval σ E] with
       | .ok v => v
       | .error _ => BV.nil
-  | .cat a b => ⟨_, (a.eval σ).bits ++ (b.eval σ).bits⟩
-  | .slice i w e => ⟨w, (e.eval σ).bits.extractLsb' i w⟩
-  | .ite c t e => if (c.eval σ).nat ≠ 0 then t.eval σ else e.eval σ
+  | .cat a b => ⟨_, (a.eval σ E).bits ++ (b.eval σ E).bits⟩
+  | .slice i w e => ⟨w, (e.eval σ E).bits.extractLsb' i w⟩
+  | .ite c t e => if (c.eval σ E).nat ≠ 0 then t.eval σ E else e.eval σ E
+  | .xcall w x a => Sem.xapply E x w (a.eval σ E)
+
+/-- Pack a list of compiled arguments as one concatenation, mirroring
+`Sem.bvcat`'s fold shape exactly (left fold from the empty literal). -/
+def NF.xpack (ns : List NF) : NF := ns.foldl .cat (.lit BV.nil)
+
+/-- The packed arguments denote the concatenation of the argument
+denotations. -/
+theorem NF.xpack_eval {σ : String → BV} {E : Sem.EEnv} (ns : List NF) :
+    (NF.xpack ns).eval σ E = Sem.bvcat (ns.map (·.eval σ E)) := by
+  suffices h : ∀ (acc : NF) (ns : List NF),
+      (ns.foldl NF.cat acc).eval σ E
+        = (ns.map (·.eval σ E)).foldl (fun a x => ⟨_, a.bits ++ x.bits⟩) (acc.eval σ E) from
+    h (.lit BV.nil) ns
+  intro acc ns
+  induction ns generalizing acc with
+  | nil => rfl
+  | cons n ns ih =>
+      rw [List.foldl_cons, List.map_cons, List.foldl_cons, ih]
+      rfl
 
 /-- The arity at which `Sem.evalOp` succeeds: 1 for the unary
 operations (not, reductions, coercions, rep), 2 for everything else
@@ -115,10 +174,14 @@ def opArity : Op → Nat
 /-- Symbolic evaluation, mirroring `evalExp` construct for construct
 (var: environment lookup; let: bind the rhs normal form; call: inline
 the callee's body through the definition map, arity-checked; xcall:
-out of scope; ite/cat/slice/prim: structural, prim arity-checked so
-the total denotation's default is unreachable). Every recursion
-consumes fuel, so the definition is structural in `fuel`. -/
-def symExp (dmap : HashMap String Defn) : Nat → HashMap String NF → Exp → Except String NF
+a MODEL-LESS generic-free extern call builds the uninterpreted node
+over the packed arguments, a model-carrying one is out of scope —
+the extern table `X` decides which, exactly as it does in `evalExp`;
+ite/cat/slice/prim: structural, prim arity-checked so the total
+denotation's default is unreachable). Every recursion consumes fuel,
+so the definition is structural in `fuel`. -/
+def symExp (dmap : HashMap String Defn) (X : Sem.XEnv) :
+    Nat → HashMap String NF → Exp → Except String NF
   | 0, _, _ => .error "symExp: out of fuel"
   | fuel + 1, ρ, e =>
     match e with
@@ -129,30 +192,36 @@ def symExp (dmap : HashMap String Defn) : Nat → HashMap String NF → Exp → 
         | some n => .ok n
         | none => .error s!"unbound variable {x}"
     | .cat e₁ e₂ => do
-        .ok (.cat (← symExp dmap fuel ρ e₁) (← symExp dmap fuel ρ e₂))
+        .ok (.cat (← symExp dmap X fuel ρ e₁) (← symExp dmap X fuel ρ e₂))
     | .slice i w e => do
-        .ok (.slice i w (← symExp dmap fuel ρ e))
+        .ok (.slice i w (← symExp dmap X fuel ρ e))
     | .prim _ op args => do
-        let ns ← args.mapM (symExp dmap fuel ρ)
+        let ns ← args.mapM (symExp dmap X fuel ρ)
         match ns with
         | [a] => if opArity op = 1 then .ok (.prim1 op a) else .error "prim: arity mismatch"
         | [a, b] => if opArity op = 2 then .ok (.prim2 op a b) else .error "prim: arity mismatch"
         | _ => .error "prim: arity mismatch"
     | .call _ f args => do
-        let ns ← args.mapM (symExp dmap fuel ρ)
+        let ns ← args.mapM (symExp dmap X fuel ρ)
         match dmap.get? f with
         | none => .error s!"unknown definition {f}"
         | some d =>
             if ns.length = d.params.length then
-              symExp dmap fuel (HashMap.ofList (d.params.zip ns)) d.body
+              symExp dmap X fuel (HashMap.ofList (d.params.zip ns)) d.body
             else .error s!"{f}: arity mismatch"
-    | .xcall _ ext _ _ => .error s!"extern call to {ext}: out of scope"
+    | .xcall w ext gs args => do
+        let ns ← args.mapM (symExp dmap X fuel ρ)
+        match X.get? ext with
+        | some _ => .error s!"extern {ext} has a model: the model-carrying validator row is out of scope"
+        | none =>
+            if gs.isEmpty then .ok (.xcall w ext (.xpack ns))
+            else .error s!"extern {ext}: generic model-less externs are out of scope"
     | .ite _ c t e => do
-        .ok (.ite (← symExp dmap fuel ρ c) (← symExp dmap fuel ρ t)
-                  (← symExp dmap fuel ρ e))
+        .ok (.ite (← symExp dmap X fuel ρ c) (← symExp dmap X fuel ρ t)
+                  (← symExp dmap X fuel ρ e))
     | .letE _ x rhs body => do
-        let n ← symExp dmap fuel ρ rhs
-        symExp dmap fuel (ρ.insert x n) body
+        let n ← symExp dmap X fuel ρ rhs
+        symExp dmap X fuel (ρ.insert x n) body
 
 /-- The symbolic device step: outputs and register next-states in
 declared order, as normal forms over the input and register names. -/
@@ -171,21 +240,21 @@ def initSymEnv (dev : Device) : HashMap String NF :=
 fold body (lets extend the environment; outputs and nexts are recorded
 once, with the same duplicate checks in the same order; instance
 statements are outside the instance-free fragment). -/
-def symBody (dmap : HashMap String Defn) (fuel : Nat) :
+def symBody (dmap : HashMap String Defn) (X : Sem.XEnv) (fuel : Nat) :
     HashMap String NF × HashMap String NF × HashMap String NF → Stmt →
     Except String (HashMap String NF × HashMap String NF × HashMap String NF) :=
   fun (ρ, outs, nexts) stmt => do
     match stmt with
     | .sLet x e => do
-        let n ← symExp dmap fuel ρ e
+        let n ← symExp dmap X fuel ρ e
         pure (ρ.insert x n, outs, nexts)
     | .sOutput o e => do
         if outs.contains o then .error s!"output {o} assigned twice"
-        let n ← symExp dmap fuel ρ e
+        let n ← symExp dmap X fuel ρ e
         pure (ρ, outs.insert o n, nexts)
     | .sNext r e => do
         if nexts.contains r then .error s!"register {r} assigned twice"
-        let n ← symExp dmap fuel ρ e
+        let n ← symExp dmap X fuel ρ e
         pure (ρ, outs, nexts.insert r n)
     | .sInstIn inst _ _ =>
         .error s!"device instance {inst}: outside the instance-free fragment"
@@ -205,9 +274,9 @@ def symFinish (dev : Device) :
     pure ⟨outsL, nextsL⟩
 
 /-- The device step, symbolically. -/
-def symStep (dmap : HashMap String Defn) (fuel : Nat) (dev : Device) :
+def symStep (dmap : HashMap String Defn) (X : Sem.XEnv) (fuel : Nat) (dev : Device) :
     Except String StepNF :=
-  dev.body.foldlM (symBody dmap fuel) (initSymEnv dev, ∅, ∅) >>= symFinish dev
+  dev.body.foldlM (symBody dmap X fuel) (initSymEnv dev, ∅, ∅) >>= symFinish dev
 
 /-! ## The constant folder -/
 
@@ -258,12 +327,59 @@ def cfold : NF → NF
   | .cat a b => mkCat a.cfold b.cfold
   | .slice i w e => mkSlice i w e.cfold
   | .ite c t e => mkIte c.cfold t.cfold e.cfold
+  | .xcall w x a => .xcall w x a.cfold
 
 end NF
 
 /-- Constant-fold both components of a labeled normal form. -/
 def cfoldPairs (l : List (String × NF)) : List (String × NF) :=
   l.map fun p => (p.1, p.2.cfold)
+
+/-- No uninterpreted extern nodes anywhere in the term: the decidable
+gate under which a normal form's denotation cannot consult the extern
+environment (`xcallFree_eval`) — what pins denotations computed at the
+EMPTY environment (spliced Cryptol definitions) at every environment. -/
+def NF.xcallFree : NF → Bool
+  | .var _ _ | .lit _ => true
+  | .prim1 _ a => a.xcallFree
+  | .prim2 _ a b => a.xcallFree && b.xcallFree
+  | .cat a b => a.xcallFree && b.xcallFree
+  | .slice _ _ e => e.xcallFree
+  | .ite c t e => c.xcallFree && t.xcallFree && e.xcallFree
+  | .xcall _ _ _ => false
+
+/-- An `xcall`-free normal form denotes identically at every extern
+environment. -/
+theorem NF.xcallFree_eval {σ : String → BV} {E E' : Sem.EEnv} :
+    ∀ {n : NF}, n.xcallFree = true → n.eval σ E = n.eval σ E' := by
+  intro n
+  induction n with
+  | var w x => intro _; rfl
+  | lit v => intro _; rfl
+  | prim1 op a iha =>
+      intro h
+      simp only [NF.eval, iha (by simpa [NF.xcallFree] using h)]
+  | prim2 op a b iha ihb =>
+      intro h
+      simp only [NF.xcallFree, Bool.and_eq_true] at h
+      simp only [NF.eval, iha h.1, ihb h.2]
+  | cat a b iha ihb =>
+      intro h
+      simp only [NF.xcallFree, Bool.and_eq_true] at h
+      simp only [NF.eval]
+      rw [iha h.1, ihb h.2]
+  | slice i w e ihe =>
+      intro h
+      simp only [NF.eval]
+      rw [ihe (by simpa [NF.xcallFree] using h)]
+  | ite c t e ihc iht ihe =>
+      intro h
+      simp only [NF.xcallFree, Bool.and_eq_true] at h
+      simp only [NF.eval]
+      rw [ihc h.1.1, iht h.1.2, ihe h.2]
+  | xcall w x a iha =>
+      intro h
+      exact absurd h (by simp [NF.xcallFree])
 
 /-! ## The checker -/
 
@@ -320,8 +436,8 @@ and the two symbolic steps, constant-folded, are syntactically equal
 normal forms, output for output and register for register. -/
 def checkEquiv (p₁ p₂ : Program) : Bool :=
   match Sem.mkFEnv p₁, Sem.mkFEnv p₂,
-        symStep (dmapOf p₁) (progFuel p₁) p₁.device,
-        symStep (dmapOf p₂) (progFuel p₂) p₂.device with
+        symStep (dmapOf p₁) (Sem.xenv p₁) (progFuel p₁) p₁.device,
+        symStep (dmapOf p₂) (Sem.xenv p₂) (progFuel p₂) p₂.device with
   | .ok _, .ok _, .ok s₁, .ok s₂ =>
          okB p₁.check && okB p₂.check
       && p₁.externs.isEmpty && p₂.externs.isEmpty
@@ -451,10 +567,10 @@ so two environments that agree there evaluate identically. This is the
 lemma that lets `mkFEnv`'s intermediate fold environments stand in for
 the final one. -/
 
-private theorem evalExp_congr {X : Sem.XEnv} {F₁ F₂ : Sem.FEnv} :
+private theorem evalExp_congr {X : Sem.XEnv} {E : Sem.EEnv} {F₁ F₂ : Sem.FEnv} :
     ∀ (e : Exp) (ρ : HashMap String BV),
       (∀ g ∈ Sem.deps X e, F₁.get? g = F₂.get? g) →
-      evalExp F₁ X ρ e = evalExp F₂ X ρ e
+      evalExp F₁ X ρ e E = evalExp F₂ X ρ e E
   | .lit _, _, _ => by simp only [evalExp]
   | .undef _, _, _ => by simp only [evalExp]
   | .var _ _, _, _ => by simp only [evalExp]
@@ -575,10 +691,11 @@ private theorem get?_ofList_map_snd {β γ : Type} (h : β → γ) (l : List (St
 
 /-- The closure `Sem.mkFEnv` builds for a definition (§6.2),
 parameterized by the environment its body evaluates against. -/
-def mkFn (X : Sem.XEnv) (F : Sem.FEnv) (d : Defn) : List BV → Except String BV :=
+def mkFn (X : Sem.XEnv) (F : Sem.FEnv) (d : Defn) (E : Sem.EEnv := Sem.eEmpty) :
+    List BV → Except String BV :=
   fun vs =>
     if vs.length = d.params.length then
-      evalExp F X (HashMap.ofList (d.params.zip vs)) d.body
+      evalExp F X (HashMap.ofList (d.params.zip vs)) d.body E
     else
       .error s!"{d.name}: arity mismatch (expected {d.params.length}, got {vs.length})"
 
@@ -587,20 +704,22 @@ by the arity-guarded closure evaluating its body against `F` ITSELF
 (the final environment — `mkFEnv`'s fold builds closures over prefix
 environments, and `mkFEnv_implements` pays the debt of showing they
 agree). -/
-def FImplements (dmap : HashMap String Defn) (X : Sem.XEnv) (F : Sem.FEnv) : Prop :=
-  ∀ f d, dmap.get? f = some d → ∃ fn, F.get? f = some fn ∧ ∀ vs, fn vs = mkFn X F d vs
+def FImplements (dmap : HashMap String Defn) (X : Sem.XEnv) (F : Sem.FEnv)
+    (E : Sem.EEnv := Sem.eEmpty) : Prop :=
+  ∀ f d, dmap.get? f = some d → ∃ fn, F.get? f = some fn ∧ ∀ vs, fn vs = mkFn X F d E vs
 
 /-- The environment correspondence of `symExp_sound`: the symbolic
 environment maps a name to a normal form exactly when the concrete
 environment maps it to that normal form's denotation. (Only the
 forward direction is needed: a concrete binding never consulted
 symbolically is irrelevant.) -/
-def EnvCorr (σ : String → BV) (ρ : HashMap String NF) (ρ' : HashMap String BV) : Prop :=
-  ∀ x n, ρ.get? x = some n → ρ'.get? x = some (n.eval σ)
+def EnvCorr (σ : String → BV) (ρ : HashMap String NF) (ρ' : HashMap String BV)
+    (E : Sem.EEnv := Sem.eEmpty) : Prop :=
+  ∀ x n, ρ.get? x = some n → ρ'.get? x = some (n.eval σ E)
 
-private theorem envCorr_insert {σ : String → BV} {ρ : HashMap String NF}
-    {ρ' : HashMap String BV} (h : EnvCorr σ ρ ρ') (x : String) (n : NF) :
-    EnvCorr σ (ρ.insert x n) (ρ'.insert x (n.eval σ)) := by
+private theorem envCorr_insert {σ : String → BV} {E : Sem.EEnv} {ρ : HashMap String NF}
+    {ρ' : HashMap String BV} (h : EnvCorr σ ρ ρ' E) (x : String) (n : NF) :
+    EnvCorr σ (ρ.insert x n) (ρ'.insert x (n.eval σ E)) E := by
   intro y m hy
   rw [HashMap.get?_eq_getElem?, HashMap.getElem?_insert] at hy ⊢
   split at hy
@@ -612,11 +731,11 @@ private theorem envCorr_insert {σ : String → BV} {ρ : HashMap String NF}
 /-- The zip environments of a call site correspond: the concrete
 closure environment is the symbolic one with every normal form
 σ-evaluated. -/
-private theorem envCorr_zip {σ : String → BV} (ps : List String) (ns : List NF) :
+private theorem envCorr_zip {σ : String → BV} {E : Sem.EEnv} (ps : List String) (ns : List NF) :
     EnvCorr σ (HashMap.ofList (ps.zip ns))
-              (HashMap.ofList (ps.zip (ns.map (NF.eval σ)))) := by
+              (HashMap.ofList (ps.zip (ns.map (NF.eval σ E)))) E := by
   intro x n hx
-  have hz : ps.zip (ns.map (NF.eval σ)) = (ps.zip ns).map fun p => (p.1, p.2.eval σ) := by
+  have hz : ps.zip (ns.map (NF.eval σ E)) = (ps.zip ns).map fun p => (p.1, p.2.eval σ E) := by
     rw [List.zip_map_right]
     rfl
   rw [hz, get?_ofList_map_snd, hx]
@@ -646,11 +765,11 @@ The `ite` case reconciles `evalExp`'s short-circuit with `NF.eval`'s
 totality: the untaken branch's normal form still has a value, and
 equality only needs the taken branch to agree. -/
 theorem symExp_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F : Sem.FEnv}
-    {σ : String → BV} (hImpl : FImplements dmap X F) :
+    {E : Sem.EEnv} {σ : String → BV} (hImpl : FImplements dmap X F E) :
     ∀ (fuel : Nat) (e : Exp) (ρ : HashMap String NF) (ρ' : HashMap String BV) (nf : NF),
-      EnvCorr σ ρ ρ' →
-      symExp dmap fuel ρ e = .ok nf →
-      evalExp F X ρ' e = .ok (nf.eval σ) := by
+      EnvCorr σ ρ ρ' E →
+      symExp dmap X fuel ρ e = .ok nf →
+      evalExp F X ρ' e E = .ok (nf.eval σ E) := by
   intro fuel
   induction fuel with
   | zero =>
@@ -700,10 +819,13 @@ theorem symExp_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F : Sem.FEnv}
       | prim w op args =>
           simp only [symExp] at hs
           obtain ⟨ns, hns, hs⟩ := except_bind_eq_ok hs
-          have hmapM : args.mapM (evalExp F X ρ') = .ok (ns.map (NF.eval σ)) :=
+          have hmapM : args.mapM (fun a => evalExp F X ρ' a E) = .ok (ns.map (NF.eval σ E)) :=
             mapM_ok_map hns (fun a _ n hn => ih a ρ ρ' n hc hn)
           simp only [evalExp]
-          rw [mapM_attach_erase, hmapM, except_bind_ok]
+          have hattach : (args.attach.mapM fun x => evalExp F X ρ' x.val E)
+              = args.mapM (fun a => evalExp F X ρ' a E) :=
+            mapM_attach_erase (fun a => evalExp F X ρ' a E) args
+          rw [hattach, hmapM, except_bind_ok]
           match ns, hs with
           | [a], hs => ?one
           | [a, b], hs => ?two
@@ -715,7 +837,7 @@ theorem symExp_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F : Sem.FEnv}
             · rename_i hop
               injection hs with hs
               subst hs
-              obtain ⟨v, hv⟩ := evalOp_unary_ok op hop (a.eval σ)
+              obtain ⟨v, hv⟩ := evalOp_unary_ok op hop (a.eval σ E)
               rw [List.map_cons, List.map_nil, hv]
               simp only [NF.eval, hv]
             · exact absurd hs (by simp)
@@ -725,17 +847,20 @@ theorem symExp_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F : Sem.FEnv}
             · rename_i hop
               injection hs with hs
               subst hs
-              obtain ⟨v, hv⟩ := evalOp_binary_ok op hop (a.eval σ) (b.eval σ)
+              obtain ⟨v, hv⟩ := evalOp_binary_ok op hop (a.eval σ E) (b.eval σ E)
               rw [List.map_cons, List.map_cons, List.map_nil, hv]
               simp only [NF.eval, hv]
             · exact absurd hs (by simp)
       | call w f args =>
           simp only [symExp] at hs
           obtain ⟨ns, hns, hs⟩ := except_bind_eq_ok hs
-          have hmapM : args.mapM (evalExp F X ρ') = .ok (ns.map (NF.eval σ)) :=
+          have hmapM : args.mapM (fun a => evalExp F X ρ' a E) = .ok (ns.map (NF.eval σ E)) :=
             mapM_ok_map hns (fun a _ n hn => ih a ρ ρ' n hc hn)
           simp only [evalExp]
-          rw [mapM_attach_erase, hmapM, except_bind_ok]
+          have hattach : (args.attach.mapM fun x => evalExp F X ρ' x.val E)
+              = args.mapM (fun a => evalExp F X ρ' a E) :=
+            mapM_attach_erase (fun a => evalExp F X ρ' a E) args
+          rw [hattach, hmapM, except_bind_ok]
           cases hd : dmap.get? f with
           | none => rw [hd] at hs; exact absurd hs (by simp)
           | some d =>
@@ -745,14 +870,37 @@ theorem symExp_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F : Sem.FEnv}
               · rename_i hlen
                 obtain ⟨fn, hfn, hspec⟩ := hImpl f d hd
                 simp only [hfn]
-                rw [hspec (ns.map (NF.eval σ))]
+                rw [hspec (ns.map (NF.eval σ E))]
                 simp only [mkFn]
                 rw [if_pos (by simp [hlen])]
                 exact ih d.body _ _ nf (envCorr_zip d.params ns) hs
               · exact absurd hs (by simp)
-      | xcall _ ext _ _ =>
+      | xcall w ext gs args =>
+          -- The uninterpreted-function node: both sides read the SAME
+          -- total `Sem.xapply` at the SAME packed bits (the argument
+          -- IHs plus `xpack_eval`), so the strong direction survives —
+          -- `evalExp`'s model-less extern path never errors.
           simp only [symExp] at hs
-          exact absurd hs (by simp)
+          obtain ⟨ns, hns, hs⟩ := except_bind_eq_ok hs
+          have hmapM : args.mapM (fun a => evalExp F X ρ' a E) = .ok (ns.map (NF.eval σ E)) :=
+            mapM_ok_map hns (fun a _ n hn => ih a ρ ρ' n hc hn)
+          simp only [evalExp]
+          have hattach : (args.attach.mapM fun x => evalExp F X ρ' x.val E)
+              = args.mapM (fun a => evalExp F X ρ' a E) :=
+            mapM_attach_erase (fun a => evalExp F X ρ' a E) args
+          rw [hattach, hmapM, except_bind_ok]
+          cases hx : X.get? ext with
+          | some m => rw [hx] at hs; exact absurd hs (by simp)
+          | none =>
+              rw [hx] at hs
+              dsimp only at hs
+              split at hs
+              · rename_i hgs
+                injection hs with hs
+                subst hs
+                rw [if_pos hgs]
+                simp only [NF.eval, NF.xpack_eval]
+              · exact absurd hs (by simp)
       | ite w c t e =>
           simp only [symExp] at hs
           obtain ⟨nc, h₁, hs⟩ := except_bind_eq_ok hs
@@ -1067,13 +1215,13 @@ private theorem topoDefns_spec {X : Sem.XEnv} {defns ordered : List Defn}
 /-! ## The `mkFEnv` fold characterization -/
 
 /-- One step of `mkFEnv`'s fold. -/
-private def stepF (X : Sem.XEnv) (F : Sem.FEnv) (d : Defn) : Sem.FEnv :=
-  F.insert d.name (mkFn X F d)
+private def stepF (X : Sem.XEnv) (E : Sem.EEnv) (F : Sem.FEnv) (d : Defn) : Sem.FEnv :=
+  F.insert d.name (mkFn X F d E)
 
 /-- The fold only touches the names it inserts. -/
-private theorem foldl_stepF_get?_not_mem (X : Sem.XEnv) :
+private theorem foldl_stepF_get?_not_mem (X : Sem.XEnv) (E : Sem.EEnv) :
     ∀ (l : List Defn) (F₀ : Sem.FEnv) (g : String), g ∉ l.map (·.name) →
-      (l.foldl (stepF X) F₀).get? g = F₀.get? g := by
+      (l.foldl (stepF X E) F₀).get? g = F₀.get? g := by
   intro l
   induction l with
   | nil => intro _ _ _; rfl
@@ -1093,10 +1241,10 @@ name-distinct list, every definition is denoted by the arity-guarded
 closure of its body AGAINST THE WHOLE FOLD — the prefix environment
 the closure captured agrees with the final one on the body's
 dependencies (`evalExp_congr` + `TopoList`). -/
-private theorem fold_spec (X : Sem.XEnv) :
+private theorem fold_spec (X : Sem.XEnv) (E : Sem.EEnv) :
     ∀ (l : List Defn) (F₀ : Sem.FEnv), TopoList X l → (l.map (·.name)).Nodup →
-      ∀ d ∈ l, ∃ fn, (l.foldl (stepF X) F₀).get? d.name = some fn ∧
-        ∀ vs, fn vs = mkFn X (l.foldl (stepF X) F₀) d vs := by
+      ∀ d ∈ l, ∃ fn, (l.foldl (stepF X E) F₀).get? d.name = some fn ∧
+        ∀ vs, fn vs = mkFn X (l.foldl (stepF X E) F₀) d E vs := by
   intro l
   induction l with
   | nil => intro F₀ _ _ d hd; exact absurd hd (by simp)
@@ -1113,8 +1261,8 @@ private theorem fold_spec (X : Sem.XEnv) :
       cases List.mem_cons.mp hd with
       | inl hda =>
           subst hda
-          refine ⟨mkFn X F₀ d, ?_, ?_⟩
-          · rw [foldl_stepF_get?_not_mem X l _ _ hnotmem]
+          refine ⟨mkFn X F₀ d E, ?_, ?_⟩
+          · rw [foldl_stepF_get?_not_mem X E l _ _ hnotmem]
             simp only [stepF]
             rw [HashMap.get?_eq_getElem?]
             exact HashMap.getElem?_insert_self
@@ -1125,13 +1273,13 @@ private theorem fold_spec (X : Sem.XEnv) :
               intro g hg
               have hgnot := hhead g hg
               simp only [List.map_cons, List.mem_cons, not_or] at hgnot
-              rw [foldl_stepF_get?_not_mem X l _ g hgnot.2]
+              rw [foldl_stepF_get?_not_mem X E l _ g hgnot.2]
               simp only [stepF]
               rw [HashMap.get?_eq_getElem?, HashMap.get?_eq_getElem?, HashMap.getElem?_insert,
                   if_neg (by simp only [beq_iff_eq]; exact fun h => hgnot.1 h.symm)]
             · rfl
       | inr hdl =>
-          exact ih (stepF X F₀ a) htail hnd'.2 d hdl
+          exact ih (stepF X E F₀ a) htail hnd'.2 d hdl
 
 /-- Distinct-name test soundness. -/
 private theorem nodupB_nodup : ∀ {l : List String}, nodupB l = true → l.Nodup := by
@@ -1146,15 +1294,16 @@ private theorem nodupB_nodup : ∀ {l : List String}, nodupB l = true → l.Nodu
 
 /-- The main environment fact: a successful `mkFEnv` implements the
 definition map (given distinct definition names). -/
-theorem mkFEnv_implements {p : Program} {F : Sem.FEnv}
+theorem mkFEnv_implements {p : Program} {E : Sem.EEnv} {F : Sem.FEnv}
     (hnd : (p.defns.map (·.name)).Nodup)
-    (hF : Sem.mkFEnv p = .ok F) :
-    FImplements (dmapOf p) (Sem.xenv p) F := by
+    (hF : Sem.mkFEnv p E = .ok F) :
+    FImplements (dmapOf p) (Sem.xenv p) F E := by
   simp only [Sem.mkFEnv] at hF
   obtain ⟨ordered, hord, hfold⟩ := except_bind_eq_ok hF
-  have hfold' : ordered.foldlM (fun F d => pure (stepF (Sem.xenv p) F d)) ∅ = Except.ok F := hfold
+  have hfold' : ordered.foldlM (fun F d => pure (stepF (Sem.xenv p) E F d)) ∅
+      = Except.ok F := hfold
   rw [foldlM_pure] at hfold'
-  have hFeq : F = ordered.foldl (stepF (Sem.xenv p)) ∅ := by
+  have hFeq : F = ordered.foldl (stepF (Sem.xenv p) E) ∅ := by
     injection hfold' with h
     exact h.symm
   obtain ⟨htopo, hndo, hmem⟩ := topoDefns_spec hord hnd
@@ -1165,14 +1314,14 @@ theorem mkFEnv_implements {p : Program} {F : Sem.FEnv}
   have h2 : d' = d := congrArg Prod.snd hpd
   subst h2
   subst h1
-  obtain ⟨fn, hfn, hspec⟩ := fold_spec (Sem.xenv p) ordered ∅ htopo hndo d' (hmem d' hd')
+  obtain ⟨fn, hfn, hspec⟩ := fold_spec (Sem.xenv p) E ordered ∅ htopo hndo d' (hmem d' hd')
   rw [← hFeq] at hfn hspec
   exact ⟨fn, hfn, hspec⟩
 
 /-! ## Constant-folder soundness -/
 
-private theorem mk1_eval (σ : String → BV) (op : Op) (a : NF) :
-    (NF.mk1 op a).eval σ = (NF.prim1 op a).eval σ := by
+private theorem mk1_eval (σ : String → BV) (E : Sem.EEnv) (op : Op) (a : NF) :
+    (NF.mk1 op a).eval σ E = (NF.prim1 op a).eval σ E := by
   cases a <;> try rfl
   case lit v =>
     simp only [NF.mk1]
@@ -1180,8 +1329,8 @@ private theorem mk1_eval (σ : String → BV) (op : Op) (a : NF) :
     | ok r => simp [NF.eval, hv]
     | error e => simp [NF.eval, hv]
 
-private theorem mk2_eval (σ : String → BV) (op : Op) (a b : NF) :
-    (NF.mk2 op a b).eval σ = (NF.prim2 op a b).eval σ := by
+private theorem mk2_eval (σ : String → BV) (E : Sem.EEnv) (op : Op) (a b : NF) :
+    (NF.mk2 op a b).eval σ E = (NF.prim2 op a b).eval σ E := by
   cases a <;> cases b <;> try rfl
   case lit.lit v w =>
     simp only [NF.mk2]
@@ -1189,16 +1338,16 @@ private theorem mk2_eval (σ : String → BV) (op : Op) (a b : NF) :
     | ok r => simp [NF.eval, hv]
     | error e => simp [NF.eval, hv]
 
-private theorem mkCat_eval (σ : String → BV) (a b : NF) :
-    (NF.mkCat a b).eval σ = (NF.cat a b).eval σ := by
+private theorem mkCat_eval (σ : String → BV) (E : Sem.EEnv) (a b : NF) :
+    (NF.mkCat a b).eval σ E = (NF.cat a b).eval σ E := by
   cases a <;> cases b <;> rfl
 
-private theorem mkSlice_eval (σ : String → BV) (i w : Nat) (e : NF) :
-    (NF.mkSlice i w e).eval σ = (NF.slice i w e).eval σ := by
+private theorem mkSlice_eval (σ : String → BV) (E : Sem.EEnv) (i w : Nat) (e : NF) :
+    (NF.mkSlice i w e).eval σ E = (NF.slice i w e).eval σ E := by
   cases e <;> rfl
 
-private theorem mkIte_eval (σ : String → BV) (c t e : NF) :
-    (NF.mkIte c t e).eval σ = (NF.ite c t e).eval σ := by
+private theorem mkIte_eval (σ : String → BV) (E : Sem.EEnv) (c t e : NF) :
+    (NF.mkIte c t e).eval σ E = (NF.ite c t e).eval σ E := by
   cases c <;> try rfl
   case lit v =>
     simp only [NF.mkIte]
@@ -1206,7 +1355,8 @@ private theorem mkIte_eval (σ : String → BV) (c t e : NF) :
 
 /-- Constant folding is denotation-preserving (each smart constructor
 folds through `Sem.evalOp` itself, so this is by that same table). -/
-theorem cfold_eval (σ : String → BV) : ∀ (nf : NF), (nf.cfold).eval σ = nf.eval σ := by
+theorem cfold_eval (σ : String → BV) (E : Sem.EEnv := Sem.eEmpty) :
+    ∀ (nf : NF), (nf.cfold).eval σ E = nf.eval σ E := by
   intro nf
   induction nf with
   | var w x => rfl
@@ -1233,6 +1383,8 @@ theorem cfold_eval (σ : String → BV) : ∀ (nf : NF), (nf.cfold).eval σ = nf
       simp only [NF.cfold]
       rw [mkIte_eval]
       simp only [NF.eval, ihc, iht, ihe]
+  | xcall w x a iha =>
+      simp only [NF.cfold, NF.eval, iha]
 
 /-! ## Soundness of the symbolic step -/
 
@@ -1275,10 +1427,11 @@ private theorem foldl_insert_var_get? {x : String} {n : NF} :
 /-- The initial correspondence: the symbolic initial environment
 (inputs and registers as variables) corresponds to `Sem.step`'s
 concrete initial environment under `sigmaOf`. -/
-private theorem initSymEnv_corr {dev : Device} {regs : HashMap String BV} {ins : List BV}
+private theorem initSymEnv_corr {dev : Device} {E : Sem.EEnv}
+    {regs : HashMap String BV} {ins : List BV}
     (hlen : ins.length = dev.inputs.length)
     (hdom : ∀ r ∈ dev.registers, regs.contains r.name) :
-    EnvCorr (sigmaOf dev.inputs regs ins) (initSymEnv dev) (stepEnv dev.inputs regs ins) := by
+    EnvCorr (sigmaOf dev.inputs regs ins) (initSymEnv dev) (stepEnv dev.inputs regs ins) E := by
   intro x n hx
   rcases foldl_insert_var_get? _ _ hx with h | h
   · obtain ⟨w, hn, hw⟩ := h
@@ -1310,25 +1463,26 @@ private theorem initSymEnv_corr {dev : Device} {regs : HashMap String BV} {ins :
 
 /-- Correspondence of the recorded output/next maps: the concrete map
 is the symbolic one, pointwise σ-evaluated. -/
-private def MapCorr (σ : String → BV) (mS : HashMap String NF) (mC : HashMap String BV) : Prop :=
-  ∀ k, mC.get? k = (mS.get? k).map (NF.eval σ)
+private def MapCorr (σ : String → BV) (E : Sem.EEnv) (mS : HashMap String NF)
+    (mC : HashMap String BV) : Prop :=
+  ∀ k, mC.get? k = (mS.get? k).map (NF.eval σ E)
 
-private theorem mapCorr_empty {σ : String → BV} : MapCorr σ ∅ ∅ := by
+private theorem mapCorr_empty {σ : String → BV} {E : Sem.EEnv} : MapCorr σ E ∅ ∅ := by
   intro k
   rw [HashMap.get?_eq_getElem?, HashMap.get?_eq_getElem?, HashMap.getElem?_empty,
       HashMap.getElem?_empty]
   rfl
 
-private theorem mapCorr_contains {σ : String → BV} {mS : HashMap String NF}
-    {mC : HashMap String BV} (h : MapCorr σ mS mC) (k : String) :
+private theorem mapCorr_contains {σ : String → BV} {E : Sem.EEnv} {mS : HashMap String NF}
+    {mC : HashMap String BV} (h : MapCorr σ E mS mC) (k : String) :
     mC.contains k = mS.contains k := by
   rw [HashMap.contains_eq_isSome_getElem?, HashMap.contains_eq_isSome_getElem?,
       ← HashMap.get?_eq_getElem?, ← HashMap.get?_eq_getElem?, h k]
   cases mS.get? k <;> rfl
 
-private theorem mapCorr_insert {σ : String → BV} {mS : HashMap String NF}
-    {mC : HashMap String BV} (h : MapCorr σ mS mC) (x : String) (n : NF) :
-    MapCorr σ (mS.insert x n) (mC.insert x (n.eval σ)) := by
+private theorem mapCorr_insert {σ : String → BV} {E : Sem.EEnv} {mS : HashMap String NF}
+    {mC : HashMap String BV} (h : MapCorr σ E mS mC) (x : String) (n : NF) :
+    MapCorr σ E (mS.insert x n) (mC.insert x (n.eval σ E)) := by
   intro k
   rw [HashMap.get?_eq_getElem?, HashMap.get?_eq_getElem?, HashMap.getElem?_insert,
       HashMap.getElem?_insert]
@@ -1339,21 +1493,21 @@ private theorem mapCorr_insert {σ : String → BV} {mS : HashMap String NF}
 
 /-- `Sem.step`'s fold body, named (definitionally equal to the lambda
 inside the committed `Sem.step`; `step_unfold` checks this by `rfl`). -/
-private def concBody (F : Sem.FEnv) (X : Sem.XEnv) :
+private def concBody (F : Sem.FEnv) (X : Sem.XEnv) (E : Sem.EEnv) :
     HashMap String BV × HashMap String BV × HashMap String BV → Stmt →
     Except String (HashMap String BV × HashMap String BV × HashMap String BV) :=
   fun (ρ, outs, nexts) stmt => do
     match stmt with
     | .sLet x e => do
-        let v ← evalExp F X ρ e
+        let v ← evalExp F X ρ e E
         pure (ρ.insert x v, outs, nexts)
     | .sOutput o e => do
         if outs.contains o then .error s!"output {o} assigned twice"
-        let v ← evalExp F X ρ e
+        let v ← evalExp F X ρ e E
         pure (ρ, outs.insert o v, nexts)
     | .sNext r e => do
         if nexts.contains r then .error s!"register {r} assigned twice"
-        let v ← evalExp F X ρ e
+        let v ← evalExp F X ρ e E
         pure (ρ, outs, nexts.insert r v)
     | .sInstIn inst _ _ => .error s!"device instance {inst}: outside the instance-free fragment"
 
@@ -1373,13 +1527,13 @@ private def concFinish (dev : Device) :
     pure (outVals, regVals)
 
 /-- The committed `Sem.step`, as the composition of the named pieces. -/
-private theorem step_unfold (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device)
+private theorem step_unfold (F : Sem.FEnv) (X : Sem.XEnv) (E : Sem.EEnv) (dev : Device)
     (regs : HashMap String BV) (ins : List BV) :
-    Sem.step F X dev regs ins =
+    Sem.step F X dev regs ins E =
       if ins.length ≠ dev.inputs.length then
         .error s!"stimulus arity: got {ins.length} inputs, device has {dev.inputs.length}"
       else
-        dev.body.foldlM (concBody F X) (stepEnv dev.inputs regs ins, ∅, ∅)
+        dev.body.foldlM (concBody F X E) (stepEnv dev.inputs regs ins, ∅, ∅)
           >>= concFinish dev := by
   by_cases h : ins.length = dev.inputs.length
   · rw [if_neg (fun hne => hne h)]
@@ -1392,16 +1546,16 @@ private theorem step_unfold (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device)
 /-- The parallel fold: from corresponding states, a successful
 symbolic body fold gives a successful concrete body fold with
 corresponding results. -/
-private theorem body_fold_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F : Sem.FEnv}
-    {σ : String → BV} {fuel : Nat} (hImpl : FImplements dmap X F) :
+private theorem body_fold_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {E : Sem.EEnv}
+    {F : Sem.FEnv} {σ : String → BV} {fuel : Nat} (hImpl : FImplements dmap X F E) :
     ∀ (stmts : List Stmt) (ρS outsS nextsS : HashMap String NF)
       (ρC outsC nextsC : HashMap String BV)
       (resS : HashMap String NF × HashMap String NF × HashMap String NF),
-      stmts.foldlM (symBody dmap fuel) (ρS, outsS, nextsS) = .ok resS →
-      EnvCorr σ ρS ρC → MapCorr σ outsS outsC → MapCorr σ nextsS nextsC →
+      stmts.foldlM (symBody dmap X fuel) (ρS, outsS, nextsS) = .ok resS →
+      EnvCorr σ ρS ρC E → MapCorr σ E outsS outsC → MapCorr σ E nextsS nextsC →
       ∃ ρC' outsC' nextsC',
-        stmts.foldlM (concBody F X) (ρC, outsC, nextsC) = .ok (ρC', outsC', nextsC') ∧
-        MapCorr σ resS.2.1 outsC' ∧ MapCorr σ resS.2.2 nextsC' := by
+        stmts.foldlM (concBody F X E) (ρC, outsC, nextsC) = .ok (ρC', outsC', nextsC') ∧
+        MapCorr σ E resS.2.1 outsC' ∧ MapCorr σ E resS.2.2 nextsC' := by
   intro stmts
   induction stmts with
   | nil =>
@@ -1423,9 +1577,10 @@ private theorem body_fold_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F :
               = .ok stS := hpure
           injection hpure with hpure
           subst hpure
-          have hv : evalExp F X ρC e = .ok (n.eval σ) := symExp_sound hImpl fuel e ρS ρC n hc hne
+          have hv : evalExp F X ρC e E = .ok (n.eval σ E) :=
+            symExp_sound hImpl fuel e ρS ρC n hc hne
           obtain ⟨ρC', outsC', nextsC', hfoldC, ho', hn'⟩ :=
-            ih _ _ _ (ρC.insert x (n.eval σ)) outsC nextsC resS hrest
+            ih _ _ _ (ρC.insert x (n.eval σ E)) outsC nextsC resS hrest
               (envCorr_insert hc x n) ho hn
           refine ⟨ρC', outsC', nextsC', ?_, ho', hn'⟩
           dsimp only [concBody]
@@ -1447,14 +1602,15 @@ private theorem body_fold_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F :
                   = .ok stS := hpure
               injection hpure with hpure
               subst hpure
-              have hv : evalExp F X ρC e = .ok (n.eval σ) := symExp_sound hImpl fuel e ρS ρC n hc hne
+              have hv : evalExp F X ρC e E = .ok (n.eval σ E) :=
+                symExp_sound hImpl fuel e ρS ρC n hc hne
               obtain ⟨ρC', outsC', nextsC', hfoldC, ho', hn'⟩ :=
-                ih _ _ _ ρC (outsC.insert o (n.eval σ)) nextsC resS hrest
+                ih _ _ _ ρC (outsC.insert o (n.eval σ E)) nextsC resS hrest
                   hc (mapCorr_insert ho o n) hn
               refine ⟨ρC', outsC', nextsC', ?_, ho', hn'⟩
               dsimp only [concBody]
               rw [mapCorr_contains ho o, hcont]
-              simp only [Bool.false_eq_true, if_false, except_bind_ok]
+              simp only [Bool.false_eq_true, if_false]
               rw [hv, except_bind_ok, except_pure_def, except_bind_ok]
               exact hfoldC
       | sNext r e =>
@@ -1472,14 +1628,15 @@ private theorem body_fold_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F :
                   = .ok stS := hpure
               injection hpure with hpure
               subst hpure
-              have hv : evalExp F X ρC e = .ok (n.eval σ) := symExp_sound hImpl fuel e ρS ρC n hc hne
+              have hv : evalExp F X ρC e E = .ok (n.eval σ E) :=
+                symExp_sound hImpl fuel e ρS ρC n hc hne
               obtain ⟨ρC', outsC', nextsC', hfoldC, ho', hn'⟩ :=
-                ih _ _ _ ρC outsC (nextsC.insert r (n.eval σ)) resS hrest
+                ih _ _ _ ρC outsC (nextsC.insert r (n.eval σ E)) resS hrest
                   hc ho (mapCorr_insert hn r n)
               refine ⟨ρC', outsC', nextsC', ?_, ho', hn'⟩
               dsimp only [concBody]
               rw [mapCorr_contains hn r, hcont]
-              simp only [Bool.false_eq_true, if_false, except_bind_ok]
+              simp only [Bool.false_eq_true, if_false]
               rw [hv, except_bind_ok, except_pure_def, except_bind_ok]
               exact hfoldC
       | sInstIn inst port e =>
@@ -1488,8 +1645,8 @@ private theorem body_fold_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F :
 
 /-- Transport the register-next read-off: the concrete fold builds
 exactly the store of σ-evaluated symbolic nexts. -/
-private theorem regs_fold_sound {σ : String → BV} {nextsS : HashMap String NF}
-    {nextsC : HashMap String BV} (h : MapCorr σ nextsS nextsC) :
+private theorem regs_fold_sound {σ : String → BV} {E : Sem.EEnv} {nextsS : HashMap String NF}
+    {nextsC : HashMap String BV} (h : MapCorr σ E nextsS nextsC) :
     ∀ (rs : List Register) (pairs : List (String × NF)) (m : HashMap String BV),
       rs.mapM (fun r =>
         match nextsS.get? r.name with
@@ -1499,7 +1656,7 @@ private theorem regs_fold_sound {σ : String → BV} {nextsS : HashMap String NF
         match nextsC.get? r.name with
         | some v => pure (m.insert r.name v)
         | none   => Except.error s!"register {r.name} never assigned")
-        = Except.ok (pairs.foldl (fun m p => m.insert p.1 (p.2.eval σ)) m) := by
+        = Except.ok (pairs.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) m) := by
   intro rs
   induction rs with
   | nil =>
@@ -1524,7 +1681,7 @@ private theorem regs_fold_sound {σ : String → BV} {nextsS : HashMap String NF
           injection hq with hq
           subst hq
           rw [List.foldlM_cons]
-          have hcget : nextsC.get? r.name = some (n.eval σ) := by rw [h r.name, hget]; rfl
+          have hcget : nextsC.get? r.name = some (n.eval σ E) := by rw [h r.name, hget]; rfl
           rw [hcget]
           dsimp only
           rw [except_pure_def, except_bind_ok, List.foldl_cons]
@@ -1532,26 +1689,28 @@ private theorem regs_fold_sound {σ : String → BV} {nextsS : HashMap String NF
 
 /-- The concrete values of a symbolic step at a valuation: outputs in
 declared order, and the next register store. -/
-def stepOutsVal (σ : String → BV) (ss : StepNF) : List BV :=
-  ss.outs.map fun p => p.2.eval σ
+def stepOutsVal (σ : String → BV) (ss : StepNF) (E : Sem.EEnv := Sem.eEmpty) : List BV :=
+  ss.outs.map fun p => p.2.eval σ E
 
-def stepNextsVal (σ : String → BV) (ss : StepNF) : HashMap String BV :=
-  ss.nexts.foldl (fun m p => m.insert p.1 (p.2.eval σ)) ∅
+def stepNextsVal (σ : String → BV) (ss : StepNF) (E : Sem.EEnv := Sem.eEmpty) :
+    HashMap String BV :=
+  ss.nexts.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) ∅
 
 /-- Soundness of the symbolic device step: whenever it succeeds,
 `Sem.step` — from any register store covering the declared registers
 and any stimulus of the right arity — computes exactly the symbolic
 outputs' and nexts' denotations at the valuation induced by that store
 and stimulus. -/
-theorem symStep_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F : Sem.FEnv}
-    {fuel : Nat} {dev : Device} {ss : StepNF} (hImpl : FImplements dmap X F)
-    (hsym : symStep dmap fuel dev = .ok ss)
+theorem symStep_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {E : Sem.EEnv}
+    {F : Sem.FEnv} {fuel : Nat} {dev : Device} {ss : StepNF}
+    (hImpl : FImplements dmap X F E)
+    (hsym : symStep dmap X fuel dev = .ok ss)
     (regs : HashMap String BV) (ins : List BV)
     (hlen : ins.length = dev.inputs.length)
     (hdom : ∀ r ∈ dev.registers, regs.contains r.name = true) :
-    Sem.step F X dev regs ins =
-      .ok (stepOutsVal (sigmaOf dev.inputs regs ins) ss,
-           stepNextsVal (sigmaOf dev.inputs regs ins) ss) := by
+    Sem.step F X dev regs ins E =
+      .ok (stepOutsVal (sigmaOf dev.inputs regs ins) ss E,
+           stepNextsVal (sigmaOf dev.inputs regs ins) ss E) := by
   rw [step_unfold, if_neg (fun hne => hne hlen)]
   rw [symStep] at hsym
   obtain ⟨resS, hfoldS, hfin⟩ := except_bind_eq_ok hsym
@@ -1572,7 +1731,7 @@ theorem symStep_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F : Sem.FEnv}
       match outsC'.get? p.1 with
       | some v => pure v
       | none   => Except.error s!"output {p.1} never assigned")
-      = Except.ok (outsL.map fun q => q.2.eval (sigmaOf dev.inputs regs ins)) := by
+      = Except.ok (outsL.map fun q => q.2.eval (sigmaOf dev.inputs regs ins) E) := by
     refine mapM_ok_map hoL ?_
     intro a _ b hb
     obtain ⟨o, w⟩ := a
@@ -1584,7 +1743,7 @@ theorem symStep_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F : Sem.FEnv}
         have hb : (Except.ok (o, n) : Except String (String × NF)) = .ok b := hb
         injection hb with hb
         subst hb
-        have : outsC'.get? o = some (n.eval (sigmaOf dev.inputs regs ins)) := by
+        have : outsC'.get? o = some (n.eval (sigmaOf dev.inputs regs ins) E) := by
           rw [hoCorr o, hget]; rfl
         rw [this]
         rfl
@@ -1617,43 +1776,43 @@ private theorem registers_eq_of_regTuples : ∀ {rs₁ rs₂ : List Register},
           rw [hr, ih (show regTuples rs = regTuples rs' from h2)]
 
 /-- Equal constant-folded pairs give equal denotations, pointwise. -/
-private theorem outsVal_eq_of_cfold {σ : String → BV} {l₁ l₂ : List (String × NF)}
+private theorem outsVal_eq_of_cfold {σ : String → BV} {E : Sem.EEnv} {l₁ l₂ : List (String × NF)}
     (h : cfoldPairs l₁ = cfoldPairs l₂) :
-    (l₁.map fun p => p.2.eval σ) = l₂.map fun p => p.2.eval σ := by
+    (l₁.map fun p => p.2.eval σ E) = l₂.map fun p => p.2.eval σ E := by
   have key : ∀ (l : List (String × NF)),
-      (l.map fun p => p.2.eval σ) = (cfoldPairs l).map fun p => p.2.eval σ := by
+      (l.map fun p => p.2.eval σ E) = (cfoldPairs l).map fun p => p.2.eval σ E := by
     intro l
     rw [cfoldPairs, List.map_map]
-    have hfn : ((fun p : String × NF => p.2.eval σ) ∘ fun p : String × NF => (p.1, p.2.cfold))
-        = fun p : String × NF => p.2.eval σ := by
+    have hfn : ((fun p : String × NF => p.2.eval σ E) ∘ fun p : String × NF => (p.1, p.2.cfold))
+        = fun p : String × NF => p.2.eval σ E := by
       funext p
       simp [Function.comp, cfold_eval]
     rw [hfn]
   rw [key l₁, key l₂, h]
 
 /-- Equal constant-folded pairs give equal next-state stores. -/
-private theorem nextsVal_eq_of_cfold {σ : String → BV} {l₁ l₂ : List (String × NF)}
+private theorem nextsVal_eq_of_cfold {σ : String → BV} {E : Sem.EEnv} {l₁ l₂ : List (String × NF)}
     (h : cfoldPairs l₁ = cfoldPairs l₂) :
-    l₁.foldl (fun m p => m.insert p.1 (p.2.eval σ)) (∅ : HashMap String BV)
-      = l₂.foldl (fun m p => m.insert p.1 (p.2.eval σ)) ∅ := by
+    l₁.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) (∅ : HashMap String BV)
+      = l₂.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) ∅ := by
   have key : ∀ (l : List (String × NF)),
-      l.foldl (fun m p => m.insert p.1 (p.2.eval σ)) (∅ : HashMap String BV)
-        = (cfoldPairs l).foldl (fun m p => m.insert p.1 (p.2.eval σ)) ∅ := by
+      l.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) (∅ : HashMap String BV)
+        = (cfoldPairs l).foldl (fun m p => m.insert p.1 (p.2.eval σ E)) ∅ := by
     intro l
     rw [cfoldPairs, List.foldl_map]
     have : (fun (m : HashMap String BV) (p : String × NF) =>
-              m.insert (p.1, p.2.cfold).1 ((p.1, p.2.cfold).2.eval σ))
-         = fun (m : HashMap String BV) (p : String × NF) => m.insert p.1 (p.2.eval σ) := by
+              m.insert (p.1, p.2.cfold).1 ((p.1, p.2.cfold).2.eval σ E))
+         = fun (m : HashMap String BV) (p : String × NF) => m.insert p.1 (p.2.eval σ E) := by
       funext m p
       simp [cfold_eval]
     rw [this]
   rw [key l₁, key l₂, h]
 
 /-- Contains-preservation through the next-store fold. -/
-private theorem foldl_insert_contains_preserve {σ : String → BV} :
+private theorem foldl_insert_contains_preserve {σ : String → BV} {E : Sem.EEnv} :
     ∀ (l : List (String × NF)) (m : HashMap String BV) (x : String),
       m.contains x = true →
-      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ)) m).contains x = true := by
+      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) m).contains x = true := by
   intro l
   induction l with
   | nil => intro m x h; exact h
@@ -1663,10 +1822,10 @@ private theorem foldl_insert_contains_preserve {σ : String → BV} :
       exact ih _ x (by rw [HashMap.contains_insert]; simp [h])
 
 /-- Every key of the pair list is contained in the folded store. -/
-private theorem foldl_insert_contains_of_mem {σ : String → BV} :
+private theorem foldl_insert_contains_of_mem {σ : String → BV} {E : Sem.EEnv} :
     ∀ (l : List (String × NF)) (m : HashMap String BV) (x : String),
       x ∈ l.map Prod.fst →
-      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ)) m).contains x = true := by
+      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) m).contains x = true := by
   intro l
   induction l with
   | nil => intro m x h; exact absurd h (by simp)
@@ -1712,8 +1871,8 @@ private theorem mapM_regs_fst :
           subst hq
           rw [List.map_cons, List.map_cons, ih nexts pairs' hps]
 
-private theorem symStep_nexts_fst {dmap : HashMap String Defn} {fuel : Nat} {dev : Device}
-    {ss : StepNF} (hsym : symStep dmap fuel dev = .ok ss) :
+private theorem symStep_nexts_fst {dmap : HashMap String Defn} {X : Sem.XEnv} {fuel : Nat}
+    {dev : Device} {ss : StepNF} (hsym : symStep dmap X fuel dev = .ok ss) :
     ss.nexts.map Prod.fst = dev.registers.map (·.name) := by
   rw [symStep] at hsym
   obtain ⟨resS, _, hfin⟩ := except_bind_eq_ok hsym
@@ -1727,9 +1886,9 @@ private theorem symStep_nexts_fst {dmap : HashMap String Defn} {fuel : Nat} {dev
   exact mapM_regs_fst dev.registers nextsS nextsL hnL
 
 /-- The next-state store covers the declared registers. -/
-private theorem stepNextsVal_regdom {σ : String → BV} {ss : StepNF} {dev : Device}
+private theorem stepNextsVal_regdom {σ : String → BV} {E : Sem.EEnv} {ss : StepNF} {dev : Device}
     (hfst : ss.nexts.map Prod.fst = dev.registers.map (·.name)) :
-    ∀ r ∈ dev.registers, (stepNextsVal σ ss).contains r.name = true := by
+    ∀ r ∈ dev.registers, (stepNextsVal σ ss E).contains r.name = true := by
   intro r hr
   exact foldl_insert_contains_of_mem _ _ _
     (by rw [hfst]; exact List.mem_map.mpr ⟨r, hr, rfl⟩)
@@ -1737,16 +1896,17 @@ private theorem stepNextsVal_regdom {σ : String → BV} {ss : StepNF} {dev : De
 /-- Two devices with pointwise-equal steps (on stores satisfying an
 invariant the step preserves) have equal run folds from any invariant
 store. -/
-private theorem run_fold_congr {F₁ F₂ : Sem.FEnv} {X₁ X₂ : Sem.XEnv} {dev₁ dev₂ : Device}
+private theorem run_fold_congr {F₁ F₂ : Sem.FEnv} {X₁ X₂ : Sem.XEnv} {E₁ E₂ : Sem.EEnv}
+    {dev₁ dev₂ : Device}
     {Inv : HashMap String BV → Prop} {Ok : List BV → Prop}
     (hstep : ∀ regs ins, Inv regs → Ok ins →
-      Sem.step F₁ X₁ dev₁ regs ins = Sem.step F₂ X₂ dev₂ regs ins)
+      Sem.step F₁ X₁ dev₁ regs ins E₁ = Sem.step F₂ X₂ dev₂ regs ins E₂)
     (hpres : ∀ regs ins outs regs', Inv regs → Ok ins →
-      Sem.step F₁ X₁ dev₁ regs ins = .ok (outs, regs') → Inv regs') :
+      Sem.step F₁ X₁ dev₁ regs ins E₁ = .ok (outs, regs') → Inv regs') :
     ∀ (stim : List (List BV)) (regs : HashMap String BV) (acc : List (List BV)),
       Inv regs → (∀ ins ∈ stim, Ok ins) →
-      stim.foldlM (Sem.foldStep F₁ X₁ dev₁) (regs, acc)
-        = stim.foldlM (Sem.foldStep F₂ X₂ dev₂) (regs, acc) := by
+      stim.foldlM (Sem.foldStep F₁ X₁ dev₁ E₁) (regs, acc)
+        = stim.foldlM (Sem.foldStep F₂ X₂ dev₂ E₂) (regs, acc) := by
   intro stim
   induction stim with
   | nil => intro regs acc _ _; rfl
@@ -1755,26 +1915,38 @@ private theorem run_fold_congr {F₁ F₂ : Sem.FEnv} {X₁ X₂ : Sem.XEnv} {de
       have hoki : Ok ins := hok ins List.mem_cons_self
       have hokr : ∀ i ∈ stim, Ok i := fun i hi => hok i (List.mem_cons_of_mem _ hi)
       rw [List.foldlM_cons, List.foldlM_cons]
-      cases hstep₁ : Sem.step F₁ X₁ dev₁ regs ins with
+      cases hstep₁ : Sem.step F₁ X₁ dev₁ regs ins E₁ with
       | error e =>
-          have h₂ : Sem.step F₂ X₂ dev₂ regs ins = .error e :=
+          have h₂ : Sem.step F₂ X₂ dev₂ regs ins E₂ = .error e :=
             (hstep regs ins hdom hoki).symm.trans hstep₁
           simp only [Sem.foldStep, hstep₁, h₂, except_bind_error]
       | ok pr =>
           obtain ⟨outs, regs'⟩ := pr
-          have h₂ : Sem.step F₂ X₂ dev₂ regs ins = .ok (outs, regs') :=
+          have h₂ : Sem.step F₂ X₂ dev₂ regs ins E₂ = .ok (outs, regs') :=
             (hstep regs ins hdom hoki).symm.trans hstep₁
           simp only [Sem.foldStep, hstep₁, h₂, except_bind_ok, except_pure_def]
           exact ih regs' (outs :: acc) (hpres regs ins outs regs' hdom hoki hstep₁) hokr
 
+/-- A denoting definition environment denotes at EVERY extern
+environment: `mkFEnv`'s only failure is `topoDefns`, which never
+consults it. -/
+private theorem mkFEnv_ok_any {p : Program} {F : Sem.FEnv} (E : Sem.EEnv)
+    (hF : Sem.mkFEnv p = .ok F) : ∃ F', Sem.mkFEnv p E = .ok F' := by
+  simp only [Sem.mkFEnv] at hF ⊢
+  obtain ⟨ordered, hord, _⟩ := except_bind_eq_ok hF
+  rw [hord, except_bind_ok]
+  exact ⟨ordered.foldl (stepF (Sem.xenv p) E) ∅,
+    foldlM_pure (stepF (Sem.xenv p) E) ordered ∅⟩
+
 /-- The verified checker is sound: a `true` verdict gives run equality
-on EVERY stimulus (the committed `Program.run`, doc/hyle.md §6.4 —
-including error agreement, whose only reachable case on an approved
-pair is per-cycle stimulus arity, determined by the shared
-interface). -/
+on EVERY stimulus AND at EVERY extern environment (both runs at the
+same one — the committed `Program.run`, doc/hyle.md §6.4, including
+error agreement, whose only reachable case on an approved pair is
+per-cycle stimulus arity, determined by the shared interface; the
+model-less extern reading is total, so it adds no error cases). -/
 theorem checkEquiv_sound {p₁ p₂ : Program} (h : checkEquiv p₁ p₂ = true) :
-    ∀ stim, p₁.run stim = p₂.run stim := by
-  intro stim
+    ∀ stim (E : Sem.EEnv), p₁.run stim E = p₂.run stim E := by
+  intro stim E
   rw [checkEquiv] at h
   cases hF₁ : Sem.mkFEnv p₁ with
   | error e => rw [hF₁] at h; exact absurd h (by simp)
@@ -1782,10 +1954,10 @@ theorem checkEquiv_sound {p₁ p₂ : Program} (h : checkEquiv p₁ p₂ = true)
   cases hF₂ : Sem.mkFEnv p₂ with
   | error e => rw [hF₁, hF₂] at h; exact absurd h (by simp)
   | ok F₂ =>
-  cases hs₁ : symStep (dmapOf p₁) (progFuel p₁) p₁.device with
+  cases hs₁ : symStep (dmapOf p₁) (Sem.xenv p₁) (progFuel p₁) p₁.device with
   | error e => rw [hF₁, hF₂, hs₁] at h; exact absurd h (by simp)
   | ok s₁ =>
-  cases hs₂ : symStep (dmapOf p₂) (progFuel p₂) p₂.device with
+  cases hs₂ : symStep (dmapOf p₂) (Sem.xenv p₂) (progFuel p₂) p₂.device with
   | error e => rw [hF₁, hF₂, hs₁, hs₂] at h; exact absurd h (by simp)
   | ok s₂ =>
   rw [hF₁, hF₂, hs₁, hs₂] at h
@@ -1793,14 +1965,16 @@ theorem checkEquiv_sound {p₁ p₂ : Program} (h : checkEquiv p₁ p₂ = true)
   simp only [Bool.and_eq_true, decide_eq_true_eq] at h
   obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨_, _⟩, _⟩, _⟩, _⟩, _⟩, hnd₁⟩, hnd₂⟩, hIn⟩, hOut⟩, hReg⟩, hOuts⟩, hNexts⟩ := h
   have hRegs : p₁.device.registers = p₂.device.registers := registers_eq_of_regTuples hReg
-  have hImpl₁ : FImplements (dmapOf p₁) (Sem.xenv p₁) F₁ :=
-    mkFEnv_implements (nodupB_nodup hnd₁) hF₁
-  have hImpl₂ : FImplements (dmapOf p₂) (Sem.xenv p₂) F₂ :=
-    mkFEnv_implements (nodupB_nodup hnd₂) hF₂
+  obtain ⟨F₁E, hF₁E⟩ := mkFEnv_ok_any E hF₁
+  obtain ⟨F₂E, hF₂E⟩ := mkFEnv_ok_any E hF₂
+  have hImpl₁ : FImplements (dmapOf p₁) (Sem.xenv p₁) F₁E E :=
+    mkFEnv_implements (nodupB_nodup hnd₁) hF₁E
+  have hImpl₂ : FImplements (dmapOf p₂) (Sem.xenv p₂) F₂E E :=
+    mkFEnv_implements (nodupB_nodup hnd₂) hF₂E
   -- pointwise step equality on register-covering stores
   have hstep : ∀ regs ins, (∀ r ∈ p₁.device.registers, regs.contains r.name = true) →
-      Sem.step F₁ (Sem.xenv p₁) p₁.device regs ins
-        = Sem.step F₂ (Sem.xenv p₂) p₂.device regs ins := by
+      Sem.step F₁E (Sem.xenv p₁) p₁.device regs ins E
+        = Sem.step F₂E (Sem.xenv p₂) p₂.device regs ins E := by
     intro regs ins hdom
     by_cases hlen : ins.length = p₁.device.inputs.length
     · rw [symStep_sound hImpl₁ hs₁ regs ins hlen hdom,
@@ -1809,23 +1983,23 @@ theorem checkEquiv_sound {p₁ p₂ : Program} (h : checkEquiv p₁ p₂ = true)
       have hσ : sigmaOf p₂.device.inputs regs ins = sigmaOf p₁.device.inputs regs ins := by
         rw [hIn]
       rw [hσ]
-      have ho : stepOutsVal (sigmaOf p₁.device.inputs regs ins) s₁
-          = stepOutsVal (sigmaOf p₁.device.inputs regs ins) s₂ := outsVal_eq_of_cfold hOuts
-      have hn : stepNextsVal (sigmaOf p₁.device.inputs regs ins) s₁
-          = stepNextsVal (sigmaOf p₁.device.inputs regs ins) s₂ := nextsVal_eq_of_cfold hNexts
+      have ho : stepOutsVal (sigmaOf p₁.device.inputs regs ins) s₁ E
+          = stepOutsVal (sigmaOf p₁.device.inputs regs ins) s₂ E := outsVal_eq_of_cfold hOuts
+      have hn : stepNextsVal (sigmaOf p₁.device.inputs regs ins) s₁ E
+          = stepNextsVal (sigmaOf p₁.device.inputs regs ins) s₂ E := nextsVal_eq_of_cfold hNexts
       rw [ho, hn]
     · rw [step_unfold, step_unfold, if_pos hlen, if_pos (by rw [← hIn]; exact hlen)]
       rw [hIn]
   -- domain preservation
   have hpres : ∀ regs ins outs regs',
       (∀ r ∈ p₁.device.registers, regs.contains r.name = true) →
-      Sem.step F₁ (Sem.xenv p₁) p₁.device regs ins = .ok (outs, regs') →
+      Sem.step F₁E (Sem.xenv p₁) p₁.device regs ins E = .ok (outs, regs') →
       ∀ r ∈ p₁.device.registers, regs'.contains r.name = true := by
     intro regs ins outs regs' hdom hstep₁
     by_cases hlen : ins.length = p₁.device.inputs.length
     · rw [symStep_sound hImpl₁ hs₁ regs ins hlen hdom] at hstep₁
       injection hstep₁ with hstep₁
-      have hregs' : regs' = stepNextsVal (sigmaOf p₁.device.inputs regs ins) s₁ :=
+      have hregs' : regs' = stepNextsVal (sigmaOf p₁.device.inputs regs ins) s₁ E :=
         (congrArg Prod.snd hstep₁).symm
       rw [hregs']
       exact stepNextsVal_regdom (symStep_nexts_fst hs₁)
@@ -1843,17 +2017,17 @@ theorem checkEquiv_sound {p₁ p₂ : Program} (h : checkEquiv p₁ p₂ = true)
       exact List.mem_map.mpr ⟨r, hr, rfl⟩
     simpa using this
   -- assemble the two runs
-  have hfold : stim.foldlM (Sem.foldStep F₁ (Sem.xenv p₁) p₁.device)
+  have hfold : stim.foldlM (Sem.foldStep F₁E (Sem.xenv p₁) p₁.device E)
         (Sem.initRegs p₁.device, [])
-      = stim.foldlM (Sem.foldStep F₂ (Sem.xenv p₂) p₂.device)
+      = stim.foldlM (Sem.foldStep F₂E (Sem.xenv p₂) p₂.device E)
         (Sem.initRegs p₂.device, []) := by
     rw [← hInit]
     exact run_fold_congr (Ok := fun _ => True)
       (fun regs ins hInv _ => hstep regs ins hInv)
       (fun regs ins outs regs' hInv _ h => hpres regs ins outs regs' hInv h)
       stim (Sem.initRegs p₁.device) [] hInitDom (fun _ _ => trivial)
-  show Program.run p₁ stim = Program.run p₂ stim
-  rw [Program.run, Program.run, hF₁, hF₂, except_bind_ok, except_bind_ok,
+  show Program.run p₁ stim E = Program.run p₂ stim E
+  rw [Program.run, Program.run, hF₁E, hF₂E, except_bind_ok, except_bind_ok,
       Sem.run, Sem.run, hfold]
 
 /-! ## Stage B: the width layer
@@ -1878,6 +2052,7 @@ def VarsWF (P : String → Nat → Prop) : NF → Prop
   | .cat a b => a.VarsWF P ∧ b.VarsWF P
   | .slice _ _ e => e.VarsWF P
   | .ite c t e => c.VarsWF P ∧ t.VarsWF P ∧ e.VarsWF P
+  | .xcall _ _ a => a.VarsWF P
 
 theorem VarsWF.mono {P Q : String → Nat → Prop} (h : ∀ x w, P x w → Q x w) :
     ∀ {nf : NF}, nf.VarsWF P → nf.VarsWF Q := by
@@ -1890,6 +2065,7 @@ theorem VarsWF.mono {P Q : String → Nat → Prop} (h : ∀ x w, P x w → Q x 
   | cat a b iha ihb => exact fun hp => ⟨iha hp.1, ihb hp.2⟩
   | slice i w e ihe => exact ihe
   | ite c t e ihc iht ihe => exact fun hp => ⟨ihc hp.1, iht hp.2.1, ihe hp.2.2⟩
+  | xcall w x a iha => exact iha
 
 end NF
 
@@ -1925,6 +2101,7 @@ def annWidth : NF → Option Nat
       match annWidth t, annWidth e with
       | some wt, some we => if wt = we then some wt else none
       | _, _ => none
+  | .xcall w _ _ => some w
 
 private theorem evalOp_width1 {op : Op} (hop : opArity op = 1) {x v : BV}
     (hv : Sem.evalOp op [x] = .ok v) : v.width = opWidth1 op x.width := by
@@ -1940,9 +2117,9 @@ private theorem evalOp_width2 {op : Op} (hop : opArity op = 2) {x y v : BV}
 
 /-- At a width-respecting valuation, the annotation-trusted width is
 the denotation's width. -/
-theorem annWidth_eval {σ : String → BV} :
+theorem annWidth_eval {σ : String → BV} {E : Sem.EEnv} :
     ∀ {nf : NF} {w : Nat}, nf.VarsWF (WP σ) → annWidth nf = some w →
-      (nf.eval σ).width = w := by
+      (nf.eval σ E).width = w := by
   intro nf
   induction nf with
   | var w' x =>
@@ -1966,7 +2143,7 @@ theorem annWidth_eval {σ : String → BV} :
             rw [haw] at ha
             simp only [Option.map_some, Option.some.injEq] at ha
             subst ha
-            obtain ⟨v, hv⟩ := evalOp_unary_ok op hop (a.eval σ)
+            obtain ⟨v, hv⟩ := evalOp_unary_ok op hop (a.eval σ E)
             simp only [NF.eval, hv]
             rw [evalOp_width1 hop hv, iha hwf haw]
       · exact absurd ha (by simp)
@@ -1981,7 +2158,7 @@ theorem annWidth_eval {σ : String → BV} :
             rw [haw] at ha
             simp only [Option.map_some, Option.some.injEq] at ha
             subst ha
-            obtain ⟨v, hv⟩ := evalOp_binary_ok op hop (a.eval σ) (b.eval σ)
+            obtain ⟨v, hv⟩ := evalOp_binary_ok op hop (a.eval σ E) (b.eval σ E)
             simp only [NF.eval, hv]
             rw [evalOp_width2 hop hv, iha hwf.1 haw]
       · exact absurd ha (by simp)
@@ -1997,7 +2174,7 @@ theorem annWidth_eval {σ : String → BV} :
               rw [haw, hbw] at ha
               simp only [Option.some.injEq] at ha
               subst ha
-              show (a.eval σ).width + (b.eval σ).width = wa + wb
+              show (a.eval σ E).width + (b.eval σ E).width = wa + wb
               rw [iha hwf.1 haw, ihb hwf.2 hbw]
   | slice i w' e ihe =>
       intro w _ ha
@@ -2026,6 +2203,11 @@ theorem annWidth_eval {σ : String → BV} :
                 · exact ihe hwf.2.2 hew
               · rw [if_neg hte] at ha
                 exact absurd ha (by simp)
+  | xcall w' x a iha =>
+      intro w _ ha
+      simp only [annWidth, Option.some.injEq] at ha
+      subst ha
+      exact Sem.xapply_width E x w' (a.eval σ E)
 
 /-- A successful `mapM` transports a pointwise property. -/
 private theorem mapM_ok_forall {α β : Type} {g : α → Except String β} {P : β → Prop} :
@@ -2054,12 +2236,24 @@ private theorem mapM_ok_forall {α β : Type} {g : α → Except String β} {P :
         exact hpt a List.mem_cons_self c hb
       · exact ih hbs (fun a ha => hpt a (List.mem_cons_of_mem _ ha)) c hc
 
-/-- Symbolic evaluation only produces variables drawn from the
-environment's normal forms: the annotation discipline propagates. -/
-theorem symExp_varsWF {dmap : HashMap String Defn} {P : String → Nat → Prop} :
+/-- Packing preserves the width discipline. -/
+private theorem xpack_varsWF {P : String → Nat → Prop} {ns : List NF}
+    (h : ∀ n ∈ ns, n.VarsWF P) : (NF.xpack ns).VarsWF P := by
+  suffices hgen : ∀ (acc : NF) (ns : List NF), acc.VarsWF P → (∀ n ∈ ns, n.VarsWF P) →
+      (ns.foldl NF.cat acc).VarsWF P from hgen (.lit BV.nil) ns trivial h
+  intro acc ns
+  induction ns generalizing acc with
+  | nil => intro hacc _; exact hacc
+  | cons n ns ih =>
+      intro hacc hns
+      rw [List.foldl_cons]
+      exact ih (.cat acc n) ⟨hacc, hns n List.mem_cons_self⟩
+        (fun m hm => hns m (List.mem_cons_of_mem _ hm))
+
+theorem symExp_varsWF {dmap : HashMap String Defn} {X : Sem.XEnv} {P : String → Nat → Prop} :
     ∀ (fuel : Nat) (e : Exp) (ρ : HashMap String NF) (nf : NF),
       (∀ x n, ρ.get? x = some n → n.VarsWF P) →
-      symExp dmap fuel ρ e = .ok nf → nf.VarsWF P := by
+      symExp dmap X fuel ρ e = .ok nf → nf.VarsWF P := by
   intro fuel
   induction fuel with
   | zero =>
@@ -2143,9 +2337,21 @@ theorem symExp_varsWF {dmap : HashMap String Defn} {P : String → Nat → Prop}
                 have hpair := ofList_get?_some hx
                 exact hall n (List.of_mem_zip hpair).2
               · exact absurd hs (by simp)
-      | xcall _ ext _ _ =>
+      | xcall w ext gs args =>
           simp only [symExp] at hs
-          exact absurd hs (by simp)
+          obtain ⟨ns, hns, hs⟩ := except_bind_eq_ok hs
+          have hall : ∀ n ∈ ns, n.VarsWF P :=
+            mapM_ok_forall hns (fun a _ n hn => ih a ρ n hρ hn)
+          cases hx : X.get? ext with
+          | some m => rw [hx] at hs; exact absurd hs (by simp)
+          | none =>
+              rw [hx] at hs
+              dsimp only at hs
+              split at hs
+              · injection hs with hs
+                subst hs
+                exact xpack_varsWF hall
+              · exact absurd hs (by simp)
       | ite w c t e =>
           simp only [symExp] at hs
           obtain ⟨nc, h₁, hs⟩ := except_bind_eq_ok hs
@@ -2184,11 +2390,11 @@ private theorem mapWF_insert {P : String → Nat → Prop} {m : HashMap String N
   · exact h k n' hk
 
 /-- The body fold preserves the discipline on all three maps. -/
-private theorem body_fold_varsWF {dmap : HashMap String Defn} {fuel : Nat}
+private theorem body_fold_varsWF {dmap : HashMap String Defn} {X : Sem.XEnv} {fuel : Nat}
     {P : String → Nat → Prop} :
     ∀ (stmts : List Stmt) (ρS outsS nextsS : HashMap String NF)
       (resS : HashMap String NF × HashMap String NF × HashMap String NF),
-      stmts.foldlM (symBody dmap fuel) (ρS, outsS, nextsS) = .ok resS →
+      stmts.foldlM (symBody dmap X fuel) (ρS, outsS, nextsS) = .ok resS →
       MapWF P ρS → MapWF P outsS → MapWF P nextsS →
       MapWF P resS.2.1 ∧ MapWF P resS.2.2 := by
   intro stmts
@@ -2251,8 +2457,8 @@ private theorem body_fold_varsWF {dmap : HashMap String Defn} {fuel : Nat}
 /-- The variable discipline delivered by `symStep`: every output and
 next normal form only mentions device inputs and registers at their
 declared widths. -/
-theorem symStep_varsWF {dmap : HashMap String Defn} {fuel : Nat} {dev : Device}
-    {ss : StepNF} (hsym : symStep dmap fuel dev = .ok ss) :
+theorem symStep_varsWF {dmap : HashMap String Defn} {X : Sem.XEnv} {fuel : Nat} {dev : Device}
+    {ss : StepNF} (hsym : symStep dmap X fuel dev = .ok ss) :
     ∀ p ∈ ss.outs ++ ss.nexts,
       p.2.VarsWF (fun x w =>
         (x, w) ∈ dev.inputs ++ dev.registers.map fun r => (r.name, r.width)) := by
@@ -2420,6 +2626,7 @@ def cfoldW : NF → NF
   | .cat a b => mkCatW a.cfoldW b.cfoldW
   | .slice i w e => mkSliceW i w e.cfoldW
   | .ite c t e => mkIteW c.cfoldW t.cfoldW e.cfoldW
+  | .xcall w x a => .xcall w x a.cfoldW
 
 end NF
 
@@ -2475,6 +2682,15 @@ private theorem mkSliceW_varsWF {P : String → Nat → Prop} :
   | .ite c t e, i, w, h => by
       simp only [NF.mkSliceW]
       cases annWidth (NF.ite c t e) with
+      | none => exact h
+      | some we =>
+          dsimp only
+          split
+          · exact h
+          · exact h
+  | .xcall v x a, i, w, h => by
+      simp only [NF.mkSliceW]
+      cases annWidth (NF.xcall v x a) with
       | none => exact h
       | some we =>
           dsimp only
@@ -2539,6 +2755,7 @@ private theorem catPieces_varsWF {P : String → Nat → Prop} :
       · exact ihb h.2 p hp
   | var w x => intro h p hp; rw [show NF.catPieces (NF.var w x) = [NF.var w x] from rfl] at hp; simp at hp; subst hp; exact h
   | lit v => intro h p hp; rw [show NF.catPieces (NF.lit v) = [NF.lit v] from rfl] at hp; simp at hp; subst hp; exact h
+  | xcall w x a iha => intro h p hp; rw [show NF.catPieces (NF.xcall w x a) = [NF.xcall w x a] from rfl] at hp; simp at hp; subst hp; exact h
   | prim1 op a iha => intro h p hp; rw [show NF.catPieces (NF.prim1 op a) = [NF.prim1 op a] from rfl] at hp; simp at hp; subst hp; exact h
   | prim2 op a b iha ihb => intro h p hp; rw [show NF.catPieces (NF.prim2 op a b) = [NF.prim2 op a b] from rfl] at hp; simp at hp; subst hp; exact h
   | slice i w e ihe => intro h p hp; rw [show NF.catPieces (NF.slice i w e) = [NF.slice i w e] from rfl] at hp; simp at hp; subst hp; exact h
@@ -2622,6 +2839,7 @@ theorem cfoldW_varsWF {P : String → Nat → Prop} :
   induction nf with
   | var w x => exact id
   | lit v => exact id
+  | xcall w x a iha => exact fun h => iha h
   | prim1 op a iha => exact fun h => mk1W_varsWF (iha h)
   | prim2 op a b iha ihb => exact fun h => mk2W_varsWF (iha h.1) (ihb h.2)
   | cat a b iha ihb => exact fun h => mkCatW_varsWF (iha h.1) (ihb h.2)
@@ -2648,11 +2866,11 @@ private theorem bv1_cases (x : BV) (h : x.width = 1) :
   · left; rw [h]
   · right; rw [h]
 
-private theorem slice_id_default_eval {σ : String → BV} {e : NF} (h : e.VarsWF (WP σ))
+private theorem slice_id_default_eval {σ : String → BV} {E : Sem.EEnv} {e : NF} (h : e.VarsWF (WP σ))
     (i w : Nat) :
     ((match annWidth e with
       | some we => if i = 0 ∧ w = we then e else NF.slice i w e
-      | none => NF.slice i w e) : NF).eval σ = (NF.slice i w e).eval σ := by
+      | none => NF.slice i w e) : NF).eval σ E = (NF.slice i w e).eval σ E := by
   cases hann : annWidth e with
   | none => rfl
   | some we =>
@@ -2662,7 +2880,7 @@ private theorem slice_id_default_eval {σ : String → BV} {e : NF} (h : e.VarsW
         obtain ⟨h0, hwe⟩ := hid
         subst h0
         subst hwe
-        have hW := annWidth_eval h hann
+        have hW := annWidth_eval (E := E) h hann
         refine bv_eq_of' (w := w) hW rfl ?_
         intro k hk
         simp only [NF.eval, BitVec.getLsbD_extractLsb', Nat.zero_add]
@@ -2672,53 +2890,53 @@ private theorem slice_id_default_eval {σ : String → BV} {e : NF} (h : e.VarsW
 /-- Projection views of the slice/cat denotations: everything below
 works at the `width`/`getLsbD` level, never rebuilding dependent
 appends. -/
-private theorem eval_slice_width (σ : String → BV) (i w : Nat) (e : NF) :
-    ((NF.slice i w e).eval σ).width = w := rfl
+private theorem eval_slice_width (σ : String → BV) (E : Sem.EEnv) (i w : Nat) (e : NF) :
+    ((NF.slice i w e).eval σ E).width = w := rfl
 
-private theorem eval_cat_width (σ : String → BV) (a b : NF) :
-    ((NF.cat a b).eval σ).width = (a.eval σ).width + (b.eval σ).width := rfl
+private theorem eval_cat_width (σ : String → BV) (E : Sem.EEnv) (a b : NF) :
+    ((NF.cat a b).eval σ E).width = (a.eval σ E).width + (b.eval σ E).width := rfl
 
-private theorem eval_slice_getLsbD (σ : String → BV) (i w : Nat) (e : NF) (k : Nat) :
-    ((NF.slice i w e).eval σ).bits.getLsbD k
-      = (decide (k < w) && (e.eval σ).bits.getLsbD (i + k)) := by
-  show (BitVec.extractLsb' i w (e.eval σ).bits).getLsbD k = _
-  exact BitVec.getLsbD_extractLsb' i w (e.eval σ).bits k
+private theorem eval_slice_getLsbD (σ : String → BV) (E : Sem.EEnv) (i w : Nat) (e : NF) (k : Nat) :
+    ((NF.slice i w e).eval σ E).bits.getLsbD k
+      = (decide (k < w) && (e.eval σ E).bits.getLsbD (i + k)) := by
+  show (BitVec.extractLsb' i w (e.eval σ E).bits).getLsbD k = _
+  exact BitVec.getLsbD_extractLsb' i w (e.eval σ E).bits k
 
-private theorem eval_cat_getLsbD (σ : String → BV) (a b : NF) (k : Nat) :
-    ((NF.cat a b).eval σ).bits.getLsbD k
-      = if k < (b.eval σ).width then (b.eval σ).bits.getLsbD k
-        else (a.eval σ).bits.getLsbD (k - (b.eval σ).width) := by
-  show ((a.eval σ).bits ++ (b.eval σ).bits).getLsbD k = _
+private theorem eval_cat_getLsbD (σ : String → BV) (E : Sem.EEnv) (a b : NF) (k : Nat) :
+    ((NF.cat a b).eval σ E).bits.getLsbD k
+      = if k < (b.eval σ E).width then (b.eval σ E).bits.getLsbD k
+        else (a.eval σ E).bits.getLsbD (k - (b.eval σ E).width) := by
+  show ((a.eval σ E).bits ++ (b.eval σ E).bits).getLsbD k = _
   exact BitVec.getLsbD_append
 
 /-- The concatenation view at a KNOWN low-side width (avoids
 dependent rewriting of the width inside `bits`' type). -/
-private theorem eval_cat_getLsbD' {σ : String → BV} {b : NF} {wb : Nat}
-    (hwb : (b.eval σ).width = wb) (a : NF) (k : Nat) :
-    ((NF.cat a b).eval σ).bits.getLsbD k
-      = if k < wb then (b.eval σ).bits.getLsbD k
-        else (a.eval σ).bits.getLsbD (k - wb) := by
+private theorem eval_cat_getLsbD' {σ : String → BV} {E : Sem.EEnv} {b : NF} {wb : Nat}
+    (hwb : (b.eval σ E).width = wb) (a : NF) (k : Nat) :
+    ((NF.cat a b).eval σ E).bits.getLsbD k
+      = if k < wb then (b.eval σ E).bits.getLsbD k
+        else (a.eval σ E).bits.getLsbD (k - wb) := by
   subst hwb
-  exact eval_cat_getLsbD σ a b k
+  exact eval_cat_getLsbD σ E a b k
 
-private theorem eval_lit_width (σ : String → BV) (v : BV) :
-    ((NF.lit v).eval σ).width = v.width := rfl
+private theorem eval_lit_width (σ : String → BV) (E : Sem.EEnv) (v : BV) :
+    ((NF.lit v).eval σ E).width = v.width := rfl
 
-private theorem eval_lit_getLsbD (σ : String → BV) (v : BV) (k : Nat) :
-    ((NF.lit v).eval σ).bits.getLsbD k = v.bits.getLsbD k := rfl
+private theorem eval_lit_getLsbD (σ : String → BV) (E : Sem.EEnv) (v : BV) (k : Nat) :
+    ((NF.lit v).eval σ E).bits.getLsbD k = v.bits.getLsbD k := rfl
 
 /-- Congruence for concatenation denotations (whole-value rewriting
 keeps the dependent append well-typed). -/
-private theorem cat_eval_congr {σ : String → BV} {a a' b b' : NF}
-    (hA : a.eval σ = a'.eval σ) (hB : b.eval σ = b'.eval σ) :
-    (NF.cat a b).eval σ = (NF.cat a' b').eval σ := by
-  show (⟨_, (a.eval σ).bits ++ (b.eval σ).bits⟩ : BV)
-     = ⟨_, (a'.eval σ).bits ++ (b'.eval σ).bits⟩
+private theorem cat_eval_congr {σ : String → BV} {E : Sem.EEnv} {a a' b b' : NF}
+    (hA : a.eval σ E = a'.eval σ E) (hB : b.eval σ E = b'.eval σ E) :
+    (NF.cat a b).eval σ E = (NF.cat a' b').eval σ E := by
+  show (⟨_, (a.eval σ E).bits ++ (b.eval σ E).bits⟩ : BV)
+     = ⟨_, (a'.eval σ E).bits ++ (b'.eval σ E).bits⟩
   rw [hA, hB]
 
-theorem mkSliceW_eval {σ : String → BV} :
+theorem mkSliceW_eval {σ : String → BV} {E : Sem.EEnv} :
     ∀ (e : NF) (i w : Nat), e.VarsWF (WP σ) →
-      (NF.mkSliceW i w e).eval σ = (NF.slice i w e).eval σ
+      (NF.mkSliceW i w e).eval σ E = (NF.slice i w e).eval σ E
   | .lit v, i, w, _ => rfl
   | .slice j v e, i, w, h => by
       simp only [NF.mkSliceW]
@@ -2737,7 +2955,7 @@ theorem mkSliceW_eval {σ : String → BV} :
       cases hbw : annWidth b with
       | none => rfl
       | some wb =>
-          have hwb : (b.eval σ).width = wb := annWidth_eval h.2 hbw
+          have hwb : (b.eval σ E).width = wb := annWidth_eval h.2 hbw
           dsimp only
           split
           · rename_i h1
@@ -2758,13 +2976,13 @@ theorem mkSliceW_eval {σ : String → BV} :
             · rename_i h1 h2
               rw [cat_eval_congr (mkSliceW_eval a 0 (i + w - wb) h.1)
                     (mkSliceW_eval b i (wb - i) h.2)]
-              have hlw : ((NF.cat (NF.slice 0 (i + w - wb) a) (NF.slice i (wb - i) b)).eval σ).width
+              have hlw : ((NF.cat (NF.slice 0 (i + w - wb) a) (NF.slice i (wb - i) b)).eval σ E).width
                   = w := by
                 rw [eval_cat_width, eval_slice_width, eval_slice_width]
                 omega
               refine bv_eq_of' (w := w) hlw (eval_slice_width ..) ?_
               intro k hk
-              rw [eval_cat_getLsbD' (eval_slice_width σ i (wb - i) b),
+              rw [eval_cat_getLsbD' (eval_slice_width σ E i (wb - i) b),
                   eval_slice_getLsbD, eval_slice_getLsbD,
                   eval_slice_getLsbD, eval_cat_getLsbD' hwb]
               by_cases hkw : k < wb - i
@@ -2788,19 +3006,22 @@ theorem mkSliceW_eval {σ : String → BV} :
   | .ite c t e, i, w, h => by
       simp only [NF.mkSliceW]
       exact slice_id_default_eval h i w
+  | .xcall v x a, i, w, h => by
+      simp only [NF.mkSliceW]
+      exact slice_id_default_eval h i w
 
 /-- The fused adjacent-slice pair, denotationally. -/
-private theorem slice_pair_merge_eval {σ : String → BV} (i₂ w₂ w₁ : Nat) (e₁ : NF)
+private theorem slice_pair_merge_eval {σ : String → BV} {E : Sem.EEnv} (i₂ w₂ w₁ : Nat) (e₁ : NF)
     (ha : e₁.VarsWF (WP σ)) :
-    (NF.mkSliceW i₂ (w₁ + w₂) e₁).eval σ
-      = (NF.cat (NF.slice (i₂ + w₂) w₁ e₁) (NF.slice i₂ w₂ e₁)).eval σ := by
+    (NF.mkSliceW i₂ (w₁ + w₂) e₁).eval σ E
+      = (NF.cat (NF.slice (i₂ + w₂) w₁ e₁) (NF.slice i₂ w₂ e₁)).eval σ E := by
   rw [mkSliceW_eval e₁ i₂ (w₁ + w₂) ha]
-  have hrw : ((NF.cat (NF.slice (i₂ + w₂) w₁ e₁) (NF.slice i₂ w₂ e₁)).eval σ).width
+  have hrw : ((NF.cat (NF.slice (i₂ + w₂) w₁ e₁) (NF.slice i₂ w₂ e₁)).eval σ E).width
       = w₁ + w₂ := by
     rw [eval_cat_width, eval_slice_width, eval_slice_width]
   refine bv_eq_of' (w := w₁ + w₂) (eval_slice_width ..) hrw ?_
   intro k hk
-  rw [eval_slice_getLsbD, eval_cat_getLsbD' (eval_slice_width σ i₂ w₂ e₁),
+  rw [eval_slice_getLsbD, eval_cat_getLsbD' (eval_slice_width σ E i₂ w₂ e₁),
       eval_slice_getLsbD, eval_slice_getLsbD]
   by_cases hkw : k < w₂
   · rw [if_pos hkw]
@@ -2811,33 +3032,33 @@ private theorem slice_pair_merge_eval {σ : String → BV} (i₂ w₂ w₁ : Nat
     rw [show i₂ + w₂ + (k - w₂) = i₂ + k from by omega]
 
 /-- One `rebuildCat` unfolding, denotationally. -/
-private theorem rebuildCat_cons_eval {σ : String → BV} (p : NF) {qs : List NF} (h : qs ≠ []) :
-    (NF.rebuildCat (p :: qs)).eval σ = (NF.cat p (NF.rebuildCat qs)).eval σ := by
+private theorem rebuildCat_cons_eval {σ : String → BV} {E : Sem.EEnv} (p : NF) {qs : List NF} (h : qs ≠ []) :
+    (NF.rebuildCat (p :: qs)).eval σ E = (NF.cat p (NF.rebuildCat qs)).eval σ E := by
   cases qs with
   | nil => exact absurd rfl h
   | cons q qs2 => rfl
 
 /-- Concatenation denotations reassociate. -/
-private theorem cat_assoc_eval {σ : String → BV} (a b c : NF) :
-    (NF.cat a (NF.cat b c)).eval σ = (NF.cat (NF.cat a b) c).eval σ := by
+private theorem cat_assoc_eval {σ : String → BV} {E : Sem.EEnv} (a b c : NF) :
+    (NF.cat a (NF.cat b c)).eval σ E = (NF.cat (NF.cat a b) c).eval σ E := by
   refine bv_eq_of ?_ ?_
   · rw [eval_cat_width, eval_cat_width, eval_cat_width, eval_cat_width]
     omega
   · intro k _
-    rw [eval_cat_getLsbD' (b := NF.cat b c) (eval_cat_width σ b c) a k,
+    rw [eval_cat_getLsbD' (b := NF.cat b c) (eval_cat_width σ E b c) a k,
         eval_cat_getLsbD' (b := c) rfl b k,
         eval_cat_getLsbD' (b := c) rfl (NF.cat a b) k,
-        eval_cat_getLsbD' (b := b) rfl a (k - (c.eval σ).width)]
-    by_cases h1 : k < (c.eval σ).width
-    · have h2 : k < (b.eval σ).width + (c.eval σ).width := by omega
+        eval_cat_getLsbD' (b := b) rfl a (k - (c.eval σ E).width)]
+    by_cases h1 : k < (c.eval σ E).width
+    · have h2 : k < (b.eval σ E).width + (c.eval σ E).width := by omega
       rw [if_pos h2, if_pos h1, if_pos h1]
-    · by_cases h2 : k < (b.eval σ).width + (c.eval σ).width
-      · have h3 : k - (c.eval σ).width < (b.eval σ).width := by omega
+    · by_cases h2 : k < (b.eval σ E).width + (c.eval σ E).width
+      · have h3 : k - (c.eval σ E).width < (b.eval σ E).width := by omega
         rw [if_pos h2, if_neg h1, if_neg h1, if_pos h3]
-      · have h3 : ¬ (k - (c.eval σ).width < (b.eval σ).width) := by omega
+      · have h3 : ¬ (k - (c.eval σ E).width < (b.eval σ E).width) := by omega
         rw [if_neg h2, if_neg h1, if_neg h3]
-        rw [show k - ((b.eval σ).width + (c.eval σ).width)
-            = k - (c.eval σ).width - (b.eval σ).width from by omega]
+        rw [show k - ((b.eval σ E).width + (c.eval σ E).width)
+            = k - (c.eval σ E).width - (b.eval σ E).width from by omega]
 
 private theorem catPieces_ne_nil : ∀ (e : NF), NF.catPieces e ≠ [] := by
   intro e
@@ -2852,12 +3073,13 @@ private theorem catPieces_ne_nil : ∀ (e : NF), NF.catPieces e ≠ [] := by
   | prim2 op a b iha ihb => simp [NF.catPieces]
   | slice i w e ihe => simp [NF.catPieces]
   | ite c t e ihc iht ihe => simp [NF.catPieces]
+  | xcall w x a iha => simp [NF.catPieces]
 
 /-- Rebuilding distributes over appended piece lists. -/
-private theorem rebuild_append_eval {σ : String → BV} :
+private theorem rebuild_append_eval {σ : String → BV} {E : Sem.EEnv} :
     ∀ (ps qs : List NF), ps ≠ [] → qs ≠ [] →
-      (NF.rebuildCat (ps ++ qs)).eval σ
-        = (NF.cat (NF.rebuildCat ps) (NF.rebuildCat qs)).eval σ := by
+      (NF.rebuildCat (ps ++ qs)).eval σ E
+        = (NF.cat (NF.rebuildCat ps) (NF.rebuildCat qs)).eval σ E := by
   intro ps
   induction ps with
   | nil => intro qs h _; exact absurd rfl h
@@ -2869,21 +3091,22 @@ private theorem rebuild_append_eval {σ : String → BV} :
           exact rebuildCat_cons_eval p hqs
       | cons r ps3 =>
           rw [show ((p :: r :: ps3) ++ qs) = p :: ((r :: ps3) ++ qs) from rfl]
-          have h1 : (NF.rebuildCat (p :: ((r :: ps3) ++ qs))).eval σ
-              = (NF.cat p (NF.rebuildCat ((r :: ps3) ++ qs))).eval σ :=
+          have h1 : (NF.rebuildCat (p :: ((r :: ps3) ++ qs))).eval σ E
+              = (NF.cat p (NF.rebuildCat ((r :: ps3) ++ qs))).eval σ E :=
             rebuildCat_cons_eval p (by simp)
-          have h2 : (NF.cat p (NF.rebuildCat ((r :: ps3) ++ qs))).eval σ
-              = (NF.cat p (NF.cat (NF.rebuildCat (r :: ps3)) (NF.rebuildCat qs))).eval σ :=
+          have h2 : (NF.cat p (NF.rebuildCat ((r :: ps3) ++ qs))).eval σ E
+              = (NF.cat p (NF.cat (NF.rebuildCat (r :: ps3)) (NF.rebuildCat qs))).eval σ E :=
             cat_eval_congr rfl (ih qs (by simp) hqs)
-          have h3 := cat_assoc_eval (σ := σ) p (NF.rebuildCat (r :: ps3)) (NF.rebuildCat qs)
-          have h4 : (NF.cat (NF.cat p (NF.rebuildCat (r :: ps3))) (NF.rebuildCat qs)).eval σ
-              = (NF.cat (NF.rebuildCat (p :: r :: ps3)) (NF.rebuildCat qs)).eval σ :=
+          have h3 := cat_assoc_eval (σ := σ) (E := E) p (NF.rebuildCat (r :: ps3))
+            (NF.rebuildCat qs)
+          have h4 : (NF.cat (NF.cat p (NF.rebuildCat (r :: ps3))) (NF.rebuildCat qs)).eval σ E
+              = (NF.cat (NF.rebuildCat (p :: r :: ps3)) (NF.rebuildCat qs)).eval σ E :=
             cat_eval_congr (rebuildCat_cons_eval p (by simp)).symm rfl
           exact h1.trans (h2.trans (h3.trans h4))
 
 /-- The rebuilt flattened spine denotes the original term. -/
-private theorem rebuild_catPieces_eval {σ : String → BV} :
-    ∀ (e : NF), (NF.rebuildCat (NF.catPieces e)).eval σ = e.eval σ := by
+private theorem rebuild_catPieces_eval {σ : String → BV} {E : Sem.EEnv} :
+    ∀ (e : NF), (NF.rebuildCat (NF.catPieces e)).eval σ E = e.eval σ E := by
   intro e
   induction e with
   | cat a b iha ihb =>
@@ -2896,6 +3119,7 @@ private theorem rebuild_catPieces_eval {σ : String → BV} :
   | prim2 op a b iha ihb => rfl
   | slice i w e ihe => rfl
   | ite c t e ihc iht ihe => rfl
+  | xcall w x a iha => rfl
 
 private theorem mergePieces_ne_nil : ∀ {ps : List NF}, ps ≠ [] → NF.mergePieces ps ≠ [] := by
   intro ps h
@@ -2910,9 +3134,9 @@ private theorem mergePieces_ne_nil : ∀ {ps : List NF}, ps ≠ [] → NF.mergeP
       · simp
 
 /-- Merging adjacent pieces preserves the rebuilt denotation. -/
-private theorem mergePieces_eval {σ : String → BV} :
+private theorem mergePieces_eval {σ : String → BV} {E : Sem.EEnv} :
     ∀ (ps : List NF), (∀ p ∈ ps, p.VarsWF (WP σ)) →
-      (NF.rebuildCat (NF.mergePieces ps)).eval σ = (NF.rebuildCat ps).eval σ := by
+      (NF.rebuildCat (NF.mergePieces ps)).eval σ E = (NF.rebuildCat ps).eval σ E := by
   intro ps
   induction ps with
   | nil => intro _; rfl
@@ -2929,8 +3153,8 @@ private theorem mergePieces_eval {σ : String → BV} :
           unfold NF.mergeStep
           split
           · rename_i v u rest2 heq
-            have hR : (NF.rebuildCat (NF.lit v :: r :: rest1)).eval σ
-                = (NF.cat (NF.lit v) (NF.rebuildCat (NF.lit u :: rest2))).eval σ := by
+            have hR : (NF.rebuildCat (NF.lit v :: r :: rest1)).eval σ E
+                = (NF.cat (NF.lit v) (NF.rebuildCat (NF.lit u :: rest2))).eval σ E := by
               rw [rebuildCat_cons_eval _ (by simp)]
               exact cat_eval_congr rfl (heq ▸ htl.symm)
             rw [hR]
@@ -2938,27 +3162,27 @@ private theorem mergePieces_eval {σ : String → BV} :
             | nil => rfl
             | cons s rest3 =>
                 have hL : (NF.rebuildCat (NF.lit ⟨v.width + u.width, v.bits ++ u.bits⟩
-                    :: s :: rest3)).eval σ
+                    :: s :: rest3)).eval σ E
                     = (NF.cat (NF.lit ⟨v.width + u.width, v.bits ++ u.bits⟩)
-                        (NF.rebuildCat (s :: rest3))).eval σ :=
+                        (NF.rebuildCat (s :: rest3))).eval σ E :=
                   rebuildCat_cons_eval _ (by simp)
-                have hR2 : (NF.cat (NF.lit v) (NF.rebuildCat (NF.lit u :: s :: rest3))).eval σ
+                have hR2 : (NF.cat (NF.lit v) (NF.rebuildCat (NF.lit u :: s :: rest3))).eval σ E
                     = (NF.cat (NF.lit v)
-                        (NF.cat (NF.lit u) (NF.rebuildCat (s :: rest3)))).eval σ :=
+                        (NF.cat (NF.lit u) (NF.rebuildCat (s :: rest3)))).eval σ E :=
                   cat_eval_congr rfl (rebuildCat_cons_eval _ (by simp))
                 rw [hL, hR2, cat_assoc_eval]
                 exact cat_eval_congr
-                  (show (NF.lit ⟨v.width + u.width, v.bits ++ u.bits⟩).eval σ
-                      = (NF.cat (NF.lit v) (NF.lit u)).eval σ from rfl) rfl
+                  (show (NF.lit ⟨v.width + u.width, v.bits ++ u.bits⟩).eval σ E
+                      = (NF.cat (NF.lit v) (NF.lit u)).eval σ E from rfl) rfl
           · rename_i i₁ w₁ e₁ i₂ w₂ e₂ rest2 heq
             split
             · rename_i hcond
               obtain ⟨he, hi⟩ := hcond
               subst he
               subst hi
-              have hR : (NF.rebuildCat (NF.slice (i₂ + w₂) w₁ e₁ :: r :: rest1)).eval σ
+              have hR : (NF.rebuildCat (NF.slice (i₂ + w₂) w₁ e₁ :: r :: rest1)).eval σ E
                   = (NF.cat (NF.slice (i₂ + w₂) w₁ e₁)
-                      (NF.rebuildCat (NF.slice i₂ w₂ e₁ :: rest2))).eval σ := by
+                      (NF.rebuildCat (NF.slice i₂ w₂ e₁ :: rest2))).eval σ E := by
                 rw [rebuildCat_cons_eval _ (by simp)]
                 exact cat_eval_congr rfl (heq ▸ htl.symm)
               rw [hR]
@@ -2966,40 +3190,40 @@ private theorem mergePieces_eval {σ : String → BV} :
               | nil => exact slice_pair_merge_eval i₂ w₂ w₁ e₁ hhd
               | cons s rest3 =>
                   have hL : (NF.rebuildCat (NF.mkSliceW i₂ (w₁ + w₂) e₁
-                      :: s :: rest3)).eval σ
+                      :: s :: rest3)).eval σ E
                       = (NF.cat (NF.mkSliceW i₂ (w₁ + w₂) e₁)
-                          (NF.rebuildCat (s :: rest3))).eval σ :=
+                          (NF.rebuildCat (s :: rest3))).eval σ E :=
                     rebuildCat_cons_eval _ (by simp)
                   have hR2 : (NF.cat (NF.slice (i₂ + w₂) w₁ e₁)
-                      (NF.rebuildCat (NF.slice i₂ w₂ e₁ :: s :: rest3))).eval σ
+                      (NF.rebuildCat (NF.slice i₂ w₂ e₁ :: s :: rest3))).eval σ E
                       = (NF.cat (NF.slice (i₂ + w₂) w₁ e₁)
-                          (NF.cat (NF.slice i₂ w₂ e₁) (NF.rebuildCat (s :: rest3)))).eval σ :=
+                          (NF.cat (NF.slice i₂ w₂ e₁) (NF.rebuildCat (s :: rest3)))).eval σ E :=
                     cat_eval_congr rfl (rebuildCat_cons_eval _ (by simp))
                   rw [hL, hR2, cat_assoc_eval]
                   exact cat_eval_congr (slice_pair_merge_eval i₂ w₂ w₁ e₁ hhd) rfl
             · have hL : (NF.rebuildCat (NF.slice i₁ w₁ e₁
-                  :: NF.slice i₂ w₂ e₂ :: rest2)).eval σ
+                  :: NF.slice i₂ w₂ e₂ :: rest2)).eval σ E
                   = (NF.cat (NF.slice i₁ w₁ e₁)
-                      (NF.rebuildCat (NF.slice i₂ w₂ e₂ :: rest2))).eval σ :=
+                      (NF.rebuildCat (NF.slice i₂ w₂ e₂ :: rest2))).eval σ E :=
                 rebuildCat_cons_eval _ (by simp)
-              have hR : (NF.rebuildCat (NF.slice i₁ w₁ e₁ :: r :: rest1)).eval σ
-                  = (NF.cat (NF.slice i₁ w₁ e₁) (NF.rebuildCat (r :: rest1))).eval σ :=
+              have hR : (NF.rebuildCat (NF.slice i₁ w₁ e₁ :: r :: rest1)).eval σ E
+                  = (NF.cat (NF.slice i₁ w₁ e₁) (NF.rebuildCat (r :: rest1))).eval σ E :=
                 rebuildCat_cons_eval _ (by simp)
               rw [hL, hR]
               exact cat_eval_congr rfl (heq ▸ htl)
           · rename_i pp q mm ex1 ex2
-            have hL : (NF.rebuildCat (pp :: NF.mergePieces (r :: rest1))).eval σ
-                = (NF.cat pp (NF.rebuildCat (NF.mergePieces (r :: rest1)))).eval σ :=
+            have hL : (NF.rebuildCat (pp :: NF.mergePieces (r :: rest1))).eval σ E
+                = (NF.cat pp (NF.rebuildCat (NF.mergePieces (r :: rest1)))).eval σ E :=
               rebuildCat_cons_eval _ hMne
-            have hR : (NF.rebuildCat (pp :: r :: rest1)).eval σ
-                = (NF.cat pp (NF.rebuildCat (r :: rest1))).eval σ :=
+            have hR : (NF.rebuildCat (pp :: r :: rest1)).eval σ E
+                = (NF.cat pp (NF.rebuildCat (r :: rest1))).eval σ E :=
               rebuildCat_cons_eval _ (by simp)
             rw [hL, hR]
             exact cat_eval_congr rfl htl
 
-theorem mkCatW_eval {σ : String → BV} (a b : NF)
+theorem mkCatW_eval {σ : String → BV} {E : Sem.EEnv} (a b : NF)
     (ha : a.VarsWF (WP σ)) (hb : b.VarsWF (WP σ)) :
-    (NF.mkCatW a b).eval σ = (NF.cat a b).eval σ := by
+    (NF.mkCatW a b).eval σ E = (NF.cat a b).eval σ E := by
   rw [show NF.mkCatW a b
       = NF.rebuildCat (NF.mergePieces (NF.catPieces a ++ NF.catPieces b)) from rfl]
   rw [mergePieces_eval _ (fun p hp => by
@@ -3009,21 +3233,21 @@ theorem mkCatW_eval {σ : String → BV} (a b : NF)
   rw [rebuild_append_eval _ _ (catPieces_ne_nil a) (catPieces_ne_nil b)]
   exact cat_eval_congr (rebuild_catPieces_eval a) (rebuild_catPieces_eval b)
 
-theorem mk1W_eval (σ : String → BV) (op : Op) (a : NF) :
-    (NF.mk1W op a).eval σ = (NF.prim1 op a).eval σ := by
+theorem mk1W_eval (σ : String → BV) (E : Sem.EEnv) (op : Op) (a : NF) :
+    (NF.mk1W op a).eval σ E = (NF.prim1 op a).eval σ E := by
   unfold NF.mk1W
   split
   · split
     · rename_i b
-      show b.eval σ = (⟨(b.eval σ).width, ~~~(~~~(b.eval σ).bits)⟩ : BV)
-      cases hbe : b.eval σ with
+      show b.eval σ E = (⟨(b.eval σ E).width, ~~~(~~~(b.eval σ E).bits)⟩ : BV)
+      cases hbe : b.eval σ E with
       | mk bw bbits => simp [BitVec.not_not]
-    · exact mk1_eval σ .not _
-  · exact mk1_eval σ _ _
+    · exact mk1_eval σ E .not _
+  · exact mk1_eval σ E _ _
 
-theorem mk2W_eval (σ : String → BV) (op : Op) (a b : NF)
+theorem mk2W_eval (σ : String → BV) (E : Sem.EEnv) (op : Op) (a b : NF)
     (ha : a.VarsWF (WP σ)) (hb : b.VarsWF (WP σ)) :
-    (NF.mk2W op a b).eval σ = (NF.prim2 op a b).eval σ := by
+    (NF.mk2W op a b).eval σ E = (NF.prim2 op a b).eval σ E := by
   unfold NF.mk2W
   split
   · split
@@ -3032,57 +3256,57 @@ theorem mk2W_eval (σ : String → BV) (op : Op) (a b : NF)
         have h0 : u.bits.toNat = 0 := hz
         have h1 : (BitVec.ofNat u.width 0).toNat = 0 := by simp
         exact BitVec.eq_of_toNat_eq (by rw [h0, h1])
-      show a.eval σ
-          = (⟨(a.eval σ).width, (a.eval σ).bits % BitVec.setWidth (a.eval σ).width u.bits⟩ : BV)
+      show a.eval σ E
+          = (⟨(a.eval σ E).width, (a.eval σ E).bits % BitVec.setWidth (a.eval σ E).width u.bits⟩ : BV)
       rw [hu]
-      cases hae : a.eval σ with
+      cases hae : a.eval σ E with
       | mk aw abits => simp [BitVec.umod_zero]
-    · exact mk2_eval σ .umod _ _
+    · exact mk2_eval σ E .umod _ _
   · split
     · rename_i hcond
       obtain ⟨hann, huv⟩ := hcond
       subst huv
-      have hw : (a.eval σ).width = 1 := annWidth_eval ha hann
-      show a.eval σ = Sem.b1 ((a.eval σ).bits == BitVec.setWidth (a.eval σ).width (1#1))
+      have hw : (a.eval σ E).width = 1 := annWidth_eval ha hann
+      show a.eval σ E = Sem.b1 ((a.eval σ E).bits == BitVec.setWidth (a.eval σ E).width (1#1))
       rcases bv1_cases _ hw with hc | hc <;> rw [hc] <;> first | rfl | decide
     · split
       · rename_i hcond
         obtain ⟨hann, huv⟩ := hcond
         subst huv
-        have hw : (a.eval σ).width = 1 := annWidth_eval ha hann
+        have hw : (a.eval σ E).width = 1 := annWidth_eval ha hann
         rw [mk1W_eval]
-        show (⟨(a.eval σ).width, ~~~(a.eval σ).bits⟩ : BV)
-            = Sem.b1 ((a.eval σ).bits == BitVec.setWidth (a.eval σ).width (0#1))
+        show (⟨(a.eval σ E).width, ~~~(a.eval σ E).bits⟩ : BV)
+            = Sem.b1 ((a.eval σ E).bits == BitVec.setWidth (a.eval σ E).width (0#1))
         rcases bv1_cases _ hw with hc | hc <;> rw [hc] <;> first | rfl | decide
-      · exact mk2_eval σ .eq _ _
+      · exact mk2_eval σ E .eq _ _
   · split
     · rename_i hcond
       obtain ⟨hann, huv⟩ := hcond
       subst huv
-      have hw : (b.eval σ).width = 1 := annWidth_eval hb hann
-      show b.eval σ = Sem.b1 ((1#1 : BitVec 1) == BitVec.setWidth 1 (b.eval σ).bits)
+      have hw : (b.eval σ E).width = 1 := annWidth_eval hb hann
+      show b.eval σ E = Sem.b1 ((1#1 : BitVec 1) == BitVec.setWidth 1 (b.eval σ E).bits)
       rcases bv1_cases _ hw with hc | hc <;> rw [hc] <;> first | rfl | decide
     · split
       · rename_i hcond
         obtain ⟨hann, huv⟩ := hcond
         subst huv
-        have hw : (b.eval σ).width = 1 := annWidth_eval hb hann
+        have hw : (b.eval σ E).width = 1 := annWidth_eval hb hann
         rw [mk1W_eval]
-        show (⟨(b.eval σ).width, ~~~(b.eval σ).bits⟩ : BV)
-            = Sem.b1 ((0#1 : BitVec 1) == BitVec.setWidth 1 (b.eval σ).bits)
+        show (⟨(b.eval σ E).width, ~~~(b.eval σ E).bits⟩ : BV)
+            = Sem.b1 ((0#1 : BitVec 1) == BitVec.setWidth 1 (b.eval σ E).bits)
         rcases bv1_cases _ hw with hc | hc <;> rw [hc] <;> first | rfl | decide
-      · exact mk2_eval σ .eq _ _
-  · exact mk2_eval σ _ _ _
+      · exact mk2_eval σ E .eq _ _
+  · exact mk2_eval σ E _ _ _
 
-theorem mkIteW_eval {σ : String → BV} (c t e : NF) (hc : c.VarsWF (WP σ)) :
-    (NF.mkIteW c t e).eval σ = (NF.ite c t e).eval σ := by
+theorem mkIteW_eval {σ : String → BV} {E : Sem.EEnv} (c t e : NF) (hc : c.VarsWF (WP σ)) :
+    (NF.mkIteW c t e).eval σ E = (NF.ite c t e).eval σ E := by
   unfold NF.mkIteW
   split
   · rename_i v u
     split
     · rename_i hcond
       obtain ⟨hv1, hu1, hvn, hun, hann⟩ := hcond
-      have hw : (c.eval σ).width = 1 := annWidth_eval hc hann
+      have hw : (c.eval σ E).width = 1 := annWidth_eval hc hann
       have hv : v = ⟨1, 1#1⟩ := by
         rcases bv1_cases v hv1 with h | h
         · rw [h] at hvn; exact absurd hvn (by simp [BV.nat])
@@ -3093,17 +3317,17 @@ theorem mkIteW_eval {σ : String → BV} (c t e : NF) (hc : c.VarsWF (WP σ)) :
         · rw [h] at hun; exact absurd hun (by simp [BV.nat])
       subst hv
       subst hu
-      rcases bv1_cases (c.eval σ) hw with h | h
-      · rw [show (NF.ite c (NF.lit ⟨1, 1#1⟩) (NF.lit ⟨1, 0#1⟩)).eval σ
-            = if (c.eval σ).nat ≠ 0 then (⟨1, 1#1⟩ : BV) else ⟨1, 0#1⟩ from rfl, h]
+      rcases bv1_cases (c.eval σ E) hw with h | h
+      · rw [show (NF.ite c (NF.lit ⟨1, 1#1⟩) (NF.lit ⟨1, 0#1⟩)).eval σ E
+            = if (c.eval σ E).nat ≠ 0 then (⟨1, 1#1⟩ : BV) else ⟨1, 0#1⟩ from rfl, h]
         simp [BV.nat]
-      · rw [show (NF.ite c (NF.lit ⟨1, 1#1⟩) (NF.lit ⟨1, 0#1⟩)).eval σ
-            = if (c.eval σ).nat ≠ 0 then (⟨1, 1#1⟩ : BV) else ⟨1, 0#1⟩ from rfl, h]
+      · rw [show (NF.ite c (NF.lit ⟨1, 1#1⟩) (NF.lit ⟨1, 0#1⟩)).eval σ E
+            = if (c.eval σ E).nat ≠ 0 then (⟨1, 1#1⟩ : BV) else ⟨1, 0#1⟩ from rfl, h]
         simp [BV.nat]
     · split
       · rename_i hcond
         obtain ⟨hv1, hu1, hvn, hun, hann⟩ := hcond
-        have hw : (c.eval σ).width = 1 := annWidth_eval hc hann
+        have hw : (c.eval σ E).width = 1 := annWidth_eval hc hann
         have hv : v = ⟨1, 0#1⟩ := by
           rcases bv1_cases v hv1 with h | h
           · exact h
@@ -3115,22 +3339,22 @@ theorem mkIteW_eval {σ : String → BV} (c t e : NF) (hc : c.VarsWF (WP σ)) :
         subst hv
         subst hu
         rw [mk1W_eval]
-        rw [show (NF.prim1 .not c).eval σ
-            = (⟨(c.eval σ).width, ~~~(c.eval σ).bits⟩ : BV) from rfl]
-        rcases bv1_cases (c.eval σ) hw with h | h
-        · rw [show (NF.ite c (NF.lit ⟨1, 0#1⟩) (NF.lit ⟨1, 1#1⟩)).eval σ
-              = if (c.eval σ).nat ≠ 0 then (⟨1, 0#1⟩ : BV) else ⟨1, 1#1⟩ from rfl, h]
+        rw [show (NF.prim1 .not c).eval σ E
+            = (⟨(c.eval σ E).width, ~~~(c.eval σ E).bits⟩ : BV) from rfl]
+        rcases bv1_cases (c.eval σ E) hw with h | h
+        · rw [show (NF.ite c (NF.lit ⟨1, 0#1⟩) (NF.lit ⟨1, 1#1⟩)).eval σ E
+              = if (c.eval σ E).nat ≠ 0 then (⟨1, 0#1⟩ : BV) else ⟨1, 1#1⟩ from rfl, h]
           simp [BV.nat]
-        · rw [show (NF.ite c (NF.lit ⟨1, 0#1⟩) (NF.lit ⟨1, 1#1⟩)).eval σ
-              = if (c.eval σ).nat ≠ 0 then (⟨1, 0#1⟩ : BV) else ⟨1, 1#1⟩ from rfl, h]
+        · rw [show (NF.ite c (NF.lit ⟨1, 0#1⟩) (NF.lit ⟨1, 1#1⟩)).eval σ E
+              = if (c.eval σ E).nat ≠ 0 then (⟨1, 0#1⟩ : BV) else ⟨1, 1#1⟩ from rfl, h]
           simp [BV.nat]
-      · exact mkIte_eval σ c _ _
-  · exact mkIte_eval σ _ _ _
+      · exact mkIte_eval σ E c _ _
+  · exact mkIte_eval σ E _ _ _
 
 /-- The width-aware normalizer is denotation-preserving at any
 valuation respecting the term's variable annotations. -/
-theorem cfoldW_eval {σ : String → BV} :
-    ∀ {nf : NF}, nf.VarsWF (WP σ) → (nf.cfoldW).eval σ = nf.eval σ := by
+theorem cfoldW_eval {σ : String → BV} {E : Sem.EEnv} :
+    ∀ {nf : NF}, nf.VarsWF (WP σ) → (nf.cfoldW).eval σ E = nf.eval σ E := by
   intro nf
   induction nf with
   | var w x => intro _; rfl
@@ -3144,7 +3368,7 @@ theorem cfoldW_eval {σ : String → BV} :
   | prim2 op a b iha ihb =>
       intro h
       simp only [NF.cfoldW]
-      rw [mk2W_eval _ _ _ _ (cfoldW_varsWF h.1) (cfoldW_varsWF h.2)]
+      rw [mk2W_eval _ _ _ _ _ (cfoldW_varsWF h.1) (cfoldW_varsWF h.2)]
       simp only [NF.eval]
       rw [iha h.1, ihb h.2]
   | cat a b iha ihb =>
@@ -3165,6 +3389,9 @@ theorem cfoldW_eval {σ : String → BV} :
       rw [mkIteW_eval _ _ _ (cfoldW_varsWF h.1)]
       simp only [NF.eval]
       rw [ihc h.1, iht h.2.1, ihe h.2.2]
+  | xcall w x a iha =>
+      intro h
+      simp only [NF.cfoldW, NF.eval, iha h]
 
 /-! ## The width-aware checker and its soundness
 
@@ -3183,8 +3410,8 @@ def cfoldW3 (nf : NF) : NF := nf.cfoldW.cfoldW.cfoldW
 theorem cfoldW3_varsWF {P : String → Nat → Prop} {nf : NF} (h : nf.VarsWF P) :
     (cfoldW3 nf).VarsWF P := cfoldW_varsWF (cfoldW_varsWF (cfoldW_varsWF h))
 
-theorem cfoldW3_eval {σ : String → BV} {nf : NF} (h : nf.VarsWF (WP σ)) :
-    (cfoldW3 nf).eval σ = nf.eval σ := by
+theorem cfoldW3_eval {σ : String → BV} {E : Sem.EEnv} {nf : NF} (h : nf.VarsWF (WP σ)) :
+    (cfoldW3 nf).eval σ E = nf.eval σ E := by
   unfold cfoldW3
   rw [cfoldW_eval (cfoldW_varsWF (cfoldW_varsWF h)), cfoldW_eval (cfoldW_varsWF h),
       cfoldW_eval h]
@@ -3324,10 +3551,10 @@ private theorem sigma_wp {dev : Device} {regs : HashMap String BV} {ins : List B
 
 /-! ### Store lemmas for the next-state fold -/
 
-private theorem foldl_insert_get?_not_mem {σ : String → BV} :
+private theorem foldl_insert_get?_not_mem {σ : String → BV} {E : Sem.EEnv} :
     ∀ (l : List (String × NF)) (m : HashMap String BV) (x : String),
       x ∉ l.map Prod.fst →
-      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ)) m).get? x = m.get? x := by
+      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) m).get? x = m.get? x := by
   intro l
   induction l with
   | nil => intro _ _ _; rfl
@@ -3338,10 +3565,10 @@ private theorem foldl_insert_get?_not_mem {σ : String → BV} :
           if_neg (by simp only [beq_iff_eq]; exact fun hc => h.1 hc.symm)]
       rfl
 
-private theorem foldl_insert_get?_of_nodup {σ : String → BV} :
+private theorem foldl_insert_get?_of_nodup {σ : String → BV} {E : Sem.EEnv} :
     ∀ (l : List (String × NF)) (m : HashMap String BV) (x : String) (nf : NF),
       (l.map Prod.fst).Nodup → (x, nf) ∈ l →
-      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ)) m).get? x = some (nf.eval σ) := by
+      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) m).get? x = some (nf.eval σ E) := by
   intro l
   induction l with
   | nil => intro _ _ _ _ hmem; exact absurd hmem (by simp)
@@ -3356,9 +3583,9 @@ private theorem foldl_insert_get?_of_nodup {σ : String → BV} :
         exact HashMap.getElem?_insert_self
       · exact ih _ x nf hnd'.2 hmem
 
-private theorem foldl_insert_contains_only {σ : String → BV} :
+private theorem foldl_insert_contains_only {σ : String → BV} {E : Sem.EEnv} :
     ∀ (l : List (String × NF)) (m : HashMap String BV) (x : String),
-      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ)) m).contains x = true →
+      (l.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) m).contains x = true →
       x ∈ l.map Prod.fst ∨ m.contains x = true := by
   intro l
   induction l with
@@ -3405,8 +3632,8 @@ widths, register nexts at declared annotated widths — and the
 comparison after the width-aware rewrite set. -/
 def checkEquivW (p₁ p₂ : Program) : Bool :=
   match Sem.mkFEnv p₁, Sem.mkFEnv p₂,
-        symStep (dmapOf p₁) (progFuel p₁) p₁.device,
-        symStep (dmapOf p₂) (progFuel p₂) p₂.device with
+        symStep (dmapOf p₁) (Sem.xenv p₁) (progFuel p₁) p₁.device,
+        symStep (dmapOf p₂) (Sem.xenv p₂) (progFuel p₂) p₂.device with
   | .ok _, .ok _, .ok s₁, .ok s₂ =>
          okB p₁.check && okB p₂.check
       && p₁.externs.isEmpty && p₂.externs.isEmpty
@@ -3424,11 +3651,11 @@ def checkEquivW (p₁ p₂ : Program) : Bool :=
 
 /-! ### Transport of normalized equality to denotations -/
 
-private theorem outsVal_eq_of_cfoldW {σ : String → BV} :
+private theorem outsVal_eq_of_cfoldW {σ : String → BV} {E : Sem.EEnv} :
     ∀ {l₁ l₂ : List (String × NF)},
       cfoldPairsW l₁ = cfoldPairsW l₂ →
       (∀ p ∈ l₁, p.2.VarsWF (WP σ)) → (∀ p ∈ l₂, p.2.VarsWF (WP σ)) →
-      (l₁.map fun p => p.2.eval σ) = l₂.map fun p => p.2.eval σ := by
+      (l₁.map fun p => p.2.eval σ E) = l₂.map fun p => p.2.eval σ E := by
   intro l₁
   induction l₁ with
   | nil =>
@@ -3445,7 +3672,7 @@ private theorem outsVal_eq_of_cfoldW {σ : String → BV} :
           rw [List.map_cons, List.map_cons]
           have h1 := h.1
           rw [Prod.mk.injEq] at h1
-          have hpq : p.2.eval σ = q.2.eval σ := by
+          have hpq : p.2.eval σ E = q.2.eval σ E := by
             rw [← cfoldW3_eval (hwf₁ p List.mem_cons_self),
                 ← cfoldW3_eval (hwf₂ q List.mem_cons_self)]
             rw [h1.2]
@@ -3453,13 +3680,13 @@ private theorem outsVal_eq_of_cfoldW {σ : String → BV} :
                 (fun r hr => hwf₁ r (List.mem_cons_of_mem _ hr))
                 (fun r hr => hwf₂ r (List.mem_cons_of_mem _ hr))]
 
-private theorem nextsVal_eq_of_cfoldW {σ : String → BV} :
+private theorem nextsVal_eq_of_cfoldW {σ : String → BV} {E : Sem.EEnv} :
     ∀ {l₁ l₂ : List (String × NF)},
       cfoldPairsW l₁ = cfoldPairsW l₂ →
       (∀ p ∈ l₁, p.2.VarsWF (WP σ)) → (∀ p ∈ l₂, p.2.VarsWF (WP σ)) →
       ∀ (m : HashMap String BV),
-        l₁.foldl (fun m p => m.insert p.1 (p.2.eval σ)) m
-          = l₂.foldl (fun m p => m.insert p.1 (p.2.eval σ)) m := by
+        l₁.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) m
+          = l₂.foldl (fun m p => m.insert p.1 (p.2.eval σ E)) m := by
   intro l₁
   induction l₁ with
   | nil =>
@@ -3475,7 +3702,7 @@ private theorem nextsVal_eq_of_cfoldW {σ : String → BV} :
           simp only [cfoldPairsW, List.map_cons, List.cons.injEq] at h
           have h1 := h.1
           rw [Prod.mk.injEq] at h1
-          have hpq : p.2.eval σ = q.2.eval σ := by
+          have hpq : p.2.eval σ E = q.2.eval σ E := by
             rw [← cfoldW3_eval (hwf₁ p List.mem_cons_self),
                 ← cfoldW3_eval (hwf₂ q List.mem_cons_self)]
             rw [h1.2]
@@ -3493,8 +3720,8 @@ at undeclared widths, so the unconditional statement is false for the
 strengthened normalizer. `checkEquiv_sound` remains the unconditional
 statement for the weaker normalizer.) -/
 theorem checkEquivW_sound {p₁ p₂ : Program} (h : checkEquivW p₁ p₂ = true) :
-    ∀ stim, StimWF p₁.device stim → p₁.run stim = p₂.run stim := by
-  intro stim hstim
+    ∀ stim, StimWF p₁.device stim → ∀ (E : Sem.EEnv), p₁.run stim E = p₂.run stim E := by
+  intro stim hstim E
   rw [checkEquivW] at h
   cases hF₁ : Sem.mkFEnv p₁ with
   | error e => rw [hF₁] at h; exact absurd h (by simp)
@@ -3502,10 +3729,10 @@ theorem checkEquivW_sound {p₁ p₂ : Program} (h : checkEquivW p₁ p₂ = tru
   cases hF₂ : Sem.mkFEnv p₂ with
   | error e => rw [hF₁, hF₂] at h; exact absurd h (by simp)
   | ok F₂ =>
-  cases hs₁ : symStep (dmapOf p₁) (progFuel p₁) p₁.device with
+  cases hs₁ : symStep (dmapOf p₁) (Sem.xenv p₁) (progFuel p₁) p₁.device with
   | error e => rw [hF₁, hF₂, hs₁] at h; exact absurd h (by simp)
   | ok s₁ =>
-  cases hs₂ : symStep (dmapOf p₂) (progFuel p₂) p₂.device with
+  cases hs₂ : symStep (dmapOf p₂) (Sem.xenv p₂) (progFuel p₂) p₂.device with
   | error e => rw [hF₁, hF₂, hs₁, hs₂] at h; exact absurd h (by simp)
   | ok s₂ =>
   rw [hF₁, hF₂, hs₁, hs₂] at h
@@ -3516,10 +3743,12 @@ theorem checkEquivW_sound {p₁ p₂ : Program} (h : checkEquivW p₁ p₂ = tru
   have hRegs : p₁.device.registers = p₂.device.registers := registers_eq_of_regTuples hReg
   have hndIR' := nodupB_nodup hndIR
   have hndR : (p₁.device.registers.map (·.name)).Nodup := (List.nodup_append.mp hndIR').2.1
-  have hImpl₁ : FImplements (dmapOf p₁) (Sem.xenv p₁) F₁ :=
-    mkFEnv_implements (nodupB_nodup hnd₁) hF₁
-  have hImpl₂ : FImplements (dmapOf p₂) (Sem.xenv p₂) F₂ :=
-    mkFEnv_implements (nodupB_nodup hnd₂) hF₂
+  obtain ⟨F₁E, hF₁E⟩ := mkFEnv_ok_any E hF₁
+  obtain ⟨F₂E, hF₂E⟩ := mkFEnv_ok_any E hF₂
+  have hImpl₁ : FImplements (dmapOf p₁) (Sem.xenv p₁) F₁E E :=
+    mkFEnv_implements (nodupB_nodup hnd₁) hF₁E
+  have hImpl₂ : FImplements (dmapOf p₂) (Sem.xenv p₂) F₂E E :=
+    mkFEnv_implements (nodupB_nodup hnd₂) hF₂E
   -- the per-pair discipline facts
   have hVars₁ : ∀ p ∈ s₁.outs ++ s₁.nexts,
       p.2.VarsWF (fun x w =>
@@ -3548,8 +3777,8 @@ theorem checkEquivW_sound {p₁ p₂ : Program} (h : checkEquivW p₁ p₂ = tru
   -- step equality on width-respecting states and stimuli
   have hstep : ∀ regs ins, RegWF p₁.device regs →
       ins.map (·.width) = p₁.device.inputs.map Prod.snd →
-      Sem.step F₁ (Sem.xenv p₁) p₁.device regs ins
-        = Sem.step F₂ (Sem.xenv p₂) p₂.device regs ins := by
+      Sem.step F₁E (Sem.xenv p₁) p₁.device regs ins E
+        = Sem.step F₂E (Sem.xenv p₂) p₂.device regs ins E := by
     intro regs ins hwf hok
     have hlen : ins.length = p₁.device.inputs.length := by
       have := congrArg List.length hok
@@ -3572,13 +3801,13 @@ theorem checkEquivW_sound {p₁ p₂ : Program} (h : checkEquivW p₁ p₂ = tru
     have hVarsWP₂ : ∀ p ∈ s₂.outs ++ s₂.nexts,
         p.2.VarsWF (WP (sigmaOf p₁.device.inputs regs ins)) :=
       fun p hp => (hVars₂ p hp).mono (fun x w hx => hwp x w hx)
-    have ho : stepOutsVal (sigmaOf p₁.device.inputs regs ins) s₁
-        = stepOutsVal (sigmaOf p₁.device.inputs regs ins) s₂ :=
+    have ho : stepOutsVal (sigmaOf p₁.device.inputs regs ins) s₁ E
+        = stepOutsVal (sigmaOf p₁.device.inputs regs ins) s₂ E :=
       outsVal_eq_of_cfoldW hOuts
         (fun p hp => hVarsWP₁ p (List.mem_append.mpr (.inl hp)))
         (fun p hp => hVarsWP₂ p (List.mem_append.mpr (.inl hp)))
-    have hn : stepNextsVal (sigmaOf p₁.device.inputs regs ins) s₁
-        = stepNextsVal (sigmaOf p₁.device.inputs regs ins) s₂ :=
+    have hn : stepNextsVal (sigmaOf p₁.device.inputs regs ins) s₁ E
+        = stepNextsVal (sigmaOf p₁.device.inputs regs ins) s₂ E :=
       nextsVal_eq_of_cfoldW hNexts
         (fun p hp => hVarsWP₁ p (List.mem_append.mpr (.inr hp)))
         (fun p hp => hVarsWP₂ p (List.mem_append.mpr (.inr hp))) _
@@ -3586,7 +3815,7 @@ theorem checkEquivW_sound {p₁ p₂ : Program} (h : checkEquivW p₁ p₂ = tru
   -- preservation of the width-respecting store
   have hpres : ∀ regs ins outs regs', RegWF p₁.device regs →
       ins.map (·.width) = p₁.device.inputs.map Prod.snd →
-      Sem.step F₁ (Sem.xenv p₁) p₁.device regs ins = .ok (outs, regs') →
+      Sem.step F₁E (Sem.xenv p₁) p₁.device regs ins E = .ok (outs, regs') →
       RegWF p₁.device regs' := by
     intro regs ins outs regs' hwf hok hstep₁
     have hlen : ins.length = p₁.device.inputs.length := by
@@ -3599,7 +3828,7 @@ theorem checkEquivW_sound {p₁ p₂ : Program} (h : checkEquivW p₁ p₂ = tru
       rfl
     rw [symStep_sound hImpl₁ hs₁ regs ins hlen hdom] at hstep₁
     injection hstep₁ with hstep₁
-    have hregs' : regs' = stepNextsVal (sigmaOf p₁.device.inputs regs ins) s₁ :=
+    have hregs' : regs' = stepNextsVal (sigmaOf p₁.device.inputs regs ins) s₁ E :=
       (congrArg Prod.snd hstep₁).symm
     subst hregs'
     have hwp := sigma_wp hndIR' hwf hok
@@ -3611,7 +3840,7 @@ theorem checkEquivW_sound {p₁ p₂ : Program} (h : checkEquivW p₁ p₂ = tru
       have hprmem : pr ∈ s₁.nexts := (List.of_mem_zip hpr).2
       have hprWF : pr.2.VarsWF (WP (sigmaOf p₁.device.inputs regs ins)) :=
         (hVars₁ pr (List.mem_append.mpr (.inr hprmem))).mono (fun x w hx => hwp x w hx)
-      refine ⟨pr.2.eval (sigmaOf p₁.device.inputs regs ins), ?_, ?_⟩
+      refine ⟨pr.2.eval (sigmaOf p₁.device.inputs regs ins) E, ?_, ?_⟩
       · rw [stepNextsVal, ← hprn]
         exact foldl_insert_get?_of_nodup s₁.nexts ∅ pr.1 pr.2 hkeysnd
           (by rw [show (pr.1, pr.2) = pr from rfl]; exact hprmem)
@@ -3644,16 +3873,16 @@ theorem checkEquivW_sound {p₁ p₂ : Program} (h : checkEquivW p₁ p₂ = tru
       rw [List.map_map] at this
       exact this
   -- assemble
-  have hfold : stim.foldlM (Sem.foldStep F₁ (Sem.xenv p₁) p₁.device)
+  have hfold : stim.foldlM (Sem.foldStep F₁E (Sem.xenv p₁) p₁.device E)
         (Sem.initRegs p₁.device, [])
-      = stim.foldlM (Sem.foldStep F₂ (Sem.xenv p₂) p₂.device)
+      = stim.foldlM (Sem.foldStep F₂E (Sem.xenv p₂) p₂.device E)
         (Sem.initRegs p₂.device, []) := by
     rw [← hInit]
     exact run_fold_congr (Inv := RegWF p₁.device)
       (Ok := fun ins => ins.map (·.width) = p₁.device.inputs.map Prod.snd)
       hstep hpres stim (Sem.initRegs p₁.device) [] hInitWF hstim
-  show Program.run p₁ stim = Program.run p₂ stim
-  rw [Program.run, Program.run, hF₁, hF₂, except_bind_ok, except_bind_ok,
+  show Program.run p₁ stim E = Program.run p₂ stim E
+  rw [Program.run, Program.run, hF₁E, hF₂E, except_bind_ok, except_bind_ok,
       Sem.run, Sem.run, hfold]
 
 end Rwv.Hyle.Bridge

@@ -9,6 +9,13 @@ which shares the goto fuel) are bounded by guardedness and the block
 structure, pure evaluation by pure-acyclicity, on well-formed
 processes; the fuel-freeness theorem is later-phase work. The goto
 fuel and the pure evaluator's fuel are separate parameters.
+
+Stage B (the η tier): the whole layer threads the bit-level extern
+environment `E` (defaulted empty) into the pure evaluator, so a
+machine's meaning is parameterized by the interpretations of the
+model-less combinational externs it calls — the same environment the
+Hyle device run reads, which is what "both runs at the same η" means
+in the correspondence statement.
 -/
 import Rwv.Eidos.Eval
 import Std.Data.HashMap
@@ -63,19 +70,20 @@ def bindFields (env : Eval.Env) (scrut : Val) (bs : List Id) : Eval.Env :=
 /-- Run a block's commands, threading the environment and cell store
 (the command clauses of `X⟦·⟧`, §7.5.3). -/
 def runCmds (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel : Nat)
-    (env₀ : Eval.Env) (cells₀ : HashMap String Val) (cmds : List Cmd) :
+    (env₀ : Eval.Env) (cells₀ : HashMap String Val) (cmds : List Cmd)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) :
     Except String (Eval.Env × HashMap String Val) :=
   cmds.foldlM (init := (env₀, cells₀)) fun (env, cells) cmd => do
     match cmd with
     | .bind x e => do
-        let v ← eval Δ defns evalFuel env e
+        let v ← eval Δ defns evalFuel env e E
         pure (((x.uniq, v) :: env), cells)
     | .get x s =>
         match cells.get? s with
         | some v => pure (((x.uniq, v) :: env), cells)
         | none => throw s!"get: unknown cell {s}"
     | .put s a => do
-        let v ← eval Δ defns evalFuel env a
+        let v ← eval Δ defns evalFuel env a E
         pure (env, cells.insert s v)
 
 /-- Execute a block body (`X⟦cmds; term⟧` of §7.5.3) under an
@@ -85,21 +93,22 @@ another block intra-cycle, consuming goto fuel (bounded by
 goto-acyclicity on well-formed processes). -/
 def execBlock (Δ : DEnv) (defns : HashMap Int Defn) (blocks : HashMap Int Block)
     (evalFuel : Nat) (gotoFuel : Nat) (env₀ : Eval.Env) (cells₀ : HashMap String Val)
-    (b : Block) : Except String StepOut := do
-  let (env, cells) ← runCmds Δ defns evalFuel env₀ cells₀ b.cmds
+    (b : Block) (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) :
+    Except String StepOut := do
+  let (env, cells) ← runCmds Δ defns evalFuel env₀ cells₀ b.cmds E
   runTerm gotoFuel env cells b.term
 where
   runTerm (gotoFuel : Nat) (env : Eval.Env) (cells : HashMap String Val) :
       Term → Except String StepOut
     | .pause out l args => do
-        let o ← eval Δ defns evalFuel env out
-        let vs ← args.mapM (eval Δ defns evalFuel env)
+        let o ← eval Δ defns evalFuel env out E
+        let vs ← args.mapM (eval Δ defns evalFuel env · E)
         pure (.step o ⟨l.uniq, vs, cells⟩)
     | .goto l args => do
         match blocks.get? l.uniq with
         | none => throw s!"goto: unknown block {l.occ}"
         | some blk => do
-            let vs ← args.mapM (eval Δ defns evalFuel env)
+            let vs ← args.mapM (eval Δ defns evalFuel env · E)
             if vs.length ≠ blk.params.length then
               throw s!"goto {l.occ}: arity mismatch"
             let env' := (blk.params.zip vs).foldl
@@ -107,12 +116,12 @@ where
             match gotoFuel with
             | 0 => throw "goto chain exhausted its fuel (unguarded loop?)"
             | gotoFuel' + 1 => do
-                let (env'', cells') ← runCmds Δ defns evalFuel env' cells blk.cmds
+                let (env'', cells') ← runCmds Δ defns evalFuel env' cells blk.cmds E
                 runTerm gotoFuel' env'' cells' blk.term
     | .halt e => do
-        pure (.halt (← eval Δ defns evalFuel env e))
+        pure (.halt (← eval Δ defns evalFuel env e E))
     | .cases scrutE alts => do
-        let scrut ← eval Δ defns evalFuel env scrutE
+        let scrut ← eval Δ defns evalFuel env scrutE E
         let (bs, t) ← selectTAlt Δ evalFuel scrut alts
         match gotoFuel with
         | 0 => throw "terminator case exhausted its fuel"
@@ -122,18 +131,20 @@ where
 /-- The initial cell store σ₀ (§7.5.4): declared initials evaluated
 closed (none exist on the current pipeline); `undef` initials are the
 zero value of the cell's type. -/
-def initCells (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel : Nat) (p : Proc) :
+def initCells (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel : Nat) (p : Proc)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) :
     Except String (HashMap String Val) :=
   p.cells.foldlM (init := (∅ : HashMap String Val)) fun σ c => do
     let v ← match c.init with
-      | some e => eval Δ defns evalFuel [] e
+      | some e => eval Δ defns evalFuel [] e E
       | none   => Δ.zeroVal evalFuel c.ty
     pure (σ.insert c.name v)
 
 /-- The one-cycle step (§7.5.3): resume the state's block with its
 saved arguments and the cycle's input in the last parameter slot. -/
 def step (Δ : DEnv) (defns : HashMap Int Defn) (blocks : HashMap Int Block)
-    (evalFuel gotoFuel : Nat) (s : MState) (input : Val) : Except String StepOut := do
+    (evalFuel gotoFuel : Nat) (s : MState) (input : Val)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String StepOut := do
   match blocks.get? s.label with
   | none => throw s!"step: unknown label {s.label}"
   | some blk => do
@@ -142,7 +153,7 @@ def step (Δ : DEnv) (defns : HashMap Int Defn) (blocks : HashMap Int Block)
         throw s!"step: resumed block arity mismatch"
       let env := (blk.params.zip vals).foldl
         (fun e (p, v) => (p.uniq, v) :: e) ([] : Eval.Env)
-      execBlock Δ defns blocks evalFuel gotoFuel env s.cells blk
+      execBlock Δ defns blocks evalFuel gotoFuel env s.cells blk E
 
 /-- One iteration of `Proc.run`'s fold: step the live machine state on
 the cycle's input (pushing the emitted output), record a halt answer
@@ -150,13 +161,13 @@ the cycle's input (pushing the emitted output), record a halt answer
 Named (rather than inline in `Proc.run`) so proofs can reason about
 the fold by its equations. -/
 def foldStep (Δ : DEnv) (defns : HashMap Int Defn) (blocks : HashMap Int Block)
-    (evalFuel gotoFuel : Nat) :
+    (evalFuel gotoFuel : Nat) (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) :
     List Val × Option Val × Option MState → Val →
     Except String (List Val × Option Val × Option MState)
   | (acc, halted, s?), i => do
       match s?, halted with
       | some s, none => do
-          match ← step Δ defns blocks evalFuel gotoFuel s i with
+          match ← step Δ defns blocks evalFuel gotoFuel s i E with
           | .step o s' => pure (o :: acc, none, some s')
           | .halt a    => pure (acc, some a, none)
       | _, _ => pure (acc, halted, s?)
@@ -174,15 +185,16 @@ parameterless entry block to its first pause (the emitted value is
 unobservable — the reset step), then iterate the one-cycle step over
 the stimulus, ending early at a halt. -/
 def Proc.run (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel gotoFuel : Nat)
-    (p : Proc) (inputs : List Val) : Except String MTrace := do
+    (p : Proc) (inputs : List Val)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String MTrace := do
   let blocks : HashMap Int Block := HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b))
-  let σ₀ ← Machine.initCells Δ defns evalFuel p
-  match ← Machine.execBlock Δ defns blocks evalFuel gotoFuel [] σ₀ p.entry with
+  let σ₀ ← Machine.initCells Δ defns evalFuel p E
+  match ← Machine.execBlock Δ defns blocks evalFuel gotoFuel [] σ₀ p.entry E with
   | .halt a => pure ⟨[], some a⟩
   | .step _o s₀ => do
       let (outsRev, halted, _) ← inputs.foldlM
           (init := (([] : List Val), (Option.none : Option Val), some s₀))
-          (Machine.foldStep Δ defns blocks evalFuel gotoFuel)
+          (Machine.foldStep Δ defns blocks evalFuel gotoFuel E)
       pure ⟨outsRev.reverse, halted⟩
 
 end Rwv.Eidos
