@@ -29,7 +29,7 @@ import qualified Data.Text as T (Text, pack, splitOn, map, filter, null, head, l
 import Data.Graph (Graph, Vertex, Tree (..))
 import Embedder.Atmo.DependencyGraph (Declaration (..), sortFreeProgram)
 import Embedder.Atmo.FlattenMonadTrans (transMonadT)
-import Data.Text (Text, pack)
+import Data.Text (Text)
 
 
 ---------- Todos/Questions --------------
@@ -46,14 +46,19 @@ import Data.Text (Text, pack)
   , imports :: [Text]
   , decls :: [Decl] } -}
 
+-- | The rewire-user library modules, by theory name. Their Isabelle
+--   semantics is the hand-written session (targets/isabelle/thys, imported
+--   as @ReWire.Atmo@), so embedding them would emit theories nothing
+--   imports. Matched against the theory name rather than the output path,
+--   which @-o@ overrides.
 rewireUserMods :: [Text]
-rewireUserMods = ["ReWire_2.thy","Bits_2.thy","BitWord_2.thy","Finite_2.thy","FiniteComp_2.thy"
-                 ,"Monad_2.thy","Prelude_2.thy","Vectors_2.thy","Primitives_2.thy"]
+rewireUserMods = ["ReWire","Bits","BitWord","Finite","FiniteComp"
+                 ,"Monad","Prelude","Vectors","Primitives"]
 
 embedModule :: (MonadError AstError m) => FilePath -> A.Module -> m (Maybe Isa.Theory)
 embedModule filename mod = do
     let thyname = T.pack $ takeBaseName filename
-    if pack filename `elem` rewireUserMods
+    if thyname `elem` rewireUserMods
       then return Nothing
       else do
             (decls,_graph,_tree) <- tModule mod
