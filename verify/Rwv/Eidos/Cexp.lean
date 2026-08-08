@@ -63,11 +63,31 @@ making the width clamp inert. Every soundness statement is
 ∀-quantified over the ambient extern environment `E` (the section
 variable below); the compilers are syntactic and never consult it.
 
+Stage C closes three recorded residues:
+
+  * MODEL-CARRYING extern occurrences compile exactly like the
+    Cryptol row keyed by the syntactic extern table (`Δ.hyleX`
+    designates the model definition; `ForeignC.xt` ties `Δ.xtF` to
+    its denotation; `symExp` inlines model-carrying xcalls, so the
+    device side reads the same splice) — sound by the Cryptol case's
+    argument verbatim.
+  * teq-STRICTNESS: the constructor-field, case-alternative-result,
+    and pause-output checks compare with `teqN` — `teq`, or Vec/Finite
+    spines with `evalNat`-equal nat positions at `ctorFree` heads —
+    and `vty_teqN` transports canonicality across (see the teqN
+    section header; nat arithmetic inside a datatype's own arguments
+    remains outside the fragment and is rejected honestly).
+  * FromFinite at ANY §7.6-legal width (n ≤ 2^m): `VTy.finite` now
+    tracks `i < bound` (matching `Val.HasTy`), which makes the
+    resize value-preserving on both the widening and narrowing side.
+    The tracked bound is maintained by every producer — the Finite
+    builtin rows all gate or mod by the bound; `rwPrimToFiniteMod` at
+    a `Finite 0` RESULT type is now rejected at compile time (the
+    committed semantics' unit-degenerate `.finite 0 0` inhabitant is
+    the one value the bound excludes).
+
 Still outside: strings, local-variable application, bare lambdas,
-FromFinite at widening widths (`VTy` does not track Finite
-canonicality), model-CARRYING extern occurrences (the stage-A xtF
-row: the validator rejects them honestly), and generic extern
-instantiations.
+and generic extern instantiations.
 
 THE soundness theorem (`cexp_sound`): a successful compilation is
 rep-correspondent — if the committed evaluator produces a value, the
@@ -206,6 +226,204 @@ theorem teqAll_types : ∀ {ps : List (NF × Ty)} {us : List Ty},
   | [], _ :: _, h => by simp [teqAll] at h
   | _ :: _, [], h => by simp [teqAll] at h
 
+/-! ## Transport-aware type comparison (the teq-strictness relaxation)
+
+The reference compiler compares types with `Ty.eq` — syntactic
+equality MODULO `natNorm` (type-level nat arithmetic evaluated) —
+where this compiler's checks demand syntactic `teq`, so programs
+whose GHC-derived occurrence types carry unevaluated arithmetic
+(`Vec (+ 7 1) Bool` against `Vec 8 Bool`) are rejected at the
+constructor-field, case-alternative-result, and pause-output checks.
+`teqN` closes exactly the canonicality-TRANSPORTABLE fragment of that
+gap: syntactic `teq`, or a Vec/Finite spine whose nat positions are
+`evalNat`-equal (elementwise recursively for Vec), at a head the
+datatype environment declares no constructors for (`ctorFree` — a
+`VTy.con` derivation pins its type SYNTACTICALLY inside the value, so
+transport at constructor-inhabited heads is unsound in general, while
+vec/finite/integer/proxy values carry no types). `vty_teqN` is the
+transport: canonicality at `t` moves to any `teqN`-equal `u`. Width
+and representation facts ride along for free because the consumers
+re-derive them from the TRANSPORTED canonicality (`vty_rep_width` at
+the target type), so no `sizeOf`-invariance lemma is needed. Nat
+positions still inside a datatype's arguments (a tuple field typed
+`(,) (Vec (+ 7 1) Bool) a` against its normalized form) remain
+outside the fragment and are still rejected honestly. -/
+
+/-- Not tuple-shaped, and no declared constructors, for a
+type-constructor name (checked at validation time so the transport
+lemma never has to compute `isTupleCon` on a literal). -/
+def ctorFree (Δ : DEnv) (tc : String) : Bool :=
+  !Ty.isTupleCon tc &&
+    match Δ.ctors.get? tc with
+    | some (_ :: _) => false
+    | _ => true
+
+/-- Transport-aware comparison (see above): `teq`, or a Vec/Finite
+spine with `evalNat`-equal nat positions at a constructor-free head. -/
+def teqN (Δ : DEnv) : Ty → Ty → Bool
+  | .app (.app tc₁ n₁) te₁, .app (.app tc₂ n₂) te₂ =>
+      teq (.app (.app tc₁ n₁) te₁) (.app (.app tc₂ n₂) te₂)
+        || (teq tc₁ (.con "Vec") && teq tc₂ (.con "Vec")
+            && (Ty.evalNat n₁ == Ty.evalNat n₂) && (Ty.evalNat n₁).isSome
+            && ctorFree Δ "Vec" && teqN Δ te₁ te₂)
+  | .app tc₁ n₁, .app tc₂ n₂ =>
+      teq (.app tc₁ n₁) (.app tc₂ n₂)
+        || (teq tc₁ (.con "Finite") && teq tc₂ (.con "Finite")
+            && (Ty.evalNat n₁ == Ty.evalNat n₂) && (Ty.evalNat n₁).isSome
+            && ctorFree Δ "Finite")
+  | t, u => teq t u
+
+/-- The three ways a `teqN` verdict can arise, with the compared
+types' syntactic shapes pinned. -/
+theorem teqN_cases {Δ : DEnv} : ∀ {t u : Ty}, teqN Δ t u = true →
+    teq t u = true
+    ∨ (∃ n₁ te₁ n₂ te₂, t = .app (.app (.con "Vec") n₁) te₁
+        ∧ u = .app (.app (.con "Vec") n₂) te₂
+        ∧ Ty.evalNat n₁ = Ty.evalNat n₂
+        ∧ ctorFree Δ "Vec" = true ∧ teqN Δ te₁ te₂ = true)
+    ∨ (∃ n₁ n₂, t = .app (.con "Finite") n₁ ∧ u = .app (.con "Finite") n₂
+        ∧ Ty.evalNat n₁ = Ty.evalNat n₂ ∧ ctorFree Δ "Finite" = true) := by
+  intro t u h
+  match t, u with
+  | .app (.app tc₁ n₁) te₁, .app (.app tc₂ n₂) te₂ =>
+      simp only [teqN, Bool.or_eq_true] at h
+      rcases h with h | h
+      · exact .inl h
+      · simp only [Bool.and_eq_true] at h
+        obtain ⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, _⟩, h5⟩, h6⟩ := h
+        obtain rfl := teq_eq h1
+        obtain rfl := teq_eq h2
+        exact .inr (.inl ⟨n₁, te₁, n₂, te₂, rfl, rfl, beq_iff_eq.mp h3, h5, h6⟩)
+  | .app (.con c₁) n₁, .app (.con c₂) n₂ =>
+      simp only [teqN, Bool.or_eq_true] at h
+      rcases h with h | h
+      · exact .inl h
+      · simp only [Bool.and_eq_true] at h
+        obtain ⟨⟨⟨⟨h1, h2⟩, h3⟩, _⟩, h5⟩ := h
+        have h1' := teq_eq h1
+        have h2' := teq_eq h2
+        injection h1' with h1''
+        injection h2' with h2''
+        subst h1''; subst h2''
+        exact .inr (.inr ⟨n₁, n₂, rfl, rfl, beq_iff_eq.mp h3, h5⟩)
+  | .app (.con _) _, .app (.app _ _) _ | .app (.con _) _, .app (.var _) _
+  | .app (.con _) _, .app (.nat _) _ | .app (.con _) _, .app (.arrow _ _) _ =>
+      simp only [teqN, Bool.or_eq_true] at h
+      rcases h with h | h
+      · exact .inl h
+      · exfalso
+        simp only [Bool.and_eq_true] at h
+        exact absurd h.1.1.1.2 (by simp [teq])
+  | .app (.var _) _, .app _ _ | .app (.nat _) _, .app _ _
+  | .app (.arrow _ _) _, .app _ _
+  | .app (.app _ _) _, .app (.con _) _ | .app (.app _ _) _, .app (.var _) _
+  | .app (.app _ _) _, .app (.nat _) _ | .app (.app _ _) _, .app (.arrow _ _) _ =>
+      simp only [teqN, Bool.or_eq_true] at h
+      rcases h with h | h
+      · exact .inl h
+      · exfalso
+        simp only [Bool.and_eq_true] at h
+        exact absurd h.1.1.1.1 (by simp [teq])
+  | .app _ _, .con _ | .app _ _, .var _ | .app _ _, .nat _ | .app _ _, .arrow _ _
+  | .con _, _ | .var _, _ | .nat _, _ | .arrow _ _, _ =>
+      simp only [teqN] at h
+      exact .inl h
+
+/-- Pointwise `teqN` of computed (NF, type) pairs against expected
+types. -/
+def teqAllN (Δ : DEnv) : List (NF × Ty) → List Ty → Bool
+  | [], [] => true
+  | (_, t) :: ps, u :: us => teqN Δ t u && teqAllN Δ ps us
+  | _, _ => false
+
+theorem teqAllN_length {Δ : DEnv} : ∀ {ps : List (NF × Ty)} {us : List Ty},
+    teqAllN Δ ps us = true → ps.length = us.length
+  | [], [], _ => rfl
+  | (_, _) :: ps, u :: us, h => by
+      simp only [teqAllN, Bool.and_eq_true] at h
+      simpa using teqAllN_length (ps := ps) (us := us) h.2
+  | [], _ :: _, h => by simp [teqAllN] at h
+  | _ :: _, [], h => by simp [teqAllN] at h
+
+theorem teqAllN_get {Δ : DEnv} : ∀ {ps : List (NF × Ty)} {us : List Ty},
+    teqAllN Δ ps us = true → ∀ i (h1 : i < ps.length) (h2 : i < us.length),
+      teqN Δ ps[i].2 us[i] = true
+  | (_, t) :: ps, u :: us, h, i, h1, h2 => by
+      simp only [teqAllN, Bool.and_eq_true] at h
+      cases i with
+      | zero => exact h.1
+      | succ j =>
+          exact teqAllN_get h.2 j (by simpa using h1) (by simpa using h2)
+  | [], _ :: _, h, _, _, _ => by simp [teqAllN] at h
+  | _ :: _, [], h, _, _, _ => by simp [teqAllN] at h
+  | [], [], _, _, h1, _ => by simp at h1
+
+/-! Flatten inversions: a spine equation pins the syntax. -/
+
+private theorem flatten_eq_nil : ∀ {t h₀ : Ty}, Ty.flatten t = (h₀, []) → t = h₀ := by
+  intro t h₀ h
+  cases t <;> simp only [Ty.flatten] at h
+  case app t₁ t₂ =>
+      rcases hf : Ty.flatten t₁ with ⟨h', args'⟩
+      rw [hf] at h
+      dsimp only at h
+      injection h with _ h2
+      exact absurd h2 (by simp)
+  all_goals exact congrArg Prod.fst h
+
+private theorem flatten_eq_one : ∀ {t h₀ a : Ty}, Ty.flatten t = (h₀, [a]) →
+    t = .app h₀ a := by
+  intro t h₀ a h
+  cases t <;> simp only [Ty.flatten] at h
+  case app t₁ t₂ =>
+      rcases hf : Ty.flatten t₁ with ⟨h', args'⟩
+      rw [hf] at h
+      dsimp only at h
+      injection h with h1 h2
+      subst h1
+      cases args' with
+      | nil =>
+          rw [List.nil_append] at h2
+          injection h2 with h3 _
+          subst h3
+          rw [flatten_eq_nil hf]
+      | cons x xs =>
+          rw [List.cons_append] at h2
+          injection h2 with _ h4
+          exact absurd h4 (by simp)
+  all_goals (exfalso; exact absurd (congrArg Prod.snd h) (by simp))
+
+private theorem flatten_eq_two : ∀ {t h₀ a b : Ty}, Ty.flatten t = (h₀, [a, b]) →
+    t = .app (.app h₀ a) b := by
+  intro t h₀ a b h
+  cases t <;> simp only [Ty.flatten] at h
+  case app t₁ t₂ =>
+      rcases hf : Ty.flatten t₁ with ⟨h', args'⟩
+      rw [hf] at h
+      dsimp only at h
+      injection h with h1 h2
+      subst h1
+      cases args' with
+      | nil =>
+          rw [List.nil_append] at h2
+          injection h2 with _ h3
+          exact absurd h3 (by simp)
+      | cons x xs =>
+          rw [List.cons_append] at h2
+          injection h2 with h3 h4
+          subst h3
+          cases xs with
+          | nil =>
+              rw [List.nil_append] at h4
+              injection h4 with h5 _
+              subst h5
+              rw [flatten_eq_one hf]
+          | cons y ys =>
+              rw [List.cons_append] at h4
+              injection h4 with _ h6
+              exact absurd h6 (by simp)
+  all_goals (exfalso; exact absurd (congrArg Prod.snd h) (by simp))
+
 /-! ## The datatype-environment side condition
 
 The bit-level builtin rows produce `Bool` values through the §7.5.1
@@ -237,7 +455,10 @@ term the compiler computes), their constructor genuinely belongs to
 list, or the head itself for the tagless tuple family), and their
 fields are canonical at the instantiated field types (via the same
 lenient `matchTy` the sizing functions use — determinism of `matchTy`
-makes the compiler's and the predicate's substitutions coincide). -/
+makes the compiler's and the predicate's substitutions coincide).
+Finite values track `i < bound` (matching `Val.HasTy`, stage 4d) —
+the fact that makes `rwPrimFromFinite`'s resize value-preserving at
+every §7.6-legal width. -/
 
 def ctorOf (Δ : DEnv) (t : Ty) (c : String) : Prop :=
   match Ty.flatten t with
@@ -259,6 +480,7 @@ inductive VTy (Δ : DEnv) : Val → Ty → Prop where
   | finite {b i : Nat} {t n : Ty} :
       Ty.flatten t = (.con "Finite", [n]) →
       Ty.evalNat n = some b →
+      i < b →
       VTy Δ (.finite b i) t
   | proxy {t : Ty} {h : Ty} {args : List Ty} :
       Ty.flatten t = (.con "Proxy", args) →
@@ -273,6 +495,95 @@ inductive VTy (Δ : DEnv) : Val → Ty → Prop where
       (∀ p ∈ (Ty.flattenArrow sig.ty).1.zip fields,
         VTy Δ p.2 (DEnv.substTv sub p.1)) →
       VTy Δ (.con t c fields) t
+
+/-- Canonicality transports across `teqN`-equal types (see the `teqN`
+section header): the vec case recurses elementwise, finite re-pins
+the evaluated bound, integer/proxy re-pin the shape, and a
+constructor value forces the `teq` leg because `ctorFree` excludes
+its head from the Vec/Finite rows. -/
+theorem vty_teqN {Δ : DEnv} {v : Val} {t : Ty}
+    (hv : VTy Δ v t) : ∀ {u : Ty}, teqN Δ t u = true → VTy Δ v u := by
+  induction hv with
+  | vec hfl hn hlen helem ih =>
+      intro u h
+      obtain rfl := flatten_eq_two hfl
+      rcases teqN_cases h with hteq
+        | ⟨n₁, te₁, n₂, te₂, ht, hu, hnn, hcf, hte⟩
+        | ⟨n₁, n₂, ht, hu, hnn, hcf⟩
+      · obtain rfl := teq_eq hteq
+        exact VTy.vec hfl hn hlen helem
+      · injection ht with ht1 ht2
+        injection ht1 with ht3 ht4
+        subst ht2; subst ht4; subst hu
+        rw [hn] at hnn
+        exact VTy.vec (n := n₂) (te := te₂) rfl hnn.symm hlen
+          (fun e he => ih e he hte)
+      · exact absurd ht (by simp)
+  | integer hfl =>
+      intro u h
+      obtain rfl := flatten_eq_nil hfl
+      rcases teqN_cases h with hteq
+        | ⟨n₁, te₁, n₂, te₂, ht, hu, hnn, hcf, hte⟩
+        | ⟨n₁, n₂, ht, hu, hnn, hcf⟩
+      · obtain rfl := teq_eq hteq
+        exact VTy.integer hfl
+      · exact absurd ht (by simp)
+      · exact absurd ht (by simp)
+  | finite hfl hn hlt =>
+      intro u h
+      obtain rfl := flatten_eq_one hfl
+      rcases teqN_cases h with hteq
+        | ⟨n₁, te₁, n₂, te₂, ht, hu, hnn, hcf, hte⟩
+        | ⟨n₁, n₂, ht, hu, hnn, hcf⟩
+      · obtain rfl := teq_eq hteq
+        exact VTy.finite hfl hn hlt
+      · exact absurd ht (by simp)
+      · injection ht with ht1 ht2
+        subst ht2; subst hu
+        rw [hn] at hnn
+        exact VTy.finite (n := n₂) rfl hnn.symm hlt
+  | proxy hfl hh =>
+      intro u h
+      rcases teqN_cases h with hteq
+        | ⟨n₁, te₁, n₂, te₂, ht, hu, hnn, hcf, hte⟩
+        | ⟨n₁, n₂, ht, hu, hnn, hcf⟩
+      · obtain rfl := teq_eq hteq
+        exact VTy.proxy hfl hh
+      · rw [ht] at hfl
+        simp only [Ty.flatten] at hfl
+        exact absurd (congrArg Prod.fst hfl) (by simp)
+      · rw [ht] at hfl
+        simp only [Ty.flatten] at hfl
+        exact absurd (congrArg Prod.fst hfl) (by simp)
+  | con hsig hmatch hlen hctor hfields ih =>
+      intro u h
+      rcases teqN_cases h with hteq
+        | ⟨n₁, te₁, n₂, te₂, ht, hu, hnn, hcf, hte⟩
+        | ⟨n₁, n₂, ht, hu, hnn, hcf⟩
+      · obtain rfl := teq_eq hteq
+        exact VTy.con hsig hmatch hlen hctor hfields
+      · subst ht
+        simp only [ctorFree, Bool.and_eq_true, Bool.not_eq_eq_eq_not,
+          Bool.not_true] at hcf
+        obtain ⟨htup, hget⟩ := hcf
+        simp only [ctorOf, Ty.flatten] at hctor
+        rw [if_neg (by simp [htup])] at hctor
+        obtain ⟨cs, hcs, hmem⟩ := hctor
+        rw [hcs] at hget
+        cases cs with
+        | nil => exact absurd hmem (by simp)
+        | cons c0 cs0 => exact absurd hget (by simp)
+      · subst ht
+        simp only [ctorFree, Bool.and_eq_true, Bool.not_eq_eq_eq_not,
+          Bool.not_true] at hcf
+        obtain ⟨htup, hget⟩ := hcf
+        simp only [ctorOf, Ty.flatten] at hctor
+        rw [if_neg (by simp [htup])] at hctor
+        obtain ⟨cs, hcs, hmem⟩ := hctor
+        rw [hcs] at hget
+        cases cs with
+        | nil => exact absurd hmem (by simp)
+        | cons c0 cs0 => exact absurd hget (by simp)
 
 /-! ## Normal-form construction helpers
 
@@ -3410,7 +3721,7 @@ theorem cexp_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
               · subst hnf
                 obtain ⟨h0, hk2, hv⟩ := litIntVal_inv_finite hfl2 hk hev
                 subst hv
-                refine ⟨VTy.finite hfl2 hk, 1, ?_⟩
+                refine ⟨VTy.finite hfl2 hk (by omega), 1, ?_⟩
                 rw [Val.rep]
                 rw [show (NF.lit (⟨nbits k, BitVec.ofInt (nbits k) n⟩ : BV)).eval σ E
                       = (⟨nbits k, BitVec.ofInt (nbits k) n⟩ : BV) from rfl]
@@ -3757,9 +4068,9 @@ def vtyB (Δ : DEnv) : Nat → Val → Ty → Bool
         | _ => false)
     | .integer _ =>
         (match Ty.flatten t with | (.con "Integer", []) => true | _ => false)
-    | .finite b _ =>
+    | .finite b i =>
         (match Ty.flatten t with
-        | (.con "Finite", [n]) => Ty.evalNat n == some b
+        | (.con "Finite", [n]) => Ty.evalNat n == some b && decide (i < b)
         | _ => false)
     | .proxy =>
         (match Ty.flatten t with | (.con "Proxy", _) => true | _ => false)
@@ -3816,6 +4127,8 @@ def rowToFiniteMod (res : Ty) : List (NF × Ty) → Except String (NF × Ty)
       let n ← finBoundT "rwPrimToFiniteMod" res
       let wa ← vecBoolLen "rwPrimToFiniteMod" ta
       if 2 ^ wa ≤ n then .ok (resizeNF (nbits n) wa a, res)
+      else if n = 0 then
+        .error "rwPrimToFiniteMod: Finite 0 result (uninhabited)"
       else
         let w := max wa (nbits n)
         .ok (resizeNF (nbits n) w
@@ -3826,9 +4139,9 @@ def rowFromFinite (res : Ty) : List (NF × Ty) → Except String (NF × Ty)
   | [(a, ta)] => do
       let n ← finBoundT "rwPrimFromFinite" ta
       let m ← vecBoolLen "rwPrimFromFinite" res
-      if n ≤ 2 ^ m then
-        if nbits n = m then .ok (a, res)
-        else .error "rwPrimFromFinite: widening from a Finite (canonicality untracked)"
+      -- §7.6: any m with n ≤ 2^m — the canonicality (`VTy.finite`'s
+      -- tracked bound) makes the resize value-preserving
+      if n ≤ 2 ^ m then .ok (resizeNF m (nbits n) a, res)
       else .error "rwPrimFromFinite: Finite bound not representable"
   | _ => .error "rwPrimFromFinite: arity mismatch"
 
@@ -3996,16 +4309,22 @@ exactly `Δ.hyleX`, so the premise must speak about the same table),
 syntactic map designates, and — the stage-B extern clause — an extern
 ABSENT from the syntactic table carries no model denotation, so the
 evaluator's extern row is forced onto the η tier's bit path exactly
-where the compiler emits an uninterpreted-call node. `impl` is pinned
-at the EMPTY extern environment (the drivers build `F` by `mkFEnv` at
-the default); the compiler's `xcallFree` gate on spliced inlinings is
-what makes that sufficient at every statement environment. -/
+where the compiler emits an uninterpreted-call node; dually (the
+stage-C clause `xt`) an extern PRESENT in the table denotes exactly
+`F` on its model definition, which is what lets the compiler's
+model-carrying row inline that definition through the bridge. `impl`
+is pinned at the EMPTY extern environment (the drivers build `F` by
+`mkFEnv` at the default); the compiler's `xcallFree` gate on spliced
+inlinings is what makes that sufficient at every statement
+environment. -/
 structure ForeignC (Δ : DEnv) (X : Rwv.Hyle.Sem.XEnv) (F : Rwv.Hyle.Sem.FEnv) : Prop where
   impl : Rwv.Hyle.Bridge.FImplements Δ.hyleDefs X F
   hX   : X = Δ.hyleX
   cry  : ∀ f n t g, Δ.cryD f n t = some g →
     ∃ den, Δ.cryF f n t = some den ∧ ∀ vs, den vs = callF F g vs
   ext  : ∀ s, Δ.hyleX.get? s = none → Δ.xtF s = none
+  xt   : ∀ s g, Δ.hyleX.get? s = some g →
+    ∃ den, Δ.xtF s = some den ∧ ∀ vs, den vs = callF F g vs
 
 /-- The trivially-empty foreign environment satisfies the premise
 against any implementing pair (no Cryptol keys are mapped, no extern
@@ -4014,9 +4333,11 @@ theorem foreignC_empty {Δ : DEnv} {X : Rwv.Hyle.Sem.XEnv} {F : Rwv.Hyle.Sem.FEn
     (himpl : Rwv.Hyle.Bridge.FImplements Δ.hyleDefs X F)
     (hXeq : X = Δ.hyleX)
     (hnone : ∀ f n t, Δ.cryD f n t = none)
-    (hxt : ∀ s, Δ.xtF s = none) : ForeignC Δ X F :=
+    (hxt : ∀ s, Δ.xtF s = none)
+    (hX0 : ∀ s, Δ.hyleX.get? s = none) : ForeignC Δ X F :=
   ⟨himpl, hXeq, fun f n t g hg => absurd hg (by rw [hnone f n t]; simp),
-   fun s _ => hxt s⟩
+   fun s _ => hxt s,
+   fun s g hg => absurd hg (by rw [hX0 s]; simp)⟩
 
 /-! ## HashMap transport for the spliced-call environments (house
 style: Bridge's private helpers, re-proved) -/
@@ -4134,10 +4455,11 @@ theorem decode_vty {Δ : DEnv} :
         split at h
         rotate_left
         · exact error_ne_ok h
+        rename_i hltk
         rw [except_pure_def] at h
         injection h with h
         subst h
-        exact VTy.finite hfl hk
+        exact VTy.finite hfl hk hltk
       · -- Integer
         rename_i hfl
         split at h
@@ -4256,7 +4578,7 @@ def cAltJ (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) (Γ' : HashMap Int 
                   (sliceNF off sz dn)
                 let Γ'' := bindFieldsΓ xs (slices.zip instTys) Γ'
                 let (bnf, bty) ← cexpJ Δ dmap fuel Γ'' jΓ body pend
-                if teq bty resTy then
+                if teqN Δ bty resTy then
                   match macc, w with
                   | some acc, _ + 1 =>
                       .ok (.ite (.prim2 .eq (sliceNF (szT - w) w dn)
@@ -4269,7 +4591,7 @@ def cAltJ (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) (Γ' : HashMap Int 
       else .error s!"cexp: constructor {cn} does not belong to the discriminant type"
   | .mk (.litAlt i) _ body, macc => do
       let (bnf, bty) ← cexpJ Δ dmap fuel Γ' jΓ body pend
-      if teq bty resTy then
+      if teqN Δ bty resTy then
         match macc with
         | some acc =>
             .ok (.ite (.prim2 .eq dn (.lit ⟨szT, BitVec.ofInt szT i⟩)) bnf acc)
@@ -4333,7 +4655,7 @@ def cexpJ (Δ : DEnv) (dmap : HashMap Int Defn) :
               match Δ.ctorSig.get? c with
               | some sig => do
                   let sub ← DEnv.matchTy (Ty.flattenArrow sig.ty).2 resTy
-                  if teqAll pas ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)) then
+                  if teqAllN Δ pas ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)) then
                     if ctorOfB Δ resTy c then do
                       let whole ← Δ.sizeOf (fuel + 1) [] resTy
                       let (tag, w) ← Δ.ctorTag resTy c
@@ -4503,7 +4825,28 @@ def cexpJ (Δ : DEnv) (dmap : HashMap Int Defn) :
                     let ity ← Eval.domTy "rwPrimExtern" (Ty.flattenArrow pty).1 6
                     if rest.length = (Ty.flattenArrow ity).1.length then
                       match Δ.hyleX.get? s with
-                      | some _ => .error s!"rwPrimExtern {s}: model-carrying extern (validator row out of scope)"
+                      | some g =>
+                          -- The MODEL-CARRYING extern row (stage C):
+                          -- exactly the Cryptol row keyed by the
+                          -- extern table — inline the model definition
+                          -- through the bridge at Δ's syntactic extern
+                          -- table, gated extern-free on the compiled
+                          -- arguments and the inlined form (the model
+                          -- denotations `ForeignC.xt` pins live at the
+                          -- empty extern environment).
+                          (match Δ.hyleDefs.get? g with
+                          | some hd => do
+                              let pas ← rest.mapM (cexpJ Δ dmap fuel Γ jΓ · [])
+                              if pas.length = hd.params.length then
+                                if (pas.map (·.1)).all NF.xcallFree then do
+                                  let nf ← Rwv.Hyle.Bridge.symExp Δ.hyleDefs Δ.hyleX Δ.hyleFuel
+                                    (HashMap.ofList (hd.params.zip (pas.map (·.1)))) hd.body
+                                  if nf.xcallFree then
+                                    .ok (nf, (Ty.flattenArrow ity).2)
+                                  else .error s!"rwPrimExtern {s}: model reaches an extern (out of scope)"
+                                else .error s!"rwPrimExtern {s}: extern-derived argument (out of scope)"
+                              else .error s!"rwPrimExtern {s}: model arity mismatch"
+                          | none => .error s!"rwPrimExtern {s}: unknown model {g}")
                       | none => do
                           let pas ← rest.mapM (cexpJ Δ dmap fuel Γ jΓ · [])
                           let res := (Ty.flattenArrow ity).2
@@ -4568,7 +4911,7 @@ def cexpJ (Δ : DEnv) (dmap : HashMap Int Defn) :
         match alts with
         | .mk .default _ dbody :: rest => do
             let (dnf, dbt) ← cexpJ Δ dmap fuel Γ' jΓ dbody pall
-            if teq dbt resTy' then cchainJ Δ dmap fuel Γ' jΓ dty szT dn resTy' pall rest (some dnf)
+            if teqN Δ dbt resTy' then cchainJ Δ dmap fuel Γ' jΓ dty szT dn resTy' pall rest (some dnf)
             else .error "cexp: default alternative result-type mismatch"
         | rest => cchainJ Δ dmap fuel Γ' jΓ dty szT dn resTy' pall rest none
     | (_, _) => .error "cexp: unsupported expression (outside the Phase 4b fragment)"
@@ -4952,7 +5295,8 @@ private theorem vtyB_sound {Δ : DEnv} :
           rotate_left
           · exact absurd h (by simp)
           rename_i n heq
-          exact VTy.finite heq (by simpa using h)
+          simp only [Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] at h
+          exact VTy.finite heq h.1 h.2
       | proxy =>
           rw [vtyB] at h
           split at h
@@ -5552,7 +5896,7 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
               rw [← hka]
         exact hxa
       constructor
-      · exact VTy.finite hflr hnt
+      · exact VTy.finite hflr hnt hxn
       · refine ⟨1, ?_⟩
         rw [Val.rep]
         show Except.ok (⟨nbits n, BitVec.ofNat (nbits n) x.toNat⟩ : BV)
@@ -5589,7 +5933,7 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
         rw [hnt] at hnt'
         exact Option.some.inj hnt'
       subst hnn
-      exact ⟨VTy.finite hflr hnt, 1, by rw [Val.rep]; rfl⟩
+      exact ⟨VTy.finite hflr hnt (by omega), 1, by rw [Val.rep]; rfl⟩
   case finiteMaxBound =>
       rcases pas with _ | ⟨p1, r1⟩ <;>
         rw [rowFinBound] at hc <;> try exact error_ne_ok hc
@@ -5620,7 +5964,7 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
         rw [hnt] at hnt'
         exact Option.some.inj hnt'
       subst hnn
-      exact ⟨VTy.finite hflr hnt, 1, by rw [Val.rep]; rfl⟩
+      exact ⟨VTy.finite hflr hnt (by omega), 1, by rw [Val.rep]; rfl⟩
   case toFinite =>
       rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨p2, r2⟩⟩ <;>
         rw [rowToFinite] at hc <;> try exact error_ne_ok hc
@@ -5670,7 +6014,7 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
           exact (a.eval σ E).bits.isLt
         exact Nat.lt_of_lt_of_le h1 (Nat.pow_le_pow_right (by omega) hle)
       constructor
-      · exact VTy.finite hflr hnt
+      · exact VTy.finite hflr hnt (Nat.lt_of_lt_of_le (a.eval σ E).bits.isLt hxw)
       · refine ⟨1, ?_⟩
         rw [Val.rep]
         rw [resizeNF_eval hwaa]
@@ -5765,6 +6109,7 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
             Nat.lt_of_lt_of_le hxlt (nbits_le n)
           constructor
           · exact VTy.finite hflr hnt
+              (Nat.mod_lt _ (by have := Nat.two_pow_pos wa; omega))
           · refine ⟨1, ?_⟩
             rw [Val.rep, resizeNF_eval hwaa]
             show Except.ok (⟨nbits n, BitVec.ofNat (nbits n) ((a.eval σ E).nat % n)⟩ : BV) = _
@@ -5776,6 +6121,9 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
             exact (Nat.mod_eq_of_lt hnatlt).symm ▸ rfl
       · -- n < 2^wa: the explicit modulus chain
         rename_i hpow
+        split at hc
+        · exact error_ne_ok hc
+        rename_i hn0c
         injection hc with hc
         injection hc with hnf hty
         subst hnf; subst hty
@@ -5798,18 +6146,9 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
             = ⟨nbits n, (((a.eval σ E).bits.setWidth wa) % ((BitVec.ofNat wa n).setWidth wa)).setWidth (nbits n)⟩ := by
           rw [resizeNF_eval (by rw [humod]), humod]
         split at hev
-        · -- n = 0: both sides are zero-width
+        · -- n = 0: rejected at compile time
           rename_i hn0
-          rw [except_pure_def] at hev
-          injection hev with hev
-          subst hev
-          subst hn0
-          constructor
-          · exact VTy.finite hflr hnt
-          · refine ⟨1, ?_⟩
-            rw [Val.rep, houter]
-            congr 1
-            exact bv_width0_eq rfl rfl
+          exact absurd hn0 hn0c
         · rename_i hn0
           rw [except_pure_def] at hev
           injection hev with hev
@@ -5818,7 +6157,7 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
           have hmodlt : (a.eval σ E).nat % n < 2 ^ nbits n :=
             Nat.lt_of_lt_of_le (Nat.mod_lt _ hn1) (nbits_le n)
           constructor
-          · exact VTy.finite hflr hnt
+          · exact VTy.finite hflr hnt (Nat.mod_lt _ hn1)
           · refine ⟨1, ?_⟩
             rw [Val.rep, houter]
             congr 2
@@ -5846,10 +6185,6 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
       rotate_left
       · exact error_ne_ok hc
       rename_i hle
-      split at hc
-      rotate_left
-      · exact error_ne_ok hc
-      rename_i hnbm
       injection hc with hc
       injection hc with hnf hty
       subst hnf; subst hty
@@ -5859,6 +6194,7 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
       split at hev
       rotate_left
       · exact error_ne_ok hev
+      rename_i hble
       rw [except_pure_def] at hev
       injection hev with hev
       subst hev
@@ -5880,7 +6216,7 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
         have hvt := h0.1
         rw [hv1] at hvt
         cases hvt with
-        | finite hfl2 hn2 =>
+        | finite hfl2 hn2 _hlt2 =>
             rename_i nvar
             rw [hflta] at hfl2
             have hp : ntt = nvar := by simpa using hfl2
@@ -5897,13 +6233,26 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
             rw [Val.rep] at hka
             injection hka with hka
             rw [← hka]
+      -- the tracked canonicality bound makes the resize value-preserving
+      have hilt : i < bound := by
+        have hvt := h0.1
+        rw [hv1] at hvt
+        cases hvt with
+        | finite _ _ hlt2 => exact hlt2
       constructor
       · exact vty_bitsToVec hΔ hflr hmlt hbet rfl
       · refine ⟨3, ?_⟩
-        rw [rep_bitsToVec hΔ (BV.ofNat m i) 0, haev]
-        show Except.ok (BV.ofNat m i) = Except.ok (⟨nbits bound, BitVec.ofNat (nbits bound) i⟩ : BV)
-        rw [hnbm]
-        rfl
+        rw [rep_bitsToVec hΔ (BV.ofNat m i) 0]
+        rw [resizeNF_eval (by rw [haev]), haev]
+        show Except.ok (BV.ofNat m i)
+          = Except.ok (⟨m, (BitVec.ofNat (nbits bound) i).setWidth m⟩ : BV)
+        have hi2 : i < 2 ^ nbits bound := Nat.lt_of_lt_of_le hilt (nbits_le bound)
+        have him : i < 2 ^ m := Nat.lt_of_lt_of_le hilt hble
+        show Except.ok (⟨m, BitVec.ofNat m i⟩ : BV) = _
+        congr 2
+        apply BitVec.eq_of_toNat_eq
+        rw [BitVec.toNat_setWidth, BitVec.toNat_ofNat, BitVec.toNat_ofNat,
+            Nat.mod_eq_of_lt hi2, Nat.mod_eq_of_lt him]
   case vecReplicate =>
       rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨p2, r2⟩⟩ <;>
         rw [rowVecReplicate] at hc <;> try exact error_ne_ok hc
@@ -6534,7 +6883,7 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
         have hvt := h1.1
         rw [hv2] at hvt
         cases hvt with
-        | finite hfl2 hn2 =>
+        | finite hfl2 hn2 _hlt2 =>
             rename_i nvar
             rw [hflb] at hfl2
             have hp : ntb = nvar := by simpa using hfl2
@@ -6783,8 +7132,9 @@ private theorem cchainJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String
       Eval.tryAlts ⟨Δ, dmap⟩ ef2 env jenv binder sv rest dflt E = .ok vout →
       Eval.applyMany ⟨Δ, dmap⟩ afuel vout vsp E = .ok v →
       ((macc = none ∧ dflt = none) ∨
-       (∃ els c bs dbody, macc = some els ∧ dflt = some (Alt.mk c bs dbody) ∧
-          cexpJ Δ dmap fuel Γ' jΓ dbody pend = .ok (els, resTy))) →
+       (∃ els c bs dbody dbt, macc = some els ∧ dflt = some (Alt.mk c bs dbody) ∧
+          cexpJ Δ dmap fuel Γ' jΓ dbody pend = .ok (els, dbt) ∧
+          teqN Δ dbt resTy = true)) →
       out.2 = resTy ∧ VTy Δ v resTy ∧ ∃ k, Val.rep Δ k v = .ok (out.1.eval σ E) := by
   -- The per-alternative step.
   have hstep : ∀ (con : AltCon) (xs : List Id) (body : Exp) (macc : Option NF) (bnf : NF)
@@ -6810,7 +7160,6 @@ private theorem cchainJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String
         rotate_left
         · exact error_ne_ok hca
         rename_i hteq
-        rw [teq_eq hteq] at hbt
         rw [Eval.tryAlts] at hev
         try dsimp only at hev
         obtain ⟨bm, hbm, hev⟩ := except_bind_eq_ok hev
@@ -6835,9 +7184,9 @@ private theorem cchainJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String
         | true =>
             rw [hbm2] at hev
             try dsimp only at hev
-            have hmain := IH Γ' jΓ body pend bnf' resTy ef3 afuel ((binder.uniq, sv) :: env)
+            have hmain := IH Γ' jΓ body pend bnf' bty ef3 afuel ((binder.uniq, sv) :: env)
               jenv vout vsp v hbt hev happ hΓ' hJ hvl hvp
-            refine ⟨hmain.1, ?_⟩
+            refine ⟨vty_teqN hmain.1 hteq, ?_⟩
             obtain ⟨k, hk⟩ := hmain.2
             refine ⟨k, ?_⟩
             rw [hk]
@@ -6901,7 +7250,6 @@ private theorem cchainJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String
         rotate_left
         · exact error_ne_ok hca
         rename_i hteq
-        rw [teq_eq hteq] at hbt
         -- the evaluator's step: the scrutinee must be a constructor value
         rw [Eval.tryAlts.eq_def] at hev
         try dsimp only at hev
@@ -7083,9 +7431,9 @@ private theorem cchainJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String
                   rw [congrArg catAll (show bsR = bsR.take i ++ bsR[i]'(by omega) :: bsR.drop (i + 1) by
                     rw [List.getElem_cons_drop, List.take_append_drop])]
                   exact (catAll_extract (bsR.take i) (bsR.drop (i + 1)) (bsR[i]'(by omega))).symm
-            have hmain := IH _ jΓ body pend bnf' resTy ef3 afuel _ jenv vout vsp v hbt hev
+            have hmain := IH _ jΓ body pend bnf' bty ef3 afuel _ jenv vout vsp v hbt hev
               happ henv'' hJ hvl hvp
-            refine ⟨hmain.1, ?_⟩
+            refine ⟨vty_teqN hmain.1 hteq, ?_⟩
             obtain ⟨k, hk⟩ := hmain.2
             refine ⟨k, ?_⟩
             rw [hk]
@@ -7187,7 +7535,7 @@ private theorem cchainJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String
   induction rest with
   | nil =>
       intro macc dflt out ef2 afuel vout v hcc hev happ hrel
-      rcases hrel with ⟨hm, hd⟩ | ⟨els, c0, bs0, dbody, hm, hd, hdb⟩
+      rcases hrel with ⟨hm, hd⟩ | ⟨els, c0, bs0, dbody, dbt, hm, hd, hdb, hdteq⟩
       · subst hm
         rw [cchainJ] at hcc
         exact error_ne_ok hcc
@@ -7199,9 +7547,9 @@ private theorem cchainJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String
         | succ ef3 =>
             rw [Eval.tryAlts] at hev
             try dsimp only at hev
-            have hmain := IH Γ' jΓ dbody pend els resTy ef3 afuel ((binder.uniq, sv) :: env)
+            have hmain := IH Γ' jΓ dbody pend els dbt ef3 afuel ((binder.uniq, sv) :: env)
               jenv vout vsp v hdb hev happ hΓ' hJ hvl hvp
-            refine ⟨by rw [← hcc], hmain.1, ?_⟩
+            refine ⟨by rw [← hcc], vty_teqN hmain.1 hdteq, ?_⟩
             obtain ⟨k, hk⟩ := hmain.2
             exact ⟨k, by rw [← hcc, hk]⟩
   | cons alt restT ihR =>
@@ -7217,7 +7565,7 @@ private theorem cchainJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String
           obtain ⟨bnf, hbnf, hcc⟩ := except_bind_eq_ok hcc
           injection hcc with hcc
           have hd0 : dflt = none := by
-            rcases hrel with ⟨_, hd⟩ | ⟨_, _, _, _, hm, _, _⟩
+            rcases hrel with ⟨_, hd⟩ | ⟨_, _, _, _, _, hm, _, _, _⟩
             · exact hd
             · exact absurd hm (by simp)
           subst hd0
@@ -7237,7 +7585,7 @@ private theorem cchainJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String
           obtain ⟨bnf, hbnf, hcc⟩ := except_bind_eq_ok hcc
           injection hcc with hcc
           rw [haccnf] at hbnf
-          rcases hrel with ⟨hm, _⟩ | ⟨els2, c0, bs0, dbody, hm, hd, hdb⟩
+          rcases hrel with ⟨hm, _⟩ | ⟨els2, c0, bs0, dbody, dbt, hm, hd, hdb, hdteq⟩
           · exact absurd hm (by simp)
           have hm2 : els = els2 := Option.some.inj hm
           subst hm2
@@ -7252,8 +7600,9 @@ private theorem cchainJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String
               | succ ef4 =>
                   rw [Eval.tryAlts] at hev'
                   try dsimp only at hev'
-                  exact IH Γ' jΓ dbody pend els resTy ef4 afuel ((binder.uniq, sv) :: env)
-                    jenv vout vsp v hdb hev' happ hΓ' hJ hvl hvp)
+                  have hm3 := IH Γ' jΓ dbody pend els dbt ef4 afuel ((binder.uniq, sv) :: env)
+                    jenv vout vsp v hdb hev' happ hΓ' hJ hvl hvp
+                  exact ⟨vty_teqN hm3.1 hdteq, hm3.2⟩)
           exact ⟨by rw [← hcc], hstepped.1, by rw [← hcc]; exact hstepped.2⟩
           all_goals (intros; simp_all)
       · -- an interior alternative
@@ -7612,19 +7961,16 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
               injection hev with hev
               subst hev
               have hlent : pas.length = (Ty.flattenArrow sig.ty).1.length := by
-                have h1 := teqAll_length hteq
+                have h1 := teqAllN_length hteq
                 simpa using h1
               have hvpas : vs.length = pas.length := by
                 have h2 : vs.length = dts.length := by simpa using hsat2
                 omega
-              have htys := teqAll_types hteq
               have hpasty : ∀ i (h : i < pas.length),
-                  pas[i].2 = DEnv.substTv sub ((Ty.flattenArrow sig.ty).1[i]'(by omega)) := by
+                  teqN Δ pas[i].2
+                    (DEnv.substTv sub ((Ty.flattenArrow sig.ty).1[i]'(by omega))) = true := by
                 intro i h
-                have h1 : (pas.map (·.2))[i]'(by simpa using h)
-                    = ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub))[i]'(by
-                        rw [← htys]; simpa using h) :=
-                  List.getElem_of_eq htys _
+                have h1 := teqAllN_get hteq i h (by rw [List.length_map]; omega)
                 simpa using h1
               obtain ⟨hwlen, hwpt⟩ := mapM_ok_idx hws
               rw [List.length_map] at hwlen
@@ -7635,13 +7981,13 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
                 obtain ⟨hwi, hszi⟩ := hwpt i (by rw [List.length_map]; omega)
                 obtain ⟨hv1, hex⟩ := hptw i h (by omega)
                 obtain ⟨k1, hrep1⟩ := hex
-                rw [hpasty i h] at hv1
+                have hv1' := vty_teqN hv1 (hpasty i h)
                 have hszi' : Δ.sizeOf (fuel + 1) []
                     (DEnv.substTv sub ((Ty.flattenArrow sig.ty).1[i]'(by omega))) = .ok (ws[i]'(by omega)) := by
                   have h2 := hszi
                   rw [List.getElem_map] at h2
                   exact h2
-                exact vty_rep_width hv1 hrep1 hszi'
+                exact vty_rep_width hv1' hrep1 hszi'
               have hlistw : (pas.map (fun p => p.1.eval σ E)).map (·.width) = ws := by
                 refine List.ext_getElem (by simpa using by omega) ?_
                 intro i h1 h2
@@ -7664,8 +8010,7 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
                   omega
                 rw [← hpj, List.getElem_zip]
                 have hvj := (hptw j hj2 (by omega)).1
-                rw [hpasty j hj2] at hvj
-                exact hvj
+                exact vty_teqN hvj (hpasty j hj2)
               · refine ⟨max (fuel + 1) K + 1, ?_⟩
                 have hle2 : w + (Val.bvConcat (pas.map fun p => p.1.eval σ E)).width ≤ whole := by
                   rw [hsum]
@@ -7870,7 +8215,99 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
             rename_i hlenC
             rw [if_pos hlenC] at hev
             cases hhx : Δ.hyleX.get? s with
-            | some m => rw [hhx] at hc; exact error_ne_ok hc
+            | some g =>
+              -- THE MODEL-CARRYING EXTERN ROW (stage C): the Cryptol
+              -- case's argument verbatim, keyed by the extern table —
+              -- the compiled form is the model definition's symbolic
+              -- inlining; its denotation is the evaluator's `Δ.xtF`
+              -- result through `ForeignC.xt`, `symExp_sound`, and the
+              -- decode round trip, with the extern-free gates pinning
+              -- the pinned-at-eEmpty denotations.
+              rw [hhx] at hc
+              dsimp only at hc
+              cases hgd : Δ.hyleDefs.get? g with
+              | none => rw [hgd] at hc; exact error_ne_ok hc
+              | some hd =>
+              rw [hgd] at hc
+              dsimp only at hc
+              obtain ⟨pas, hpas, hc⟩ := except_bind_eq_ok hc
+              obtain ⟨hplen, hpt⟩ := mapM_ok_idx hpas
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i harity
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i hargsFree
+              obtain ⟨nfS, hsym, hc⟩ := except_bind_eq_ok hc
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i hnfFree
+              injection hc with hc
+              injection hc with hnf hty
+              subst hnf
+              subst hty
+              obtain ⟨den, hxtF, hden⟩ := hFor.xt s g hhx
+              rw [hxtF] at hev
+              dsimp only at hev
+              obtain ⟨reps, hreps, hev⟩ := except_bind_eq_ok hev
+              obtain ⟨hrlen, hrpt⟩ := mapM_ok_idx hreps
+              obtain ⟨bv, hbv, hev⟩ := except_bind_eq_ok hev
+              have hptw : ∀ i (h1 : i < pas.length) (h2 : i < vs.length),
+                  VTy Δ vs[i] pas[i].2 ∧
+                    ∃ k, Val.rep Δ k vs[i] = .ok (pas[i].1.eval σ E) := by
+                intro i h1 h2
+                obtain ⟨hia, hci⟩ := hpt i (by omega)
+                obtain ⟨hia2, ki, hei⟩ := hpt2 i (by omega)
+                exact ih Γ jΓ rest[i] [] (pas[i].1) (pas[i].2) ki 1 env jenv vs[i] [] vs[i]
+                  hci hei (applyMany_one ⟨Δ, dmap⟩ 0 vs[i]) hΓ hJ rfl
+                  (fun j hj1 _ => absurd hj1 (by simp))
+              have hre : reps = (pas.map (·.1)).map (NF.eval σ E) := by
+                refine List.ext_getElem (by rw [List.length_map, List.length_map]; omega) ?_
+                intro i hi1 hi2
+                obtain ⟨hia, hri⟩ := hrpt i (by omega)
+                obtain ⟨hvtyi, ki, hrepi⟩ := hptw i (by omega) (by omega)
+                have hri' : Val.rep Δ ef2 vs[i] = .ok reps[i] := hri
+                rw [List.getElem_map, List.getElem_map]
+                exact rep_det hri' hrepi
+              obtain ⟨fn, hFg, hfn⟩ := hFor.impl g hd hgd
+              have hlenR : reps.length = hd.params.length := by omega
+              have himpl' : Rwv.Hyle.Bridge.FImplements Δ.hyleDefs Δ.hyleX F := by
+                have h0 := hFor.impl
+                rw [hFor.hX] at h0
+                exact h0
+              have hbv' : Rwv.Hyle.evalExp F Δ.hyleX (HashMap.ofList (hd.params.zip reps))
+                  hd.body = .ok bv := by
+                have h1 := hden reps
+                rw [h1, callF, hFg] at hbv
+                dsimp only at hbv
+                rw [hfn reps] at hbv
+                simp only [Rwv.Hyle.Bridge.mkFn] at hbv
+                rw [if_pos hlenR] at hbv
+                rw [← hFor.hX]
+                exact hbv
+              have hre0 : reps = (pas.map (·.1)).map (NF.eval σ Rwv.Hyle.Sem.eEmpty) := by
+                rw [hre]
+                refine List.map_congr_left ?_
+                intro n hn
+                exact Rwv.Hyle.Bridge.NF.xcallFree_eval (List.all_eq_true.mp hargsFree n hn)
+              have hcorr : Rwv.Hyle.Bridge.EnvCorr σ
+                  (HashMap.ofList (hd.params.zip (pas.map (·.1))))
+                  (HashMap.ofList (hd.params.zip reps)) := by
+                rw [hre0]
+                exact envCorr_zip_eval (E := Rwv.Hyle.Sem.eEmpty) hd.params (pas.map (·.1))
+              have hsem := Rwv.Hyle.Bridge.symExp_sound himpl' Δ.hyleFuel hd.body
+                (HashMap.ofList (hd.params.zip (pas.map (·.1))))
+                (HashMap.ofList (hd.params.zip reps)) nfS hcorr hsym
+              have hbvnf : bv = nfS.eval σ Rwv.Hyle.Sem.eEmpty := by
+                rw [hsem] at hbv'
+                injection hbv' with h'
+                exact h'.symm
+              have hlift : nfS.eval σ Rwv.Hyle.Sem.eEmpty = nfS.eval σ E :=
+                Rwv.Hyle.Bridge.NF.xcallFree_eval (E := Rwv.Hyle.Sem.eEmpty) (E' := E) hnfFree
+              exact ⟨decode_vty hev, ef2, (hlift ▸ hbvnf) ▸ decode_rep hev⟩
             | none =>
             rw [hhx] at hc
             dsimp only at hc
@@ -8540,7 +8977,7 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
                   match j with
                   | 0 =>
                       simp only [List.getElem_cons_zero]
-                      refine ⟨VTy.finite hflF hbtF, 1, ?_⟩
+                      refine ⟨VTy.finite hflF hbtF (by omega), 1, ?_⟩
                       rw [Val.rep, except_pure_def]
                       rfl
                   | j + 1 => exact absurd hj1 (by simp))
@@ -8612,7 +9049,7 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
           · subst hnf
             obtain ⟨h0, hk2, hv⟩ := litIntVal_inv_finite hfl2 hk hev
             subst hv
-            refine ⟨VTy.finite hfl2 hk, 1, ?_⟩
+            refine ⟨VTy.finite hfl2 hk (by omega), 1, ?_⟩
             rw [Val.rep]
             rw [show (NF.lit (⟨nbits k, BitVec.ofInt (nbits k) n⟩ : BV)).eval σ E
                   = (⟨nbits k, BitVec.ofInt (nbits k) n⟩ : BV) from rfl]
@@ -8925,8 +9362,6 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
                 rotate_left
                 · exact error_ne_ok hc
                 rename_i hteq2
-                have hdbt : dbt = resTy' := teq_eq hteq2
-                subst hdbt
                 cases efuel with
                 | zero => rw [Eval.tryAlts] at hv'; exact error_ne_ok hv'
                 | succ ef2 =>
@@ -8935,8 +9370,8 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
                     obtain ⟨hty2, hvt, hr⟩ := cchainJ_sound hΔ ih hΓ' hJ hsz hvty hks
                       hlall hall rest (some dnf) (some (Alt.mk .default bs0 dbody))
                       (nf, ty) ef2 K v' v hc hv' hKall
-                      (.inr ⟨dnf, .default, bs0, dbody, rfl, rfl, hdb⟩)
-                    exact ⟨by rw [show ty = dbt from hty2]; exact hvt, hr⟩
+                      (.inr ⟨dnf, .default, bs0, dbody, dbt, rfl, rfl, hdb, hteq2⟩)
+                    exact ⟨by rw [show ty = resTy' from hty2]; exact hvt, hr⟩
             | dataAlt cn =>
                 try dsimp only at hc
                 obtain ⟨hty2, hvt, hr⟩ := cchainJ_sound hΔ ih hΓ' hJ hsz hvty hks
@@ -9275,10 +9710,12 @@ private theorem cprimF_varsWF {P : String → Nat → Prop} {Δ : DEnv} {szf : N
         injection hc with h1 _
         subst h1
         exact resizeNF_varsWF (h _ List.mem_cons_self)
-      · injection hc with hc
-        injection hc with h1 _
-        subst h1
-        exact resizeNF_varsWF ⟨resizeNF_varsWF (h _ List.mem_cons_self), trivial⟩
+      · split at hc
+        · exact error_ne_ok hc
+        · injection hc with hc
+          injection hc with h1 _
+          subst h1
+          exact resizeNF_varsWF ⟨resizeNF_varsWF (h _ List.mem_cons_self), trivial⟩
   case fromFinite =>
       rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨p2, r2⟩⟩ <;>
         rw [rowFromFinite] at hc <;> try exact error_ne_ok hc
@@ -9287,12 +9724,10 @@ private theorem cprimF_varsWF {P : String → Nat → Prop} {Δ : DEnv} {szf : N
       split at hc
       rotate_left
       · exact error_ne_ok hc
-      split at hc
-      · injection hc with hc
-        injection hc with h1 _
-        subst h1
-        exact h _ List.mem_cons_self
-      · exact error_ne_ok hc
+      injection hc with hc
+      injection hc with h1 _
+      subst h1
+      exact resizeNF_varsWF (h _ List.mem_cons_self)
   case vecReplicate =>
       rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨p2, r2⟩⟩ <;>
         rw [rowVecReplicate] at hc <;> try exact error_ne_ok hc
@@ -10048,8 +10483,9 @@ theorem cexpJ_varsWF {Δ : DEnv} {dmap : HashMap Int Defn} {P : String → Nat �
             obtain ⟨q, hq, hqn⟩ := List.mem_map.mp hx2
             rw [← hqn]
             exact hpasWF q hq
-          · -- the model-less extern row: the packed arguments'
-            -- variables are the compiled arguments'
+          · -- the extern row: model-carrying occurrences inline the
+            -- model (the Cryptol case's argument); model-less ones
+            -- pack the compiled arguments' variables
             split at hc
             all_goals try exact error_ne_ok hc
             rename_i _ps _clk _rst _as _rs sx _impl _inst rest
@@ -10059,29 +10495,68 @@ theorem cexpJ_varsWF {Δ : DEnv} {dmap : HashMap Int Defn} {P : String → Nat �
             rotate_left
             · exact error_ne_ok hc
             split at hc
-            all_goals try exact error_ne_ok hc
-            rw [bind_ok_iff] at hc
-            obtain ⟨pas, hpas, hc⟩ := hc
-            obtain ⟨hplen, hpt⟩ := mapM_ok_idx hpas
-            have hpasWF : ∀ p ∈ pas, NF.VarsWF P p.1 := by
-              intro p hp
-              obtain ⟨j, hj, hpj⟩ := List.getElem_of_mem hp
-              obtain ⟨hj2, hcj⟩ := hpt j (by omega)
-              rw [← hpj]
-              exact ih Γ jΓ rest[j] [] (pas[j].1) (pas[j].2) hΓ hJ
-                (fun q hq => absurd hq (by simp)) hcj
-            rw [bind_ok_iff] at hc
-            obtain ⟨w, _hw, hc⟩ := hc
-            injection hc with hc
-            have h1 := congrArg Prod.fst hc
-            dsimp only at h1
-            rw [← h1]
-            show ((NF.xpack (pas.map (·.1))).VarsWF P)
-            refine xpack_varsWF' ?_
-            intro n hn
-            obtain ⟨q, hq, hqn⟩ := List.mem_map.mp hn
-            rw [← hqn]
-            exact hpasWF q hq
+            · -- model-carrying: the model inlining's variables are
+              -- the compiled arguments'
+              rename_i g _hhx
+              split at hc
+              all_goals try exact error_ne_ok hc
+              rename_i hd _hgd
+              rw [bind_ok_iff] at hc
+              obtain ⟨pas, hpas, hc⟩ := hc
+              obtain ⟨hplen, hpt⟩ := mapM_ok_idx hpas
+              have hpasWF : ∀ p ∈ pas, NF.VarsWF P p.1 := by
+                intro p hp
+                obtain ⟨j, hj, hpj⟩ := List.getElem_of_mem hp
+                obtain ⟨hj2, hcj⟩ := hpt j (by omega)
+                rw [← hpj]
+                exact ih Γ jΓ rest[j] [] (pas[j].1) (pas[j].2) hΓ hJ
+                  (fun q hq => absurd hq (by simp)) hcj
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rw [bind_ok_iff] at hc
+              obtain ⟨nfS, hsym, hc⟩ := hc
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              injection hc with hc
+              have h1 := congrArg Prod.fst hc
+              dsimp only at h1
+              rw [← h1]
+              refine Rwv.Hyle.Bridge.symExp_varsWF Δ.hyleFuel hd.body _ nfS ?_ hsym
+              intro x nx hnx
+              have hmem := ofList_get?_some' hnx
+              have hx2 : nx ∈ pas.map (·.1) := (List.of_mem_zip hmem).2
+              obtain ⟨q, hq, hqn⟩ := List.mem_map.mp hx2
+              rw [← hqn]
+              exact hpasWF q hq
+            · -- model-less: the packed arguments' variables are the
+              -- compiled arguments'
+              rw [bind_ok_iff] at hc
+              obtain ⟨pas, hpas, hc⟩ := hc
+              obtain ⟨hplen, hpt⟩ := mapM_ok_idx hpas
+              have hpasWF : ∀ p ∈ pas, NF.VarsWF P p.1 := by
+                intro p hp
+                obtain ⟨j, hj, hpj⟩ := List.getElem_of_mem hp
+                obtain ⟨hj2, hcj⟩ := hpt j (by omega)
+                rw [← hpj]
+                exact ih Γ jΓ rest[j] [] (pas[j].1) (pas[j].2) hΓ hJ
+                  (fun q hq => absurd hq (by simp)) hcj
+              rw [bind_ok_iff] at hc
+              obtain ⟨w, _hw, hc⟩ := hc
+              injection hc with hc
+              have h1 := congrArg Prod.fst hc
+              dsimp only at h1
+              rw [← h1]
+              show ((NF.xpack (pas.map (·.1))).VarsWF P)
+              refine xpack_varsWF' ?_
+              intro n hn
+              obtain ⟨q, hq, hqn⟩ := List.mem_map.mp hn
+              rw [← hqn]
+              exact hpasWF q hq
           · -- extended rows
             rw [bind_ok_iff] at hc
             obtain ⟨pas, hpas, hc⟩ := hc
@@ -10364,6 +10839,12 @@ def teqAllD : List (Nat × Ty) → List Ty → Bool
   | (_, t) :: ps, u :: us => teq t u && teqAllD ps us
   | _, _ => false
 
+/-- `Cexp.teqAllN` on index pairs (only the types are consulted). -/
+def teqAllND (Δ : DEnv) : List (Nat × Ty) → List Ty → Bool
+  | [], [] => true
+  | (_, t) :: ps, u :: us => teqN Δ t u && teqAllND Δ ps us
+  | _, _ => false
+
 /-- `Cexp.catList` on indices. -/
 def catListD (d : Dag) : List Nat → Dag × Nat
   | [] => d.mkLit Rwv.Hyle.BV.nil
@@ -10586,6 +11067,8 @@ def cprimFD (d : Dag) (Δ : DEnv) (szf : Nat) (pty : Ty) (b : Builtin)
           if 2 ^ wa ≤ n then
             let dr := resizeNFD d (nbits n) wa a
             .ok (dr.1, dr.2, (Ty.flattenArrow pty).2)
+          else if n = 0 then
+            .error "rwPrimToFiniteMod: Finite 0 result (uninhabited)"
           else
             let w := max wa (nbits n)
             let (d₁, r₁) := resizeNFD d w wa a
@@ -10600,8 +11083,8 @@ def cprimFD (d : Dag) (Δ : DEnv) (szf : Nat) (pty : Ty) (b : Builtin)
           let n ← finBoundT "rwPrimFromFinite" ta
           let m ← vecBoolLen "rwPrimFromFinite" (Ty.flattenArrow pty).2
           if n ≤ 2 ^ m then
-            if nbits n = m then .ok (d, a, (Ty.flattenArrow pty).2)
-            else .error "rwPrimFromFinite: widening from a Finite (canonicality untracked)"
+            let dr := resizeNFD d m (nbits n) a
+            .ok (dr.1, dr.2, (Ty.flattenArrow pty).2)
           else .error "rwPrimFromFinite: Finite bound not representable"
       | _ => .error "rwPrimFromFinite: arity mismatch")
   | .vecReplicate =>
@@ -10764,7 +11247,7 @@ def cAltJD (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) (Γ' : DGamma)
                   (d, ([] : List Nat))
                 let Γ'' := bindFieldsΓD xs (slices.zip instTys) Γ'
                 let (d₂, bnf, bty) ← cexpJD Δ dmap fuel Γ'' jΓ body pend d₁
-                if teq bty resTy then
+                if teqN Δ bty resTy then
                   match macc, w with
                   | some acc, _ + 1 =>
                       let (d₃, sl) := sliceNFD d₂ (szT - w) w dn
@@ -10780,7 +11263,7 @@ def cAltJD (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) (Γ' : DGamma)
       else .error s!"cexp: constructor {cn} does not belong to the discriminant type"
   | .mk (.litAlt i) _ body, macc, d => do
       let (d₁, bnf, bty) ← cexpJD Δ dmap fuel Γ' jΓ body pend d
-      if teq bty resTy then
+      if teqN Δ bty resTy then
         match macc with
         | some acc =>
             let (d₂, tl) := d₁.mkLit ⟨szT, BitVec.ofInt szT i⟩
@@ -10871,7 +11354,7 @@ def cexpJD (Δ : DEnv) (dmap : HashMap Int Defn) :
               match Δ.ctorSig.get? c with
               | some sig => do
                   let sub ← DEnv.matchTy (Ty.flattenArrow sig.ty).2 resTy
-                  if teqAllD pas ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)) then
+                  if teqAllND Δ pas ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub)) then
                     if ctorOfB Δ resTy c then do
                       let whole ← Δ.sizeOf (fuel + 1) [] resTy
                       let (tag, w) ← Δ.ctorTag resTy c
@@ -11004,11 +11487,11 @@ def cexpJD (Δ : DEnv) (dmap : HashMap Int Defn) :
                           | some hd => do
                               let (d₁, pas) ← cargsD Δ dmap fuel Γ jΓ rest d
                               if pas.length = hd.params.length then
-                                if pas.all (fun p => d₁.xcallFreeIdx p.1) then do
+                                if pas.all (fun p => d₁.xcallFreeM p.1) then do
                                   let (d₂, i) ← Rwv.Hyle.BridgeDag.symExpDag Δ.hyleDefs Δ.hyleX
                                     Δ.hyleFuel (HashMap.ofList (hd.params.zip (pas.map (·.1))))
                                     hd.body d₁
-                                  if d₂.xcallFreeIdx i then
+                                  if d₂.xcallFreeM i then
                                     .ok (d₂, i, (Ty.flattenArrow ity).2)
                                   else .error "rwPrimCryptol: spliced definition reaches an extern (out of scope)"
                                 else .error "rwPrimCryptol: extern-derived argument (out of scope)"
@@ -11089,7 +11572,7 @@ def cexpJD (Δ : DEnv) (dmap : HashMap Int Defn) :
         match alts with
         | .mk .default _ dbody :: rest => do
             let (d₃, dnf, dbt) ← cexpJD Δ dmap fuel Γ' jΓ dbody pall d₂
-            if teq dbt resTy' then
+            if teqN Δ dbt resTy' then
               cchainJD Δ dmap fuel Γ' jΓ dty szT dn resTy' pall rest (some dnf) d₃
             else .error "cexp: default alternative result-type mismatch"
         | rest => cchainJD Δ dmap fuel Γ' jΓ dty szT dn resTy' pall rest none d₂
@@ -11804,6 +12287,23 @@ theorem teqAllD_eq (d : Dag) :
       | cons u urest =>
           obtain ⟨i, t⟩ := p
           show (teq t u && teqAllD rest urest) = (teq t u && teqAll _ urest)
+          rw [ih urest]
+
+/-- `teqAllND` is `teqAllN` of the read-back pairs (only types are
+consulted). -/
+theorem teqAllND_eq {Δ : DEnv} (d : Dag) :
+    ∀ (ps : List (Nat × Ty)) (us : List Ty),
+      teqAllND Δ ps us = teqAllN Δ (ps.map fun p => ((d.read p.1 : NF), p.2)) us := by
+  intro ps
+  induction ps with
+  | nil => intro us; cases us <;> rfl
+  | cons p rest ih =>
+      intro us
+      cases us with
+      | nil => rfl
+      | cons u urest =>
+          obtain ⟨i, t⟩ := p
+          show (teqN Δ t u && teqAllND Δ rest urest) = (teqN Δ t u && teqAllN Δ _ urest)
           rw [ih urest]
 
 /-- The simulation contract at one fuel (the induction hypothesis's
@@ -12577,6 +13077,9 @@ private theorem cprimFD_sim_toFiniteMod {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf 
       show rowToFiniteMod (Ty.flattenArrow pty).2 [((d.read a : NF), ta)] = _
       rw [rowToFiniteMod, hn, except_bind_ok, hwa, except_bind_ok, if_pos hle, R]
     · rename_i hnle
+      split at h
+      · exact error_ne_ok h
+      rename_i hn0c
       rcases hr1 : resizeNFD d (max wa (nbits n)) wa a with ⟨d₁, r₁⟩
       rw [hr1] at h
       rcases hl2 : d₁.mkLit ⟨max wa (nbits n), BitVec.ofNat (max wa (nbits n)) n⟩
@@ -12597,7 +13100,7 @@ private theorem cprimFD_sim_toFiniteMod {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf 
       refine ⟨W₄, ((E₁.trans E₂).trans E₃).trans E₄, L₄, ?_⟩
       show rowToFiniteMod (Ty.flattenArrow pty).2 [((d.read a : NF), ta)] = _
       rw [rowToFiniteMod, hn, except_bind_ok, hwa, except_bind_ok, if_neg hnle,
-          R₄, R₃, read_ext E₂ r₁ L₁, R₁, R₂]
+          if_neg hn0c, R₄, R₃, read_ext E₂ r₁ L₁, R₁, R₂]
 
 private theorem cprimFD_sim_fromFinite {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
     {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
@@ -12617,16 +13120,15 @@ private theorem cprimFD_sim_fromFinite {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf :
     rotate_left
     · exact error_ne_ok h
     rename_i hle
-    split at h
-    rotate_left
-    · exact error_ne_ok h
-    rename_i hnb
+    rcases hrz : resizeNFD d m (nbits n) a with ⟨d₁, r₁⟩
+    rw [hrz] at h
     obtain ⟨hd, hr, hty⟩ := triple_eq h
     subst hd; subst hr; subst hty
-    refine ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d,
-      show a < d.size from hpas (a, ta) (by simp), ?_⟩
+    obtain ⟨W, E, L, R⟩ := mk_out
+      (resizeNFD_spec hwf (show a < d.size from hpas (a, ta) (by simp))) hrz
+    refine ⟨W, E, L, ?_⟩
     show rowFromFinite (Ty.flattenArrow pty).2 [((d.read a : NF), ta)] = _
-    rw [rowFromFinite, hn, except_bind_ok, hm, except_bind_ok, if_pos hle, if_pos hnb]
+    rw [rowFromFinite, hn, except_bind_ok, hm, except_bind_ok, if_pos hle, R]
 
 private theorem cprimFD_sim_vecReplicate {d : Dag} (hwf : d.WF) {Δ : DEnv} {szf : Nat}
     {pty : Ty} {pas : List (Nat × Ty)} {d' : Dag} {r : Nat} {ty : Ty}
@@ -13173,7 +13675,7 @@ theorem cexpJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} :
           rw [if_pos (show (pas.map fun p => ((d₁.read p.1 : NF), p.2)).length
                 = (Ty.flattenArrow cty).1.length by simpa using hplen)]
           rw [hsub, except_bind_ok]
-          rw [teqAllD_eq d₁] at hteqs
+          rw [teqAllND_eq d₁] at hteqs
           rw [if_pos hteqs, if_pos hcob, hwhole, except_bind_ok, htg, except_bind_ok]
           dsimp only
           rw [hws, except_bind_ok, if_pos hwsum, R₄, List.map_cons, List.map_cons]
@@ -13540,6 +14042,7 @@ theorem cexpJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} :
             rotate_left
             · exact error_ne_ok hc
             rename_i hargsFree
+            simp only [Rwv.Hyle.BridgeDag.Dag.xcallFreeM_eq] at hargsFree
             rw [if_pos (by
               rw [hmm]
               rw [List.all_eq_true]
@@ -13568,6 +14071,7 @@ theorem cexpJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} :
             rotate_left
             · exact error_ne_ok hc
             rename_i hfreeD
+            rw [Rwv.Hyle.BridgeDag.Dag.xcallFreeM_eq] at hfreeD
             rw [if_pos (Rwv.Hyle.BridgeDag.Dag.xcallFreeIdx_read _ hfreeD)]
             obtain ⟨hd2, hri, hty2⟩ := triple_eq hc
             subst hd2; subst hri; subst hty2

@@ -36,7 +36,11 @@ the device:
     same tag-slice if-chains as `Cexp.cchain`. Pure expressions
     compile through `Cexp.cexpFull` (the Phase 4b-i compiler — joins,
     the extended first-order rows, live `error`), which bounds this
-    fragment.
+    fragment. The pause-output type check compares with `Cexp.teqN`
+    (type-level nat arithmetic evaluated on Vec/Finite spines, e.g.
+    `Vec (+ 8 8) Bool` against the declared `Vec 16 Bool`), with
+    `vty_teqN` transporting the output's canonicality to the process
+    output type.
   * `checkLabel` — the per-label obligation: compile the step from
     pause target L into a record normal form over the device's
     registers and inputs (saved args are slices of the resumption-tag
@@ -162,7 +166,7 @@ namespace Rwv.Eidos.Cstep
 open Std (HashMap)
 open Rwv.Hyle (BV Op)
 open Rwv.Hyle.Bridge (NF)
-open Rwv.Eidos.Cexp (teq teqAll cexp catNF sliceNF denvOk VTy ctorOfB)
+open Rwv.Eidos.Cexp (teq teqAll teqN vty_teqN cexp catNF sliceNF denvOk VTy ctorOfB)
 
 /- The extern environment of the stage-B η tier: a section-implicit
 threaded through every denotational statement (Cexp's convention).
@@ -460,9 +464,9 @@ def vtyB (Δ : DEnv) : Nat → Val → Ty → Bool
       (match Ty.flatten t with
       | (.con "Integer", []) => true
       | _ => false)
-  | _ + 1, .finite b _, t =>
+  | _ + 1, .finite b i, t =>
       (match Ty.flatten t with
-      | (.con "Finite", [n]) => Ty.evalNat n == some b
+      | (.con "Finite", [n]) => Ty.evalNat n == some b && decide (i < b)
       | _ => false)
   | _ + 1, .proxy, t =>
       (match Ty.flatten t with
@@ -596,7 +600,7 @@ def goTerm (C : Ctx) : Nat → HashMap Int (NF × Ty) → List CellNF → Term �
       match term with
       | .pause out l args => do
           let (onf, oty) ← Rwv.Eidos.Cexp.cexpFull C.Δ C.edm C.cexpFuel Γ out
-          if teq oty C.outTy then
+          if teqN C.Δ oty C.outTy then
             match C.lo.targets.find? (fun t => t.uniq == l.uniq) with
             | none => throw s!"cstep: pause to an unknown target {l.occ}"
             | some tgt => do
@@ -899,7 +903,7 @@ def goTermD (C : Ctx) : Nat → DGamma → List CellNFD → Term → Dag →
       match term with
       | .pause out l args => do
           let (d₁, onf, oty) ← cexpFullD C.Δ C.edm C.cexpFuel Γ out d
-          if teq oty C.outTy then
+          if teqN C.Δ oty C.outTy then
             match C.lo.targets.find? (fun t => t.uniq == l.uniq) with
             | none => .error s!"cstep: pause to an unknown target {l.occ}"
             | some tgt => do
@@ -1393,7 +1397,8 @@ theorem vtyB_sound {Δ : DEnv} : ∀ (fuel : Nat) {v : Val} {t : Ty},
           rw [vtyB] at h
           split at h
           · rename_i n heq
-            exact VTy.finite heq (by simpa using h)
+            simp only [Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] at h
+            exact VTy.finite heq h.1 h.2
           · cases h
       | proxy =>
           rw [vtyB] at h
@@ -1717,7 +1722,7 @@ theorem hasTy_vty {Δ : DEnv} (htup : tupleCtorsOk Δ = true) :
   intro v t h
   induction h with
   | vec hty hn hlen _helems ih => exact VTy.vec hty hn hlen fun e he => ih e he
-  | finite hty hn _hlt => exact VTy.finite hty hn
+  | finite hty hn hlt => exact VTy.finite hty hn hlt
   | integer hty => exact VTy.integer hty
   | proxy hty => exact VTy.proxy hty rfl
   | @con t tc c fields sig sub doms hty hctor hsig hmatch hdoms hlen _hfields ih =>
@@ -2815,15 +2820,13 @@ theorem rep_decode {Δ : DEnv} (hΔ : denvOk Δ = true) (habs : absHeadsOk Δ = 
           injection hrep with hrep
           subst hrep
           rw [decode_integer_red hfl, if_pos rfl, BitVec.setWidth_eq, except_pure_def]
-  | finite hfl hn =>
+  | finite hfl hn hlt =>
       rename_i b i t n
       intro fuel bv hcanon _ hrep hsz
       cases fuel with
       | zero => rw [Val.rep] at hrep; exact error_ne_ok hrep
       | succ k =>
-          have hib : i < b := by
-            cases hcanon with
-            | finite h => exact h
+          have hib : i < b := hlt
           rw [Val.rep, except_pure_def] at hrep
           injection hrep with hrep
           subst hrep
@@ -5243,10 +5246,11 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
       subst hconcB
       subst hgoB
       -- output facts
-      obtain ⟨hovty, ko, horep⟩ := Rwv.Eidos.Cexp.cexpFull_sound hS.hden hS.hfor.choose_spec.choose_spec C.cexpFuel Γ out
+      obtain ⟨hovty0, ko, horep⟩ := Rwv.Eidos.Cexp.cexpFull_sound hS.hden hS.hfor.choose_spec.choose_spec C.cexpFuel Γ out
         onf oty ef env [] o hot ho hE
-      have hotyE : oty = C.outTy := Rwv.Eidos.Cexp.teq_eq hteqo
-      subst hotyE
+      -- the pause-output check is teqN: transport the canonicality to
+      -- the process output type (widths re-derive from the target)
+      have hovty : VTy C.Δ o C.outTy := vty_teqN hovty0 hteqo
       obtain ⟨kout, hkout⟩ := hS.outsz
       have hbw : (onf.eval σ E).width = C.lo.outW := vty_rep_width hovty horep hkout
       -- target facts

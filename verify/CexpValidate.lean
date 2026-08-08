@@ -38,6 +38,7 @@ definition pair actually passed to it.
 -/
 import Rwv.Eidos.Parse
 import Rwv.Eidos.PrimBasis
+import Rwv.Eidos.ForeignEnv
 import Rwv.Eidos.Cexp
 import Rwv.Hyle.Parse
 import Rwv.Hyle.Bridge
@@ -316,7 +317,10 @@ def main (argv : List String) : IO UInt32 := do
     | _, .error e => IO.eprintln s!"cexp-validate: {rwcFile}: {e}"; return 1
     | .ok p₀, .ok hp => do
       let p := natNormDefns (etaSaturateDefns (addPrims p₀))
-      let Δ := DEnv.ofDatas p.datas
+      -- The foreign tier: Cryptol splices and extern models read from
+      -- the compiled program itself (CstepValidate's default), so the
+      -- compile side's model inlining aligns with `symExp`'s.
+      let Δ := addForeign (DEnv.ofDatas p.datas) rwcTxt hp
       let edm := mkDefnMap p.defns
       let hdm : HashMap String Rwv.Hyle.Defn :=
         HashMap.ofList (hp.defns.map fun d => (d.name, d))
@@ -347,6 +351,15 @@ def main (argv : List String) : IO UInt32 := do
               if d.params.length ≠ h.params.length then
                 IO.println s!"SKIP      {nm}  (arity {d.params.length} vs {h.params.length}: eta drift)"
                 t := { t with skip := t.skip + 1 }
+              -- The VERIFIED verdict first: its DAG leg absorbs the
+              -- splice-inlining pairs whose TREE forms only exist as
+              -- shared dags (sha256ffi — a tree `NF.xcallFree` walk
+              -- tree-unfolds the sharing); the tree compilations below
+              -- run only for the failure diagnosis.
+              else if checkDefnPair Δ edm hDmap hX fuel hyleFuel d h then do
+                -- the leg the VERIFIED checkDefnPair certifies
+                if verbose then IO.println s!"OK-V      {nm}"
+                t := { t with okV := t.okV + 1 }
               else do
                 match cexpFull Δ edm fuel (mkParamGamma d.params h.params h.sig.params) d.body with
                 | .error msg =>
@@ -359,11 +372,7 @@ def main (argv : List String) : IO UInt32 := do
                         IO.println s!"SKIP      {nm}  (Hyle symExp: {msg})"
                         t := { t with skip := t.skip + 1 }
                     | .ok nh =>
-                        if checkDefnPair Δ edm hDmap hX fuel hyleFuel d h then do
-                          -- the leg the VERIFIED checkDefnPair certifies
-                          if verbose then IO.println s!"OK-V      {nm}"
-                          t := { t with okV := t.okV + 1 }
-                        else if Rwv.Hyle.Bridge.cfoldW3 ne == Rwv.Hyle.Bridge.cfoldW3 nh then do
+                        if Rwv.Hyle.Bridge.cfoldW3 ne == Rwv.Hyle.Bridge.cfoldW3 nh then do
                           IO.println s!"OK-W      {nm}"
                           t := { t with ok := t.ok + 1 }
                         else if dagEq ne nh then do
