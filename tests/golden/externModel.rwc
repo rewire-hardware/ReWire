@@ -21,61 +21,29 @@ extern xorW32
       output p2 : [32]
       model Main.xorModel
 
---| state dispatch for process main: 0=$x2
-main.$dispatch : ([32]) -> [32]
-main.$dispatch i =
-      main.$x2 i
-
---| block '$L.$x2' of process main (state 0)
-main.$x2 : ([32]) -> [32]
-main.$x2 $x =
-      main.iter$W32$W32$sMain_f $x
-
---| block '$L.ReWire.Monad.iter$W32$W32$sMain_f' of process main
-main.iter$W32$W32$sMain_f : ([32]) -> [32]
-main.iter$W32$W32$sMain_f i =
-      let $a = Main.f i in
-      $a
-
 Main.andModel : ([32], [32]) -> [32]
 Main.andModel a b =
       and a b
-
-Main.andW32 : ([32], [32]) -> [32]
-Main.andW32 $eta0 $eta1 =
-      andW32 $eta0 $eta1
 
 Main.xorModel : ([32], [32]) -> [32]
 Main.xorModel a b =
       xor a b
 
-Main.xorW32 : ([32], [32]) -> [32]
-Main.xorW32 $eta0 $eta1 =
-      xorW32 $eta0 $eta1
-
 Main.notModel : ([32]) -> [32]
 Main.notModel $eta0 =
       not $eta0
-
-Main.notW32 : ([32]) -> [32]
-Main.notW32 $eta0 =
-      notW32 $eta0
 
 Main.plusModel : ([32], [32]) -> [32]
 Main.plusModel a b =
       add a b
 
-Main.plusW32 : ([32], [32]) -> [32]
-Main.plusW32 $eta0 $eta1 =
-      plusW32 $eta0 $eta1
-
-Main.f : ([32]) -> [32]
-Main.f x =
-      Main.plusW32 (Main.andW32 x 32'hf0f0f0f0) (Main.xorW32 (Main.notW32 x) 32'h12345678)
-
 device top_level
       input __in0 : [32]
       output __out0 : [32]
       tag $x2 = 0
-      let $res = main.$dispatch __in0
+      let $res = let $a$i3 = (let $eta0$i0 = andW32 __in0 32'hf0f0f0f0 in
+            let $eta1$i2 = (let $eta0$i1 = notW32 __in0 in
+            xorW32 $eta0$i1 32'h12345678) in
+            plusW32 $eta0$i0 $eta1$i2) in
+            $a$i3
       __out0 := $res

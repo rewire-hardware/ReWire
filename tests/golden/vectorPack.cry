@@ -16,33 +16,14 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// main.$dispatch
-rw_main__dispatch : [128] -> [128]
-rw_main__dispatch x0 = rw_main__x2 x0
-
-// main.$x2
-rw_main__x2 : [128] -> [128]
-rw_main__x2 x0 = rw_main_loop x0
-
-// main.$x3
-rw_main__x3 : [128] -> [128]
-rw_main__x3 x0 = x0
-
-// main.loop
-rw_main_loop : [128] -> [128]
-rw_main_loop x0 = rw_main__x3 s0
-  where
-    s0 : [128]
-    s0 = rw_Main_compute x0
-
-// Main.compute
-rw_Main_compute : [128] -> [128]
-rw_Main_compute x0 = s13 # s14
+// Per-cycle step: outputs # next register values.
+rw_step : [128] -> [128]
+rw_step i = (take`{64} s16) # (drop`{64} s16)
   where
     s0 : [64]
-    s0 = take`{64} x0
+    s0 = take`{64} i
     s1 : [64]
-    s1 = drop`{64} x0
+    s1 = drop`{64} i
     s2 : [128]
     s2 = (rw'resize`{8} (s0 >> 0x00000000000000000000000000000038)) # ((rw'resize`{8} (s0 >> 0x00000000000000000000000000000028)) # ((rw'resize`{8} (s0 >> 0x00000000000000000000000000000018)) # ((rw'resize`{8} (s0 >> 0x00000000000000000000000000000008)) # ((rw'resize`{8} (s1 >> 0x00000000000000000000000000000038)) # ((rw'resize`{8} (s1 >> 0x00000000000000000000000000000028)) # ((rw'resize`{8} (s1 >> 0x00000000000000000000000000000018)) # ((rw'resize`{8} (s1 >> 0x00000000000000000000000000000008)) # ((rw'resize`{8} (s0 >> 0x00000000000000000000000000000030)) # ((rw'resize`{8} (s0 >> 0x00000000000000000000000000000020)) # ((rw'resize`{8} (s0 >> 0x00000000000000000000000000000010)) # ((rw'resize`{8} (s0 >> 0x00000000000000000000000000000000)) # ((rw'resize`{8} (s1 >> 0x00000000000000000000000000000030)) # ((rw'resize`{8} (s1 >> 0x00000000000000000000000000000020)) # ((rw'resize`{8} (s1 >> 0x00000000000000000000000000000010)) # (rw'resize`{8} (s1 >> 0x00000000000000000000000000000000))))))))))))))))
     s3 : [64]
@@ -69,19 +50,10 @@ rw_Main_compute x0 = s13 # s14
     s13 = take`{64} s12
     s14 : [64]
     s14 = drop`{64} s12
-
-// Per-cycle step: outputs # next register values.
-rw_step : [128] -> [128]
-rw_step i = (take`{64} s3) # (drop`{64} s3)
-  where
-    s0 : [64]
-    s0 = take`{64} i
-    s1 : [64]
-    s1 = drop`{64} i
-    s2 : [128]
-    s2 = s0 # s1
-    s3 : [128]
-    s3 = rw_main__dispatch s2
+    s15 : [128]
+    s15 = s13 # s14
+    s16 : [128]
+    s16 = s15
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [64], __in1 : [64]

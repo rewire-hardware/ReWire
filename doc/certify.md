@@ -15,11 +15,12 @@ Cryptol, or `--core`), `--certify` writes two artifacts beside the output
 - **`<out>.eir`** — the machine-mode Eidos IR after the block-graph
   cleanup (pass 8), exactly the file `--eidos` writes; its semantics is
   doc/eidos.md §7.5.
-- **`<out>.certify.rwc`** — the final, fully inlined Hyle program the
-  backends consume (after the Hyle optimize and inline passes, 10–11; on
-  the Cryptol and `--core` paths, where the pipeline stops at pass 10,
-  the inline pass is run for the certificate so the certified program is
-  always the fully lowered one); its semantics is doc/hyle.md §6.
+- **`<out>.certify.rwc`** — the final, fully inlined Hyle program (after
+  the Hyle optimize and inline passes, 10–11). Every device target
+  consumes this same program — the HDL and Cryptol backends, the
+  interpreter, and the `.rwc` that `--core` emits — so the certified
+  program is always exactly the consumed one; its semantics is
+  doc/hyle.md §6.
 
 It then invokes the validator `rwv-cstep-validate` on the pair and
 surfaces the verdict:

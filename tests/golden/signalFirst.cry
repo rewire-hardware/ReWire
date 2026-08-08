@@ -16,29 +16,13 @@ rw'parity x = foldr (^) False x
 rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
-// main.$dispatch
-rw_main__dispatch : [17] -> [8] -> [25]
-rw_main__dispatch x0 x1 = if ~ ((take`{1} x0) @ 0) then (rw_main_i2 (take`{8} (drop`{1} x0)) x1 (drop`{9} x0)) else (rw_main_i x1 (drop`{9} x0))
-
-// main.i2
-rw_main_i2 : [8] -> [8] -> [8] -> [25]
-rw_main_i2 x0 x1 x2 = rw_main_dev x0 x1
-
-// main.s
-rw_main_s : [8] -> [8] -> [8] -> [25]
-rw_main_s x0 x1 x2 = (x1 + x0) # (0b0 # (x0 # x2))
-
 // main.dev
 rw_main_dev : [8] -> [8] -> [25]
-rw_main_dev x0 x1 = rw_main_s x0 x1 x1
-
-// main.i
-rw_main_i : [8] -> [8] -> [25]
-rw_main_i x0 x1 = rw_main_dev x0 0x00
+rw_main_dev x0 x1 = (x1 + x0) # (0b0 # (x0 # x1))
 
 // Per-cycle step: outputs # next register values.
 rw_step : [17] -> [8] -> [25]
-rw_step st i = (take`{8} s3) # ((take`{9} (drop`{8} s3)) # (drop`{17} s3))
+rw_step st i = (take`{8} s4) # ((take`{9} (drop`{8} s4)) # (drop`{17} s4))
   where
     s0 : [9]
     s0 = take`{9} st
@@ -46,8 +30,10 @@ rw_step st i = (take`{8} s3) # ((take`{9} (drop`{8} s3)) # (drop`{17} s3))
     s1 = drop`{9} st
     s2 : [8]
     s2 = i
-    s3 : [25]
-    s3 = rw_main__dispatch (s0 # s1) s2
+    s3 : [8]
+    s3 = drop`{1} s0
+    s4 : [25]
+    s4 = if ~ ((take`{1} s0) @ 0) then (rw_main_dev s3 s2) else (rw_main_dev s2 0x00)
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [8]

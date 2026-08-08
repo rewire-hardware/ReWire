@@ -1,72 +1,15 @@
---| state dispatch for process main: 0=$x2
-main.$dispatch : ([16]) -> [20]
-main.$dispatch i =
-      main.$x2 i
-
---| block '$L.$x2' of process main (state 0)
-main.$x2 : ([16]) -> [20]
-main.$x2 $x =
-      main.iter$W16$W16W4$sMain_go $x
-
---| block '$L.ReWire.Monad.iter$W16$W16W4$sMain_go' of process main
-main.iter$W16$W16W4$sMain_go : ([16]) -> [20]
-main.iter$W16$W16W4$sMain_go i =
-      let $a = Main.go i in
-      $a
-
-Main.crysub : ([16]) -> [16]
-Main.crysub $eta0 =
-      cry$bytemap$16_16 $eta0
-
-Main.cryflip16 : ([16]) -> [16]
-Main.cryflip16 $eta0 =
-      cry$flipHalves$16_16 $eta0
-
-Main.cryflip4 : ([4]) -> [4]
-Main.cryflip4 $eta0 =
-      cry$flipHalves$4_4 $eta0
-
-Main.cryxor : ([16]) -> [4]
-Main.cryxor $eta0 =
-      cry$xorWord$16_4 $eta0
-
-Main.go : ([16]) -> [20]
-Main.go x =
-      Main.cryflip16 (Main.crysub x) # Main.cryflip4 (Main.cryxor x)
-
 cry$bytemap$16_16.subst$1 : ([4]) -> [4]
 cry$bytemap$16_16.subst$1 i$0 =
       (shl 64'he4d12fb83a6c5907 (mul (zext 6 i$0) 6'h4))[60 +: 4]
-
---| cryptol cry/crysbox.cry::bytemap at [16] -> [16]
-cry$bytemap$16_16 : ([16]) -> [16]
-cry$bytemap$16_16 x$0 =
-      cry$bytemap$16_16.subst$1 x$0[12 +: 4] # cry$bytemap$16_16.subst$1 x$0[8 +: 4] # cry$bytemap$16_16.subst$1 x$0[4 +: 4] # cry$bytemap$16_16.subst$1 x$0[0 +: 4]
-
---| cryptol cry/crysbox.cry::flipHalves at [16] -> [16]
-cry$flipHalves$16_16 : ([16]) -> [16]
-cry$flipHalves$16_16 x$0 =
-      x$0[0 +: 8] # x$0[8 +: 8]
-
---| cryptol cry/crysbox.cry::flipHalves at [4] -> [4]
-cry$flipHalves$4_4 : ([4]) -> [4]
-cry$flipHalves$4_4 x$0 =
-      x$0[0 +: 2] # x$0[2 +: 2]
-
-cry$xorWord$16_4.xorAll$0 : ([16]) -> [4]
-cry$xorWord$16_4.xorAll$0 xs$0 =
-      xor (xor (xor (xor 4'h0 xs$0[12 +: 4]) xs$0[8 +: 4]) xs$0[4 +: 4]) xs$0[0 +: 4]
-
---| cryptol cry/crysbox.cry::xorWord at [16] -> [4]
-cry$xorWord$16_4 : ([16]) -> [4]
-cry$xorWord$16_4 x$0 =
-      cry$xorWord$16_4.xorAll$0 x$0
 
 device top_level
       input __in0 : [16]
       output __out0 : [16]
       output __out1 : [4]
       tag $x2 = 0
-      let $res = main.$dispatch __in0
+      let $res = let $a$i2 = (let $eta0$i0 = cry$bytemap$16_16.subst$1 __in0[12 +: 4] # cry$bytemap$16_16.subst$1 __in0[8 +: 4] # cry$bytemap$16_16.subst$1 __in0[4 +: 4] # cry$bytemap$16_16.subst$1 __in0[0 +: 4] in
+            $eta0$i0[0 +: 8] # $eta0$i0[8 +: 8]) # (let $eta0$i1 = xor (xor (xor (xor 4'h0 __in0[12 +: 4]) __in0[8 +: 4]) __in0[4 +: 4]) __in0[0 +: 4] in
+            $eta0$i1[0 +: 2] # $eta0$i1[2 +: 2]) in
+            $a$i2
       __out0 := $res[4 +: 16]
       __out1 := $res[0 +: 4]

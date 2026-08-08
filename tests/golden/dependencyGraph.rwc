@@ -1,85 +1,36 @@
---| state dispatch for process main: 0=$x2
-main.$dispatch : ([30], [10]) -> [46]
-main.$dispatch disc i =
-      main.$x2 i disc
-
---| block '$L.$x2' of process main (state 0)
-main.$x2 : ([10], [30]) -> [46]
-main.$x2 $x s0 =
-      main.iterSt$Input$V2MyState$Output$sMain_loop $x s0
-
---| block '$L._unused2' of process main
-main._unused2 : ([16], [30]) -> [46]
-main._unused2 o s0 =
-      o # s0
-
---| block '$L.arm' of process main
-main.arm : ([16], [30], [30]) -> [46]
-main.arm o s s0 =
-      main._unused2 o s
-
---| block '$L.$ds2' of process main
-main.$ds2 : ([46], [30]) -> [46]
-main.$ds2 $ds s0 =
-      let o = $ds[30 +: 16] in
-      let s = $ds[0 +: 30] in
-      main.arm o s s0
-
---| block '$L.x' of process main
-main.x : ([10], [30], [30]) -> [46]
-main.x i x s0 =
-      let $a = Main.loop i x in
-      main.$ds2 $a s0
-
---| block '$L.ReWire.Monad.iterSt$Input$V2MyState$Output$sMain_loop' of process main
-main.iterSt$Input$V2MyState$Output$sMain_loop : ([10], [30]) -> [46]
-main.iterSt$Input$V2MyState$Output$sMain_loop i s0 =
-      main.x i s0 s0
-
-Main.inputToMyState : ([10], [15]) -> [15]
-Main.inputToMyState $ds $ds1 =
-      if eq $ds[8 +: 2] 2'h0 then (let w4 = $ds[0 +: 4] in
-            let b = $ds1[14 +: 1] in
-            b # 1'h1 # w4 # 5'h0 # w4)
-            else if eq $ds[8 +: 2] 2'h1 then (let w8 = $ds[0 +: 8] in
-            let b = $ds1[14 +: 1] in
-            let w4 = $ds1[9 +: 5] in
-            b # w4 # 1'h1 # w8) else let $ds2 = $ds[0 +: 1] in
-            if not $ds2 then (let w8 = $ds1[0 +: 9] in
-                  6'h0 # w8)
-                  else let $ds5 = $ds1[0 +: 9] in
-                  if not $ds1[13 +: 1] then 6'h20 # $ds5
-                        else let w4 = $ds1[9 +: 4] in
-                        11'h400 # w4
-
-Main.myStateToOutput : ([15]) -> [16]
-Main.myStateToOutput $ds =
-      let $ds1 = $ds[14 +: 1] in
-      let mw4 = $ds[9 +: 5] in
-      let $ds2 = $ds[0 +: 9] in
-      if not $ds1 then 7'h0 # $ds2
-            else if not $ds[8 +: 1] then (let w4 = $ds[0 +: 4] in
-            2'h3 # mw4 # 5'h0 # w4) else let w8 = $ds[0 +: 8] in
-            2'h1 # mw4 # 1'h1 # w8
-
-Main.incrPipeline : ([45]) -> [45]
-Main.incrPipeline $ds =
-      let s = $ds[30 +: 15] in
-      let ps = $ds[0 +: 30] in
-      s # $ds[15 +: 15] # trunc 15 (lshr ps 128'h0)
-
-Main.loop : ([10], [30]) -> [46]
-Main.loop i s =
-      let $ds = Main.incrPipeline (Main.inputToMyState i s[15 +: 15] # s) in
-      Main.myStateToOutput (let out = $ds[0 +: 15] in
-      out) # (let s' = $ds[15 +: 30] in
-      s')
-
 device top_level
       input __in0 : [10]
       output __out0 : [16]
       register __st0 : [30] init 30'h0
       tag $x2 = 0
-      let $res = main.$dispatch __st0 __in0
+      let $res = let $a$i22 = (let $ds$i13 = (let $ds$i10 = (if eq __in0[8 +: 2] 2'h0 then (let w4$i1 = __in0[0 +: 4] in
+                  let b$i2 = __st0[29 +: 1] in
+                  b$i2 # 1'h1 # w4$i1 # 5'h0 # w4$i1)
+                  else if eq __in0[8 +: 2] 2'h1 then (let w8$i3 = __in0[0 +: 8] in
+                  let b$i4 = __st0[29 +: 1] in
+                  let w4$i5 = __st0[24 +: 5] in
+                  b$i4 # w4$i5 # 1'h1 # w8$i3) else let $ds2$i6 = __in0[0 +: 1] in
+                  if not $ds2$i6 then (let w8$i7 = __st0[15 +: 9] in
+                        6'h0 # w8$i7)
+                        else let $ds5$i8 = __st0[15 +: 9] in
+                        if not __st0[28 +: 1] then 6'h20 # $ds5$i8
+                              else let w4$i9 = __st0[24 +: 4] in
+                              11'h400 # w4$i9) # __st0 in
+            let s$i11 = $ds$i10[30 +: 15] in
+            let ps$i12 = $ds$i10[0 +: 30] in
+            s$i11 # $ds$i10[15 +: 15] # trunc 15 (lshr ps$i12 128'h0)) in
+            (let $ds$i15 = (let out$i14 = $ds$i13[0 +: 15] in
+            out$i14) in
+            let $ds1$i16 = $ds$i15[14 +: 1] in
+            let mw4$i17 = $ds$i15[9 +: 5] in
+            let $ds2$i18 = $ds$i15[0 +: 9] in
+            if not $ds1$i16 then 7'h0 # $ds2$i18
+                  else if not $ds$i15[8 +: 1] then (let w4$i19 = $ds$i15[0 +: 4] in
+                  2'h3 # mw4$i17 # 5'h0 # w4$i19) else let w8$i20 = $ds$i15[0 +: 8] in
+                  2'h1 # mw4$i17 # 1'h1 # w8$i20) # (let s'$i21 = $ds$i13[15 +: 30] in
+            s'$i21)) in
+            let o$i23 = $a$i22[30 +: 16] in
+            let s$i24 = $a$i22[0 +: 30] in
+            o$i23 # s$i24
       __out0 := $res[30 +: 16]
       next __st0 := $res[0 +: 30]

@@ -1,31 +1,7 @@
---| state dispatch for process main: 0=$x2
-main.$dispatch : ([7]) -> [5]
-main.$dispatch i =
-      main.$x2 i
-
---| block '$L.$x2' of process main (state 0)
-main.$x2 : ([7]) -> [5]
-main.$x2 $x =
-      main.loop $x
-
---| block '$L.$x3' of process main
-main.$x3 : ([5]) -> [5]
-main.$x3 $x =
-      $x
-
---| block '$L.Main.loop' of process main
-main.loop : ([7]) -> [5]
-main.loop i =
-      let $a = Main.compute i in
-      main.$x3 $a
-
-Main.compute : ([7]) -> [5]
-Main.compute n =
-      trunc 5 (umod (add (zext 128 (trunc 5 (umod n 7'h14))) 128'h6) 128'h14)
-
 device top_level
       input __in0 : [7]
       output __out0 : [5]
       tag $x2 = 0
-      let $res = main.$dispatch __in0
+      let $res = let $a$i0 = trunc 5 (umod (add (zext 128 (trunc 5 (umod __in0 7'h14))) 128'h6) 128'h14) in
+            $a$i0
       __out0 := $res

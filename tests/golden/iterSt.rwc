@@ -1,51 +1,12 @@
---| state dispatch for process main: 0=$x2
-main.$dispatch : ([1], [1]) -> [2]
-main.$dispatch disc i =
-      main.$x2 i disc
-
---| block '$L.$x2' of process main (state 0)
-main.$x2 : ([1], [1]) -> [2]
-main.$x2 $x s0 =
-      main.iterSt$Bool$Bool$Bool$sMain_f $x s0
-
---| block '$L._unused2' of process main
-main._unused2 : ([1], [1]) -> [2]
-main._unused2 o s0 =
-      o # s0
-
---| block '$L.arm' of process main
-main.arm : ([1], [1], [1]) -> [2]
-main.arm o s s0 =
-      main._unused2 o s
-
---| block '$L.$ds2' of process main
-main.$ds2 : ([2], [1]) -> [2]
-main.$ds2 $ds s0 =
-      let o = $ds[1 +: 1] in
-      let s = $ds[0 +: 1] in
-      main.arm o s s0
-
---| block '$L.x' of process main
-main.x : ([1], [1], [1]) -> [2]
-main.x i x s0 =
-      let $a = Main.f i x in
-      main.$ds2 $a s0
-
---| block '$L.ReWire.Monad.iterSt$Bool$Bool$Bool$sMain_f' of process main
-main.iterSt$Bool$Bool$Bool$sMain_f : ([1], [1]) -> [2]
-main.iterSt$Bool$Bool$Bool$sMain_f i s0 =
-      main.x i s0 s0
-
-Main.f : ([1], [1]) -> [2]
-Main.f i s =
-      (let $t1 = xor s i in
-      $t1) # s
-
 device top_level
       input __in0 : [1]
       output __out0 : [1]
       register __st0 : [1] init 1'h0
       tag $x2 = 0
-      let $res = main.$dispatch __st0 __in0
+      let $res = let $a$i1 = (let $t1$i0 = xor __st0 __in0 in
+            $t1$i0) # __st0 in
+            let o$i2 = $a$i1[1 +: 1] in
+            let s$i3 = $a$i1[0 +: 1] in
+            o$i2 # s$i3
       __out0 := $res[1 +: 1]
       next __st0 := $res[0 +: 1]
