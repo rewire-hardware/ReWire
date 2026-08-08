@@ -96,9 +96,10 @@
 * New `rwc --certify` flag: emit a per-compilation, machine-checked proof
   that the compiled device implements its source state machine. Alongside
   the output it writes the machine-level Eidos IR (`<out>.eir`) and the
-  final Hyle IR (`<out>.certify.rwc`), runs the formally verified
-  validator (`rwv-cstep-validate`, built from the Lean development in
-  `verify/`) on the pair, and prints a one-line `VALIDATED` verdict --
+  final Hyle IR (`<out>.rwc`, byte-identical to `--core` output), runs
+  the formally verified validator (`rwv-cstep-validate`, built from the
+  Lean development in `verify/`) on the pair, and prints a one-line
+  `VALIDATED` verdict --
   backed by a Lean-kernel-checked theorem covering cycle-for-cycle
   agreement, spliced Cryptol FFI code, extern models, and (universally,
   over all implementations) combinational externs -- or a warning (fatal

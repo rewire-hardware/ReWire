@@ -10,17 +10,23 @@ was produced from.
 
 On any compilation from Haskell source to a device target (Verilog, VHDL,
 Cryptol, or `--core`), `--certify` writes two artifacts beside the output
-(for `-o dir/x.sv`: `dir/x.eir` and `dir/x.certify.rwc`):
+(for `-o dir/x.sv`: `dir/x.eir` and `dir/x.rwc`; with no `-o`, beside the
+source file, overwriting any existing `<src>.rwc` — which is harmless when
+that file came from `--core` with the same flags, since the bytes agree):
 
 - **`<out>.eir`** — the machine-mode Eidos IR after the block-graph
   cleanup (pass 8), exactly the file `--eidos` writes; its semantics is
   doc/eidos.md §7.5.
-- **`<out>.certify.rwc`** — the final, fully inlined Hyle program (after
-  the Hyle optimize and inline passes, 10–11). Every device target
-  consumes this same program — the HDL and Cryptol backends, the
-  interpreter, and the `.rwc` that `--core` emits — so the certified
-  program is always exactly the consumed one; its semantics is
-  doc/hyle.md §6.
+- **`<out>.rwc`** — the final, fully inlined Hyle program (after the
+  Hyle optimize and inline passes, 10–11), byte-identical to the `.rwc`
+  that `--core` emits. Every device target consumes this same program —
+  the HDL and Cryptol backends, the interpreter, and `--core` — so the
+  certified program is always exactly the consumed one; its semantics
+  is doc/hyle.md §6.
+
+(If an HDL or Cryptol output is explicitly named `-o *.rwc`, the artifact
+would land on the requested output file; rwc warns and skips certification
+rather than overwrite it.)
 
 It then invokes the validator `rwv-cstep-validate` on the pair and
 surfaces the verdict:
@@ -31,7 +37,7 @@ surfaces the verdict:
   or a missing validator binary — is a warning (so `-Werror` makes it
   fatal); certification never passes silently. The artifacts are left in
   place for rerunning the validator by hand:
-  `rwv-cstep-validate <out>.eir <out>.certify.rwc [-v]`.
+  `rwv-cstep-validate <out>.eir <out>.rwc [-v]`.
 
 `--interpret` and `--from-core` have nothing to certify (no device
 output, and no Eidos IR, respectively) and warn.
@@ -69,10 +75,12 @@ Eidos-to-Hyle fold (pass 9) and the Hyle-level optimization and inlining
 Eidos front half, procification) and the HDL backends after Hyle are not
 covered; the cosimulation legs of rwc-test remain the check on those.
 
-Scope: the extern-free fragment. Devices with device instances (clocked
-externs) or extern calls (including Cryptol foreign functions) are
-outside the validated fragment; `--certify` warns rather than claiming a
-verdict for them.
+Scope: everything except clocked externs. Combinational extern calls are
+covered universally — VALIDATED quantifies over all implementations of
+the extern — and extern models and spliced Cryptol foreign functions are
+covered like ordinary definitions. Devices with device instances (clocked
+externs) are outside the validated fragment; `--certify` warns rather
+than claiming a verdict for them.
 
 ## Building and locating the validator
 
@@ -89,5 +97,5 @@ PATH, and `verify/.lake/build/bin` relative to the current directory
 (the in-checkout build location).
 
 The rwc-test "certify" group runs `--certify` end-to-end over a
-representative subset of the golden tests (plus the extern tests, which
-must warn); it is skipped when the validator binary is not found.
+representative subset of the golden tests (plus the clocked-extern test,
+which must warn); it is skipped when the validator binary is not found.

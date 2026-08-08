@@ -89,16 +89,8 @@ compileFile conf filename = do
                         Cryptol   -> do
                               HyleCry.compileProgram conf p >>= writeOutput
                               certifyOutput p
-                        -- The .rwc output only carries source locators
-                        -- ('--@' lines) under --locators (and not under
-                        -- --no-locators, which wins): spans can embed
-                        -- absolute paths, which would destabilize golden
-                        -- files. Doc ('--|') and 'tag' lines are path-free
-                        -- and not gated.
                         RWCore    -> do
-                              if conf^.locators && not (conf^.noLocators)
-                                    then writeOutput p
-                                    else writeOutput $ scrubSpans p
+                              writeOutputText $ renderCore p
                               certifyOutput p
                         Interpret -> do
                               ips  <- loadInputs
@@ -137,26 +129,50 @@ compileFile conf filename = do
                   liftIO $ T.writeFile tbout $ (if conf^.Config.pretty then prettyPrint else fastPrint) $ gen ips
 
             writeOutput :: (MonadError AstError m, MonadIO m, Pretty a) => a -> m ()
-            writeOutput a = do
+            writeOutput = writeOutputText . (if conf^.Config.pretty then prettyPrint else fastPrint)
+
+            writeOutputText :: (MonadError AstError m, MonadIO m) => Text -> m ()
+            writeOutputText txt = do
                   let fout = getOutFile conf filename
                   verb $ "Writing to file: " <> pack fout
-                  liftIO $ T.writeFile fout $ if conf^.Config.pretty then prettyPrint a else fastPrint a
+                  liftIO $ T.writeFile fout txt
+
+            -- | The rendered .rwc text, shared by the RWCore target and the
+            --   --certify artifact so the two outputs are byte-identical.
+            --   It only carries source locators ('--@' lines) under
+            --   --locators (and not under --no-locators, which wins): spans
+            --   can embed absolute paths, which would destabilize golden
+            --   files. Doc ('--|') and 'tag' lines are path-free and not
+            --   gated.
+            renderCore :: Program -> Text
+            renderCore p
+                  | conf^.locators && not (conf^.noLocators) = render p
+                  | otherwise                                = render $ scrubSpans p
+                  where render :: Program -> Text
+                        render = if conf^.Config.pretty then prettyPrint else fastPrint
 
             -- | --certify: write the certified pair beside the output --
             --   the machine-mode Eidos IR (<out>.eir, the --eidos dump,
             --   written by ReWire.ModCache) and the final backend-consumed
-            --   Hyle program (<out>.certify.rwc) -- run the verified
-            --   validator on it, and surface the verdict: a one-line
-            --   confirmation on VALIDATED, otherwise a warning (fatal
-            --   under -Werror), never a silent pass. See doc/certify.md.
+            --   Hyle program (<out>.rwc, byte-identical to the --core
+            --   output) -- run the verified validator on it, and surface
+            --   the verdict: a one-line confirmation on VALIDATED,
+            --   otherwise a warning (fatal under -Werror), never a silent
+            --   pass. See doc/certify.md.
             certifyOutput :: (MonadError AstError m, MonadIO m) => Program -> m ()
             certifyOutput p11 = when (conf^.Config.certify) $ case conf^.source of
+                  -- The artifact shares the --core output naming, so an
+                  -- HDL/Cryptol output explicitly named *.rwc (-o) would
+                  -- collide with it; refuse rather than clobber the
+                  -- requested output. (For the RWCore target the collision
+                  -- is the point: the same bytes are written either way.)
+                  Haskell | conf^.target /= RWCore && rwcFile == getOutFile conf filename ->
+                        warnAt conf (filePath filename)
+                              $ "certify: not validated: the certify artifact (" <> pack rwcFile
+                              <> ") would overwrite the requested output file; pass a different -o to certify this compilation."
                   Haskell -> do
-                        let fout    = fromMaybe filename $ conf^.Config.outFile
-                            eirFile = fout -<.> "eir"
-                            rwcFile = fout -<.> "certify.rwc"
                         verb $ "certify: writing the final (backend-consumed) Hyle IR to file: " <> pack rwcFile
-                        liftIO $ T.writeFile rwcFile $ prettyPrint p11
+                        liftIO $ T.writeFile rwcFile $ renderCore p11
                         liftIO findRwv >>= \ case
                               Nothing  -> warnAt conf (filePath filename) $ "certify: not validated: the validator (" <> pack rwvExe
                                     <> ") was not found next to rwc, on the PATH, or in verify/.lake/build/bin; build it with"
@@ -177,7 +193,11 @@ compileFile conf filename = do
                   -- Under --from-core the Eidos pipeline never runs, so
                   -- there is no machine IR to validate against.
                   _       -> warnAt conf noAnn "certify: not validated: nothing to certify (certification requires compiling from Haskell source; no Eidos IR exists under --from-core)."
-                  where lastLine :: String -> String -> Text
+                  where fout    = fromMaybe filename $ conf^.Config.outFile
+                        eirFile = fout -<.> "eir"
+                        rwcFile = fout -<.> "rwc"
+
+                        lastLine :: String -> String -> Text
                         lastLine out err = maybe "(no output)" pack
                               $ lastMaybe (filter (not . null) $ lines out) <|> lastMaybe (filter (not . null) $ lines err)
 
