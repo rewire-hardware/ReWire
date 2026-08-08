@@ -65,7 +65,7 @@ threads (defaulted empty) through `NF.eval`, `evalExp`, `mkFn`,
 `FImplements`, `EnvCorr`, and every denotation lemma in this file. The
 symbolic evaluator takes the program's extern table `X : Sem.XEnv` and
 BUILDS the node exactly where `evalExp` would consult `E` (model-less,
-generic-free; a model-carrying xcall stays out of scope), so the strong
+generic-free), so the strong
 soundness statements survive verbatim: the model-less extern reading is
 total (the width clamp included), so `symExp` success still forces
 `evalExp` success — both sides are literally `Sem.xapply` of the same
@@ -82,6 +82,16 @@ decidable gate under which a denotation cannot consult `E` at all
 (`xcallFree_eval`) — what downstream compilation uses to keep
 denotations pinned at the empty environment (spliced Cryptol
 definitions) valid at every environment.
+
+STAGE C (the model-carrying extern row): a MODEL-CARRYING xcall (an
+X-hit) reads in `evalExp` as a call to its model definition through
+`F` — ignoring the generics and the declared width, exactly the
+committed semantics — so `symExp` INLINES the model definition's body
+the way it inlines a `.call` (fuel-decremented, params zipped), and
+`symExp_sound`'s xcall case gains a sub-case that is its call case
+verbatim keyed through `X`. The compiled forms this arm produces
+contain no xcall node for the extern itself (the model body is
+spliced), so the `xcallFree` discipline downstream is unchanged.
 -/
 import Rwv.Hyle.Syntax
 import Rwv.Hyle.Semantics
@@ -175,8 +185,10 @@ def opArity : Op → Nat
 (var: environment lookup; let: bind the rhs normal form; call: inline
 the callee's body through the definition map, arity-checked; xcall:
 a MODEL-LESS generic-free extern call builds the uninterpreted node
-over the packed arguments, a model-carrying one is out of scope —
-the extern table `X` decides which, exactly as it does in `evalExp`;
+over the packed arguments, a MODEL-CARRYING one inlines its model
+definition like a call (`evalExp`'s model path ignores the generics
+and the declared width) — the extern table `X` decides which,
+exactly as it does in `evalExp`;
 ite/cat/slice/prim: structural, prim arity-checked so the total
 denotation's default is unreachable). Every recursion consumes fuel,
 so the definition is structural in `fuel`. -/
@@ -212,7 +224,16 @@ def symExp (dmap : HashMap String Defn) (X : Sem.XEnv) :
     | .xcall w ext gs args => do
         let ns ← args.mapM (symExp dmap X fuel ρ)
         match X.get? ext with
-        | some _ => .error s!"extern {ext} has a model: the model-carrying validator row is out of scope"
+        | some model =>
+            -- The model-carrying extern call reads exactly like a call
+            -- to its model definition (`evalExp`'s model path ignores
+            -- the generics and the declared width): inline it.
+            (match dmap.get? model with
+            | none => .error s!"extern {ext}: unknown model {model}"
+            | some d =>
+                if ns.length = d.params.length then
+                  symExp dmap X fuel (HashMap.ofList (d.params.zip ns)) d.body
+                else .error s!"extern {ext}: model arity mismatch")
         | none =>
             if gs.isEmpty then .ok (.xcall w ext (.xpack ns))
             else .error s!"extern {ext}: generic model-less externs are out of scope"
@@ -890,7 +911,23 @@ theorem symExp_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F : Sem.FEnv}
             mapM_attach_erase (fun a => evalExp F X ρ' a E) args
           rw [hattach, hmapM, except_bind_ok]
           cases hx : X.get? ext with
-          | some m => rw [hx] at hs; exact absurd hs (by simp)
+          | some model =>
+              rw [hx] at hs
+              dsimp only at hs
+              cases hd : dmap.get? model with
+              | none => rw [hd] at hs; exact absurd hs (by simp)
+              | some d =>
+                  rw [hd] at hs
+                  dsimp only at hs
+                  split at hs
+                  · rename_i hlen
+                    obtain ⟨fn, hfn, hspec⟩ := hImpl model d hd
+                    simp only [hfn]
+                    rw [hspec (ns.map (NF.eval σ E))]
+                    simp only [mkFn]
+                    rw [if_pos (by simp [hlen])]
+                    exact ih d.body _ _ nf (envCorr_zip d.params ns) hs
+                  · exact absurd hs (by simp)
           | none =>
               rw [hx] at hs
               dsimp only at hs
@@ -2343,7 +2380,20 @@ theorem symExp_varsWF {dmap : HashMap String Defn} {X : Sem.XEnv} {P : String �
           have hall : ∀ n ∈ ns, n.VarsWF P :=
             mapM_ok_forall hns (fun a _ n hn => ih a ρ n hρ hn)
           cases hx : X.get? ext with
-          | some m => rw [hx] at hs; exact absurd hs (by simp)
+          | some model =>
+              rw [hx] at hs
+              dsimp only at hs
+              cases hd : dmap.get? model with
+              | none => rw [hd] at hs; exact absurd hs (by simp)
+              | some d =>
+                  rw [hd] at hs
+                  dsimp only at hs
+                  split at hs
+                  · refine ih d.body _ nf ?_ hs
+                    intro x n hx'
+                    have hpair := ofList_get?_some hx'
+                    exact hall n (List.of_mem_zip hpair).2
+                  · exact absurd hs (by simp)
           | none =>
               rw [hx] at hs
               dsimp only at hs

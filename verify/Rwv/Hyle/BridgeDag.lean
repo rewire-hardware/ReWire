@@ -43,7 +43,12 @@ equality. The renormalizer passes the node through, renormalizing only
 the packed child, mirroring `cfoldW`. `xcallFreeIdx` is the store-side
 `NF.xcallFree` (guard-else branches answer `true`, matching `read`'s
 empty-literal reading), certified by `xcallFreeIdx_read` — the gate the
-Cryptol splice-inlining mirror consumes.
+Cryptol splice-inlining mirror consumes. TRAP: `xcallFreeIdx`'s bare
+recursion tree-unfolds the store's sharing (exponential on the SHA-256
+splices — it was sha256ffi's 300s "timeout"); executable gates must use
+the memoized `xcallFreeM` (one bottom-up table pass, `xcallFreeTab`),
+which is pointwise EQUAL to it (`xcallFreeM_eq`), so proofs stay
+stated against the spec form.
 
 Per house style, the `Except`/`HashMap.ofList` helpers private to
 Bridge are re-proved locally.
