@@ -565,6 +565,13 @@ compileExp xenv = go
                         (M.SLe   , [a, b], _) -> pure' $ V.LtEq (Signed a) (Signed b)
                         (M.SGt   , [a, b], _) -> pure' $ V.Gt (Signed a) (Signed b)
                         (M.SGe   , [a, b], _) -> pure' $ V.GtEq (Signed a) (Signed b)
+                        -- A reduction of a zero-width operand emits the
+                        -- doc/hyle.md (section 5.2) n = 0 identity
+                        -- directly: the operand itself cannot be printed
+                        -- (there are no zero-width Verilog expressions).
+                        (M.RedAnd, [_], [ma]) | M.sizeOf ma == 0 -> pure' $ bvToExp $ ones 1
+                        (M.RedOr , [_], [ma]) | M.sizeOf ma == 0 -> pure' $ bvToExp $ zeros 1
+                        (M.RedXOr, [_], [ma]) | M.sizeOf ma == 0 -> pure' $ bvToExp $ zeros 1
                         (M.RedAnd, [a], _)    -> pure' $ V.RAnd a
                         (M.RedOr , [a], _)    -> pure' $ V.ROr a
                         (M.RedXOr, [a], _)    -> pure' $ V.RXOr a

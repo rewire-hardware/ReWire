@@ -5,13 +5,8 @@ module
   data ReWire.Prelude.Either a b where
     ReWire.Prelude.Left :: (a -> (ReWire.Prelude.Either a b))
     ReWire.Prelude.Right :: (b -> (ReWire.Prelude.Either a b))
-  data R_  where
-  data A_  where
   data Proxy n where
     Proxy :: (Proxy n)
-  data PuRe s o where
-    Done :: ((A_, s) -> (PuRe s o))
-    Pause :: ((o, (R_, s)) -> (PuRe s o))
   type Main.Input  = ((Vec 8 ((ReWire.W 8))), (Vec 8 ((ReWire.W 8))))
   type Main.Output  = ((Vec 8 ((ReWire.W 8))), (Vec 8 ((ReWire.W 8))))
   type ReWire.Bit  = Bool
@@ -123,9 +118,6 @@ module
   {-# INLINE ReWire.extrude #-}
   ReWire.extrude :: ((ReacT i o ((StateT s m)) a) -> (s -> (ReacT i o m a)))
    |-> extrude
-  {-# INLINE ReWire.unfold #-}
-  ReWire.unfold :: ((((R_, s) -> (i -> (PuRe s o)))) -> (((s -> (PuRe s o))) -> (ReacT i o (Identity) ())))
-   |-> unfold
   {-# INLINE ReWire.natVal #-}
   ReWire.natVal :: ((Proxy n) -> Integer)
    |-> natVal
@@ -158,8 +150,6 @@ module
    |-> error "Prim: rwPrimLift"
   rwPrimExtrude :: ((ReacT i o ((StateT s m)) a) -> (s -> (ReacT i o m a)))
   GHC.ReacT (GHC.StateT m) s |-> error "Prim: rwPrimExtrude"
-  rwPrimUnfold :: ((((R_, s) -> (i -> (PuRe s o)))) -> (((s -> (PuRe s o))) -> (ReacT i o (Identity) ())))
-  f s0 |-> error "Prim: rwPrimUnfold"
   rwPrimFinite :: (Integer -> (Finite n))
    |-> error "Prim: rwPrimFinite"
   rwPrimFiniteMinBound :: (Finite n)
@@ -192,12 +182,12 @@ module
    |-> error "Prim: rwPrimVecGenerate"
   rwPrimVecConcat :: ((Vec n a) -> ((Vec m a) -> (Vec ((+ n m)) a)))
    |-> error "Prim: rwPrimVecConcat"
+  bitsAt :: (Integer -> (Vec n Bool))
+   |-> error "Prim: bitsAt"
   rwPrimBits :: (Integer -> (Vec 128 Bool))
    |-> error "Prim: rwPrimBits"
   rwPrimResize :: ((Vec n Bool) -> (Vec m Bool))
   v |-> error "Prim: rwPrimResize"
-  rwPrimSignextend :: ((Vec n Bool) -> (Vec m Bool))
-  v |-> error "Prim: rwPrimSignextend"
   rwPrimNatVal :: ((Proxy n) -> Integer)
    |-> error "Prim: rwPrimNatVal"
   rwPrimBitSlice :: ((Vec n Bool) -> ((Finite n) -> ((Finite n) -> (Vec m Bool))))
@@ -211,9 +201,9 @@ module
   rwPrimMul :: ((Vec n Bool) -> ((Vec n Bool) -> (Vec n Bool)))
   v w |-> error "Prim: rwPrimMul"
   rwPrimDiv :: ((Vec n Bool) -> ((Vec n Bool) -> (Vec n Bool)))
-  v w |-> error "Prim: rwPrimDiv"
+   |-> error "Prim: rwPrimDiv"
   rwPrimMod :: ((Vec n Bool) -> ((Vec n Bool) -> (Vec n Bool)))
-  v w |-> error "Prim: rwPrimMod"
+   |-> error "Prim: rwPrimMod"
   rwPrimPow :: ((Vec n Bool) -> ((Vec n Bool) -> (Vec n Bool)))
   v w |-> error "Prim: rwPrimPow"
   rwPrimLAnd :: ((Vec n Bool) -> ((Vec n Bool) -> Bool))
@@ -262,8 +252,8 @@ module
    |-> error "Prim: rwPrimRXNor"
   rwPrimMSBit :: ((Vec ((+ 1 n)) Bool) -> Bool)
    |-> error "Prim: rwPrimMSBit"
-  rwPrimToInteger :: ((Vec n Bool) -> Integer)
-   |-> error "Prim: rwPrimToInteger"
+  toIntegerV :: ((Vec n Bool) -> Integer)
+   |-> error "Prim: toIntegerV"
   ReWire.Monad.iter :: (((i -> o)) -> (i -> (ReacT i o (Identity) ())))
   f i |-> >>= (signal (f i)) (ReWire.Monad.iter f)
   ReWire.Monad.iterSt :: (((i -> (s -> (o, s)))) -> (i -> (ReacT i o ((StateT s (Identity))) ())))
@@ -450,7 +440,7 @@ module
    |-> msbit
   {-# INLINE ReWire.Bits.toInteger #-}
   ReWire.Bits.toInteger :: ((ReWire.W n) -> Integer)
-   |-> rwPrimToInteger
+   |-> toIntegerV
   {-# INLINE ReWire.Bits.@@ #-}
   ReWire.Bits.@@ :: ((ReWire.W n) -> ((Integer, Integer) -> (ReWire.W m)))
   a (j, i) |-> ReWire.Bits.bitSlice a j i
@@ -464,8 +454,8 @@ module
   ReWire.Bits.resize :: ((ReWire.W n) -> (ReWire.W m))
    |-> resize
   {-# INLINE ReWire.Bits.sext #-}
-  ReWire.Bits.sext :: ((ReWire.W n) -> (ReWire.W m))
-   |-> rwPrimSignextend
+  ReWire.Bits.sext :: ((ReWire.W ((+ 1 n))) -> (ReWire.W ((+ m ((+ 1 n))))))
+  w |-> ++ (replicate (msbit w)) w
   {-# INLINE ReWire.Bits.bitSlice #-}
   ReWire.Bits.bitSlice :: ((ReWire.W n) -> (Integer -> (Integer -> (ReWire.W m))))
   v j i |-> finBitSlice v (finite j) (finite i)

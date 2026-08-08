@@ -18,9 +18,13 @@ one = True
 bit :: W 1 -> Bit
 bit = msbit
 
+-- | The unsigned value of a bit vector, as an Integer. A GHC-only
+--   convenience for simulation and testing: rwc does not compile uses of
+--   this function (Integer is a compile-time-literal-only type in the
+--   compiled fragment).
 {-# INLINE toInteger #-}
 toInteger :: W n -> Integer
-toInteger = rwPrimToInteger
+toInteger = toIntegerV
 
 -- | Project range of bits.
 --   a @@ (j, i) returns bits j (most significant) to i (least significant) from a (j >= i).
@@ -61,10 +65,12 @@ lit i = rwPrimResize (rwPrimBits i :: Lit)
 resize :: KnownNat m => W n -> W m
 resize = rwPrimResize
 
--- | Sign extend bitvector
+-- | Sign-extend a bitvector by @m@ bits (the result width is inferred
+--   from the use site). Compiles to the idiomatic replicated-msb
+--   concatenation.
 {-# INLINE sext #-}
-sext :: KnownNat m => W n -> W m
-sext = rwPrimSignextend
+sext :: KnownNat m => W (1 + n) -> W (m + (1 + n))
+sext w = rwPrimVecReplicate (msbit w) `rwPrimVecConcat` w
 
 {-# INLINE bitSlice #-}
 bitSlice :: (KnownNat n, KnownNat m) => W n -> Integer -> Integer -> W m
@@ -97,12 +103,16 @@ finBitIndex = rwPrimBitIndex
 (*) :: KnownNat n => W n -> W n -> W n
 (*) = rwPrimMul
 
--- | Divide.
+-- | Unsigned division. Division by zero yields all-ones (2^n - 1),
+--   following the SMT-LIB convention (compiled RTL, the interpreter, and
+--   the GHC implementation agree).
 {-# INLINE (/) #-}
 (/) :: KnownNat n => W n -> W n -> W n
 (/) = rwPrimDiv
 
--- | Modulus.
+-- | Unsigned modulus. A zero divisor yields the dividend, following the
+--   SMT-LIB convention (compiled RTL, the interpreter, and the GHC
+--   implementation agree).
 {-# INLINE (%) #-}
 (%) :: KnownNat n => W n -> W n -> W n
 (%) = rwPrimMod

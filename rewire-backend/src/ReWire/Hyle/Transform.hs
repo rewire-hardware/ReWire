@@ -313,6 +313,13 @@ partialEval (Program exts ds dev) = Program exts (map peDefn ds) dev'
                                     -- whenever the divisor is a zero literal.
                                     (UDiv, [_, Lit _ bv]) | nat bv == 0 -> Lit an $ BV.ones $ fromIntegral sz
                                     (UMod, [a, Lit _ bv]) | nat bv == 0 -> a
+                                    -- Reductions of a zero-width operand
+                                    -- fold to the section 5.2 n = 0
+                                    -- identities (the operand cannot be
+                                    -- printed by the RTL backends).
+                                    (RedAnd, [a]) | sizeOf a == 0 -> Lit an $ BV.ones 1
+                                    (RedOr , [a]) | sizeOf a == 0 -> Lit an $ BV.zeros 1
+                                    (RedXOr, [a]) | sizeOf a == 0 -> Lit an $ BV.zeros 1
                                     -- Boolean-mux peephole (1-bit only:
                                     -- Hyle widths are load-bearing).
                                     -- Comparing a 1-bit value to a

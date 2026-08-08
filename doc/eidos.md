@@ -505,8 +505,9 @@ pure fragment:
   constantly `zero` at the result).
 - **Builtins**: per the signature and denotation table of §7.6.
   Higher-order builtin arguments (`rwPrimVecMap`'s function argument: a
-  lambda, or a possibly-partially-applied reference to a definition) are
-  applied semantically, element by element.
+  lambda, a possibly-partially-applied reference to a definition, or a
+  possibly-partially-applied operator builtin) are applied semantically,
+  element by element.
 - **Case**: evaluate the scrutinee; select the first *matching*
   constructor or literal alternative, binding the case binder to the
   scrutinee's value and field binders to its components; the default
@@ -648,15 +649,13 @@ a process or in any definition reachable from one):
 | `rwPrimSignal` | `∀ i o m̂. o → ReacT i o m̂ i` | procify |
 | `rwPrimLift` | `∀ t̂ m̂ a. m̂ a → t̂ m̂ a` | procify |
 | `rwPrimExtrude` | `∀ i o s m̂ a. ReacT i o (StateT s m̂) a → s → ReacT i o m̂ a` | procify |
-| `rwPrimUnfold` | `∀ s i o. ((R_, s) → i → PuRe s o) → (s → PuRe s o) → ReacT i o Identity ()` | legacy (the retired purifier's device constructor; not produced by the current pipeline) |
 
 **Foreign mechanisms** (signatures; denotation per §7.5.5):
 
 | builtin | signature | notes |
 |---|---|---|
-| `rwPrimExtern` | `∀ a. [(String, Integer)] → String → String → [(String, Integer)] → [(String, Integer)] → String → a → String → a` | params, clock, reset, ins, outs, module name, model, instance name — all but the model static; becomes an `xcall` (combinational) or an instance (clocked) |
+| `rwPrimExtern` | `∀ a. [(String, Integer)] → String → String → [(String, Integer)] → [(String, Integer)] → String → a → String → a` | params, clock, reset, ins, outs, module name, model, instance name (reserved; currently ignored) — all but the model static; becomes an `xcall` (combinational) or an instance (clocked) |
 | `rwPrimCryptol` | `∀ a. String → String → a → a` | module file and function name static; model-carrying by construction (§7.5.5) |
-| `rwPrimUsingExtern`, `rwPrimVecFoldR`, `rwPrimVecFoldL` | — | reserved enum entries: no user-facing carrier, no lowering; occurrences are rejected (at the Hyle fold — the linter records no signature for them, trusting occurrence types as it also does for `Extern` and `Unfold`) |
 
 **Bit-vector operations** (denotations through `bv`; the result width is
 fixed by the type):
@@ -666,14 +665,11 @@ fixed by the type):
 | `rwPrimAdd` | `∀ n. Vec n Bool → Vec n Bool → Vec n Bool` | as hyle `add`: `⟨x + y⟩ₙ` |
 | `rwPrimSub` | ″ | as hyle `sub` (modular) |
 | `rwPrimMul` | ″ | as hyle `mul` |
-| `rwPrimDiv` | ″ | as hyle `udiv`: y = 0 ⇒ 2ⁿ−1 (SMT-LIB). *The GHC model errors on a zero divisor; the compiled semantics is total.* |
-| `rwPrimMod` | ″ | as hyle `umod`: y = 0 ⇒ x (SMT-LIB). *Same GHC caveat.* |
+| `rwPrimDiv` | ″ | as hyle `udiv`: y = 0 ⇒ 2ⁿ−1 (SMT-LIB) |
+| `rwPrimMod` | ″ | as hyle `umod`: y = 0 ⇒ x (SMT-LIB) |
 
-*(A width caveat on the five rows above: the GHC models of Add, Sub,
-Mul, Div, and Mod compute through the 128-bit `rwPrimBits`, so they
-agree with the compiled semantics only at widths n ≤ 128. Pow, the
-shifts, and the bitwise, comparison, and reduction operations are exact
-at every width.)*
+*(The GHC reference models of every row in this table — including the
+SMT-LIB division-by-zero equations — are exact at every width.)*
 | `rwPrimPow` | ″ | as hyle `pow`: `⟨x^y⟩ₙ`, 0⁰ = 1 |
 | `rwPrimAnd`, `rwPrimOr`, `rwPrimXOr` | ″ | bitwise |
 | `rwPrimXNor` | ″ | `⟨2ⁿ−1⟩ − (x ⊕ y)` (bitwise complement of xor) |
@@ -702,7 +698,7 @@ at every width.)*
 | `rwPrimBits` | `Integer → Vec 128 Bool` | `bv⁻¹₁₂₈(x)` (identity on residues) | |
 | `rwPrimResize` | `∀ m n. Vec n Bool → Vec m Bool` | `bv⁻¹ₘ⟨x⟩ₘ` — truncate (keep low bits) or zero-extend | |
 | `rwPrimNatVal` | `∀ n. Proxy n → Integer` | `⟨n⟩₁₂₈` | |
-| `rwPrimBitSlice` | `∀ m n. Vec n Bool → Finite n → Finite n → Vec m Bool` | bits j…i of x, LSB-numbered (head = bit n−1) | j, i static (`finite` applications of integer literals); j + 1 ≥ i (j = i − 1 is the empty slice); m = j − i + 1, enforced downstream by the Hyle checker |
+| `rwPrimBitSlice` | `∀ m n. Vec n Bool → Finite n → Finite n → Vec m Bool` | bits j…i of x, LSB-numbered (head = bit n−1) | j, i static (`finite` applications of integer literals); j + 1 ≥ i (j = i − 1 is the empty slice); m = j − i + 1, checked at the fold |
 | `rwPrimBitIndex` | `∀ n. Vec n Bool → Finite n → Bool` | bit i of x, LSB-numbered | i static (a `finite` application of an integer literal) |
 | `rwPrimFinite` | `∀ n. Integer → Finite n` | the value itself | static; 0 ≤ value < n |
 | `rwPrimFiniteMinBound` | `∀ n. Finite n` | 0 | n ≥ 1 |
@@ -716,7 +712,7 @@ positions 0-indexed from the head):
 
 | builtin | signature | denotation | static |
 |---|---|---|---|
-| `rwPrimVecFromList` | `∀ n a. [a] → Vec n a` | the elements, in order | the list literal; length n enforced downstream by the Hyle checker |
+| `rwPrimVecFromList` | `∀ n a. [a] → Vec n a` | the elements, in order | the list literal; its length must equal n (checked at the fold) |
 | `rwPrimVecReplicate` | `∀ n a. a → Vec n a` | n copies | |
 | `rwPrimVecReverse` | `∀ n a. Vec n a → Vec n a` | reversal | |
 | `rwPrimVecSlice` | `∀ i n m a. Proxy i → Vec ((i + n) + m) a → Vec n a` | elements i … i+n−1 | |
@@ -727,13 +723,12 @@ positions 0-indexed from the head):
 | `rwPrimVecMap` | `∀ n a b. (a → b) → Vec n a → Vec n b` | elementwise application (7.5.2) | |
 | `rwPrimVecGenerate` | `∀ n a. (Finite n → a) → Vec n a` | `⟨f(0), …, f(n−1)⟩` (function argument as in 7.5.2) | |
 
-Two exports of `RWC.Primitives` are *not* builtins and appear here only
-to disclaim them: `rwPrimSignextend` and `rwPrimToInteger` have no
-`Builtin` constructor, and — because the bridge treats every `rwPrim*`
-name defined in `RWC.Primitives` as a primitive, stubbing its body — an
-occurrence of either is rejected as an unknown primitive. They (and
-`ReWire.Bits.sext`/`toInteger`, which wrap them) are GHC-only
-compatibility exports.
+One user-facing function deserves a disclaimer here: `ReWire.Bits.toInteger`
+is *not* a builtin but a plain GHC-side convenience for simulation and
+testing — `Integer` is a compile-time-literal-only type in the fragment,
+so rwc rejects programs that reach it. (`ReWire.Bits.sext`, by contrast,
+is an ordinary derived definition — replicated-MSB concatenation — and
+compiles like any user code.)
 
 ## 8. Pass discipline
 

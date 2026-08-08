@@ -152,11 +152,6 @@ pad' n v | n Prelude.== 0 = v
          | n Prelude.> 0 = False : pad' (n Prelude.- 1) v
          | otherwise = error "negative padding"
 
-signpad' :: Bool -> Int -> [Bool] -> [Bool]
-signpad' pn n v | n Prelude.== 0 = v
-                | n Prelude.> 0 = pn : signpad' pn (n Prelude.- 1) v
-                | otherwise = error "negative padding"
-
 -- w is bigendian
 padTrunc' :: Int -> [Bool] -> [Bool]
 padTrunc' d w
@@ -181,6 +176,16 @@ fromBool = toInteger . fromEnum
 toInteger' :: Vec n Bool -> Integer
 toInteger' = foldl (\ s x -> fromBool x Prelude.+ 2 Prelude.* s) 0
 
+-- | The unsigned value of a big-endian bit list, as an Integer (exact at
+--   any width, unlike 'toInt'').
+bitsToInteger' :: [Bool] -> Integer
+bitsToInteger' = foldl (\ s x -> fromBool x Prelude.+ 2 Prelude.* s) 0
+
+-- | Materialize an Integer as exactly d bits, big-endian, reducing mod 2^d
+--   (so a negative value takes its d-bit two's-complement form).
+intToBits' :: Int -> Integer -> [Bool]
+intToBits' d x = padTrunc' d $ reverse $ int2bits' $ x `mod` (2 ^ d)
+
 -- w is bigendian
 resize' :: Int -> [Bool] -> [Bool]
 resize' d w | l Prelude.== d = w
@@ -188,13 +193,6 @@ resize' d w | l Prelude.== d = w
             | otherwise = reverse . take d . reverse $ w
        where
          l = length w
-
-signextend :: Int -> [Bool] -> [Bool]
-signextend d w | l Prelude.== d = w
-               | l Prelude.< d  = signpad' (msBit' w) (d Prelude.- l) w
-               | otherwise = reverse . take d . reverse $ w
-           where
-             l = length w
 
 false' :: [Bool] -> Bool
 false' [] = True
@@ -285,14 +283,25 @@ iter' n f w =
   then w
   else iter' (decr' n) f (f w)
 
+-- | The shift amount as an Int, saturated to the word length (the guard
+--   compares in Integer, so amounts too wide for Int cannot wrap).
+shiftAmount' :: [Bool] -> [Bool] -> Int
+shiftAmount' w n
+      | bitsToInteger' n Prelude.>= Prelude.toInteger (length w) = length w
+      | otherwise                                                = Prelude.fromInteger (bitsToInteger' n)
+
 shiftL' :: [Bool] -> [Bool] -> [Bool]
-shiftL' w n = iter' n shiftL1' w
+shiftL' w n = drop k w ++ replicate k False
+      where k = shiftAmount' w n
 
 shiftR' :: [Bool] -> [Bool] -> [Bool]
-shiftR' w n = iter' n shiftR1' w
+shiftR' w n = replicate k False ++ take (length w Prelude.- k) w
+      where k = shiftAmount' w n
 
 arithShiftR' :: [Bool] -> [Bool] -> [Bool]
-arithShiftR' w n = iter' n arithShiftR1' w
+arithShiftR' [] _ = []
+arithShiftR' w n  = replicate k (msBit' w) ++ take (length w Prelude.- k) w
+      where k = shiftAmount' w n
 
 -- For (Unsigned!) Falseomparison:
 -- we assume that the input words are the same length
@@ -305,8 +314,16 @@ padMax' v w =
        LT -> (pad' (length w Prelude.- length v) v , w)
        GT -> (v, pad' (length v Prelude.- length w) w)
 
+-- | Modular exponentiation by squaring over the exponent's bits, so wide
+--   dynamic exponents evaluate in O(width) multiplies instead of
+--   O(value) (the result cycles mod 2^(length w) regardless).
 power' :: [Bool] -> [Bool] -> [Bool]
-power' w n = iter' n (times' w) (resize' (length w) one')
+power' w n = intToBits' l (go 1 (bitsToInteger' w `mod` m) (reverse n))
+      where l = length w
+            m = 2 ^ l
+            go :: Integer -> Integer -> [Bool] -> Integer
+            go acc _ []        = acc
+            go acc sq (b : bs) = go (if b then acc Prelude.* sq `mod` m else acc) (sq Prelude.* sq `mod` m) bs
 
 
 -- assumed positive inputs, n = dividend, d = divisor

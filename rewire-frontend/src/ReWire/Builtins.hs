@@ -23,11 +23,11 @@ import GHC.Generics (Generic (..))
 data Builtin = Error | Extern | Cryptol
              | Bind | Return
              | Put | Get
-             | Signal | Lift | Extrude | Unfold
+             | Signal | Lift | Extrude
              | VecFromList | VecReplicate | VecReverse | VecSlice | VecRSlice
              | VecIndex | VecIndexProxy
              | VecConcat
-             | VecMap | VecFoldR | VecFoldL | VecGenerate
+             | VecMap | VecGenerate
              | Finite | FiniteMinBound | FiniteMaxBound | ToFinite | ToFiniteMod | FromFinite
              | NatVal
              | Bits | Resize | BitSlice | BitIndex
@@ -40,7 +40,6 @@ data Builtin = Error | Extern | Cryptol
              | LNot | Not
              | RAnd | RNAnd | ROr | RNor | RXOr | RXNor
              | MSBit
-             | UsingExtern
       deriving (Eq, Ord, Generic, Show, Typeable, Data, Bounded, Enum)
       deriving TextShow via FromGeneric Builtin
 

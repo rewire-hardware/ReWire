@@ -398,9 +398,5 @@ filterName = leadingTrailingEmpty
                              | otherwise = s
 
 
-isPrimException :: Show a => a -> Bool
-isPrimException a = let s = show a
-      in s == "R_" || s == "A_" || s == "PuRe"
-
 isReWire :: Show a => a -> Bool
-isReWire a = isPrefixOf "ReWire." (show a) || isPrim a && not (isPrimException a)
+isReWire a = isPrefixOf "ReWire." (show a) || isPrim a

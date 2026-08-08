@@ -24,10 +24,12 @@ showHex' = toHex "h"
 toHex :: Text -> BV.BV -> Text
 toHex pre = (pre <>) . pack . flip Num.showHex "" . BV.nat
 
--- | Number of bits needed to encode `n` different values.
+-- | Number of bits needed to encode `n` different values: exact integer
+--   ceil-log2 via clog2(n) = 1 + clog2(ceil(n/2)) (floating-point logBase
+--   mis-rounds near powers of two once n exceeds 2^29 or so).
 nbits :: Natural -> Natural
-nbits 0 = 0
-nbits n = ceiling $ logBase 2 (fromIntegral n :: Double)
+nbits n | n <= 1    = 0
+        | otherwise = 1 + nbits ((n + 1) `div` 2)
 
 -- | Number of bits in the binary representation of `n` (with no leading
 --   zeros).

@@ -15,10 +15,7 @@
 --
 --   A builtin with no recorded signature ('Nothing') has its occurrence
 --   types trusted, as all builtins were before this table existed:
---   'Extern' (its parameter-list type is legacy-shaped), 'Unfold' (its
---   signature mentions the retired purifier's @PuRe@/@R_@ types), and
---   the reserved enum entries ('UsingExtern', 'VecFoldR', 'VecFoldL'),
---   which no pipeline stage produces.
+--   currently only 'Extern' (its parameter-list type is legacy-shaped).
 module ReWire.Eidos.BuiltinSigs (builtinSig, matchesSig) where
 
 import ReWire.Annotation (Annote (MsgAnnote))
@@ -78,7 +75,6 @@ builtinSig = \ case
       Signal          -> Just $ Sig [oS, iS, mM] $ vo --> reacT vi vo vm vi
       Lift            -> Just $ Sig [tT, mM, aS] $ TyApp an vm va --> TyApp an (TyApp an vt vm) va
       Extrude         -> Just $ Sig [iS, oS, sS, mM, aS] $ reacT vi vo (TyApp an (TyApp an (TyCon an "StateT") vs) vm) va --> vs --> reacT vi vo vm va
-      Unfold          -> Nothing
       VecFromList     -> Just $ Sig [nN, aS] $ list va --> vec vn va
       VecReplicate    -> Just $ Sig [nN, aS] $ va --> vec vn va
       VecReverse      -> Just $ Sig [nN, aS] $ vec vn va --> vec vn va
@@ -88,8 +84,6 @@ builtinSig = \ case
       VecIndexProxy   -> Just $ Sig [nN, mN, aS] $ vec (plus (plus vn vm') (TyNat an 1)) va --> proxy vn --> va
       VecConcat       -> Just $ Sig [nN, mN, aS] $ vec vn va --> vec vm' va --> vec (plus vn vm') va
       VecMap          -> Just $ Sig [nN, aS, bS] $ (va --> vb) --> vec vn va --> vec vn vb
-      VecFoldR        -> Nothing
-      VecFoldL        -> Nothing
       VecGenerate     -> Just $ Sig [nN, aS] $ (finite vn --> va) --> vec vn va
       Finite          -> Just $ Sig [nN] $ integer --> finite vn
       FiniteMinBound  -> Just $ Sig [nN] $ finite vn
@@ -131,7 +125,6 @@ builtinSig = \ case
       RXOr            -> redOp
       RXNor           -> redOp
       MSBit           -> redOp
-      UsingExtern     -> Nothing
       where an :: Annote
             an = MsgAnnote "builtin signature"
 
