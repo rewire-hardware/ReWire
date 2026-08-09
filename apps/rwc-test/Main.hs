@@ -426,23 +426,34 @@ getSmokeTests = do
                         withArgs ([fn, "-o", out] <> args) RWC.main
 
 -- | The --certify test group: recompile a representative subset of the golden
---   tests from Haskell source with --certify, requiring the validator's
---   VALIDATED confirmation line on stdout; the extern tests instead require
---   the not-validated warning to fire (the leg must never see a false
---   VALIDATED on an out-of-scope device). Like the HDL checks, the group is
---   gated on its tool being available: when the validator binary is missing
---   (RWC_RWV, then the PATH, then verify/.lake/build/bin in a checkout), a
---   single placeholder test records the skip. The discovered binary is handed
---   to the in-process rwc via RWC_RWV, since the tests cd into the data
---   directory, where rwc's own checkout-relative fallback cannot find it.
+--   tests from Haskell source with --certify (required mode, the default),
+--   requiring the validator's VALIDATED confirmation line on stdout; the
+--   foreign-tier tests (extern instances, model-carrying externs) instead
+--   must FAIL the compilation with an UNSUPPORTED status (the leg must never
+--   see a false VALIDATED on an out-of-scope device), and one warn-mode test
+--   checks that --certify=warn reports the same status without failing. Like
+--   the HDL checks, the group is gated on its tool being available: when the
+--   validator binary is missing (RWC_RWV, then the PATH, then
+--   verify/.lake/build/bin in a checkout), a single placeholder test records
+--   the skip — unless RWC_TEST_REQUIRE_RWV is set (the CI certification
+--   lane), in which case the missing validator is a test failure. The
+--   discovered binary is handed to the in-process rwc via RWC_RWV, since the
+--   tests cd into the data directory.
 getCertifyTests :: IO TestTree
 getCertifyTests = findValidator >>= \ case
-      Nothing  -> pure $ testGroup "certify"
-            [ testCase "certify (skipped: rwv-cstep-validate not found; build it with 'cd verify && lake build rwv-cstep-validate')" $ pure () ]
+      Nothing  -> lookupEnv "RWC_TEST_REQUIRE_RWV" >>= \ case
+            Just _  -> pure $ testGroup "certify"
+                  [ testCase "certify (validator required)" $ assertFailure
+                        "RWC_TEST_REQUIRE_RWV is set but rwv-cstep-validate was not found; build it with 'cd verify && lake build rwv-cstep-validate'" ]
+            Nothing -> pure $ testGroup "certify"
+                  [ testCase "certify (skipped: rwv-cstep-validate not found; build it with 'cd verify && lake build rwv-cstep-validate')" $ pure () ]
       Just exe -> do
             setEnv "RWC_RWV" exe
             dir <- getDataFileName ("tests" </> "golden")
-            pure $ testGroup "certify" $ map (certifyTest dir True) validated <> map (certifyTest dir False) notValidated
+            pure $ testGroup "certify"
+                  $ map (certifyTest dir) validated
+                  <> map (unsupportedTest dir) unsupported
+                  <> [warnModeTest dir "externModel.hs"]
       where -- Representative goldens that must VALIDATE end-to-end (TinyISA is
             -- the big one: the validator takes on the order of two minutes on
             -- its block bodies).
@@ -452,34 +463,61 @@ getCertifyTests = findValidator >>= \ case
                   , "state.hs", "multireg.hs", "records.hs", "subfsm.hs"
                   , "UpCounter1.hs", "wordArith.hs", "PreludeTest.hs"
                   , "Sha256.hs", "zerowidth.hs", "TinyISA.hs"
-                  , "externModel.hs" -- model-carrying externs are in scope
                   ]
 
-            -- Devices outside the validator's scope (device instances):
-            -- rwc must warn rather than claim VALIDATED.
-            notValidated :: [FilePath]
-            notValidated = [ "extern.hs" ]
+            -- Devices outside the certified profile: clocked extern
+            -- instances, and model-carrying externs (whose source-side
+            -- semantics exists only as compiler output). Required-mode
+            -- certification must fail the compilation with UNSUPPORTED,
+            -- never claim VALIDATED.
+            unsupported :: [FilePath]
+            unsupported = [ "extern.hs", "externModel.hs" ]
 
-            certifyTest :: FilePath -> Bool -> FilePath -> TestTree
-            certifyTest dir expectValid file = testCase (takeBaseName file <> " (certify)") $ do
+            -- The tag names the per-test output files: tests over the
+            -- same golden run concurrently and must not share logs or
+            -- artifacts.
+            runCertify :: String -> FilePath -> FilePath -> [String] -> IO (Either ExitCode (), String, String)
+            runCertify tag dir file extraArgs = do
                   let fn   = dir </> file
-                      logF = fn -<.> "out.certify.log"
-                      errF = fn -<.> "out.certify.err"
+                      logF = fn -<.> ("out." <> tag <> ".log")
+                      errF = fn -<.> ("out." <> tag <> ".err")
                   setCurrentDirectory dir
                   r <- withStdoutTo logF $ withStderrTo errF
-                        $ try (withArgs [fn, "--certify", "-o", fn -<.> "out.certify.sv"] RWC.main)
+                        $ try (withArgs ([fn, "-o", fn -<.> ("out." <> tag <> ".sv")] <> extraArgs) RWC.main)
                   outTxt <- readFile logF
                   errTxt <- readFile errF
-                  case (r :: Either ExitCode ()) of
+                  pure (r, outTxt, errTxt)
+
+            certifyTest :: FilePath -> FilePath -> TestTree
+            certifyTest dir file = testCase (takeBaseName file <> " (certify)") $ do
+                  (r, outTxt, errTxt) <- runCertify "certify" dir file ["--certify"]
+                  case r of
                         Left e -> assertFailure $ "rwc --certify exited (" <> show e <> "); stderr:\n" <> errTxt
-                        Right ()
-                              | expectValid -> assertBool ("expected a VALIDATED verdict; stdout:\n" <> outTxt <> "\nstderr:\n" <> errTxt)
-                                    $ "certify: VALIDATED" `isInfixOf` outTxt
-                              | otherwise   -> do
-                                    assertBool ("expected the certify not-validated warning; stderr:\n" <> errTxt)
-                                          $ "ertify: not validated" `isInfixOf` errTxt
-                                    assertBool ("expected no VALIDATED verdict; stdout:\n" <> outTxt)
-                                          $ not ("VALIDATED" `isInfixOf` outTxt)
+                        Right () -> assertBool ("expected a VALIDATED verdict; stdout:\n" <> outTxt <> "\nstderr:\n" <> errTxt)
+                              $ "certify: VALIDATED" `isInfixOf` outTxt
+
+            unsupportedTest :: FilePath -> FilePath -> TestTree
+            unsupportedTest dir file = testCase (takeBaseName file <> " (certify unsupported)") $ do
+                  (r, outTxt, errTxt) <- runCertify "certify" dir file ["--certify"]
+                  case r of
+                        Left _   -> do
+                              assertBool ("expected an UNSUPPORTED status; stderr:\n" <> errTxt)
+                                    $ "UNSUPPORTED" `isInfixOf` errTxt
+                              assertBool ("expected no VALIDATED verdict; stdout:\n" <> outTxt)
+                                    $ not ("VALIDATED" `isInfixOf` outTxt)
+                        Right () -> assertFailure
+                              $ "expected required-mode certification to fail the compilation; stdout:\n" <> outTxt <> "\nstderr:\n" <> errTxt
+
+            warnModeTest :: FilePath -> FilePath -> TestTree
+            warnModeTest dir file = testCase (takeBaseName file <> " (certify=warn)") $ do
+                  (r, outTxt, errTxt) <- runCertify "certify-warn" dir file ["--certify=warn"]
+                  case r of
+                        Left e   -> assertFailure $ "rwc --certify=warn exited (" <> show e <> "); stderr:\n" <> errTxt
+                        Right () -> do
+                              assertBool ("expected the not-validated status line; stderr:\n" <> errTxt)
+                                    $ "certify: not validated" `isInfixOf` errTxt
+                              assertBool ("expected no VALIDATED verdict; stdout:\n" <> outTxt)
+                                    $ not ("VALIDATED" `isInfixOf` outTxt)
 
             -- The validator, as the group gate: RWC_RWV, then the PATH, then
             -- the Lake build directory relative to the initial working

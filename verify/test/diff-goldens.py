@@ -182,6 +182,10 @@ def main():
                     help="cycles of generated stimulus (default: 20)")
     ap.add_argument("--gen", action="store_true",
                     help="always generate stimulus, ignoring committed <base>.input.yaml files")
+    ap.add_argument("--require-lean", action="store_true",
+                    help="fail (exit nonzero) if the Lean side cannot be "
+                         "built or run — for CI, where degrading to "
+                         "Haskell-only silently exercises zero Lean code")
     ap.add_argument("--haskell-only", action="store_true",
                     help="run only the Haskell side (stimulus + reference traces)")
     ap.add_argument("--workdir", default=str(VERIFY / "test" / "out"),
@@ -204,9 +208,14 @@ def main():
     work.mkdir(parents=True, exist_ok=True)
 
     rwc = resolve_rwc(args.rwc)
+    if args.require_lean and args.haskell_only:
+        sys.exit("diff-goldens: --require-lean and --haskell-only are contradictory")
     lean_exe, lean_reason = (None, "--haskell-only") if args.haskell_only \
         else build_lean(args.lean_exe)
     if lean_exe is None and not args.haskell_only:
+        if args.require_lean:
+            sys.exit(f"diff-goldens: Lean side unavailable ({lean_reason}) "
+                     "and --require-lean was given")
         print(f"NOTE: Lean side unavailable ({lean_reason}); "
               "running the Haskell side only.\n", file=sys.stderr)
 

@@ -5,12 +5,16 @@ validator (rwv-cstep-validate, Rwv.Eidos.Cstep).
 For each test with a pass-8 Eidos dump, runs the machine-step
 validator against the FINAL Hyle program (<base>.11.rwc — the
 post-inline program the backends consume; --pass9/--pass10 select the
-earlier dumps), tabulating the headline VALIDATED/REJECTED verdicts
-(the driver prints validateProcE's verdict first). With --measure the
-driver additionally runs its per-label tree-tier measurement loop
-(per-label verdicts, initial-state check) — memory-hungry on the giant
-tests. Dumps are the ones verify/test/hyle-equiv-goldens.py generates
-into verify/test/out-equiv.
+earlier dumps), checking the headline verdict against the test's
+EXPECTED outcome (VALIDATED for the pure corpus; UNSUPPORTED for the
+foreign-tier tests, whose source-side semantics has no independent
+artifact). With --measure the driver additionally runs its per-label
+tree-tier measurement loop (per-label verdicts, initial-state check)
+— memory-hungry on the giant tests. Dumps are the ones
+verify/test/hyle-equiv-goldens.py generates into verify/test/out-equiv.
+
+The harness exits nonzero on any unexpected verdict, crash, timeout,
+missing/ambiguous summary, or when no tests were selected.
 
 Usage:
   verify/test/cstep-goldens.py [--only SUBSTR] [--dumps DIR]
@@ -24,6 +28,24 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 VERIFY = REPO / "verify"
+
+# Expected headline verdict per test; everything else expects VALIDATED.
+# The foreign tier is outside the certified profile: model-carrying
+# externs and Cryptol splices have no independent source-side semantics
+# (only compiler output), and clocked externs have no instance-level
+# proof.
+EXPECTED_UNSUPPORTED = {
+    "extern",       # clocked extern instance
+    "externModel",  # model-carrying combinational externs
+    "cryptolffi", "cryptolffi2", "cryptolffi3", "cryptolffi4",
+    "cryptolffi5", "cryptolffi6", "cryptolffi7", "cryptolffi8",
+    "cryptolffi9",  # Cryptol foreign functions
+    "sha256ffi",    # Cryptol foreign functions
+}
+
+
+def expected(test: str) -> str:
+    return "UNSUPPORTED" if test in EXPECTED_UNSUPPORTED else "VALIDATED"
 
 
 def main():
@@ -54,21 +76,19 @@ def main():
                    key=str.lower)
     if args.only:
         tests = [t for t in tests if args.only in t]
+    if not tests:
+        sys.exit(f"cstep-goldens: no tests selected (dumps: {dumps}, only: '{args.only}')")
 
     total = {}
-    validated = rejected = other = 0
+    validated = rejected = unsupported = other = unexpected = 0
     for t in tests:
         eir = dumps / f"{t}.8.eir"
         rwc = dumps / f"{t}{ext}"
         if not rwc.exists():
-            print(f"{t:<20} (no {ext} dump)")
+            print(f"{t:<20} FAILED (no {ext} dump)")
+            unexpected += 1
             continue
         cmd = [str(exe), str(eir), str(rwc)]
-        raw9 = dumps / f"{t}.9.rwc"
-        if raw9.exists():
-            # the pre-optimization dump still carries every Cryptol
-            # splice (constant-folded ones are gone from the final .rwc)
-            cmd.append(f"--foreign={raw9}")
         if args.measure:
             cmd.append("--measure")
         try:
@@ -79,6 +99,7 @@ def main():
             print(f"{t:<20} TIMEOUT after {args.timeout:.0f}s")
             total["timeout"] = total.get("timeout", 0) + 1
             other += 1
+            unexpected += 1
             continue
         summary = [l for l in r.stdout.splitlines() if l.startswith("summary:")]
         details = [l for l in r.stdout.splitlines()
@@ -88,6 +109,18 @@ def main():
         else:
             err = (r.stderr.strip().splitlines() or r.stdout.strip().splitlines() or ["?"])[-1]
             line = f"FAILED: {err[:120]}"
+        verdict = line.split(" ", 1)[0].split(";", 1)[0]
+        ok = bool(summary) and len(summary) <= 2 and verdict == expected(t)
+        # The verdict and the exit code must agree (0 VALIDATED,
+        # 1 REJECTED, 2 ERROR, 3 UNSUPPORTED; --measure folds the
+        # measurement tallies into a 0/1 exit instead).
+        codes = {"VALIDATED": 0, "REJECTED": 1, "ERROR": 2, "UNSUPPORTED": 3}
+        if ok and not args.measure and r.returncode != codes.get(verdict, -1):
+            line += f" [exit {r.returncode} does not match the verdict]"
+            ok = False
+        if not ok:
+            unexpected += 1
+            line += f"  << expected {expected(t)}"
         print(f"{t:<20} {line}")
         if args.verbose or not summary:
             for d in details:
@@ -96,8 +129,10 @@ def main():
             for d in details[:3]:
                 print(f"    {d}")
         if summary:
-            if line.startswith("VALIDATED"):
+            if verdict == "VALIDATED":
                 validated += 1
+            elif verdict == "UNSUPPORTED":
+                unsupported += 1
             else:
                 rejected += 1
             body = line.split("; ", 1)[1] if "; " in line else ""
@@ -109,9 +144,10 @@ def main():
         else:
             other += 1
 
-    print(f"\ntotals: {validated} validated, {rejected} rejected, {other} failed/timeout; "
+    print(f"\ntotals: {validated} validated, {unsupported} unsupported, "
+          f"{rejected} rejected, {other} failed/timeout, {unexpected} unexpected; "
           + ", ".join(f"{v} {k}" for k, v in sorted(total.items())))
-    sys.exit(0)
+    sys.exit(1 if unexpected else 0)
 
 
 if __name__ == "__main__":

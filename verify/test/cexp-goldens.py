@@ -42,6 +42,8 @@ def main():
     tests = sorted(p.name[:-len(".8.eir")] for p in dumps.glob("*.8.eir"))
     if args.only:
         tests = [t for t in tests if args.only in t]
+    if not tests:
+        sys.exit(f"cexp-goldens: no tests selected (dumps: {dumps}, only: '{args.only}')")
 
     total = {}
     bad = 0
@@ -49,23 +51,33 @@ def main():
         eir = dumps / f"{t}.8.eir"
         rwc = dumps / f"{t}{ext}"
         if not rwc.exists():
-            print(f"{t:<20} (no {ext} dump)")
+            print(f"{t:<20} FAILED (no {ext} dump)")
+            bad += 1
             continue
-        r = subprocess.run([str(exe), str(eir), str(rwc)],
-                           capture_output=True, text=True)
+        try:
+            r = subprocess.run([str(exe), str(eir), str(rwc)],
+                               capture_output=True, text=True, timeout=600.0)
+        except subprocess.TimeoutExpired:
+            print(f"{t:<20} TIMEOUT after 600s")
+            bad += 1
+            continue
         summary = [l for l in r.stdout.splitlines() if l.startswith("summary:")]
         gaps = [l for l in r.stdout.splitlines() if l.startswith(("GAP", "MISMATCH", "OK-W", "OK-DAG"))]
         line = summary[-1] if summary else f"FAILED: {r.stderr.strip().splitlines()[-1:] or r.stdout[-120:]}"
         print(f"{t:<20} {line}")
         for g in gaps:
             print(f"    {g}")
-        if summary:
-            for part in summary[-1].removeprefix("summary: ").split(", "):
-                n, k = part.split(" ", 1)
-                total[k] = total.get(k, 0) + int(n)
+        if not summary:
+            # A crashed or summary-less child is a harness failure, not a skip.
+            bad += 1
+            continue
+        for part in summary[-1].removeprefix("summary: ").split(", "):
+            n, k = part.split(" ", 1)
+            total[k] = total.get(k, 0) + int(n)
         if "mismatch" in line and not line.split("mismatch")[0].rstrip().endswith(" 0"):
             bad += 1
-    print("\ntotals: " + ", ".join(f"{v} {k}" for k, v in total.items()))
+    print("\ntotals: " + ", ".join(f"{v} {k}" for k, v in total.items())
+          + (f"; {bad} failed" if bad else ""))
     sys.exit(1 if bad else 0)
 
 
