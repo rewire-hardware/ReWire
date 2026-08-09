@@ -24,6 +24,21 @@ structure Env where
   defns   : HashMap String Defn
   externs : HashMap String Extern
 
+/-- An assignment-coverage target, typed so quoted names can never
+collide across roles (an output literally named `"next r"` is distinct
+from register `r`'s next-assignment, and an output cannot alias an
+instance-input key). Diagnostics render separately from key identity. -/
+inductive AssignKey where
+  | output (o : String)
+  | next   (r : String)
+  | instIn (i p : String)
+deriving DecidableEq, Hashable
+
+def AssignKey.render : AssignKey → String
+  | .output o => o
+  | .next r => s!"next {r}"
+  | .instIn i p => s!"{i}.{p}"
+
 /-- Names in scope, with their widths. -/
 abbrev Ctx := HashMap String Nat
 
@@ -198,12 +213,12 @@ def checkDevice (env : Env) (dev : Device) : Except String Unit := do
   -- assigned exactly once, at the declared width; outputs are never
   -- readable.
   let mut ctx := ambient
-  let mut assigned : HashSet String := ∅
-  let assignOnce (assigned : HashSet String) (ctx : Ctx) (target : String) (sz : Nat) (e : Exp) :
-      Except String (HashSet String) := do
-    if assigned.contains target then throw s!"{target} is assigned more than once"
+  let mut assigned : HashSet AssignKey := ∅
+  let assignOnce (assigned : HashSet AssignKey) (ctx : Ctx) (target : AssignKey) (sz : Nat) (e : Exp) :
+      Except String (HashSet AssignKey) := do
+    if assigned.contains target then throw s!"{target.render} is assigned more than once"
     let sz' ← checkExp env ctx e
-    if sz ≠ sz' then throw s!"assignment to {target}: width {sz'} (expected {sz})"
+    if sz ≠ sz' then throw s!"assignment to {target.render}: width {sz'} (expected {sz})"
     pure (assigned.insert target)
   for stmt in dev.body do
     match stmt with
@@ -213,11 +228,11 @@ def checkDevice (env : Env) (dev : Device) : Except String Unit := do
     | .sOutput o e =>
         match outsCtx.get? o with
         | none => throw s!"assignment to unknown output: {o}"
-        | some sz => assigned ← assignOnce assigned ctx o sz e
+        | some sz => assigned ← assignOnce assigned ctx (.output o) sz e
     | .sNext r e =>
         match dev.registers.find? (·.name = r) with
         | none => throw s!"next-assignment to unknown register: {r}"
-        | some reg => assigned ← assignOnce assigned ctx s!"next {r}" reg.width e
+        | some reg => assigned ← assignOnce assigned ctx (.next r) reg.width e
     | .sInstIn i p e =>
         match dev.instances.find? (·.name = i) with
         | none => throw s!"assignment to unknown instance: {i}"
@@ -227,17 +242,17 @@ def checkDevice (env : Env) (dev : Device) : Except String Unit := do
             | some ex =>
                 match ex.ins.find? (·.1 = p) with
                 | none => throw s!"instance {i} has no input port {p}"
-                | some (_, sz) => assigned ← assignOnce assigned ctx s!"{i}.{p}" sz e
+                | some (_, sz) => assigned ← assignOnce assigned ctx (.instIn i p) sz e
   for (o, _) in dev.outputs do
-    if ¬ assigned.contains o then throw s!"output {o} is never assigned"
+    if ¬ assigned.contains (.output o) then throw s!"output {o} is never assigned"
   for r in dev.registers do
-    if ¬ assigned.contains s!"next {r.name}" then throw s!"register {r.name} is never assigned"
+    if ¬ assigned.contains (.next r.name) then throw s!"register {r.name} is never assigned"
   for i in dev.instances do
     match env.externs.get? i.ext with
     | none => pure ()
     | some e =>
         for (p, _) in e.ins do
-          if ¬ assigned.contains s!"{i.name}.{p}" then
+          if ¬ assigned.contains (.instIn i.name p) then
             throw s!"instance input {i.name}.{p} is never assigned"
 
 /-- Acyclicity of the call graph, including extern-model edges: a DFS,

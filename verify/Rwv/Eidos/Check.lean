@@ -43,7 +43,13 @@ types are *skipped* — the fold's `emit` filters them out, so they are
 not part of the checked fragment (divergence from the Haskell
 whole-program lint, which checks carriers in poly mode and would
 reject reactive definitions in machine mode; the pipeline's pass-8
-check is `lintProc`, which checks neither).
+check is `lintProc`, which checks neither). "Skipped" is not
+"trusted", though: a builtin-named carrier must be the *canonical
+intrinsic stub* — its body an application headed by the `error`
+builtin, the shape the bridge emits — and a reference from checked
+code (a process, or a checked definition) to any *other* skipped
+definition is rejected, so nothing reachable from the machine ever
+has an unchecked body.
 Skipped definitions still contribute their names to scope and *all*
 their binding sites to the global-uniqueness rule, exactly as in the
 reference. Relatedly, the global-uniqueness rule covers the
@@ -74,12 +80,16 @@ Shape notes (differences forced by the embedding, none semantic):
   fueled (fuel bounds *depth*, generously; exhaustion is an "rwv bug?"
   error, as in Rwv.Hyle.Check), everything else is structural.
 
-Deliberate transcriptions of Haskell quirks (kept for fidelity):
-terminator-case constructor alternatives do not compare field-binder
-types against the constructor's field types (expression-level `case`
-does); terminator-case *literal* alternatives are not
-distinctness-checked (expression-level ones are); `checkTop`'s
-device-type rule is suspended whenever processes are present.
+Three historical Haskell-linter laxities are deliberately *not*
+transcribed (this judgment is strictly stronger than the reference
+there): terminator-case constructor alternatives compare field-binder
+types against the constructor's instantiated field types, exactly as
+expression-level `case` does; terminator-case literal alternatives
+are distinctness-checked, like expression-level ones; and `checkTop`'s
+device-type rule (the root has type `ReacT i o Identity a`) holds
+whether or not processes are present — with processes, `top` names
+the reactive machine-root definition procify consumed, which retains
+exactly that type as skipped residue.
 -/
 import Rwv.Eidos.Types
 import Rwv.Eidos.Value
@@ -347,6 +357,15 @@ structure Env where
   joins : HashMap Int JoinDef
   /-- Joins jumpable from here (tail position of their scopes). -/
   tail  : HashSet Int
+  /-- Names of skipped non-intrinsic (polymorphic/reactive carrier)
+  definitions: their bodies are unchecked, so references from checked
+  code are rejected (the module header's carrier rule). -/
+  unchecked : HashSet Int
+
+/-- A builtin-named signature carrier (the canonical-intrinsic class of
+the skip rule; its body must be the canonical error stub). -/
+def intrinsicDefn (d : Defn) : Bool :=
+  (Parse.lookupBuiltin d.name.occ).isSome
 
 def mkEnv (p : Program) : Env where
   Δ     := DEnv.ofDatas p.datas
@@ -355,6 +374,10 @@ def mkEnv (p : Program) : Env where
   tvs   := ∅
   joins := ∅
   tail  := ∅
+  unchecked := HashSet.ofList
+    ((p.defns.filter fun d =>
+        !intrinsicDefn d && (!d.name.sig.tvs.isEmpty || d.name.sig.ty.reacOrStateT)).map
+      (·.name.uniq))
 
 def bindVar (x : Id) (env : Env) : Env :=
   { env with scope := env.scope.insert x.uniq x }
@@ -536,7 +559,11 @@ def checkOccSig (occ bnd : Id) : Except String Unit := do
 (§4.4). Returns the binder. -/
 def lookupVar (env : Env) (x : Id) : Except String Id :=
   match env.scope.get? x.uniq with
-  | some xB => do checkOccSig x xB; pure xB
+  | some xB => do
+      if env.unchecked.contains x.uniq then
+        throw s!"reference to {x.render}, a polymorphic or reactive carrier definition whose body is outside the checked machine fragment"
+      checkOccSig x xB
+      pure xB
   | none =>
       if env.joins.contains x.uniq then
         throw s!"join point {x.render} used as a value (labels may only be jump targets)"
@@ -932,11 +959,23 @@ where
 named signature carriers (exact builtin-name match, as the Haskell's
 `primNames` membership), polymorphic signatures, and reactive types —
 the definitions the fold's `emit` filters out of the lowered
-fragment. -/
+fragment. Skipping a body does not mean trusting it: intrinsic
+carriers must be the canonical error stub (`checkIntrinsicStub`), and
+references from checked code to the other skipped definitions are
+rejected (`lookupVar`, `enterPure`). -/
 def skipDefn (d : Defn) : Bool :=
-  (Parse.lookupBuiltin d.name.occ).isSome
+  intrinsicDefn d
     || !d.name.sig.tvs.isEmpty
     || d.name.sig.ty.reacOrStateT
+
+/-- A builtin-named carrier is exactly the shape the bridge emits: an
+application spine headed by the `error` builtin (the placeholder the
+fold never lowers). Anything else under a builtin name is a
+declaration masquerading as an intrinsic, not residue. -/
+def checkIntrinsicStub (d : Defn) : Except String Unit :=
+  match (Exp.flattenApp d.body).1 with
+  | .prim _ .error => pure ()
+  | _ => throw s!"builtin-named definition {d.name.render} is not the canonical error stub (its body would be trusted without being checked)"
 
 /-- Parameters match a prefix of the signature's arrow spine; the body
 checks against the remainder. (Non-skipped definitions are
@@ -954,19 +993,19 @@ def checkDefn (env : Env) (d : Defn) : Except String Unit := do
   let rest := (doms.drop d.params.length).foldr Ty.arrow res
   checkAgainst (d.params.foldr bindVar env) expFuel d.body rest
 
-/-- `top` resolves to a definition and its occurrence signature
-matches the binder's. When processes are present the device-type rule
-is suspended: the process is the machine (Lint.hs checkTop). -/
-def checkTop (defns : List Defn) (hasProcs : Bool) (top : Id) :
-    Except String Unit := do
+/-- `top` resolves to a definition, its occurrence signature matches
+the binder's, and it has the device-root type `ReacT i o Identity a`
+— with processes present, `top` names the reactive machine-root
+definition procify consumed, which retains exactly that type as
+skipped residue (module header). -/
+def checkTop (defns : List Defn) (top : Id) : Except String Unit := do
   match defns.find? (fun d => d.name.uniq == top.uniq) with
   | none => throw s!"top: designated device root {top.render} does not name a definition"
   | some d => do
       checkOccSig top d.name
-      unless hasProcs do
-        match Ty.flatten (Ty.natNorm d.name.sig.ty) with
-        | (.con "ReacT", [_, _, .con "Identity", _]) => pure ()
-        | _ => throw s!"the top definition must have type ReacT i o Identity a, not {d.name.sig.ty.render}"
+      match Ty.flatten (Ty.natNorm d.name.sig.ty) with
+      | (.con "ReacT", [_, _, .con "Identity", _]) => pure ()
+      | _ => throw s!"the top definition must have type ReacT i o Identity a, not {d.name.sig.ty.render}"
 
 /-! ## Processes (doc/eidos.md §7.4): the machine rules, per-proc
 (Lint.hs checkProc) -/
@@ -1055,8 +1094,14 @@ def checkTerm (env : Env) (P : PEnv) (fuel : Nat) (t : Term) : Except String Uni
           throw s!"goto {lB.render} supplies {args.length} arguments (its target takes {b.params.length})"
         (args.zip b.params).forM fun (a, p) => checkAgainst (nonTail env) expFuel a p.sig.ty
     | .halt a => do
-        let _ ← checkExp (nonTail env) expFuel a
-        pure ()
+        -- The halt answer becomes a slice of the machine-step record
+        -- (tagged per distinct answer type), so it needs a fixed
+        -- width; its type is otherwise unconstrained.
+        let ta ← checkExp (nonTail env) expFuel a
+        match env.Δ.sizeOf szFuel [] ta with
+        | .ok _    => pure ()
+        | .error e =>
+            throw s!"a halt answer of process {P.name} is not representable at a fixed bit width ({e})"
     | .cases a alts => do
         let ts ← checkExp (nonTail env) expFuel a
         if (alts.drop 1).any (fun (.mk c _ _) => isDefaultAlt c) then
@@ -1065,6 +1110,10 @@ def checkTerm (env : Env) (P : PEnv) (fuel : Nat) (t : Term) : Except String Uni
           match c with
           | .dataAlt c' => some (c', s!"terminator alternative for constructor {c'}")
           | _           => none)
+        checkDistinct (alts.filterMap fun (.mk c _ _) =>
+          match c with
+          | .litAlt n => some (n, s!"terminator alternative for literal {n}")
+          | _         => none)
         if alts.isEmpty then
           throw "terminator case with no alternatives"
         alts.forM (checkTAlt env P fuel ts)
@@ -1092,6 +1141,9 @@ def checkTAlt (env : Env) (P : PEnv) (fuel : Nat) (ts : Ty) (a : TAlt) : Except 
         unless xs.length == fields.length do
           throw s!"terminator alternative for {c} binds {xs.length} fields (the constructor has {fields.length})"
         xs.forM (checkValueBinder env "pattern binder")
+        (xs.zip fields).forM fun (p, ft) =>
+          unless Ty.eq p.sig.ty ft do
+            throw s!"pattern binder {p.render}: type does not match the constructor's field type {ft.render}"
         checkTerm (xs.foldr bindVar env) P fuel t
 termination_by fuel
 
@@ -1185,6 +1237,16 @@ def checkGuarded (pr : Proc) : Except String Unit := do
 def checkProc (env : Env) (pr : Proc) : Except String Unit := do
   checkTy env pr.inTy
   checkTy env pr.outTy
+  -- The ports are the machine's layout boundary: fixed widths, like
+  -- cells and block parameters (§7.4).
+  match env.Δ.sizeOf szFuel [] pr.inTy with
+  | .ok _    => pure ()
+  | .error e =>
+      throw s!"the input type of process {pr.name} is not representable at a fixed bit width ({e})"
+  match env.Δ.sizeOf szFuel [] pr.outTy with
+  | .ok _    => pure ()
+  | .error e =>
+      throw s!"the output type of process {pr.name} is not representable at a fixed bit width ({e})"
   -- Label distinctness (an addition over Lint.hs checkProc, whose
   -- whole-program mode covered it via uniqSites): the per-proc label
   -- table must be well-defined for target resolution and the fold.
@@ -1209,9 +1271,10 @@ def checkProc (env : Env) (pr : Proc) : Except String Unit := do
 by the Haskell linter — downstream today via the Hyle checker's
 recursion rule): the call graph of the pure definitions reachable from
 a process is acyclic, and no `rec` binding is reachable. A fueled DFS
-in the style of Rwv.Hyle.Check.checkRecursion, with skipped (carrier)
-definitions as leaves — a process cannot well-typedly reference them,
-and the fold never lowers them. -/
+in the style of Rwv.Hyle.Check.checkRecursion. Intrinsic carriers are
+leaves (their bodies are the validated error stubs, edge-free); a
+reference into any other skipped definition is an error here as it is
+at `lookupVar` — recursion must not hide inside an unchecked body. -/
 
 mutual
 
@@ -1249,15 +1312,20 @@ termination_by fuel
 end
 
 /-- Follow an edge into a (non-skipped) definition, pushing it on the
-DFS stack; leaves (local binders, skipped carriers) contribute
-nothing. -/
-def enterPure (defns : HashMap Int Defn) (fuel : Nat) (stack done : HashSet Int) (u : Int) :
-    Except String (HashSet Int) :=
+DFS stack; leaves (local binders, intrinsic carriers) contribute
+nothing, and an edge into an unchecked (polymorphic/reactive) skipped
+definition is an error. -/
+def enterPure (defns : HashMap Int Defn) (unchecked : HashMap Int Defn) (fuel : Nat)
+    (stack done : HashSet Int) (u : Int) : Except String (HashSet Int) :=
   match fuel with
   | 0 => throw "pure call graph deeper than the number of definitions (rwv bug?)"
   | fuel + 1 =>
     match defns.get? u with
-    | none   => pure done
+    | none   =>
+        match unchecked.get? u with
+        | some d =>
+            throw s!"{d.name.render}, a polymorphic or reactive carrier definition, is reachable from a process (its body is outside the checked machine fragment)"
+        | none => pure done
     | some d =>
         if stack.contains u then
           throw s!"recursion among pure definitions reachable from a process: {d.name.render} (the pure call graph must be acyclic, doc/eidos.md §7.4)"
@@ -1265,7 +1333,7 @@ def enterPure (defns : HashMap Int Defn) (fuel : Nat) (stack done : HashSet Int)
         else do
           let refs ← expRefs expFuel #[] d.body
           let stack' := stack.insert u
-          let done ← refs.foldlM (fun dn v => enterPure defns fuel stack' dn v) done
+          let done ← refs.foldlM (fun dn v => enterPure defns unchecked fuel stack' dn v) done
           pure (done.insert u)
 termination_by fuel
 
@@ -1299,11 +1367,14 @@ where
 def checkPureAcyclic (p : Program) : Except String Unit := do
   let checked : HashMap Int Defn :=
     HashMap.ofList ((p.defns.filter (fun d => !skipDefn d)).map fun d => (d.name.uniq, d))
+  let unchecked : HashMap Int Defn :=
+    HashMap.ofList ((p.defns.filter (fun d => skipDefn d && !intrinsicDefn d)).map
+      fun d => (d.name.uniq, d))
   let mut done : HashSet Int := ∅
   for pr in p.procs do
     let roots ← procRefs pr
     for u in roots do
-      done ← enterPure checked (p.defns.length + 1) ∅ done u
+      done ← enterPure checked unchecked (p.defns.length + 1) ∅ done u
 
 end Check
 
@@ -1323,9 +1394,12 @@ def Program.checkMachine (p : Program) : Except String Unit := do
   checkDistinct (p.datas.flatMap fun d => d.cons.map fun c => (c.name, s!"data constructor name {c.name}"))
   checkDistinct (p.procs.map fun pr => (pr.name, s!"process name {pr.name}"))
   p.datas.forM (checkDataDefn env)
-  p.defns.forM fun d => if skipDefn d then pure () else checkDefn env d
+  p.defns.forM fun d =>
+    if intrinsicDefn d then checkIntrinsicStub d
+    else if skipDefn d then pure ()
+    else checkDefn env d
   p.procs.forM (checkProc env)
   checkPureAcyclic p
-  checkTop p.defns (!p.procs.isEmpty) p.top
+  checkTop p.defns p.top
 
 end Rwv.Eidos
