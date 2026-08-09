@@ -26,7 +26,7 @@ options =
        , Option []    ["dump-all"]        (NoArg  FlagDumpAll)                       "Dump the IR after every pass (see -d)."
        , Option []    ["debug-lint"]      (NoArg  FlagDebugLint)                     "Re-lint the Eidos IR after every front-half pass to possibly catch compiler bugs."
        , Option []    ["eidos"]           (NoArg  FlagEidos)                         "Dump the Eidos IR (.eir) beside the output; see doc/eidos.md."
-       , Option []    ["certify"]         (NoArg  FlagCertify)                       "Validate the compiled device against the Eidos machine IR with the formally verified validator (rwv-cstep-validate); see doc/certify.md."
+       , Option []    ["certify"]         (OptArg FlagCertify     "required|warn")   "Validate the compiled device against the Eidos machine IR with the formally verified validator (rwv-cstep-validate); compilation fails unless the validator returns VALIDATED (--certify=warn reports the verdict without failing); see doc/certify.md."
        , Option []    ["no-halt"]         (NoArg  FlagNoHalt)                        "Reject a device that can halt (post-halt outputs are unspecified; a rejected device must pause forever instead)."
        , Option []    ["flatten"]         (NoArg  FlagFlatten)                       "Flatten RTL output into a single module (currently slow, memory-intensive)."
        , Option ['o'] []                  (ReqArg FlagO           "filename")        "Name for output file."

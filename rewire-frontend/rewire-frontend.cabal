@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.39.1.
+-- This file has been generated from package.yaml by hpack version 0.39.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -65,7 +65,9 @@ library
       ViewPatterns
   ghc-options: -Wall -Werror -Wunused-packages -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
-      base ==4.20.*
+      aeson ==2.2.*
+    , base ==4.20.*
+    , bytestring ==0.12.*
     , containers ==0.7.*
     , deepseq ==1.5.*
     , directory ==1.3.*

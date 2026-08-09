@@ -35,7 +35,9 @@ extra-source-files:
 dependencies:
 - rewire-base >= 2.8
 - rewire-backend >= 2.8
+- aeson ^>= 2.2
 - base ^>= 4.20
+- bytestring ^>= 0.12
 - containers ^>= 0.7
 - deepseq ^>= 1.5
 - directory ^>= 1.3

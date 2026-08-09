@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE Trustworthy #-}
 module ReWire.ModCache
       ( runCache
       , getDevice
@@ -26,6 +26,7 @@ import Control.Monad.State.Strict (MonadState)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text, pack)
 import Numeric.Natural (Natural)
+import System.Directory (renameFile)
 import System.FilePath ((-<.>))
 
 import qualified Data.Text.IO                 as T
@@ -93,10 +94,14 @@ getDevice conf fp = do
       when (conf^.C.noHalt) $ mapM_ noHaltCheck $ Eidos.progProcs eirPE'
       -- --certify validates against exactly this dump (the machine-mode
       -- Eidos IR the fold consumes), so it implies --eidos.
-      when (conf^.C.eidos || conf^.C.certify) $ do
+      when (conf^.C.eidos || conf^.C.certify /= C.CertifyOff) $ do
             let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
             verb ("Writing Eidos IR to file: " <> pack eirFile) ()
-            liftIO $ T.writeFile eirFile $ prettyProgram eirPE'
+            -- Same-directory temporary plus rename, so a crash can't
+            -- leave a torn artifact that later validates or replays.
+            liftIO $ do
+                  T.writeFile (eirFile <> ".tmp") $ prettyProgram eirPE'
+                  renameFile (eirFile <> ".tmp") eirFile
       -- Every well-formed device has a reactive root (the mono lint's
       -- device rule), hence a process.
       when (null $ Eidos.progProcs eirPE') $ failAt noAnn

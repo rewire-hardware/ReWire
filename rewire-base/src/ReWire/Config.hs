@@ -4,7 +4,7 @@
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Config
       ( interpret, Config, getOutFile
-      , Language (..), ResetFlag (..), OutFlag (..)
+      , Language (..), ResetFlag (..), OutFlag (..), Certify (..)
       , verbose, pretty, flatten
       , target, clock, reset
       , resetFlags, outFlags
@@ -44,6 +44,12 @@ data OutFlag   = Flatten | Pretty | Verbose
       deriving (Eq, Ord, Show, Generic)
 instance Hashable OutFlag
 
+-- | --certify: off, best-effort with an unsuppressible status report
+--   (--certify=warn), or required (plain --certify: compilation fails
+--   unless the validator returns VALIDATED).
+data Certify   = CertifyOff | CertifyWarn | CertifyRequired
+      deriving (Eq, Ord, Show)
+
 data Config = Config
       { _source       :: Language
       , _target       :: Language
@@ -64,7 +70,7 @@ data Config = Config
       , _depth        :: Natural
       , _dump         :: Natural -> Bool
       , _eidos        :: Bool
-      , _certify      :: Bool -- ^ --certify: validate the compiled device against the Eidos machine IR with the verified validator.
+      , _certify      :: Certify -- ^ --certify: validate the compiled device against the Eidos machine IR with the verified validator.
       , _noHalt       :: Bool
       , _debugLint    :: Bool
       , _rtlOpt       :: Natural
@@ -99,7 +105,7 @@ defaultConfig = Config
       , _depth        = 8
       , _dump         = const False
       , _eidos        = False
-      , _certify      = False
+      , _certify      = CertifyOff
       , _noHalt       = False
       , _debugLint    = False
       , _rtlOpt       = 8
@@ -183,7 +189,10 @@ interpret = foldM interp defaultConfig
                   FlagCycles n                    -> readNat "--cycles" n  >>= \ v -> pure $ cycles .~ Just v $ c
                   FlagEvalDepth n                 -> readNat "--depth" n   >>= \ v -> pure $ depth .~ v $ c
                   FlagEidos                       -> pure $ eidos .~ True $ c
-                  FlagCertify                     -> pure $ certify .~ True $ c
+                  FlagCertify Nothing             -> pure $ certify .~ CertifyRequired $ c
+                  FlagCertify (Just "required")   -> pure $ certify .~ CertifyRequired $ c
+                  FlagCertify (Just "warn")       -> pure $ certify .~ CertifyWarn $ c
+                  FlagCertify (Just m)            -> Left $ "Invalid value for --certify: '" <> pack m <> "' (expected 'required' or 'warn')."
                   FlagNoHalt                      -> pure $ noHalt .~ True $ c
                   FlagDebugLint                   -> pure $ debugLint .~ True $ c
                   FlagRtlOpt n                    -> readNat "--rtl-opt" n >>= \ v -> pure $ rtlOpt .~ v $ c

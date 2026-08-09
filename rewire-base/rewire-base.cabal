@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.39.1.
+-- This file has been generated from package.yaml by hpack version 0.39.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -38,6 +38,7 @@ library
       ReWire.Flags
       ReWire.Orphans
       ReWire.Pretty
+      ReWire.Sha256
       ReWire.SYB
       ReWire.Unbound
   other-modules:
@@ -52,6 +53,7 @@ library
   build-depends:
       base ==4.20.*
     , bv ==0.5.*
+    , bytestring ==0.12.*
     , containers ==0.7.*
     , deepseq ==1.5.*
     , directory ==1.3.*
