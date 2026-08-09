@@ -16,8 +16,8 @@
         <link rel="icon" href="favicon-de23e50b.svg">
         <link rel="shortcut icon" href="favicon-8114d1fc.png">
         <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-0392ca55.css">
-        <link rel="stylesheet" href="css/chrome-fc474251.css">
+        <link rel="stylesheet" href="css/general-e96d0476.css">
+        <link rel="stylesheet" href="css/chrome-d279d366.css">
         <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-5dad8bfe.js";
+            window.path_to_searchindex_js = "searchindex-f0dea21e.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1a25fc83.js"></script>
@@ -455,22 +455,22 @@ instance Show Exp where
 <pre><code class="language-haskell">readX :: StateT Int Maybe Int
 readX = get
 
-eval3 :: Exp -&gt; StateT Int Maybe Int
-eval3 (Const i)   = return i
-eval3 (Neg e)     = do
-                      v &lt;- eval3 e
+eval4 :: Exp -&gt; StateT Int Maybe Int
+eval4 (Const i)   = return i
+eval4 (Neg e)     = do
+                      v &lt;- eval4 e
                       return (- v)
-eval3 (Add e1 e2) = do
-                      v1 &lt;- eval3 e1
-                      v2 &lt;- eval3 e2
+eval4 (Add e1 e2) = do
+                      v1 &lt;- eval4 e1
+                      v2 &lt;- eval4 e2
                       return (v1 + v2)
-eval3 (Div e1 e2) = do
-                      v1 &lt;- eval3 e1
-                      v2 &lt;- eval3 e2
+eval4 (Div e1 e2) = do
+                      v1 &lt;- eval4 e1
+                      v2 &lt;- eval4 e2
                       if v2==0 then lift Nothing else return (v1 `div` v2)
                                  -- N.b., this is new.
 
-eval3 X           = readX
+eval4 X           = readX
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="hello-worlds"><a class="header" href="#hello-worlds">Hello Worlds</a></h1>
@@ -523,7 +523,7 @@ s1 One  = signal Zero &gt;&gt;= s1
 <p>We’ll return to the types of <code>si</code>, <code>s0</code>, and <code>s1</code> momentarily.</p>
 <p>Finally, we need to designate a start state, just as with any state machine definition.</p>
 <pre><code class="language-haskell">start :: ReacT Alphabet Alphabet Identity ()
-start = signal Zero &gt;&gt;= si
+start = signal Zero &gt;&gt;= s0
 </code></pre>
 <h4 id="why-this-type-react-alphabet-alphabet-identity-"><a class="header" href="#why-this-type-react-alphabet-alphabet-identity-">Why this type <code>ReacT Alphabet Alphabet Identity ()</code>?</a></h4>
 <p>We know the type will have the form <code>ReacT i o m a</code> for some types <code>i</code>, <code>o</code>, and <code>a</code> and monad <code>m</code>.</p>
@@ -537,7 +537,7 @@ start = signal Zero &gt;&gt;= si
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="fibonacci-of-course"><a href="#fibonacci-of-course" class="header">Fibonacci, of course</a></h1>
 <h2 id="the-obligatory-fibonacci-example"><a class="header" href="#the-obligatory-fibonacci-example">The Obligatory Fibonacci Example</a></h2>
-<p>The following Haskell code (the file is called <a href="code/Fib.hs">Fib.hs</a>) creates an infinite list of <code>Int</code>s in a conventional manner using the <code>fibgen</code> function.</p>
+<p>The following Haskell code creates an infinite list of <code>Int</code>s in a conventional manner using the <code>fibgen</code> function.</p>
 <pre><code class="language-haskell">module Fibonacci where
 
 fibs :: [Int]
@@ -546,25 +546,25 @@ fibs = fibgen 0 1
     fibgen :: Int -&gt; Int -&gt; [Int]
     fibgen n m = n : fibgen m (n + m)
 </code></pre>
-<p>Loading <code>Fib.hs</code> into GHCi, you can see that it calculates the familiar Fibonacci sequence:</p>
+<p>Loading that into GHCi, you can see that it calculates the familiar Fibonacci sequence:</p>
 <pre><code class="language-haskell">ghci&gt; take 10 fibs
 take 10 fibs
 [0,1,1,2,3,5,8,13,21,34]
 </code></pre>
 <h3 id="making-hardware-out-of-this"><a class="header" href="#making-hardware-out-of-this">Making Hardware Out of This.</a></h3>
-<p>In the ReWire code below, <code>fibdev</code> plays the same role as <code>fibgen</code> above. For the moment, just ignore the monadic type, <code>ReacT Bit (W 8) Identity ()</code>. (I’ll explain its significance shortly.) Instead of using Haskell’s <code>Int</code> type, we will compute over eight bit words (i.e., <code>W 8</code>). There is also a definition of <code>start</code>, which is a special symbol that unsurprisingly specifies how to start the device.</p>
-<p>What <code>fibdev</code> does is, given two words <code>n</code> and <code>m</code>, it puts <code>n</code> on the output port using <code>signal</code> and accepts a new input <code>b</code> off of the input port. If bit <code>b</code> is <code>1</code>, then it continues on. However, if <code>b</code> is <code>0</code>, then it calls itself on <code>m</code> and <code>m + n</code> just like <code>fibgen</code> above.</p>
+<p>The ReWire code below is the file <a href="code/Fib.hs">Fib.hs</a>, in which <code>fibgen</code> plays the same role as the list-producing <code>fibgen</code> above. For the moment, just ignore the monadic type, <code>ReacT Bit (W 8) Identity ()</code>. (I’ll explain its significance shortly.) Instead of using Haskell’s <code>Int</code> type, we will compute over eight bit words (i.e., <code>W 8</code>). There is also a definition of <code>start</code>, which is a special symbol that unsurprisingly specifies how to start the device.</p>
+<p>What <code>fibgen</code> does is, given two words <code>n</code> and <code>m</code>, it puts <code>n</code> on the output port using <code>signal</code> and accepts a new input <code>b</code> off of the input port. If bit <code>b</code> is <code>1</code>, then it continues on. However, if <code>b</code> is <code>0</code>, then it calls itself on <code>m</code> and <code>m + n</code> just like the list version above.</p>
 <pre><code class="language-haskell">{-# LANGUAGE DataKinds #-}
 import Prelude hiding ((+))
 import ReWire
 import ReWire.Bits
 
 start :: ReacT Bit (W 8) Identity ()
-start = fibdev (lit 0) (lit 1)
+start = fibgen (lit 0) (lit 1)
 
-fibdev :: W 8 -&gt; W 8 -&gt; ReacT Bit (W 8) Identity ()
-fibdev n m = do b &lt;- signal n
-                if b then fibdev n m else fibdev m (n + m)
+fibgen :: W 8 -&gt; W 8 -&gt; ReacT Bit (W 8) Identity ()
+fibgen n m = do b &lt;- signal n
+                if b then fibgen n m else fibgen m (n + m)
 </code></pre>
 <h3 id="lessons-learned-1"><a class="header" href="#lessons-learned-1">Lessons Learned.</a></h3>
 <p>There are some lessons to be learned from this example.</p>
@@ -683,12 +683,7 @@ inputs = (_40 , _25 , _20)
        : (_41 , _25 , _20)
        : (_40 , _25 , _20)  : []
 </code></pre>
-<p><em>Pro-tip.</em> Because ReWire doesn’t know about things likes lists, <code>ReWire.Interactive</code> and the definition of <code>inputs</code> need to be commented out <em>before</em> compiling with <code>rwc</code>. Otherwise, you will receive a non-informative error message like this:</p>
-<pre><code class="language-haskell">$ rwc CSA.hs --verilog
-Control/Monad/Identity.hs:
-Error: File not found in load-path
-$ 
-</code></pre>
+<p><em>Pro-tip.</em> Because ReWire doesn’t know about things likes lists, <code>ReWire.Interactive</code> and the definition of <code>inputs</code> need to be commented out <em>before</em> compiling with <code>rwc</code>.</p>
 <p>Assuming these are now commented out, you can proceed to compile CSA.hs with:</p>
 <pre><code class="language-haskell">$ ls -l CSA.* 
 -rw-r--r--  1 william.harrison  staff  1039 Jun 13 09:02 CSA.hs
@@ -794,9 +789,10 @@ them off leads to error messages pointing at surprising places.)</p>
 </li>
 <li>
 <p><strong>GHC-only code.</strong> Anything <code>rwc</code> can’t compile – lists used at the top
-level, <code>ReWire.Interactive</code> imports for GHCi experimentation, class
-instances – needs to be commented out (or moved to a separate file) before
-compiling. The <code>main</code> definition is the one exception: <code>rwc</code> ignores it.</p>
+level, <code>ReWire.Interactive</code> imports for GHCi experimentation, instances of
+single-method classes (multi-method classes are fine) – needs to be
+commented out (or moved to a separate file) before compiling. The <code>main</code>
+definition is the one exception: <code>rwc</code> ignores it.</p>
 </li>
 </ul>
 <p>Once that’s settled, compile with the ReWire compiler <code>rwc</code>:</p>
@@ -846,7 +842,7 @@ writing.</p>
 
         <script src="clipboard-1626706a.min.js"></script>
         <script src="highlight-abc7f01d.js"></script>
-        <script src="book-c22b7243.js"></script>
+        <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
 

@@ -15,8 +15,8 @@
         <link rel="icon" href="favicon-de23e50b.svg">
         <link rel="shortcut icon" href="favicon-8114d1fc.png">
         <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-0392ca55.css">
-        <link rel="stylesheet" href="css/chrome-fc474251.css">
+        <link rel="stylesheet" href="css/general-e96d0476.css">
+        <link rel="stylesheet" href="css/chrome-d279d366.css">
         <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-5dad8bfe.js";
+            window.path_to_searchindex_js = "searchindex-f0dea21e.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1a25fc83.js"></script>
@@ -211,7 +211,7 @@ s1 One  = signal Zero &gt;&gt;= s1
 <p>We’ll return to the types of <code>si</code>, <code>s0</code>, and <code>s1</code> momentarily.</p>
 <p>Finally, we need to designate a start state, just as with any state machine definition.</p>
 <pre><code class="language-haskell">start :: ReacT Alphabet Alphabet Identity ()
-start = signal Zero &gt;&gt;= si
+start = signal Zero &gt;&gt;= s0
 </code></pre>
 <h4 id="why-this-type-react-alphabet-alphabet-identity-"><a class="header" href="#why-this-type-react-alphabet-alphabet-identity-">Why this type <code>ReacT Alphabet Alphabet Identity ()</code>?</a></h4>
 <p>We know the type will have the form <code>ReacT i o m a</code> for some types <code>i</code>, <code>o</code>, and <code>a</code> and monad <code>m</code>.</p>
@@ -271,7 +271,7 @@ start = signal Zero &gt;&gt;= si
 
         <script src="clipboard-1626706a.min.js"></script>
         <script src="highlight-abc7f01d.js"></script>
-        <script src="book-c22b7243.js"></script>
+        <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
 
