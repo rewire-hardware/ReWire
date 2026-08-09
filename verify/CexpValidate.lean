@@ -305,7 +305,14 @@ def main (argv : List String) : IO UInt32 := do
   for a in argv do
     if a = "-v" then verbose := true
     else if a.startsWith "--fuel=" then
-      fuel := ((a.drop 7).toNat?).getD fuel
+      match (a.drop "--fuel=".length).toNat? with
+      | some n => fuel := n
+      | none =>
+          IO.eprintln s!"cexp-validate: --fuel: expected a non-negative integer, got '{a.drop 7}'"
+          return 2
+    else if a.startsWith "-" && a ≠ "-" then
+      IO.eprintln s!"cexp-validate: unknown option: {a}"
+      return 2
     else pos := pos ++ [a]
   match pos with
   | [eirFile, rwcFile] => do

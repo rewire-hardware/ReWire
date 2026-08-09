@@ -61,22 +61,25 @@ def parseArgs (argv : List String) : Except String Args := do
   | [f, st] => return { rwcFile := f, stimFile := some st, cycles }
   | _       => throw usage
 
-/-- Load the stimulus entries, mirroring rwc's loadInputs: an absent or
-unparseable file drives all inputs with zeros (with a warning on
-stderr; none when the default file is merely absent). -/
-def loadStimulus (args : Args) : IO (List (List (String × Int))) := do
+/-- Load the stimulus entries. An EXPLICITLY named stimulus file that
+does not exist or does not parse is a hard error — a harness path
+mixup that silently zero-drives both sides of a differential run would
+make the byte comparison trivially pass. Only the implicit default
+(`inputs.yaml`) may be absent, matching rwc's driving-with-zeros
+default for that case. -/
+def loadStimulus (args : Args) : IO (Except String (List (List (String × Int)))) := do
   let path := args.stimFile.getD "inputs.yaml"
   let explicit := args.stimFile.isSome
   if ← System.FilePath.pathExists ⟨path⟩ then
     match parseStimulus (← IO.FS.readFile ⟨path⟩) with
-    | .ok entries => return entries
+    | .ok entries => return .ok entries
     | .error e    =>
+        if explicit then return .error s!"could not read inputs from {path} ({e})"
         IO.eprintln s!"rwv-diff: warning: could not read inputs from {path} ({e}); driving all inputs with zeros."
-        return []
+        return .ok []
   else
-    if explicit then
-      IO.eprintln s!"rwv-diff: warning: could not read inputs from {path} (file does not exist); driving all inputs with zeros."
-    return []
+    if explicit then return .error s!"could not read inputs from {path} (file does not exist)"
+    return .ok []
 
 def main (argv : List String) : IO UInt32 := do
   match parseArgs argv with
@@ -89,7 +92,9 @@ def main (argv : List String) : IO UInt32 := do
       if let .error e := p.check then
         IO.eprintln s!"rwv-diff: {args.rwcFile}: check failed: {e}"
         return 1
-      let entries ← loadStimulus args
+      let entries ← match ← loadStimulus args with
+        | .error e => IO.eprintln s!"rwv-diff: {e}"; return 1
+        | .ok entries => pure entries
       let ncycles := effectiveCycles args.cycles entries.length
       let stim    := stimulusFor p.device (boundInput ncycles entries)
       match p.run stim with
