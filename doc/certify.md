@@ -61,9 +61,11 @@ output, and no Eidos IR, respectively): required mode fails,
 
 ## The response protocol
 
-rwc does not trust the validator's human-readable output. It invokes the
-validator with `--protocol=2 --nonce=<fresh>`, and requires all of the
-following before printing its VALIDATED confirmation:
+Because `rwc` invokes the validator executable as a subprocess, we have implemented
+a simple handshake protocol with the validator to increase our confidence that
+it has validated the correct files. `rwc` invokes the validator with `--protocol=2
+--nonce=<fresh>`, and requires all of the following before printing its
+VALIDATED confirmation:
 
 - the process exited with status 0;
 - stdout carries exactly one line, a JSON object naming the tool

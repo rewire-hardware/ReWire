@@ -26,11 +26,6 @@ and static rules are in force:
   restriction of P (§6) and produces M; the translation to Hyle is a fold
   over M.
 
-  *Status:* the M level is normative for the `procify` pass and is the
-  compiler's sole purification route (the predecessor's monad-transformer
-  elimination is deleted); the translation to Hyle is a direct fold over
-  M (`ReWire.Eidos.ToHyle`).
-
 ## 1. Design goals
 
 - **G1 — One machine story.** The temporal structure of a program — where
@@ -63,12 +58,11 @@ and static rules are in force:
   tests at the front half's boundaries and hand-written test inputs, exactly
   as Hyle's `.rwc` does for the back half.
 
-Non-goals at this writing (deliberately deferred, with their seams named):
-multi-clock semantics (procs carry an optional clock-domain annotation,
-default the single implicit domain); multiple processes and process
-composition operators (the program grammar admits a proc list and a `top`
-designation; the singleton restriction is only a property of what procify
-mints, not a grammar, parser, or lint rule); memory primitives.
+Non-goals at this writing: multi-clock semantics (procs carry an optional
+clock-domain annotation, default the single implicit domain); multiple
+processes and process composition operators (the program grammar admits a proc
+list and a `top` designation; the singleton restriction is only a property of
+what procify mints, not a grammar, parser, or lint rule); memory primitives.
 
 ## 2. Metavariables and annotations
 
@@ -194,11 +188,11 @@ applications at use sites by first-order matching.
     prog ::= data* defn* proc* top f
 
 A program designates one *device root* with `top`. The `proc` productions
-belong to the M level (§7); at the P level the list is empty. The
-restriction that the reactive root set is the singleton `{top}` is a
-property of the current pipeline — procify mints exactly one proc, and
-neither the grammar, the parser, nor the linter imposes the restriction —
-reserving the seam for process composition.
+belong to the M level (§7); at the P level the list is empty. The restriction
+that the reactive root set is the singleton `{top}` is a property of the
+current pipeline — procify mints exactly one proc, and neither the grammar, the
+parser, nor the linter imposes the restriction, but process composition is
+future work.
 
 ## 4. Static semantics: Eidos-P
 
@@ -855,44 +849,7 @@ printer parenthesizes non-atom forms); labels print like variables
 (`L#12`) and carry no signature. Terminator labels may reference blocks
 declared later in the same process.
 
-## 10. Design rationale
-
-**Why labels instead of named definitions for states.** The predecessor
-(Crust) minted one resumption state per *definition name* satisfying an
-invariant established by five passes in a fixed order; equal continuations
-minted distinct states, repaired after the fact by alpha-merging. Labels
-make state identity a structural property with a namespace, a checker, and
-a deterministic naming scheme — and make FSM-level transformations
-(block merging, epsilon elimination, eventually equivalent-state merging)
-well-defined program transformations instead of heuristics over names.
-
-**Why no inference.** GHC has already typechecked the program, solved all
-class and type-nat constraints, and recorded every instantiation as a type
-application. Re-inferring (as Crust did, with a 499-line HM engine whose
-unifier hard-coded a whole-device single-ReacT assumption) recomputes
-worse what the input already says. Substitution + lint keeps every type
-fact local and every failure located.
-
-**Why plain-data types and explicit uniques.** The predecessor's
-binder-library representation made free-variable computation quadratic,
-made structural equality unsound (hash-based), taxed every traversal with
-annotation binders, and required a deep-force between passes. Uniques are
-the representation GHC and Clash both converged on; the price — capture
-discipline by invariant rather than by construction — is paid once, in one
-clone primitive and one lint rule.
-
-**Why the process calculus is worth a second level.** Purification is
-ReWire's essential transformation; no comparable compiler has one (Clash
-rejects recursion; FSM DSLs make states explicit in the source). Giving
-its output a first-class calculus turns the compiler's hardest contract
-(purification's input invariants) into a grammar, makes the whenchain
-class of divergence a static error (guardedness), deletes the layout
-reverse-engineering in the Hyle translation (the step record is declared,
-not inferred), and reserves clean seams for multiple processes and
-pipeline composition operators — the singular-ReacT restriction becomes a
-removable property of the pipeline instead of an axiom of the unifier.
-
-## 11. Correspondence to the implementation
+## 10. Correspondence to the implementation
 
 | Spec section | Module |
 |---|---|
