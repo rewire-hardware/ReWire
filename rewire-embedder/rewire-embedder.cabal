@@ -32,7 +32,6 @@ source-repository head
 library
   exposed-modules:
       Embedder.Atmo.DependencyGraph
-      Embedder.Atmo.Desugar
       Embedder.Atmo.FlattenMonadTrans
       Embedder.Atmo.Syntax
       Embedder.Atmo.ToIsabelle

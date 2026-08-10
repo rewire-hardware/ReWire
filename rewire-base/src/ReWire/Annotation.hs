@@ -1,4 +1,3 @@
-{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -20,7 +19,6 @@ module ReWire.Annotation
       ) where
 
 import ReWire.SYB (transform)
-import ReWire.Unbound (Alpha (..))
 import ReWire.Pretty (TextShow (showb), fromString)
 
 import Control.DeepSeq (NFData (..))
@@ -101,28 +99,14 @@ instance TextShow Annote where
       showb = fromString . show
 
 -- Annotations are metadata about a node, not part of its meaning. Equality,
--- ordering, hashing, and alpha-equivalence are therefore intentionally blind to
--- them: two terms that differ only in source location must still compare equal,
--- or type comparison and term deduplication (which run over annotated IR) would
--- wrongly distinguish them.
+-- ordering, and hashing are therefore intentionally blind to them: two terms
+-- that differ only in source location must still compare equal, or type
+-- comparison and term deduplication (which run over annotated IR) would wrongly
+-- distinguish them.
 instance Ord Annote where
       _ <= _ = True
 instance Eq Annote where
       _ == _ = True
-
-instance Alpha Annote where
-      aeq' _ _ _         = True
-      acompare' _ _ _    = EQ
-      fvAny' _ _         = pure
-      close _ _          = id
-      open _ _           = id
-      isPat _            = mempty
-      isTerm _           = mempty
-      nthPatFind _       = mempty
-      namePatFind _      = mempty
-      swaps' _ _         = id
-      freshen' _ i       = pure (i, mempty)
-      lfreshen' _ i cont = cont i mempty
 
 instance Hashable Annote where
       hashWithSalt s _ = s

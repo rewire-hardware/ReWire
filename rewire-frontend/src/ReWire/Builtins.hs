@@ -9,7 +9,6 @@ module ReWire.Builtins (Builtin (..), builtins, builtinName) where
 
 import ReWire.Orphans ()
 import ReWire.Pretty (TextShow (showt), FromGeneric (..), Pretty (pretty))
-import ReWire.Unbound (Alpha (..))
 
 import Control.Arrow ((&&&))
 import Control.DeepSeq (NFData (..))
@@ -44,7 +43,6 @@ data Builtin = Error | Extern | Cryptol
       deriving TextShow via FromGeneric Builtin
 
 instance Hashable Builtin
-instance Alpha Builtin
 instance NFData Builtin
 
 instance Pretty Builtin where

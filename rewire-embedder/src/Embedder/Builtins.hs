@@ -20,7 +20,6 @@ import Control.Arrow ((&&&))
 
 import ReWire.Builtins (Builtin (..), builtinName, builtins)
 import ReWire.Pretty (Pretty (..), TextShow, FromGeneric(..))
-import ReWire.Unbound (Alpha)
 
 -- | Note: this is not injective (e.g., VecConcat has two notations)
 -- | Note: there are Builtins that don't have direct corresponding notations (e.g. Bits is used in lit, but not directly)
@@ -141,7 +140,6 @@ data RWUserOp =
       deriving TextShow via FromGeneric RWUserOp
 
 instance Hashable RWUserOp
-instance Alpha RWUserOp
 instance NFData RWUserOp
 
 rwUserQName :: [(RWUserOp,Text)]
@@ -291,4 +289,3 @@ instance Pretty TyBuiltin where
 
 instance NFData TyBuiltin
 instance Hashable TyBuiltin
-instance Alpha TyBuiltin

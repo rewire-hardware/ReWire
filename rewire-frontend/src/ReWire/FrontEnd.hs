@@ -13,7 +13,7 @@ import ReWire.Error (MonadError, AstError, runSyntaxError, failAt, warnAt, print
 import ReWire.Hyle.Interp (Ins, run)
 import ReWire.Hyle.Parse (parseHyle)
 import ReWire.Hyle.Syntax (Program, progDevice)
-import ReWire.ModCache (runCache, getDevice, LoadPath)
+import ReWire.ModCache (getDevice, LoadPath)
 import ReWire.Pass (pass)
 import ReWire.Pretty (Pretty, prettyPrint, fastPrint, showt)
 import ReWire.Sha256 (hashHex)
@@ -54,7 +54,7 @@ import qualified Data.Yaml           as YAML
 
 -- | Opens and parses a file and, recursively, its imports.
 loadProgram :: (MonadFail m, MonadError AstError m, MonadState AstError m, MonadIO m) => Config -> FilePath -> m Program
-loadProgram conf fp = runCache $ getDevice conf fp
+loadProgram = getDevice
 
 compileFile :: MonadIO m => Config -> FilePath -> m ()
 compileFile conf filename = do
