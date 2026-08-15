@@ -457,7 +457,9 @@ def main (argv : List String) : IO UInt32 := do
                   match tr.outs.mapM (Val.portSplit Δ repFuel pr.outTy) with
                   | .error e => err s!"portSplit at the output type: {e}"
                   | .ok outBVs => do
-                    IO.print (Rwv.Diff.printTrace (dev.outputs.map (·.1)) outBVs)
+                    match Rwv.Diff.printTrace (dev.outputs.map (·.1)) outBVs with
+                    | .ok out => IO.print out
+                    | .error e => IO.eprintln s!"rwv-eidos-diff: {e}"; return 1
                     if tr.halted.isSome then
                       IO.eprintln s!"rwv-eidos-diff: note: halted after {tr.outs.length} observable cycle(s) (of {args.cycles} inputs); the trace is the halt prefix"
                     -- The internal correspondence check — the mechanized

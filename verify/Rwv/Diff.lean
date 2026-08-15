@@ -60,26 +60,63 @@ unsigned reading. Width-independent; a zero-width BV prints `0x0`. -/
 def bvHex (v : BV) : String :=
   "0x" ++ hexOfNat v.nat
 
-/-- One cycle of the trace: a YAML block mapping as a sequence item,
-keys sorted lexicographically (aeson ordered-keymap order), values
-single-quoted hex; `- {}` when there are no outputs. No trailing
-newline (the caller adds one per cycle). -/
-def printCycle (outs : List (String × BV)) : String :=
-  match outs.mergeSort (fun a b => a.1 ≤ b.1) with
-  | []            => "- {}"
-  | first :: rest =>
-        "- " ++ entry first ++ String.join (rest.map fun p => "\n  " ++ entry p)
+/-- Render a trace KEY exactly as `Data.Yaml.encode` (libyaml) renders
+a block-mapping key: plain when the scalar needs no quoting,
+single-quoted (with `'` doubled) when it does. The quoting predicate
+was derived by probing libyaml: quote on a leading or trailing space;
+a `: ` anywhere or a trailing `:`; a ` #` anywhere or a leading `#`;
+a leading indicator among `[]{},&*!|>'"%@\``; or a leading `-`/`?`/`:`
+that is the whole name or followed by a space. Names containing
+newlines, tabs, or other control characters take libyaml's block/
+double-quoted styles, which this printer deliberately does not
+reproduce — it errors instead, failing the differential run closed
+rather than mis-emitting. -/
+def yamlKey (s : String) : Except String String := do
+  let cs := s.toList
+  if cs.any fun c => c == '\n' || c == '\t' || c.toNat < 0x20 then
+    throw s!"port name {s.quote}: control characters are outside the emitter's \
+      byte-identical YAML fragment"
+  let quote :=
+    match cs with
+    | [] => true
+    | c0 :: rest =>
+        c0 == ' ' || "[]{},&*!|>'\"%@`#".toList.contains c0
+        || ((c0 == '-' || c0 == '?' || c0 == ':') && (rest.isEmpty || rest.headD ' ' == ' '))
+        || cs.getLast? == some ' ' || cs.getLast? == some ':'
+        || hasSub cs ':' ' ' || hasSub cs ' ' '#'
+  if quote then
+    return "'" ++ String.ofList (cs.flatMap fun c => if c == '\'' then ['\'', '\''] else [c]) ++ "'"
+  else return s
 where
-  entry (p : String × BV) : String := s!"{p.1}: '{bvHex p.2}'"
+  hasSub : List Char → Char → Char → Bool
+    | a :: rest@(b :: _), x, y => (a == x && b == y) || hasSub rest x y
+    | _, _, _ => false
+
+/-- One cycle of the trace: a YAML block mapping as a sequence item,
+keys sorted lexicographically (aeson ordered-keymap order) and
+rendered by `yamlKey`, values single-quoted hex; `- {}` when there are
+no outputs. No trailing newline (the caller adds one per cycle). -/
+def printCycle (outs : List (String × BV)) : Except String String := do
+  match outs.mergeSort (fun a b => a.1 ≤ b.1) with
+  | []            => return "- {}"
+  | first :: rest => do
+        let f ← entry first
+        let rs ← rest.mapM entry
+        return "- " ++ f ++ String.join (rs.map ("\n  " ++ ·))
+where
+  entry (p : String × BV) : Except String String := do
+    return s!"{← yamlKey p.1}: '{bvHex p.2}'"
 
 /-- The whole trace in `rwc --interpret`'s YAML format: `names` are the
 device's output port names in port order, zipped against each cycle's
 positional outputs (`Program.run`'s result). An empty trace (zero
 cycles) prints as `[]`, as `Data.Yaml.encode []` does. -/
-def printTrace (names : List String) (trace : List (List BV)) : String :=
+def printTrace (names : List String) (trace : List (List BV)) : Except String String :=
   match trace with
-  | [] => "[]\n"
-  | _  => String.join (trace.map fun vs => printCycle (names.zip vs) ++ "\n")
+  | [] => return "[]\n"
+  | _  => do
+      let ls ← trace.mapM fun vs => printCycle (names.zip vs)
+      return String.join (ls.map (· ++ "\n"))
 
 /-! ## Stimulus files
 
@@ -90,22 +127,24 @@ name -> integer mappings, with `#` comments, blank lines, and optional
 error -- silently diverging from Data.Yaml would mask disagreements. -/
 
 /-- Drop a `#` comment: a `#` at the start of the line or preceded by
-whitespace starts a comment (values are plain integers, so `#` cannot
-occur inside a value). -/
+whitespace starts a comment — but never inside a quoted key (values
+are plain integers, so `#` cannot occur inside a value). Quote state
+tracks one level of single (`''` doubling) or double (backslash
+escapes) quoting, as the stimulus fragment's keys use. -/
 def stripComment (l : String) : String :=
-  String.ofList (go true l.toList)
+  String.ofList (go true none l.toList)
 where
-  go : Bool → List Char → List Char
-    | _, []                => []
-    | true, '#' :: _       => []
-    | _, c :: rest         => c :: go (c = ' ' || c = '\t') rest
-
-/-- Strip one layer of matching single or double quotes. -/
-def unquote (s : String) : String :=
-  if s.length ≥ 2 &&
-     ((s.startsWith "'" && s.endsWith "'") || (s.startsWith "\"" && s.endsWith "\"")) then
-    sdropEnd (sdrop s 1) 1
-  else s
+  go : Bool → Option Char → List Char → List Char
+    | _, none, []                    => []
+    | _, some _, []                  => []
+    | true, none, '#' :: _           => []
+    | _, none, c :: rest             =>
+        let q := if c = '\'' || c = '"' then some c else none
+        c :: go (c = ' ' || c = '\t') q rest
+    | _, some '"', '\\' :: e :: rest => '\\' :: e :: go false (some '"') rest
+    | _, some '\'', '\'' :: '\'' :: rest => '\'' :: '\'' :: go false (some '\'') rest
+    | _, some q, c :: rest           =>
+        c :: go false (if c = q then none else some q) rest
 
 private def digitVal? (c : Char) : Option Nat :=
   if '0' ≤ c && c ≤ '9' then some (c.toNat - '0'.toNat)
@@ -133,14 +172,59 @@ def parseIntLit? (s : String) : Option Int :=
     else parseNatBase? 10 t
   mag?.map fun m => if neg then -(m : Int) else (m : Int)
 
-private def parsePair (lineNo : Nat) (t : String) : Except String (String × Int) :=
-  match t.splitOn ":" with
-  | name :: rest@(_ :: _) =>
-        let v := strim (String.intercalate ":" rest)
-        match parseIntLit? v with
-        | some i => .ok (unquote (strim name), i)
-        | none   => .error s!"stimulus line {lineNo}: cannot parse input value '{v}' (expected an integer)"
-  | _ => .error s!"stimulus line {lineNo}: expected 'name: value', got '{t}'"
+/-- Read a leading quoted key: single quotes with `''` doubling, or
+double quotes with `\\`/`\"` escapes (the JSON-style keys the harness
+writes and Data.Yaml reads). Returns the key and the rest. -/
+private def readQuotedKey (q : Char) : List Char → Option (String × List Char)
+  | cs => go cs []
+where
+  go : List Char → List Char → Option (String × List Char)
+    | [], _ => none
+    | '\'' :: '\'' :: rest, acc =>
+        if q == '\'' then go rest ('\'' :: acc) else go ('\'' :: rest) ('\'' :: acc)
+    | '\\' :: e :: rest, acc =>
+        if q == '"' then
+          match e with
+          | '"' => go rest ('"' :: acc)
+          | '\\' => go rest ('\\' :: acc)
+          | _ => none
+        else go (e :: rest) ('\\' :: acc)
+    | c :: rest, acc =>
+        if c == q then some (String.ofList acc.reverse, rest)
+        else go rest (c :: acc)
+
+/-- Split a plain (unquoted) `name: value` line at the first `": "`
+(or a trailing `:`), the YAML block-mapping separator — a plain key
+may itself contain colons not followed by a space. -/
+private def splitPlainPair : List Char → Option (String × String)
+  | cs => go cs []
+where
+  go : List Char → List Char → Option (String × String)
+    | [], _ => none
+    | ':' :: [], acc => some (String.ofList acc.reverse, "")
+    | ':' :: ' ' :: rest, acc => some (String.ofList acc.reverse, String.ofList rest)
+    | c :: rest, acc => go rest (c :: acc)
+
+private def parsePair (lineNo : Nat) (t : String) : Except String (String × Int) := do
+  let (name, vtxt) ←
+    match t.toList with
+    | q :: rest =>
+        if q == '\'' || q == '"' then
+          match readQuotedKey q rest with
+          | some (k, rest') =>
+              (match rest' with
+               | ':' :: rest'' => pure (k, String.ofList rest'')
+               | _ => throw s!"stimulus line {lineNo}: expected ':' after quoted key")
+          | none => throw s!"stimulus line {lineNo}: malformed quoted key: '{t}'"
+        else
+          match splitPlainPair t.toList with
+          | some (k, v) => pure (k, v)
+          | none => throw s!"stimulus line {lineNo}: expected 'name: value', got '{t}'"
+    | [] => throw s!"stimulus line {lineNo}: expected 'name: value', got '{t}'"
+  let v := strim vtxt
+  match parseIntLit? v with
+  | some i => .ok (name, i)
+  | none   => .error s!"stimulus line {lineNo}: cannot parse input value '{v}' (expected an integer)"
 
 /-- Parse a stimulus file into its per-cycle entries, in file order.
 Accepts exactly the fragment described above. -/

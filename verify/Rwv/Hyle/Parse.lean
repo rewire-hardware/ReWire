@@ -63,26 +63,57 @@ private def headIsIdentChar : List Char → Bool
   | []     => false
 
 /-- Lex the body of a `"…"`-quoted name (the opening quote already
-consumed). Escapes follow the reference parser's Haskell-style character
-literals for the cases that occur in practice: `\\`, `\"`, `\n`, `\t`,
-`\r`; any other escaped character stands for itself. Returns the name,
-the rest of the input, and the updated column. -/
-private partial def lexQuoted (fname : String) (ln col0 : Nat) :
-    List Char → Nat → List Char → Except String (String × List Char × Nat)
-  | [], _, _ => .error s!"{fname}:{ln}:{col0}: unterminated quoted name"
-  | '"' :: rest, col, acc => .ok (String.ofList acc.reverse, rest, col + 1)
-  | '\\' :: [], _, _ => .error s!"{fname}:{ln}:{col0}: unterminated quoted name"
-  | '\\' :: e :: rest, col, acc =>
-      let ch := match e with
-        | 'n' => '\n'
-        | 't' => '\t'
-        | 'r' => '\r'
-        | c   => c
-      lexQuoted fname ln col0 rest (col + 2) (ch :: acc)
-  | c :: rest, col, acc => lexQuoted fname ln col0 rest (col + 1) (c :: acc)
+consumed). Escapes are restricted to the exact printer-emitted subset
+(`ppName` escapes only `\"` and `\\`): any other escaped character is
+a lex error. This is deliberately NARROWER than the reference parser,
+which accepts megaparsec's full Haskell character-literal repertoire —
+the validator format is the printer-emitted subset, and narrower can
+only reject, never mis-accept. Raw newlines inside a quoted name are
+accepted (as the reference does) and advance the line counter, so
+later diagnostics don't drift. Returns the name, the rest of the
+input, and the updated line and column. -/
+private partial def lexQuoted (fname : String) (ln0 col0 : Nat) :
+    List Char → Nat → Nat → List Char → Except String (String × List Char × Nat × Nat)
+  | [], _, _, _ => .error s!"{fname}:{ln0}:{col0}: unterminated quoted name"
+  | '"' :: rest, ln, col, acc => .ok (String.ofList acc.reverse, rest, ln, col + 1)
+  | '\\' :: [], _, _, _ => .error s!"{fname}:{ln0}:{col0}: unterminated quoted name"
+  | '\\' :: e :: rest, ln, col, acc =>
+      match e with
+      | '"'  => lexQuoted fname ln0 col0 rest ln (col + 2) ('"' :: acc)
+      | '\\' => lexQuoted fname ln0 col0 rest ln (col + 2) ('\\' :: acc)
+      | c    => .error s!"{fname}:{ln}:{col}: unsupported escape '\\{c}' in quoted \
+          name (the printer emits only \\\" and \\\\)"
+  | '\n' :: rest, ln, _, acc => lexQuoted fname ln0 col0 rest (ln + 1) 1 ('\n' :: acc)
+  | c :: rest, ln, col, acc => lexQuoted fname ln0 col0 rest ln (col + 1) (c :: acc)
 
-/-- The tokenizer. All `--` line comments — including the display-only
-`--|` doc lines and `--@` locator lines — are skipped. -/
+/-- Shape-check a `--@` source-locator line: the reference parser
+requires `file:line:col-line:col`, splitting the four position fields
+off from the RIGHT (the file part may itself contain colons and
+dashes), and fails the parse on a malformed one. Transcribed here so a
+malformed locator is a lex error rather than silently skipped. -/
+private def spanShapeOk (txt : String) : Bool := Id.run do
+  let some (rest1, c2) := breakOnLast ':' txt | return false
+  let some (rest2, cl) := breakOnLast ':' rest1 | return false
+  let some (_f, l1) := breakOnLast ':' rest2 | return false
+  let some (c1, l2) := breakOnFirst '-' cl | return false
+  return [l1, c1, l2, c2].all fun s => !s.isEmpty && s.toList.all Char.isDigit
+where
+  breakOnLast (c : Char) (t : String) : Option (String × String) :=
+    let cs := t.toList
+    match (cs.reverse.span (· != c)) with
+    | (post, _ :: pre) => some (String.ofList pre.reverse, String.ofList post.reverse)
+    | (_, []) => none
+  breakOnFirst (c : Char) (t : String) : Option (String × String) :=
+    match t.toList.span (· != c) with
+    | (pre, _ :: post) => some (String.ofList pre, String.ofList post)
+    | (_, []) => none
+
+/-- The tokenizer. Plain `--` line comments and `--|` doc lines are
+skipped; `--@` locator lines are shape-checked (`spanShapeOk`) and
+then skipped — a malformed locator is a lex error, as in the
+reference parser. (The reference additionally accepts metadata lines
+only at declaration boundaries; this lexer accepts them anywhere —
+a deliberate, comments-only divergence in the lax direction.) -/
 private partial def lexGo (fname : String) :
     List Char → Nat → Nat → Array Token → Except String (Array Token)
   | [], _, _, acc => .ok acc
@@ -91,6 +122,12 @@ private partial def lexGo (fname : String) :
     else if c == ' ' || c == '\t' || c == '\r' then lexGo fname cs ln (col + 1) acc
     else if c == '-' then
       match cs with
+      | '-' :: '@' :: cs' =>
+          let body := cs'.takeWhile (· != '\n')
+          let txt := String.ofList (match body with | ' ' :: b => b | b => b)
+          if spanShapeOk txt then lexGo fname (cs'.dropWhile (· != '\n')) ln (col + 3) acc
+          else .error s!"{fname}:{ln}:{col}: malformed source locator \
+            (expected file:line:col-line:col): {txt}"
       | '-' :: cs' => lexGo fname (cs'.dropWhile (· != '\n')) ln (col + 2) acc
       | '>' :: cs' => lexGo fname cs' ln (col + 2) (acc.push ⟨.arrow, ln, col⟩)
       | _          => .error s!"{fname}:{ln}:{col}: unexpected '-'"
@@ -121,8 +158,8 @@ private partial def lexGo (fname : String) :
       let (xs, rest) := cs.span isIdentChar
       lexGo fname rest ln (col + 1 + xs.length) (acc.push ⟨.ident false (String.ofList (c :: xs)), ln, col⟩)
     else if c == '"' then
-      match lexQuoted fname ln col cs (col + 1) [] with
-      | .ok (s, rest, col') => lexGo fname rest ln col' (acc.push ⟨.ident true s, ln, col⟩)
+      match lexQuoted fname ln col cs ln (col + 1) [] with
+      | .ok (s, rest, ln', col') => lexGo fname rest ln' col' (acc.push ⟨.ident true s, ln, col⟩)
       | .error e => .error e
     else
       let sym (t : Tok) (k : Nat) (rest : List Char) : Except String (Array Token) :=

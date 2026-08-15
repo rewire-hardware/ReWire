@@ -1,0 +1,4 @@
+device top_level
+      input "i n:p#1" : [8]
+      output "o ut: #2" : [8]
+      "o ut: #2" := "i n:p#1"

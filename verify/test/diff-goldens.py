@@ -34,6 +34,7 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import re
 import shutil
@@ -81,6 +82,15 @@ def stimulus(name: str, ins, ncycles: int):
     return cycles
 
 
+BARE_KEY = re.compile(r"[A-Za-z_$][A-Za-z0-9_.$']*\Z")
+
+
+def ykey(name: str) -> str:
+    """A stimulus key both Data.Yaml and rwv-diff read identically:
+    bare identifiers as-is, anything else JSON-style double-quoted."""
+    return name if BARE_KEY.match(name) else json.dumps(name)
+
+
 def write_stimulus(path: Path, cycles) -> None:
     """One YAML sequence entry per cycle, name: decimal-value pairs."""
     with open(path, "w") as f:
@@ -90,7 +100,7 @@ def write_stimulus(path: Path, cycles) -> None:
         for c in cycles:
             lead = "- "
             for n, v in c:
-                f.write(f"{lead}{n}: {v}\n")
+                f.write(f"{lead}{ykey(n)}: {v}\n")
                 lead = "  "
 
 
@@ -106,6 +116,12 @@ def parse_device(path: Path):
             in_dev = True
             continue
         if not in_dev:
+            continue
+        m = re.match(r'\s+input "((?:[^"\\]|\\.)*)" : \[(\d+)\]', line)
+        if m:
+            # A quoted port name: undo the printer's escapes (\" and \\).
+            name = re.sub(r'\\(.)', r'\1', m.group(1))
+            ins.append((name, int(m.group(2))))
             continue
         m = re.match(r"\s+input (\S+) : \[(\d+)\]", line)
         if m:
@@ -199,6 +215,10 @@ def main():
 
     golden_dir = Path(args.goldens)
     files = sorted(golden_dir.glob("*.rwc"))
+    # Hand-written fixtures (quoted port names, etc.) ride along with the
+    # golden corpus: they exercise the YAML quoting agreement between
+    # Data.Yaml and the Lean emitter/parser.
+    files += sorted((VERIFY / "test" / "fixtures").glob("*.rwc"))
     if args.only:
         files = [f for f in files if args.only in f.stem]
     if not files:

@@ -100,5 +100,6 @@ def main (argv : List String) : IO UInt32 := do
       match p.run stim with
       | .error e  => IO.eprintln s!"rwv-diff: {args.rwcFile}: {e}"; return 1
       | .ok trace =>
-          IO.print (printTrace (p.device.outputs.map Prod.fst) trace)
-          return 0
+          match printTrace (p.device.outputs.map Prod.fst) trace with
+          | .ok out => IO.print out; return 0
+          | .error e => IO.eprintln s!"rwv-diff: {e}"; return 1

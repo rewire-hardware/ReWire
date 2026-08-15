@@ -100,21 +100,24 @@ private def lexUniq (fname : String) (ln col : Nat) :
 
 /-- The body of a backtick-quoted name (opening backtick consumed): any
 characters up to the closing backtick, no escapes (the printer quotes
-occurrence text that does not lex as an identifier). -/
-private partial def lexTick (fname : String) (ln col0 : Nat) :
-    List Char → Nat → List Char → Except String (String × List Char × Nat)
-  | [], _, _ => .error s!"{fname}:{ln}:{col0}: unterminated backtick-quoted name"
-  | '`' :: rest, col, acc => .ok (String.ofList acc.reverse, rest, col + 1)
-  | c :: rest, col, acc => lexTick fname ln col0 rest (col + 1) (c :: acc)
+occurrence text that does not lex as an identifier). Raw newlines
+advance the line counter so later diagnostics don't drift. -/
+private partial def lexTick (fname : String) (ln0 col0 : Nat) :
+    List Char → Nat → Nat → List Char → Except String (String × List Char × Nat × Nat)
+  | [], _, _, _ => .error s!"{fname}:{ln0}:{col0}: unterminated backtick-quoted name"
+  | '`' :: rest, ln, col, acc => .ok (String.ofList acc.reverse, rest, ln, col + 1)
+  | '\n' :: rest, ln, _, acc => lexTick fname ln0 col0 rest (ln + 1) 1 ('\n' :: acc)
+  | c :: rest, ln, col, acc => lexTick fname ln0 col0 rest ln (col + 1) (c :: acc)
 
 /-- The body of a string literal (opening quote consumed), with exactly
 the escapes the printer emits: `\\ \" \n \t \r`; any other escape is an
-error, as in the reference. -/
-private partial def lexStr (fname : String) (ln col0 : Nat) :
-    List Char → Nat → List Char → Except String (String × List Char × Nat)
-  | [], _, _ => .error s!"{fname}:{ln}:{col0}: unterminated string literal"
-  | '"' :: rest, col, acc => .ok (String.ofList acc.reverse, rest, col + 1)
-  | '\\' :: e :: rest, col, acc =>
+error, as in the reference. Raw newlines advance the line counter so
+later diagnostics don't drift. -/
+private partial def lexStr (fname : String) (ln0 col0 : Nat) :
+    List Char → Nat → Nat → List Char → Except String (String × List Char × Nat × Nat)
+  | [], _, _, _ => .error s!"{fname}:{ln0}:{col0}: unterminated string literal"
+  | '"' :: rest, ln, col, acc => .ok (String.ofList acc.reverse, rest, ln, col + 1)
+  | '\\' :: e :: rest, ln, col, acc =>
       let ch? : Option Char := match e with
         | '\\' => some '\\'
         | '"'  => some '"'
@@ -123,10 +126,11 @@ private partial def lexStr (fname : String) (ln col0 : Nat) :
         | 'r'  => some '\r'
         | _    => none
       match ch? with
-      | some ch => lexStr fname ln col0 rest (col + 2) (ch :: acc)
+      | some ch => lexStr fname ln0 col0 rest ln (col + 2) (ch :: acc)
       | none    => .error s!"{fname}:{ln}:{col}: invalid escape character '\\{e}' (expected one of \\\\ \\\" \\n \\t \\r)"
-  | '\\' :: [], _, _ => .error s!"{fname}:{ln}:{col0}: unterminated string literal"
-  | c :: rest, col, acc => lexStr fname ln col0 rest (col + 1) (c :: acc)
+  | '\\' :: [], _, _, _ => .error s!"{fname}:{ln0}:{col0}: unterminated string literal"
+  | '\n' :: rest, ln, _, acc => lexStr fname ln0 col0 rest (ln + 1) 1 ('\n' :: acc)
+  | c :: rest, ln, col, acc => lexStr fname ln0 col0 rest ln (col + 1) (c :: acc)
 
 private partial def lexGo (fname : String) :
     List Char → Nat → Nat → Array Token → Except String (Array Token)
@@ -159,17 +163,17 @@ private partial def lexGo (fname : String) :
       | .ok (u, rest', w) =>
           lexGo fname rest' ln (col' + w) (acc.push ⟨.name false s u, ln, col⟩)
     else if c == '`' then
-      match lexTick fname ln col cs (col + 1) [] with
+      match lexTick fname ln col cs ln (col + 1) [] with
       | .error e => .error e
-      | .ok (s, rest, col') =>
-        match lexUniq fname ln col' rest with
+      | .ok (s, rest, ln', col') =>
+        match lexUniq fname ln' col' rest with
         | .error e => .error e
         | .ok (u, rest', w) =>
-            lexGo fname rest' ln (col' + w) (acc.push ⟨.name true s u, ln, col⟩)
+            lexGo fname rest' ln' (col' + w) (acc.push ⟨.name true s u, ln, col⟩)
     else if c == '"' then
-      match lexStr fname ln col cs (col + 1) [] with
+      match lexStr fname ln col cs ln (col + 1) [] with
       | .error e => .error e
-      | .ok (s, rest, col') => lexGo fname rest ln col' (acc.push ⟨.str s, ln, col⟩)
+      | .ok (s, rest, ln', col') => lexGo fname rest ln' col' (acc.push ⟨.str s, ln, col⟩)
     else
       let sym (t : Tok) (k : Nat) (rest : List Char) : Except String (Array Token) :=
         lexGo fname rest ln (col + k) (acc.push ⟨t, ln, col⟩)
@@ -243,7 +247,11 @@ def tokOpt (t : Tok) : PM Bool := do
   | none    => pure false
 
 /-- Consume the bare (unquoted, uniqueless) identifier `k` if it is next.
-A quoted occurrence or a `k#uniq` token is a name, never a keyword. -/
+A quoted occurrence or a `k#uniq` token is a name, never a keyword.
+(Known divergence, safe direction: the reference parser matches
+keywords case-insensitively — megaparsec `string'` — while this
+comparison is case-sensitive; the printer emits lowercase, so the Lean
+side is strictly narrower on non-printer-emitted inputs.) -/
 def keywordOpt (k : String) : PM Bool := do
   match ← peek? with
   | some ⟨.name false s none, _, _⟩ =>

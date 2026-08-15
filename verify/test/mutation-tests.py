@@ -180,6 +180,32 @@ def validator_tests(exe, dumps, work):
     check("protocol response is a single bound JSON object", ok)
 
 
+def parser_tests(work):
+    """Parser-fidelity negatives: the Lean Hyle parser must reject what
+    the reference parser rejects — malformed source locators and
+    quoted-name escapes outside the printer-emitted subset."""
+    pc = VERIFY / ".lake" / "build" / "bin" / "rwv-parse-check"
+    base = ('device top_level\n'
+            '      input __in0 : [8]\n'
+            '      output __out0 : [8]\n'
+            '      __out0 := __in0\n')
+
+    def run_pc(name, text):
+        p = work / name
+        p.write_text(text)
+        return subprocess.run([str(pc), str(p)], capture_output=True, text=True, timeout=120)
+
+    r = run_pc("pc-ok.rwc", "--@ /a/b.hs:1:1-2:3\n--| a doc line\n" + base)
+    check("well-formed metadata comments parse", r.returncode == 0,
+          (r.stdout + r.stderr).strip().splitlines()[:1])
+    r = run_pc("pc-badloc.rwc", "--@ not a locator\n" + base)
+    check("malformed source locator is a parse error",
+          r.returncode != 0 and "malformed source locator" in r.stdout + r.stderr)
+    r = run_pc("pc-badesc.rwc", base.replace("__in0", '"a\\qb"'))
+    check("unknown quoted-name escape is a parse error",
+          r.returncode != 0 and "escape" in r.stdout + r.stderr)
+
+
 def frontend_tests(dumps, work):
     """rwc's fail-closed handling of the validator response, via fake
     validator executables. Requires stack (run from the repo root)."""
@@ -256,6 +282,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="rwv-mutation-") as td:
         work = Path(td)
         validator_tests(exe, dumps, work)
+        parser_tests(work)
         if args.frontend:
             frontend_tests(dumps, work)
 
