@@ -1240,7 +1240,7 @@ private theorem go_spec (X : Sem.XEnv) :
 
 /-- `topoDefns`' output: topologically ordered, name-distinct, and
 containing every definition. -/
-private theorem topoDefns_spec {X : Sem.XEnv} {defns ordered : List Defn}
+theorem topoDefns_spec {X : Sem.XEnv} {defns ordered : List Defn}
     (h : Sem.topoDefns X defns = .ok ordered)
     (hnd : (defns.map (·.name)).Nodup) :
     TopoList X ordered ∧ (ordered.map (·.name)).Nodup ∧ ∀ d ∈ defns, d ∈ ordered := by
