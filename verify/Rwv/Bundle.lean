@@ -38,6 +38,7 @@ import Rwv.Eidos.Check
 import Rwv.Eidos.Cstep
 import Rwv.Hyle.Parse
 import Rwv.Hyle.Check
+import Rwv.Hyle.Progress
 
 namespace Rwv.Eidos
 
@@ -281,6 +282,12 @@ def validateBundle (srcName srcTxt tgtName tgtTxt : String) (fuel : Nat) : Bundl
                 | .error e => .rejected s!"target definition environment does not \
                     denote: {e}"
                 | .ok _ =>
+                  -- The two checked-but-nonprogressing constructs
+                  -- (Rwv.Hyle.Progress): a target using either could
+                  -- only ever validate vacuously, so it is refused a
+                  -- verdict instead.
+                  if hp.device.instances.isEmpty then
+                  if Rwv.Hyle.Program.etaGenericFree hp then
                   match etaSaturate Bundle.structuralFuel p₁ with
                   | .error e => .error s!"{srcName}: eta-saturation: {e}"
                   | .ok p =>
@@ -293,6 +300,10 @@ def validateBundle (srcName srcTxt tgtName tgtTxt : String) (fuel : Nat) : Bundl
                           (mkDefnMap p.defns) pr hp fuel with
                       | .ok _ => .validated
                       | .error e => .rejected e
+                  else .unsupported "generic model-less extern calls are outside \
+                    the certified fragment"
+                  else .unsupported "device instances (sequential externs) are \
+                    outside the certified fragment"
 
 /-- The `ForeignC` premise at the environment the bundle actually
 builds: `DEnv.ofDatas` leaves every foreign field at its default
@@ -306,21 +317,24 @@ theorem foreignC_ofDatas (datas : List DataDefn) :
       rfl
       (fun _ _ _ => rfl)⟩
 
-/-- The top-level soundness theorem: a `.validated` bundle result
-alone — no side conditions — yields the §7.5.6 correspondence, at
-every evaluation/goto fuel at least the bundle's and every extern
-interpretation, for the eta-saturated program the artifacts determine.
-The artifacts' processing chain is part of the conclusion, so a caller
-knows exactly which program was certified. -/
-theorem validateBundle_sound {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}
+/-- Inversion of a `.validated` bundle result: every fact the gate
+tower checked, in one package — the two parses, target
+well-formedness, a denoting definition environment, instance- and
+eta-generic-freedom, the saturation chain, the single process, and the
+library validator's acceptance. The downstream theorems
+(`validateBundle_sound`, `validateBundle_refines`) consume this. -/
+theorem validateBundle_inv {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}
     (h : validateBundle srcName srcTxt tgtName tgtTxt fuel = .validated) :
     ∃ p₀ hp p pr,
       parseEir srcTxt srcName = .ok p₀
       ∧ Rwv.Hyle.parseProgram tgtTxt tgtName = .ok hp
+      ∧ hp.check = .ok ()
+      ∧ (∃ F, Rwv.Hyle.Sem.mkFEnv hp = .ok F)
+      ∧ hp.device.instances.isEmpty = true
+      ∧ Rwv.Hyle.Program.etaGenericFree hp = true
       ∧ etaSaturate Bundle.structuralFuel (addPrims p₀) = .ok p
       ∧ p.procs = [pr]
-      ∧ ∀ ef gf (E : Rwv.Hyle.Sem.EEnv), fuel ≤ ef →
-          Corresponds (DEnv.ofDatas p.datas) (mkDefnMap p.defns) ef gf pr hp E := by
+      ∧ Cstep.validateProcE (DEnv.ofDatas p.datas) (mkDefnMap p.defns) pr hp fuel = .ok () := by
   cases hpe : parseEir srcTxt srcName with
   | error e => rw [validateBundle, hpe] at h; exact absurd h (by simp)
   | ok p₀ =>
@@ -361,6 +375,14 @@ theorem validateBundle_sound {srcName srcTxt tgtName tgtTxt : String} {fuel : Na
     | ok F =>
     rw [hfe] at h
     dsimp only at h
+    by_cases hinst : hp.device.instances.isEmpty = true
+    case neg => rw [if_neg hinst] at h; exact absurd h (by simp)
+    case pos =>
+    rw [if_pos hinst] at h
+    by_cases hgf : Rwv.Hyle.Program.etaGenericFree hp = true
+    case neg => rw [if_neg hgf] at h; exact absurd h (by simp)
+    case pos =>
+    rw [if_pos hgf] at h
     cases heta : etaSaturate Bundle.structuralFuel (addPrims p₀) with
     | error e => rw [heta] at h; exact absurd h (by simp)
     | ok p =>
@@ -375,13 +397,254 @@ theorem validateBundle_sound {srcName srcTxt tgtName tgtTxt : String} {fuel : Na
     cases hv : Cstep.validateProcE (DEnv.ofDatas p.datas) (mkDefnMap p.defns) pr hp fuel with
     | error e => rw [hv] at h; exact absurd h (by simp)
     | ok u =>
-    -- `cases h : e` substituted each scrutinee in the goal, so the
-    -- pipeline conjuncts are reflexive here.
-    refine ⟨p₀, hp, p, pr, rfl, rfl, heta, hprocs, ?_⟩
-    intro ef gf E hef
-    exact Cstep.validateProc_corresponds
-      (by rw [Cstep.validateProc, hv]) hef (foreignC_ofDatas p.datas)
+    cases u
+    exact ⟨p₀, hp, p, pr, rfl, rfl, hhc, ⟨F, hfe⟩, hinst, hgf, heta, hprocs, hv⟩
+
+/-- The top-level soundness theorem: a `.validated` bundle result
+alone — no side conditions — yields the §7.5.6 correspondence, at
+every evaluation/goto fuel at least the bundle's and every extern
+interpretation, for the eta-saturated program the artifacts determine.
+The artifacts' processing chain is part of the conclusion, so a caller
+knows exactly which program was certified. -/
+theorem validateBundle_sound {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}
+    (h : validateBundle srcName srcTxt tgtName tgtTxt fuel = .validated) :
+    ∃ p₀ hp p pr,
+      parseEir srcTxt srcName = .ok p₀
+      ∧ Rwv.Hyle.parseProgram tgtTxt tgtName = .ok hp
+      ∧ etaSaturate Bundle.structuralFuel (addPrims p₀) = .ok p
+      ∧ p.procs = [pr]
+      ∧ ∀ ef gf (E : Rwv.Hyle.Sem.EEnv), fuel ≤ ef →
+          Corresponds (DEnv.ofDatas p.datas) (mkDefnMap p.defns) ef gf pr hp E := by
+  obtain ⟨p₀, hp, p, pr, hpe, hhp, _, _, _, _, heta, hprocs, hv⟩ := validateBundle_inv h
+  refine ⟨p₀, hp, p, pr, hpe, hhp, heta, hprocs, ?_⟩
+  intro ef gf E hef
+  exact Cstep.validateProc_corresponds
+    (by rw [Cstep.validateProc, hv]) hef (foreignC_ofDatas p.datas)
+
+/-! ## Refinement glue
+
+The width discipline `Rwv.Hyle.Progress.Program.run_progress` needs is
+recovered from facts the bundle already checked: `portSplit` slices at
+exactly the `detupleSizes` widths, `mkPlan` (inverted out of
+`validateProcE`) accepted the target only because its input ports ARE
+those widths, and `detupleSizes` is stable in its fuel. `mkFEnv` can
+fail only in `topoDefns`, which never consults the extern environment,
+so a denoting environment at the empty interpretation denotes at every
+interpretation. -/
+
+private theorem error_ne_ok {α : Type} {msg : String} {a : α} {P : Prop}
+    (h : (Except.error msg : Except String α) = .ok a) : P := by cases h
+
+private theorem except_bind_eq_ok {α β : Type} {x : Except String α}
+    {f : α → Except String β} {b : β} (h : (x >>= f) = .ok b) :
+    ∃ a, x = .ok a ∧ f a = .ok b := by
+  cases x with
+  | error e => exact error_ne_ok h
+  | ok a => exact ⟨a, rfl, h⟩
+
+private theorem bind_ok {α β : Type} {a : α} {f : α → Except String β} :
+    ((Except.ok a : Except String α) >>= f) = f a := rfl
+
+private theorem mapM_ok_mem {α β : Type} {f : α → Except String β} {l : List α}
+    {l' : List β} (h : l.mapM f = .ok l') : ∀ y ∈ l', ∃ x ∈ l, f x = .ok y := by
+  induction l generalizing l' with
+  | nil =>
+      rw [List.mapM_nil] at h
+      cases h
+      intro y hy
+      exact absurd hy (by simp)
+  | cons x xs ih =>
+      rw [List.mapM_cons] at h
+      obtain ⟨b, hb, h⟩ := except_bind_eq_ok h
+      obtain ⟨bs, hbs, h⟩ := except_bind_eq_ok h
+      cases h
+      intro y hy
+      rcases List.mem_cons.mp hy with rfl | hy'
+      · exact ⟨x, List.mem_cons_self, hb⟩
+      · obtain ⟨x', hx', hfx⟩ := ih hbs y hy'
+        exact ⟨x', List.mem_cons_of_mem _ hx', hfx⟩
+
+private theorem sizeOf_mapM_mono {Δ : DEnv} {k k' : Nat} (hk : k ≤ k')
+    {l : List Ty} {ns : List Nat} (h : l.mapM (Δ.sizeOf k []) = .ok ns) :
+    l.mapM (Δ.sizeOf k' []) = .ok ns := by
+  induction l generalizing ns with
+  | nil => simpa using h
+  | cons t ts ih =>
+      rw [List.mapM_cons] at h ⊢
+      obtain ⟨n, hn, h⟩ := except_bind_eq_ok h
+      obtain ⟨ms, hms, h⟩ := except_bind_eq_ok h
+      rw [DEnv.sizeOf_mono Δ hk hn, bind_ok, ih hms, bind_ok]
+      exact h
+
+/-- `Val.detupleSizes` is monotone in its fuel (it is `DEnv.sizeOf`
+compositions and pure arithmetic). -/
+theorem detupleSizes_mono {Δ : DEnv} {k k' : Nat} (hk : k ≤ k') {t : Ty}
+    {szs : List Nat} (h : Val.detupleSizes Δ k t = .ok szs) :
+    Val.detupleSizes Δ k' t = .ok szs := by
+  rw [Val.detupleSizes] at h ⊢
+  dsimp only at h ⊢
+  obtain ⟨whole, hw, h⟩ := except_bind_eq_ok h
+  obtain ⟨sizes, hs, h⟩ := except_bind_eq_ok h
+  rw [DEnv.sizeOf_mono Δ hk hw, bind_ok, sizeOf_mapM_mono hk hs, bind_ok]
+  exact h
+
+private theorem foldSlices_widths {n : Nat} (bits : BitVec n) :
+    ∀ (sizes : List Nat) (hi : Nat) (acc : List Rwv.Hyle.BV),
+      (((sizes.foldl
+          (fun (p : Nat × List Rwv.Hyle.BV) w =>
+            (p.1 - w, (⟨w, bits.extractLsb' (p.1 - w) w⟩ : Rwv.Hyle.BV) :: p.2))
+          (hi, acc)).2).map (·.width))
+        = sizes.reverse ++ acc.map (·.width) := by
+  intro sizes
+  induction sizes with
+  | nil => intro hi acc; simp
+  | cons w ws ih =>
+      intro hi acc
+      rw [List.foldl_cons, ih]
+      simp [List.reverse_cons, List.append_assoc]
+
+/-- `Val.portSplit` produces slices at exactly the `detupleSizes`
+widths — a fact of the construction, independent of the value. -/
+theorem portSplit_widths {Δ : DEnv} {fuel : Nat} {t : Ty} {v : Val}
+    {bvs : List Rwv.Hyle.BV} (h : Val.portSplit Δ fuel t v = .ok bvs) :
+    ∃ szs, Val.detupleSizes Δ fuel t = .ok szs ∧ bvs.map (·.width) = szs := by
+  rw [Val.portSplit] at h
+  obtain ⟨bv, hbv, h⟩ := except_bind_eq_ok h
+  obtain ⟨sizes, hs, h⟩ := except_bind_eq_ok h
+  refine ⟨sizes, hs, ?_⟩
+  dsimp only at h
+  split at h
+  · exact error_ne_ok h
+  · cases h
+    have hw := foldSlices_widths bv.bits sizes bv.width []
+    rw [List.map_reverse, hw]
+    simp
+
+/-- Inversion of `mkPlan`: it accepted the device only because the
+input port widths ARE the `detupleSizes` split of the process input
+type. -/
+theorem mkPlan_inputs {Δ : DEnv} {fuel : Nat} {p : Proc} {lo : Cstep.Layout}
+    {dev : Rwv.Hyle.Device} {plan : Cstep.Plan}
+    (h : Cstep.mkPlan Δ fuel p lo dev = .ok plan) :
+    ∃ szs, Val.detupleSizes Δ fuel p.inTy = .ok szs ∧ dev.inputs.map (·.2) = szs := by
+  rw [Cstep.mkPlan] at h
+  split at h
+  · obtain ⟨inSzs, hin, h⟩ := except_bind_eq_ok h
+    obtain ⟨outSzs, hout, h⟩ := except_bind_eq_ok h
+    split at h
+    · rename_i hbeq
+      exact ⟨inSzs, hin, eq_of_beq hbeq⟩
+    · exact error_ne_ok h
+  · exact error_ne_ok h
+
+/-- Inversion of `validateProcE` down to its layout/plan stage. -/
+theorem validateProcE_plan {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
+    {H : Rwv.Hyle.Program} {fuel : Nat} {u : Unit}
+    (h : Cstep.validateProcE Δ edm p H fuel = .ok u) :
+    ∃ lo plan, Cstep.mkLayoutL Δ fuel p = .ok lo
+      ∧ Cstep.mkPlan Δ fuel p lo H.device = .ok plan := by
+  rw [Cstep.validateProcE] at h
+  split at h
+  rotate_left
+  · exact error_ne_ok h
+  dsimp only at h
+  split at h
+  rotate_left
+  · exact error_ne_ok h
+  split at h
+  rotate_left
+  · exact error_ne_ok h
+  split at h
+  rotate_left
+  · exact error_ne_ok h
+  split at h
+  rotate_left
+  · exact error_ne_ok h
+  obtain ⟨lo, hlo, h⟩ := except_bind_eq_ok h
+  obtain ⟨plan, hplan, _⟩ := except_bind_eq_ok h
+  exact ⟨lo, plan, hlo, hplan⟩
+
+private theorem foldlM_pure_ok {α β : Type} (g : β → α → β) (l : List α) (init : β) :
+    (l.foldlM (fun b a => (pure (g b a) : Except String β)) init) = .ok (l.foldl g init) := by
+  induction l generalizing init with
+  | nil => rfl
+  | cons a as ih =>
+      rw [List.foldlM_cons]
+      exact ih (g init a)
+
+/-- A denoting definition environment denotes at EVERY extern
+interpretation: only `topoDefns` can fail, and it never consults the
+interpretation — the fold itself always succeeds. -/
+theorem mkFEnv_ok_any {p : Rwv.Hyle.Program} {F₀ : Rwv.Hyle.Sem.FEnv}
+    (h : Rwv.Hyle.Sem.mkFEnv p = .ok F₀) (E : Rwv.Hyle.Sem.EEnv) :
+    ∃ F, Rwv.Hyle.Sem.mkFEnv p E = .ok F := by
+  rw [Rwv.Hyle.Sem.mkFEnv] at h ⊢
+  dsimp only at h ⊢
+  obtain ⟨ordered, hord, _⟩ := except_bind_eq_ok h
+  rw [hord, bind_ok]
+  exact ⟨_, foldlM_pure_ok _ ordered _⟩
+
+/-- The top-level refinement theorem: a `.validated` bundle result
+alone yields FORWARD REFINEMENT — every successful, well-typed source
+execution has a successful, agreeing target execution — at every
+evaluation/goto fuel at least the bundle's and every extern
+interpretation. The target-run existence comes from
+`Rwv.Hyle.Progress.Program.run_progress` at the facts the bundle
+checked (target well-formedness, a denoting definition environment,
+instance- and eta-generic-freedom), with the stimulus width discipline
+recovered from `portSplit`/`mkPlan` agreement on `detupleSizes`. A
+target that can never run cannot satisfy this theorem. -/
+theorem validateBundle_refines {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}
+    (h : validateBundle srcName srcTxt tgtName tgtTxt fuel = .validated) :
+    ∃ p₀ hp p pr,
+      parseEir srcTxt srcName = .ok p₀
+      ∧ Rwv.Hyle.parseProgram tgtTxt tgtName = .ok hp
+      ∧ etaSaturate Bundle.structuralFuel (addPrims p₀) = .ok p
+      ∧ p.procs = [pr]
+      ∧ ∀ ef gf (E : Rwv.Hyle.Sem.EEnv), fuel ≤ ef →
+          Refines (DEnv.ofDatas p.datas) (mkDefnMap p.defns) ef gf pr hp E := by
+  obtain ⟨p₀, hp, p, pr, hpe, hhp, hhc, ⟨F₀, hfe⟩, hinst, hgf, heta, hprocs, hv⟩ :=
+    validateBundle_inv h
+  refine ⟨p₀, hp, p, pr, hpe, hhp, heta, hprocs, ?_⟩
+  intro ef gf E hef ins hty encIns henc mt hmt
+  -- The agreement half, from the correspondence theorem.
+  have hcorr : Corresponds (DEnv.ofDatas p.datas) (mkDefnMap p.defns) ef gf pr hp E :=
+    Cstep.validateProc_corresponds (by rw [Cstep.validateProc, hv]) hef
+      (foreignC_ofDatas p.datas)
+  -- The existence half: the checked target runs on the encoded inputs.
+  obtain ⟨lo, plan, hlo, hplan⟩ := validateProcE_plan hv
+  obtain ⟨inSzs, hszs, hinputs⟩ := mkPlan_inputs hplan
+  have hszs' : Val.detupleSizes (DEnv.ofDatas p.datas) ef pr.inTy = .ok inSzs :=
+    detupleSizes_mono hef hszs
+  have hstim : ∀ cyc ∈ encIns, cyc.length = hp.device.inputs.length ∧
+      ∀ i (h1 : i < cyc.length) (h2 : i < hp.device.inputs.length),
+        cyc[i].width = (hp.device.inputs[i]).2 := by
+    intro cyc hcyc
+    obtain ⟨v, _, hsplit⟩ := mapM_ok_mem henc cyc hcyc
+    obtain ⟨szs', hszs'', hwidths⟩ := portSplit_widths hsplit
+    rw [hszs'] at hszs''
+    cases hszs''
+    have hmapeq : cyc.map (·.width) = hp.device.inputs.map (·.2) := by
+      rw [hwidths, hinputs]
+    constructor
+    · have hlen := congrArg List.length hmapeq
+      simpa using hlen
+    · intro i h1 h2
+      have h2' : i < (hp.device.inputs.map (·.2)).length := by simpa using h2
+      have hi : (cyc.map (·.width))[i]'(by simpa using h1)
+          = (hp.device.inputs.map (·.2))[i]'h2' := by
+        simp only [hmapeq]
+      simpa using hi
+  have hinst' : hp.device.instances = [] := by
+    cases hd : hp.device.instances with
+    | nil => rfl
+    | cons a as => rw [hd] at hinst; exact absurd hinst (by simp)
+  obtain ⟨F, hFE⟩ := mkFEnv_ok_any hfe E
+  obtain ⟨ht, hht, _⟩ :=
+    Rwv.Hyle.Progress.Program.run_progress hhc hinst' hgf hstim hFE
+  exact ⟨ht, hht, hcorr ins hty encIns henc mt hmt ht hht⟩
 
 #print axioms Rwv.Eidos.validateBundle_sound
+#print axioms Rwv.Eidos.validateBundle_refines
 
 end Rwv.Eidos

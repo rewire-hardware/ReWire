@@ -109,6 +109,23 @@ def validator_tests(exe, dumps, work):
     expect(exe, "clocked externs are unsupported",
            dumps / "extern.8.eir", dumps / "extern.11.rwc", "UNSUPPORTED")
 
+    # The two checked-but-nonprogressing constructs are refused a
+    # verdict up front (they could otherwise only validate vacuously;
+    # the refinement theorem's target-run existence excludes them).
+    iter_base = (dumps / "iter.11.rwc").read_text()
+    inst = iter_base.replace("      tag $x2 = 0\n",
+                             "      tag $x2 = 0\n      instance i0 of seqext\n")
+    inst = ("extern seqext\n      clock clk\n      input p0 : [1]\n"
+            "      output p1 : [1]\n\n"
+            + inst.rstrip("\n") + "\n      i0.p0 := __in0\n")
+    expect(exe, "target-only device instance is unsupported",
+           dumps / "iter.8.eir", w("iter.inst.11.rwc", inst), "UNSUPPORTED")
+    gen = ("extern gext\n      generic n\n      input p0 : [1]\n"
+           "      output p1 : [1]\n\n"
+           "gfun : ([1]) -> [1]\ngfun x =\n      gext<3>(x)\n\n") + iter_base
+    expect(exe, "generic model-less extern call is unsupported",
+           dumps / "iter.8.eir", w("iter.gen.11.rwc", gen), "UNSUPPORTED")
+
     # The primitive basis is never silently substituted.
     boolswap = (case1_eir.read_text()
                 .replace("data Bool * {\n      False :: Bool;\n      True :: Bool",

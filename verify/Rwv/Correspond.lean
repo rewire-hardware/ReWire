@@ -87,4 +87,33 @@ def Corresponds (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel gotoFuel : Nat)
     ∀ ht, H.run encIns E = .ok ht →
     TraceAgrees Δ evalFuel p.outTy mt ht
 
+/-- Forward refinement: strictly stronger than `Corresponds` — a
+successful, well-typed source execution ENTAILS a successful target
+execution, whose trace agrees. A target that can never run cannot
+satisfy this statement; vacuity is structurally impossible rather than
+gated away. (`Rwv.Hyle.Progress` supplies the target-run existence on
+checked programs; `validateBundle_refines` concludes this statement
+from a `.validated` bundle result.) -/
+def Refines (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel gotoFuel : Nat)
+    (p : Proc) (H : Rwv.Hyle.Program)
+    (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Prop :=
+  ∀ (ins : List Val), (∀ v ∈ ins, Val.HasTy Δ v p.inTy) →
+    ∀ encIns, ins.mapM (Val.portSplit Δ evalFuel p.inTy) = .ok encIns →
+    ∀ mt, Proc.run Δ defns evalFuel gotoFuel p ins E = .ok mt →
+    ∃ ht, H.run encIns E = .ok ht ∧ TraceAgrees Δ evalFuel p.outTy mt ht
+
+/-- Refinement subsumes the conditional agreement: the device's run is
+a function of its inputs, so the entailed trace IS any hypothesized
+one. -/
+theorem Refines.corresponds {Δ : DEnv} {defns : HashMap Int Defn}
+    {evalFuel gotoFuel : Nat} {p : Proc} {H : Rwv.Hyle.Program}
+    {E : Rwv.Hyle.Sem.EEnv}
+    (h : Refines Δ defns evalFuel gotoFuel p H E) :
+    Corresponds Δ defns evalFuel gotoFuel p H E := by
+  intro ins hty encIns henc mt hmt ht hht
+  obtain ⟨ht', hht', hagree⟩ := h ins hty encIns henc mt hmt
+  rw [hht] at hht'
+  cases hht'
+  exact hagree
+
 end Rwv.Eidos

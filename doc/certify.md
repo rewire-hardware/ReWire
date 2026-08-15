@@ -107,16 +107,21 @@ internally, and the conclusion names the exact processing chain, so a
 caller knows precisely which program was certified. The driver's
 verdict is this function's result.
 
-Two boundary caveats qualify the theorem:
+The verdict is moreover a **forward refinement**, not merely
+conditional agreement: `validateBundle_refines` (axiom-clean, same
+three axioms) concludes that every successful, well-typed source
+execution HAS a successful target execution with an agreeing trace — a
+target that can never run cannot satisfy the theorem, so vacuous
+validation is structurally impossible rather than gated away. The
+target-run existence rests on the mechanized progress result
+(`Rwv.Hyle.Progress`): on a program `Program.check` accepts, with a
+denoting definition environment, the dynamic semantics hits none of
+its error cases. The two checked constructs the semantics nevertheless
+rejects — device instances and generic model-less extern calls — are
+refused a verdict (UNSUPPORTED) by explicit bundle gates.
 
-- **The correspondence is conditional on both runs succeeding.** The
-  bundle therefore requires the target to be well formed
-  (`Rwv.Hyle.Program.check`) and its definition environment to denote
-  (`Rwv.Hyle.Sem.mkFEnv`), and the source to satisfy the machine
-  well-formedness judgment (`Rwv.Eidos.Check.checkMachine`), so that a
-  target that could never execute cannot validate vacuously. A proved
-  progress/refinement theorem (a successful source run entails a
-  successful target run) does not exist yet.
+One boundary caveat qualifies the theorem:
+
 - **The certified source artifact is the eta-saturated program.** The
   drivers saturate under-applied constructor/primitive occurrences to
   signature arity after parsing (the same normalization rwc's own
