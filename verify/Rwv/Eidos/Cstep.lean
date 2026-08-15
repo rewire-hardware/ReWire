@@ -150,9 +150,10 @@ once at the empty environment and transports by `Rwv.Eidos.FuelMono`'s
 eta family (a successful empty-environment run never consulted the
 hooks). The algebraic extern tier (η_alg) section at the file's tail
 gives that reading (`EtaAlg`/`WFEta`/`etaB`, and the specialization
-`validateProc_corresponds_eta`); model-carrying externs (`xtF`)
-compile by inlining their model definition through the bridge, and
-generic model-less externs are rejected honestly.
+`validateProc_corresponds_eta`); model-carrying externs compile as
+their own implementation argument applied to the value arguments
+(`Eval.externModelless` classifies from the source artifact alone),
+and generic model-less externs are rejected honestly.
 -/
 import Rwv.Eidos.Cexp
 import Rwv.Eidos.Machine

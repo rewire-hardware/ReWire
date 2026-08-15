@@ -1,13 +1,12 @@
 /-
 The drivers' foreign-environment construction: instantiate the DEnv
-foreign hooks from a compiled Hyle program — the model-carrying trust
-boundary, under which the rwcry-spliced `cry$…` definitions (resp. a
-combinational extern's model definition) ARE the foreign builtin's
-semantics.
+Cryptol hooks from a compiled Hyle program — the model-carrying trust
+boundary, under which the rwcry-spliced `cry$…` definitions ARE the
+Cryptol builtin's semantics. (Extern models take no hook: a
+model-carrying extern occurrence's meaning is its own Eidos
+implementation argument — see `Eval.externModelless` — evaluated and
+compiled as an ordinary expression.)
 
-  * `xtF` is the program's own extern-model composition (`Sem.xenv`
-    then the definition denotations) keyed by extern name — exactly
-    `evalExp`'s xcall reading.
   * `cryF`/`cryD` need the (file, function, monotype) ↦ entry-name
     map, which rwc does not emit structurally; `scrapeCry` recovers it
     from the `--| cryptol <file>::<fn> at <cty>` doc lines rwc prints
@@ -129,21 +128,18 @@ def addForeign (Δ : DEnv) (rwcTxt : String) (hp : Rwv.Hyle.Program) : DEnv :=
       { Δ with
         cryD, hyleDefs, hyleFuel
         hyleX := Rwv.Hyle.Sem.xenv hp
-        cryF := fun f n t => (cryD f n t).map (Cexp.callF F)
-        xtF := fun s => ((Rwv.Hyle.Sem.xenv hp).get? s).map (Cexp.callF F) }
+        cryF := fun f n t => (cryD f n t).map (Cexp.callF F) }
 
 /-- The constructed foreign environment satisfies the soundness
 premise: `cryF` is definitionally `F`'s denotation of the entry `cryD`
-designates, `F` implements the installed definition map by the
+designates, and `F` implements the installed definition map by the
 bridge's `mkFEnv` characterization at the installed extern table
-(`hyleX` is `Sem.xenv` of the same program, by construction), and the
-model-less extern clause holds because `xtF` is populated exactly on
-the extern table's domain. -/
+(`hyleX` is `Sem.xenv` of the same program, by construction). -/
 theorem addForeign_foreignC {Δ : DEnv} {rwcTxt : String} {hp : Rwv.Hyle.Program}
     (hnd : (hp.defns.map (·.name)).Nodup) {F : Rwv.Hyle.Sem.FEnv}
     (hF : Rwv.Hyle.Sem.mkFEnv hp = .ok F) :
     ∃ X F', Rwv.Eidos.Cexp.ForeignC (addForeign Δ rwcTxt hp) X F' := by
-  refine ⟨Rwv.Hyle.Sem.xenv hp, F, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨Rwv.Hyle.Sem.xenv hp, F, ?_, ?_, ?_⟩
   · show Rwv.Hyle.Bridge.FImplements (addForeign Δ rwcTxt hp).hyleDefs
       (Rwv.Hyle.Sem.xenv hp) F
     have hdefs : (addForeign Δ rwcTxt hp).hyleDefs = Rwv.Hyle.Bridge.dmapOf hp := by
@@ -161,24 +157,6 @@ theorem addForeign_foreignC {Δ : DEnv} {rwcTxt : String} {hp : Rwv.Hyle.Program
     show (ForeignEnv.cryDOf (ForeignEnv.scrapeCry rwcTxt) f n t).map (Cexp.callF F)
       = some (Rwv.Eidos.Cexp.callF F g)
     rw [show ForeignEnv.cryDOf (ForeignEnv.scrapeCry rwcTxt) f n t = some g from hg']
-    rfl
-  · intro s hs
-    have hs' : (addForeign Δ rwcTxt hp).hyleX.get? s = none := hs
-    rw [addForeign, hF] at hs'
-    show (addForeign Δ rwcTxt hp).xtF s = none
-    rw [addForeign, hF]
-    show ((Rwv.Hyle.Sem.xenv hp).get? s).map (Cexp.callF F) = none
-    rw [show (Rwv.Hyle.Sem.xenv hp).get? s = none from hs']
-    rfl
-  · intro s g hg
-    have hg' : (addForeign Δ rwcTxt hp).hyleX.get? s = some g := hg
-    rw [addForeign, hF] at hg'
-    refine ⟨Rwv.Eidos.Cexp.callF F g, ?_, fun vs => rfl⟩
-    show (addForeign Δ rwcTxt hp).xtF s = some (Rwv.Eidos.Cexp.callF F g)
-    rw [addForeign, hF]
-    show ((Rwv.Hyle.Sem.xenv hp).get? s).map (Cexp.callF F)
-      = some (Rwv.Eidos.Cexp.callF F g)
-    rw [show (Rwv.Hyle.Sem.xenv hp).get? s = some g from hg']
     rfl
 
 #print axioms Rwv.Eidos.addForeign_foreignC

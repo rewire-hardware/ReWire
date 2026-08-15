@@ -54,9 +54,6 @@ through. The foreign fields all default to "absent", so a bare
     emitted — the model-carrying trust boundary). The drivers build
     it from the compiled program's own definition environment
     (`Rwv.Hyle.Sem.mkFEnv`).
-  * `xtF s` — likewise for a model-carrying combinational extern `s`:
-    the Hyle-side denotation of its model definition (doc/hyle.md
-    §6.1, the interpreter's own reading).
   * `cryD f n τ` — the (untrusted, checked) Hyle entry-definition
     name for the same key: what the verified expression compiler
     inlines through. `hyleDefs`/`hyleFuel` are the compiled program's
@@ -67,19 +64,18 @@ through. The foreign fields all default to "absent", so a bare
     soundness.
   * `hyleX` — the compiled program's syntactic extern→model table
     (`Rwv.Hyle.Sem.xenv` of the foreign program, structurally): the
-    verified compiler's DECIDABLE gate for "model-less" — its extern
-    row compiles an uninterpreted-call node only when the extern is
-    absent here (`ForeignC`'s extern clause ties a miss to `xtF`
-    being unpopulated, so the evaluator's row is then the η-tier's
-    decode-gated bit path), and its Cryptol row inlines spliced
-    definitions through the bridge at exactly this table. -/
+    table at which the compiler's Cryptol row inlines spliced
+    definitions through the bridge.
+
+(Model-carrying externs need no hook here: an extern occurrence's
+source-side meaning is its own implementation argument — see
+`Eval.externModelless` — so it is evaluated and compiled as an
+ordinary expression, independent of any target program.) -/
 structure DEnv where
   ctors    : HashMap String (List String)
   ctorSig  : HashMap String Sig
   cryF     : String → String → Ty → Option (List Rwv.Hyle.BV → Except String Rwv.Hyle.BV) :=
     fun _ _ _ => none
-  xtF      : String → Option (List Rwv.Hyle.BV → Except String Rwv.Hyle.BV) :=
-    fun _ => none
   cryD     : String → String → Ty → Option String := fun _ _ _ => none
   hyleDefs : HashMap String Rwv.Hyle.Defn := ∅
   hyleFuel : Nat := 0

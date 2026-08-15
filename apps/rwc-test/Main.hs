@@ -453,7 +453,7 @@ getCertifyTests = findValidator >>= \ case
             pure $ testGroup "certify"
                   $ map (certifyTest dir) validated
                   <> map (unsupportedTest dir) unsupported
-                  <> [warnModeTest dir "externModel.hs"]
+                  <> [warnModeTest dir "extern.hs"]
       where -- Representative goldens that must VALIDATE end-to-end (TinyISA is
             -- the big one: the validator takes on the order of two minutes on
             -- its block bodies).
@@ -463,15 +463,17 @@ getCertifyTests = findValidator >>= \ case
                   , "state.hs", "multireg.hs", "records.hs", "subfsm.hs"
                   , "UpCounter1.hs", "wordArith.hs", "PreludeTest.hs"
                   , "Sha256.hs", "zerowidth.hs", "TinyISA.hs"
+                  , "externModel.hs" -- model-carrying externs: the source
+                                     -- meaning is the extern's own Eidos
+                                     -- implementation argument
                   ]
 
             -- Devices outside the certified profile: clocked extern
-            -- instances, and model-carrying externs (whose source-side
-            -- semantics exists only as compiler output). Required-mode
-            -- certification must fail the compilation with UNSUPPORTED,
-            -- never claim VALIDATED.
+            -- instances (no stream-level instance semantics or proof).
+            -- Required-mode certification must fail the compilation with
+            -- UNSUPPORTED, never claim VALIDATED.
             unsupported :: [FilePath]
-            unsupported = [ "extern.hs", "externModel.hs" ]
+            unsupported = [ "extern.hs" ]
 
             -- The tag names the per-test output files: tests over the
             -- same golden run concurrently and must not share logs or

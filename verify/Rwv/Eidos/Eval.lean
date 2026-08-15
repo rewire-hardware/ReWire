@@ -56,28 +56,28 @@ Decisions where the spec leaves latitude (candidates for doc folding):
 8. Eliminated (`bind`/`ret`/…) and reserved (`usingExtern`/
    `vecFoldR`/`vecFoldL`) builtins evaluate to errors naming the
    builtin — the machine fragment never reaches them.
-9. FOREIGN rows (doc/eidos.md §7.5.5, with η fixed by the
-   model-carrying trust boundary — the spliced and model definitions
-   ARE the builtin's semantics): a SATURATED `rwPrimCryptol f n impl ā`
-   (`f`/`n` string literals, as ToHyle requires after inlining)
-   evaluates the value arguments ā, reps them, applies the foreign
-   denotation `Δ.cryF f n τ_impl` — which the drivers instantiate as
-   the Hyle-side denotation of the rwcry-spliced `cry$…` definitions,
-   the definition OF the builtin's semantics under that boundary —
-   and `decode`s the result at the row's result type (both types read
-   off the occurrence's carried instantiated type, τ_impl being its
-   third argument type). The canonicality-checked `decode` makes a
+9. FOREIGN rows (doc/eidos.md §7.5.5): a SATURATED
+   `rwPrimCryptol f n impl ā` (`f`/`n` string literals, as ToHyle
+   requires after inlining) evaluates the value arguments ā, reps
+   them, applies the foreign denotation `Δ.cryF f n τ_impl` — which
+   the drivers may instantiate from a foreign artifact (the
+   model-carrying trust boundary for Cryptol; with the default empty
+   hook the row errors, naming the builtin) — and `decode`s the
+   result at the row's result type (both types read off the
+   occurrence's carried instantiated type, τ_impl being its third
+   argument type). The canonicality-checked `decode` makes a
    non-canonical foreign result a loud error, never a junk value.
-   `rwPrimExtern` gets the same row shape through `Δ.xtF s` (the
-   extern's name, its sixth argument) — the model-carrying
-   combinational extern's semantics is its Hyle-side model definition
-   (doc/hyle.md §6.1). The impl argument is never evaluated (its
-   GHC-side content was neutered before pass 8; at a function type it
-   has no value in this domain), and under-application is an error —
-   the drivers eta-saturate to signature arity first, exactly as
-   rwc's own normalization (ToHyle's etaExpand) does. With the
-   default (empty) foreign hooks both rows error, naming the builtin,
-   as before.
+   `rwPrimExtern` dispatches on its OWN implementation argument (the
+   occurrence's seventh argument, classified by `externModelless`):
+   a MODEL-LESS occurrence (the neutered-placeholder idiom) reads
+   through the bit-level extern environment η (`evalExt`); a
+   MODEL-CARRYING occurrence means exactly its implementation
+   argument applied to the value arguments — an ordinary source-side
+   application, so the extern's semantics comes from the source
+   artifact, never from a target program. Under-application of the
+   model-less row is an error — the drivers eta-saturate to signature
+   arity first, exactly as rwc's own normalization (ToHyle's
+   etaExpand) does.
 -/
 import Rwv.Eidos.Value
 import Rwv.Eidos.Decode
@@ -200,6 +200,30 @@ where go (acc : List Exp) : Exp → Exp × List Exp
   | .app f (.tArg _) => go acc f
   | e => (e, acc)
 
+/-- The neutered implementation-argument literal marking a MODEL-LESS
+extern occurrence (what `ReWire.Eidos.Externs` leaves when the user
+supplied no model). -/
+def externPlaceholder : String := "Extern expression placeholder"
+
+/-- Strip leading lambda binders (the eta-saturation wrapper shape). -/
+def stripLams : Exp → Exp
+  | .lam _ e => stripLams e
+  | e => e
+
+/-- Whether an extern occurrence is MODEL-LESS, decided from the
+SOURCE artifact alone: its implementation argument is the neutered
+`rwPrimError "Extern expression placeholder"` application (possibly
+eta-wrapped). This one classifier is shared by the evaluator, the
+verified compiler, and the drivers, so the source and target readings
+always dispatch together — and it is UNTRUSTED: a misclassification
+merely selects the other reading for the occurrence, which the
+symbolic comparison then rejects; it can never produce a false
+acceptance. -/
+def externModelless (impl : Exp) : Bool :=
+  match flattenApp (stripLams impl) with
+  | (.prim _ .error, .litStr s :: _) => s == externPlaceholder
+  | _ => false
+
 /-- The denotation of an integer literal at its carried type (§7.5.1):
 the 128-bit residue at `Integer`; the (fit-checked) value at
 `Finite n`; the MSB-first width-n residue at `Vec n Bool`. -/
@@ -287,8 +311,17 @@ def evalCore (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (e : Exp)
           | _ => throw "rwPrimCryptol: malformed foreign application"
         else if b == .«extern» then
           match args with
-          | _ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: _impl :: _inst :: rest =>
-              evalExt C fuel env jenv ty s rest E
+          | _ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: impl :: _inst :: rest =>
+              if externModelless impl then evalExt C fuel env jenv ty s rest E
+              else do
+                -- The MODEL-CARRYING extern row: the occurrence means
+                -- exactly its own implementation argument applied to
+                -- the value arguments — the source-side semantics
+                -- comes from the source artifact, never from the
+                -- target being checked.
+                let vs ← evalList C fuel env jenv rest E
+                let fv ← evalCore C fuel env jenv impl E
+                applyMany C fuel fv vs E
           | _ => throw "rwPrimExtern: malformed foreign application"
         else do
           let vs ← evalList C fuel env jenv args E
@@ -349,10 +382,15 @@ def evalCry (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (pty : Ty)
       else throw "rwPrimCryptol: unsaturated foreign application"
 termination_by fuel
 
-/-- The model-carrying extern row (decision note 9), after
-`evalCore`'s shape dispatch: the same shape as the Cryptol row, keyed
-by the extern's name `s` (the occurrence's sixth argument) with the
-impl monotype at its seventh argument position. -/
+/-- The MODEL-LESS extern row (decision note 9, the η tier), after
+`evalCore`'s shape dispatch: the extern reads through the bit-level
+extern environment — rep the arguments at the current fuel, apply the
+interpretation to their concatenation (errors are loud), and decode
+the result at the row's result type (the impl monotype is the
+occurrence type's seventh argument type). The canonicality-checked
+decode is the gate that confines the bit-level quantification to
+representation images. (Model-carrying occurrences never reach here:
+`evalCore` dispatches them to their own implementation argument.) -/
 def evalExt (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (pty : Ty)
     (s : String) (rest : List Exp)
     (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=
@@ -362,25 +400,12 @@ def evalExt (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (pty : Ty)
       let vs ← evalList C fuel env jenv rest E
       let ity ← domTy "rwPrimExtern" (Ty.flattenArrow pty).1 6
       if rest.length = (Ty.flattenArrow ity).1.length then
-        match C.Δ.xtF s with
-        | some den => do
+        match E s with
+        | some f => do
             let reps ← vs.mapM (fun v => valToBits C.Δ fuel v)
-            let bv ← den reps
+            let bv ← f (Rwv.Hyle.Sem.bvcat reps)
             decode C.Δ fuel (Ty.flattenArrow ity).2 bv
-        | none =>
-            -- The η tier: a MODEL-LESS extern reads through the
-            -- bit-level extern environment — rep the arguments at the
-            -- current fuel, apply the interpretation to their
-            -- concatenation (errors are loud), and decode the result
-            -- at the row's result type. The canonicality-checked
-            -- decode is the gate that confines the bit-level
-            -- quantification to representation images.
-            match E s with
-            | some f => do
-                let reps ← vs.mapM (fun v => valToBits C.Δ fuel v)
-                let bv ← f (Rwv.Hyle.Sem.bvcat reps)
-                decode C.Δ fuel (Ty.flattenArrow ity).2 bv
-            | none => throw s!"rwPrimExtern: no model denotation for extern {s}"
+        | none => throw s!"rwPrimExtern: no model denotation for extern {s}"
       else throw "rwPrimExtern: unsaturated foreign application"
 termination_by fuel
 

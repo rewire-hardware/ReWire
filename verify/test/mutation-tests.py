@@ -88,13 +88,22 @@ def validator_tests(exe, dumps, work):
     # Baseline: the pure corpus validates.
     expect(exe, "pure baseline validates", case1_eir, case1_rwc, "VALIDATED")
 
-    # Foreign tier: no independent source semantics -> UNSUPPORTED,
-    # regardless of what the target says.
-    expect(exe, "model-carrying externs are unsupported",
-           dumps / "externModel.8.eir", dumps / "externModel.11.rwc", "UNSUPPORTED")
+    # The extern-model tier: an occurrence's source-side meaning is its
+    # own Eidos implementation argument, so the tier validates with
+    # independent semantics — and a semantic mutation on EITHER side
+    # alone rejects (the flagship regression: a target model can no
+    # longer define the meaning it is checked against).
+    expect(exe, "model-carrying externs validate end-to-end",
+           dumps / "externModel.8.eir", dumps / "externModel.11.rwc", "VALIDATED")
     mut = (dumps / "externModel.11.rwc").read_text().replace("      and a b", "      or a b")
-    expect(exe, "target-only extern-model mutation cannot validate",
-           dumps / "externModel.8.eir", w("externModel.and2or.11.rwc", mut), "UNSUPPORTED")
+    assert mut != (dumps / "externModel.11.rwc").read_text()
+    expect(exe, "target-only extern-model mutation rejects",
+           dumps / "externModel.8.eir", w("externModel.and2or.11.rwc", mut), "REJECTED")
+    smut = (dumps / "externModel.8.eir").read_text().replace("(rwPrimAnd :: ", "(rwPrimOr :: ")
+    assert smut != (dumps / "externModel.8.eir").read_text()
+    expect(exe, "source-only extern-model mutation rejects",
+           w("externModel.srcmut.8.eir", smut), dumps / "externModel.11.rwc", "REJECTED")
+    # The rest of the foreign tier stays outside the certified profile.
     expect(exe, "Cryptol splices are unsupported",
            dumps / "cryptolffi.8.eir", dumps / "cryptolffi.11.rwc", "UNSUPPORTED")
     expect(exe, "clocked externs are unsupported",

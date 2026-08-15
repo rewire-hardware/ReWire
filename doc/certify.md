@@ -95,10 +95,22 @@ cycle for cycle — in full when the machine never halts, and up to (and
 excluding) the halting cycle when it does (the doc/eidos.md §7.5.4
 prefix reading).
 
+The gap between the executable and the theorem is closed by one pure
+entry point: `Rwv.Eidos.validateBundle` owns every gate between the
+artifact texts and the library validator, and its top-level theorem
+`validateBundle_sound` (axiom-clean, same three axioms) concludes the
+correspondence from a `.validated` result alone — parsing, the
+primitive-basis and fresh-unique gates, the foreign-occurrence scan,
+both well-formedness judgments, the denoting definition environment,
+eta saturation, and the `ForeignC` premise are all discharged
+internally, and the conclusion names the exact processing chain, so a
+caller knows precisely which program was certified. The driver's
+verdict is this function's result.
+
 Two boundary caveats qualify the theorem:
 
 - **The correspondence is conditional on both runs succeeding.** The
-  validator therefore separately requires the target to be well formed
+  bundle therefore requires the target to be well formed
   (`Rwv.Hyle.Program.check`) and its definition environment to denote
   (`Rwv.Hyle.Sem.mkFEnv`), and the source to satisfy the machine
   well-formedness judgment (`Rwv.Eidos.Check.checkMachine`), so that a
@@ -124,10 +136,11 @@ The mathematical core —
 - the Lean kernel and the three standard axioms above;
 - the two mechanized semantics being the intended readings of
   doc/eidos.md §7.5 and doc/hyle.md §6. Differential testing against
-  `rwc --interpret` pins them **for the non-foreign fragment only**: for
-  model-less externs the interpreter cannot run, so the eta tier's
-  differential evidence is a Lean-vs-Lean self-test, not an external
-  oracle;
+  `rwc --interpret` pins them for the interpreter-evaluable fragment
+  (model-carrying externs included — the interpreter evaluates the
+  model); for **model-less** externs the interpreter cannot run, so the
+  eta tier's differential evidence is a Lean-vs-Lean self-test, not an
+  external oracle;
 - the parsers that read the two dumps, and the printers that wrote them
   (the round-trip legs of rwc-test exercise both);
 - the eta-saturation and canonical-basis preprocessing described above.
@@ -158,21 +171,20 @@ covered; the cosimulation legs of rwc-test remain the check on those.
 | Pure devices (no foreign calls) | **VALIDATED** |
 | Model-less combinational externs, no static generics | **VALIDATED**, universally: the verdict quantifies over all implementations of the extern (the ∀η tier) |
 | Model-less combinational externs with static generics | UNSUPPORTED (the mechanized extern environment is not keyed by generics) |
-| Model-carrying combinational externs | UNSUPPORTED: the model's source-side meaning currently exists only as compiler output, and validating against that would let the target define the semantics it is checked against |
-| Cryptol foreign functions (`rwPrimCryptol`) | UNSUPPORTED, for the same reason: no independent source-side semantics exists in the artifact bundle |
+| Model-carrying combinational externs | **VALIDATED**: the occurrence's source-side meaning is its own Eidos implementation argument (the model rwc kept beside the extern), evaluated and compiled as an ordinary expression; the target's model meets that independently obtained form through the ordinary translation obligations |
+| Cryptol foreign functions (`rwPrimCryptol`) | UNSUPPORTED: no independent source-side semantics exists in the artifact bundle (the pass-8 artifact carries only a placeholder) |
 | Clocked (sequential) externs / device instances | UNSUPPORTED (no stream-level instance semantics or proof) |
 | Multiple processes | UNSUPPORTED |
 
 Whether an extern occurrence carries a model is decided from the Eidos
 artifact alone (the model-less idiom is syntactic: the implementation
 argument is the `rwPrimError "Extern expression placeholder"`
-application), and the target's extern declaration is cross-checked to
-agree — changing the target can never select a different validation
-rule. Re-enabling the model-carrying and Cryptol rows requires source
-semantics constructed independently of the target (for extern models,
-by evaluating the model's Eidos definition; for Cryptol, retained
-source syntax with mechanized semantics, or an explicitly trusted
-oracle artifact under a distinct verdict).
+application) — changing the target can never select a different
+validation rule; a source/target disagreement about model-ness is
+REJECTED. Re-enabling the Cryptol row requires source semantics
+constructed independently of the target: retained source syntax with
+mechanized semantics, or an explicitly trusted oracle artifact under a
+distinct verdict.
 
 ## Building and locating the validator
 
@@ -196,10 +208,10 @@ binary on the PATH.
 ## Tests
 
 The rwc-test "certify" group runs `--certify` end-to-end over a
-representative subset of the golden tests: the pure subset must
-VALIDATE, the foreign-tier tests (clocked and model-carrying externs)
-must fail required-mode certification with UNSUPPORTED, and a warn-mode
-leg checks the unsuppressible status line. The group is skipped when the
+representative subset of the golden tests: the pure subset and the
+model-carrying extern test must VALIDATE, the clocked-extern test must
+fail required-mode certification with UNSUPPORTED, and a warn-mode leg
+checks the unsuppressible status line. The group is skipped when the
 validator binary is not found, unless `RWC_TEST_REQUIRE_RWV` is set (the
 CI certification lane), in which case a missing validator fails.
 

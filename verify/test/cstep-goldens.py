@@ -29,14 +29,14 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 VERIFY = REPO / "verify"
 
-# Expected headline verdict per test; everything else expects VALIDATED.
-# The foreign tier is outside the certified profile: model-carrying
-# externs and Cryptol splices have no independent source-side semantics
-# (only compiler output), and clocked externs have no instance-level
+# Expected headline verdict per test; everything else expects VALIDATED
+# (including externModel: a model-carrying extern occurrence means its
+# own Eidos implementation argument, so the tier has independent
+# source-side semantics). Cryptol splices still have only compiler
+# output as their meaning, and clocked externs have no instance-level
 # proof.
 EXPECTED_UNSUPPORTED = {
     "extern",       # clocked extern instance
-    "externModel",  # model-carrying combinational externs
     "cryptolffi", "cryptolffi2", "cryptolffi3", "cryptolffi4",
     "cryptolffi5", "cryptolffi6", "cryptolffi7", "cryptolffi8",
     "cryptolffi9",  # Cryptol foreign functions

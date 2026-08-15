@@ -496,7 +496,18 @@ private theorem evalCore_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : 
       by_cases hbx : b == .«extern»
       · rw [if_pos hbx] at h ⊢
         split at h
-        · exact ih.ext _ _ _ _ _ _ h
+        · -- the extern shape: dispatch on the source-side classifier
+          split at h
+          · rename_i hml
+            rw [if_pos hml]
+            exact ih.ext _ _ _ _ _ _ h
+          · rename_i hml
+            rw [if_neg hml]
+            obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
+            refine bind_ok (ih.list _ _ _ _ hvs) ?_
+            obtain ⟨fv, hfv, h⟩ := except_bind_eq_ok h
+            refine bind_ok (ih.core _ _ _ _ hfv) ?_
+            exact ih.many _ _ _ h
         · exact error_ne_ok h
       · rw [if_neg hbx] at h ⊢
         obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
@@ -757,21 +768,11 @@ private theorem evalExt_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : N
   · exact error_ne_ok h
   rename_i hlen
   rw [if_pos hlen]
-  cases hden : C.Δ.xtF s with
-  | none =>
-      rw [hden] at h
-      cases hEs : E s with
-      | none => rw [hEs] at h; exact error_ne_ok h
-      | some f =>
-          rw [hEs] at h
-          rw [hE s f hEs]
-          obtain ⟨reps, hreps, h⟩ := except_bind_eq_ok h
-          refine bind_ok (mapM_mono (fun a b hab => Eval.valToBits_mono hk hab) hreps) ?_
-          obtain ⟨bv, hbv, h⟩ := except_bind_eq_ok h
-          refine bind_ok hbv ?_
-          exact decode_mono hk h
-  | some den =>
-      rw [hden] at h
+  cases hEs : E s with
+  | none => rw [hEs] at h; exact error_ne_ok h
+  | some f =>
+      rw [hEs] at h
+      rw [hE s f hEs]
       obtain ⟨reps, hreps, h⟩ := except_bind_eq_ok h
       refine bind_ok (mapM_mono (fun a b hab => Eval.valToBits_mono hk hab) hreps) ?_
       obtain ⟨bv, hbv, h⟩ := except_bind_eq_ok h

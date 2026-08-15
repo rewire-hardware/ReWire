@@ -64,12 +64,15 @@ variable below); the compilers are syntactic and never consult it.
 
 Three further gaps are closed:
 
-  * MODEL-CARRYING extern occurrences compile exactly like the
-    Cryptol row keyed by the syntactic extern table (`Δ.hyleX`
-    designates the model definition; `ForeignC.xt` ties `Δ.xtF` to
-    its denotation; `symExp` inlines model-carrying xcalls, so the
-    device side reads the same splice) — sound by the Cryptol case's
-    argument verbatim.
+  * MODEL-CARRYING extern occurrences (classified from the SOURCE
+    artifact alone — `Eval.externModelless` on the implementation
+    argument, never a target extern table) compile as their own
+    implementation argument applied to the value arguments through
+    the pending discipline — sound directly by the induction
+    hypothesis's `applyMany` leg, with no foreign premise. The
+    target side's xcall inlines the target's model (`symExp`), so
+    the two independently obtained forms meet in the ordinary
+    translation obligations.
   * teq-STRICTNESS: the constructor-field, case-alternative-result,
     and pause-output checks compare with `teqN` — `teq`, or Vec/Finite
     spines with `evalNat`-equal nat positions at `ctorFree` heads —
@@ -4297,44 +4300,32 @@ def callF (F : Rwv.Hyle.Sem.FEnv) (g : String) (vs : List BV) : Except String BV
   | some fn => fn vs
   | none => .error s!"foreign: unknown definition {g}"
 
-/-- The foreign-environment premise (the Cryptol and extern rows):
-SOME Hyle definition environment `F` implements Δ's foreign definition
-map at Δ's own syntactic extern table (`hX` pins the table — the
-compiler's Cryptol row inlines spliced definitions through `symExp` at
-exactly `Δ.hyleX`, so the premise must speak about the same table),
-Δ's semantic Cryptol hook is exactly `F`'s denotation of the entry the
-syntactic map designates, and — the η tier's `ext` clause — an extern
-ABSENT from the syntactic table carries no model denotation, so the
-evaluator's extern row is forced onto the η tier's bit path exactly
-where the compiler emits an uninterpreted-call node; dually (the
-model clause `xt`) an extern PRESENT in the table denotes exactly
-`F` on its model definition, which is what lets the compiler's
-model-carrying row inline that definition through the bridge. `impl`
-is pinned at the EMPTY extern environment (the drivers build `F` by
-`mkFEnv` at the default); the compiler's `xcallFree` gate on spliced
-inlinings is what makes that sufficient at every statement
-environment. -/
+/-- The foreign-environment premise (the Cryptol row): SOME Hyle
+definition environment `F` implements Δ's foreign definition map at
+Δ's own syntactic extern table (`hX` pins the table — the compiler's
+Cryptol row inlines spliced definitions through `symExp` at exactly
+`Δ.hyleX`, so the premise must speak about the same table), and Δ's
+semantic Cryptol hook is exactly `F`'s denotation of the entry the
+syntactic map designates. `impl` is pinned at the EMPTY extern
+environment (the drivers build `F` by `mkFEnv` at the default); the
+compiler's `xcallFree` gate on spliced inlinings is what makes that
+sufficient at every statement environment. (Externs need no clause
+here: a model-carrying extern occurrence means its OWN implementation
+argument — an ordinary source expression — and the model-less η tier
+is uninterpreted on both sides by construction.) -/
 structure ForeignC (Δ : DEnv) (X : Rwv.Hyle.Sem.XEnv) (F : Rwv.Hyle.Sem.FEnv) : Prop where
   impl : Rwv.Hyle.Bridge.FImplements Δ.hyleDefs X F
   hX   : X = Δ.hyleX
   cry  : ∀ f n t g, Δ.cryD f n t = some g →
     ∃ den, Δ.cryF f n t = some den ∧ ∀ vs, den vs = callF F g vs
-  ext  : ∀ s, Δ.hyleX.get? s = none → Δ.xtF s = none
-  xt   : ∀ s g, Δ.hyleX.get? s = some g →
-    ∃ den, Δ.xtF s = some den ∧ ∀ vs, den vs = callF F g vs
 
 /-- The trivially-empty foreign environment satisfies the premise
-against any implementing pair (no Cryptol keys are mapped, no extern
-models are installed). -/
+against any implementing pair (no Cryptol keys are mapped). -/
 theorem foreignC_empty {Δ : DEnv} {X : Rwv.Hyle.Sem.XEnv} {F : Rwv.Hyle.Sem.FEnv}
     (himpl : Rwv.Hyle.Bridge.FImplements Δ.hyleDefs X F)
     (hXeq : X = Δ.hyleX)
-    (hnone : ∀ f n t, Δ.cryD f n t = none)
-    (hxt : ∀ s, Δ.xtF s = none)
-    (hX0 : ∀ s, Δ.hyleX.get? s = none) : ForeignC Δ X F :=
-  ⟨himpl, hXeq, fun f n t g hg => absurd hg (by rw [hnone f n t]; simp),
-   fun s _ => hxt s,
-   fun s g hg => absurd hg (by rw [hX0 s]; simp)⟩
+    (hnone : ∀ f n t, Δ.cryD f n t = none) : ForeignC Δ X F :=
+  ⟨himpl, hXeq, fun f n t g hg => absurd hg (by rw [hnone f n t]; simp)⟩
 
 /-! ## HashMap transport for the spliced-call environments (house
 style: Bridge's private helpers, re-proved) -/
@@ -4809,47 +4800,36 @@ def cexpJ (Δ : DEnv) (dmap : HashMap Int Defn) :
                     else .error "rwPrimCryptol: unsaturated foreign application"
                 | _ => .error "rwPrimCryptol: malformed foreign application")
             | .«extern» =>
-                -- The model-less combinational extern row (the η
-                -- tier): compile the value arguments, pack their
-                -- concatenation, and emit the uninterpreted-call node
-                -- at the result type's width. The syntactic gate
-                -- `Δ.hyleX.get? s = none` is what `ForeignC`'s extern
-                -- clause converts into "the evaluator takes the η
-                -- path"; a model-carrying extern takes the
-                -- model-inlining arm below.
+                -- The extern row, dispatched on the SOURCE-side
+                -- classifier (`Eval.externModelless` on the
+                -- implementation argument — never a target extern
+                -- table, so changing the target cannot select a
+                -- different validation rule):
+                --   * MODEL-LESS (the neutered-placeholder idiom, the
+                --     η tier): compile the value arguments, pack their
+                --     concatenation, and emit the uninterpreted-call
+                --     node at the result type's width;
+                --   * MODEL-CARRYING: the occurrence means exactly
+                --     its own implementation argument applied to the
+                --     value arguments — compile the impl through the
+                --     pending discipline, mirroring the evaluator's
+                --     `applyMany` reading. The target's model meets
+                --     this form through the ordinary translation
+                --     obligations (the device side's xcall inlines
+                --     the target model).
                 (match args with
-                | _ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: _impl :: _inst :: rest => do
-                    let ity ← Eval.domTy "rwPrimExtern" (Ty.flattenArrow pty).1 6
-                    if rest.length = (Ty.flattenArrow ity).1.length then
-                      match Δ.hyleX.get? s with
-                      | some g =>
-                          -- The MODEL-CARRYING extern row: exactly the
-                          -- Cryptol row keyed by the extern table —
-                          -- inline the model definition through the
-                          -- bridge at Δ's syntactic extern table,
-                          -- gated extern-free on the compiled
-                          -- arguments and the inlined form (the model
-                          -- denotations `ForeignC.xt` pins live at the
-                          -- empty extern environment).
-                          (match Δ.hyleDefs.get? g with
-                          | some hd => do
-                              let pas ← rest.mapM (cexpJ Δ dmap fuel Γ jΓ · [])
-                              if pas.length = hd.params.length then
-                                if (pas.map (·.1)).all NF.xcallFree then do
-                                  let nf ← Rwv.Hyle.Bridge.symExp Δ.hyleDefs Δ.hyleX Δ.hyleFuel
-                                    (HashMap.ofList (hd.params.zip (pas.map (·.1)))) hd.body
-                                  if nf.xcallFree then
-                                    .ok (nf, (Ty.flattenArrow ity).2)
-                                  else .error s!"rwPrimExtern {s}: model reaches an extern (out of scope)"
-                                else .error s!"rwPrimExtern {s}: extern-derived argument (out of scope)"
-                              else .error s!"rwPrimExtern {s}: model arity mismatch"
-                          | none => .error s!"rwPrimExtern {s}: unknown model {g}")
-                      | none => do
-                          let pas ← rest.mapM (cexpJ Δ dmap fuel Γ jΓ · [])
-                          let res := (Ty.flattenArrow ity).2
-                          let w ← Δ.sizeOf (fuel + 1) [] res
-                          .ok (.xcall w s (.xpack (pas.map (·.1))), res)
-                    else .error "rwPrimExtern: unsaturated foreign application"
+                | _ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: impl :: _inst :: rest =>
+                    if Eval.externModelless impl then do
+                      let ity ← Eval.domTy "rwPrimExtern" (Ty.flattenArrow pty).1 6
+                      if rest.length = (Ty.flattenArrow ity).1.length then do
+                        let pas ← rest.mapM (cexpJ Δ dmap fuel Γ jΓ · [])
+                        let res := (Ty.flattenArrow ity).2
+                        let w ← Δ.sizeOf (fuel + 1) [] res
+                        .ok (.xcall w s (.xpack (pas.map (·.1))), res)
+                      else .error "rwPrimExtern: unsaturated foreign application"
+                    else do
+                      let pas ← rest.mapM (cexpJ Δ dmap fuel Γ jΓ · [])
+                      cexpJ Δ dmap fuel Γ jΓ impl pas
                 | _ => .error "rwPrimExtern: malformed foreign application")
             | _ => do
                 let pas ← args.mapM (cexpJ Δ dmap fuel Γ jΓ · [])
@@ -8180,75 +8160,53 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
             revert hbc
             cases b == .cryptol <;> simp
           by_cases hbx : (b == .«extern») = true
-          · -- THE MODEL-LESS EXTERN ROW (the η tier): the
-            -- compiled form is the uninterpreted-call node over the
-            -- packed arguments. Both sides read the SAME bit-level
-            -- interpretation E on the SAME bits (the argument IH),
-            -- and the evaluator's decode gate pins the result
-            -- canonical, with `decode_rep` closing the representation
-            -- leg and the clamp made inert by `vty_rep_width`.
+          · -- THE EXTERN ROW, dispatched on the source-side
+            -- classifier exactly as the compiler and evaluator do.
             rw [if_neg (by simp [hbcF]), if_pos hbx] at hev
             rw [beq_iff_eq] at hbx
             subst hbx
             dsimp only at hc hev
             split at hc
             all_goals try exact error_ne_ok hc
-            rename_i _ps _clk _rst _as _rs s _impl _inst rest
+            rename_i _ps _clk _rst _as _rs s impl _inst rest
             dsimp only at hev
-            cases efuel with
-            | zero => rw [Eval.evalExt] at hev; exact error_ne_ok hev
-            | succ ef2 =>
-            rw [Eval.evalExt] at hev
-            obtain ⟨vs, hvs, hev⟩ := except_bind_eq_ok hev
-            obtain ⟨hvlen, hpt2⟩ := evalList_ok_idx hvs
-            obtain ⟨ityE, hityE, hev⟩ := except_bind_eq_ok hev
-            obtain ⟨ityC, hityC, hc⟩ := except_bind_eq_ok hc
-            rw [hityC] at hityE
-            injection hityE with hity
-            subst hity
-            split at hc
-            rotate_left
-            · exact error_ne_ok hc
-            rename_i hlenC
-            rw [if_pos hlenC] at hev
-            cases hhx : Δ.hyleX.get? s with
-            | some g =>
-              -- THE MODEL-CARRYING EXTERN ROW: the Cryptol case's
-              -- argument verbatim, keyed by the extern table — the
-              -- compiled form is the model definition's symbolic
-              -- inlining; its denotation is the evaluator's `Δ.xtF`
-              -- result through `ForeignC.xt`, `symExp_sound`, and the
-              -- decode round trip, with the extern-free gates pinning
-              -- the pinned-at-eEmpty denotations.
-              rw [hhx] at hc
-              dsimp only at hc
-              cases hgd : Δ.hyleDefs.get? g with
-              | none => rw [hgd] at hc; exact error_ne_ok hc
-              | some hd =>
-              rw [hgd] at hc
-              dsimp only at hc
+            by_cases hml : Eval.externModelless impl = true
+            · -- THE MODEL-LESS ROW (the η tier): the compiled form is
+              -- the uninterpreted-call node over the packed
+              -- arguments. Both sides read the SAME bit-level
+              -- interpretation E on the SAME bits (the argument IH),
+              -- and the evaluator's decode gate pins the result
+              -- canonical, with `decode_rep` closing the
+              -- representation leg and the clamp made inert by
+              -- `vty_rep_width`.
+              rw [if_pos hml] at hc hev
+              cases efuel with
+              | zero => rw [Eval.evalExt] at hev; exact error_ne_ok hev
+              | succ ef2 =>
+              rw [Eval.evalExt] at hev
+              obtain ⟨vs, hvs, hev⟩ := except_bind_eq_ok hev
+              obtain ⟨hvlen, hpt2⟩ := evalList_ok_idx hvs
+              obtain ⟨ityE, hityE, hev⟩ := except_bind_eq_ok hev
+              obtain ⟨ityC, hityC, hc⟩ := except_bind_eq_ok hc
+              rw [hityC] at hityE
+              injection hityE with hity
+              subst hity
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
+              rename_i hlenC
+              rw [if_pos hlenC] at hev
               obtain ⟨pas, hpas, hc⟩ := except_bind_eq_ok hc
               obtain ⟨hplen, hpt⟩ := mapM_ok_idx hpas
-              split at hc
-              rotate_left
-              · exact error_ne_ok hc
-              rename_i harity
-              split at hc
-              rotate_left
-              · exact error_ne_ok hc
-              rename_i hargsFree
-              obtain ⟨nfS, hsym, hc⟩ := except_bind_eq_ok hc
-              split at hc
-              rotate_left
-              · exact error_ne_ok hc
-              rename_i hnfFree
+              obtain ⟨w, hw, hc⟩ := except_bind_eq_ok hc
               injection hc with hc
               injection hc with hnf hty
               subst hnf
               subst hty
-              obtain ⟨den, hxtF, hden⟩ := hFor.xt s g hhx
-              rw [hxtF] at hev
-              dsimp only at hev
+              cases hEs : E s with
+              | none => rw [hEs] at hev; exact error_ne_ok hev
+              | some fx =>
+              rw [hEs] at hev
               obtain ⟨reps, hreps, hev⟩ := except_bind_eq_ok hev
               obtain ⟨hrlen, hrpt⟩ := mapM_ok_idx hreps
               obtain ⟨bv, hbv, hev⟩ := except_bind_eq_ok hev
@@ -8269,91 +8227,42 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
                 have hri' : Val.rep Δ ef2 vs[i] = .ok reps[i] := hri
                 rw [List.getElem_map, List.getElem_map]
                 exact rep_det hri' hrepi
-              obtain ⟨fn, hFg, hfn⟩ := hFor.impl g hd hgd
-              have hlenR : reps.length = hd.params.length := by omega
-              have himpl' : Rwv.Hyle.Bridge.FImplements Δ.hyleDefs Δ.hyleX F := by
-                have h0 := hFor.impl
-                rw [hFor.hX] at h0
-                exact h0
-              have hbv' : Rwv.Hyle.evalExp F Δ.hyleX (HashMap.ofList (hd.params.zip reps))
-                  hd.body = .ok bv := by
-                have h1 := hden reps
-                rw [h1, callF, hFg] at hbv
-                dsimp only at hbv
-                rw [hfn reps] at hbv
-                simp only [Rwv.Hyle.Bridge.mkFn] at hbv
-                rw [if_pos hlenR] at hbv
-                rw [← hFor.hX]
-                exact hbv
-              have hre0 : reps = (pas.map (·.1)).map (NF.eval σ Rwv.Hyle.Sem.eEmpty) := by
-                rw [hre]
-                refine List.map_congr_left ?_
-                intro n hn
-                exact Rwv.Hyle.Bridge.NF.xcallFree_eval (List.all_eq_true.mp hargsFree n hn)
-              have hcorr : Rwv.Hyle.Bridge.EnvCorr σ
-                  (HashMap.ofList (hd.params.zip (pas.map (·.1))))
-                  (HashMap.ofList (hd.params.zip reps)) := by
-                rw [hre0]
-                exact envCorr_zip_eval (E := Rwv.Hyle.Sem.eEmpty) hd.params (pas.map (·.1))
-              have hsem := Rwv.Hyle.Bridge.symExp_sound himpl' Δ.hyleFuel hd.body
-                (HashMap.ofList (hd.params.zip (pas.map (·.1))))
-                (HashMap.ofList (hd.params.zip reps)) nfS hcorr hsym
-              have hbvnf : bv = nfS.eval σ Rwv.Hyle.Sem.eEmpty := by
-                rw [hsem] at hbv'
-                injection hbv' with h'
-                exact h'.symm
-              have hlift : nfS.eval σ Rwv.Hyle.Sem.eEmpty = nfS.eval σ E :=
-                Rwv.Hyle.Bridge.NF.xcallFree_eval (E := Rwv.Hyle.Sem.eEmpty) (E' := E) hnfFree
-              exact ⟨decode_vty hev, ef2, (hlift ▸ hbvnf) ▸ decode_rep hev⟩
-            | none =>
-            rw [hhx] at hc
-            dsimp only at hc
-            obtain ⟨pas, hpas, hc⟩ := except_bind_eq_ok hc
-            obtain ⟨hplen, hpt⟩ := mapM_ok_idx hpas
-            obtain ⟨w, hw, hc⟩ := except_bind_eq_ok hc
-            injection hc with hc
-            injection hc with hnf hty
-            subst hnf
-            subst hty
-            have hxtF : Δ.xtF s = none := hFor.ext s hhx
-            rw [hxtF] at hev
-            cases hEs : E s with
-            | none => rw [hEs] at hev; exact error_ne_ok hev
-            | some fx =>
-            rw [hEs] at hev
-            obtain ⟨reps, hreps, hev⟩ := except_bind_eq_ok hev
-            obtain ⟨hrlen, hrpt⟩ := mapM_ok_idx hreps
-            obtain ⟨bv, hbv, hev⟩ := except_bind_eq_ok hev
-            have hptw : ∀ i (h1 : i < pas.length) (h2 : i < vs.length),
-                VTy Δ vs[i] pas[i].2 ∧
-                  ∃ k, Val.rep Δ k vs[i] = .ok (pas[i].1.eval σ E) := by
-              intro i h1 h2
-              obtain ⟨hia, hci⟩ := hpt i (by omega)
-              obtain ⟨hia2, ki, hei⟩ := hpt2 i (by omega)
-              exact ih Γ jΓ rest[i] [] (pas[i].1) (pas[i].2) ki 1 env jenv vs[i] [] vs[i]
-                hci hei (applyMany_one ⟨Δ, dmap⟩ 0 vs[i]) hΓ hJ rfl
-                (fun j hj1 _ => absurd hj1 (by simp))
-            have hre : reps = (pas.map (·.1)).map (NF.eval σ E) := by
-              refine List.ext_getElem (by rw [List.length_map, List.length_map]; omega) ?_
-              intro i hi1 hi2
-              obtain ⟨hia, hri⟩ := hrpt i (by omega)
-              obtain ⟨hvtyi, ki, hrepi⟩ := hptw i (by omega) (by omega)
-              have hri' : Val.rep Δ ef2 vs[i] = .ok reps[i] := hri
-              rw [List.getElem_map, List.getElem_map]
-              exact rep_det hri' hrepi
-            have hwidth : bv.width = w :=
-              vty_rep_width (decode_vty hev) (decode_rep hev) hw
-            refine ⟨decode_vty hev, ef2, ?_⟩
-            have h1 : (NF.xcall w s (.xpack (pas.map (·.1)))).eval σ E
-                = Rwv.Hyle.Sem.xapply E s w (Rwv.Hyle.Sem.bvcat reps) := by
-              show Rwv.Hyle.Sem.xapply E s w ((NF.xpack (pas.map (·.1))).eval σ E) = _
-              rw [Rwv.Hyle.Bridge.NF.xpack_eval, ← hre]
-            have heval : (NF.xcall w s (.xpack (pas.map (·.1)))).eval σ E = bv := by
-              rw [h1]
-              simp only [Rwv.Hyle.Sem.xapply, hEs, hbv]
-              rw [if_pos hwidth]
-            rw [heval]
-            exact decode_rep hev
+              have hwidth : bv.width = w :=
+                vty_rep_width (decode_vty hev) (decode_rep hev) hw
+              refine ⟨decode_vty hev, ef2, ?_⟩
+              have h1 : (NF.xcall w s (.xpack (pas.map (·.1)))).eval σ E
+                  = Rwv.Hyle.Sem.xapply E s w (Rwv.Hyle.Sem.bvcat reps) := by
+                show Rwv.Hyle.Sem.xapply E s w ((NF.xpack (pas.map (·.1))).eval σ E) = _
+                rw [Rwv.Hyle.Bridge.NF.xpack_eval, ← hre]
+              have heval : (NF.xcall w s (.xpack (pas.map (·.1)))).eval σ E = bv := by
+                rw [h1]
+                simp only [Rwv.Hyle.Sem.xapply, hEs, hbv]
+                rw [if_pos hwidth]
+              rw [heval]
+              exact decode_rep hev
+            · -- THE MODEL-CARRYING ROW: the occurrence means its own
+              -- implementation argument applied to the value
+              -- arguments — on both sides — so the induction
+              -- hypothesis closes it through the `applyMany` leg. No
+              -- foreign premise is involved: the source-side meaning
+              -- is constructed from the source artifact alone.
+              rw [if_neg hml] at hc hev
+              obtain ⟨pas, hpas, hc⟩ := except_bind_eq_ok hc
+              obtain ⟨hplen, hpt⟩ := mapM_ok_idx hpas
+              obtain ⟨vs, hvs, hev⟩ := except_bind_eq_ok hev
+              obtain ⟨hvlen, hpt2⟩ := evalList_ok_idx hvs
+              obtain ⟨fv, hfv, hev⟩ := except_bind_eq_ok hev
+              have hptw : ∀ i (h1 : i < pas.length) (h2 : i < vs.length),
+                  VTy Δ vs[i] pas[i].2 ∧
+                    ∃ k, Val.rep Δ k vs[i] = .ok (pas[i].1.eval σ E) := by
+                intro i h1 h2
+                obtain ⟨hia, hci⟩ := hpt i (by omega)
+                obtain ⟨hia2, ki, hei⟩ := hpt2 i (by omega)
+                exact ih Γ jΓ rest[i] [] (pas[i].1) (pas[i].2) ki 1 env jenv vs[i] [] vs[i]
+                  hci hei (applyMany_one ⟨Δ, dmap⟩ 0 vs[i]) hΓ hJ rfl
+                  (fun j hj1 _ => absurd hj1 (by simp))
+              exact ih Γ jΓ impl pas nf ty efuel efuel env jenv fv vs v hc hfv hev hΓ hJ
+                (by omega) hptw
           have hbxF : (b == .«extern») = false := by
             revert hbx
             cases b == .«extern» <;> simp
@@ -10480,58 +10389,21 @@ theorem cexpJ_varsWF {Δ : DEnv} {dmap : HashMap Int Defn} {P : String → Nat �
             obtain ⟨q, hq, hqn⟩ := List.mem_map.mp hx2
             rw [← hqn]
             exact hpasWF q hq
-          · -- the extern row: model-carrying occurrences inline the
-            -- model (the Cryptol case's argument); model-less ones
-            -- pack the compiled arguments' variables
+          · -- the extern row: model-less occurrences pack the compiled
+            -- arguments' variables; model-carrying ones compile the
+            -- implementation argument through the pending discipline
+            -- (the induction hypothesis)
             split at hc
             all_goals try exact error_ne_ok hc
-            rename_i _ps _clk _rst _as _rs sx _impl _inst rest
-            rw [bind_ok_iff] at hc
-            obtain ⟨ity, _hity, hc⟩ := hc
+            rename_i _ps _clk _rst _as _rs sx impl _inst rest
             split at hc
-            rotate_left
-            · exact error_ne_ok hc
-            split at hc
-            · -- model-carrying: the model inlining's variables are
-              -- the compiled arguments'
-              rename_i g _hhx
-              split at hc
-              all_goals try exact error_ne_ok hc
-              rename_i hd _hgd
-              rw [bind_ok_iff] at hc
-              obtain ⟨pas, hpas, hc⟩ := hc
-              obtain ⟨hplen, hpt⟩ := mapM_ok_idx hpas
-              have hpasWF : ∀ p ∈ pas, NF.VarsWF P p.1 := by
-                intro p hp
-                obtain ⟨j, hj, hpj⟩ := List.getElem_of_mem hp
-                obtain ⟨hj2, hcj⟩ := hpt j (by omega)
-                rw [← hpj]
-                exact ih Γ jΓ rest[j] [] (pas[j].1) (pas[j].2) hΓ hJ
-                  (fun q hq => absurd hq (by simp)) hcj
-              split at hc
-              rotate_left
-              · exact error_ne_ok hc
-              split at hc
-              rotate_left
-              · exact error_ne_ok hc
-              rw [bind_ok_iff] at hc
-              obtain ⟨nfS, hsym, hc⟩ := hc
-              split at hc
-              rotate_left
-              · exact error_ne_ok hc
-              injection hc with hc
-              have h1 := congrArg Prod.fst hc
-              dsimp only at h1
-              rw [← h1]
-              refine Rwv.Hyle.Bridge.symExp_varsWF Δ.hyleFuel hd.body _ nfS ?_ hsym
-              intro x nx hnx
-              have hmem := ofList_get?_some' hnx
-              have hx2 : nx ∈ pas.map (·.1) := (List.of_mem_zip hmem).2
-              obtain ⟨q, hq, hqn⟩ := List.mem_map.mp hx2
-              rw [← hqn]
-              exact hpasWF q hq
             · -- model-less: the packed arguments' variables are the
               -- compiled arguments'
+              rw [bind_ok_iff] at hc
+              obtain ⟨ity, _hity, hc⟩ := hc
+              split at hc
+              rotate_left
+              · exact error_ne_ok hc
               rw [bind_ok_iff] at hc
               obtain ⟨pas, hpas, hc⟩ := hc
               obtain ⟨hplen, hpt⟩ := mapM_ok_idx hpas
@@ -10554,6 +10426,20 @@ theorem cexpJ_varsWF {Δ : DEnv} {dmap : HashMap Int Defn} {P : String → Nat �
               obtain ⟨q, hq, hqn⟩ := List.mem_map.mp hn
               rw [← hqn]
               exact hpasWF q hq
+            · -- model-carrying: the implementation argument's
+              -- compilation, whose pending arguments are the compiled
+              -- arguments
+              rw [bind_ok_iff] at hc
+              obtain ⟨pas, hpas, hc⟩ := hc
+              obtain ⟨hplen, hpt⟩ := mapM_ok_idx hpas
+              have hpasWF : ∀ p ∈ pas, NF.VarsWF P p.1 := by
+                intro p hp
+                obtain ⟨j, hj, hpj⟩ := List.getElem_of_mem hp
+                obtain ⟨hj2, hcj⟩ := hpt j (by omega)
+                rw [← hpj]
+                exact ih Γ jΓ rest[j] [] (pas[j].1) (pas[j].2) hΓ hJ
+                  (fun q hq => absurd hq (by simp)) hcj
+              exact ih Γ jΓ impl pas nf ty hΓ hJ hpasWF hc
           · -- extended rows
             rw [bind_ok_iff] at hc
             obtain ⟨pas, hpas, hc⟩ := hc
@@ -11498,21 +11384,24 @@ def cexpJD (Δ : DEnv) (dmap : HashMap Int Defn) :
                     else .error "rwPrimCryptol: unsaturated foreign application"
                 | _ => .error "rwPrimCryptol: malformed foreign application")
             | .«extern» =>
-                -- The model-less extern row's DAG mirror.
+                -- The model-less extern row's DAG mirror (dispatched
+                -- on the same source-side classifier as the tree
+                -- compiler); the model-carrying row is deliberately
+                -- absent here — `checkLabelD` falls back to the
+                -- proven tree tier for it.
                 (match args with
-                | _ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: _impl :: _inst :: rest => do
-                    let ity ← Eval.domTy "rwPrimExtern" (Ty.flattenArrow pty).1 6
-                    if rest.length = (Ty.flattenArrow ity).1.length then
-                      match Δ.hyleX.get? s with
-                      | some _ => .error s!"rwPrimExtern {s}: model-carrying extern (validator row out of scope)"
-                      | none => do
+                | _ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: impl :: _inst :: rest =>
+                    if Eval.externModelless impl then do
+                      let ity ← Eval.domTy "rwPrimExtern" (Ty.flattenArrow pty).1 6
+                      if rest.length = (Ty.flattenArrow ity).1.length then do
                           let (d₁, pas) ← cargsD Δ dmap fuel Γ jΓ rest d
                           let res := (Ty.flattenArrow ity).2
                           let w ← Δ.sizeOf (fuel + 1) [] res
                           let (d₂, ip) := d₁.xpackD (pas.map (·.1))
                           let (d₃, r) := d₂.mkXcallD w s ip
                           .ok (d₃, r, res)
-                    else .error "rwPrimExtern: unsaturated foreign application"
+                      else .error "rwPrimExtern: unsaturated foreign application"
+                    else .error s!"rwPrimExtern {s}: model-carrying extern (DAG mirror out of scope)"
                 | _ => .error "rwPrimExtern: malformed foreign application")
             | _ => do
                 let (d₁, pas) ← cargsD Δ dmap fuel Γ jΓ args d
@@ -14077,12 +13966,19 @@ theorem cexpJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} :
             -- The model-less extern row's DAG mirror: the
             -- packed-argument node is built by the hash-consed
             -- constructors, whose specs read back to exactly the tree
-            -- arm's normal form.
+            -- arm's normal form. (The model-carrying branch errors on
+            -- the DAG side, so only the model-less dispatch arm
+            -- survives.)
             dsimp only at hc ⊢
             split at hc
             all_goals try exact error_ne_ok hc
-            rename_i _ps _clk _rst _as _rs sx _impl _inst rest
+            rename_i _ps _clk _rst _as _rs sx impl _inst rest
             try dsimp only at hc ⊢
+            split at hc
+            rotate_left
+            · exact error_ne_ok hc
+            rename_i hml
+            rw [if_pos hml]
             rw [bind_ok_iff] at hc
             obtain ⟨ity, hity, hc⟩ := hc
             rw [hity, except_bind_ok]
@@ -14091,10 +13987,6 @@ theorem cexpJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} :
             · exact error_ne_ok hc
             rename_i hlen
             rw [if_pos hlen]
-            cases hhx : Δ.hyleX.get? sx with
-            | some m => rw [hhx] at hc; exact error_ne_ok hc
-            | none =>
-            rw [hhx] at hc
             try dsimp only at hc ⊢
             rw [bind_ok_iff] at hc
             obtain ⟨dp, hargs, hc⟩ := hc
