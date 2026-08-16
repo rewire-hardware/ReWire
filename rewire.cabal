@@ -108,9 +108,11 @@ data-files:
     tests/golden/Mods/Y.hs
     tests/golden/OD19/ProgramCounter.hs
     tests/golden/Mods/C/X.hs
+    tests/golden/verilog/addk.sv
     tests/golden/verilog/filterprims.sv
     tests/golden/verilog/mymod.sv
     tests/golden/verilog/w32ops.sv
+    tests/golden/vhdl/addk.vhdl
     tests/golden/vhdl/filterprims.vhdl
     tests/golden/vhdl/mymod.vhdl
     tests/golden/vhdl/w32ops.vhdl
@@ -133,6 +135,7 @@ data-files:
     tests/golden/divzero.hs
     tests/golden/exp2.hs
     tests/golden/extern.hs
+    tests/golden/externGeneric.hs
     tests/golden/externModel.hs
     tests/golden/extrudeApp.hs
     tests/golden/fibo1.hs
@@ -214,6 +217,7 @@ data-files:
     tests/golden/divzero.sv
     tests/golden/exp2.sv
     tests/golden/extern.sv
+    tests/golden/externGeneric.sv
     tests/golden/externModel.sv
     tests/golden/extrudeApp.sv
     tests/golden/fibo1.sv
@@ -295,6 +299,7 @@ data-files:
     tests/golden/divzero.rwc
     tests/golden/exp2.rwc
     tests/golden/extern.rwc
+    tests/golden/externGeneric.rwc
     tests/golden/externModel.rwc
     tests/golden/extrudeApp.rwc
     tests/golden/fibo1.rwc
@@ -376,6 +381,7 @@ data-files:
     tests/golden/divzero.vhdl
     tests/golden/exp2.vhdl
     tests/golden/extern.vhdl
+    tests/golden/externGeneric.vhdl
     tests/golden/externModel.vhdl
     tests/golden/extrudeApp.vhdl
     tests/golden/fibo1.vhdl
@@ -456,6 +462,7 @@ data-files:
     tests/golden/dissex2.cry
     tests/golden/divzero.cry
     tests/golden/exp2.cry
+    tests/golden/externGeneric.cry
     tests/golden/externModel.cry
     tests/golden/extrudeApp.cry
     tests/golden/fibo1.cry

@@ -1,0 +1,14 @@
+extern addk
+      generic K
+      input p0 : [8]
+      output p1 : [8]
+
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      tag a'2 = 0
+      let $res = let $a$i0 = addk<3> __in0 in
+            let $a1$i1 = addk<5> __in0 in
+            let a$i2 = add $a$i0 $a1$i1 in
+            a$i2
+      __out0 := $res
