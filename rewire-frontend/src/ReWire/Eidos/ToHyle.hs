@@ -811,6 +811,8 @@ transBuiltin env sc an' t' an theExp = case theExp of
             resize an sz =<< transExp env sc arg
       (ToFiniteMod, [arg]) -> do
             finSz   <- checkFinTypeMax "rwPrimToFiniteMod" t'
+            unless (finSz > 0)
+                  $ failAt an "rwPrimToFiniteMod: Finite 0 is uninhabited."
             sz      <- sizeOf env "rwPrimToFiniteMod" an t'
             nBits   <- checkVecArgSize "rwPrimToFiniteMod" $ typeOf arg
             arg'    <- transExp env sc arg

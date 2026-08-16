@@ -54,6 +54,7 @@ data-files:
     tests/negative/finite-runtime-arg.hs
     tests/negative/finite-zero-maxbound.hs
     tests/negative/finite-zero-minbound.hs
+    tests/negative/finite0Mod.hs
     tests/negative/from-finite-not-representable.hs
     tests/negative/fromListLength.hs
     tests/negative/illtyped-dead-code.hs
