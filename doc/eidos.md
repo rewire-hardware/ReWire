@@ -451,10 +451,11 @@ For each representable type τ (§4.1), the set `V_τ` of values:
   (printed leftmost); for `Vec n Bool` the head is the most significant
   bit.
 - `V_Bool = {False, True}`; `V_() = {()}`; `V_(Proxy n) = {Proxy}`.
-- `V_(Finite n) = {0, …, n−1}` for n ≥ 1. `Finite 0` is uninhabited in
-  the source language; its machine representation is zero-width, so the
-  semantics gives it the single degenerate value (like `()`), which no
-  well-typed closed program observes.
+- `V_(Finite n) = {0, …, n−1}` for n ≥ 1. `Finite 0` is uninhabited,
+  matching `Data.Finite`: it is representable at zero width, but no
+  value of the type exists — zero/undef initialization at `Finite 0`
+  and conversions into it fail rather than producing a degenerate
+  value.
 - `V_Integer = {0, …, 2¹²⁸ − 1}`: `Integer` compiles at fixed width 128
   (§4.1); its machine meaning is the 128-bit residue. Integer literals
   at `Finite n` and `Vec n Bool` are lint-checked to fit; at `Integer`
@@ -700,7 +701,7 @@ SMT-LIB division-by-zero equations — are exact at every width.)*
 | `rwPrimFiniteMinBound` | `∀ n. Finite n` | 0 | n ≥ 1 |
 | `rwPrimFiniteMaxBound` | `∀ n. Finite n` | n − 1 | n ≥ 1 |
 | `rwPrimToFinite` | `∀ m n. Vec m Bool → Finite n` | `bv(v)` | 2^m ≤ n |
-| `rwPrimToFiniteMod` | `∀ m n. Vec m Bool → Finite n` | `bv(v) mod n` | n = 0 degenerates to the unit value (§7.5.1). *The GHC model errors (mod 0); the compiled semantics is total.* |
+| `rwPrimToFiniteMod` | `∀ m n. Vec m Bool → Finite n` | `bv(v) mod n` | n ≥ 1 |
 | `rwPrimFromFinite` | `∀ n m. Finite n → Vec m Bool` | `bv⁻¹ₘ(i)` | n ≤ 2^m |
 
 **Vectors** (element-polymorphic; denotations are algebraic on tuples,

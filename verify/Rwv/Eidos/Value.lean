@@ -197,9 +197,15 @@ def zeroVal (Δ : DEnv) (fuel : Nat) (t : Ty) : Except String Val :=
         match Ty.evalNat n with
         | some k => do pure (.vec (List.replicate k (← zeroVal Δ fuel te)))
         | none   => throw "zeroVal: open Vec length"
-    | (.con "Finite", [_]) => pure (.finite ((Ty.evalNat (Ty.flatten t).2.head!).getD 0) 0)
+    | (.con "Finite", [nt]) =>
+        -- `Finite 0` is uninhabited (matching Data.Finite): an empty
+        -- type has no zero value, and an open bound has no width.
+        (match Ty.evalNat nt with
+        | some (k + 1) => pure (.finite (k + 1) 0)
+        | some 0       => throw "zeroVal: Finite 0 is uninhabited"
+        | none         => throw "zeroVal: open Finite bound")
     | (.con "Integer", []) => pure (.integer 0)
-    | (.con "Proxy", _)    => pure .proxy
+    | (.con "Proxy", [_])  => pure .proxy
     | (.con c, _) =>
         match Δ.ctors.get? c with
         | some (c₀ :: _) => do

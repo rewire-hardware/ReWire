@@ -143,6 +143,17 @@ def validator_tests(exe, dumps, work):
     expect(exe, "reserved eta-unique range is refused",
            w("case1.etaclash.8.eir", etaclash), case1_rwc, "ERROR", "reserved")
 
+    # Finite 0 is uninhabited (matching Data.Finite): an undef-init cell
+    # of an empty type has no zero value, so initialization must fail.
+    zw_eir = dumps / "zerowidth.8.eir"
+    zw_rwc = dumps / "zerowidth.11.rwc"
+    f0 = zw_eir.read_text().replace(
+        "      state s1 : Vec 0 Bool := undef;\n",
+        "      state s1 : Vec 0 Bool := undef;\n      state s2 : Finite 0 := undef;\n")
+    assert f0 != zw_eir.read_text()
+    expect(exe, "Finite 0 cell initialization rejects (uninhabited)",
+           w("zerowidth.f0.8.eir", f0), zw_rwc, "REJECTED", "uninhabited")
+
     # A target that cannot denote cannot validate vacuously.
     rec = "unusedRec : ([8]) -> [8]\nunusedRec x =\n      unusedRec x\n\n" + case1_rwc.read_text()
     expect(exe, "unused recursive target definition rejects",

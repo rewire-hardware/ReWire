@@ -569,8 +569,8 @@ def evalBuiltin (C : Ctx) (fuel : Nat) (pty : Ty) (b : Builtin) (vs : List Val)
     | .toFiniteMod, [v] => do
         let n ← finBound "rwPrimToFiniteMod" res
         let x ← valToBits Δ fuel v
-        -- n = 0 degenerates to the unit value (§7.5.1); total.
-        if n = 0 then pure (.finite 0 0) else pure (.finite n (x.nat % n))
+        if n ≥ 1 then pure (.finite n (x.nat % n))
+        else throw "rwPrimToFiniteMod: Finite 0 is uninhabited"
     | .fromFinite, [v] => do
         let m ← vecLen "rwPrimFromFinite" res
         let (bound, i) ← finVal "rwPrimFromFinite" v
@@ -715,5 +715,16 @@ used internally by `VecMap`/`VecGenerate`). -/
 def applyVal (Δ : DEnv) (defns : HashMap Int Defn) (fuel : Nat) (f a : Val)
     (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=
   Eval.applyValCore ⟨Δ, defns⟩ fuel f a E
+
+/- Conversion into `Finite 0` fails — the codomain is uninhabited
+(matching Data.Finite, and the GHC model's `mod` by zero error). -/
+example {C : Eval.Ctx} {E : Rwv.Hyle.Sem.EEnv} :
+    Eval.evalBuiltin C 2
+      (.arrow (.app (.app (.con "Vec") (.nat 0)) (.con "Bool"))
+        (.app (.con "Finite") (.nat 0)))
+      .toFiniteMod [.vec []] E
+      = .error "rwPrimToFiniteMod: Finite 0 is uninhabited" := by
+  rw [Eval.evalBuiltin]
+  rfl
 
 end Rwv.Eidos

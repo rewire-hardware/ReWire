@@ -1750,6 +1750,13 @@ theorem hasTy_vty {Δ : DEnv} (htup : tupleCtorsOk Δ = true) :
           exact zip_swap_mem (DEnv.substTv sub) _ fields q hq
         exact ih (q.2, DEnv.substTv sub q.1) hq'
 
+/-- The zero value is canonically typed (`DEnv.zeroVal_hasTy` through
+the `hasTy_vty` bridge). -/
+theorem zeroVal_vty {Δ : DEnv} (htup : tupleCtorsOk Δ = true)
+    {fuel : Nat} {t : Ty} {v : Val}
+    (h : DEnv.zeroVal Δ fuel t = .ok v) : VTy Δ v t :=
+  hasTy_vty htup (DEnv.zeroVal_hasTy h)
+
 /-! ## The BV concatenation/slice kit (house style: projection level)
 
 Everything at widths and `getLsbD`, per the bridge's recorded

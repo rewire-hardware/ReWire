@@ -116,4 +116,142 @@ theorem Refines.corresponds {Δ : DEnv} {defns : HashMap Int Defn}
   cases hht'
   exact hagree
 
+/-! ## The zero value is well typed
+
+`DEnv.zeroVal` (doc/eidos.md §7.5.1) fails on every type with no
+values — `Finite 0` (uninhabited, matching Data.Finite), empty
+datatypes, open bounds — so its success is itself the inhabitation
+witness: whatever it returns inhabits the requested type,
+unconditionally. Its call sites (undef cell initialization in
+`Machine.cells0`, the evaluator's live-error row) discharge the
+premise with their own success hypotheses. -/
+
+private theorem error_ne_ok' {α : Type} {msg : String} {a : α} {P : Prop}
+    (h : (Except.error msg : Except String α) = .ok a) : P := by
+  cases h
+
+private theorem bind_eq_ok' {α β : Type} {x : Except String α}
+    {f : α → Except String β} {b : β} (h : (x >>= f) = .ok b) :
+    ∃ a, x = .ok a ∧ f a = .ok b := by
+  cases x with
+  | error e => exact error_ne_ok' h
+  | ok a => exact ⟨a, rfl, h⟩
+
+/-- Pointwise typing of a `zeroVal`-filled field telescope. -/
+private theorem zeroVal_fields {Δ : DEnv} {fuel : Nat}
+    (ih : ∀ {t : Ty} {v : Val}, DEnv.zeroVal Δ fuel t = .ok v → Val.HasTy Δ v t)
+    (g : Ty → Ty) :
+    ∀ {ts : List Ty} {vs : List Val},
+      ts.mapM (fun ta => DEnv.zeroVal Δ fuel (g ta)) = .ok vs →
+      vs.length = ts.length ∧ ∀ p ∈ vs.zip (ts.map g), Val.HasTy Δ p.1 p.2 := by
+  intro ts
+  induction ts with
+  | nil =>
+      intro vs h
+      rw [List.mapM_nil] at h
+      injection h with h
+      subst h
+      exact ⟨rfl, by simp⟩
+  | cons ta ts iht =>
+      intro vs h
+      rw [List.mapM_cons] at h
+      obtain ⟨b, hb, h⟩ := bind_eq_ok' h
+      obtain ⟨bs, hbs, h⟩ := bind_eq_ok' h
+      injection h with h
+      obtain ⟨hlen, htys⟩ := iht hbs
+      refine h ▸ ⟨by simpa using hlen, ?_⟩
+      intro p hp
+      rw [List.map_cons, List.zip_cons_cons] at hp
+      rcases List.mem_cons.mp hp with hp | hp
+      · rw [hp]
+        exact ih hb
+      · exact htys p hp
+
+/-- Whatever `zeroVal` returns inhabits the requested type. -/
+theorem DEnv.zeroVal_hasTy {Δ : DEnv} :
+    ∀ {fuel : Nat} {t : Ty} {v : Val},
+      DEnv.zeroVal Δ fuel t = .ok v → Val.HasTy Δ v t := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro t v h
+      rw [DEnv.zeroVal] at h
+      exact error_ne_ok' h
+  | succ fuel ih =>
+      intro t v h
+      rw [DEnv.zeroVal] at h
+      split at h
+      · -- Vec
+        rename_i n te hfl
+        split at h
+        · rename_i k hk
+          obtain ⟨z, hz, h⟩ := bind_eq_ok' h
+          injection h with h
+          subst h
+          exact .vec hfl hk (List.length_replicate ..) fun v hv => by
+            rw [List.eq_of_mem_replicate hv]; exact ih hz
+        · exact error_ne_ok' h
+      · -- Finite
+        rename_i nt hfl
+        split at h
+        · rename_i k hk
+          injection h with h
+          subst h
+          exact .finite hfl hk (Nat.succ_pos k)
+        · exact error_ne_ok' h
+        · exact error_ne_ok' h
+      · -- Integer
+        rename_i hfl
+        injection h with h
+        subst h
+        exact .integer hfl
+      · -- Proxy
+        rename_i x hfl
+        injection h with h
+        subst h
+        exact .proxy hfl
+      · -- datatype: first constructor, zero fields (the pattern
+        -- overlaps the four builtin-head arms, so the scrutinee
+        -- equation follows their exclusion witnesses)
+        rename_i c args _ _ _ _ hfl
+        split at h
+        · rename_i c₀ rest hget
+          split at h
+          · rename_i sig hsig
+            obtain ⟨sub, hsub, h⟩ := bind_eq_ok' h
+            obtain ⟨fields, hfields, h⟩ := bind_eq_ok' h
+            injection h with h
+            subst h
+            obtain ⟨hlen, htys⟩ := zeroVal_fields @ih (DEnv.substTv sub) hfields
+            exact .con (tc := c) (by rw [hfl])
+              ⟨c₀ :: rest, hget, List.mem_cons_self ..⟩ hsig hsub rfl
+              (by rw [hlen, List.length_map]) htys
+          · exact error_ne_ok' h
+        · exact error_ne_ok' h
+        · exact error_ne_ok' h
+      · exact error_ne_ok' h
+
+/- `Finite 0` is uninhabited (matching Data.Finite): its would-be sole
+representative is ill typed, and no zero value exists — at bound zero
+or at an open bound. -/
+example {Δ : DEnv} :
+    ¬ Val.HasTy Δ (.finite 0 0) (.app (.con "Finite") (.nat 0)) := by
+  intro h
+  cases h with
+  | finite _ _ hlt => exact absurd hlt (by omega)
+
+example {Δ : DEnv} {fuel : Nat} :
+    DEnv.zeroVal Δ (fuel + 1) (.app (.con "Finite") (.nat 0))
+      = .error "zeroVal: Finite 0 is uninhabited" := by
+  rw [DEnv.zeroVal]
+  rfl
+
+example {Δ : DEnv} {fuel : Nat} {a : TyVar} :
+    DEnv.zeroVal Δ (fuel + 1) (.app (.con "Finite") (.var a))
+      = .error "zeroVal: open Finite bound" := by
+  rw [DEnv.zeroVal]
+  rfl
+
+#print axioms Rwv.Eidos.DEnv.zeroVal_hasTy
+
 end Rwv.Eidos

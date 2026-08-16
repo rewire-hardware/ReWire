@@ -6073,11 +6073,8 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
         injection hc with hnf hty
         subst hnf; subst hty
         split at hev
-        · rename_i hn0
-          exfalso
-          rw [hn0] at hpow
-          have : 0 < 2 ^ wa := Nat.two_pow_pos wa
-          omega
+        rotate_left
+        · exact error_ne_ok hev
         · rw [except_pure_def] at hev
           injection hev with hev
           subst hev
@@ -6123,14 +6120,13 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
             = ⟨nbits n, (((a.eval σ E).bits.setWidth wa) % ((BitVec.ofNat wa n).setWidth wa)).setWidth (nbits n)⟩ := by
           rw [resizeNF_eval (by rw [humod]), humod]
         split at hev
-        · -- n = 0: rejected at compile time
-          rename_i hn0
-          exact absurd hn0 hn0c
-        · rename_i hn0
+        rotate_left
+        · exact error_ne_ok hev
+        · rename_i hn1'
           rw [except_pure_def] at hev
           injection hev with hev
           subst hev
-          have hn1 : 0 < n := Nat.pos_of_ne_zero hn0
+          have hn1 : 0 < n := hn1'
           have hmodlt : (a.eval σ E).nat % n < 2 ^ nbits n :=
             Nat.lt_of_lt_of_le (Nat.mod_lt _ hn1) (nbits_le n)
           constructor
