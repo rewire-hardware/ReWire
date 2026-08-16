@@ -134,6 +134,25 @@ def validator_tests(exe, dumps, work):
     expect(exe, "unused generic model-less extern definition validates",
            dumps / "iter.8.eir", w("iter.gen.11.rwc", gen), "VALIDATED")
 
+    # The generics tier proper: the source's parameter values ride the
+    # compiled node, so a device-reachable target generic-value edit is
+    # a different uninterpreted symbol — REJECTED by the comparison —
+    # and a declaration generic-name edit breaks the source-descriptor
+    # cross-check.
+    eg_eir = dumps / "externGeneric.8.eir"
+    eg_rwc = dumps / "externGeneric.11.rwc"
+    expect(exe, "generic model-less extern validates end to end",
+           eg_eir, eg_rwc, "VALIDATED")
+    genval = eg_rwc.read_text().replace("addk<3>", "addk<4>")
+    assert genval != eg_rwc.read_text()
+    expect(exe, "target-only generic value mutation rejects",
+           eg_eir, w("externGeneric.genval.11.rwc", genval), "REJECTED")
+    genname = eg_rwc.read_text().replace("      generic K", "      generic J")
+    assert genname != eg_rwc.read_text()
+    expect(exe, "target generic-name mutation rejects (descriptor cross-check)",
+           eg_eir, w("externGeneric.genname.11.rwc", genname), "REJECTED",
+           "do not match the target declaration's generics")
+
     # The primitive basis is never silently substituted.
     boolswap = (case1_eir.read_text()
                 .replace("data Bool * {\n      False :: Bool;\n      True :: Bool",

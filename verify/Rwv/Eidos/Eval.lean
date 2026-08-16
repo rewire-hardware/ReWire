@@ -224,6 +224,33 @@ def externModelless (impl : Exp) : Bool :=
   | (.prim _ .error, .litStr s :: _) => s == externPlaceholder
   | _ => false
 
+/-- The generic parameters of an extern occurrence, read from the
+descriptor list literal (the occurrence's FIRST argument) exactly as
+the fold reads it (ToHyle `applyExtern.generics`): each element is a
+`(,) "name" (value :: Integer)` pair, and an empty name defaults to
+`g<i>` — mirroring the fold, so the emitted declaration's generic
+names match the scan's cross-check. The fold fabricates a zero value
+for elements outside this shape; a validator must refuse rather than
+agree with a fabricated value, so those extract to `none` (outside
+the certified fragment), as do negative values. Shared by the
+evaluator, the verified compiler, and the drivers: both sides key the
+η interpretation by the SAME extracted values, and the target call's
+values meet them through the uninterpreted-symbol identity. -/
+def externGenerics : Exp → Option (List (String × Nat))
+  | .litList _ es => go 0 es
+  | _ => none
+where go (i : Nat) : List Exp → Option (List (String × Nat))
+  | [] => some []
+  | e :: rest =>
+      match flattenApp e with
+      | (.con _ "(,)", [.litStr p, .litInt _ v]) =>
+          if h : 0 ≤ v then
+            match go (i + 1) rest with
+            | some ps => some ((if p = "" then s!"g{i}" else p, v.toNat) :: ps)
+            | none => none
+          else none
+      | _ => none
+
 /-- The denotation of an integer literal at its carried type (§7.5.1):
 the 128-bit residue at `Integer`; the (fit-checked) value at
 `Finite n`; the MSB-first width-n residue at `Vec n Bool`. -/
@@ -311,8 +338,11 @@ def evalCore (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (e : Exp)
           | _ => throw "rwPrimCryptol: malformed foreign application"
         else if b == .«extern» then
           match args with
-          | _ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: impl :: _inst :: rest =>
-              if externModelless impl then evalExt C fuel env jenv ty s rest E
+          | ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: impl :: _inst :: rest =>
+              if externModelless impl then
+                match externGenerics ps with
+                | some gps => evalExt C fuel env jenv ty s (gps.map (·.2)) rest E
+                | none => throw "rwPrimExtern: non-literal extern parameter (outside the certified fragment)"
               else do
                 -- The MODEL-CARRYING extern row: the occurrence means
                 -- exactly its own implementation argument applied to
@@ -392,7 +422,7 @@ decode is the gate that confines the bit-level quantification to
 representation images. (Model-carrying occurrences never reach here:
 `evalCore` dispatches them to their own implementation argument.) -/
 def evalExt (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (pty : Ty)
-    (s : String) (rest : List Exp)
+    (s : String) (gs : List Nat) (rest : List Exp)
     (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=
   match fuel with
   | 0 => throw fuelErr
@@ -400,7 +430,7 @@ def evalExt (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (pty : Ty)
       let vs ← evalList C fuel env jenv rest E
       let ity ← domTy "rwPrimExtern" (Ty.flattenArrow pty).1 6
       if rest.length = (Ty.flattenArrow ity).1.length then
-        match E s [] with
+        match E s gs with
         | some f => do
             let reps ← vs.mapM (fun v => valToBits C.Δ fuel v)
             let bv ← f (Rwv.Hyle.Sem.bvcat reps)

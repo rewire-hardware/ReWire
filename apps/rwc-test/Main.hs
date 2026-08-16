@@ -466,6 +466,9 @@ getCertifyTests = findValidator >>= \ case
                   , "externModel.hs" -- model-carrying externs: the source
                                      -- meaning is the extern's own Eidos
                                      -- implementation argument
+                  , "externGeneric.hs" -- model-less extern with static
+                                       -- generics: the ∀η verdict, per
+                                       -- instantiation
                   ]
 
             -- Devices outside the certified profile: clocked extern

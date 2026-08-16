@@ -4818,14 +4818,17 @@ def cexpJ (Δ : DEnv) (dmap : HashMap Int Defn) :
                 --     obligations (the device side's xcall inlines
                 --     the target model).
                 (match args with
-                | _ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: impl :: _inst :: rest =>
+                | ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: impl :: _inst :: rest =>
                     if Eval.externModelless impl then do
+                      match Eval.externGenerics ps with
+                      | none => .error "rwPrimExtern: non-literal extern parameter (outside the certified fragment)"
+                      | some gps => do
                       let ity ← Eval.domTy "rwPrimExtern" (Ty.flattenArrow pty).1 6
                       if rest.length = (Ty.flattenArrow ity).1.length then do
                         let pas ← rest.mapM (cexpJ Δ dmap fuel Γ jΓ · [])
                         let res := (Ty.flattenArrow ity).2
                         let w ← Δ.sizeOf (fuel + 1) [] res
-                        .ok (.xcall w s [] (.xpack (pas.map (·.1))), res)
+                        .ok (.xcall w s (gps.map (·.2)) (.xpack (pas.map (·.1))), res)
                       else .error "rwPrimExtern: unsaturated foreign application"
                     else do
                       let pas ← rest.mapM (cexpJ Δ dmap fuel Γ jΓ · [])
@@ -8164,7 +8167,7 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
             dsimp only at hc hev
             split at hc
             all_goals try exact error_ne_ok hc
-            rename_i _ps _clk _rst _as _rs s impl _inst rest
+            rename_i ps _clk _rst _as _rs s impl _inst rest
             dsimp only at hev
             by_cases hml : Eval.externModelless impl = true
             · -- THE MODEL-LESS ROW (the η tier): the compiled form is
@@ -8176,6 +8179,11 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
               -- representation leg and the clamp made inert by
               -- `vty_rep_width`.
               rw [if_pos hml] at hc hev
+              cases hgps : Eval.externGenerics ps with
+              | none => rw [hgps] at hc; exact error_ne_ok hc
+              | some gps =>
+              rw [hgps] at hc hev
+              dsimp only at hc hev
               cases efuel with
               | zero => rw [Eval.evalExt] at hev; exact error_ne_ok hev
               | succ ef2 =>
@@ -8199,7 +8207,7 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
               injection hc with hnf hty
               subst hnf
               subst hty
-              cases hEs : E s [] with
+              cases hEs : E s (gps.map (·.2)) with
               | none => rw [hEs] at hev; exact error_ne_ok hev
               | some fx =>
               rw [hEs] at hev
@@ -8226,11 +8234,11 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
               have hwidth : bv.width = w :=
                 vty_rep_width (decode_vty hev) (decode_rep hev) hw
               refine ⟨decode_vty hev, ef2, ?_⟩
-              have h1 : (NF.xcall w s [] (.xpack (pas.map (·.1)))).eval σ E
-                  = Rwv.Hyle.Sem.xapply E s [] w (Rwv.Hyle.Sem.bvcat reps) := by
-                show Rwv.Hyle.Sem.xapply E s [] w ((NF.xpack (pas.map (·.1))).eval σ E) = _
+              have h1 : (NF.xcall w s (gps.map (·.2)) (.xpack (pas.map (·.1)))).eval σ E
+                  = Rwv.Hyle.Sem.xapply E s (gps.map (·.2)) w (Rwv.Hyle.Sem.bvcat reps) := by
+                show Rwv.Hyle.Sem.xapply E s (gps.map (·.2)) w ((NF.xpack (pas.map (·.1))).eval σ E) = _
                 rw [Rwv.Hyle.Bridge.NF.xpack_eval, ← hre]
-              have heval : (NF.xcall w s [] (.xpack (pas.map (·.1)))).eval σ E = bv := by
+              have heval : (NF.xcall w s (gps.map (·.2)) (.xpack (pas.map (·.1)))).eval σ E = bv := by
                 rw [h1]
                 simp only [Rwv.Hyle.Sem.xapply, hEs, hbv]
                 rw [if_pos hwidth]
@@ -10395,6 +10403,10 @@ theorem cexpJ_varsWF {Δ : DEnv} {dmap : HashMap Int Defn} {P : String → Nat �
             split at hc
             · -- model-less: the packed arguments' variables are the
               -- compiled arguments'
+              cases hgps : Eval.externGenerics _ps with
+              | none => rw [hgps] at hc; exact error_ne_ok hc
+              | some gps =>
+              rw [hgps] at hc
               rw [bind_ok_iff] at hc
               obtain ⟨ity, _hity, hc⟩ := hc
               split at hc
@@ -11386,15 +11398,18 @@ def cexpJD (Δ : DEnv) (dmap : HashMap Int Defn) :
                 -- absent here — `checkLabelD` falls back to the
                 -- proven tree tier for it.
                 (match args with
-                | _ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: impl :: _inst :: rest =>
+                | ps :: _clk :: _rst :: _as :: _rs :: .litStr s :: impl :: _inst :: rest =>
                     if Eval.externModelless impl then do
+                      match Eval.externGenerics ps with
+                      | none => .error "rwPrimExtern: non-literal extern parameter (outside the certified fragment)"
+                      | some gps => do
                       let ity ← Eval.domTy "rwPrimExtern" (Ty.flattenArrow pty).1 6
                       if rest.length = (Ty.flattenArrow ity).1.length then do
                           let (d₁, pas) ← cargsD Δ dmap fuel Γ jΓ rest d
                           let res := (Ty.flattenArrow ity).2
                           let w ← Δ.sizeOf (fuel + 1) [] res
                           let (d₂, ip) := d₁.xpackD (pas.map (·.1))
-                          let (d₃, r) := d₂.mkXcallD w s [] ip
+                          let (d₃, r) := d₂.mkXcallD w s (gps.map (·.2)) ip
                           .ok (d₃, r, res)
                       else .error "rwPrimExtern: unsaturated foreign application"
                     else .error s!"rwPrimExtern {s}: model-carrying extern (DAG mirror out of scope)"
@@ -13968,13 +13983,18 @@ theorem cexpJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} :
             dsimp only at hc ⊢
             split at hc
             all_goals try exact error_ne_ok hc
-            rename_i _ps _clk _rst _as _rs sx impl _inst rest
+            rename_i psx _clk _rst _as _rs sx impl _inst rest
             try dsimp only at hc ⊢
             split at hc
             rotate_left
             · exact error_ne_ok hc
             rename_i hml
             rw [if_pos hml]
+            cases hgps : Eval.externGenerics psx with
+            | none => rw [hgps] at hc; exact error_ne_ok hc
+            | some gps =>
+            rw [hgps] at hc
+            try dsimp only at hc ⊢
             rw [bind_ok_iff] at hc
             obtain ⟨ity, hity, hc⟩ := hc
             rw [hity, except_bind_ok]
@@ -13997,7 +14017,7 @@ theorem cexpJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} :
             rcases hxp : d₁.xpackD (pas.map (·.1)) with ⟨d₂, ip⟩
             rw [hxp] at hc
             dsimp only at hc
-            rcases hxc : d₂.mkXcallD w sx [] ip with ⟨d₃, rr⟩
+            rcases hxc : d₂.mkXcallD w sx (gps.map (·.2)) ip with ⟨d₃, rr⟩
             rw [hxc] at hc
             dsimp only at hc
             obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (Rwv.Hyle.BridgeDag.Dag.xpackD_spec W₁

@@ -116,9 +116,9 @@ validation is structurally impossible rather than gated away. The
 target-run existence rests on the mechanized progress result
 (`Rwv.Hyle.Progress`): on a program `Program.check` accepts, with a
 denoting definition environment, the dynamic semantics hits none of
-its error cases. The two checked constructs the semantics nevertheless
-rejects — device instances and generic model-less extern calls — are
-refused a verdict (UNSUPPORTED) by explicit bundle gates.
+its error cases. The one checked construct the semantics nevertheless
+rejects — device instances — is refused a verdict (UNSUPPORTED) by an
+explicit bundle gate.
 
 One boundary caveat qualifies the theorem:
 
@@ -175,7 +175,7 @@ covered; the cosimulation legs of rwc-test remain the check on those.
 |---|---|
 | Pure devices (no foreign calls) | **VALIDATED** |
 | Model-less combinational externs, no static generics | **VALIDATED**, universally: the verdict quantifies over all implementations of the extern (the ∀η tier) |
-| Model-less combinational externs with static generics | UNSUPPORTED (the mechanized extern environment is not keyed by generics) |
+| Model-less combinational externs with static generics | **VALIDATED**, universally per instantiation: the η environment is keyed by (name, generic values), the compiled call carries the source descriptor's values, and distinct instantiations are distinct uninterpreted symbols |
 | Model-carrying combinational externs | **VALIDATED**: the occurrence's source-side meaning is its own Eidos implementation argument (the model rwc kept beside the extern), evaluated and compiled as an ordinary expression; the target's model meets that independently obtained form through the ordinary translation obligations |
 | Cryptol foreign functions (`rwPrimCryptol`) | UNSUPPORTED: no independent source-side semantics exists in the artifact bundle (the pass-8 artifact carries only a placeholder) |
 | Clocked (sequential) externs / device instances | UNSUPPORTED (no stream-level instance semantics or proof) |

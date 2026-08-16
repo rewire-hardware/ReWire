@@ -355,12 +355,14 @@ def scanProgram (p : Program) : Except String (List (String × Ty)) := do
 
 /-- The synthesized bit-level extern environment: per scraped extern,
 a canonical value of the result type drawn deterministically from the
-name and the argument bits, `rep`ped. -/
+name, the static generic instantiation, and the argument bits,
+`rep`ped — distinct instantiations behave as distinct black boxes,
+mirroring the η keying. -/
 def synthEta (Δ : DEnv) (repFuel : Nat) (etaTys : List (String × Ty)) :
-    Rwv.Hyle.Sem.EEnv := fun s _gs =>
+    Rwv.Hyle.Sem.EEnv := fun s gs =>
   (etaTys.lookup s).map fun ity bv => do
     let res := (Ty.flattenArrow ity).2
-    let (v, _) ← genVal Δ res (seed0 s!"{s}/{bv.width}/{bv.bits.toNat}")
+    let (v, _) ← genVal Δ res (seed0 s!"{s}/{gs}/{bv.width}/{bv.bits.toNat}")
     Val.rep Δ repFuel v
 
 /-! ## Main -/

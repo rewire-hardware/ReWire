@@ -443,8 +443,8 @@ private structure EvalMono (C : Eval.Ctx) (E E' : Rwv.Hyle.Sem.EEnv) (k k' : Nat
     Eval.evalBuiltin C k' ty b vs E' = .ok v
   cry : ∀ env jenv pty f n rest v, Eval.evalCry C k env jenv pty f n rest E = .ok v →
     Eval.evalCry C k' env jenv pty f n rest E' = .ok v
-  ext : ∀ env jenv pty s rest v, Eval.evalExt C k env jenv pty s rest E = .ok v →
-    Eval.evalExt C k' env jenv pty s rest E' = .ok v
+  ext : ∀ env jenv pty s gs rest v, Eval.evalExt C k env jenv pty s gs rest E = .ok v →
+    Eval.evalExt C k' env jenv pty s gs rest E' = .ok v
 
 /-- At fuel 0 every evaluator function throws, so the bundle holds
 vacuously. -/
@@ -459,7 +459,7 @@ private theorem evalMono_zero (C : Eval.Ctx) (E E' : Rwv.Hyle.Sem.EEnv) (k' : Na
   alts := by intro env jenv binder sv as dflt v h; rw [Eval.tryAlts] at h; exact error_ne_ok h
   builtin := by intro ty b vs v h; rw [Eval.evalBuiltin] at h; exact error_ne_ok h
   cry := by intro env jenv pty f n rest v h; rw [Eval.evalCry] at h; exact error_ne_ok h
-  ext := by intro env jenv pty s rest v h; rw [Eval.evalExt] at h; exact error_ne_ok h
+  ext := by intro env jenv pty s gs rest v h; rw [Eval.evalExt] at h; exact error_ne_ok h
 
 private theorem evalCore_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
     (_hk : k ≤ k') (ih : EvalMono C E E' k k') :
@@ -500,7 +500,13 @@ private theorem evalCore_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : 
           split at h
           · rename_i hml
             rw [if_pos hml]
-            exact ih.ext _ _ _ _ _ _ h
+            cases hgs : Eval.externGenerics _ with
+            | some gps =>
+                rw [hgs] at h
+                exact ih.ext _ _ _ _ _ _ _ h
+            | none =>
+                rw [hgs] at h
+                exact error_ne_ok h
           · rename_i hml
             rw [if_neg hml]
             obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
@@ -755,9 +761,9 @@ private theorem evalCry_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : N
 
 private theorem evalExt_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
     (hk : k ≤ k') (hE : EExt E E') (ih : EvalMono C E E' k k') :
-    ∀ env jenv pty s rest v, Eval.evalExt C (k + 1) env jenv pty s rest E = .ok v →
-      Eval.evalExt C (k' + 1) env jenv pty s rest E' = .ok v := by
-  intro env jenv pty s rest v h
+    ∀ env jenv pty s gs rest v, Eval.evalExt C (k + 1) env jenv pty s gs rest E = .ok v →
+      Eval.evalExt C (k' + 1) env jenv pty s gs rest E' = .ok v := by
+  intro env jenv pty s gs rest v h
   rw [Eval.evalExt] at h ⊢
   obtain ⟨vs, hvs, h⟩ := except_bind_eq_ok h
   refine bind_ok (ih.list _ _ _ _ hvs) ?_
@@ -768,11 +774,11 @@ private theorem evalExt_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : N
   · exact error_ne_ok h
   rename_i hlen
   rw [if_pos hlen]
-  cases hEs : E s [] with
+  cases hEs : E s gs with
   | none => rw [hEs] at h; exact error_ne_ok h
   | some f =>
       rw [hEs] at h
-      rw [hE s [] f hEs]
+      rw [hE s gs f hEs]
       obtain ⟨reps, hreps, h⟩ := except_bind_eq_ok h
       refine bind_ok (mapM_mono (fun a b hab => Eval.valToBits_mono hk hab) hreps) ?_
       obtain ⟨bv, hbv, h⟩ := except_bind_eq_ok h
@@ -859,14 +865,14 @@ theorem Eval.evalCry_mono {C : Eval.Ctx} {E : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
     Eval.evalCry C k' env jenv pty f n rest E = .ok v :=
   (evalMono_all C (eext_refl E) k k' hk).cry env jenv pty f n rest v h
 
-/-- `Eval.evalExt` (the model-carrying extern row) is monotone in its
+/-- `Eval.evalExt` (the model-less extern η row) is monotone in its
 fuel. -/
 theorem Eval.evalExt_mono {C : Eval.Ctx} {E : Rwv.Hyle.Sem.EEnv} {k k' : Nat}
     (hk : k ≤ k') {env : Eval.Env}
-    {jenv : Eval.JEnv} {pty : Ty} {s : String} {rest : List Exp} {v : Val}
-    (h : Eval.evalExt C k env jenv pty s rest E = .ok v) :
-    Eval.evalExt C k' env jenv pty s rest E = .ok v :=
-  (evalMono_all C (eext_refl E) k k' hk).ext env jenv pty s rest v h
+    {jenv : Eval.JEnv} {pty : Ty} {s : String} {gs : List Nat} {rest : List Exp} {v : Val}
+    (h : Eval.evalExt C k env jenv pty s gs rest E = .ok v) :
+    Eval.evalExt C k' env jenv pty s gs rest E = .ok v :=
+  (evalMono_all C (eext_refl E) k k' hk).ext env jenv pty s gs rest v h
 
 /-- The exported evaluator entry point `eval` is monotone in its fuel. -/
 theorem eval_mono {Δ : DEnv} {defns : HashMap Int Defn} {E : Rwv.Hyle.Sem.EEnv}

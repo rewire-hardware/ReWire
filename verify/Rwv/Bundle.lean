@@ -59,12 +59,15 @@ def scanFuelErr : ScanErr := .rejected "foreign scan: fuel exhausted (rwv bug?)"
 mutual
 
 /-- Scan an expression. Foreign occurrences are classified from the
-source artifact alone (`Eval.externModelless` — the same classifier
-the evaluator and the verified compiler dispatch on); `tgtModeled`
-reports whether the target program declares a model for a given extern
-name, used only to cross-check consistency with the source-side
-classification, never to choose it. -/
-def scanExp (tm : String → Bool) : Nat → Exp → Except ScanErr Unit
+source artifact alone (`Eval.externModelless` on the implementation
+argument, `Eval.externGenerics` on the parameter descriptor — the same
+classifiers the evaluator and the verified compiler dispatch on); the
+target declaration lookup `tm` is used only to cross-check consistency
+with the source-side classification (model-ness, and the generic-name
+order the fold derives from the same descriptor), never to choose it.
+A value disagreement needs no scan: the compiled node's generic values
+meet the target call's through the uninterpreted-symbol identity. -/
+def scanExp (tm : String → Option Rwv.Hyle.Extern) : Nat → Exp → Except ScanErr Unit
   | 0, _ => throw scanFuelErr
   | fuel + 1, e => do
       let (h, args) := EtaSat.flattenApp' e
@@ -79,17 +82,34 @@ def scanExp (tm : String → Bool) : Nat → Exp → Except ScanErr Unit
       | .prim _ .«extern» =>
           let eargs := args.filterMap fun | .eArg a => some a | .tArg _ => none
           match eargs with
-          | _ps :: clk :: _rst :: _as :: _rs :: nameE :: impl :: _rest =>
+          | ps :: clk :: _rst :: _as :: _rs :: nameE :: impl :: _rest =>
               let s := match nameE with | .litStr s => s | _ => "?"
               match clk with
               | .litStr "" =>
                   if Eval.externModelless impl then
-                    if tm s then
-                      throw (.rejected s!"extern {s}: the source occurrence is \
-                        model-less but the target declares a model")
-                    else pure ()
+                    match tm s with
+                    | some ex =>
+                        if ex.model.isSome then
+                          throw (.rejected s!"extern {s}: the source occurrence is \
+                            model-less but the target declares a model")
+                        else
+                          match Eval.externGenerics ps with
+                          | none => throw (.unsupported s!"extern {s}: non-literal \
+                              extern parameter (outside the certified fragment)")
+                          | some gps =>
+                              if ex.generics = gps.map (·.1) then pure ()
+                              else throw (.rejected s!"extern {s}: the source \
+                                parameter names {gps.map (·.1)} do not match the \
+                                target declaration's generics {ex.generics}")
+                    | none =>
+                        -- No target declaration: the occurrence is unused
+                        -- (a used one fails target well-formedness), and an
+                        -- unextractable descriptor still refuses a verdict.
+                        if (Eval.externGenerics ps).isSome then pure ()
+                        else throw (.unsupported s!"extern {s}: non-literal \
+                            extern parameter (outside the certified fragment)")
                   else
-                    if tm s then pure ()
+                    if (tm s).elim false (·.model.isSome) then pure ()
                     else
                       throw (.rejected s!"extern {s}: the source occurrence carries \
                         a model but the target declares none")
@@ -112,7 +132,7 @@ def scanExp (tm : String → Bool) : Nat → Exp → Except ScanErr Unit
       | .litVec _ es => es.forM (scanExp tm fuel)
       | _ => pure ()
 
-def scanAlt (tm : String → Bool) : Nat → Alt → Except ScanErr Unit
+def scanAlt (tm : String → Option Rwv.Hyle.Extern) : Nat → Alt → Except ScanErr Unit
   | 0, _ => throw scanFuelErr
   | fuel + 1, .mk _ _ b => scanExp tm fuel b
 
@@ -120,7 +140,7 @@ end
 
 mutual
 
-def scanTerm (tm : String → Bool) : Nat → Term → Except ScanErr Unit
+def scanTerm (tm : String → Option Rwv.Hyle.Extern) : Nat → Term → Except ScanErr Unit
   | 0, _ => throw scanFuelErr
   | fuel + 1, .pause o _ as => do
       scanExp tm fuel o
@@ -131,22 +151,22 @@ def scanTerm (tm : String → Bool) : Nat → Term → Except ScanErr Unit
       scanExp tm fuel sc
       alts.forM (scanTAlt tm fuel)
 
-def scanTAlt (tm : String → Bool) : Nat → TAlt → Except ScanErr Unit
+def scanTAlt (tm : String → Option Rwv.Hyle.Extern) : Nat → TAlt → Except ScanErr Unit
   | 0, _ => throw scanFuelErr
   | fuel + 1, .mk _ _ t => scanTerm tm fuel t
 
 end
 
-def scanCmd (tm : String → Bool) (fuel : Nat) : Cmd → Except ScanErr Unit
+def scanCmd (tm : String → Option Rwv.Hyle.Extern) (fuel : Nat) : Cmd → Except ScanErr Unit
   | .bind _ e => scanExp tm fuel e
   | .get _ _ => pure ()
   | .put _ e => scanExp tm fuel e
 
-def scanBlock (tm : String → Bool) (fuel : Nat) (b : Block) : Except ScanErr Unit := do
+def scanBlock (tm : String → Option Rwv.Hyle.Extern) (fuel : Nat) (b : Block) : Except ScanErr Unit := do
   b.cmds.forM (scanCmd tm fuel)
   scanTerm tm fuel b.term
 
-def scanProgram (tm : String → Bool) (fuel : Nat) (p : Program) : Except ScanErr Unit := do
+def scanProgram (tm : String → Option Rwv.Hyle.Extern) (fuel : Nat) (p : Program) : Except ScanErr Unit := do
   p.defns.forM fun d => scanExp tm fuel d.body
   p.procs.forM fun pr => do
     pr.cells.forM fun c =>
@@ -267,7 +287,7 @@ def validateBundle (srcName srcTxt tgtName tgtTxt : String) (fuel : Nat) : Bundl
           .error s!"input uses a term unique at or below {Bundle.uniqFloor} \
             (reserved for freshly minted eta binders)"
         else
-          match Bundle.scanProgram (fun s => ((Rwv.Hyle.Sem.xenv hp).get? s).isSome)
+          match Bundle.scanProgram (fun s => hp.externs.find? (·.name = s))
               Bundle.structuralFuel p₁ with
           | .error (.unsupported r) => .unsupported r
           | .error (.rejected r) => .rejected r
@@ -349,7 +369,7 @@ theorem validateBundle_inv {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}
   by_cases huniq : Bundle.minIdProgram Bundle.structuralFuel (addPrims p₀) ≤ Bundle.uniqFloor
   · rw [if_pos huniq] at h; exact absurd h (by simp)
   · rw [if_neg huniq] at h
-    cases hscan : Bundle.scanProgram (fun s => ((Rwv.Hyle.Sem.xenv hp).get? s).isSome)
+    cases hscan : Bundle.scanProgram (fun s => hp.externs.find? (·.name = s))
         Bundle.structuralFuel (addPrims p₀) with
     | error se => rw [hscan] at h; cases se <;> exact absurd h (by simp)
     | ok u =>

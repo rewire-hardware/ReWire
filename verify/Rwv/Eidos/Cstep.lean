@@ -9097,20 +9097,22 @@ device side's `Sem.xapply` clamp never fires and the extern's
 bit-level behavior is exactly `rep (η (decode …))`, cycle for
 cycle. -/
 
-/-- Algebraic extern environments: per extern name, an interpretation
-on machine values (doc/eidos.md §7.5.5's η, for the model-less
-combinational tier). -/
-def EtaAlg := String → Option (List Val → Except String Val)
+/-- Algebraic extern environments: per extern name AND static generic
+instantiation, an interpretation on machine values (doc/eidos.md
+§7.5.5's η over ℕ^g, for the model-less combinational tier — distinct
+instantiations are distinct black boxes). -/
+def EtaAlg := String → List Nat → Option (List Val → Except String Val)
 
-/-- The extern signature assignment: per extern name, the declared
-argument types and result type (the impl monotype's arrow spine). -/
-def EtaSig := String → Option (List Ty × Ty)
+/-- The extern signature assignment: per extern name and generic
+instantiation, the declared argument types and result type (the impl
+monotype's arrow spine). -/
+def EtaSig := String → List Nat → Option (List Ty × Ty)
 
 /-- Well-formedness of an algebraic extern environment against a
 signature assignment: results are canonical inhabitants of the
 declared result types. -/
 def WFEta (Δ : DEnv) (Ξ : EtaSig) (η : EtaAlg) : Prop :=
-  ∀ s doms res g, Ξ s = some (doms, res) → η s = some g →
+  ∀ s gs doms res g, Ξ s gs = some (doms, res) → η s gs = some g →
     ∀ vs v, g vs = .ok v → VTy Δ v res
 
 /-- Split a concatenated argument image at the declared types' sizes
@@ -9133,11 +9135,8 @@ def decodeSeq (Δ : DEnv) (K : Nat) : List Ty → BV → Except String (List Val
 structural fuel `K`. This is the instantiation the ∀η reading of the
 correspondence quantifies through. -/
 def etaB (Δ : DEnv) (K : Nat) (Ξ : EtaSig) (η : EtaAlg) : Rwv.Hyle.Sem.EEnv :=
-  -- The algebraic tier responds uniformly at every static generic
-  -- instantiation: `EtaSig`/`EtaAlg` are keyed by extern name (the
-  -- generic-free tier the Eidos side emits).
-  fun s _gs =>
-    match Ξ s, η s with
+  fun s gs =>
+    match Ξ s gs, η s gs with
     | some (doms, _res), some g =>
         some (fun bv => do
           let vs ← decodeSeq Δ K doms bv
@@ -9153,7 +9152,7 @@ needs no `WFEta` at all). -/
 theorem etaB_width {Δ : DEnv} {K : Nat} {Ξ : EtaSig} {η : EtaAlg}
     (hη : WFEta Δ Ξ η) {s : String} {doms : List Ty} {res : Ty}
     {g : List Val → Except String Val} {f : BV → Except String BV} {gs : List Nat}
-    (hΞ : Ξ s = some (doms, res)) (hg : η s = some g)
+    (hΞ : Ξ s gs = some (doms, res)) (hg : η s gs = some g)
     (hf : etaB Δ K Ξ η s gs = some f) {bv r : BV} (hr : f bv = .ok r)
     {k' w : Nat} (hsz : Δ.sizeOf k' [] res = .ok w) : r.width = w := by
   rw [etaB, hΞ, hg] at hf
@@ -9161,7 +9160,7 @@ theorem etaB_width {Δ : DEnv} {K : Nat} {Ξ : EtaSig} {η : EtaAlg}
   subst hf
   obtain ⟨vs, hvs, hr⟩ := except_bind_eq_ok hr
   obtain ⟨v, hv, hr⟩ := except_bind_eq_ok hr
-  exact vty_rep_width (hη s doms res g hΞ hg vs v hv) hr hsz
+  exact vty_rep_width (hη s gs doms res g hΞ hg vs v hv) hr hsz
 
 /-- THE ∀η headline: a passing `validateProc` run certifies the
 correspondence at EVERY algebraic extern interpretation — the ∀E
