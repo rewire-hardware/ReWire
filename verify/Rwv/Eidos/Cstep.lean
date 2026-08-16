@@ -153,7 +153,8 @@ gives that reading (`EtaAlg`/`WFEta`/`etaB`, and the specialization
 `validateProc_corresponds_eta`); model-carrying externs compile as
 their own implementation argument applied to the value arguments
 (`Eval.externModelless` classifies from the source artifact alone),
-and generic model-less externs are rejected honestly.
+and model-less calls (generic or not) read through the
+(name, generics)-keyed extern environment.
 -/
 import Rwv.Eidos.Cexp
 import Rwv.Eidos.Machine
@@ -501,7 +502,7 @@ def substNF (θ : String → Option NF) : NF → NF
   | .cat a b => .cat (substNF θ a) (substNF θ b)
   | .slice i w e => .slice i w (substNF θ e)
   | .ite c t e => .ite (substNF θ c) (substNF θ t) (substNF θ e)
-  | .xcall w x a => .xcall w x (substNF θ a)
+  | .xcall w x gs a => .xcall w x gs (substNF θ a)
 
 /-- The label specialization: rewrite the resumption-tag register to
 `tag-literal | its own low rPayW bits`. Denotation-preserving exactly
@@ -1060,7 +1061,7 @@ def substNodeD (plan : Plan) (lo : Layout) (tag : Nat) (d : Dag) (m : Array Nat)
       if d.widthOf (mIdx m t) = d.widthOf (mIdx m e) then
         .ok (d.rawIte (mIdx m c) (mIdx m t) (mIdx m e))
       else .error "substD: ite arm widths"
-  | .xcall w x a => .ok (d.mkXcallD w x (mIdx m a))
+  | .xcall w x gs a => .ok (d.mkXcallD w x gs (mIdx m a))
 
 def substGoD (plan : Plan) (lo : Layout) (tag : Nat) :
     Nat → Dag → Array Nat → Except String (Dag × Array Nat)
@@ -1583,7 +1584,7 @@ theorem substNF_eval {σ : String → BV} {θ : String → Option NF}
         = (fun u : BV => (⟨w, u.bits.extractLsb' i w⟩ : BV)) (e.eval σ E)
       rw [ihe]
   | ite c t e ihc iht ihe => simp only [substNF, NF.eval, ihc, iht, ihe]
-  | xcall w x a iha => simp only [substNF, NF.eval, iha]
+  | xcall w x gs a iha => simp only [substNF, NF.eval, iha]
 
 /-- Substitution preserves the width discipline when every substituted
 image satisfies it. -/
@@ -1604,7 +1605,7 @@ theorem substNF_varsWF {P : String → Nat → Prop} {θ : String → Option NF}
   | cat a b iha ihb => exact fun h => ⟨iha h.1, ihb h.2⟩
   | slice i w e ihe => exact fun h => ihe h
   | ite c t e ihc iht ihe => exact fun h => ⟨ihc h.1, iht h.2.1, ihe h.2.2⟩
-  | xcall w x a iha => exact fun h => iha h
+  | xcall w x gs a iha => exact fun h => iha h
 
 /-- The tag specialization is denotation-preserving at valuations
 whose tag-register value is fixed by the specialization image (the
@@ -8436,7 +8437,7 @@ private theorem substNodeD_spec {plan : Plan} {lo : Layout} {tag : Nat}
       refine ⟨W, E, L, ?_⟩
       rw [R, hca, hread]
       rfl
-  | xcall w x a =>
+  | xcall w x gs a =>
       rw [substNodeD] at h
       injection h with h
       have ha : a < m.size := hchild a (by simp [DNode.children])
@@ -9132,7 +9133,10 @@ def decodeSeq (Δ : DEnv) (K : Nat) : List Ty → BV → Except String (List Val
 structural fuel `K`. This is the instantiation the ∀η reading of the
 correspondence quantifies through. -/
 def etaB (Δ : DEnv) (K : Nat) (Ξ : EtaSig) (η : EtaAlg) : Rwv.Hyle.Sem.EEnv :=
-  fun s =>
+  -- The algebraic tier responds uniformly at every static generic
+  -- instantiation: `EtaSig`/`EtaAlg` are keyed by extern name (the
+  -- generic-free tier the Eidos side emits).
+  fun s _gs =>
     match Ξ s, η s with
     | some (doms, _res), some g =>
         some (fun bv => do
@@ -9148,9 +9152,9 @@ environments (the non-vacuity half of the η story; the agreement half
 needs no `WFEta` at all). -/
 theorem etaB_width {Δ : DEnv} {K : Nat} {Ξ : EtaSig} {η : EtaAlg}
     (hη : WFEta Δ Ξ η) {s : String} {doms : List Ty} {res : Ty}
-    {g : List Val → Except String Val} {f : BV → Except String BV}
+    {g : List Val → Except String Val} {f : BV → Except String BV} {gs : List Nat}
     (hΞ : Ξ s = some (doms, res)) (hg : η s = some g)
-    (hf : etaB Δ K Ξ η s = some f) {bv r : BV} (hr : f bv = .ok r)
+    (hf : etaB Δ K Ξ η s gs = some f) {bv r : BV} (hr : f bv = .ok r)
     {k' w : Nat} (hsz : Δ.sizeOf k' [] res = .ok w) : r.width = w := by
   rw [etaB, hΞ, hg] at hf
   injection hf with hf

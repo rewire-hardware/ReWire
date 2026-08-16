@@ -120,11 +120,19 @@ def validator_tests(exe, dumps, work):
             + inst.rstrip("\n") + "\n      i0.p0 := __in0\n")
     expect(exe, "target-only device instance is unsupported",
            dumps / "iter.8.eir", w("iter.inst.11.rwc", inst), "UNSUPPORTED")
+    # Generic model-less xcalls now have expressible semantics: the
+    # extern environment is keyed by (name, generics), so a generic
+    # call in an UNUSED target definition is well-formed, denoting
+    # code the device comparison never consults — acceptance is
+    # correct (the device itself is unchanged). Device-reachable
+    # generic fixtures (and generic value/order mutations, which the
+    # symbol identity must reject) land with the source-side generics
+    # tier.
     gen = ("extern gext\n      generic n\n      input p0 : [1]\n"
            "      output p1 : [1]\n\n"
            "gfun : ([1]) -> [1]\ngfun x =\n      gext<3>(x)\n\n") + iter_base
-    expect(exe, "generic model-less extern call is unsupported",
-           dumps / "iter.8.eir", w("iter.gen.11.rwc", gen), "UNSUPPORTED")
+    expect(exe, "unused generic model-less extern definition validates",
+           dumps / "iter.8.eir", w("iter.gen.11.rwc", gen), "VALIDATED")
 
     # The primitive basis is never silently substituted.
     boolswap = (case1_eir.read_text()

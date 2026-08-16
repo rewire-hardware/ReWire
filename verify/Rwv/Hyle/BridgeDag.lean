@@ -30,13 +30,14 @@ The store invariant (`Dag.WF`):
   adjacent-slice merging with the tree-level structural equality test.
 
 The η tier: `DNode` mirrors Bridge's uninterpreted extern-call node as
-`xcall w ext a` — one packed-argument child, built by `xpackD` (the
+`xcall w ext gs a` — one packed-argument child at the call's static
+generic instantiation (part of the hash-cons identity), built by `xpackD` (the
 node-level `NF.xpack`, a left `mkCatD` fold from the empty literal)
 under `mkXcallD`, whose `width_coh` obligation is free (`annWidth`
 answers the cached width unconditionally, by the `xapply` clamp).
 `symExpDag` carries the extern table `X` exactly as `symExp` does —
-model-carrying calls and generic instantiations reject, sharing the
-tree evaluator's messages — and the simulation extends node for node,
+model-carrying calls reject, sharing the tree evaluator's messages —
+and the simulation extends node for node,
 so `checkEquivDag`/`checkEquivDagRaw` inherit Bridge's ∀E run
 equality. The renormalizer passes the node through, renormalizing only
 the packed child, mirroring `cfoldW`. `xcallFreeIdx` is the store-side
@@ -78,7 +79,7 @@ inductive DNode where
   | cat   (w : Nat) (a b : Nat)
   | slice (i w : Nat) (e : Nat)
   | ite   (w : Nat) (c t e : Nat)
-  | xcall (w : Nat) (ext : String) (a : Nat)
+  | xcall (w : Nat) (ext : String) (gs : List Nat) (a : Nat)
 deriving DecidableEq, Hashable, Repr
 
 namespace DNode
@@ -92,7 +93,7 @@ def width : DNode → Nat
   | .cat w _ _ => w
   | .slice _ w _ => w
   | .ite w _ _ _ => w
-  | .xcall w _ _ => w
+  | .xcall w _ _ _ => w
 
 /-- Child indices. -/
 def children : DNode → List Nat
@@ -102,7 +103,7 @@ def children : DNode → List Nat
   | .cat _ a b => [a, b]
   | .slice _ _ e => [e]
   | .ite _ c t e => [c, t, e]
-  | .xcall _ _ a => [a]
+  | .xcall _ _ _ a => [a]
 
 /-- The one-level tree reading: children through `f`. The cached
 width is dropped exactly where `NF` carries none. -/
@@ -115,7 +116,7 @@ def toNF (n : DNode) (f : Nat → NF) : NF :=
   | .cat _ a b => .cat (f a) (f b)
   | .slice i w e => .slice i w (f e)
   | .ite _ c t e => .ite (f c) (f t) (f e)
-  | .xcall w ext a => .xcall w ext (f a)
+  | .xcall w ext gs a => .xcall w ext gs (f a)
 
 theorem toNF_congr {n : DNode} {f g : Nat → NF} (h : ∀ j ∈ n.children, f j = g j) :
     n.toNF f = n.toNF g := by
@@ -164,8 +165,8 @@ def read (d : Dag) (i : Nat) : NF :=
       .ite (if _h : c < i then d.read c else .lit BV.nil)
            (if _h : t < i then d.read t else .lit BV.nil)
            (if _h : e < i then d.read e else .lit BV.nil)
-  | some (.xcall w ext a) =>
-      .xcall w ext (if _h : a < i then d.read a else .lit BV.nil)
+  | some (.xcall w ext gs a) =>
+      .xcall w ext gs (if _h : a < i then d.read a else .lit BV.nil)
   | none => .lit BV.nil
 termination_by i
 
@@ -246,9 +247,9 @@ theorem read_eq {d : Dag} {i : Nat} {n : DNode}
           dif_pos (hlt t (by simp [DNode.children])),
           dif_pos (hlt e (by simp [DNode.children]))]
       rfl
-  | xcall w ext a =>
+  | xcall w ext gs a =>
       rw [read, h]
-      show NF.xcall w ext (if _h : a < i then d.read a else .lit BV.nil) = _
+      show NF.xcall w ext gs (if _h : a < i then d.read a else .lit BV.nil) = _
       rw [dif_pos (hlt a (by simp [DNode.children]))]
       rfl
 
@@ -296,7 +297,7 @@ def xcallFreeIdx (d : Dag) (i : Nat) : Bool :=
       (if _h : c < i then d.xcallFreeIdx c else true)
         && (if _h : t < i then d.xcallFreeIdx t else true)
         && (if _h : e < i then d.xcallFreeIdx e else true)
-  | some (.xcall _ _ _) => false
+  | some (.xcall _ _ _ _) => false
   | none => true
 termination_by i
 
@@ -353,7 +354,7 @@ theorem xcallFreeIdx_read {d : Dag} :
               && (if _h : e < i then d.read e else .lit BV.nil).xcallFree) = true
             rw [Bool.and_eq_true, Bool.and_eq_true]
             exact ⟨⟨step c h.1.1, step t h.1.2⟩, step e h.2⟩
-        | xcall w ext a =>
+        | xcall w ext gs a =>
             dsimp only at h
             exact absurd h (by simp)
 
@@ -377,7 +378,7 @@ def xcallFreeStep (d : Dag) (i : Nat) (acc : Array Bool) : Bool :=
       (if _h : c < acc.size then acc[c] else true)
         && (if _h : t < acc.size then acc[t] else true)
         && (if _h : e < acc.size then acc[e] else true)
-  | some (.xcall _ _ _) => false
+  | some (.xcall _ _ _ _) => false
   | none => true
 
 /-- The bottom-up `xcallFreeIdx` table over the store prefix `[0, n)`:
@@ -423,7 +424,7 @@ theorem xcallFreeStep_eq (d : Dag) {i : Nat} {acc : Array Bool} (hsz : acc.size 
       | cat w a b => dsimp only; rw [step a, step b]
       | slice j w e => exact step e
       | ite w c t e => dsimp only; rw [step c, step t, step e]
-      | xcall w ext a => rfl
+      | xcall w ext gs a => rfl
 
 /-- Every table entry is the recursion's verdict. -/
 theorem xcallFreeTab_get (d : Dag) : ∀ n j (hj : j < (d.xcallFreeTab n).size),
@@ -660,6 +661,9 @@ theorem WF.canon {d : Dag} (hwf : d.WF) :
              child _ _ (by simp [DNode.children]) (by simp [DNode.children]) heq.1,
              child _ _ (by simp [DNode.children]) (by simp [DNode.children]) heq.2.1,
              child _ _ (by simp [DNode.children]) (by simp [DNode.children]) heq.2.2])
+      -- xcall: width, name, and generics carried by the reading, one child
+      | (rw [heq.1, heq.2.1, heq.2.2.1,
+             child _ _ (by simp [DNode.children]) (by simp [DNode.children]) heq.2.2.2])
 
 
 end Dag
@@ -790,12 +794,12 @@ theorem rawIte_spec {d : Dag} (hwf : d.WF) {c t e : Nat} (hc : c < d.size) (ht :
 cached width is `annWidth`'s unconditional answer, so `width_coh` is
 free. Serves both the raw alphabet and the renormalizer (`cfoldW`
 passes the node through, recursing only into the packed argument). -/
-def mkXcallD (d : Dag) (w : Nat) (ext : String) (a : Nat) : Dag × Nat :=
-  d.push (.xcall w ext a)
+def mkXcallD (d : Dag) (w : Nat) (ext : String) (gs : List Nat) (a : Nat) : Dag × Nat :=
+  d.push (.xcall w ext gs a)
 
-theorem mkXcallD_spec {d : Dag} (hwf : d.WF) {w : Nat} {ext : String} {a : Nat}
+theorem mkXcallD_spec {d : Dag} (hwf : d.WF) {w : Nat} {ext : String} {gs : List Nat} {a : Nat}
     (ha : a < d.size) :
-    Mk d (d.mkXcallD w ext a) (.xcall w ext (d.read a)) := by
+    Mk d (d.mkXcallD w ext gs a) (.xcall w ext gs (d.read a)) := by
   refine push_mk hwf ?_ rfl
   intro j hj
   rw [mem1 hj]
@@ -953,10 +957,10 @@ theorem mk1D_spec {d : Dag} (hwf : d.WF) {op : Op} {a : Nat} (ha : a < d.size)
       by_cases hn : op = .not
       · subst hn; rfl
       · rw [mk1W_ne_not hn]; rfl
-  | xcall w' ext c =>
+  | xcall w' ext gs c =>
       refine (rawPrim1_spec hwf ha hop).cast ?_
       rw [hra]
-      show NF.prim1 op (NF.xcall w' ext (d.read c)) = _
+      show NF.prim1 op (NF.xcall w' ext gs (d.read c)) = _
       by_cases hn : op = .not
       · subst hn; rfl
       · rw [mk1W_ne_not hn]; rfl
@@ -1633,19 +1637,19 @@ theorem mkSliceD_spec :
         · rw [if_neg hid, if_neg hid]
           refine (rawSlice_spec hwf i w he).cast ?_
           rw [hre']
-    | xcall xw ext a =>
-        have hre' : d.read e = NF.xcall xw ext (d.read a) := hre
+    | xcall xw ext gs a =>
+        have hre' : d.read e = NF.xcall xw ext gs (d.read a) := hre
         have hann : annWidth (d.read e) = some xw := hwf.width_coh e _ hne
         rw [hre']
         rw [hre'] at hann
-        show Mk d (if i = 0 ∧ w = (DNode.xcall xw ext a).width then (d, e)
+        show Mk d (if i = 0 ∧ w = (DNode.xcall xw ext gs a).width then (d, e)
                    else d.push (.slice i w e))
-          (NF.mkSliceW i w (NF.xcall xw ext (d.read a)))
+          (NF.mkSliceW i w (NF.xcall xw ext gs (d.read a)))
         simp only [NF.mkSliceW, DNode.width]
         rw [hann]
         show Mk d (if i = 0 ∧ w = xw then (d, e) else d.push (.slice i w e))
-          (if i = 0 ∧ w = xw then NF.xcall xw ext (d.read a)
-           else NF.slice i w (NF.xcall xw ext (d.read a)))
+          (if i = 0 ∧ w = xw then NF.xcall xw ext gs (d.read a)
+           else NF.slice i w (NF.xcall xw ext gs (d.read a)))
         by_cases hid : i = 0 ∧ w = xw
         · rw [if_pos hid, if_pos hid, ← hre']
           exact self_mk hwf he
@@ -2162,10 +2166,8 @@ def symExpDag (dmap : HashMap String Defn) (X : Sem.XEnv) :
         | some _ =>
             .error s!"extern {ext} has a model: the model-carrying validator row is out of scope"
         | none =>
-            if gs.isEmpty then
-              let (d₂, pk) := d₁.xpackD ns
-              .ok (d₂.mkXcallD w ext pk)
-            else .error s!"extern {ext}: generic model-less externs are out of scope"
+            let (d₂, pk) := d₁.xpackD ns
+            .ok (d₂.mkXcallD w ext gs pk)
     | .ite _ c t e => do
         let (d₁, nc) ← symExpDag dmap X fuel ρ c d
         let (d₂, nt) ← symExpDag dmap X fuel ρ t d₁
@@ -2355,18 +2357,14 @@ theorem symExpDag_sim {dmap : HashMap String Defn} {X : Sem.XEnv} :
           | none =>
               rw [hX] at hs
               dsimp only at hs ⊢
-              split at hs
-              · rename_i hgs
-                rw [if_pos hgs]
-                rcases hxp : d₁.xpackD ns with ⟨d₂, pk⟩
-                rw [hxp] at hs
-                dsimp only at hs
-                injection hs with hs
-                obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (xpackD_spec W₁ L₁) hxp
-                obtain ⟨W, E, L, R⟩ := mk_out (mkXcallD_spec W₂ L₂) hs
-                refine ⟨W, (E₁.trans E₂).trans E, L, ?_⟩
-                rw [R, R₂]
-              · exact absurd hs (by simp)
+              rcases hxp : d₁.xpackD ns with ⟨d₂, pk⟩
+              rw [hxp] at hs
+              dsimp only at hs
+              injection hs with hs
+              obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (xpackD_spec W₁ L₁) hxp
+              obtain ⟨W, E, L, R⟩ := mk_out (mkXcallD_spec W₂ L₂) hs
+              refine ⟨W, (E₁.trans E₂).trans E, L, ?_⟩
+              rw [R, R₂]
       | ite w c t e =>
           simp only [symExpDag] at hs
           obtain ⟨⟨d₁, nc⟩, h₁, hs⟩ := except_bind_eq_ok hs
@@ -2772,7 +2770,7 @@ def renormNode (d : Dag) (m : Array Nat) : DNode → Except String (Dag × Nat)
       if d.widthOf (mIdx m t) = d.widthOf (mIdx m e) then
         .ok (d.mkIteD (mIdx m c) (mIdx m t) (mIdx m e))
       else .error "renorm: ite arm widths"
-  | .xcall w ext a => .ok (d.mkXcallD w ext (mIdx m a))
+  | .xcall w ext gs a => .ok (d.mkXcallD w ext gs (mIdx m a))
 
 def renormGo : Nat → Dag → Array Nat → Except String (Dag × Array Nat)
   | 0, d, m => .ok (d, m)
@@ -2887,7 +2885,7 @@ private theorem renormNode_spec {d₀ dc : Dag} {m : Array Nat} {n : DNode} {i :
           = NF.cfoldW (NF.ite (d₀.read c) (d₀.read t) (d₀.read e))
         simp only [NF.cfoldW]
       · exact absurd h (by simp)
-  | xcall w ext a =>
+  | xcall w ext gs a =>
       rw [renormNode] at h
       injection h with h
       have ha : a < m.size := hchild a (by simp [DNode.children])
@@ -2896,7 +2894,7 @@ private theorem renormNode_spec {d₀ dc : Dag} {m : Array Nat} {n : DNode} {i :
       obtain ⟨W, E, L, R⟩ := mk_out (mkXcallD_spec hwfc hra) h
       refine ⟨W, E, L, ?_⟩
       rw [R, hca, hread]
-      show NF.xcall w ext (NF.cfoldW (d₀.read a)) = NF.cfoldW (NF.xcall w ext (d₀.read a))
+      show NF.xcall w ext gs (NF.cfoldW (d₀.read a)) = NF.cfoldW (NF.xcall w ext gs (d₀.read a))
       simp only [NF.cfoldW]
 
 private theorem renormGo_spec :

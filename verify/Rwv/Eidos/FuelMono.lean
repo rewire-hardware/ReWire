@@ -421,12 +421,12 @@ instantiated at `E E` for pure fuel monotonicity, and at
 successful run at the empty environment never consulted it, since the
 empty environment's model-less row throws). -/
 private def EExt (E E' : Rwv.Hyle.Sem.EEnv) : Prop :=
-  ∀ s f, E s = some f → E' s = some f
+  ∀ s gs f, E s gs = some f → E' s gs = some f
 
-private theorem eext_refl (E : Rwv.Hyle.Sem.EEnv) : EExt E E := fun _ _ h => h
+private theorem eext_refl (E : Rwv.Hyle.Sem.EEnv) : EExt E E := fun _ _ _ h => h
 
 private theorem eext_empty (E : Rwv.Hyle.Sem.EEnv) : EExt Rwv.Hyle.Sem.eEmpty E :=
-  fun _ _ h => by simp [Rwv.Hyle.Sem.eEmpty] at h
+  fun _ _ _ h => by simp [Rwv.Hyle.Sem.eEmpty] at h
 
 private structure EvalMono (C : Eval.Ctx) (E E' : Rwv.Hyle.Sem.EEnv) (k k' : Nat) : Prop where
   core : ∀ env jenv e v, Eval.evalCore C k env jenv e E = .ok v →
@@ -768,11 +768,11 @@ private theorem evalExt_step {C : Eval.Ctx} {E E' : Rwv.Hyle.Sem.EEnv} {k k' : N
   · exact error_ne_ok h
   rename_i hlen
   rw [if_pos hlen]
-  cases hEs : E s with
+  cases hEs : E s [] with
   | none => rw [hEs] at h; exact error_ne_ok h
   | some f =>
       rw [hEs] at h
-      rw [hE s f hEs]
+      rw [hE s [] f hEs]
       obtain ⟨reps, hreps, h⟩ := except_bind_eq_ok h
       refine bind_ok (mapM_mono (fun a b hab => Eval.valToBits_mono hk hab) hreps) ?_
       obtain ⟨bv, hbv, h⟩ := except_bind_eq_ok h

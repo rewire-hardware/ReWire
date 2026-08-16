@@ -357,7 +357,7 @@ def scanProgram (p : Program) : Except String (List (String × Ty)) := do
 a canonical value of the result type drawn deterministically from the
 name and the argument bits, `rep`ped. -/
 def synthEta (Δ : DEnv) (repFuel : Nat) (etaTys : List (String × Ty)) :
-    Rwv.Hyle.Sem.EEnv := fun s =>
+    Rwv.Hyle.Sem.EEnv := fun s _gs =>
   (etaTys.lookup s).map fun ity bv => do
     let res := (Ty.flattenArrow ity).2
     let (v, _) ← genVal Δ res (seed0 s!"{s}/{bv.width}/{bv.bits.toNat}")

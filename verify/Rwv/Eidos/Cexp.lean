@@ -4825,7 +4825,7 @@ def cexpJ (Δ : DEnv) (dmap : HashMap Int Defn) :
                         let pas ← rest.mapM (cexpJ Δ dmap fuel Γ jΓ · [])
                         let res := (Ty.flattenArrow ity).2
                         let w ← Δ.sizeOf (fuel + 1) [] res
-                        .ok (.xcall w s (.xpack (pas.map (·.1))), res)
+                        .ok (.xcall w s [] (.xpack (pas.map (·.1))), res)
                       else .error "rwPrimExtern: unsaturated foreign application"
                     else do
                       let pas ← rest.mapM (cexpJ Δ dmap fuel Γ jΓ · [])
@@ -5830,7 +5830,7 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
       | cat a0 b0 => exact error_ne_ok hc
       | slice i0 w0 e0 => exact error_ne_ok hc
       | ite c0 t0 e0 => exact error_ne_ok hc
-      | xcall w0 x0 a0 => exact error_ne_ok hc
+      | xcall w0 x0 gs0 a0 => exact error_ne_ok hc
       | lit lv =>
       dsimp only at hc
       split at hc
@@ -8199,7 +8199,7 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
               injection hc with hnf hty
               subst hnf
               subst hty
-              cases hEs : E s with
+              cases hEs : E s [] with
               | none => rw [hEs] at hev; exact error_ne_ok hev
               | some fx =>
               rw [hEs] at hev
@@ -8226,11 +8226,11 @@ theorem cexpJ_sound {Δ : DEnv} {dmap : HashMap Int Defn} {σ : String → BV}
               have hwidth : bv.width = w :=
                 vty_rep_width (decode_vty hev) (decode_rep hev) hw
               refine ⟨decode_vty hev, ef2, ?_⟩
-              have h1 : (NF.xcall w s (.xpack (pas.map (·.1)))).eval σ E
-                  = Rwv.Hyle.Sem.xapply E s w (Rwv.Hyle.Sem.bvcat reps) := by
-                show Rwv.Hyle.Sem.xapply E s w ((NF.xpack (pas.map (·.1))).eval σ E) = _
+              have h1 : (NF.xcall w s [] (.xpack (pas.map (·.1)))).eval σ E
+                  = Rwv.Hyle.Sem.xapply E s [] w (Rwv.Hyle.Sem.bvcat reps) := by
+                show Rwv.Hyle.Sem.xapply E s [] w ((NF.xpack (pas.map (·.1))).eval σ E) = _
                 rw [Rwv.Hyle.Bridge.NF.xpack_eval, ← hre]
-              have heval : (NF.xcall w s (.xpack (pas.map (·.1)))).eval σ E = bv := by
+              have heval : (NF.xcall w s [] (.xpack (pas.map (·.1)))).eval σ E = bv := by
                 rw [h1]
                 simp only [Rwv.Hyle.Sem.xapply, hEs, hbv]
                 rw [if_pos hwidth]
@@ -11394,7 +11394,7 @@ def cexpJD (Δ : DEnv) (dmap : HashMap Int Defn) :
                           let res := (Ty.flattenArrow ity).2
                           let w ← Δ.sizeOf (fuel + 1) [] res
                           let (d₂, ip) := d₁.xpackD (pas.map (·.1))
-                          let (d₃, r) := d₂.mkXcallD w s ip
+                          let (d₃, r) := d₂.mkXcallD w s [] ip
                           .ok (d₃, r, res)
                       else .error "rwPrimExtern: unsaturated foreign application"
                     else .error s!"rwPrimExtern {s}: model-carrying extern (DAG mirror out of scope)"
@@ -13997,7 +13997,7 @@ theorem cexpJD_sim {Δ : DEnv} {dmap : HashMap Int Defn} :
             rcases hxp : d₁.xpackD (pas.map (·.1)) with ⟨d₂, ip⟩
             rw [hxp] at hc
             dsimp only at hc
-            rcases hxc : d₂.mkXcallD w sx ip with ⟨d₃, rr⟩
+            rcases hxc : d₂.mkXcallD w sx [] ip with ⟨d₃, rr⟩
             rw [hxc] at hc
             dsimp only at hc
             obtain ⟨W₂, E₂, L₂, R₂⟩ := mk_out (Rwv.Hyle.BridgeDag.Dag.xpackD_spec W₁

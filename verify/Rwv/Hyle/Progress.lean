@@ -10,12 +10,10 @@ condition rather than a proof obligation:
   * device instances (`sInstIn`, the instance-free fragment) — the
     theorems take an instance-free device, under which a checked
     device body contains no instance statements at all;
-  * model-less extern calls with static generic arguments — the
-    checker accepts them (matching generic counts) but `evalExp`
-    deliberately rejects them (doc/hyle.md §6.1). `Exp.etaGenericFree`
-    is the computable sweep for their absence; note that model-less
-    GENERIC-FREE calls read totally through `Sem.xapply`, so they need
-    no extern-environment hypothesis at all.
+
+  Model-less extern calls (generic or not) read totally through
+  `Sem.xapply` at the call's (name, generics) key, so they need no
+  extern-environment hypothesis at all.
 
 The main results, bottom up:
 
@@ -44,36 +42,6 @@ import Rwv.Hyle.Bridge
 namespace Rwv.Hyle
 
 open Std (HashMap HashSet)
-
-/-! ## The eta-generic-free sweep -/
-
-/-- No model-less extern call carries static generic arguments: the
-one checked configuration `evalExp` deliberately rejects
-(doc/hyle.md §6.1). Model-carrying calls are unconstrained — their
-generics are ignored by the model path. -/
-def Exp.etaGenericFree (X : Sem.XEnv) : Exp → Bool
-  | .lit _ | .undef _ | .var _ _ => true
-  | .cat e₁ e₂ => e₁.etaGenericFree X && e₂.etaGenericFree X
-  | .slice _ _ e => e.etaGenericFree X
-  | .prim _ _ args => args.attach.all fun ⟨a, _⟩ => a.etaGenericFree X
-  | .call _ _ args => args.attach.all fun ⟨a, _⟩ => a.etaGenericFree X
-  | .xcall _ ext gs args =>
-      (match X.get? ext with
-       | some _ => true
-       | none => gs.isEmpty)
-      && args.attach.all fun ⟨a, _⟩ => a.etaGenericFree X
-  | .ite _ c t e => c.etaGenericFree X && t.etaGenericFree X && e.etaGenericFree X
-  | .letE _ _ rhs body => rhs.etaGenericFree X && body.etaGenericFree X
-
-def Stmt.etaGenericFree (X : Sem.XEnv) : Stmt → Bool
-  | .sLet _ e | .sOutput _ e | .sNext _ e | .sInstIn _ _ e => e.etaGenericFree X
-
-/-- Every expression of the program — definition bodies and the device
-body — is eta-generic-free (at the program's own extern table). -/
-def Program.etaGenericFree (p : Program) : Bool :=
-  let X := Sem.xenv p
-  p.defns.all (fun d => d.body.etaGenericFree X)
-    && p.device.body.all (fun s => s.etaGenericFree X)
 
 namespace Progress
 
@@ -367,18 +335,17 @@ theorem evalExp_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E : Se
       Check.checkExp env ctx e = .ok w →
       CtxAgree ctx ρ →
       (∀ f ∈ Sem.deps X e, ClosOk env F f) →
-      e.etaGenericFree X = true →
       ∃ v, evalExp F X ρ e E = .ok v ∧ v.width = w
-  | .lit v, ctx, ρ, w, hck, _, _, _ => by
+  | .lit v, ctx, ρ, w, hck, _, _ => by
       simp only [Check.checkExp] at hck
       injection hck with hck
       exact ⟨v, by simp only [evalExp], hck⟩
-  | .undef w0, ctx, ρ, w, hck, _, _, _ => by
+  | .undef w0, ctx, ρ, w, hck, _, _ => by
       simp only [Check.checkExp] at hck
       injection hck with hck
       subst hck
       exact ⟨BV.zero w0, by simp only [evalExp], rfl⟩
-  | .var w0 x, ctx, ρ, w, hck, hρ, _, _ => by
+  | .var w0 x, ctx, ρ, w, hck, hρ, _ => by
       simp only [Check.checkExp] at hck
       cases hctx : ctx.get? x with
       | none => rw [hctx] at hck; exact absurd hck (by simp)
@@ -394,22 +361,21 @@ theorem evalExp_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E : Se
             refine ⟨v, ?_, by rw [hvw, heq]⟩
             simp only [evalExp]
             rw [hv]
-  | .cat e₁ e₂, ctx, ρ, w, hck, hρ, hF, hgf => by
+  | .cat e₁ e₂, ctx, ρ, w, hck, hρ, hF => by
       simp only [Check.checkExp] at hck
       obtain ⟨s₁, h₁, hck⟩ := bind_ok hck
       obtain ⟨s₂, h₂, hck⟩ := bind_ok hck
       injection hck with hck
-      simp only [Exp.etaGenericFree, Bool.and_eq_true] at hgf
       obtain ⟨v₁, hv₁, hw₁⟩ := evalExp_progress (E := E) hxm e₁ ctx ρ s₁ h₁ hρ
-        (fun g hg => hF g (by simp only [Sem.deps, List.mem_append]; exact .inl hg)) hgf.1
+        (fun g hg => hF g (by simp only [Sem.deps, List.mem_append]; exact .inl hg))
       obtain ⟨v₂, hv₂, hw₂⟩ := evalExp_progress (E := E) hxm e₂ ctx ρ s₂ h₂ hρ
-        (fun g hg => hF g (by simp only [Sem.deps, List.mem_append]; exact .inr hg)) hgf.2
+        (fun g hg => hF g (by simp only [Sem.deps, List.mem_append]; exact .inr hg))
       refine ⟨⟨v₁.width + v₂.width, v₁.bits ++ v₂.bits⟩, ?_, ?_⟩
       · simp only [evalExp]
         rw [hv₁, except_bind_ok, hv₂, except_bind_ok]
       · show v₁.width + v₂.width = w
         omega
-  | .slice i w0 e, ctx, ρ, w, hck, hρ, hF, hgf => by
+  | .slice i w0 e, ctx, ρ, w, hck, hρ, hF => by
       simp only [Check.checkExp] at hck
       obtain ⟨s, hs, hck⟩ := bind_ok hck
       split at hck
@@ -419,11 +385,10 @@ theorem evalExp_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E : Se
         subst hck
         obtain ⟨v, hv, _⟩ := evalExp_progress (E := E) hxm e ctx ρ s hs hρ
           (fun g hg => hF g (by simpa [Sem.deps] using hg))
-          (by simpa [Exp.etaGenericFree] using hgf)
         refine ⟨⟨w0, v.bits.extractLsb' i w0⟩, ?_, rfl⟩
         simp only [evalExp]
         rw [hv, except_bind_ok]
-  | .prim w0 op args, ctx, ρ, w, hck, hρ, hF, hgf => by
+  | .prim w0 op args, ctx, ρ, w, hck, hρ, hF => by
       simp only [Check.checkExp] at hck
       rw [mapM_attach_erase] at hck
       obtain ⟨szs, hszs, hck⟩ := bind_ok hck
@@ -437,19 +402,17 @@ theorem evalExp_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E : Se
           case isTrue heq =>
             injection hck with hck
             subst hck
-            rw [Exp.etaGenericFree, all_attach_erase, List.all_eq_true] at hgf
             obtain ⟨vs, hvs, hlen, hpts⟩ := mapM_progress hszs
               (fun a ha w hcw => evalExp_progress (E := E) hxm a ctx ρ w hcw hρ
                 (fun g hg => hF g (by
                   simp only [Sem.deps, List.mem_flatMap]
-                  exact ⟨⟨a, ha⟩, List.mem_attach _ _, hg⟩))
-                (hgf a ha))
+                  exact ⟨⟨a, ha⟩, List.mem_attach _ _, hg⟩)))
             obtain ⟨r, hr, hrw⟩ := evalOp_progress hop hlen hpts
             refine ⟨r, ?_, by rw [hrw, heq]⟩
             simp only [evalExp]
             rw [mapM_attach_erase' (fun a => evalExp F X ρ a E) args, hvs, except_bind_ok]
             exact hr
-  | .call w0 f args, ctx, ρ, w, hck, hρ, hF, hgf => by
+  | .call w0 f args, ctx, ρ, w, hck, hρ, hF => by
       simp only [Check.checkExp] at hck
       cases hd : env.defns.get? f with
       | none => rw [hd] at hck; exact absurd hck (by simp)
@@ -466,13 +429,11 @@ theorem evalExp_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E : Se
             injection hck with hck
             subst hck
             obtain ⟨halen, halw⟩ := checkArgs_ok hargs
-            rw [Exp.etaGenericFree, all_attach_erase, List.all_eq_true] at hgf
             obtain ⟨vs, hvs, hlen, hpts⟩ := mapM_progress hszs
               (fun a ha w hcw => evalExp_progress (E := E) hxm a ctx ρ w hcw hρ
                 (fun g hg => hF g (by
                   simp only [Sem.deps, List.mem_cons, List.mem_flatMap]
-                  exact .inr ⟨⟨a, ha⟩, List.mem_attach _ _, hg⟩))
-                (hgf a ha))
+                  exact .inr ⟨⟨a, ha⟩, List.mem_attach _ _, hg⟩)))
             obtain ⟨d', hd', fn, hfn, htot⟩ := hF f (by simp [Sem.deps])
             rw [hd] at hd'
             injection hd' with hd'
@@ -483,14 +444,13 @@ theorem evalExp_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E : Se
             simp only [evalExp]
             rw [mapM_attach_erase' (fun a => evalExp F X ρ a E) args, hvs, except_bind_ok, hfn]
             exact hr
-  | .xcall w0 x cs args, ctx, ρ, w, hck, hρ, hF, hgf => by
+  | .xcall w0 x cs args, ctx, ρ, w, hck, hρ, hF => by
       simp only [Check.checkExp] at hck
       cases hex : env.externs.get? x with
       | none => rw [hex] at hck; exact absurd hck (by simp)
       | some ex =>
           rw [hex] at hck
           dsimp only at hck
-          rw [Exp.etaGenericFree, all_attach_erase, Bool.and_eq_true, List.all_eq_true] at hgf
           split at hck
           case isTrue =>
             exact absurd hck (by simp [throw, throwThe, MonadExceptOf.throw, Bind.bind, Except.bind])
@@ -513,8 +473,7 @@ theorem evalExp_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E : Se
                   (fun a ha w hcw => evalExp_progress (E := E) hxm a ctx ρ w hcw hρ
                     (fun g hg => hF g (by
                       simp only [Sem.deps, List.mem_append, List.mem_flatMap]
-                      exact .inr ⟨⟨a, ha⟩, List.mem_attach _ _, hg⟩))
-                    (hgf.2 a ha))
+                      exact .inr ⟨⟨a, ha⟩, List.mem_attach _ _, hg⟩)))
                 cases hX : X.get? x with
                 | some model =>
                     obtain ⟨ex', hex', dm, hdm, hsigp, hsigr⟩ := hxm x model hX
@@ -547,20 +506,13 @@ theorem evalExp_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E : Se
                     rw [hfn]
                     exact hr
                 | none =>
-                    have hgs : cs.isEmpty = true := by
-                      have hh := hgf.1
-                      rw [hX] at hh
-                      exact hh
-                    refine ⟨Sem.xapply E x w0 (Sem.bvcat vs), ?_, ?_⟩
+                    refine ⟨Sem.xapply E x cs w0 (Sem.bvcat vs), ?_, ?_⟩
                     · simp only [evalExp]
                       rw [mapM_attach_erase' (fun a => evalExp F X ρ a E) args, hvs, except_bind_ok, hX]
-                      dsimp only
-                      rw [if_pos hgs]
                     · rw [Sem.xapply_width, heq]
-  | .ite w0 c t e, ctx, ρ, w, hck, hρ, hF, hgf => by
+  | .ite w0 c t e, ctx, ρ, w, hck, hρ, hF => by
       simp only [Check.checkExp] at hck
       obtain ⟨sc, hsc, hck⟩ := bind_ok hck
-      simp only [Exp.etaGenericFree, Bool.and_eq_true] at hgf
       split at hck
       case isTrue =>
         exact absurd hck (by simp [throw, throwThe, MonadExceptOf.throw, Bind.bind, Except.bind])
@@ -579,13 +531,13 @@ theorem evalExp_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E : Se
             subst hck
             obtain ⟨vc, hvc, _⟩ := evalExp_progress (E := E) hxm c ctx ρ sc hsc hρ
               (fun g hg => hF g (by
-                simp only [Sem.deps, List.mem_append]; exact .inl (.inl hg))) hgf.1.1
+                simp only [Sem.deps, List.mem_append]; exact .inl (.inl hg)))
             obtain ⟨vt, hvt, hwt⟩ := evalExp_progress (E := E) hxm t ctx ρ st hst hρ
               (fun g hg => hF g (by
-                simp only [Sem.deps, List.mem_append]; exact .inl (.inr hg))) hgf.1.2
+                simp only [Sem.deps, List.mem_append]; exact .inl (.inr hg)))
             obtain ⟨ve, hve, hwe⟩ := evalExp_progress (E := E) hxm e ctx ρ se hse hρ
               (fun g hg => hF g (by
-                simp only [Sem.deps, List.mem_append]; exact .inr hg)) hgf.2
+                simp only [Sem.deps, List.mem_append]; exact .inr hg))
             by_cases hc : vc.nat ≠ 0
             · refine ⟨vt, ?_, by rw [hwt, heq]⟩
               simp only [evalExp]
@@ -595,7 +547,7 @@ theorem evalExp_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E : Se
               simp only [evalExp]
               rw [hvc, except_bind_ok, if_neg hc]
               exact hve
-  | .letE w0 x rhs body, ctx, ρ, w, hck, hρ, hF, hgf => by
+  | .letE w0 x rhs body, ctx, ρ, w, hck, hρ, hF => by
       simp only [Check.checkExp] at hck
       obtain ⟨s₁, h₁, hck⟩ := bind_ok hck
       obtain ⟨s₂, h₂, hck⟩ := bind_ok hck
@@ -604,13 +556,12 @@ theorem evalExp_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E : Se
       case isTrue heq =>
         injection hck with hck
         subst hck
-        simp only [Exp.etaGenericFree, Bool.and_eq_true] at hgf
         obtain ⟨v₁, hv₁, hw₁⟩ := evalExp_progress (E := E) hxm rhs ctx ρ s₁ h₁ hρ
-          (fun g hg => hF g (by simp only [Sem.deps, List.mem_append]; exact .inl hg)) hgf.1
+          (fun g hg => hF g (by simp only [Sem.deps, List.mem_append]; exact .inl hg))
         obtain ⟨v₂, hv₂, hw₂⟩ := evalExp_progress (E := E) hxm body
           (ctx.insert x s₁) (ρ.insert x v₁) s₂ h₂
           (ctxAgree_insert hρ hw₁)
-          (fun g hg => hF g (by simp only [Sem.deps, List.mem_append]; exact .inr hg)) hgf.2
+          (fun g hg => hF g (by simp only [Sem.deps, List.mem_append]; exact .inr hg))
         refine ⟨v₂, ?_, by rw [hw₂, heq]⟩
         simp only [evalExp]
         rw [hv₁, except_bind_ok]
@@ -1112,15 +1063,6 @@ private theorem topoList_split {X : Sem.XEnv} :
           injection heq with h1 h2
           exact ih hl pre' d suf h2
 
-/-- The per-program sweep, unpacked. -/
-private theorem etaGenericFree_unpack {p : Program}
-    (h : p.etaGenericFree = true) :
-    (∀ d ∈ p.defns, d.body.etaGenericFree (Sem.xenv p) = true)
-    ∧ (∀ s ∈ p.device.body, s.etaGenericFree (Sem.xenv p) = true) := by
-  unfold Program.etaGenericFree at h
-  simp only [Bool.and_eq_true, List.all_eq_true] at h
-  exact h
-
 /-- The induction along the topological order: walking the ordered
 list left to right, every processed definition's closure is total —
 its dependencies land strictly earlier, where totality is already
@@ -1130,7 +1072,6 @@ private theorem chain_closOk {p : Program} {E : Sem.EEnv} {F : Sem.FEnv}
     (himpl : Bridge.FImplements (Bridge.dmapOf p) (Sem.xenv p) F E)
     (hnd : (p.defns.map (·.name)).Nodup)
     (hdefok : ∀ d ∈ p.defns, Check.checkDefn (Check.mkEnv p) d = .ok ())
-    (hgf : ∀ d ∈ p.defns, d.body.etaGenericFree (Sem.xenv p) = true)
     (hxm : XModelsOk (Check.mkEnv p) (Sem.xenv p))
     (htopo : Bridge.TopoList (Sem.xenv p) ordered)
     (hsub : ∀ d ∈ ordered, d ∈ p.defns)
@@ -1164,7 +1105,7 @@ private theorem chain_closOk {p : Program} {E : Sem.EEnv} {F : Sem.FEnv}
             exact hdOk'
           · exact absurd (List.mem_map.mpr ⟨dg, hin, hdgname⟩) hnotafter
         obtain ⟨v, hv, hvw⟩ := evalExp_progress (E := E) hxm d.body _ _ _ hbody
-          (ctxAgree_zip hpnodup (by omega) hvsw) hdeps (hgf d hdp)
+          (ctxAgree_zip hpnodup (by omega) hvsw) hdeps
         refine ⟨v, ?_, hvw⟩
         rw [hfneq vs, Bridge.mkFn, if_pos (by omega : vs.length = d.params.length)]
         exact hv
@@ -1187,7 +1128,6 @@ eta-generic-free bodies). -/
 theorem mkFEnv_closOk {p : Program} {E : Sem.EEnv} {F : Sem.FEnv}
     (hnd : (p.defns.map (·.name)).Nodup)
     (hdefok : ∀ d ∈ p.defns, Check.checkDefn (Check.mkEnv p) d = .ok ())
-    (hgf : ∀ d ∈ p.defns, d.body.etaGenericFree (Sem.xenv p) = true)
     (hxm : XModelsOk (Check.mkEnv p) (Sem.xenv p))
     (hF : Sem.mkFEnv p E = .ok F) :
     ∀ f, ((Check.mkEnv p).defns.get? f).isSome = true → ClosOk (Check.mkEnv p) F f := by
@@ -1199,7 +1139,7 @@ theorem mkFEnv_closOk {p : Program} {E : Sem.EEnv} {F : Sem.FEnv}
   obtain ⟨d, hget⟩ := Option.isSome_iff_exists.mp hf
   obtain ⟨hdmem, hdname⟩ := defnMap_get?_mem hget
   have hdord : d ∈ ordered := hper d hdmem
-  have := chain_closOk himpl hnd hdefok hgf hxm htopo hsub hper ordered [] rfl
+  have := chain_closOk himpl hnd hdefok hxm htopo hsub hper ordered [] rfl
     (by intro e he; exact absurd he (by simp)) d hdord
   rw [← hdname]
   exact this
@@ -1351,7 +1291,6 @@ private theorem fold_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E
     ∀ (stmts : List Stmt) (ctx : Check.Ctx) (asg : HashSet Check.AssignKey)
       (ρ outs nexts : HashMap String BV) (sB : Check.Ctx × HashSet Check.AssignKey),
       forIn stmts (ctx, asg) Φ = .ok sB →
-      (∀ s ∈ stmts, s.etaGenericFree X = true) →
       StInv env outsCtx dev ctx asg ρ outs nexts →
       ∃ ρ' outs' nexts',
         stmts.foldlM (concBody F X E) (ρ, outs, nexts) = .ok (ρ', outs', nexts') ∧
@@ -1359,28 +1298,25 @@ private theorem fold_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E
   intro stmts
   induction stmts with
   | nil =>
-      intro ctx asg ρ outs nexts sB hfor _ hInv
+      intro ctx asg ρ outs nexts sB hfor hInv
       rw [List.forIn_nil] at hfor
       injection hfor with hfor
       subst hfor
       exact ⟨ρ, outs, nexts, rfl, hInv⟩
   | cons stmt rest ih =>
-      intro ctx asg ρ outs nexts sB hfor hgf hInv
+      intro ctx asg ρ outs nexts sB hfor hInv
       rw [List.forIn_cons] at hfor
       obtain ⟨s', hstep, hcont⟩ := bind_ok hfor
       have hspec := hΦ stmt ctx asg s' hstep
-      have hgfs := hgf stmt List.mem_cons_self
-      have hgfr : ∀ s ∈ rest, s.etaGenericFree X = true :=
-        fun s hs => hgf s (List.mem_cons_of_mem _ hs)
       cases stmt with
       | sLet x e =>
           obtain ⟨sz, hck, hs'⟩ := hspec
           subst hs'
           dsimp only at hcont
           obtain ⟨v, hv, hvw⟩ := evalExp_progress (E := E) hxm e ctx ρ sz hck hInv.agree
-            (closOk_deps hxm hclos hck) hgfs
+            (closOk_deps hxm hclos hck)
           obtain ⟨ρ', outs', nexts', hfold, hInv'⟩ := ih (ctx.insert x sz) asg
-            (ρ.insert x v) outs nexts sB hcont hgfr
+            (ρ.insert x v) outs nexts sB hcont
             ⟨ctxAgree_insert hInv.agree hvw, hInv.outsC, hInv.outsW, hInv.nextsC, hInv.nextsW⟩
           refine ⟨ρ', outs', nexts', ?_, hInv'⟩
           rw [List.foldlM_cons]
@@ -1394,7 +1330,7 @@ private theorem fold_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E
           subst hs'
           dsimp only at hcont
           obtain ⟨v, hv, hvw⟩ := evalExp_progress (E := E) hxm e ctx ρ sz hck hInv.agree
-            (closOk_deps hxm hclos hck) hgfs
+            (closOk_deps hxm hclos hck)
           have hocont : outs.contains o = false := by rw [← hInv.outsC]; exact hnc
           have hInvN : StInv env outsCtx dev ctx (asg.insert (.output o))
               ρ (outs.insert o v) nexts := by
@@ -1416,7 +1352,7 @@ private theorem fold_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E
             · intro r
               rw [HashSet.contains_insert, ← hInv.nextsC, beq_output_next, Bool.false_or]
           obtain ⟨ρ', outs', nexts', hfold, hInv'⟩ := ih ctx (asg.insert (.output o))
-            ρ (outs.insert o v) nexts sB hcont hgfr hInvN
+            ρ (outs.insert o v) nexts sB hcont hInvN
           refine ⟨ρ', outs', nexts', ?_, hInv'⟩
           rw [List.foldlM_cons]
           show (concBody F X E (ρ, outs, nexts) (.sOutput o e) >>= _) = _
@@ -1431,7 +1367,7 @@ private theorem fold_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E
           subst hs'
           dsimp only at hcont
           obtain ⟨v, hv, hvw⟩ := evalExp_progress (E := E) hxm e ctx ρ reg.width hck hInv.agree
-            (closOk_deps hxm hclos hck) hgfs
+            (closOk_deps hxm hclos hck)
           have hncont : nexts.contains r = false := by rw [← hInv.nextsC]; exact hnc
           have hInvN : StInv env outsCtx dev ctx (asg.insert (.next r))
               ρ outs (nexts.insert r v) := by
@@ -1453,7 +1389,7 @@ private theorem fold_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E
               case isFalse =>
                 exact hInv.nextsW r' v' (by rw [HashMap.get?_eq_getElem?]; exact hv')
           obtain ⟨ρ', outs', nexts', hfold, hInv'⟩ := ih ctx (asg.insert (.next r))
-            ρ outs (nexts.insert r v) sB hcont hgfr hInvN
+            ρ outs (nexts.insert r v) sB hcont hInvN
           refine ⟨ρ', outs', nexts', ?_, hInv'⟩
           rw [List.foldlM_cons]
           show (concBody F X E (ρ, outs, nexts) (.sNext r e) >>= _) = _
@@ -1774,7 +1710,6 @@ theorem step_progress {p : Program} {F : Sem.FEnv} {E : Sem.EEnv}
     {regs : HashMap String BV} {ins : List BV}
     (hdev : Check.checkDevice (Check.mkEnv p) p.device = .ok ())
     (hinst : p.device.instances = [])
-    (hgf : ∀ s ∈ p.device.body, s.etaGenericFree (Sem.xenv p) = true)
     (hxm : XModelsOk (Check.mkEnv p) (Sem.xenv p))
     (hclos : ∀ f, ((Check.mkEnv p).defns.get? f).isSome = true →
       ClosOk (Check.mkEnv p) F f)
@@ -1910,7 +1845,7 @@ theorem step_progress {p : Program} {F : Sem.FEnv} {E : Sem.EEnv}
             rw [List.find?_nil] at hstep
             exact absurd hstep
               (by simp [throw, throwThe, MonadExceptOf.throw, Bind.bind, Except.bind]))
-      p.device.body _ _ _ _ _ sB hbody hgf hInv0
+      p.device.body _ _ _ _ _ sB hbody hInv0
   -- Coverage, and the read-off.
   have hcovO := coverOut_loop hcovO'
   have hcovR := coverReg_loop hcovR'
@@ -1964,7 +1899,6 @@ for cycle. -/
 theorem runLoop_progress {p : Program} {F : Sem.FEnv} {E : Sem.EEnv}
     (hdev : Check.checkDevice (Check.mkEnv p) p.device = .ok ())
     (hinst : p.device.instances = [])
-    (hgf : ∀ s ∈ p.device.body, s.etaGenericFree (Sem.xenv p) = true)
     (hxm : XModelsOk (Check.mkEnv p) (Sem.xenv p))
     (hclos : ∀ f, ((Check.mkEnv p).defns.get? f).isSome = true →
       ClosOk (Check.mkEnv p) F f) :
@@ -1991,7 +1925,7 @@ theorem runLoop_progress {p : Program} {F : Sem.FEnv} {E : Sem.EEnv}
       intro regs hregs hstim acc
       obtain ⟨hlen, hw⟩ := hstim ins List.mem_cons_self
       obtain ⟨outs, regs', hstep, holen, how, hrOk⟩ :=
-        step_progress (E := E) hdev hinst hgf hxm hclos hregs hlen hw
+        step_progress (E := E) hdev hinst hxm hclos hregs hlen hw
       obtain ⟨regsF, outsRev, hfold, hrlen, hrmem⟩ := ih regs' hrOk
         (fun i hi => hstim i (List.mem_cons_of_mem _ hi)) (outs :: acc)
       refine ⟨regsF, outsRev, ?_, by simp at hrlen ⊢; omega, ?_⟩
@@ -2018,7 +1952,6 @@ vacuous. -/
 theorem Program.run_progress {p : Program} {E : Sem.EEnv} {stim : List (List BV)}
     (hck : p.check = .ok ())
     (hinst : p.device.instances = [])
-    (hgf : p.etaGenericFree = true)
     (hstim : ∀ ins ∈ stim, ins.length = p.device.inputs.length ∧
       ∀ i (h1 : i < ins.length) (h2 : i < p.device.inputs.length),
         ins[i].width = (p.device.inputs[i]).2)
@@ -2029,12 +1962,11 @@ theorem Program.run_progress {p : Program} {E : Sem.EEnv} {stim : List (List BV)
           outs[i].width = (p.device.outputs[i]).2 := by
   obtain ⟨hnd, hext, hdefok, hdev⟩ := check_ok hck
   have hxm := check_xModelsOk hnd hext
-  obtain ⟨hgfd, hgfs⟩ := etaGenericFree_unpack hgf
   have hnddefs : (p.defns.map (·.name)).Nodup := (List.nodup_append.mp hnd).2.1
-  have hclos := mkFEnv_closOk hnddefs hdefok hgfd hxm hF
+  have hclos := mkFEnv_closOk hnddefs hdefok hxm hF
   obtain ⟨hinits, hnodreg⟩ := checkDevice_inits hdev hinst
   obtain ⟨regsF, outsRev, hfold, hrlen, hrmem⟩ :=
-    runLoop_progress (E := E) hdev hinst hgfs hxm hclos stim (Sem.initRegs p.device)
+    runLoop_progress (E := E) hdev hinst hxm hclos stim (Sem.initRegs p.device)
       (initRegs_regsOk hnodreg hinits) hstim []
   refine ⟨outsRev.reverse, ?_, by simpa using hrlen, ?_⟩
   · unfold Program.run

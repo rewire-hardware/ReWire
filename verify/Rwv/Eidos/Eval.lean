@@ -400,7 +400,7 @@ def evalExt (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (pty : Ty)
       let vs ← evalList C fuel env jenv rest E
       let ity ← domTy "rwPrimExtern" (Ty.flattenArrow pty).1 6
       if rest.length = (Ty.flattenArrow ity).1.length then
-        match E s with
+        match E s [] with
         | some f => do
             let reps ← vs.mapM (fun v => valToBits C.Δ fuel v)
             let bv ← f (Rwv.Hyle.Sem.bvcat reps)

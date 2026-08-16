@@ -114,17 +114,20 @@ environment `EEnv` below. -/
 abbrev XEnv := HashMap String String
 
 /-- Bit-level interpretations of MODEL-LESS combinational externs
-(the η tier): per extern name, a function of the CONCATENATION of
+(the η tier): per extern name AND static generic instantiation (the
+positional generic values of the call — doc/hyle.md §6.1 defines η
+over ℕ^g × BV, since distinct instantiations of a parameterized
+extern are distinct functions), a function of the CONCATENATION of
 the input ports (MSB-first, in port order). The correspondence
 statement quantifies over this environment with both semantics
 reading the SAME one — the algebraic η_alg enters by instantiating
 it at `rep ∘ η ∘ decode` (Rwv.Eidos.Cstep.etaB). -/
-abbrev EEnv := String → Option (BV → Except String BV)
+abbrev EEnv := String → List Nat → Option (BV → Except String BV)
 
 /-- The empty extern environment: every model-less extern
 uninterpreted. The default everywhere, under which every definition
 and theorem means exactly what it meant before the extension. -/
-def eEmpty : EEnv := fun _ => none
+def eEmpty : EEnv := fun _ _ => none
 
 /-- Concatenate bit vectors, left = most significant (the Eidos side's
 `Val.bvConcat`, transcribed). -/
@@ -139,8 +142,8 @@ soundness — and every annotation-width fact — unconditional in `E`;
 the Eidos-side row (`Eval.evalExt`) keeps loud errors and a decode
 canonicality gate, so the clamp is inert wherever the correspondence
 statement has content. -/
-def xapply (E : EEnv) (ext : String) (w : Nat) (bv : BV) : BV :=
-  match E ext with
+def xapply (E : EEnv) (ext : String) (gs : List Nat) (w : Nat) (bv : BV) : BV :=
+  match E ext gs with
   | some f =>
       match f bv with
       | .ok r => if r.width = w then r else BV.zero w
@@ -148,8 +151,8 @@ def xapply (E : EEnv) (ext : String) (w : Nat) (bv : BV) : BV :=
   | none => BV.zero w
 
 /-- `xapply` always returns the cached width. -/
-theorem xapply_width (E : EEnv) (ext : String) (w : Nat) (bv : BV) :
-    (xapply E ext w bv).width = w := by
+theorem xapply_width (E : EEnv) (ext : String) (gs : List Nat) (w : Nat) (bv : BV) :
+    (xapply E ext gs w bv).width = w := by
   rw [xapply]
   split
   · split
@@ -169,9 +172,10 @@ mux is short-circuiting, as in the interpreter (mathematically eager —
 both arms denote, and evaluation is effect-free on checked programs, so
 the difference is unobservable). The trailing extern environment `E`
 (defaulted empty) interprets MODEL-LESS extern calls — with a model
-the §6.1 model path is unchanged, errors included; without one,
-generic-free calls read TOTALLY through `Sem.xapply` (the configuration
-the committed semantics previously rejected outright). -/
+the §6.1 model path is unchanged, errors included; without one, the
+call reads TOTALLY through `Sem.xapply` at the call's static generic
+instantiation (the environment is keyed by (name, generics), so
+distinct instantiations are distinct uninterpreted functions). -/
 def evalExp (F : Sem.FEnv) (X : Sem.XEnv) (ρ : HashMap String BV) (e : Exp)
     (E : Sem.EEnv := Sem.eEmpty) : Except String BV :=
   match e with
@@ -203,9 +207,7 @@ def evalExp (F : Sem.FEnv) (X : Sem.XEnv) (ρ : HashMap String BV) (e : Exp)
           match F.get? model with
           | some fn => fn vs
           | none    => .error s!"extern {ext}: unknown model {model}"
-      | none =>
-          if gs.isEmpty then .ok (Sem.xapply E ext w (Sem.bvcat vs))
-          else .error s!"cannot evaluate model-less extern {ext} (generic instantiation)"
+      | none => .ok (Sem.xapply E ext gs w (Sem.bvcat vs))
   | .ite _ c t e => do
       let vc ← evalExp F X ρ c E
       if vc.nat ≠ 0 then evalExp F X ρ t E else evalExp F X ρ e E

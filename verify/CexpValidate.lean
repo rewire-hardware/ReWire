@@ -271,9 +271,9 @@ partial def nfToDag (d : Rwv.Hyle.BridgeDag.Dag) : NF →
       let (d, rt) := nfToDag d t
       let (d, re) := nfToDag d e
       Rwv.Hyle.BridgeDag.Dag.mkIteD d rc rt re
-  | .xcall w x a =>
+  | .xcall w x gs a =>
       let (d, ra) := nfToDag d a
-      Rwv.Hyle.BridgeDag.Dag.mkXcallD d w x ra
+      Rwv.Hyle.BridgeDag.Dag.mkXcallD d w x gs ra
 
 /-- DAG-engine comparison of two normal forms over shared variables. -/
 def dagEq (n₁ n₂ : NF) : Bool :=

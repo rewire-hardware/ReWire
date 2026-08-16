@@ -282,12 +282,13 @@ def validateBundle (srcName srcTxt tgtName tgtTxt : String) (fuel : Nat) : Bundl
                 | .error e => .rejected s!"target definition environment does not \
                     denote: {e}"
                 | .ok _ =>
-                  -- The two checked-but-nonprogressing constructs
-                  -- (Rwv.Hyle.Progress): a target using either could
-                  -- only ever validate vacuously, so it is refused a
-                  -- verdict instead.
+                  -- The one checked-but-nonprogressing construct
+                  -- (Rwv.Hyle.Progress): a target with device
+                  -- instances could only ever validate vacuously, so
+                  -- it is refused a verdict instead. (Model-less
+                  -- generic extern calls read totally through the
+                  -- (name, generics)-keyed environment.)
                   if hp.device.instances.isEmpty then
-                  if Rwv.Hyle.Program.etaGenericFree hp then
                   match etaSaturate Bundle.structuralFuel p₁ with
                   | .error e => .error s!"{srcName}: eta-saturation: {e}"
                   | .ok p =>
@@ -300,8 +301,6 @@ def validateBundle (srcName srcTxt tgtName tgtTxt : String) (fuel : Nat) : Bundl
                           (mkDefnMap p.defns) pr hp fuel with
                       | .ok _ => .validated
                       | .error e => .rejected e
-                  else .unsupported "generic model-less extern calls are outside \
-                    the certified fragment"
                   else .unsupported "device instances (sequential externs) are \
                     outside the certified fragment"
 
@@ -319,8 +318,8 @@ theorem foreignC_ofDatas (datas : List DataDefn) :
 
 /-- Inversion of a `.validated` bundle result: every fact the gate
 tower checked, in one package — the two parses, target
-well-formedness, a denoting definition environment, instance- and
-eta-generic-freedom, the saturation chain, the single process, and the
+well-formedness, a denoting definition environment, instance-freedom,
+the saturation chain, the single process, and the
 library validator's acceptance. The downstream theorems
 (`validateBundle_sound`, `validateBundle_refines`) consume this. -/
 theorem validateBundle_inv {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}
@@ -331,7 +330,6 @@ theorem validateBundle_inv {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}
       ∧ hp.check = .ok ()
       ∧ (∃ F, Rwv.Hyle.Sem.mkFEnv hp = .ok F)
       ∧ hp.device.instances.isEmpty = true
-      ∧ Rwv.Hyle.Program.etaGenericFree hp = true
       ∧ etaSaturate Bundle.structuralFuel (addPrims p₀) = .ok p
       ∧ p.procs = [pr]
       ∧ Cstep.validateProcE (DEnv.ofDatas p.datas) (mkDefnMap p.defns) pr hp fuel = .ok () := by
@@ -379,10 +377,6 @@ theorem validateBundle_inv {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}
     case neg => rw [if_neg hinst] at h; exact absurd h (by simp)
     case pos =>
     rw [if_pos hinst] at h
-    by_cases hgf : Rwv.Hyle.Program.etaGenericFree hp = true
-    case neg => rw [if_neg hgf] at h; exact absurd h (by simp)
-    case pos =>
-    rw [if_pos hgf] at h
     cases heta : etaSaturate Bundle.structuralFuel (addPrims p₀) with
     | error e => rw [heta] at h; exact absurd h (by simp)
     | ok p =>
@@ -398,7 +392,7 @@ theorem validateBundle_inv {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}
     | error e => rw [hv] at h; exact absurd h (by simp)
     | ok u =>
     cases u
-    exact ⟨p₀, hp, p, pr, rfl, rfl, hhc, ⟨F, hfe⟩, hinst, hgf, heta, hprocs, hv⟩
+    exact ⟨p₀, hp, p, pr, rfl, rfl, hhc, ⟨F, hfe⟩, hinst, heta, hprocs, hv⟩
 
 /-- The top-level soundness theorem: a `.validated` bundle result
 alone — no side conditions — yields the §7.5.6 correspondence, at
@@ -415,7 +409,7 @@ theorem validateBundle_sound {srcName srcTxt tgtName tgtTxt : String} {fuel : Na
       ∧ p.procs = [pr]
       ∧ ∀ ef gf (E : Rwv.Hyle.Sem.EEnv), fuel ≤ ef →
           Corresponds (DEnv.ofDatas p.datas) (mkDefnMap p.defns) ef gf pr hp E := by
-  obtain ⟨p₀, hp, p, pr, hpe, hhp, _, _, _, _, heta, hprocs, hv⟩ := validateBundle_inv h
+  obtain ⟨p₀, hp, p, pr, hpe, hhp, _, _, _, heta, hprocs, hv⟩ := validateBundle_inv h
   refine ⟨p₀, hp, p, pr, hpe, hhp, heta, hprocs, ?_⟩
   intro ef gf E hef
   exact Cstep.validateProc_corresponds
@@ -603,7 +597,7 @@ theorem validateBundle_refines {srcName srcTxt tgtName tgtTxt : String} {fuel : 
       ∧ p.procs = [pr]
       ∧ ∀ ef gf (E : Rwv.Hyle.Sem.EEnv), fuel ≤ ef →
           Refines (DEnv.ofDatas p.datas) (mkDefnMap p.defns) ef gf pr hp E := by
-  obtain ⟨p₀, hp, p, pr, hpe, hhp, hhc, ⟨F₀, hfe⟩, hinst, hgf, heta, hprocs, hv⟩ :=
+  obtain ⟨p₀, hp, p, pr, hpe, hhp, hhc, ⟨F₀, hfe⟩, hinst, heta, hprocs, hv⟩ :=
     validateBundle_inv h
   refine ⟨p₀, hp, p, pr, hpe, hhp, heta, hprocs, ?_⟩
   intro ef gf E hef ins hty encIns henc mt hmt
@@ -641,7 +635,7 @@ theorem validateBundle_refines {srcName srcTxt tgtName tgtTxt : String} {fuel : 
     | cons a as => rw [hd] at hinst; exact absurd hinst (by simp)
   obtain ⟨F, hFE⟩ := mkFEnv_ok_any hfe E
   obtain ⟨ht, hht, _⟩ :=
-    Rwv.Hyle.Progress.Program.run_progress hhc hinst' hgf hstim hFE
+    Rwv.Hyle.Progress.Program.run_progress hhc hinst' hstim hFE
   exact ⟨ht, hht, hcorr ins hty encIns henc mt hmt ht hht⟩
 
 #print axioms Rwv.Eidos.validateBundle_sound

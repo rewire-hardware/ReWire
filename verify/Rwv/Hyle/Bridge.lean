@@ -57,7 +57,9 @@ below); per house style (Rwv.Schema), small `Except`/list helpers are
 re-proved locally rather than exported from committed files.
 
 THE COMB-EXTERN η TIER: `NF` gains the uninterpreted-function node
-`xcall w ext a` — a MODEL-LESS combinational extern call over the
+`xcall w ext gs a` — a MODEL-LESS combinational extern call, at the
+call's static generic instantiation `gs` (part of the uninterpreted-
+symbol identity: distinct instantiations are distinct symbols), over the
 packed (concatenated, MSB-first) compiled arguments (`NF.xpack`),
 denoted through the committed semantics' own total reading
 `Sem.xapply E ext w` at the extern environment `E : Sem.EEnv` that now
@@ -75,7 +77,7 @@ equal packed argument after normalization — which is sound for ANY
 interpretation (`checkEquiv_sound`/`checkEquivW_sound` now conclude run
 equality at EVERY extern environment, both runs at the same one). The
 width layer is E-unconditional: `xapply` clamps to the cached width, so
-`annWidth (.xcall w _ _) = some w` holds at every valuation and every
+`annWidth (.xcall w _ _ _) = some w` holds at every valuation and every
 environment, and the width-aware rewrites treat the node as an opaque
 atom while recursing into its packed argument. `NF.xcallFree` is the
 decidable gate under which a denotation cannot consult `E` at all
@@ -126,7 +128,7 @@ inductive NF where
   | cat   (a b : NF)
   | slice (i w : Nat) (e : NF)
   | ite   (c t e : NF)
-  | xcall (w : Nat) (ext : String) (a : NF)
+  | xcall (w : Nat) (ext : String) (gs : List Nat) (a : NF)
 deriving DecidableEq, Repr
 
 /-- The total denotation. Primitive applications take `Sem.evalOp`'s
@@ -150,7 +152,7 @@ def NF.eval (σ : String → BV) (E : Sem.EEnv := Sem.eEmpty) : NF → BV
   | .cat a b => ⟨_, (a.eval σ E).bits ++ (b.eval σ E).bits⟩
   | .slice i w e => ⟨w, (e.eval σ E).bits.extractLsb' i w⟩
   | .ite c t e => if (c.eval σ E).nat ≠ 0 then t.eval σ E else e.eval σ E
-  | .xcall w x a => Sem.xapply E x w (a.eval σ E)
+  | .xcall w x gs a => Sem.xapply E x gs w (a.eval σ E)
 
 /-- Pack a list of compiled arguments as one concatenation, mirroring
 `Sem.bvcat`'s fold shape exactly (left fold from the empty literal). -/
@@ -235,8 +237,7 @@ def symExp (dmap : HashMap String Defn) (X : Sem.XEnv) :
                   symExp dmap X fuel (HashMap.ofList (d.params.zip ns)) d.body
                 else .error s!"extern {ext}: model arity mismatch")
         | none =>
-            if gs.isEmpty then .ok (.xcall w ext (.xpack ns))
-            else .error s!"extern {ext}: generic model-less externs are out of scope"
+            .ok (.xcall w ext gs (.xpack ns))
     | .ite _ c t e => do
         .ok (.ite (← symExp dmap X fuel ρ c) (← symExp dmap X fuel ρ t)
                   (← symExp dmap X fuel ρ e))
@@ -349,7 +350,7 @@ def cfold : NF → NF
   | .cat a b => mkCat a.cfold b.cfold
   | .slice i w e => mkSlice i w e.cfold
   | .ite c t e => mkIte c.cfold t.cfold e.cfold
-  | .xcall w x a => .xcall w x a.cfold
+  | .xcall w x gs a => .xcall w x gs a.cfold
 
 end NF
 
@@ -368,7 +369,7 @@ def NF.xcallFree : NF → Bool
   | .cat a b => a.xcallFree && b.xcallFree
   | .slice _ _ e => e.xcallFree
   | .ite c t e => c.xcallFree && t.xcallFree && e.xcallFree
-  | .xcall _ _ _ => false
+  | .xcall _ _ _ _ => false
 
 /-- An `xcall`-free normal form denotes identically at every extern
 environment. -/
@@ -399,7 +400,7 @@ theorem NF.xcallFree_eval {σ : String → BV} {E E' : Sem.EEnv} :
       simp only [NF.xcallFree, Bool.and_eq_true] at h
       simp only [NF.eval]
       rw [ihc h.1.1, iht h.1.2, ihe h.2]
-  | xcall w x a iha =>
+  | xcall w x gs a iha =>
       intro h
       exact absurd h (by simp [NF.xcallFree])
 
@@ -932,13 +933,9 @@ theorem symExp_sound {dmap : HashMap String Defn} {X : Sem.XEnv} {F : Sem.FEnv}
           | none =>
               rw [hx] at hs
               dsimp only at hs
-              split at hs
-              · rename_i hgs
-                injection hs with hs
-                subst hs
-                rw [if_pos hgs]
-                simp only [NF.eval, NF.xpack_eval]
-              · exact absurd hs (by simp)
+              injection hs with hs
+              subst hs
+              simp only [NF.eval, NF.xpack_eval]
       | ite w c t e =>
           simp only [symExp] at hs
           obtain ⟨nc, h₁, hs⟩ := except_bind_eq_ok hs
@@ -1421,7 +1418,7 @@ theorem cfold_eval (σ : String → BV) (E : Sem.EEnv := Sem.eEmpty) :
       simp only [NF.cfold]
       rw [mkIte_eval]
       simp only [NF.eval, ihc, iht, ihe]
-  | xcall w x a iha =>
+  | xcall w x gs a iha =>
       simp only [NF.cfold, NF.eval, iha]
 
 /-! ## Soundness of the symbolic step -/
@@ -2090,7 +2087,7 @@ def VarsWF (P : String → Nat → Prop) : NF → Prop
   | .cat a b => a.VarsWF P ∧ b.VarsWF P
   | .slice _ _ e => e.VarsWF P
   | .ite c t e => c.VarsWF P ∧ t.VarsWF P ∧ e.VarsWF P
-  | .xcall _ _ a => a.VarsWF P
+  | .xcall _ _ _ a => a.VarsWF P
 
 theorem VarsWF.mono {P Q : String → Nat → Prop} (h : ∀ x w, P x w → Q x w) :
     ∀ {nf : NF}, nf.VarsWF P → nf.VarsWF Q := by
@@ -2103,7 +2100,7 @@ theorem VarsWF.mono {P Q : String → Nat → Prop} (h : ∀ x w, P x w → Q x 
   | cat a b iha ihb => exact fun hp => ⟨iha hp.1, ihb hp.2⟩
   | slice i w e ihe => exact ihe
   | ite c t e ihc iht ihe => exact fun hp => ⟨ihc hp.1, iht hp.2.1, ihe hp.2.2⟩
-  | xcall w x a iha => exact iha
+  | xcall w x gs a iha => exact iha
 
 end NF
 
@@ -2139,7 +2136,7 @@ def annWidth : NF → Option Nat
       match annWidth t, annWidth e with
       | some wt, some we => if wt = we then some wt else none
       | _, _ => none
-  | .xcall w _ _ => some w
+  | .xcall w _ _ _ => some w
 
 private theorem evalOp_width1 {op : Op} (hop : opArity op = 1) {x v : BV}
     (hv : Sem.evalOp op [x] = .ok v) : v.width = opWidth1 op x.width := by
@@ -2241,11 +2238,11 @@ theorem annWidth_eval {σ : String → BV} {E : Sem.EEnv} :
                 · exact ihe hwf.2.2 hew
               · rw [if_neg hte] at ha
                 exact absurd ha (by simp)
-  | xcall w' x a iha =>
+  | xcall w' x gs a iha =>
       intro w _ ha
       simp only [annWidth, Option.some.injEq] at ha
       subst ha
-      exact Sem.xapply_width E x w' (a.eval σ E)
+      exact Sem.xapply_width E x gs w' (a.eval σ E)
 
 /-- A successful `mapM` transports a pointwise property. -/
 private theorem mapM_ok_forall {α β : Type} {g : α → Except String β} {P : β → Prop} :
@@ -2398,11 +2395,9 @@ theorem symExp_varsWF {dmap : HashMap String Defn} {X : Sem.XEnv} {P : String �
           | none =>
               rw [hx] at hs
               dsimp only at hs
-              split at hs
-              · injection hs with hs
-                subst hs
-                exact xpack_varsWF hall
-              · exact absurd hs (by simp)
+              injection hs with hs
+              subst hs
+              exact xpack_varsWF hall
       | ite w c t e =>
           simp only [symExp] at hs
           obtain ⟨nc, h₁, hs⟩ := except_bind_eq_ok hs
@@ -2677,7 +2672,7 @@ def cfoldW : NF → NF
   | .cat a b => mkCatW a.cfoldW b.cfoldW
   | .slice i w e => mkSliceW i w e.cfoldW
   | .ite c t e => mkIteW c.cfoldW t.cfoldW e.cfoldW
-  | .xcall w x a => .xcall w x a.cfoldW
+  | .xcall w x gs a => .xcall w x gs a.cfoldW
 
 end NF
 
@@ -2739,9 +2734,9 @@ private theorem mkSliceW_varsWF {P : String → Nat → Prop} :
           split
           · exact h
           · exact h
-  | .xcall v x a, i, w, h => by
+  | .xcall v x gs a, i, w, h => by
       simp only [NF.mkSliceW]
-      cases annWidth (NF.xcall v x a) with
+      cases annWidth (NF.xcall v x gs a) with
       | none => exact h
       | some we =>
           dsimp only
@@ -2806,7 +2801,7 @@ private theorem catPieces_varsWF {P : String → Nat → Prop} :
       · exact ihb h.2 p hp
   | var w x => intro h p hp; rw [show NF.catPieces (NF.var w x) = [NF.var w x] from rfl] at hp; simp at hp; subst hp; exact h
   | lit v => intro h p hp; rw [show NF.catPieces (NF.lit v) = [NF.lit v] from rfl] at hp; simp at hp; subst hp; exact h
-  | xcall w x a iha => intro h p hp; rw [show NF.catPieces (NF.xcall w x a) = [NF.xcall w x a] from rfl] at hp; simp at hp; subst hp; exact h
+  | xcall w x gs a iha => intro h p hp; rw [show NF.catPieces (NF.xcall w x gs a) = [NF.xcall w x gs a] from rfl] at hp; simp at hp; subst hp; exact h
   | prim1 op a iha => intro h p hp; rw [show NF.catPieces (NF.prim1 op a) = [NF.prim1 op a] from rfl] at hp; simp at hp; subst hp; exact h
   | prim2 op a b iha ihb => intro h p hp; rw [show NF.catPieces (NF.prim2 op a b) = [NF.prim2 op a b] from rfl] at hp; simp at hp; subst hp; exact h
   | slice i w e ihe => intro h p hp; rw [show NF.catPieces (NF.slice i w e) = [NF.slice i w e] from rfl] at hp; simp at hp; subst hp; exact h
@@ -2890,7 +2885,7 @@ theorem cfoldW_varsWF {P : String → Nat → Prop} :
   induction nf with
   | var w x => exact id
   | lit v => exact id
-  | xcall w x a iha => exact fun h => iha h
+  | xcall w x gs a iha => exact fun h => iha h
   | prim1 op a iha => exact fun h => mk1W_varsWF (iha h)
   | prim2 op a b iha ihb => exact fun h => mk2W_varsWF (iha h.1) (ihb h.2)
   | cat a b iha ihb => exact fun h => mkCatW_varsWF (iha h.1) (ihb h.2)
@@ -3057,7 +3052,7 @@ theorem mkSliceW_eval {σ : String → BV} {E : Sem.EEnv} :
   | .ite c t e, i, w, h => by
       simp only [NF.mkSliceW]
       exact slice_id_default_eval h i w
-  | .xcall v x a, i, w, h => by
+  | .xcall v x gs a, i, w, h => by
       simp only [NF.mkSliceW]
       exact slice_id_default_eval h i w
 
@@ -3124,7 +3119,7 @@ private theorem catPieces_ne_nil : ∀ (e : NF), NF.catPieces e ≠ [] := by
   | prim2 op a b iha ihb => simp [NF.catPieces]
   | slice i w e ihe => simp [NF.catPieces]
   | ite c t e ihc iht ihe => simp [NF.catPieces]
-  | xcall w x a iha => simp [NF.catPieces]
+  | xcall w x gs a iha => simp [NF.catPieces]
 
 /-- Rebuilding distributes over appended piece lists. -/
 private theorem rebuild_append_eval {σ : String → BV} {E : Sem.EEnv} :
@@ -3170,7 +3165,7 @@ private theorem rebuild_catPieces_eval {σ : String → BV} {E : Sem.EEnv} :
   | prim2 op a b iha ihb => rfl
   | slice i w e ihe => rfl
   | ite c t e ihc iht ihe => rfl
-  | xcall w x a iha => rfl
+  | xcall w x gs a iha => rfl
 
 private theorem mergePieces_ne_nil : ∀ {ps : List NF}, ps ≠ [] → NF.mergePieces ps ≠ [] := by
   intro ps h
@@ -3440,7 +3435,7 @@ theorem cfoldW_eval {σ : String → BV} {E : Sem.EEnv} :
       rw [mkIteW_eval _ _ _ (cfoldW_varsWF h.1)]
       simp only [NF.eval]
       rw [ihc h.1, iht h.2.1, ihe h.2.2]
-  | xcall w x a iha =>
+  | xcall w x gs a iha =>
       intro h
       simp only [NF.cfoldW, NF.eval, iha h]
 
