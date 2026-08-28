@@ -128,9 +128,18 @@ simplify depth p = runSimpT p $ go (max 1 depth) p
             done :: Program -> Bool
             done pr = all synthableDefn (progDefns pr) && dictFree pr
 
+            -- Both ways a definition can hold up the fixpoint: a
+            -- non-synthable signature, or a signature still mentioning a
+            -- dictionary datatype (which alone would otherwise report an
+            -- empty list).
             stuck :: Program -> [Text]
             stuck pr = [ prettyPrint (defnId d) <> " :: " <> prettyPrint (sigTy $ idSig $ defnId d)
-                       | d <- progDefns pr, not $ synthableDefn d ]
+                       | d <- progDefns pr, not (synthableDefn d) || dictSig d ]
+                  where bad :: HashSet Text
+                        bad = dictTyCons $ progDatas pr
+
+                        dictSig :: Defn -> Bool
+                        dictSig d = any (`Set.member` bad) $ tyConsOf $ sigTy $ idSig $ defnId d
 
 -- | Prim-named definitions are signature carriers; everything else must
 --   reach a representable type.

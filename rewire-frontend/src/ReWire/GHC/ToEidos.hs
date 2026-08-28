@@ -344,7 +344,7 @@ bridgeTyConApp rec tvm an tc args
                               -> appN $ pack $ getOccString $ tyConName tc
                   | Just mn <- tyConModule tc, homeishMod (Just mn)
                               -> appN $ pack (moduleNameString mn) <> "." <> pack (getOccString $ tyConName tc)
-                  | otherwise -> failAt an $ "ghc-frontend: type not in the ReWire vocabulary: " <> qualTc
+                  | otherwise -> failAt an $ "ghc-frontend: type not in the ReWire vocabulary: " <> qualTc <> kindHint
       where appN :: MonadError AstError m => Text -> m E.Ty
             appN = appN' args
 
@@ -353,6 +353,14 @@ bridgeTyConApp rec tvm an tc args
 
             qualTc :: Text
             qualTc = pack (maybe "?" moduleNameString (tyConModule tc)) <> "." <> pack (getOccString $ tyConName tc)
+
+            -- A leaked kind argument (e.g. a kind-generalized zero-method
+            -- class): point at the fix rather than the leak.
+            kindHint :: Text
+            kindHint
+                  | qualTc `elem` ["GHC.Prim.TYPE", "GHC.Prim.CONSTRAINT"]
+                              = " (kind-polymorphic definitions are unsupported; an explicit kind annotation may help, e.g. \"class C (a :: Type)\")"
+                  | otherwise = ""
 
 ---
 --- Expressions.
@@ -627,9 +635,13 @@ bridgeClassOp ctx an v args vargs
                   _     -> do -- return/pure
                         t <- opTy
                         mkApp an (E.Prim an t B.Return) . eargs <$> mapM (bridgeExp ctx an) vargs
-      | otherwise = failAt an $ "ghc-frontend: unsupported use of a type class method: " <> occ
+      | otherwise = failAt an $ "ghc-frontend: unsupported use of a type class method: " <> clsOcc <> "." <> occ
+            <> " (" <> clsOcc <> " is an external class; methods of external classes cannot be compiled)."
       where occ :: Text
             occ = pack $ getOccString v
+
+            clsOcc :: Text
+            clsOcc = maybe "?" (pack . getOccString . tyConName . classTyCon) $ isClassOpId_maybe v
 
             -- The op's instantiated type (constraint arrows dropped by the
             -- type bridge).
