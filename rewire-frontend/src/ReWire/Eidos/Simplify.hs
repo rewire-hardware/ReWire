@@ -38,7 +38,7 @@
 --
 --   Join points are preserved (dead ones are dropped); datatypes are left
 --   untouched.
-module ReWire.Eidos.Simplify (simplify, purge, reduceProgram, reduceExp, SimpT, runSimpT) where
+module ReWire.Eidos.Simplify (simplify, purge, reduceProgram, reduceExp, dictTyCons, SimpT, runSimpT) where
 
 import ReWire.Annotation (Annote, noAnn)
 import ReWire.Builtins (builtins)
@@ -141,22 +141,28 @@ synthableDefn d = Set.member (idOcc $ defnId d) primNames
 -- | No definition's signature mentions a datatype with a function-typed
 --   constructor field (a class dictionary).
 dictFree :: Program -> Bool
-dictFree (Program datas defns _ _) = null bad || all ok defns
-      where bad :: [Text]
-            bad = [ dataName d | d <- datas, any arrowField $ dataCons d ]
-
-            arrowField :: DataCon -> Bool
-            arrowField (DataCon _ _ (Sig _ t)) = any hasArrow $ fst $ flattenArrow t
+dictFree (Program datas defns _ _) = Set.null bad || all ok defns
+      where bad :: HashSet Text
+            bad = dictTyCons datas
 
             ok :: Defn -> Bool
-            ok d = not $ any (`elem` bad) $ tyCons $ sigTy $ idSig $ defnId d
+            ok d = not $ any (`Set.member` bad) $ tyConsOf $ sigTy $ idSig $ defnId d
 
-            tyCons :: Ty -> [Text]
-            tyCons = \ case
-                  TyCon _ c   -> [c]
-                  TyApp _ a b -> tyCons a <> tyCons b
-                  Arrow _ a b -> tyCons a <> tyCons b
-                  _           -> []
+-- | Names of the datatypes with a function-typed constructor field (class
+--   dictionaries and their shapes): a value of such a type can never reach
+--   Hyle, so bindings of these types must always reduce away.
+dictTyCons :: [DataDefn] -> HashSet Text
+dictTyCons datas = Set.fromList [ dataName d | d <- datas, any arrowField $ dataCons d ]
+      where arrowField :: DataCon -> Bool
+            arrowField (DataCon _ _ (Sig _ t)) = any hasArrow $ fst $ flattenArrow t
+
+-- | Every TyCon name a type mentions.
+tyConsOf :: Ty -> [Text]
+tyConsOf = \ case
+      TyCon _ c   -> [c]
+      TyApp _ a b -> tyConsOf a <> tyConsOf b
+      Arrow _ a b -> tyConsOf a <> tyConsOf b
+      _           -> []
 
 ---
 --- Purge: definition-level DCE.
@@ -215,7 +221,7 @@ purge (Program datas defns procs top) = Program datas [ d | d <- defns, IS.membe
 reduceProgram :: MonadError AstError m => Program -> SimpT m Program
 reduceProgram (Program datas defns procs top) = do
       let tops = IS.fromList $ map (idUniq . defnId) defns
-      defns' <- mapM (\ d -> (\ b -> d { defnBody = b }) <$> reduceExp tops (defnBody d)) defns
+      defns' <- mapM (\ d -> (\ b -> d { defnBody = b }) <$> reduceExp tops (dictTyCons datas) (defnBody d)) defns
       new    <- drainNew
       pure $ Program datas (defns' <> new) procs top
 
@@ -225,9 +231,13 @@ reduceProgram (Program datas defns procs top) = do
 --   constructor and known-literal cases select their alternative; lambdas
 --   eta-reduce; dead join points drop. Top-level references are never
 --   unfolded. The first argument is the set of top-level uniques (a
---   lift's captures are the free variables outside it).
-reduceExp :: forall m. MonadError AstError m => IS.IntSet -> Exp -> SimpT m Exp
-reduceExp tops = go
+--   lift's captures are the free variables outside it); the second is the
+--   dictionary-datatype names ('dictTyCons'): a dictionary-typed binding
+--   is substituted at every occurrence rather than shared, because it can
+--   never be represented -- multi-use superclass projections would
+--   otherwise never see the constructor.
+reduceExp :: forall m. MonadError AstError m => IS.IntSet -> HashSet Text -> Exp -> SimpT m Exp
+reduceExp tops dicts = go
       where go :: Exp -> SimpT m Exp
             go e = case e of
                   App an f a -> do
@@ -246,6 +256,7 @@ reduceExp tops = go
                                     let occ = IM.findWithDefault 0 (idUniq x) $ occCounts body'
                                     if | occ == 0                   -> pure body'
                                        | occ == 1                   -> go $ substVars (IM.singleton (idUniq x) rhs') body'
+                                       | dictBound x                -> go =<< supplied (substVarsRefreshing (IM.singleton (idUniq x) rhs') body')
                                        | hasArrow (sigTy $ idSig x) -> do
                                              ref <- liftNonRep an x rhs'
                                              pure $ substVars (IM.singleton (idUniq x) ref) body'
@@ -294,6 +305,11 @@ reduceExp tops = go
                         | idUniq x' == idUniq x
                         , not $ IM.member (idUniq x) $ occCounts f -> f
                   b -> Lam an x b
+
+            -- A binder whose type mentions a dictionary datatype: never
+            -- representable, so never worth sharing.
+            dictBound :: Id -> Bool
+            dictBound x = any (`Set.member` dicts) $ tyConsOf $ sigTy $ idSig x
 
             -- Substitutable everywhere without loss of sharing.
             atomic :: Exp -> Bool

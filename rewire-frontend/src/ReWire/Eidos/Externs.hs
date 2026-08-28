@@ -32,7 +32,7 @@ module ReWire.Eidos.Externs (neuterExterns) where
 import ReWire.Annotation (Annote, ann)
 import ReWire.Builtins (Builtin (Error, Extern, Cryptol))
 import ReWire.Error (AstError, MonadError, Warning (..))
-import ReWire.Eidos.Simplify (SimpT, runSimpT, reduceExp)
+import ReWire.Eidos.Simplify (SimpT, runSimpT, reduceExp, dictTyCons)
 import ReWire.Eidos.Subst (freeUniqs)
 import ReWire.Eidos.Syntax
 import ReWire.Eidos.Types (typeOf, flattenApp, higherOrder, fundamental, synthable)
@@ -69,7 +69,7 @@ neuterExterns p@(Program datas defns procs top) = do
 
             reduce1 :: Defn -> SimpT m Defn
             reduce1 d
-                  | hasExtern d = (\ b -> d { defnBody = b }) <$> reduceExp tops (defnBody d)
+                  | hasExtern d = (\ b -> d { defnBody = b }) <$> reduceExp tops (dictTyCons datas) (defnBody d)
                   | otherwise   = pure d
 
             hasExtern :: Defn -> Bool
