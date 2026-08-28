@@ -16,7 +16,9 @@
 --
 --   Inherited from the retired Crust bridge (unchanged): the reachability walk
 --   from the start symbol + rwPrim* roots, evidence erasure (dictionary
---   arguments/binders/binds erased; user-class dictionaries kept as data),
+--   arguments/binders/binds erased; user-class dictionaries kept as data,
+--   with single-method classes' newtype-dictionary types unwrapped to the
+--   method type, matching the term level's cast erasure),
 --   rwPrim* recognition, the reactive-monad class-op recognition (Bind and
 --   Return at ReacT/StateT/Identity or at an unresolved monad type),
 --   Integer/String/list literal folding, INLINE-pragma ride-along, and the
@@ -57,7 +59,8 @@ import GHC.Core.DataCon (DataCon, dataConOrigArgTys, dataConUnivTyVars, dataConE
 import GHC.Core.Predicate (isEvVarType)
 import GHC.Core.TyCo.Rep (Type (..), TyLit (..), scaledThing)
 import GHC.Core.TyCon (TyCon, tyConName, tyConKind, tyConDataCons, tyConTyVars, isClassTyCon, isAlgTyCon, isTypeSynonymTyCon, isBoxedTupleTyCon, tyConArity, isNewTyCon, tyConSingleDataCon)
-import GHC.Core.Type (expandTypeSynonyms, mkTyVarTy, mkTyVarTys, splitForAllTyCoVars, substTyWith)
+import GHC.Core.TyCon.RecWalk (RecTcChecker, initRecTc, checkRecTc)
+import GHC.Core.Type (expandTypeSynonyms, mkTyVarTy, mkTyVarTys, splitForAllTyCoVars, substTyWith, newTyConInstRhs)
 import GHC.Core.Utils (exprType)
 import GHC.Types.Basic (InlineSpec (..), inlinePragmaSpec, JoinPointHood (..))
 import GHC.Types.Id (isClassOpId_maybe, idInlinePragma, isDataConId_maybe, isDFunId, idJoinPointHood)
@@ -275,16 +278,23 @@ bridgeKind = go . expandTypeSynonyms -- N.B. Nat is a synonym for Natural.
 
 -- | Core Type -> Eidos Ty. Callers are expected to expandTypeSynonyms
 --   first. Constraint (invisible) arrows are dropped; user-class
---   constraint arrows become value arrows (the dictionary is data).
+--   constraint arrows become value arrows (the dictionary is data);
+--   single-method ("newtype-dictionary") class types unwrap to their
+--   method type (the dictionary IS its method, at both levels).
 bridgeTy :: MonadError AstError m => IM.IntMap E.TyVar -> Annote -> Type -> m E.Ty
-bridgeTy tvm an = go
+bridgeTy = bridgeTy' initRecTc
+
+-- | The worker: the checker bounds newtype-class unwrapping across one
+--   type's whole traversal (the regress can cross recursive calls).
+bridgeTy' :: MonadError AstError m => RecTcChecker -> IM.IntMap E.TyVar -> Annote -> Type -> m E.Ty
+bridgeTy' rec tvm an = go
       where go :: MonadError AstError m => Type -> m E.Ty
             go = \ case
                   TyVarTy v            -> case IM.lookup (uKey v) tvm of
                         Just tv -> pure $ E.TyVarT an tv
                         Nothing -> failAt an $ "ghc-frontend: out-of-scope type variable: " <> pack (getOccString v)
                   AppTy a b            -> E.TyApp an <$> go a <*> go b
-                  TyConApp tc args     -> bridgeTyConApp tvm an tc args
+                  TyConApp tc args     -> bridgeTyConApp rec tvm an tc args
                   ForAllTy _ _         -> failAt an "ghc-frontend: unsupported higher-rank type."
                   FunTy _ _ a r
                         | userPred a    -> E.Arrow an <$> go a <*> go r
@@ -295,8 +305,8 @@ bridgeTy tvm an = go
                   CastTy t _           -> go t
                   CoercionTy _         -> failAt an "ghc-frontend: unsupported coercion in type position."
 
-bridgeTyConApp :: MonadError AstError m => IM.IntMap E.TyVar -> Annote -> TyCon -> [Type] -> m E.Ty
-bridgeTyConApp tvm an tc args
+bridgeTyConApp :: MonadError AstError m => RecTcChecker -> IM.IntMap E.TyVar -> Annote -> TyCon -> [Type] -> m E.Ty
+bridgeTyConApp rec tvm an tc args
       -- [Char] is Eidos's String.
       | tc == listTyCon, [TyConApp c []] <- args, c == charTyCon
                               = pure $ E.TyCon an "String"
@@ -313,8 +323,20 @@ bridgeTyConApp tvm an tc args
       -- The function tycon in prefix position: [mult, rep1, rep2, a, b].
       | getOccString (tyConName tc) == "FUN"
                               = case reverse args of
-            (b : a : _) -> E.Arrow an <$> bridgeTy tvm an a <*> bridgeTy tvm an b
+            (b : a : _) -> E.Arrow an <$> bridgeTy' rec tvm an a <*> bridgeTy' rec tvm an b
             _           -> failAt an "ghc-frontend: unsaturated function type constructor."
+      -- A single-method (or methodless-with-superclass) user class: GHC
+      -- gives it a newtype dictionary, so the predicate type IS the method
+      -- (or superclass dictionary) type -- matching the term level, where
+      -- the cast-erased dictionary IS the method (see bridgeClassOp).
+      -- Unwrap so the class type never reaches Eidos.
+      | isClassTyCon tc, isNewTyCon tc, homeishMod (tyConModule tc)
+                              = case checkRecTc rec tc of
+            Nothing   -> failAt an $ "ghc-frontend: unsupported recursive class dictionary: " <> qualTc
+            Just rec'
+                  | length args == tyConArity tc
+                              -> bridgeTy' rec' tvm an $ expandTypeSynonyms $ newTyConInstRhs tc args
+                  | otherwise -> failAt an $ "ghc-frontend: unsaturated class constructor: " <> qualTc
       | otherwise             = case lookup (tyConKey tc) tyConTable of
             Just (n, dropN) -> appN' (drop dropN args) n
             Nothing
@@ -322,13 +344,15 @@ bridgeTyConApp tvm an tc args
                               -> appN $ pack $ getOccString $ tyConName tc
                   | Just mn <- tyConModule tc, homeishMod (Just mn)
                               -> appN $ pack (moduleNameString mn) <> "." <> pack (getOccString $ tyConName tc)
-                  | otherwise -> failAt an $ "ghc-frontend: type not in the ReWire vocabulary: "
-                                    <> pack (maybe "?" moduleNameString (tyConModule tc)) <> "." <> pack (getOccString $ tyConName tc)
+                  | otherwise -> failAt an $ "ghc-frontend: type not in the ReWire vocabulary: " <> qualTc
       where appN :: MonadError AstError m => Text -> m E.Ty
             appN = appN' args
 
             appN' :: MonadError AstError m => [Type] -> Text -> m E.Ty
-            appN' as n = foldl (E.TyApp an) (E.TyCon an n) <$> mapM (bridgeTy tvm an) as
+            appN' as n = foldl (E.TyApp an) (E.TyCon an n) <$> mapM (bridgeTy' rec tvm an) as
+
+            qualTc :: Text
+            qualTc = pack (maybe "?" moduleNameString (tyConModule tc)) <> "." <> pack (getOccString $ tyConName tc)
 
 ---
 --- Expressions.
