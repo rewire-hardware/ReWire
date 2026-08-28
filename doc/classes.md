@@ -88,10 +88,20 @@ not compile (there is no runtime to defer to).
 - **Deep hierarchies and `--depth`**: dictionary elimination runs inside
   the partial-evaluation fixpoint, bounded by `--depth` (default 8). A
   very deep superclass/instance-context chain can need more rounds; raise
-  the bound with `--depth N`.
+  the bound with `--depth N`. The same bound governs monomorphization: a
+  chain of more than ten *distinct* constraint-polymorphic definitions,
+  each calling the next, exceeds the specializer's generation bound
+  (`Polymorphic function instantiation not terminating`) — also fixed by
+  `--depth`.
 - **A default method that calls its own sole method**
   (`frob x = frob x`-style knots) is an infinite loop in Haskell too; rwc
   rejects it as unsupported recursion.
+- **Point-free method aliases at the method's own type**
+  (`f :: Frob a => a -> a; f = frob`) desugar to a bare selector reference
+  and are rejected (`unapplied class method`); eta-expand (`f x = frob x`).
+  An alias at a *different* constraint (say, aliasing a superclass method
+  under a subclass constraint) is fine — the desugarer inserts the
+  adaptor itself.
 - **The embedder (`rwe`) does not accept classes**: class and instance
   declarations — in the program or any module it imports — fail the
   embedder's front end. Type classes are an `rwc` feature.

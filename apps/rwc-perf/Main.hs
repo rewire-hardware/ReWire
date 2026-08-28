@@ -94,7 +94,7 @@ families =
       , Family "defchain"   [64, 128, 256] genDefChain
       , Family "statevars"  [8, 16, 32]    genStateVars
       , Family "whenchain"  [4, 8, 16]     genWhenChain
-      , Family "classchain" [32, 64, 128]  genClassChain
+      , Family "classinsts" [32, 64, 128]  genClassInsts
       ]
 
 goldenCases :: [String]
@@ -160,38 +160,42 @@ genDefChain n = unlines $
       , "main = undefined"
       ]
 
--- | A chain of n constraint-polymorphic definitions, each passing its
---   dictionary down to the previous. Stresses dictionary elimination: the
---   specializer's type worklist, forced dfun inlining, and the
---   simplifier's per-dictionary value baking.
-genClassChain :: Int -> String
-genClassChain n = unlines $
-      [ "{-# LANGUAGE DataKinds #-}"
-      , "import Prelude hiding ((^), (+))"
-      , "import ReWire"
-      , "import ReWire.Bits"
+-- | n instances of one class over n generated datatypes, all dispatched
+--   in one device. Stresses the class machinery breadth-wise: n dfuns
+--   force-inlined, n specialization requests, and n dictionary bakings
+--   per round of the partial-evaluation fixpoint. (Depth-wise chains of
+--   *distinct* constraint-polymorphic definitions instead hit the
+--   specializer's generation bound past --depth and are not a perf
+--   shape.)
+genClassInsts :: Int -> String
+genClassInsts n = unlines $
+      [ "import ReWire"
       , "import ReWire.Monad (iter, Dev)"
       , ""
       , "class Frob a where"
-      , "      frob :: a -> a"
-      , "      unfrob :: a -> a"
-      , ""
-      , "instance Frob (W 32) where"
-      , "      frob x = x ^ lit 1"
-      , "      unfrob x = x"
-      , ""
-      , "f0 :: Frob a => a -> a"
-      , "f0 = frob"
+      , "      tick :: a -> a"
+      , "      obs  :: a -> Bool"
       ]
       <> concat [ [ ""
-                  , "f" <> show i <> " :: Frob a => a -> a"
-                  , "f" <> show i <> " x = f" <> show (i - 1) <> " (frob (unfrob x))"
+                  , "data T" <> show i <> " = A" <> show i <> " | B" <> show i
+                  , "instance Frob T" <> show i <> " where"
+                  , "      tick A" <> show i <> " = B" <> show i
+                  , "      tick B" <> show i <> " = A" <> show i
+                  , "      obs A" <> show i <> " = " <> (if even i then "True" else "False")
+                  , "      obs B" <> show i <> " = " <> (if even i then "False" else "True")
                   ]
                 | i <- [1 .. n] ]
       <>
       [ ""
-      , "start :: Dev (W 32) (W 32)"
-      , "start = iter f" <> show n <> " (lit 0)"
+      , "myXor :: Bool -> Bool -> Bool"
+      , "myXor a b = if a then not b else b"
+      , ""
+      , "step :: Bool -> Bool"
+      , "step b = " <> foldr1 (\ x acc -> "myXor (" <> x <> ") (" <> acc <> ")")
+                        [ "obs (tick (if b then A" <> show i <> " else B" <> show i <> "))" | i <- [1 .. n] ]
+      , ""
+      , "start :: Dev Bool Bool"
+      , "start = iter step False"
       , ""
       , "main :: IO ()"
       , "main = undefined"
