@@ -605,7 +605,7 @@ evaluation/goto fuel at least the bundle's and every extern
 interpretation. The target-run existence comes from
 `Rwv.Hyle.Progress.Program.run_progress` at the facts the bundle
 checked (target well-formedness, a denoting definition environment,
-instance- and eta-generic-freedom), with the stimulus width discipline
+instance-freedom), with the stimulus width discipline
 recovered from `portSplit`/`mkPlan` agreement on `detupleSizes`. A
 target that can never run cannot satisfy this theorem. -/
 theorem validateBundle_refines {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}

@@ -35,10 +35,12 @@ generic instantiation (part of the hash-cons identity), built by `xpackD` (the
 node-level `NF.xpack`, a left `mkCatD` fold from the empty literal)
 under `mkXcallD`, whose `width_coh` obligation is free (`annWidth`
 answers the cached width unconditionally, by the `xapply` clamp).
-`symExpDag` carries the extern table `X` exactly as `symExp` does —
-model-carrying calls reject, sharing the tree evaluator's messages —
-and the simulation extends node for node,
-so `checkEquivDag`/`checkEquivDagRaw` inherit Bridge's ∀E run
+`symExpDag` carries the extern table `X` like `symExp` — but where
+`symExp` INLINES a model-carrying call's model, the DAG tier
+deliberately rejects it with its own message (the model-carrying
+validator row is out of scope here), so DAG success forces the
+X-miss case and the simulation extends node for node;
+`checkEquivDag`/`checkEquivDagRaw` inherit Bridge's ∀E run
 equality. The renormalizer passes the node through, renormalizing only
 the packed child, mirroring `cfoldW`. `xcallFreeIdx` is the store-side
 `NF.xcallFree` (guard-else branches answer `true`, matching `read`'s

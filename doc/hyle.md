@@ -160,7 +160,7 @@ definition denotes a total function (§6.2).
 
     extern ::= extern E
                  generics  g₁, …, g_q                       (q ≥ 0; elaboration-time ℕ parameters)
-                 kind      comb | seq(clock cname, reset rname)
+                 kind      comb | seq([clock cname], [reset rname])   (clock, reset each optional)
                  inputs    p₁ : [n₁], …, p_k : [n_k]        (named; k ≥ 0)
                  outputs   q₁ : [m₁], …, q_l : [m_l]        (named; l ≥ 1)
                  model     f                                 (optional; comb only)
@@ -308,7 +308,8 @@ and instances ιⱼ of Eⱼ⟨c̄ⱼ⟩ where Σ_x(Eⱼ) = (gⱼ; ī; ō; seq):
   each instance is the target of exactly one assignment; nothing else may be
   a target; output names do not appear in any Γ.
 
-**Programs.** All declarations well-formed; all global names distinct;
+**Programs.** All declarations well-formed; all global names distinct (the
+device name is unconstrained — it is never referenced);
 every called f and E is declared with the matching kind (comb for calls,
 seq for instances); every `model f` reference resolves to a defn of the
 required signature; and the relation
@@ -485,7 +486,9 @@ producer's concern, settled before the program reaches Hyle.
 The interpreter realizes 𝔇 directly (it rejects programs containing
 instances or model-less combinational externs). The finite-trace semantics
 used by `--interpret` and the `.yaml` goldens is the n-prefix of 𝔇⟦device⟧
-applied to the (zero-extended) input trace.
+applied to the input trace (each input wire holds its most recently driven
+value, zero if never driven; the trace's last entry repeats to fill the n
+cycles).
 
 ## 7. Metatheory
 
@@ -553,19 +556,19 @@ force, every row is a local template — no analysis beyond a topological walk.
 
 | construct        | Verilog                  | VHDL                                | Cryptol |
 |------------------|--------------------------|-------------------------------------|---------|
-| `lit n v`        | `n'h…`                   | sized literal / `x"…"`              | `(0x… : [n])` or binary |
-| `undef n`        | `n'h0`                   | zeros                               | `(zero : [n])` |
+| `lit n v`        | `n'h…`                   | sized literal / `x"…"`              | `0x…`/`0b…` (digit count gives n) |
+| `undef n`        | `n'h0`                   | zeros                               | zeros literal |
 | `e₁ ⧺ e₂`        | `{e₁, e₂}`               | `e₁ & e₂`                           | `e₁ # e₂` |
 | `e[i +: k]`      | `e[i+k-1 : i]`           | `e(i+k-1 downto i)`                 | `take`{k} (drop`{n-i-k} e)` |
 | `add` …          | `+` etc., widths equal   | `rw_add(a, b)` etc.                 | `+` etc. |
 | `udiv`/`umod`    | guard mux + `/`, `%`     | `rw_div`/`rw_mod` (guarded)         | guard + `/`, `%` |
 | `shl/lshr/ashr`  | `<<`, `>>`, `$unsigned($signed(a) >>> b)` | `rw_shiftl`/`rw_shiftr`/`rw_ashiftr` | `<<`, `>>`, `>>$` |
-| `slt`/`sle`      | `$signed(a) < $signed(b)`| `rw_lts`/`rw_lteqs`                 | sign-flip compare |
+| `slt`/`sle`      | `$signed(a) < $signed(b)`| `rw_lts`/`rw_lteqs`                 | `<$`/`<=$` |
 | `zext⟨m⟩`        | `{pad-zeros, e}`         | `rw_resize(e, m)`                   | `rw'resize` (zero-pad) |
 | `sext⟨m⟩`        | `{repl of MSB, e}`       | `rw_sext(e, m)`                     | `rw'sext` |
-| `if`             | `c ? a : b`              | `rw_cond(c, a, b)`                  | `if c == 1 then a else b` |
-| `f(ē)`           | module instantiation + result wire | component instantiation (named ports) | application |
-| comb extern call | module instantiation     | component instantiation             | `parameter` fn or model call |
+| `if`             | `c ? a : b`              | `rw_cond(c, a, b)`                  | `if c @ 0 then a else b` |
+| `f(ē)`           | module instantiation + result wire | component instantiation (positional) | application |
+| comb extern call | module instantiation     | component instantiation (named ports) | `parameter` fn or model call |
 
 The `$unsigned(...)` around the Verilog arithmetic shift isolates it from
 the parent expression's signedness context (function arguments are
@@ -638,9 +641,10 @@ positions whose own width is zero are erased entirely by every printer
 width [0], simply vanishes from interfaces. A zero-width operand of a
 value-consuming primitive with a non-zero-width result — a reduction, or
 a comparison — cannot be erased; those applications are constant-folded
-to the §5.2 n = 0 identities instead (in the optimizer, and again by the
-Verilog printer for reductions, which is what makes `--rtl-opt=0` output
-printable).
+to the §5.2 n = 0 identities instead (reductions by an explicit rule in
+the optimizer, and again by the Verilog printer, which is what makes
+`--rtl-opt=0` output printable; comparisons only via the optimizer's
+all-literal evaluation).
 
 ## 9. Design rationale: an expression language, not a netlist
 
@@ -703,7 +707,7 @@ exp      ::= "let" ident "=" exp "in" exp
 cat      ::= app { "#" app }                   -- concat, associative
 app      ::= prim { atom } | name [ "<" nat { "," nat } ">" ] { atom } | atom
 atom     ::= lit | "undef" nat | ident | atom "[" nat "+:" nat "]" | "(" exp ")"
-lit      ::= nat "'" [ "h" { hexdigit } ]      -- e.g. 8'hff ; no digits means zero (0', 8')
+lit      ::= nat "'" [ "h" hexdigit { hexdigit } ]  -- e.g. 8'hff ; no h-part means zero (0', 8')
 prim     ::= "add" | "sub" | … | "zext" nat | "sext" nat | "trunc" nat | "rep" nat
 ident    ::= [A-Za-z_$][A-Za-z0-9_.$']* | '"' … '"'   -- quoted form for arbitrary names
 locator  ::= "--@" file ":" nat ":" nat "-" nat ":" nat   -- one line
@@ -719,7 +723,9 @@ part of structural equality). The `noinline` equation prefix exempts the
 definition from backend inlining (including `--flatten`). A `tag` line
 gives a display name for one value of the `__resumption_tag` register
 (display metadata; not part of structural equality). An extern is
-sequential iff it declares a `clock` or `reset` name. (Other annotations
+sequential iff it declares a `clock` or `reset` name. Within a device,
+the declaration groups appear in the order shown — inputs, then
+outputs, registers, tags, instances — before the statements. (Other annotations
 are not part of the concrete syntax; the parser, `Hyle.Parse`, leaves them
 empty except where a `--@` locator line or the parse position of an
 instance or a slice supplies one.) Example:

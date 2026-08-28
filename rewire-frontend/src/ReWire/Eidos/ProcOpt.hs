@@ -7,9 +7,10 @@
 --   * /Epsilon-block inlining/: a block with no commands whose terminator
 --     is a single goto is glue; references to it re-target its successor
 --     directly (with the argument substitution applied). A pause target
---     is never inlined away — it is a machine state. Chains terminate
---     because the goto-only subgraph is acyclic (the machine lint's
---     guardedness rule, checked before this runs).
+--     is never inlined away — it is a machine state. Chain-following is
+--     fuel-bounded by the block count: the goto-only subgraph is acyclic
+--     on guarded input, but the machine lint's guardedness rule is only
+--     checked downstream of this pass.
 --
 --   * /Alpha-equal block merge/ (the retired duplicate-definition merge's
 --     structural successor): blocks whose bodies are alpha-equivalent

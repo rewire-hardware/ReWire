@@ -51,6 +51,6 @@ mkState _a [] = nilTy
 mkState a (t:ts) = pairTy a t $ mkState a ts
 
 
--- We also need to diambiguate lift
+-- We also need to disambiguate lift
 -- lift of return type ReacT is liftR
 -- lift of return type StateT is liftS

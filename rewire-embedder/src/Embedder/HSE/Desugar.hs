@@ -59,11 +59,12 @@ desugar _rn = flip evalStateT 0 .
 
 -- | Like ReWire.HSE.Desugar's desugarFuns, except that unguarded multi-clause
 --   function bindings are kept intact (Atmo represents them directly) and
---   pattern variables are annotated with their declared types.
--- > f p1 p2 = rhs1
+--   pattern variables are annotated with their declared types. A binding
+--   with a guarded clause still desugars to a single PatBind:
+-- > f p1 p2 | g = rhs1
 -- > f q1 q2 = rhs2
 -- becomes
--- > f = \ $1 $2 -> case ($1, $2) of { (p1, p2) -> rhs1; (q1, q2) -> rhs2 }
+-- > f = \ $1 $2 -> case ($1, $2) of { (p1, p2) | g -> rhs1; (q1, q2) -> rhs2 }
 desugarFuns :: (MonadState Fresh m, MonadError AstError m) => Desugar m
 desugarFuns = mempty
       { dsModule = TM $ \ case
@@ -107,7 +108,7 @@ desugarFuns = mempty
             allUnguarded [] = True
             allUnguarded (Match _ _ _ (UnGuardedRhs {}) _ : ms) = allUnguarded ms
             allUnguarded (Match _ _ _ (GuardedRhss {}) _ : _) = False
-            allUnguarded _ = error "Infix should be desugered by now."
+            allUnguarded _ = error "Infix should be desugared by now."
 
 -- TODO(chathhorn): recursive bindings?
 -- | Like ReWire.HSE.Desugar's desugarLets, but annotates pattern variables with

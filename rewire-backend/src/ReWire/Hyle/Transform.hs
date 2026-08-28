@@ -254,7 +254,7 @@ purgeUnused (Program exts ds dev) = Program exts' ds' dev
             exts' = filter ((`Set.member` liveExts) . extName) exts
 
 ---
---- Optimization passes: slice merging, partial evaluation, dedupe.
+--- Optimization passes: partial evaluation, zero-width purging, dedupe.
 ---
 
 -- | The standard optimization pipeline, iterated to a fixpoint (bounded by

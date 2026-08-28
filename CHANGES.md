@@ -33,6 +33,7 @@
   classes get a kind-annotation hint, recursive class dictionaries
   (`ConstraintKinds`) are a located error instead of a compiler hang, and
   `GeneralizedNewtypeDeriving` is documented as unsupported.
+* The Crust IR and its monad-transformer purification pass have been
   replaced by Eidos (`ReWire.Eidos.*`), a new typed functional IR
   specified in `doc/eidos.md`, with a textual format (`.eir`, dumped
   beside the output by `--eidos`). The reactive fragment is now compiled
@@ -76,7 +77,7 @@
   interior-only: the entry point's type must be words/vectors/tuples);
   local function bindings, higher-order functions applied to statically
   known functions (named, lambdas, curried, or chosen by `if`/`case`),
-  and type-indexed recursion (e.g. `pow`{e-1}` behind constraint
+  and type-indexed recursion (e.g. ``pow`{e-1}`` behind constraint
   guards, unrolled per instantiation); recursive finite comprehensions
   (the message-schedule/key-expansion/CBC-chaining idiom, unrolled
   element-wise), `scanl`, `update`/`updateEnd`, rotates, element shifts,
@@ -118,8 +119,9 @@
   `VALIDATED` verdict --
   backed by a Lean-kernel-checked theorem covering cycle-for-cycle
   agreement, spliced Cryptol FFI code, extern models, and (universally,
-  over all implementations) combinational externs -- or a warning (fatal
-  under `-Werror`), never a silent pass. See `doc/certify.md`.
+  over all implementations) combinational externs -- or fails
+  (`--certify=warn` reports the verdict without failing), never a
+  silent pass. See `doc/certify.md`.
 * The Hyle inline pass now runs for every device target, so the HDL and
   Cryptol backends, the interpreter, `--core` output, and the certified
   artifact all consume the same fully lowered program. `--core` and

@@ -80,7 +80,7 @@ If the ReWire session has been changed, you need to rebuild the session before r
 
 ### Calling the Embedder
 
-To embed a file, use the `rwe` (this will likely be extended with additional options in the future).
+To embed a file, use the `rwe` command (this will likely be extended with additional options in the future).
 
 `rwe example.hs`
 
@@ -91,7 +91,7 @@ There are some other available flags.
 
 To load an output theory file, you'll have to add it to a directory with a ROOT file that includes the ReWire session and the local theories (see ROOT files in the rewire-embedder directory for examples).
 
-### Formatting ReWire Designs for Smoothe Embedding
+### Formatting ReWire Designs for Smooth Embedding
 
 Watch this spot. We will include and maintain a ReWire Embedder Style Guide here soon.
 Some short notes in the meantime:

@@ -25,7 +25,7 @@ f :: W 8 -> W 8 -> W 8 -> (W 8, W 8)
 λ> f _40 _25 _20
 (Vector [False,False,True,True,False,False,False,False],Vector [False,False,True,False,False,True,False,True])
 ```
-What's this mess? `W 8` values are represented internally using Haskell's `Data.Vector` library and, well, it ain't pretty. There is a ReWire library you can import to make all this more palatable called `ReWire.Interactive`:
+What's this mess? `W 8` values are represented internally using Haskell's `Data.Vector.Sized` library and, well, it ain't pretty. There is a ReWire library you can import to make all this more palatable called `ReWire.Interactive`:
 ```haskell
 λ> pretty (f _40 _25 _20)
 (48,37)
@@ -55,8 +55,8 @@ start = csa (_0, _0, _0)
 First, `csa` consumes its three inputs `a`, `b`, and `c` as a tuple. Then, it computes the carry save addition on these and puts the result on the output port, `signal (f a b c)`. Finally, it obtains the next inputs, `abc'` and continues.
 
 *What does the type of `csa` mean?* It's worth contemplating the type of `csa`'s codomain, which is `ReacT (W 8, W 8, W 8) (W 8, W 8) Identity ()`.
-- The input type is `(W 8, W 8, W 8)`, meaning that every it takes three `W 8`s each clock cycle;
-- The output type is `(W 8, W 8)`, meaning that every it produces two `W 8`s each clock cycle; and
+- The input type is `(W 8, W 8, W 8)`, meaning that it takes three `W 8`s each clock cycle;
+- The output type is `(W 8, W 8)`, meaning that it produces two `W 8`s each clock cycle; and
 - It does not use any internal storage or registers, hence the `Identity` monad is used rather than a state monad.
 
 
@@ -85,7 +85,7 @@ import Prelude hiding ((^))
 import ReWire
 import ReWire.Bits
 
--- | ReWire compiler will complain if this is imported
+-- | Only needed for interactive use in GHCi
 import ReWire.Interactive
 
 f :: W 8 -> W 8 -> W 8 -> (W 8, W 8)
@@ -98,6 +98,12 @@ _25 = lit 25
 _20 = lit 20
 _41 = lit 41
 _0  = lit 0
+
+_1 :: W 8
+_1 = lit 1
+
+_1' :: W 9
+_1' = lit 1
 
 -- |
 -- | Example 1. CSA
@@ -113,16 +119,19 @@ csa (a, b, c) = do
 start :: ReacT (W 8, W 8, W 8) (W 8, W 8) Identity ()
 start = csa (_0, _0, _0)
 
--- | ReWire compiler will complain if this is here (i.e., comment it before compiling):
+-- | Only used for interactive exploration in GHCi:
 inputs :: [(W 8 , W 8 , W 8)]
 inputs = (_40 , _25 , _20)
        : (_41 , _25 , _20)
        : (_40 , _25 , _20)  : []
+
+main :: IO ()
+main = undefined
 ```
 
-*Pro-tip.* Because ReWire doesn't know about things likes lists, `ReWire.Interactive` and the definition of `inputs` need to be commented out *before* compiling with `rwc`.
+*Pro-tip.* GHCi-only code like the `ReWire.Interactive` import and the list `inputs` can stay in the file: `rwc` only compiles what is reachable from `start` and ignores the rest. GHC does, however, require a `main` definition in a `Main` module (which includes any file without a module header) — hence the stub at the end; `rwc` ignores its definition.
 
-Assuming these are now commented out, you can proceed to compile CSA.hs with:
+You can then compile CSA.hs with:
 ```haskell
 $ ls -l CSA.* 
 -rw-r--r--  1 william.harrison  staff  1039 Jun 13 09:02 CSA.hs

@@ -7,7 +7,7 @@
 --   pure fragment translates per-construct (n-ary cases compile to
 --   if-chains over constructor tags; joins are lifted to definitions
 --   first), and each process folds to an explicit device: one definition
---   per block (stores threaded as trailing parameters), one dispatch
+--   per block (cells threaded as trailing parameters), one dispatch
 --   definition (an if-chain over the label tag), and register initials
 --   obtained by evaluating the entry block with the Hyle interpreter.
 --

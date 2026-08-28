@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
--- | Monomorphization by specialization (doc/eidos.md §4.1, §5): a worklist
+-- | Monomorphization by specialization (doc/eidos.md §4.1, §5, §8): a worklist
 --   specializer driven by the type arguments the bridge keeps on
 --   application spines. There is no inference and no unification: a
 --   monomorphic definition's body mentions a polymorphic definition only

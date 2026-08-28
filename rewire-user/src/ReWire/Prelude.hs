@@ -70,7 +70,7 @@ fst (x, _) = x
 snd :: (a, b) -> b
 snd (_, y) = y
 
--- | Converts an uncurried function to a curried function;
+-- | Converts an uncurried function to a curried function.
 {-# INLINE curry #-}
 curry :: ((a, b) -> c) -> a -> b -> c
 curry f x y = f (x, y)

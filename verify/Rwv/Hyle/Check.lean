@@ -7,8 +7,10 @@ exactly-once assignment coverage, and acyclicity of the call graph
 including extern-model edges.
 
 On programs this checker accepts, the semantics (Rwv.Hyle.Semantics)
-hits none of its error cases except the deliberate ones (model-less
-externs, instances); that is not mechanized as a theorem.
+hits none of its error cases except the deliberate one (device
+instances); Rwv.Hyle.Progress mechanizes this as a theorem
+(`Program.run_progress`), under its side conditions (an instance-free
+device, a successful `mkFEnv`).
 -/
 import Rwv.Hyle.Syntax
 import Std.Data.HashMap

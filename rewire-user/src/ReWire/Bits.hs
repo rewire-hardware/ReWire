@@ -34,6 +34,7 @@ toInteger = toIntegerV
 a @@ (j, i) = bitSlice a j i
 
 -- | Project single bit.
+--   The Integer argument must be a non-negative integer literal (after inlining).
 {-# INLINE (@.) #-}
 (@.) :: KnownNat n => W n -> Integer -> Bit
 a @. i = bitIndex a i
@@ -278,7 +279,7 @@ msbit = rwPrimMSBit
 odd :: W (1 + n) -> Bool
 odd b = bit (resize b :: W 1)
 
--- | Least significant bit.
+-- | Negation of the least significant bit.
 {-# INLINE even #-}
 even :: W (1 + n) -> Bool
 even b = not (bit (resize b :: W 1))

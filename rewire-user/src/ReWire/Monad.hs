@@ -1,6 +1,6 @@
 -- | This module defines operations related to monads in ReWire, including 
 -- functions for defining looping monadic actions, and simplifying a tower
--- of monad transformers down to the simple ReacT action required by rwc
+-- of monad transformers down to the simple ReacT action required by rwc.
 -- It provides type synonyms for distinguishing looping devices and stateful devices
 -- that run indefinitely.
 module ReWire.Monad 

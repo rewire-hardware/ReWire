@@ -1,4 +1,4 @@
-module Register where
+module RegisterError where
 
 import Control.Monad.State
 

@@ -4,16 +4,15 @@ programs: the mechanization of Check.lean's header claim that on
 programs the §4 checker accepts, evaluation hits none of its error
 cases except the deliberate ones.
 
-The deliberate ones are exactly two, and each becomes a side
-condition rather than a proof obligation:
+The deliberate case is exactly one — device instances (`sInstIn`,
+the instance-free fragment) — and it becomes a side condition rather
+than a proof obligation: the theorems take an instance-free device,
+under which a checked device body contains no instance statements at
+all.
 
-  * device instances (`sInstIn`, the instance-free fragment) — the
-    theorems take an instance-free device, under which a checked
-    device body contains no instance statements at all;
-
-  Model-less extern calls (generic or not) read totally through
-  `Sem.xapply` at the call's (name, generics) key, so they need no
-  extern-environment hypothesis at all.
+Model-less extern calls (generic or not) read totally through
+`Sem.xapply` at the call's (name, generics) key, so they need no
+extern-environment hypothesis at all.
 
 The main results, bottom up:
 
@@ -27,7 +26,7 @@ The main results, bottom up:
     `mkFEnv` denotes is total at its signature widths (induction along
     the topological order, through Bridge's `FImplements`);
   * `step_progress` / `run_progress` / `Program.run_progress` — a
-    checked, instance-free, eta-generic-free device steps and runs on
+    checked, instance-free device steps and runs on
     every width-disciplined stimulus, producing declared-width outputs
     cycle for cycle.
 
@@ -327,8 +326,7 @@ private theorem ctxAgree_insert {ctx : Check.Ctx} {ρ : HashMap String BV}
 
 /-- A `checkExp`-accepted expression evaluates, at its checked width,
 in any valuation supplying the context's names at their declared
-widths, given total closures for the expression's `deps` and no
-model-less generic extern calls. -/
+widths, given total closures for the expression's `deps`. -/
 theorem evalExp_progress {env : Check.Env} {X : Sem.XEnv} {F : Sem.FEnv} {E : Sem.EEnv}
     (hxm : XModelsOk env X) :
     ∀ (e : Exp) (ctx : Check.Ctx) (ρ : HashMap String BV) (w : Nat),
@@ -1123,8 +1121,7 @@ private theorem chain_closOk {p : Program} {E : Sem.EEnv} {F : Sem.FEnv}
             d' hrest
 
 /-- On a checked program with a denoting definition environment, every
-definition's closure is total at its signature widths (given
-eta-generic-free bodies). -/
+definition's closure is total at its signature widths. -/
 theorem mkFEnv_closOk {p : Program} {E : Sem.EEnv} {F : Sem.FEnv}
     (hnd : (p.defns.map (·.name)).Nodup)
     (hdefok : ∀ d ∈ p.defns, Check.checkDefn (Check.mkEnv p) d = .ok ())
@@ -1703,7 +1700,7 @@ private theorem finish_progress {env : Check.Env} {dev : Device}
       exact absurd h (by simp)
     · exact h
 
-/-- A checked, instance-free, eta-generic-free device steps on every
+/-- A checked, instance-free device steps on every
 width-disciplined input row and register store, producing
 declared-width outputs and a disciplined next store. -/
 theorem step_progress {p : Program} {F : Sem.FEnv} {E : Sem.EEnv}
@@ -1893,7 +1890,7 @@ private theorem initRegs_regsOk {dev : Device}
     injection heq with h1 h2
     exact ⟨reg, hreg, h1⟩
 
-/-- A checked, instance-free, eta-generic-free device runs on every
+/-- A checked, instance-free device runs on every
 width-disciplined stimulus, producing declared-width outputs cycle
 for cycle. -/
 theorem runLoop_progress {p : Program} {F : Sem.FEnv} {E : Sem.EEnv}
@@ -1944,7 +1941,7 @@ theorem runLoop_progress {p : Program} {F : Sem.FEnv} {E : Sem.EEnv}
           | inr ha => exact .inl ha
         · exact .inr hok
 
-/-- Top-level progress: a checked, instance-free, eta-generic-free
+/-- Top-level progress: a checked, instance-free
 program with a denoting definition environment runs on every
 width-disciplined stimulus, producing declared-width outputs cycle for
 cycle — execution cannot fail, so trace correspondence is never

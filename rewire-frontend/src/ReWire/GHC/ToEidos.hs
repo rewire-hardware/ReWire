@@ -14,7 +14,7 @@
 --   untranslatable type is a located error at the occurrence, never a
 --   silent Nothing.
 --
---   Inherited from the retired Crust bridge (unchanged): the reachability walk
+--   Also handled here: the reachability walk
 --   from the start symbol + rwPrim* roots, evidence erasure (dictionary
 --   arguments/binders/binds erased; user-class dictionaries kept as data,
 --   with single-method classes' newtype-dictionary types unwrapped to the
@@ -180,8 +180,7 @@ flattenBind = \ case
       Rec bs       -> bs
 
 -- | Transitive closure of top-level binds reachable from the roots, with
---   the same erasures the translation performs. (Carried over unchanged
---   from the retired Crust bridge.)
+--   the same erasures the translation performs.
 reachable :: IM.IntMap (Var, CoreExpr, ModuleName) -> [Var] -> IS.IntSet
 reachable bindMap = go mempty
       where go :: IS.IntSet -> [Var] -> IS.IntSet
@@ -224,7 +223,7 @@ bridgeDefn ctx (b, rhs, mn) = do
           ghcTvs          = filter isTyVar $ fst $ splitForAllTyCoVars $ expandTypeSynonyms $ varType b
       -- The defn's leading type/dictionary lambdas correspond to its
       -- signature: map the type binders (positionally) onto the minted
-      -- signature variables and skip the dictionary binders. An eta-reduced
+      -- signature variables and skip the erased evidence binders. An eta-reduced
       -- wrapper (e.g. @put = rwPrimPut@) has fewer type lambdas than its
       -- signature quantifies; the leftover signature variables are
       -- type-applied to the body (type-level eta expansion), using the
@@ -568,7 +567,8 @@ bridgeConApp ctx an v dc args vargs
                   _ -> failAt an "ghc-frontend: unsupported non-literal list (lists must be literal cons chains)."
 
 -- | Class method dispatch: user-class methods project the field out of the
---   dictionary (ordinary data, via a single-alternative case); >>=, >>,
+--   dictionary (ordinary data, via a single-alternative case; a newtype
+--   dictionary IS its method, applied directly); >>=, >>,
 --   return, pure at ReacT/StateT/Identity or at an unresolved monad type
 --   become Bind/Return primitives (dictionary discarded; a concrete monad
 --   off the reactive stack is rejected).

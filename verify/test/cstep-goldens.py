@@ -6,9 +6,10 @@ For each test with a pass-8 Eidos dump, runs the machine-step
 validator against the FINAL Hyle program (<base>.11.rwc — the
 post-inline program the backends consume; --pass9/--pass10 select the
 earlier dumps), checking the headline verdict against the test's
-EXPECTED outcome (VALIDATED for the pure corpus; UNSUPPORTED for the
-foreign-tier tests, whose source-side semantics has no independent
-artifact). With --measure the driver additionally runs its per-label
+EXPECTED outcome (VALIDATED for the pure corpus, model-carrying and
+generic extern tests included; UNSUPPORTED only for the clocked-extern
+and Cryptol-FFI tests, whose semantics has no independent source-side
+artifact — see EXPECTED_UNSUPPORTED). With --measure the driver additionally runs its per-label
 tree-tier measurement loop (per-label verdicts, initial-state check)
 — memory-hungry on the giant tests. Dumps are the ones
 verify/test/hyle-equiv-goldens.py generates into verify/test/out-equiv.

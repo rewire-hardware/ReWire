@@ -54,7 +54,8 @@ arguments and the inlined form (the spliced denotations `ForeignC`
 pins live at the empty extern environment, and extern-free normal
 forms cannot see the difference); a MODEL-LESS combinational extern
 occurrence compiles to the uninterpreted-call node
-`NF.xcall (sizeOf res) name (NF.xpack args)`, sound at EVERY extern
+`NF.xcall (sizeOf res) name generics (NF.xpack args)` (the call's
+static generic instantiation is part of the symbol), sound at EVERY extern
 environment because both semantics read the same interpretation on
 the same packed bits, with the evaluator's decode gate pinning the
 result canonical (`decode_vty`/`decode_rep`) and `vty_rep_width`
@@ -88,8 +89,8 @@ Three further gaps are closed:
     committed semantics' unit-degenerate `.finite 0 0` inhabitant is
     the one value the bound excludes).
 
-Still outside: strings, local-variable application, bare lambdas,
-and generic extern instantiations.
+Still outside: strings, local-variable application, and bare
+lambdas.
 
 THE soundness theorem (`cexp_sound`): a successful compilation is
 rep-correspondent — if the committed evaluator produces a value, the
@@ -3978,10 +3979,10 @@ mirroring the reference lowering construct for construct:
     definition reference (with or without earlier arguments on its
     spine) consumes it as its final argument and inlines.
 
-Still outside: strings, local-variable application, bare lambdas,
-and generic extern instantiations (the foreign rows proper — Cryptol
-splices, model-carrying externs, and model-less combinational
-externs — are in scope, see the module header).
+Still outside: strings, local-variable application, and bare
+lambdas (the foreign rows proper — Cryptol splices, model-carrying
+externs, and model-less combinational externs, generic
+instantiations included — are in scope, see the module header).
 
 The original `cexp`/`cAlt`/`cchain`/`cprim` and every theorem about
 them are unchanged above; `cexpFull` (= `cexpJ` with empty join

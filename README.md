@@ -63,8 +63,9 @@ the exact pinned Lean version automatically):
   first place rwc looks; then the `PATH`; `RWC_RWV` overrides). A
   `VALIDATED` verdict from `rwc --certify` is backed by a machine-checked
   proof that the compiled device implements the source state machine —
-  without the validator installed, `--certify` compiles normally and
-  warns.
+  without the validator installed, `--certify` fails with an error
+  explaining how to build it (`--certify=warn` reports the verdict
+  without failing).
 
 ### Checking the installation
 
@@ -73,15 +74,16 @@ $ rwc --certify -o fibo1.sv tests/golden/fibo1.hs
 certify: VALIDATED: the compiled device (fibo1.rwc) implements the Eidos machine (fibo1.eir).
 ```
 
-(Without the validator installed, the same command produces `fibo1.sv` and
-a warning explaining how to build the validator.)
+(Without the validator installed, the same command writes `fibo1.sv` but
+then fails with an error explaining how to build the validator;
+`--certify=warn` reports the verdict without failing.)
 
 ### Environment variables
 
 | Variable | Effect |
 |---|---|
 | `RWC_RWCRY` | path to the `rwcry` executable (otherwise: next to `rwc`, then `PATH`) |
-| `RWC_RWV` | path to the `rwv-cstep-validate` executable (otherwise: next to `rwc`, then `PATH`, then `verify/.lake/build/bin`) |
+| `RWC_RWV` | path to the `rwv-cstep-validate` executable (otherwise: next to `rwc`, then `PATH`) |
 | `RWC_PACKAGE_PATH` | override the GHC package databases rwc consults (rarely needed; an installed rwc uses the path baked in at build time) |
 
 ### Running the test suites

@@ -5,6 +5,7 @@ The code for this section is [Register.hs](Register.hs).
 ```haskell
 module Register where
 
+import Control.Monad.Identity
 import Control.Monad.State
 
 data Exp = Const Int | Neg Exp | Add Exp Exp
@@ -17,17 +18,17 @@ instance Show Exp where
   show X           = "X"
 
 -- | Just a copy 
-eval2 :: Exp -> Maybe Int
-eval2 (Const i)   = return i
-eval2 (Neg e)     = do
-                      v <- eval2 e
+eval1 :: Exp -> Identity Int
+eval1 (Const i)   = return i
+eval1 (Neg e)     = do
+                      v <- eval1 e
                       return (- v)
-eval2 (Add e1 e2) = do
-                      v1 <- eval2 e1
-                      v2 <- eval2 e2
+eval1 (Add e1 e2) = do
+                      v1 <- eval1 e1
+                      v2 <- eval1 e2
                       return (v1 + v2)
 
-eval2 X           = undefined -- How do we do handle this?
+eval1 X           = error "Where's the current value of X?"
 ```
 
 Here's how we handle this:

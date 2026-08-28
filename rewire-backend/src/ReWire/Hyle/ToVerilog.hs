@@ -64,12 +64,12 @@ sigInfo0 :: Maybe (Text, M.Size, [(Text, Integer)]) -> [Text] -> SigInfo
 sigInfo0 tags ambient = SigInfo (seedNames ambient) [] mempty mempty tags Nothing
 
 -- | Identity key for compiled expressions (the CSE memos, the case-chain
---   same-scrutinee test): the full Show rendering. The derived Eq/Ord on
---   'V.Exp' inherit the bv package's width-blind BV instances (bitVec 4 0
---   == bitVec 8 0), which would unify expressions differing only in a
---   literal's width -- a miscompilation, since widths are load-bearing in
---   RTL. BV's Show (@[4]0@) carries the width, so the rendering is
---   width-exact.
+--   same-scrutinee test): the full Show rendering. The derived Eq on
+--   'V.Exp' (and any derived Ord) inherits the bv package's width-blind BV
+--   instances (bitVec 4 0 == bitVec 8 0), which would unify expressions
+--   differing only in a literal's width -- a miscompilation, since widths
+--   are load-bearing in RTL. BV's Show (@[4]0@) carries the width, so the
+--   rendering is width-exact.
 expKey :: V.Exp -> Text
 expKey = T.pack . show
 

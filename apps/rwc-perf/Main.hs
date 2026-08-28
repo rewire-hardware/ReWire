@@ -101,7 +101,7 @@ goldenCases :: [String]
 goldenCases = ["gfmult", "Sha256", "OD19Filter", "cubehash"]
 
 -- | A single definition containing a chain of n let-bindings, each used
---   twice by the next (the gfmult shape). Stresses the passes that have
+--   three times by the next (the gfmult shape). Stresses the passes that have
 --   to preserve sharing: Eidos.Simplify's let-preserving reduce and the
 --   Hyle inliner's uses-at-most-once heuristic -- substituting a binding
 --   instead of sharing it would grow exponentially in the chain length.

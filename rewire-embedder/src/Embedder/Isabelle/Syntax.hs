@@ -281,11 +281,11 @@ selfGroup = \ case
 ----------------------------------------------
 --                Error | Extern
 --              | Bind | Return
---              | Signal | Lift | Extrude | Unfold
+--              | Signal | Lift | Extrude
 --              | VecFromList | VecReplicate | VecReverse | VecSlice | VecRSlice
 --              | VecIndex | VecIndexProxy
 --              | VecConcat
---              | VecMap | VecFoldR | VecFoldL | VecGenerate
+--              | VecMap | VecGenerate
 --              | Finite | FiniteMinBound | FiniteMaxBound | ToFinite | ToFiniteMod | FromFinite
 --              | NatVal
 --              | Bits | Resize | BitSlice | BitIndex
@@ -447,8 +447,7 @@ instance Pretty Term where
       -- -- Data structures: Maybe a = Nothing | Just a, Either a b = Left a | Right b, Bool = True | False
       -- | Vectors
       -- -- Missing prims: VecUpdate, VecBulkUpdate, VecIterate, VecZip, VecFromList
-      -- -- Missing Builtins: VecFoldR, VecFoldL,
-      -- | Bits 
+      -- | Bits
       -- -- Missing prims: ToInteger,
       -- -- Not translated (directly): Bits, 
       -- ]

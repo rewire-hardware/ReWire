@@ -3,8 +3,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | A-normalization to procify's input form (doc/eidos.md §6): every
---   definition body becomes a let chain over simple right-hand sides
---   ending in an atom (or a jump), by the spec's small ordered ruleset —
+--   reactive definition body becomes a let chain over simple right-hand
+--   sides ending in an atom (or a jump), by the spec's small ordered ruleset —
 --   eta-expansion (definitions reach their signature arity, parameters in
 --   the telescope), argument naming (non-atom arguments of pure spines
 --   are let-bound), subject naming (case scrutinees are atoms),

@@ -26,10 +26,13 @@ and static rules are in force:
   dictionaries in GHC, and the bridge unwraps their types to the method
   type, so no datatype exists for them here), instance definitions are
   inline-annotated definitions of those values, and method calls are
-  single-alternative case projections. The partial-evaluation fixpoint
-  *requires* dictionary-freedom — a program whose dictionaries cannot be
-  resolved statically fails compilation — so no class construct ever
-  reaches Eidos-M or Hyle.
+  single-alternative case projections. A dictionary-typed binding is
+  never shared: no dictionary is representable, so the simplifier
+  substitutes it at every occurrence regardless of use count (where a
+  representable multi-use binding keeps its let). The partial-evaluation
+  fixpoint *requires* dictionary-freedom — a program whose dictionaries
+  cannot be resolved statically fails compilation — so no class construct
+  ever reaches Eidos-M or Hyle.
 - **Eidos-M** (§7): the machine level — the monomorphic ANF fragment of
   Eidos-P plus a first-class process calculus (state cells, labeled blocks,
   `pause`/`goto`/`halt` terminators). Purification consumes the mono+ANF
@@ -309,7 +312,9 @@ at the Hyle level.
 ## 6. The mono+ANF restriction (procify's input)
 
 The ANF productions are shared with the full P grammar (they are a
-restriction, not a new syntax): in mono+ANF mode every definition body is
+restriction, not a new syntax): in mono+ANF mode every *reactive*
+definition body is (pure bodies are exempt — the fold lowers them in any
+shape)
 
     e ::= let x :: τ = r in e  |  ret a  |  jump L (ā)
     r ::= a  |  x a₁ … a_k  |  C ā  |  p ā  |  case a of x { alt; … } :: τ
@@ -342,7 +347,7 @@ static rules, and machine-step contract.*
 
     proc ::= proc P : τ_I ~> τ_O clock? {
                  state s₁ : τ₁ := e₀₁ ;  …          cells: one per state layer
-                 entry { cmds ; term }               the reset block (implicitly labeled)
+                 entry { cmds ; term }               the reset block (unlabeled)
                  block L₁ (x₁:τ, …, inp:τ_I) { cmds ; term }
                  …
              }
@@ -360,7 +365,7 @@ A block's *last* parameter is the resumed input (type `τ_I`); a
 `pause a → L(ā)` supplies all of `L`'s parameters *except* that one, which
 the machine supplies on resumption. A block may be the target of both
 `pause` and `goto` (a `goto` supplies all parameters). The `entry` block is
-parameterless, implicitly labeled (so `goto entry` expresses restart), and
+parameterless and unlabeled (no `goto` can target it) and
 holds the reset prefix; cells it writes before the first pause become
 register initials (§7.3).
 
@@ -379,8 +384,8 @@ sides; *sequential* (clocked) extern calls are legal only as commands, and
 each syntactic occurrence denotes one device instance.
 
 Labels are a distinct namespace, per-proc; all generated names (label
-enum, step record, cells) are qualified by the proc name (the qualifier
-renders empty while programs have one proc).
+enum, step record, cells) are qualified by the proc name (procify names
+the single proc `main`).
 
 ### 7.2 Degenerate forms
 
@@ -416,7 +421,7 @@ naming and ordering function, which fixes dispatch order and tag values.
   (pause-free) loops are rejected with a located error; entry evaluation
   terminates without fuel; blocks lower to acyclic Hyle definitions.
 - **Constness** of cell initials; **representability** (fixed bit width)
-  of every binder, parameter, and cell; full-arity jumps and gotos; the
+  of every binder, parameter, and cell; full-arity pauses and gotos; the
   input parameter typed `τ_I`; "root proc never pauses" (a proc with no
   pause target has no machine) — all with located diagnostics.
 - **Pure-acyclicity**: the call graph of the pure definitions reachable
@@ -634,7 +639,9 @@ The normative signature scheme and machine-level denotation of every
 builtin (`ReWire.Builtins`; occurrences print as `rwPrim<Name>`, §9).
 Signatures are what `Prim` occurrences must instantiate: an occurrence's
 carried type must be a substitution instance of its builtin's scheme
-(this is the linter's builtin signature table). Quantified `n, m, i` have
+(this is the linter's builtin signature table; the `rwPrimExtern` row is
+the one exception — its occurrence types are trusted, not checked).
+Quantified `n, m, i` have
 kind `Nat`; `a, b` kind `*`; `m̂` ranges over the reactive stack. In
 denotations, `x = bv(v)` and `y = bv(w)` are the bit readings of the
 first and second `Vec _ Bool` arguments (§7.5.1), and `⟨·⟩ₙ` the width-n
@@ -778,6 +785,27 @@ among `inline` definitions is rejected. Inlining runs after
 specialization: substituting under a type-argument spine would strand the
 arguments on a non-variable head.
 
+**Partial evaluation** (mono; the `--depth`-bounded fixpoint) alternates
+value specialization, purge, and a let-preserving reduction until every
+definition's signature is representable and no signature mentions a
+dictionary datatype (one with a function-typed constructor field). The
+reduction turns beta redexes into lets and inlines a let only when its
+binder is dead, used once, or bound to an atom — with two policy
+exceptions: a multi-use *function-typed* binding is lifted to a top-level
+definition over its captured locals (LiftNonRep; the `$LL.` prefix), and
+a *dictionary-typed* binding is substituted at every occurrence (it can
+never be represented, so there is no sharing to preserve — this is what
+lets known-constructor case selection consume multi-use superclass
+projections). Known-constructor and known-literal cases select their
+alternative; top-level references are never unfolded — higher-orderness
+dies by *argument baking* instead: a call to a top-level definition with
+closed arguments (free variables all top-level) bakes those arguments
+into a memoized clone (provenance `baked f`), dropping the baked
+parameters from its signature. Definitions unreachable from the device
+root (plus the builtin signature carriers) are purged each round; a
+program that fails to converge within `--depth` rounds is rejected,
+listing the definitions that held up the fixpoint.
+
 ## 9. Concrete syntax (.eir)
 
 One grammar spans both levels; the M-level productions (§7.1) parse today
@@ -789,7 +817,10 @@ Names print with their uniques: `x#12`, `Main.loop#3`, type variables
 `a#7`. Type/data constructor names print bare (`Main.CPUState`, `Vec`).
 Primitives print by their builtin name (`rwPrimBind`); the `rwPrim` prefix
 and absence of `#` distinguishes them lexically from constructors and
-variables.
+variables. Occurrence text that does not lex as an identifier prints
+backtick-quoted (`` `Main.C:Frob` ``, `` `GHC.Classes.&&`#5 ``) and the
+parser accepts the quoted form anywhere a name is expected; string
+literals use the `\\`, `\"`, `\n`, `\t`, `\r` escapes.
 
     prog  ::= data* defn* proc* 'top' var
     data  ::= 'data' T kind '{' (ctor (';' ctor)*)? '}'
@@ -799,7 +830,7 @@ variables.
     tyvarb::= '(' a '::' kind ')'
     ty    ::= ty '->' ty                  (right associative)
             | ty tyatom
-            | natop tyatom tyatom+          (prefix arithmetic application;
+            | natop tyatom+                 (prefix arithmetic application;
                                              the printer's canonical form)
             | tyatom
     tyatom::= T | a | nat | '()' | '[]' | '[_]'
@@ -826,7 +857,7 @@ and `[_]` the list type constructors, applied via `tyatom` spines.
             | app
     app   ::= app arg | atom
     arg   ::= atom | '@' tyatom
-    atom  ::= var | lit
+    atom  ::= var
             | '(' C '::' ty ')' | '(' p '::' ty ')' | '(' int '::' ty ')'
             | strlit
             | '(' 'list' '[' exps? ']' '::' ty ')'

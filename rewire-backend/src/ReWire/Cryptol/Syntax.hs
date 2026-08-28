@@ -29,7 +29,9 @@ type Size = Word
 --   outside @[A-Za-z0-9_]@ becomes an underscore. Callers are expected to
 --   prepend a prefix (@rw_@), so the first character doesn't matter and the
 --   result can never collide with a Cryptol keyword, a Prelude name, or the
---   tick-containing helper names.
+--   tick-containing helper names. The one unprefixed use is the module name
+--   ('ReWire.Hyle.ToCryptol' via 'modName'), where a keyword-named @--top@
+--   would emit an invalid module header.
 cryptolName :: Text -> Name
 cryptolName = T.map sub
       where sub :: Char -> Char

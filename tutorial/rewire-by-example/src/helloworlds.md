@@ -18,5 +18,5 @@ In ReWire, there is a type corresponding to the Mealy machine above, the monadic
 
 ``ReacT i o (StateT s Identity) ()``
 
-And, because it occurs so frequently, we refer to it as a *device type* some times. Things of this type are those that can be compiled to hardware. 
+And, because it occurs so frequently, we refer to it as a *device type* sometimes. Things of this type are those that can be compiled to hardware -- after the `StateT s` layer is extruded (with `extrude`/`extrudeDev`), leaving a top-level term of type ``ReacT i o Identity ()`` (see `Dev` in `ReWire.Monad`). 
 

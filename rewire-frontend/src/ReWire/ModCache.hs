@@ -133,9 +133,9 @@ getDevice conf fp = do
                               Eidos.TCase _ _ alts -> concat [ halts t | Eidos.TAlt _ _ _ t <- alts ]
                               _                    -> []
 
-            -- The standing lints (post-bridge, post-inline, post-PE) run
-            -- always; --debug-lint re-lints after the remaining Eidos
-            -- passes too.
+            -- The standing lints (post-bridge, post-inline, post-PE,
+            -- post-ANF) run always; --debug-lint re-lints after the
+            -- remaining Eidos passes too.
             lintDebug :: MonadError AstError m => Eidos.LintMode -> Eidos.Program -> m ()
             lintDebug mode p | conf^.C.debugLint = Eidos.lint mode p
                              | otherwise         = pure ()

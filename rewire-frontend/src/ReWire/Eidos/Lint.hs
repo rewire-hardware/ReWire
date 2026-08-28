@@ -20,6 +20,12 @@
 --     and check in poly mode. Value binders may still be higher-order here:
 --     first-orderization is the partial evaluator's job, downstream of
 --     specialization, so the first-order rule belongs to mono+ANF.
+--   * 'LintMonoANF' (procify's input contract): additionally, value
+--     binders are first-order and reactive definition bodies are in the
+--     ANF shape of §6 (let chains over simple right-hand sides; the
+--     reactive fragment — procify's input skeleton — is exempt from
+--     naming, and pure definition bodies are exempt entirely — the fold
+--     lowers them in any shape).
 --   * 'LintMachine' (post-procification): additionally, the per-process
 --     machine rules of §7.4 — signal-guardedness (the goto-only subgraph
 --     of the block graph is acyclic), cell-initial constness and typing,
@@ -27,10 +33,6 @@
 --     "the process pauses" — and the reactive types are out of the
 --     grammar entirely. The @top@ device-type rule is suspended when
 --     processes are present (the process is the machine).
---   * 'LintMonoANF' (procify's input contract): additionally, value
---     binders are first-order and definition bodies are in the ANF shape
---     of §6 (let chains over simple right-hand sides; the reactive
---     fragment — procify's input skeleton — is exempt from naming).
 --
 --   There is no inference and no unification anywhere: every binder carries
 --   its type, so every expression synthesizes, and checking an expression

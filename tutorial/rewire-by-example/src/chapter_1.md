@@ -9,9 +9,9 @@ These are the tutorial notes for the ReWire language.
 There's no way of learning ReWire without knowing basic Haskell. Here are some good sources:
 - **Programming in Haskell** by Graham Hutton.
 This is an excellent, step-by-step introduction to Haskell. Graham also has a lot of online resources (slides, videos, etc.) to go along with the book.
-- **Learn You a Haskell for Good** by Miran Lipovaca.
-Highly amusing and informative; available [here](https://learnyouahaskell.com/).
-- **A Gentle Introduction to Haskell** by Hudak, Peterson, and Fasal. 
+- **Learn You a Haskell for Great Good!** by Miran Lipovaca.
+Highly amusing and informative; available [here](https://learnyouahaskell.github.io/).
+- **A Gentle Introduction to Haskell** by Hudak, Peterson, and Fasel. 
 Available at [http://www.haskell.org/tutorial/](http://www.haskell.org/tutorial/).
 - **Real World Haskell** by Bryan O'Sullivan.
 Also available online (I believe). 

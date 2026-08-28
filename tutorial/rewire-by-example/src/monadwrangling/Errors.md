@@ -49,7 +49,7 @@ But with the `Maybe` monad, we can use its `Nothing` constructor for this errone
 data Maybe a = Nothing | Just a
 ```
 
-Here's the definition of `eval2` whhich is typed in the `Maybe` monad:
+Here's the definition of `eval2` which is typed in the `Maybe` monad:
 ```haskell
 eval2 :: Exp -> Maybe Int     -- N.b., the new type
 eval2 (Const i)   = return i
@@ -75,7 +75,7 @@ Nothing
 
 ### Maybe Under the Hood
 
-Below is the definition of the `Maybe` monad. The way to think of a computation `x >>= f` is that, if `x` is returns some value (i.e., it's `Just v`), then just proceed normally. If an exception is thrown by computing `x` (i.e., it's `Nothing`), then the whole computation `x >>= f` 
+Below is the definition of the `Maybe` monad. The way to think of a computation `x >>= f` is that, if `x` returns some value (i.e., it's `Just v`), then just proceed normally. If an exception is thrown by computing `x` (i.e., it's `Nothing`), then the whole computation `x >>= f` is `Nothing`.
 ```haskell
 data Maybe a = Nothing | Just a
 

@@ -12,11 +12,13 @@ definition environment, after which expression evaluation is
 structurally recursive.
 
 Evaluation runs in `Except String`: on well-formed programs (the §4
-checker) no error case is reachable except the deliberate ones —
-model-less combinational externs (the interpreter rejects them,
-doc/hyle.md §6.1) and device instances (the instance-free fragment,
-§6.4). Errors are precise rather than defaulted so the differential
-harness against the Haskell interpreter cannot mask disagreements.
+checker) no error case is reachable except the deliberate one —
+device instances (the instance-free fragment, §6.4). Model-less
+combinational extern calls, which the Haskell interpreter rejects
+(doc/hyle.md §6.1), deliberately diverge here: they read totally
+through `Sem.xapply` (the η reading). Errors are precise rather than
+defaulted so the differential harness against the Haskell interpreter
+cannot mask disagreements.
 -/
 import Rwv.Hyle.Syntax
 import Std.Data.HashMap

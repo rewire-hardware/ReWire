@@ -55,8 +55,9 @@ varAnnote = spanAnnote . nameSrcSpan . varName
 
 -- | Arguments the translation erases: types, coercions, and evidence --
 --   except evidence for /user/ classes, which is kept as ordinary data
---   (dictionaries as values; the specializer + case-of-known-constructor
---   eliminate them).
+--   (dictionaries as values; specialization plus the partial evaluator's
+--   dictionary-let substitution and case-of-known-constructor eliminate
+--   them).
 erasedArg :: CoreExpr -> Bool
 erasedArg a = isTyCoArg a || erasedEv (exprType a)
 

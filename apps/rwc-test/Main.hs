@@ -428,7 +428,7 @@ getSmokeTests = do
 -- | The --certify test group: recompile a representative subset of the golden
 --   tests from Haskell source with --certify (required mode, the default),
 --   requiring the validator's VALIDATED confirmation line on stdout; the
---   foreign-tier tests (extern instances, model-carrying externs) instead
+--   unsupported tests (clocked extern instances) instead
 --   must FAIL the compilation with an UNSUPPORTED status (the leg must never
 --   see a false VALIDATED on an out-of-scope device), and one warn-mode test
 --   checks that --certify=warn reports the same status without failing. Like

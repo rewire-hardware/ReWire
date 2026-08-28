@@ -11,7 +11,7 @@ Given these explanations, I generated a Haskell implementation of a crossbar swi
 
 * [CrossbarSwitch.hs](code/CrossbarSwitch.hs)
 
-What follows is an explanation of this code. First, we consider the Haskell definition of a crossbar switch, written in monadic style. Then, we transform the Haskell definition of the switch into proper ReWire. This is important because it gives you a practical introduction to the differences between Haskell and ReWire..
+What follows is an explanation of this code. First, we consider the Haskell definition of a crossbar switch, written in monadic style. Then, we transform the Haskell definition of the switch into proper ReWire. This is important because it gives you a practical introduction to the differences between Haskell and ReWire.
 
 ### Just write it in Haskell first, then add a few bits to get your program into ReWire.
 
@@ -98,11 +98,13 @@ knowing when adapting a Haskell program for `rwc`:
   (Signatures are how definitions are checked against their uses, so leaving
   them off leads to error messages pointing at surprising places.)
 
-- **GHC-only code.** Anything `rwc` can't compile -- lists used at the top
-  level, `ReWire.Interactive` imports for GHCi experimentation, instances of
-  single-method classes (multi-method classes are fine) -- needs to be
-  commented out (or moved to a separate file) before compiling. The `main`
-  definition is the one exception: `rwc` ignores it.
+- **GHC-only code.** Definitions the device never uses -- lists for GHCi
+  experimentation, `ReWire.Interactive` imports, class instances used only
+  interactively (e.g. `Pretty`) -- can stay in the file: `rwc` only compiles
+  what is reachable from the start symbol and ignores the rest. One thing
+  GHC itself insists on: a `Main` module (which includes any file without a
+  module header) must define `main` -- the linked file carries a stub
+  `main = undefined` for exactly this reason; `rwc` ignores its definition.
 
 Once that's settled, compile with the ReWire compiler `rwc`:
 

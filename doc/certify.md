@@ -8,9 +8,10 @@ was produced from.
 
 Certification is required by default: plain `--certify` fails the
 compilation unless the validator returns VALIDATED. `--certify=warn`
-compiles best-effort instead, always printing a dedicated certification
-status line to stderr — the status is not an ordinary warning, so `-w`
-cannot suppress it and `-Werror` does not govern it.
+compiles best-effort instead, always surfacing the verdict (the
+VALIDATED confirmation on stdout, any other status as a dedicated line
+on stderr) — the status is not an ordinary warning, so `-w` cannot
+suppress it and `-Werror` does not govern it.
 
 ## What it produces
 
@@ -213,8 +214,9 @@ binary on the PATH.
 ## Tests
 
 The rwc-test "certify" group runs `--certify` end-to-end over a
-representative subset of the golden tests: the pure subset and the
-model-carrying extern test must VALIDATE, the clocked-extern test must
+representative subset of the golden tests: the enrolled subset — pure
+devices (the type-class tests included) plus the extern-model and
+extern-generics tests — must VALIDATE, the clocked-extern test must
 fail required-mode certification with UNSUPPORTED, and a warn-mode leg
 checks the unsuppressible status line. The group is skipped when the
 validator binary is not found, unless `RWC_TEST_REQUIRE_RWV` is set (the

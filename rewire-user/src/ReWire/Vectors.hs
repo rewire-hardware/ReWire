@@ -139,7 +139,7 @@ packhi v w = generate (\ fi ->
       n' = lastIndex v `FC.div` two
       n = if FC.even (lastIndex v) then n' else n' FC.+ one
 
--- | Returns the first half of v interleaved with w
+-- | Returns the first half of v interleaved with the first half of w
 {-# INLINE unpacklo #-}
 unpacklo :: KnownNat n => Vec n a -> Vec n a -> Vec n a
 unpacklo v w = generate (\ fi ->
@@ -149,7 +149,7 @@ unpacklo v w = generate (\ fi ->
       one = F.finite 1
       two = F.finite 2
 
--- | Returns the second half of v interleaved with w
+-- | Returns the second half of v interleaved with the second half of w
 {-# INLINE unpackhi #-}
 unpackhi :: KnownNat n => Vec n a -> Vec n a -> Vec n a
 unpackhi v w = generate (\ fi ->

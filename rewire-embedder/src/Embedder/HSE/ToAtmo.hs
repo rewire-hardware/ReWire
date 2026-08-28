@@ -52,14 +52,14 @@ mkUId = \ case
       Ident _ n  -> T.pack n
       Symbol _ n -> T.pack n
 
--- | Translate a Haskell module into the ReWire abstract syntax.
+-- | Translate a Haskell module into the Atmo abstract syntax.
 -- Name Handling: Fresh m, rename returns an FQName which is then T.packaged into an Export
 toAtmo :: (MonadError AstError m) => Renamer -> Module Annote -> m (M.Module, Exports)
 toAtmo rn = \ case
       Module _ (Just (ModuleHead _ (ModuleName _ mname) _ exps)) _ _ (reverse -> ds) -> do
             tyDefs <- foldM (transData rn) [] ds
             (recDefs,recEnv) <- transRecs rn ds
-            tySyns <- if isPrimMod mname then pure [] -- TODO(chathhorn): ignore type synonyms in the ReWire.hs module.
+            tySyns <- if isPrimMod mname then pure [] -- TODO(chathhorn): ignore type synonyms in the RWC.Primitives module.
                       else foldM (transTyDecl rn) [] ds
             tySigs <- foldM (transTySig rn) [] ds
             fnDefs <- foldM (transDef rn recEnv tySigs inls) [] ds

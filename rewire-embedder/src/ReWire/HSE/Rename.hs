@@ -59,7 +59,7 @@ type Ctors = Map (Name ()) (Set (Name ()))
 -- | Qualified (globally-unique) version of the above map.
 type FQCtors = Map FQName (Set FQName)
 
--- | Map from construtor name to its field "signature,"
+-- | Map from constructor name to its field "signature,"
 --   which is a list of field names and types.
 type CtorSigs = Map (Name ()) [(Maybe (Name ()), Type ())]
 

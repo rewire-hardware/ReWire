@@ -74,8 +74,9 @@ not compile (there is no runtime to defer to).
 - **Recursive class dictionaries** (only expressible with
   `ConstraintKinds`): `unsupported recursive class dictionary`.
 - **Instances of `Monad` and friends for your own types** — the reactive
-  monad stack (`ReacT`/`StateT`/`Identity`) is fixed; see the monad-stack
-  restriction.
+  monad stack (`ReacT`/`StateT`/`Identity`) is fixed, and monadic
+  operators at any other monad are rejected
+  (`monadic operator at unsupported monad`).
 
 ## Things to know
 
@@ -88,7 +89,7 @@ not compile (there is no runtime to defer to).
 - **Deep hierarchies and `--depth`**: dictionary elimination runs inside
   the partial-evaluation fixpoint, bounded by `--depth` (default 8). A
   very deep superclass/instance-context chain can need more rounds; raise
-  the bound with `--depth N`. The same bound governs monomorphization: a
+  the bound with `--depth N`. The same flag governs monomorphization: a
   chain of more than ten *distinct* constraint-polymorphic definitions,
   each calling the next, exceeds the specializer's generation bound
   (`Polymorphic function instantiation not terminating`) — also fixed by

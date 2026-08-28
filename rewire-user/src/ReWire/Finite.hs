@@ -4,7 +4,7 @@ module ReWire.Finite where
 
 import ReWire
 
--- | Convert an Integer into a @'Finite' n@, throws an error if >= @n@.
+-- | Convert an Integer into a @'Finite' n@, throws an error if negative or >= @n@.
 {-# INLINE finite #-}
 finite :: KnownNat n => Integer -> Finite n
 finite = rwPrimFinite
@@ -23,7 +23,8 @@ maxBound :: KnownNat n => Finite n
 maxBound = rwPrimFiniteMaxBound
 
 -- | Converts argument bitvector to Finite n, reducing modulo n if necessary
---   (without raising error).
+--   (without raising error; @n@ must be positive, as @'Finite' 0@ is
+--   uninhabited).
 {-# INLINE toFinite' #-}
 toFinite' :: KnownNat n => W m -> Finite n
 toFinite' = rwPrimToFiniteMod

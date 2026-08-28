@@ -10,8 +10,10 @@
 --   bounded by @--depth@ with the retired loop's diagnostic.
 --
 --   * 'reduceExp' is let-preserving: beta redexes become lets, and a let
---     is inlined only when its binder is dead, used once, or bound to an
---     atom; a representable multi-use binding KEEPS its let (sharing).
+--     is inlined only when its binder is dead, used once, bound to an
+--     atom, or dictionary-typed ('dictTyCons' — never representable, so
+--     substituted at every occurrence); a representable multi-use binding
+--     KEEPS its let (sharing).
 --     The one lambda-lifting policy surviving from the retired pipeline
 --     is explicit here (Clash's LiftNonRep): a multi-use *function-typed*
 --     let cannot stay (it is not representable), so it is lifted to a

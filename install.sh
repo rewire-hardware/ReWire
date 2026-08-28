@@ -82,7 +82,7 @@ if [ "$CERTIFY" -eq 1 ]; then
       install -m 755 verify/.lake/build/bin/rwv-cstep-validate "$BIN/rwv-cstep-validate"
       say "Installed to $BIN: rwv-cstep-validate"
 else
-      say "Skipping the certificate validator; 'rwc --certify' will warn until it is built"
+      say "Skipping the certificate validator; 'rwc --certify' will fail until it is built ('--certify=warn' only reports)"
       say "(re-run this script, or: cd verify && lake build rwv-cstep-validate)."
 fi
 

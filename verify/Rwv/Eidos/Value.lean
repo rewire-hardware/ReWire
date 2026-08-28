@@ -34,8 +34,8 @@ inductive Val where
 deriving Repr, Inhabited
 
 /-- ⌈log₂ n⌉, the width of a tag or `Finite` value
-(ReWire.BitVector.nbits — defined there via floating-point log; this
-is the exact integer form, `nbits 0 = nbits 1 = 0`). -/
+(ReWire.BitVector.nbits, an equivalent exact integer recursion; this
+is the closed log2 form, `nbits 0 = nbits 1 = 0`). -/
 def nbits (n : Nat) : Nat :=
   if n ≤ 1 then 0 else Nat.log2 (n - 1) + 1
 

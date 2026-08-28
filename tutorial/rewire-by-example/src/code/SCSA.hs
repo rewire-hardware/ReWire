@@ -21,4 +21,6 @@ scsa abc = save abc >>= \ cs -> signal cs >>= scsa
 
 start :: ReacT (W8 , W8 , W8) (W8 , W8) Identity ()
 start = extrude (scsa (lit 0, lit 0, lit 0)) (lit 0, lit 0)
-  
+
+main :: IO ()
+main = undefined

@@ -18,8 +18,9 @@ and for each matched pair checks
       ≡  Bridge.symExp (Hyle body)
 
 first by the VERIFIED per-defn validator `checkDefnPair`
-(`checkDefnPair_sound`: the `cfold`-syntactic leg plus the
-`cfoldW3` width-aware leg under the parameter-width discipline),
+(`checkDefnPair_sound`: the DAG leg `checkDefnPairDag` tried first,
+then the `cfold`-syntactic leg plus the `cfoldW3` width-aware leg
+under the parameter-width discipline),
 then by unverified fallbacks: plain `cfoldW3` equality without the
 parameter-width guard, and the BridgeDag hash-consing engine.
 

@@ -4,7 +4,7 @@ The code for this is [RegisterError.hs](RegisterError.hs). In this example, we w
 
 
 ```haskell
-module Register where
+module RegisterError where
 
 import Control.Monad.State
 

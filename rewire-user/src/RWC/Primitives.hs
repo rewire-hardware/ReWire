@@ -72,7 +72,8 @@ module RWC.Primitives
       , type (+), type GHC.Monad, type GHC.MonadTrans, KnownNat
       ) where
 
--- Imports in this file are ignored by rwc.
+-- Imports here serve only the GHC implementations (rwc never translates
+-- the bodies in this file).
 import Prelude ((.),($))
 import qualified Prelude                           as GHC
 import qualified Control.Monad.Identity            as GHC
@@ -104,7 +105,11 @@ type Finite     = F.Finite
 -- data StateT s m a
 -- data Identity a
 -- data Integer
--- data Bit
+-- data Bool
+-- data String
+-- data Vec n a
+-- data Finite n
+-- data Proxy n
 
 -- Also tuples:
 -- data () = ()
@@ -113,7 +118,9 @@ type Finite     = F.Finite
 
 data Proxy (n :: Nat) = Proxy
 
--- Definitions in this file are for ghc compat and ignored by rwc.
+-- Definitions in this file are never translated by rwc (rwPrim*
+-- references compile to built-ins); the bodies are the GHC
+-- implementations.
 
 {-# OPAQUE rwPrimError #-}
 rwPrimError :: String -> a
@@ -173,7 +180,7 @@ rwPrimExtrude (GHC.ReacT (GHC.StateT m)) s =
             GHC.Left y -> GHC.return (GHC.Left y)
             GHC.Right (o,k) -> GHC.return (GHC.Right (o, \ i -> rwPrimExtrude (k i) s'))
 
--- | Convert an Integer into a @'Finite' n@, throws an error if >= @n@.
+-- | Convert an Integer into a @'Finite' n@, throws an error if negative or >= @n@.
 {-# OPAQUE rwPrimFinite #-}
 rwPrimFinite :: KnownNat n => Integer -> Finite n
 rwPrimFinite = F.finite
@@ -456,7 +463,8 @@ rwPrimMSBit = V.head
 -- | The unsigned value of a bit vector, as an Integer. Not a primitive:
 --   GHC-only simulation support backing ReWire.Bits.toInteger (Integer is
 --   a compile-time-literal-only type in the compiled fragment). It lives
---   here because this module's imports are ignored by both front ends.
+--   here because neither front end translates this module's bodies or
+--   chases its imports.
 {-# OPAQUE toIntegerV #-}
 toIntegerV :: Vec n Bool -> Integer
 toIntegerV = BW.toInteger'

@@ -172,7 +172,6 @@ toInt' = toIntLE' . reverse
 fromBool :: Bool -> Integer
 fromBool = toInteger . fromEnum
 
--- should check that this works on big-endian
 toInteger' :: Vec n Bool -> Integer
 toInteger' = foldl (\ s x -> fromBool x Prelude.+ 2 Prelude.* s) 0
 
@@ -303,7 +302,7 @@ arithShiftR' [] _ = []
 arithShiftR' w n  = replicate k (msBit' w) ++ take (length w Prelude.- k) w
       where k = shiftAmount' w n
 
--- For (Unsigned!) Falseomparison:
+-- For (Unsigned!) comparison:
 -- we assume that the input words are the same length
 -- so we can use (lexicographic) ordering as defined on lists
 -- so we need a function pad the shorter word

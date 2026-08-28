@@ -112,9 +112,9 @@ bindLet sz x = \ case
                   (H.Var w, ) <$> assignStmts (H.LVName w) e
 
 -- | Identity key for compiled expressions (the CSE memos): the full Show
---   rendering. The derived Eq/Ord on 'H.Exp' inherit the bv package's
---   width-blind BV instances (bitVec 4 0 == bitVec 8 0), which would
---   unify expressions differing only in a literal's width -- a
+--   rendering. The derived Eq on 'H.Exp' (and any derived Ord) inherits
+--   the bv package's width-blind BV instances (bitVec 4 0 == bitVec 8 0),
+--   which would unify expressions differing only in a literal's width -- a
 --   miscompilation, since widths are load-bearing in RTL. BV's Show
 --   (@[4]0@) carries the width, so the rendering is width-exact. (The
 --   selected-assignment matcher needs no key: its scrutinees are

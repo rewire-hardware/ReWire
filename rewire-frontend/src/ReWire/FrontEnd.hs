@@ -52,7 +52,8 @@ import qualified Data.Text           as Text
 import qualified Data.Text.IO        as T
 import qualified Data.Yaml           as YAML
 
--- | Opens and parses a file and, recursively, its imports.
+-- | Loads and compiles a file (and, recursively, its imports) to a Hyle
+--   program (the whole pass pipeline through the Eidos-to-Hyle fold).
 loadProgram :: (MonadFail m, MonadError AstError m, MonadState AstError m, MonadIO m) => Config -> FilePath -> m Program
 loadProgram = getDevice
 

@@ -66,8 +66,8 @@ denoted through the committed semantics' own total reading
 threads (defaulted empty) through `NF.eval`, `evalExp`, `mkFn`,
 `FImplements`, `EnvCorr`, and every denotation lemma in this file. The
 symbolic evaluator takes the program's extern table `X : Sem.XEnv` and
-BUILDS the node exactly where `evalExp` would consult `E` (model-less,
-generic-free), so the strong
+BUILDS the node exactly where `evalExp` would consult `E`
+(model-less), so the strong
 soundness statements survive verbatim: the model-less extern reading is
 total (the width clamp included), so `symExp` success still forces
 `evalExp` success — both sides are literally `Sem.xapply` of the same
@@ -75,7 +75,11 @@ packed bits (`xpack_eval`). The equivalence checkers discharge xcall
 nodes by structural equality — same extern name, same cached width,
 equal packed argument after normalization — which is sound for ANY
 interpretation (`checkEquiv_sound`/`checkEquivW_sound` now conclude run
-equality at EVERY extern environment, both runs at the same one). The
+equality at EVERY extern environment, both runs at the same one) —
+though `checkEquiv`/`checkEquivW` themselves also require BOTH
+programs' extern tables empty, so their ∀E conclusions are vacuously
+E-independent; the real xcall discharge lives in the Cexp/Cstep
+validators and BridgeDag. The
 width layer is E-unconditional: `xapply` clamps to the cached width, so
 `annWidth (.xcall w _ _ _) = some w` holds at every valuation and every
 environment, and the width-aware rewrites treat the node as an opaque
@@ -186,7 +190,7 @@ def opArity : Op → Nat
 /-- Symbolic evaluation, mirroring `evalExp` construct for construct
 (var: environment lookup; let: bind the rhs normal form; call: inline
 the callee's body through the definition map, arity-checked; xcall:
-a MODEL-LESS generic-free extern call builds the uninterpreted node
+a MODEL-LESS extern call builds the uninterpreted node
 over the packed arguments, a MODEL-CARRYING one inlines its model
 definition like a call (`evalExp`'s model path ignores the generics
 and the declared width) — the extern table `X` decides which,
