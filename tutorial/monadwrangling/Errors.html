@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f0dea21e.js";
+            window.path_to_searchindex_js = "../searchindex-6823a005.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-1a25fc83.js"></script>
@@ -215,7 +215,7 @@ uhoh = Div (Const 1) (Const 0)              -- new
 <p>But with the <code>Maybe</code> monad, we can use its <code>Nothing</code> constructor for this erroneous case; recall the definition of the <code>Maybe</code> data type:</p>
 <pre><code class="language-haskell">data Maybe a = Nothing | Just a
 </code></pre>
-<p>Here’s the definition of <code>eval2</code> whhich is typed in the <code>Maybe</code> monad:</p>
+<p>Here’s the definition of <code>eval2</code> which is typed in the <code>Maybe</code> monad:</p>
 <pre><code class="language-haskell">eval2 :: Exp -&gt; Maybe Int     -- N.b., the new type
 eval2 (Const i)   = return i
 eval2 (Neg e)     = do
@@ -236,7 +236,7 @@ eval2 (Div e1 e2) = do
 Nothing
 </code></pre>
 <h3 id="maybe-under-the-hood"><a class="header" href="#maybe-under-the-hood">Maybe Under the Hood</a></h3>
-<p>Below is the definition of the <code>Maybe</code> monad. The way to think of a computation <code>x &gt;&gt;= f</code> is that, if <code>x</code> is returns some value (i.e., it’s <code>Just v</code>), then just proceed normally. If an exception is thrown by computing <code>x</code> (i.e., it’s <code>Nothing</code>), then the whole computation <code>x &gt;&gt;= f</code></p>
+<p>Below is the definition of the <code>Maybe</code> monad. The way to think of a computation <code>x &gt;&gt;= f</code> is that, if <code>x</code> returns some value (i.e., it’s <code>Just v</code>), then just proceed normally. If an exception is thrown by computing <code>x</code> (i.e., it’s <code>Nothing</code>), then the whole computation <code>x &gt;&gt;= f</code> is <code>Nothing</code>.</p>
 <pre><code class="language-haskell">data Maybe a = Nothing | Just a
 
 return :: a -&gt; Maybe a

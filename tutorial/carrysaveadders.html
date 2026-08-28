@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-f0dea21e.js";
+            window.path_to_searchindex_js = "searchindex-6823a005.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1a25fc83.js"></script>
@@ -195,7 +195,7 @@ f :: W 8 -&gt; W 8 -&gt; W 8 -&gt; (W 8, W 8)
 λ&gt; f _40 _25 _20
 (Vector [False,False,True,True,False,False,False,False],Vector [False,False,True,False,False,True,False,True])
 </code></pre>
-<p>What’s this mess? <code>W 8</code> values are represented internally using Haskell’s <code>Data.Vector</code> library and, well, it ain’t pretty. There is a ReWire library you can import to make all this more palatable called <code>ReWire.Interactive</code>:</p>
+<p>What’s this mess? <code>W 8</code> values are represented internally using Haskell’s <code>Data.Vector.Sized</code> library and, well, it ain’t pretty. There is a ReWire library you can import to make all this more palatable called <code>ReWire.Interactive</code>:</p>
 <pre><code class="language-haskell">λ&gt; pretty (f _40 _25 _20)
 (48,37)
 λ&gt; pretty (f _41 _25 _20)
@@ -220,8 +220,8 @@ start = csa (_0, _0, _0)
 <p>First, <code>csa</code> consumes its three inputs <code>a</code>, <code>b</code>, and <code>c</code> as a tuple. Then, it computes the carry save addition on these and puts the result on the output port, <code>signal (f a b c)</code>. Finally, it obtains the next inputs, <code>abc'</code> and continues.</p>
 <p><em>What does the type of <code>csa</code> mean?</em> It’s worth contemplating the type of <code>csa</code>’s codomain, which is <code>ReacT (W 8, W 8, W 8) (W 8, W 8) Identity ()</code>.</p>
 <ul>
-<li>The input type is <code>(W 8, W 8, W 8)</code>, meaning that every it takes three <code>W 8</code>s each clock cycle;</li>
-<li>The output type is <code>(W 8, W 8)</code>, meaning that every it produces two <code>W 8</code>s each clock cycle; and</li>
+<li>The input type is <code>(W 8, W 8, W 8)</code>, meaning that it takes three <code>W 8</code>s each clock cycle;</li>
+<li>The output type is <code>(W 8, W 8)</code>, meaning that it produces two <code>W 8</code>s each clock cycle; and</li>
 <li>It does not use any internal storage or registers, hence the <code>Identity</code> monad is used rather than a state monad.</li>
 </ul>
 <h4 id="running-it-in-ghci"><a class="header" href="#running-it-in-ghci">Running it in GHCi</a></h4>
@@ -244,7 +244,7 @@ import Prelude hiding ((^))
 import ReWire
 import ReWire.Bits
 
--- | ReWire compiler will complain if this is imported
+-- | Only needed for interactive use in GHCi
 import ReWire.Interactive
 
 f :: W 8 -&gt; W 8 -&gt; W 8 -&gt; (W 8, W 8)
@@ -257,6 +257,12 @@ _25 = lit 25
 _20 = lit 20
 _41 = lit 41
 _0  = lit 0
+
+_1 :: W 8
+_1 = lit 1
+
+_1' :: W 9
+_1' = lit 1
 
 -- |
 -- | Example 1. CSA
@@ -272,14 +278,17 @@ csa (a, b, c) = do
 start :: ReacT (W 8, W 8, W 8) (W 8, W 8) Identity ()
 start = csa (_0, _0, _0)
 
--- | ReWire compiler will complain if this is here (i.e., comment it before compiling):
+-- | Only used for interactive exploration in GHCi:
 inputs :: [(W 8 , W 8 , W 8)]
 inputs = (_40 , _25 , _20)
        : (_41 , _25 , _20)
        : (_40 , _25 , _20)  : []
+
+main :: IO ()
+main = undefined
 </code></pre>
-<p><em>Pro-tip.</em> Because ReWire doesn’t know about things likes lists, <code>ReWire.Interactive</code> and the definition of <code>inputs</code> need to be commented out <em>before</em> compiling with <code>rwc</code>.</p>
-<p>Assuming these are now commented out, you can proceed to compile CSA.hs with:</p>
+<p><em>Pro-tip.</em> GHCi-only code like the <code>ReWire.Interactive</code> import and the list <code>inputs</code> can stay in the file: <code>rwc</code> only compiles what is reachable from <code>start</code> and ignores the rest. GHC does, however, require a <code>main</code> definition in a <code>Main</code> module (which includes any file without a module header) — hence the stub at the end; <code>rwc</code> ignores its definition.</p>
+<p>You can then compile CSA.hs with:</p>
 <pre><code class="language-haskell">$ ls -l CSA.* 
 -rw-r--r--  1 william.harrison  staff  1039 Jun 13 09:02 CSA.hs
 $ rwc CSA.hs --verilog

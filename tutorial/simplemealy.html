@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-f0dea21e.js";
+            window.path_to_searchindex_js = "searchindex-6823a005.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1a25fc83.js"></script>
@@ -177,7 +177,7 @@
                         <h2 id="simple-mealy"><a class="header" href="#simple-mealy">Simple Mealy</a></h2>
 <p>The “theoretical computer science” picture of a Mealy machine is seen below:</p>
 <img src="images/Mealy.png" style="height:17%; width:17%">
-<p>Here <code>si</code> is the start state, and there are two other states, <code>s0</code> and <code>s1</code>. There is also an alphabet consisting of <code>0</code> and <code>1</code>. On the transitions, a red digit denotes an input and a blue digit denotes an output, so, in the machine is currently in state <code>si</code> and receives a <code>1</code> as input, it outputs a <code>0</code> and proceeds to state <code>s1</code>.</p>
+<p>Here <code>si</code> is the start state, and there are two other states, <code>s0</code> and <code>s1</code>. There is also an alphabet consisting of <code>0</code> and <code>1</code>. On the transitions, a red digit denotes an input and a blue digit denotes an output, so, if the machine is currently in state <code>si</code> and receives a <code>1</code> as input, it outputs a <code>0</code> and proceeds to state <code>s1</code>.</p>
 <p>The ReWire code described in the section is found here, <a href="code/SimpleMealy.hs">SimpleMealy.hs</a>, and what follows is a line-by-line description.</p>
 <p>First thing is to import a library with ReWire definitions, etc. What’s <code>DataKinds</code>? Don’t worry about it for now. Collected in a comment is a tabular form of the state transitions.</p>
 <pre><code class="language-haskell">{-# LANGUAGE DataKinds #-}

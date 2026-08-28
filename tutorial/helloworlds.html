@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-f0dea21e.js";
+            window.path_to_searchindex_js = "searchindex-6823a005.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1a25fc83.js"></script>
@@ -184,7 +184,7 @@
 <img src="images/beautifullestmealy.png" style="height:50%; width:50%">
 <p>In ReWire, there is a type corresponding to the Mealy machine above, the monadic type:</p>
 <p><code>ReacT i o (StateT s Identity) ()</code></p>
-<p>And, because it occurs so frequently, we refer to it as a <em>device type</em> some times. Things of this type are those that can be compiled to hardware.</p>
+<p>And, because it occurs so frequently, we refer to it as a <em>device type</em> sometimes. Things of this type are those that can be compiled to hardware – after the <code>StateT s</code> layer is extruded (with <code>extrude</code>/<code>extrudeDev</code>), leaving a top-level term of type <code>ReacT i o Identity ()</code> (see <code>Dev</code> in <code>ReWire.Monad</code>).</p>
 
                     </main>
 

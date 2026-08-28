@@ -26,3 +26,5 @@ s1 One  = signal Zero >>= s1
 start :: ReacT Alphabet Alphabet Identity ()
 start = signal Zero >>= s0
 
+main :: IO ()
+main = undefined

@@ -3,8 +3,8 @@ import Prelude hiding ((^))
 import ReWire
 import ReWire.Bits
 
--- | ReWire compiler will complain if this is imported
--- import ReWire.Interactive
+-- | Only needed for interactive use in GHCi
+import ReWire.Interactive
 
 f :: W 8 -> W 8 -> W 8 -> (W 8, W 8)
 f a b c = ( ((a .&. b) .|. (a .&. c) .|. (b .&. c) ) <<. lit 1 , (a ^ b) ^ c )
@@ -37,8 +37,11 @@ csa (a, b, c) = do
 start :: ReacT (W 8, W 8, W 8) (W 8, W 8) Identity ()
 start = csa (_0, _0, _0)
 
--- -- | ReWire compiler will complain if this is here (i.e., comment it before compiling):
--- inputs :: [(W 8 , W 8 , W 8)]
--- inputs = (_40 , _25 , _20)
---        : (_41 , _25 , _20)
---        : (_40 , _25 , _20)  : []
+-- | Only used for interactive exploration in GHCi:
+inputs :: [(W 8 , W 8 , W 8)]
+inputs = (_40 , _25 , _20)
+       : (_41 , _25 , _20)
+       : (_40 , _25 , _20)  : []
+
+main :: IO ()
+main = undefined

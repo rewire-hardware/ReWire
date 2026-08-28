@@ -4,7 +4,8 @@ import ReWire
 import ReWire.Bits
 
 -- | This file is for interactive exploration with GHCi only: rwc can't
--- | compile it (it imports ReWire.Interactive and declares a class instance).
+-- | compile it (start's type keeps an unextruded StateT layer, so it
+-- | isn't a device type).
 import ReWire.Interactive 
 
 type W8 = W 8

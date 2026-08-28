@@ -49,3 +49,5 @@ dev NoInput      = signal Nix >>= dev
 start :: ReacT Inp Out Identity ()
 start = signal Nix >>= dev
 
+main :: IO ()
+main = undefined

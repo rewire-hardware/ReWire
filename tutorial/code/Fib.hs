@@ -20,3 +20,6 @@ is1 , is2 :: [Bit]
 is1 = False : False : False : False : False : False : False : False : False : False : []
 is2 = True : False : True : False : True : False : True : False : True : False : []
 -}
+
+main :: IO ()
+main = undefined

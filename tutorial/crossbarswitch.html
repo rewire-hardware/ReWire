@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-f0dea21e.js";
+            window.path_to_searchindex_js = "searchindex-6823a005.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1a25fc83.js"></script>
@@ -185,7 +185,7 @@
 <ul>
 <li><a href="code/CrossbarSwitch.hs">CrossbarSwitch.hs</a></li>
 </ul>
-<p>What follows is an explanation of this code. First, we consider the Haskell definition of a crossbar switch, written in monadic style. Then, we transform the Haskell definition of the switch into proper ReWire. This is important because it gives you a practical introduction to the differences between Haskell and ReWire..</p>
+<p>What follows is an explanation of this code. First, we consider the Haskell definition of a crossbar switch, written in monadic style. Then, we transform the Haskell definition of the switch into proper ReWire. This is important because it gives you a practical introduction to the differences between Haskell and ReWire.</p>
 <h3 id="just-write-it-in-haskell-first-then-add-a-few-bits-to-get-your-program-into-rewire"><a class="header" href="#just-write-it-in-haskell-first-then-add-a-few-bits-to-get-your-program-into-rewire">Just write it in Haskell first, then add a few bits to get your program into ReWire.</a></h3>
 <p>The usual mode of program development is to first write a version of the desired application in Haskell. The reasons to do this boil down to the GHC compiler being vastly more mature than the ReWire compiler, and so, for example, error messages are much more informative. Once all the kinks as it were are worked out in Haskell (e.g., getting something that typechecks, etc.), make whatever small tweaks are needed to get your program into the ReWire subset of Haskell. This section of the tutorial introduces the reader to this mode of program development.</p>
 <h4 id="the-rewire-standard-library"><a class="header" href="#the-rewire-standard-library">The ReWire standard library</a></h4>
@@ -268,11 +268,13 @@ device in a different module, point the compiler at its start symbol with
 them off leads to error messages pointing at surprising places.)</p>
 </li>
 <li>
-<p><strong>GHC-only code.</strong> Anything <code>rwc</code> can’t compile – lists used at the top
-level, <code>ReWire.Interactive</code> imports for GHCi experimentation, instances of
-single-method classes (multi-method classes are fine) – needs to be
-commented out (or moved to a separate file) before compiling. The <code>main</code>
-definition is the one exception: <code>rwc</code> ignores it.</p>
+<p><strong>GHC-only code.</strong> Definitions the device never uses – lists for GHCi
+experimentation, <code>ReWire.Interactive</code> imports, class instances used only
+interactively (e.g. <code>Pretty</code>) – can stay in the file: <code>rwc</code> only compiles
+what is reachable from the start symbol and ignores the rest. One thing
+GHC itself insists on: a <code>Main</code> module (which includes any file without a
+module header) must define <code>main</code> – the linked file carries a stub
+<code>main = undefined</code> for exactly this reason; <code>rwc</code> ignores its definition.</p>
 </li>
 </ul>
 <p>Once that’s settled, compile with the ReWire compiler <code>rwc</code>:</p>

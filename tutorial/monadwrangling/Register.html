@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f0dea21e.js";
+            window.path_to_searchindex_js = "../searchindex-6823a005.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-1a25fc83.js"></script>
@@ -178,6 +178,7 @@
 <p>The code for this section is <a href="Register.hs">Register.hs</a>.</p>
 <pre><code class="language-haskell">module Register where
 
+import Control.Monad.Identity
 import Control.Monad.State
 
 data Exp = Const Int | Neg Exp | Add Exp Exp
@@ -190,17 +191,17 @@ instance Show Exp where
   show X           = "X"
 
 -- | Just a copy 
-eval2 :: Exp -&gt; Maybe Int
-eval2 (Const i)   = return i
-eval2 (Neg e)     = do
-                      v &lt;- eval2 e
+eval1 :: Exp -&gt; Identity Int
+eval1 (Const i)   = return i
+eval1 (Neg e)     = do
+                      v &lt;- eval1 e
                       return (- v)
-eval2 (Add e1 e2) = do
-                      v1 &lt;- eval2 e1
-                      v2 &lt;- eval2 e2
+eval1 (Add e1 e2) = do
+                      v1 &lt;- eval1 e1
+                      v2 &lt;- eval1 e2
                       return (v1 + v2)
 
-eval2 X           = undefined -- How do we do handle this?
+eval1 X           = error "Where's the current value of X?"
 </code></pre>
 <p>Here’s how we handle this:</p>
 <ul>
