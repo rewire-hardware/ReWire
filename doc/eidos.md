@@ -20,6 +20,16 @@ and static rules are in force:
 - **Eidos-P** (§3–§5): a System-F-lite mirror of GHC Core — polymorphic
   definitions, recursive lets, join points, n-ary case. The bridge targets
   it; specialization, dictionary elimination, and normalization happen here.
+  Class dictionaries arrive from the bridge as ordinary data: a class's
+  dictionary is a datatype whose constructor fields are its superclass
+  dictionaries and methods (single-method classes have *newtype*
+  dictionaries in GHC, and the bridge unwraps their types to the method
+  type, so no datatype exists for them here), instance definitions are
+  inline-annotated definitions of those values, and method calls are
+  single-alternative case projections. The partial-evaluation fixpoint
+  *requires* dictionary-freedom — a program whose dictionaries cannot be
+  resolved statically fails compilation — so no class construct ever
+  reaches Eidos-M or Hyle.
 - **Eidos-M** (§7): the machine level — the monomorphic ANF fragment of
   Eidos-P plus a first-class process calculus (state cells, labeled blocks,
   `pause`/`goto`/`halt` terminators). Purification consumes the mono+ANF

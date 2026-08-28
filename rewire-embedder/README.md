@@ -1,5 +1,12 @@
 # Isabelle Embedder
 
+## Limitations
+
+`rwe` does not accept type class or instance declarations — in the program
+or in any module it imports (the loader chases imports as source files, so
+a class in an imported module fails the same way). Type classes are an
+`rwc` feature; see `doc/classes.md`.
+
 ## Setup
 
 #### 0. Install ReWire

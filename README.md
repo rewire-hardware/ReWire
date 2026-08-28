@@ -110,6 +110,8 @@ tests (requires Isabelle and the AFP).
 
 See `rwc --help` for a list of supported options and the `tests/golden`
 directory for some examples. A tutorial is in `tutorial/rewire-by-example`.
+Type classes are supported — see [doc/classes.md](doc/classes.md) for the
+supported forms and how they compile.
 
 ## Changelog
 

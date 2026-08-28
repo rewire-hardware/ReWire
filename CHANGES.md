@@ -11,15 +11,28 @@
   typechecked by GHC itself, with GHC's error messages, and type classes
   are now supported: instance methods compile to ordinary
   dictionary-passing definitions that specialization and partial
-  evaluation eliminate (single-method classes, whose dictionaries are
-  newtypes, are not yet supported). The haskell-src-exts front end is
+  evaluation eliminate. The haskell-src-exts front end is
   retired from `rwc`; the embedder (`rwe`) still uses it. The typelits
   solver plugins are linked into `rwc` and enabled without any dynamic
   loading, and the package databases `rwc` was built against are baked in
   and self-discovered at run time (`RWC_PACKAGE_PATH` overrides; running
   under `stack exec` works as before), so an installed `rwc` normally
   needs neither stack nor the checkout's environment at run time.
-* The Crust IR and its monad-transformer purification pass have been
+* Type classes are now fully supported and documented (`doc/classes.md`):
+  single-method classes (whose dictionaries are GHC newtypes; their class
+  types unwrap to the method type), superclasses, default methods and
+  `DeriveAnyClass`, multi-parameter classes, constraint-polymorphic
+  functions, instances with contexts (`instance (Frob a, Frob b) =>
+  Frob (a, b)`, `instance KnownNat n => Frob (W n)`, element-context
+  `Vec` instances), classes and orphan instances across modules, and
+  methods with reactive result types — with every dictionary eliminated
+  at compile time (dictionary-typed bindings are no longer shared by the
+  simplifier, fixing functions that use more than one superclass method).
+  Unsupported forms are rejected with targeted diagnostics: methods of
+  external classes now name the class (`Eq.==`), kind-generalized marker
+  classes get a kind-annotation hint, recursive class dictionaries
+  (`ConstraintKinds`) are a located error instead of a compiler hang, and
+  `GeneralizedNewtypeDeriving` is documented as unsupported.
   replaced by Eidos (`ReWire.Eidos.*`), a new typed functional IR
   specified in `doc/eidos.md`, with a textual format (`.eir`, dumped
   beside the output by `--eidos`). The reactive fragment is now compiled
