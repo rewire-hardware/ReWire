@@ -459,6 +459,12 @@ bridgeApp ctx an e = do
           vargs     = filter (not . erasedArg) args
       case f of
             Var v -> bridgeVarApp ctx an v args vargs
+            -- A cast-headed spine (e.g. an eta-reduced newtype-class dfun
+            -- type-applied by the wrapper expansion): the coercion is
+            -- erased, so hoist the arguments through it -- dropping the
+            -- cast first would strand the head's type arguments.
+            Cast f' _ -> bridgeApp ctx an $ foldl App f' args
+            Tick _ f' -> bridgeApp ctx an $ foldl App f' args
             _     -> do
                   f'  <- bridgeExp ctx an f
                   as' <- mapM (bridgeExp ctx an) vargs

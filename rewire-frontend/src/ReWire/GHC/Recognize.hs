@@ -28,9 +28,9 @@ import GHC.Builtin.Types (trueDataCon, falseDataCon, unitDataCon)
 import GHC.Core (CoreExpr, isTyCoArg)
 import GHC.Core.DataCon (DataCon, dataConName, isTupleDataCon, dataConSourceArity)
 import GHC.Core.Predicate (isEvVarType)
-import GHC.Core.TyCo.Rep (Type)
+import GHC.Core.TyCo.Rep (Type (..))
 import GHC.Core.TyCon (TyCon, tyConName, isClassTyCon)
-import GHC.Core.Type (expandTypeSynonyms, tyConAppTyCon_maybe)
+import GHC.Core.Type (expandTypeSynonyms, tyConAppTyCon_maybe, splitForAllTyCoVars)
 import GHC.Core.Utils (exprType)
 import GHC.Data.FastString (unpackFS)
 import GHC.Types.Name (getOccString, nameModule_maybe, nameSrcSpan, isSystemName)
@@ -64,14 +64,24 @@ erasedArg a = isTyCoArg a || erasedEv (exprType a)
 erasedEv :: Type -> Bool
 erasedEv t = isEvVarType t && not (userPred t)
 
--- | Is this a user-class predicate type? A class defined in a home module
---   (approximated by defining-module namespace, like the tycon table's
---   fallback): built-in evidence (KnownNat, Monad, HasCallStack, ...) is
---   external and erased; classes in the user's own modules are data.
+-- | Is this a user-class predicate type -- or evidence for one under
+--   quantifiers and a context (an instance's dfun type)? A class defined
+--   in a home module (approximated by defining-module namespace, like the
+--   tycon table's fallback): built-in evidence (KnownNat, Monad,
+--   HasCallStack, ...) is external and erased; classes in the user's own
+--   modules are data, and their dfuns -- contexted instances included --
+--   are ordinary definitions.
 userPred :: Type -> Bool
-userPred t = case tyConAppTyCon_maybe $ expandTypeSynonyms t of
+userPred t = case tyConAppTyCon_maybe $ predHead $ expandTypeSynonyms t of
       Just tc -> isClassTyCon tc && homeishMod (tyConModule tc)
       _       -> False
+
+-- | The head predicate under quantifiers and constraint arrows (the
+--   identity on ordinary types).
+predHead :: Type -> Type
+predHead ty = case snd $ splitForAllTyCoVars ty of
+      FunTy _ _ d r | isEvVarType d -> predHead r
+      ty'                           -> ty'
 
 -- | Home modules (loaded from source) get qualified names; known external
 --   entities are in the tables; anything else external is out of
