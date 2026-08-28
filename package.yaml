@@ -40,6 +40,7 @@ data-files:
 - tests/golden/Mods/*.hs
 - tests/golden/OD19/*.hs
 - tests/golden/Mods/C/*.hs
+- tests/golden/ClassMods/*.hs
 - tests/golden/verilog/*.sv
 - tests/golden/vhdl/*.vhdl
 - tests/golden/*.hs

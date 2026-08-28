@@ -1,0 +1,43 @@
+-- A data-dictionary elimination fixture: a dictionary datatype with
+-- arrow-typed constructor fields (arming the simplifier's dictionary-free
+-- gate), an inline dfun, and a constraint-polymorphic definition that
+-- projects its methods out of the dictionary argument; the front-half
+-- passes (specialize, inline, simplify) must erase every trace of the
+-- dictionary independently of the GHC bridge.
+data Main.T * {
+      Main.A :: Main.T;
+      Main.B :: Main.T
+}
+
+data Main.Frob * -> * {
+      Main.CFrob :: forall (a#1 :: *). (a#1 -> a#1) -> (a#1 -> a#1) -> Main.Frob a#1
+}
+
+Main.flipT#2 :: Main.T -> Main.T
+Main.flipT#2 (x#3 :: Main.T) =
+      case x#3 of s#4 {
+            _ -> (Main.A :: Main.T);
+            Main.A -> (Main.B :: Main.T)
+      } :: Main.T
+
+Main.dFrobT#5 :: Main.Frob Main.T
+inline Main.dFrobT#5 =
+      (Main.CFrob :: (Main.T -> Main.T) -> (Main.T -> Main.T) -> Main.Frob Main.T) Main.flipT#2 Main.flipT#2
+
+Main.twice#6 :: forall (a#7 :: *). Main.Frob a#7 -> a#7 -> a#7
+Main.twice#6 (d#8 :: Main.Frob a#7) (x#9 :: a#7) =
+      (case d#8 of dd#10 {
+            Main.CFrob (f#11 :: a#7 -> a#7) (g#12 :: a#7 -> a#7) -> f#11
+      } :: a#7 -> a#7) ((case d#8 of de#13 {
+            Main.CFrob (h#14 :: a#7 -> a#7) (k#15 :: a#7 -> a#7) -> k#15
+      } :: a#7 -> a#7) x#9)
+
+Main.start#16 :: ReacT Main.T Main.T Identity ()
+Main.start#16 =
+      (rwPrimError :: String -> ReacT Main.T Main.T Identity ())
+            (case Main.twice#6 @Main.T Main.dFrobT#5 (Main.A :: Main.T) of b#17 {
+                  _ -> "b";
+                  Main.A -> "a"
+            } :: String)
+
+top Main.start#16

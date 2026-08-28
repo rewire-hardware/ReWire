@@ -1,0 +1,25 @@
+Main.$ckeep : ([8]) -> [8]
+Main.$ckeep w =
+      w
+
+Main.$cinvert : ([8]) -> [8]
+Main.$cinvert w =
+      xor w 8'hff
+
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      tag $x2 = 0
+      let $res = let $a$i7 = (let $t1$i5 = (let x$i0 = __in0[0 +: 1] in
+            let y$i2 = (let $t0$i1 = __in0[7 +: 1] in
+            not $t0$i1) in
+            let $t0$i3 = not x$i0 in
+            if $t0$i3 then (if x$i0 then 1'h1
+                        else let $t0$i4 = not y$i2 in
+                        not $t0$i4)
+                  else 1'h0) in
+            if not $t1$i5 then Main.$ckeep __in0
+                  else let y$i6 = Main.$cinvert __in0 in
+                  and (Main.$cinvert __in0) (or __in0 (Main.$ckeep y$i6))) in
+            $a$i7
+      __out0 := $res

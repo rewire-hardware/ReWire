@@ -1,0 +1,48 @@
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      register __resumption_tag : [11] init 11'h600
+      tag i = 0
+      tag i2 = 1
+      tag i3 = 2
+      tag i4 = 3
+      tag i5 = 4
+      tag i6 = 5
+      tag i7 = 6
+      tag i8 = 7
+      let $res = if eq __resumption_tag[8 +: 3] 3'h0 then (let n$i0 = __resumption_tag[0 +: 8] in
+                  let $a$i1 = eq __in0 8'h0 in
+                  if not $a$i1 then (let n$i2 = add n$i0 __in0 in
+                        n$i2 # 3'h0 # n$i2)
+                        else 19'h200)
+                  else if eq __resumption_tag[8 +: 3] 3'h1 then (let n$i3 = __resumption_tag[0 +: 8] in
+                  let $a$i4 = eq __in0 8'h0 in
+                  if not $a$i4 then (let n$i5 = sub n$i3 __in0 in
+                        n$i5 # 3'h1 # n$i5)
+                        else 19'h200) else if eq __resumption_tag[8 +: 3] 3'h2 then (let n$i6 = __resumption_tag[0 +: 8] in
+                  let $a$i7 = eq __in0 8'h0 in
+                  if not $a$i7 then (let n$i8 = add n$i6 __in0 in
+                        n$i8 # 3'h2 # n$i8)
+                        else 19'h7f9ff) else if eq __resumption_tag[8 +: 3] 3'h3 then (let n$i9 = __resumption_tag[0 +: 8] in
+                  let $a$i10 = eq __in0 8'h0 in
+                  if not $a$i10 then (let n$i11 = sub n$i9 __in0 in
+                        n$i11 # 3'h3 # n$i11)
+                        else 19'h7f9ff) else if eq __resumption_tag[8 +: 3] 3'h4 then (let n$i12 = __resumption_tag[0 +: 8] in
+                  let $a$i13 = eq __in0 8'h0 in
+                  if not $a$i13 then (let n$i14 = add n$i12 __in0 in
+                        n$i14 # 3'h4 # n$i14)
+                        else 19'h200) else if eq __resumption_tag[8 +: 3] 3'h5 then (let n$i15 = __resumption_tag[0 +: 8] in
+                  let $a$i16 = eq __in0 8'h0 in
+                  if not $a$i16 then (let n$i17 = sub n$i15 __in0 in
+                        n$i17 # 3'h5 # n$i17)
+                        else 19'h200) else if eq __resumption_tag[8 +: 3] 3'h6 then (let n$i18 = __resumption_tag[0 +: 8] in
+                  let $a$i19 = eq __in0 8'h0 in
+                  if not $a$i19 then (let n$i20 = add n$i18 __in0 in
+                        n$i20 # 3'h6 # n$i20)
+                        else 19'h7fdff) else let n$i21 = __resumption_tag[0 +: 8] in
+                  let $a$i22 = eq __in0 8'h0 in
+                  if not $a$i22 then (let n$i23 = sub n$i21 __in0 in
+                        n$i23 # 3'h7 # n$i23)
+                        else 19'h7fdff
+      __out0 := $res[11 +: 8]
+      next __resumption_tag := $res[0 +: 11]

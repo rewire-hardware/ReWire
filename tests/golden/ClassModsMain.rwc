@@ -1,0 +1,17 @@
+ClassMods.Impl.$cinv : ([8]) -> [8]
+ClassMods.Impl.$cinv w =
+      xor w 8'hff
+
+ClassMods.Impl.$cflick : ([8]) -> [8]
+ClassMods.Impl.$cflick w =
+      xor w 8'hf
+
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      tag $x2 = 0
+      let $res = let $a$i1 = (let $t0$i0 = __in0[0 +: 1] in
+            if not $t0$i0 then ClassMods.Impl.$cinv (or __in0 (ClassMods.Impl.$cflick __in0))
+                  else or (ClassMods.Impl.$cinv __in0) (ClassMods.Impl.$cflick __in0)) in
+            $a$i1
+      __out0 := $res

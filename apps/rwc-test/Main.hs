@@ -469,6 +469,10 @@ getCertifyTests = findValidator >>= \ case
                   , "externGeneric.hs" -- model-less extern with static
                                        -- generics: the ∀η verdict, per
                                        -- instantiation
+                  , "classes1.hs" -- multi-method (data-dictionary) classes
+                  , "classes2.hs" -- single-method (newtype-dictionary)
+                                  -- classes: dictionaries are erased before
+                                  -- the certified region
                   ]
 
             -- Devices outside the certified profile: clocked extern

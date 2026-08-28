@@ -1,0 +1,14 @@
+Main.$cscramble : ([8]) -> [8]
+Main.$cscramble w =
+      xor w 8'h5a
+
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      tag $x2 = 0
+      let $res = let $a$i3 = xor (let w$i0 = xor __in0 8'ha5 in
+            or (Main.$cscramble w$i0) 8'hf) (let w$i2 = (let $eta0$i1 = Main.$cscramble __in0 in
+            $eta0$i1) in
+            and (Main.$cscramble w$i2) 8'hf0) in
+            $a$i3
+      __out0 := $res

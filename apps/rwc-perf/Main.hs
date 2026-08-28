@@ -90,10 +90,11 @@ data Family = Family
 
 families :: [Family]
 families =
-      [ Family "letchain"  [32, 64, 128]  genLetChain
-      , Family "defchain"  [64, 128, 256] genDefChain
-      , Family "statevars" [8, 16, 32]    genStateVars
-      , Family "whenchain" [4, 8, 16]     genWhenChain
+      [ Family "letchain"   [32, 64, 128]  genLetChain
+      , Family "defchain"   [64, 128, 256] genDefChain
+      , Family "statevars"  [8, 16, 32]    genStateVars
+      , Family "whenchain"  [4, 8, 16]     genWhenChain
+      , Family "classchain" [32, 64, 128]  genClassChain
       ]
 
 goldenCases :: [String]
@@ -148,6 +149,43 @@ genDefChain n = unlines $
       <> concat [ [ ""
                   , "f" <> show i <> " :: W 32 -> W 32"
                   , "f" <> show i <> " x = f" <> show (i - 1) <> " (x ^ lit " <> show (i * 13 + 1) <> ")"
+                  ]
+                | i <- [1 .. n] ]
+      <>
+      [ ""
+      , "start :: Dev (W 32) (W 32)"
+      , "start = iter f" <> show n <> " (lit 0)"
+      , ""
+      , "main :: IO ()"
+      , "main = undefined"
+      ]
+
+-- | A chain of n constraint-polymorphic definitions, each passing its
+--   dictionary down to the previous. Stresses dictionary elimination: the
+--   specializer's type worklist, forced dfun inlining, and the
+--   simplifier's per-dictionary value baking.
+genClassChain :: Int -> String
+genClassChain n = unlines $
+      [ "{-# LANGUAGE DataKinds #-}"
+      , "import Prelude hiding ((^), (+))"
+      , "import ReWire"
+      , "import ReWire.Bits"
+      , "import ReWire.Monad (iter, Dev)"
+      , ""
+      , "class Frob a where"
+      , "      frob :: a -> a"
+      , "      unfrob :: a -> a"
+      , ""
+      , "instance Frob (W 32) where"
+      , "      frob x = x ^ lit 1"
+      , "      unfrob x = x"
+      , ""
+      , "f0 :: Frob a => a -> a"
+      , "f0 = frob"
+      ]
+      <> concat [ [ ""
+                  , "f" <> show i <> " :: Frob a => a -> a"
+                  , "f" <> show i <> " x = f" <> show (i - 1) <> " (frob (unfrob x))"
                   ]
                 | i <- [1 .. n] ]
       <>

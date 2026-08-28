@@ -1,0 +1,21 @@
+Main.$cmask : ([8]) -> [8]
+noinline Main.$cmask w =
+      and w 8'h3c
+
+Main.$cbackfit : ([8]) -> [1]
+Main.$cbackfit w =
+      eq w 8'h1
+
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      tag $x2 = 0
+      let $res = let $a$i4 = xor (let b$i0 = Main.$cbackfit (Main.$cmask __in0) in
+            if not b$i0 then 8'h0
+                  else 8'h1) (let c$i3 = (let $eta0$i2 = (let $t0$i1 = Main.$cbackfit __in0 in
+            not $t0$i1) in
+            $eta0$i2) in
+            if not c$i3 then Main.$cmask __in0
+                  else __in0) in
+            $a$i4
+      __out0 := $res

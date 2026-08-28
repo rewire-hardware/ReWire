@@ -1,0 +1,40 @@
+Main.$cunfrob : ([1]) -> [1]
+Main.$cunfrob b =
+      b
+
+--| specialized from 'Main.$cfrob' at Bool, Bool
+--| also: Main.$cfrob$Bool$Bool$sda47482e, Main.$csole$Bool$Bool$sa0d0e4b4
+Main.$cfrob$Bool$Bool$s32ddedfb : ([2]) -> [2]
+Main.$cfrob$Bool$Bool$s32ddedfb $ds =
+      let a = $ds[1 +: 1] in
+      let b = $ds[0 +: 1] in
+      not a # not b
+
+--| specialized from 'Main.$cunfrob' at Bool, Bool
+--| also: Main.$cunfrob$Bool$Bool$sda47482e
+Main.$cunfrob$Bool$Bool$s32ddedfb : ([2]) -> [2]
+Main.$cunfrob$Bool$Bool$s32ddedfb $ds =
+      let a = $ds[1 +: 1] in
+      let b = $ds[0 +: 1] in
+      Main.$cunfrob a # Main.$cunfrob b
+
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      tag $x2 = 0
+      let $res = let $a$i12 = (let $t3$i11 = (let $t1$i8 = (let $t0$i6 = (let x$i5 = __in0[0 +: 1] # (let $t1$i3 = (let $t0$i2 = (let $eta0$i1 = Main.$cunfrob$Bool$Bool$s32ddedfb (__in0[0 +: 1] # __in0[1 +: 1]) # Main.$cunfrob$Bool$Bool$s32ddedfb (__in0[2 +: 1] # __in0[3 +: 1]) # Main.$cunfrob$Bool$Bool$s32ddedfb (__in0[4 +: 1] # __in0[5 +: 1]) # Main.$cunfrob$Bool$Bool$s32ddedfb (__in0[6 +: 1] # __in0[7 +: 1]) in
+            Main.$cfrob$Bool$Bool$s32ddedfb $eta0$i1[6 +: 2] # Main.$cfrob$Bool$Bool$s32ddedfb $eta0$i1[4 +: 2] # Main.$cfrob$Bool$Bool$s32ddedfb $eta0$i1[2 +: 2] # Main.$cfrob$Bool$Bool$s32ddedfb $eta0$i1[0 +: 2]) in
+            $t0$i2[6 +: 2]) in
+            let x$i4 = $t1$i3[1 +: 1] in
+            x$i4) in
+            Main.$cfrob$Bool$Bool$s32ddedfb (Main.$cunfrob$Bool$Bool$s32ddedfb x$i5)) in
+            let x$i7 = $t0$i6[1 +: 1] in
+            x$i7) in
+            if $t1$i8 then 1'h1
+                  else let $t2$i9 = Main.$cfrob$Bool$Bool$s32ddedfb (__in0[1 +: 1] # __in0[7 +: 1]) in
+                  let y$i10 = $t2$i9[0 +: 1] in
+                  y$i10) in
+            if not $t3$i11 then __in0
+                  else xor __in0 8'h55) in
+            $a$i12
+      __out0 := $res
