@@ -1,0 +1,14 @@
+# deadExtrude: a stateless echo whose dead branch holds an inline extrude.
+#
+# Device: ReacT Bit Bit Identity, no state cells; the output is the
+# previous input.
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0

@@ -48,10 +48,10 @@ import ReWire.Builtins (Builtin (..))
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Eidos.Naming (blockLabel)
 import ReWire.Eidos.Pretty ()
-import ReWire.Eidos.Subst (nextUniq, freeUniqs, occIds)
+import ReWire.Eidos.Subst (nextUniq, freeUniqs, occIds, substVars)
 import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, flattenTyApp, reacOrStateT, machineDefn)
 import ReWire.Pretty (showt, prettyPrint)
-import ReWire.SYB (query)
+import ReWire.SYB (query, queryWith)
 import ReWire.Synolon.Syntax
 
 import Control.Monad (when)
@@ -78,7 +78,9 @@ procify :: forall m. MonadError AstError m => E.Program -> m Program
 procify p@(E.Program datas defns top)
       | (TyCon _ "ReacT", [ti, to, _, _]) <- flattenTyApp $ sigTy $ idSig top
       , [] <- fst (flattenArrow $ sigTy $ idSig top) = do
-            let cells = stackCells $ maxStack [ typeOf $ defnBody d | d <- reactives ]
+            let cells = stackCells $ maxStack
+                      $ concatMap (stackOfTy . typeOf . defnBody) reactives
+                     <> concatMap (queryWith stackOfTy . defnBody) liveReactives
             pr <- evalStateT (compileRoot ti to cells) $ PSt (nextUniq p) [] mempty mempty mempty
             let defns' = filter machineDefn defns
             pure $ Program (usedDatas datas defns' [pr]) defns' [pr]
@@ -134,11 +136,36 @@ procify p@(E.Program datas defns top)
                             , null $ sigTVs $ idSig $ defnId d ]
 
             -- The state cells: one per layer of the deepest reactive
-            -- stack, outermost first, named s0, s1, ....
-            maxStack :: [Ty] -> [Ty]
-            maxStack ts = case [ st | t <- ts, Just st <- [stackOf t], not (null st) ] of
+            -- stack — among the reactive definitions' own types (listed
+            -- first, so that among stacks of equal depth the definition's
+            -- spelling of the type wins) and every type the reachable
+            -- reactive code carries: the partial evaluator inlines a
+            -- single-use stateful computation into its extrude site, and
+            -- then its state layer is visible in expression types only.
+            -- Only reachable code counts there — a definition the last
+            -- partial-evaluation round orphaned must not mint a cell.
+            -- Outermost first, named s0, s1, ....
+            maxStack :: [[Ty]] -> [Ty]
+            maxStack = \ case
                   [] -> []
                   ss -> foldr1 (\ a b -> if length a >= length b then a else b) ss
+
+            liveReactives :: [Defn]
+            liveReactives = [ d | d <- reactives, IS.member (idUniq $ defnId d) reachable ]
+
+            -- The definitions reachable from the device root.
+            reachable :: IS.IntSet
+            reachable = go IS.empty [idUniq top]
+                  where go :: IS.IntSet -> [Uniq] -> IS.IntSet
+                        go seen = \ case
+                              []                          -> seen
+                              u : us | IS.member u seen   -> go seen us
+                                     | otherwise          -> go (IS.insert u seen)
+                                          $ maybe us ((<> us) . IS.toList . (`IS.intersection` IM.keysSet dmap) . freeUniqs . defnBody)
+                                                (IM.lookup u dmap) 
+
+            stackOfTy :: Ty -> [[Ty]]
+            stackOfTy t = [ st | Just st <- [stackOf t], not (null st) ]
 
             stackCells :: [Ty] -> [Cell]
             stackCells ts = [ Cell (ann t) ("s" <> showt i) t Nothing | (i, t) <- zip [0 :: Int ..] ts ]
@@ -188,11 +215,15 @@ procify p@(E.Program datas defns top)
                         Just l  -> pure ([], Goto an l args)
                         Nothing -> failAt an "procify: jump to an uncompiled join point (rwc bug)."
                   Case an t s cb alts | reacOrStateT t -> do
-                        alts' <- mapM (arm cx k) alts
-                        -- The case binder is dead in ANF output (the
-                        -- scrutinee is an atom); drop it.
-                        when (IS.member (idUniq cb) $ IS.unions $ map (freeUniqs . altBody) alts) $ failAt an
-                              "procify: a terminator case's binder is live (unsupported)."
+                        -- A terminator case has no binder: the case binder
+                        -- aliases the scrutinee, an atom in ANF output, so
+                        -- where it is live (GHC's case-binder swap leaves
+                        -- it referenced in the alternatives) the scrutinee
+                        -- takes its place.
+                        let live  = IS.member (idUniq cb) $ IS.unions $ map (freeUniqs . altBody) alts
+                            alts0 | live      = [ Alt aan c xs $ substVars (IM.singleton (idUniq cb) s) b | Alt aan c xs b <- alts ]
+                                  | otherwise = alts
+                        alts' <- mapM (arm cx k) alts0
                         pure ([], TCase an s alts')
                   Var an x
                         | Just rhs <- IM.lookup (idUniq x) $ cxRLets cx -> compile cx rhs k

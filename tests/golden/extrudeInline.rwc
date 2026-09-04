@@ -1,0 +1,16 @@
+device top_level
+      input __in0 : [1]
+      output __out0 : [1]
+      register __resumption_tag : [2] init 2'h2
+      register __st0 : [1] init 1'h0
+      tag $ds2 = 0
+      tag j = 1
+      tag i = 2
+      let $res = if eq __resumption_tag 2'h0 then 4'hc
+                  else if eq __resumption_tag 2'h1 then (let r$i4 = (let $t1$i3 = and __st0 __in0 in
+                  $t1$i3) in
+                  r$i4 # 2'h0 # __st0) else let $a$i6 = not __in0 in
+                  $a$i6 # 2'h1 # __in0
+      __out0 := $res[3 +: 1]
+      next __resumption_tag := $res[1 +: 2]
+      next __st0 := $res[0 +: 1]

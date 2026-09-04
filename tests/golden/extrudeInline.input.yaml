@@ -1,0 +1,14 @@
+# extrudeInline: an inline stateful phase under extrude inside a stateless loop.
+#
+# Device: ReacT Bit Bit Identity with one Bit cell (the inner phase's state,
+# reset to False on every entry).
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1

@@ -126,6 +126,7 @@ data-files:
     tests/golden/case1.hs
     tests/golden/case2.hs
     tests/golden/caseBindBug.hs
+    tests/golden/caseBinderLive.hs
     tests/golden/classes1.hs
     tests/golden/classes2.hs
     tests/golden/classes3.hs
@@ -142,6 +143,7 @@ data-files:
     tests/golden/cryptolffi8.hs
     tests/golden/cryptolffi9.hs
     tests/golden/cubehash.hs
+    tests/golden/deadExtrude.hs
     tests/golden/dependencyGraph.hs
     tests/golden/dissex.hs
     tests/golden/dissex2.hs
@@ -152,6 +154,7 @@ data-files:
     tests/golden/externGeneric.hs
     tests/golden/externModel.hs
     tests/golden/extrudeApp.hs
+    tests/golden/extrudeInline.hs
     tests/golden/fibo1.hs
     tests/golden/fibo2.hs
     tests/golden/fibo3.hs
@@ -215,6 +218,7 @@ data-files:
     tests/golden/case1.sv
     tests/golden/case2.sv
     tests/golden/caseBindBug.sv
+    tests/golden/caseBinderLive.sv
     tests/golden/classes1.sv
     tests/golden/classes2.sv
     tests/golden/classes3.sv
@@ -231,6 +235,7 @@ data-files:
     tests/golden/cryptolffi8.sv
     tests/golden/cryptolffi9.sv
     tests/golden/cubehash.sv
+    tests/golden/deadExtrude.sv
     tests/golden/dependencyGraph.sv
     tests/golden/dissex.sv
     tests/golden/dissex2.sv
@@ -241,6 +246,7 @@ data-files:
     tests/golden/externGeneric.sv
     tests/golden/externModel.sv
     tests/golden/extrudeApp.sv
+    tests/golden/extrudeInline.sv
     tests/golden/fibo1.sv
     tests/golden/fibo2.sv
     tests/golden/fibo3.sv
@@ -304,6 +310,7 @@ data-files:
     tests/golden/case1.rwc
     tests/golden/case2.rwc
     tests/golden/caseBindBug.rwc
+    tests/golden/caseBinderLive.rwc
     tests/golden/classes1.rwc
     tests/golden/classes2.rwc
     tests/golden/classes3.rwc
@@ -320,6 +327,7 @@ data-files:
     tests/golden/cryptolffi8.rwc
     tests/golden/cryptolffi9.rwc
     tests/golden/cubehash.rwc
+    tests/golden/deadExtrude.rwc
     tests/golden/dependencyGraph.rwc
     tests/golden/dissex.rwc
     tests/golden/dissex2.rwc
@@ -330,6 +338,7 @@ data-files:
     tests/golden/externGeneric.rwc
     tests/golden/externModel.rwc
     tests/golden/extrudeApp.rwc
+    tests/golden/extrudeInline.rwc
     tests/golden/fibo1.rwc
     tests/golden/fibo2.rwc
     tests/golden/fibo3.rwc
@@ -393,6 +402,7 @@ data-files:
     tests/golden/case1.vhdl
     tests/golden/case2.vhdl
     tests/golden/caseBindBug.vhdl
+    tests/golden/caseBinderLive.vhdl
     tests/golden/classes1.vhdl
     tests/golden/classes2.vhdl
     tests/golden/classes3.vhdl
@@ -409,6 +419,7 @@ data-files:
     tests/golden/cryptolffi8.vhdl
     tests/golden/cryptolffi9.vhdl
     tests/golden/cubehash.vhdl
+    tests/golden/deadExtrude.vhdl
     tests/golden/dependencyGraph.vhdl
     tests/golden/dissex.vhdl
     tests/golden/dissex2.vhdl
@@ -419,6 +430,7 @@ data-files:
     tests/golden/externGeneric.vhdl
     tests/golden/externModel.vhdl
     tests/golden/extrudeApp.vhdl
+    tests/golden/extrudeInline.vhdl
     tests/golden/fibo1.vhdl
     tests/golden/fibo2.vhdl
     tests/golden/fibo3.vhdl
@@ -482,6 +494,7 @@ data-files:
     tests/golden/case1.cry
     tests/golden/case2.cry
     tests/golden/caseBindBug.cry
+    tests/golden/caseBinderLive.cry
     tests/golden/classes1.cry
     tests/golden/classes2.cry
     tests/golden/classes3.cry
@@ -498,6 +511,7 @@ data-files:
     tests/golden/cryptolffi8.cry
     tests/golden/cryptolffi9.cry
     tests/golden/cubehash.cry
+    tests/golden/deadExtrude.cry
     tests/golden/dependencyGraph.cry
     tests/golden/dissex.cry
     tests/golden/dissex2.cry
@@ -507,6 +521,7 @@ data-files:
     tests/golden/externGeneric.cry
     tests/golden/externModel.cry
     tests/golden/extrudeApp.cry
+    tests/golden/extrudeInline.cry
     tests/golden/fibo1.cry
     tests/golden/fibo2.cry
     tests/golden/fibo3.cry
@@ -581,6 +596,8 @@ data-files:
     tests/golden/case2.yaml
     tests/golden/caseBindBug.input.yaml
     tests/golden/caseBindBug.yaml
+    tests/golden/caseBinderLive.input.yaml
+    tests/golden/caseBinderLive.yaml
     tests/golden/classes1.yaml
     tests/golden/classes2.yaml
     tests/golden/classes3.yaml
@@ -607,6 +624,8 @@ data-files:
     tests/golden/cryptolffi9.yaml
     tests/golden/cubehash.input.yaml
     tests/golden/cubehash.yaml
+    tests/golden/deadExtrude.input.yaml
+    tests/golden/deadExtrude.yaml
     tests/golden/dependencyGraph.input.yaml
     tests/golden/dependencyGraph.yaml
     tests/golden/dissex.input.yaml
@@ -623,6 +642,8 @@ data-files:
     tests/golden/externModel.yaml
     tests/golden/extrudeApp.input.yaml
     tests/golden/extrudeApp.yaml
+    tests/golden/extrudeInline.input.yaml
+    tests/golden/extrudeInline.yaml
     tests/golden/fibo1.input.yaml
     tests/golden/fibo1.yaml
     tests/golden/fibo2.input.yaml

@@ -585,9 +585,14 @@ definitions the machine calls and the datatypes they and the process
 mention (§3.3), and mints one process from the device root: a `signal` becomes a `pause` to the
 continuation's block (whose last parameter is the resumed input), a
 `return` a `goto` (or a `halt` at the root), lifted `get`/`put` operations
-cell commands (cells resolved from the operation's own residual state
-stack), an `extrude` a cell write followed by its body, a reactive `case` a
-terminator case (arms with commands get their own blocks), join points
+cell commands (the cells are the layers of the deepest state stack among
+the reactive definitions' types and every type the reactive code
+reachable from the root carries — the partial evaluator may have inlined
+a stateful computation into its extrude site — and each operation
+resolves its cell from its own residual stack), an `extrude` a cell write followed by its body, a
+reactive `case` a terminator case (arms with commands get their own
+blocks; the case binder, an alias of the atom scrutinee, is substituted
+away where GHC's case-binder swap left it live), join points
 blocks and jumps gotos. A reactive call is compiled once per continuation
 — block-graph splicing memoized on the (definition, continuation) pair —
 so tail recursion closes through the memo table and becomes a `goto`. Two

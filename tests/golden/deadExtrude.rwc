@@ -1,0 +1,10 @@
+device top_level
+      input __in0 : [1]
+      output __out0 : [1]
+      register __resumption_tag : [1] init 1'h1
+      tag $ds = 0
+      tag i = 1
+      let $res = if not __resumption_tag then 2'h3
+                  else __in0 # 1'h0
+      __out0 := $res[1 +: 1]
+      next __resumption_tag := $res[0 +: 1]

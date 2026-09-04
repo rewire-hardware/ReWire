@@ -1,0 +1,14 @@
+# caseBinderLive: a reactive `if` whose taken branch reuses the scrutinee.
+#
+# Device: ReacT Bit Bit (StateT Bit Identity) extruded with False: the state
+# is set to the input when the input is 1, flipped otherwise.
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0

@@ -186,6 +186,14 @@
   the primitive basis and the tuple family with them. The `.syn` dumps
   shrink accordingly; the validator re-adds absent basis declarations
   itself, so certification is unaffected. Generated code is unchanged.
+* Two procification rejections of valid programs are fixed: a stateful
+  computation written (or inlined by the partial evaluator) directly
+  under `extrude`, with no reactive definition carrying its `StateT`
+  layer, failed with "cannot resolve the state cell (rwc bug)" — the
+  state cells are now inferred from every type the reactive code
+  carries; and a reactive `if`/`case` whose branch reused the scrutinee
+  failed with "a terminator case's binder is live" — the binder aliases
+  the scrutinee atom and is substituted away.
 
 ## 2.8 (2026-07)
 
