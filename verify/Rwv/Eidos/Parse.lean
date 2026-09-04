@@ -1,8 +1,9 @@
 /-
-Parser for the Eidos concrete syntax (.eir; doc/eidos.md §9), both the P
-and M levels: a transcription of the reference implementation
-(rewire-frontend ReWire.Eidos.Parse), in the same tokenizer + recursive
-descent style as Rwv.Hyle.Parse.
+Parser for the Eidos concrete syntax (.eir; doc/eidos.md §9) and its
+Synolon extension (.syn; doc/synolon.md §9): a transcription of the
+reference implementation (rewire-frontend ReWire.Eidos.Parse and
+ReWire.Synolon.Parse), in the same tokenizer + recursive descent style
+as Rwv.Hyle.Parse.
 
 The concrete syntax does not carry a type for every binder occurrence, so
 (as in the reference) parsing is followed by an elaboration pass that
@@ -790,7 +791,7 @@ def pDataDefn : PM DataDefn := do
     pure { name := c, sig := sig : DataCon }
   pure { name := n, kind := k, cons := cs }
 
-/-! ## Processes (the M level, doc/eidos.md §7.1 and §9)
+/-! ## Processes (doc/synolon.md §3.4 and §9)
 
 Terminator labels resolve after the whole process is parsed (a
 terminator may target a block declared later); a label's signature is
@@ -967,7 +968,7 @@ where the concrete syntax omits a type that the abstract syntax
 carries: the shared trusting synthesizer `Rwv.Eidos.typeOf`
 (Rwv.Eidos.Types), applied at this elaboration environment's join
 scope. Grossly ill-typed input is rejected here; everything subtler is
-the machine-mode checker's job (Rwv.Eidos.Check). -/
+the Synolon checker's job (Rwv.Eidos.Check). -/
 def synthTy (env : Env) : Exp → Except String Ty :=
   typeOf env.joins
 

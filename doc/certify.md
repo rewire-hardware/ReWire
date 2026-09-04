@@ -17,13 +17,13 @@ suppress it and `-Werror` does not govern it.
 
 On any compilation from Haskell source to a device target (Verilog, VHDL,
 Cryptol, or `--core`), `--certify` writes two artifacts beside the output
-(for `-o dir/x.sv`: `dir/x.eir` and `dir/x.rwc`; with no `-o`, beside the
+(for `-o dir/x.sv`: `dir/x.syn` and `dir/x.rwc`; with no `-o`, beside the
 source file, overwriting any existing `<src>.rwc` — which is harmless when
 that file came from `--core` with the same flags, since the bytes agree):
 
-- **`<out>.eir`** — the machine-mode Eidos IR after the block-graph
-  cleanup (pass 8), exactly the file `--eidos` writes; its semantics is
-  doc/eidos.md §7.5.
+- **`<out>.syn`** — the Synolon machine IR after the block-graph cleanup
+  (pass 8), exactly the file `--synolon` writes; its semantics is
+  doc/synolon.md §5.
 - **`<out>.rwc`** — the final, fully inlined Hyle program (after the
   Hyle optimize and inline passes, 10–11), byte-identical to the `.rwc`
   that `--core` emits. Every device target consumes this same program —
@@ -34,7 +34,7 @@ that file came from `--core` with the same flags, since the bytes agree):
 Both artifacts are published with a same-directory temporary file and a
 rename, so an interrupted compilation cannot leave a torn artifact in
 place. An output naming that would collide with either artifact (`-o
-*.rwc` for an HDL/Cryptol target, or `-o *.eir` for any target) is
+*.rwc` for an HDL/Cryptol target, or `-o *.syn` for any target) is
 refused up front in required mode; under `--certify=warn` it surfaces as
 a not-validated status.
 
@@ -54,10 +54,14 @@ verdicts form four classes, and each maps to a validator exit code:
 
 In required mode anything but VALIDATED fails the compilation; the
 artifacts are left in place for rerunning the validator by hand:
-`rwv-cstep-validate <out>.eir <out>.rwc [-v]`.
+`rwv-cstep-validate <out>.syn <out>.rwc [-v]`. (A validator built before
+the Synolon artifact existed rejects the pair with an ERROR about a
+missing `top` line: it is reading the `.syn` as the older whole-program
+dump. Rebuild it — `lake build` under `verify/` — and make sure the copy
+rwc selects, see below, is the rebuilt one.)
 
 `--interpret` and `--from-core` have nothing to certify (no device
-output, and no Eidos IR, respectively): required mode fails,
+output, and no Synolon IR, respectively): required mode fails,
 `--certify=warn` reports.
 
 ## The response protocol
@@ -87,13 +91,13 @@ The validator is a Lean 4 program (under `verify/`) whose acceptance
 carries a kernel-checked soundness theorem (`validateProc_corresponds`,
 in `Rwv.Eidos.Cstep`; axiom-clean up to `propext`, `Classical.choice`,
 `Quot.sound`). When it accepts a pair, the theorem concludes the
-correspondence of doc/eidos.md §7.5.6 for the dumped process and program:
+correspondence of doc/synolon.md §5.6 for the dumped process and program:
 for every input trace of well-typed semantic values, whenever the
-mechanized Eidos-M machine semantics produces a trace and the mechanized
+mechanized Synolon machine semantics produces a trace and the mechanized
 Hyle stream semantics produces a trace on the port-split encodings of
 those inputs, the device trace *is* the encoding of the machine trace,
 cycle for cycle — in full when the machine never halts, and up to (and
-excluding) the halting cycle when it does (the doc/eidos.md §7.5.4
+excluding) the halting cycle when it does (the doc/synolon.md §5.4
 prefix reading).
 
 The gap between the executable and the theorem is closed by one pure
@@ -141,7 +145,7 @@ The mathematical core —
 
 - the Lean kernel and the three standard axioms above;
 - the two mechanized semantics being the intended readings of
-  doc/eidos.md §7.5 and doc/hyle.md §6. Differential testing against
+  doc/synolon.md §5 and doc/hyle.md §6. Differential testing against
   `rwc --interpret` pins them for the interpreter-evaluable fragment
   (model-carrying externs included — the interpreter evaluates the
   model); for **model-less** externs the interpreter cannot run, so the
@@ -165,9 +169,9 @@ normalizers — are *untrusted*: a wrong answer inside them yields
 REJECTED, never an unsound VALIDATED.
 
 What is covered is the compiler's middle and back half: the
-Eidos-to-Hyle fold (pass 9) and the Hyle-level optimization and inlining
+Synolon-to-Hyle fold (pass 9) and the Hyle-level optimization and inlining
 (passes 10–11). Passes before the pass-8 dump (the GHC front end, the
-Eidos front half, procification) and the HDL backends after Hyle are not
+Eidos passes, procification) and the HDL backends after Hyle are not
 covered; the cosimulation legs of rwc-test remain the check on those.
 
 ## Support matrix
@@ -177,12 +181,12 @@ covered; the cosimulation legs of rwc-test remain the check on those.
 | Pure devices (no foreign calls) | **VALIDATED** |
 | Model-less combinational externs, no static generics | **VALIDATED**, universally: the verdict quantifies over all implementations of the extern (the ∀η tier) |
 | Model-less combinational externs with static generics | **VALIDATED**, universally per instantiation: the η environment is keyed by (name, generic values), the compiled call carries the source descriptor's values, and distinct instantiations are distinct uninterpreted symbols |
-| Model-carrying combinational externs | **VALIDATED**: the occurrence's source-side meaning is its own Eidos implementation argument (the model rwc kept beside the extern), evaluated and compiled as an ordinary expression; the target's model meets that independently obtained form through the ordinary translation obligations |
+| Model-carrying combinational externs | **VALIDATED**: the occurrence's source-side meaning is its own implementation argument (the model rwc kept beside the extern in the Synolon artifact), evaluated and compiled as an ordinary expression; the target's model meets that independently obtained form through the ordinary translation obligations |
 | Cryptol foreign functions (`rwPrimCryptol`) | UNSUPPORTED: no independent source-side semantics exists in the artifact bundle (the pass-8 artifact carries only a placeholder) |
 | Clocked (sequential) externs / device instances | UNSUPPORTED (no stream-level instance semantics or proof) |
 | Multiple processes | UNSUPPORTED |
 
-Whether an extern occurrence carries a model is decided from the Eidos
+Whether an extern occurrence carries a model is decided from the Synolon
 artifact alone (the model-less idiom is syntactic: the implementation
 argument is the `rwPrimError "Extern expression placeholder"`
 application) — changing the target can never select a different

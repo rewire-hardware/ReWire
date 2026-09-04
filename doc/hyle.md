@@ -5,10 +5,10 @@ implemented in `ReWire.Hyle.*`.
 
 Hyle is the IR that the back ends consume; the compiler pipeline is
 
-    GHC Core  →  Eidos  →  Hyle  →  { Verilog, VHDL, Cryptol, interpreter }
+    GHC Core  →  Eidos  →  Synolon  →  Hyle  →  { Verilog, VHDL, Cryptol, interpreter }
 
-The producer (the Eidos-to-Hyle fold `ReWire.Eidos.ToHyle`, applied to the
-Eidos machine program — see `doc/eidos.md`) is
+The producer (the Synolon-to-Hyle fold `ReWire.Synolon.ToHyle`, applied to
+the Synolon machine program — see `doc/synolon.md`) is
 outside the scope of this document: everything below treats Hyle programs as
 given, whether produced by the compiler or written by hand (`--from-core`).
 
@@ -660,7 +660,7 @@ functional expression language rather than a cell graph, because:
   the project's distinguishing goal — verification via Cryptol/SAW and
   Isabelle — wants readable, structured functional output, which a netlist
   would have to *reconstruct*;
-- the producer (the Eidos-to-Hyle fold) already emits a functional
+- the producer (the Synolon-to-Hyle fold) already emits a functional
   program; lowering to a netlist and re-deriving expression structure in two
   back ends is two transformations where zero are needed;
 - the RTL emission benefits of a netlist come from the width/port

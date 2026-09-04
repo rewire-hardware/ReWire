@@ -1,5 +1,5 @@
 /-
-Fuel monotonicity for the Eidos-M semantics: every fueled function in
+Fuel monotonicity for the Synolon semantics: every fueled function in
 the value layer (Rwv.Eidos.Value), the pure evaluator (Rwv.Eidos.Eval),
 and the machine semantics (Rwv.Eidos.Machine) preserves successful
 results under more fuel — `fuel ≤ fuel' → f fuel … = .ok v →

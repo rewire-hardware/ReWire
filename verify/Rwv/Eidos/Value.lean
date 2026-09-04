@@ -1,5 +1,5 @@
 /-
-The Eidos-M semantic value domain (doc/eidos.md §7.5.1) and the
+The Synolon semantic value domain (doc/synolon.md §5.1) and the
 data-to-bits representation (the `rep` of the validation architecture,
 transcribing ToHyle's sizeOf/ctorTag/ctorRep and the detupleSizes port
 convention).
@@ -9,7 +9,7 @@ numbers, ADT values (including Bool, unit, and the tuple family, which
 are just prim-basis datatypes) as constructor applications carrying
 their instance type — the type is what `rep` needs to lay out
 tag | pad | fields. Function values (higher-order builtin arguments,
-§7.5.2) are defunctionalized closures: a lambda with its captured
+doc/synolon.md §5.2) are defunctionalized closures: a lambda with its captured
 environment, or a partially applied definition.
 -/
 import Rwv.Eidos.Types
@@ -21,7 +21,7 @@ namespace Rwv.Eidos
 
 open Std (HashMap HashSet)
 
-/-- Semantic values (doc/eidos.md §7.5.1). -/
+/-- Semantic values (doc/synolon.md §5.1). -/
 inductive Val where
   | vec     (elems : List Val)
   | integer (v : BitVec 128)
@@ -49,7 +49,7 @@ through. The foreign fields all default to "absent", so a bare
 
   * `cryF f n τ` — the semantic denotation of the Cryptol foreign
     function `(module file f, function n)` at the impl monotype `τ`
-    (per doc/eidos.md §7.5.5, with η for a Cryptol splice DEFINED as
+    (per doc/synolon.md §5.5, with η for a Cryptol splice DEFINED as
     the Hyle-side denotation of the `cry$…` definitions rwcry
     emitted — the model-carrying trust boundary). The drivers build
     it from the compiled program's own definition environment
@@ -185,7 +185,7 @@ def ctorTag (Δ : DEnv) (t : Ty) (c : String) : Except String (Nat × Nat) :=
         | none => throw s!"ctorTag: unknown type: {tc}"
   | _ => throw "ctorTag: unexpected type"
 
-/-- The zero value of a representable type (doc/eidos.md §7.5.1):
+/-- The zero value of a representable type (doc/synolon.md §5.1):
 zero vectors and numbers, and the first constructor applied to zero
 fields — whose representation is the all-zeros bit pattern. -/
 def zeroVal (Δ : DEnv) (fuel : Nat) (t : Ty) : Except String Val :=
@@ -230,7 +230,7 @@ open Rwv.Hyle (BV)
 def bvConcat (xs : List BV) : BV :=
   xs.foldl (fun acc x => ⟨_, acc.bits ++ x.bits⟩) Rwv.Hyle.BV.nil
 
-/-- The data-to-bits representation `rep` (doc/eidos.md §7.5.1's bit
+/-- The data-to-bits representation `rep` (doc/synolon.md §5.1's bit
 readings extended to ADTs per the translation's encoding, ToHyle
 ctorRep): vectors concatenate MSB-first from the head; a constructor
 value is tag | zero pad | fields. -/

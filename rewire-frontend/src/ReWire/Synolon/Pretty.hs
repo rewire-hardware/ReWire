@@ -1,9 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
--- | The Synolon concrete syntax (@.syn@) pretty-printer (doc/eidos.md §7.1,
---   §9):
---   the process declarations, and the program that embeds Eidos datatypes
+-- | The Synolon concrete syntax (@.syn@) pretty-printer (doc/synolon.md §3.4,
+--   §9): the process declarations, and the program that embeds Eidos datatypes
 --   and definitions (printed by 'ReWire.Eidos.Pretty', as are the
 --   expressions inside blocks). 'ReWire.Synolon.Parse' is the other half of
 --   the round-trip contract: @parse . pretty@ is the identity modulo

@@ -1,4 +1,4 @@
--- Degenerate and multi-process forms (doc/eidos.md section 7.2): a
+-- Degenerate and multi-process forms (doc/synolon.md section 3.5): a
 -- zero-cell process whose blocks chain by goto (the goto-only subgraph is
 -- acyclic: the cycle crosses a pause), and an undef-celled process with a
 -- reachable halt under a terminator case.

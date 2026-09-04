@@ -5,7 +5,7 @@ equality modulo normalization, substitution/instantiation, and the
 trusting type synthesizer `typeOf` — transcribing the corresponding
 parts of ReWire.Eidos.Types (doc/eidos.md §3.1, §5). `typeOf` is
 shared by the `.eir` elaborator (Rwv.Eidos.Parse, which reconstructs
-the types the concrete syntax leaves implicit) — the machine-mode
+the types the concrete syntax leaves implicit) — the Synolon
 checker (Rwv.Eidos.Check) is its located, checking twin, exactly as
 ReWire.Eidos.Lint.checkExp is the monadic twin of
 ReWire.Eidos.Types.typeOf in the reference.
@@ -112,7 +112,7 @@ instantiated types; spines instantiate signatures by substitution.
 (arrows from parameter types to body type — in the reference the type
 lives on the label's own signature, which this embedding's `JoinId`
 does not carry). Grossly ill-typed input is rejected; everything
-subtler is the machine-mode checker's job (Rwv.Eidos.Check, whose
+subtler is the Synolon checker's job (Rwv.Eidos.Check, whose
 `checkExp` is this function's located, checking twin). -/
 partial def typeOf (joins : Std.HashMap Int Ty) : Exp → Except String Ty
   | .var x        => .ok x.sig.ty

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Differential-test harness: the mechanized Eidos-M machine semantics
+"""Differential-test harness: the mechanized Synolon machine semantics
 (rwv-eidos-diff) vs rwc's Haskell Hyle interpreter on the COMPILED
-program, across the golden corpus — the doc/eidos.md §7.5.6
+program, across the golden corpus — the doc/synolon.md §5.6
 correspondence, checked per test by trace comparison.
 
 For each tests/golden/<base>.rwc with a <base>.hs source:
@@ -32,7 +32,7 @@ hooks the Lean driver instantiates from the compiled .rwc itself.
 Programs with model-LESS combinational externs (the η tier)
 run under --eta-synth: rwc cannot interpret them at all, so the driver
 synthesizes a deterministic algebraic η and checks the correspondence
-INTERNALLY — the Eidos-M machine trace against the mechanized Hyle
+INTERNALLY — the Synolon machine trace against the mechanized Hyle
 device run at the same η (the ∀η statement at one concrete η); the
 harness reports these as OK (eta self-test) on driver success.
 
@@ -277,7 +277,7 @@ def main():
         if "(rwPrimExtern ::" in eir_text:
             eta_synth = modelless_externs(f)
 
-        # The Lean side: stimulus + Eidos-M trace.
+        # The Lean side: stimulus + Synolon trace.
         stim = work / f"{base}.stim.yaml"
         eidos_out = work / f"{base}.eidos.yaml"
         cmd = [lean_exe, str(eir), str(f),

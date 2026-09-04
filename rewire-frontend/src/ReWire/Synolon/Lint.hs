@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Safe #-}
 -- | Well-formedness checking for Synolon programs: the per-process machine
---   rules of doc/eidos.md §7.4 — signal-guardedness (the goto-only
+--   rules of doc/synolon.md §4 — signal-guardedness (the goto-only
 --   subgraph of the block graph is acyclic), cell-initial constness and
 --   typing, full-arity pauses and gotos, the resumed-input parameter rule,
 --   and "the process pauses" — over the expression-level checker of
@@ -77,7 +77,7 @@ lintProc :: MonadError AstError m => Program -> Proc -> m ()
 lintProc p@(Program datas defns _) = checkProcWith (declSites datas defns) True (machineEnv p)
 
 ---
---- Processes (doc/eidos.md §7.4): the machine rules, per-proc.
+--- Processes (doc/synolon.md §4): the machine rules, per-proc.
 ---
 
 
@@ -245,7 +245,7 @@ checkProcWith decls guarded env pr@(Proc an n it ot _clk cells entry blocks) = d
                               TCase _ _ alts -> concatMap (\ (TAlt _ _ _ t) -> pt t) alts
                               _              -> []
 
-            -- Signal-guardedness (§7.4): the goto-only subgraph of the
+            -- Signal-guardedness (doc/synolon.md §4): the goto-only subgraph of the
             -- block graph is acyclic — every cycle crosses a pause.
             checkGuarded :: m ()
             checkGuarded = mapM_ (visit mempty) $ Map.keys gotoEdges

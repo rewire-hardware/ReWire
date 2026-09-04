@@ -5,7 +5,7 @@ rewire-frontend ReWire.Eidos.PrimBasis: the built-in type constructors
 programs may reference without declaring — the unit and tuple families
 (2..62), Bool, Maybe/Either (the GHC-internal dotted names, as the
 bridge emits them), the abstract width-bearing types (Vec, Finite,
-Proxy), and the reactive stack types (which exist at the P level only).
+Proxy), and the reactive stack types (which exist only in Eidos, before procification).
 The bridge prepends these to every program so consumers can resolve
 constructor occurrences.
 

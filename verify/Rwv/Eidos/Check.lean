@@ -1,6 +1,6 @@
 /-
-The Eidos machine-mode well-formedness judgment (doc/eidos.md §4.1,
-§4.4, §7.4, §7.6): the whole-program pre-ToHyle check, and the
+The Synolon well-formedness judgment (doc/eidos.md §4.1, §4.4;
+doc/synolon.md §4, §6): the whole-program pre-ToHyle check, and the
 hypothesis set for the Eidos↔Hyle simulation metatheorem.
 
 This is a transcription of the machine-relevant subset of
@@ -12,14 +12,14 @@ trusting `Rwv.Eidos.typeOf`, per-construct rules inline). There is no
 mode parameter: this judgment is exactly the machine-stage discipline —
 the poly rules plus the mono rules (closed nat-normalized types,
 monomorphic signatures, literal fit) plus the mono+ANF first-order
-value-binder rule plus the §7.4 machine rules, with the reactive types
+value-binder rule plus the doc/synolon.md §4 machine rules, with the reactive types
 out of the type grammar.
 
-Also here: the §7.6 builtin signature table (`builtinSig`, `matchesSig`
+Also here: the doc/synolon.md §6 builtin signature table (`builtinSig`, `matchesSig`
 — a port of ReWire.Eidos.BuiltinSigs, same schemes, same negative
 table-tyvar uniques, same one-way matching with deferred nat-arithmetic
 equations), checked at every `Prim` occurrence; and two rules the
-Haskell linter does not enforce yet but §7.4 states normatively:
+Haskell linter does not enforce yet but doc/synolon.md §4 states normatively:
 
 * **pure-acyclicity** — the call graph of the pure definitions
   reachable from a process (block bodies, cell initials, and
@@ -29,7 +29,7 @@ Haskell linter does not enforce yet but §7.4 states normatively:
   process* is rejected by the same rule (local recursion breaks the
   same well-foundedness; the reference's evaluator-side counterpart is
   Rwv.Eidos.Eval's rejection of `recB`) — an unreachable `rec` is legal
-  Eidos-P and is checked structurally like any binding;
+  Eidos and is checked structurally like any binding;
 * **representability** — every value binder, block parameter, and
   state cell has a fixed bit width (`DEnv.sizeOf`, shared with the
   translation's sizing in Rwv.Eidos.Value) — so `Integer` = 128 bits,
@@ -144,7 +144,7 @@ def Ty.hasArrowDeep : Ty → Bool
   | .app t₁ t₂ => t₁.hasArrowDeep || t₂.hasArrowDeep
   | _          => false
 
-/-! ## Builtin signatures (doc/eidos.md §7.6; ReWire.Eidos.BuiltinSigs)
+/-! ## Builtin signatures (doc/synolon.md §6; ReWire.Eidos.BuiltinSigs)
 
 The signature scheme every `Prim` occurrence must instantiate, and the
 one-way matcher the judgment checks occurrences with. Matching is
@@ -216,7 +216,7 @@ private def redOp : Option Sig := some ⟨[nN], .arrow (bVec (plus (.nat 1) vn))
 end BuiltinSigs
 
 open BuiltinSigs in
-/-- The signature scheme of each builtin (doc/eidos.md §7.6). -/
+/-- The signature scheme of each builtin (doc/synolon.md §6). -/
 def builtinSig : Builtin → Option Sig
   | .error          => some ⟨[aS], .arrow string va⟩
   | .«extern»       => none
@@ -530,7 +530,7 @@ def checkClosed : Ty → Except String Unit
   | .arrow t₁ t₂ => do checkClosed t₁; checkClosed t₂
   | _            => pure ()
 
-/-- Scoping plus closedness plus the machine-mode type-grammar rule:
+/-- Scoping plus closedness plus the Synolon type-grammar rule:
 the reactive types are out of the grammar entirely (doc/eidos.md
 §4.1). -/
 def checkTy (env : Env) (t : Ty) : Except String Unit := do
@@ -577,7 +577,7 @@ def szFuel : Nat := 100000
 
 /-- A local *value* binder (parameter, lambda/let/case/pattern/command
 binder, block parameter): additionally first-order (mono+ANF rule) and
-representable at a fixed bit width (§7.4; `DEnv.sizeOf` is the
+representable at a fixed bit width (doc/synolon.md §4; `DEnv.sizeOf` is the
 translation's own sizing). Join point labels are exempt — a label's
 signature is its continuation's function type, and a label is not a
 value. -/
@@ -645,7 +645,7 @@ def litRep (t : Ty) : LitRep :=
 def fitsRep (rep : LitRep) (n : Int) : Bool :=
   match rep with
   | .integer   => true
-  | .openR     => true -- unreachable here (types are nat-closed in machine mode).
+  | .openR     => true -- unreachable here (types are nat-closed in Synolon).
   | .bits w    =>
       if n ≥ 0 then n < (2 : Int) ^ w
       else w > 0 && n ≥ -((2 : Int) ^ (w - 1))
@@ -1003,7 +1003,7 @@ def checkTop (defns : List Defn) (top : Id) : Except String Unit := do
       | (.con "ReacT", [_, _, .con "Identity", _]) => pure ()
       | _ => throw s!"the top definition must have type ReacT i o Identity a, not {d.name.sig.ty.render}"
 
-/-! ## Processes (doc/eidos.md §7.4): the machine rules, per-proc
+/-! ## Processes (doc/synolon.md §4): the machine rules, per-proc
 (Lint.hs checkProc) -/
 
 /-- Fuel for terminator-tree recursion (terminator-case nesting
@@ -1038,7 +1038,7 @@ def target (P : PEnv) (l : Id) : Except String (Id × Block) :=
 
 /-- Cell initials are closed (checked in the top-level-only
 environment: no locals are in scope) and cell-typed; the cell's type
-is representable (§7.4). -/
+is representable (doc/synolon.md §4). -/
 def checkCell (env : Env) (procName : String) (c : Cell) : Except String Unit := do
   checkTy env c.ty
   match env.Δ.sizeOf szFuel [] c.ty with
@@ -1217,7 +1217,7 @@ def visitGoto (edges : HashMap Int (List Int)) (msg : String) (fuel : Nat)
     else (edges.getD u []).forM (visitGoto edges msg fuel (stack.insert u))
 termination_by fuel
 
-/-- Signal-guardedness (§7.4): the goto-only subgraph of the block
+/-- Signal-guardedness (doc/synolon.md §4): the goto-only subgraph of the block
 graph is acyclic — every cycle crosses a pause. -/
 def checkGuarded (pr : Proc) : Except String Unit := do
   let entryGotos ← termGotos termFuel #[] pr.entry.term
@@ -1234,7 +1234,7 @@ def checkProc (env : Env) (pr : Proc) : Except String Unit := do
   checkTy env pr.inTy
   checkTy env pr.outTy
   -- The ports are the machine's layout boundary: fixed widths, like
-  -- cells and block parameters (§7.4).
+  -- cells and block parameters (doc/synolon.md §4).
   match env.Δ.sizeOf szFuel [] pr.inTy with
   | .ok _    => pure ()
   | .error e =>
@@ -1263,7 +1263,7 @@ def checkProc (env : Env) (pr : Proc) : Except String Unit := do
     throw s!"process {pr.name} never pauses (no machine to generate)"
   checkGuarded pr
 
-/-! ## Pure-acyclicity (doc/eidos.md §7.4, normative; not yet enforced
+/-! ## Pure-acyclicity (doc/synolon.md §4, normative; not yet enforced
 by the Haskell linter — downstream today via the Hyle checker's
 recursion rule): the call graph of the pure definitions reachable from
 a process is acyclic, and no `rec` binding is reachable. A fueled DFS
@@ -1296,7 +1296,7 @@ def expRefs (fuel : Nat) (acc : Array Int) (e : Exp) : Except String (Array Int)
         let acc ← match b with
           | .nonRec _ rhs => expRefs fuel acc rhs
           | .recB _       =>
-              throw "a rec binding is reachable from a process (the pure call graph must be acyclic, doc/eidos.md §7.4)"
+              throw "a rec binding is reachable from a process (the pure call graph must be acyclic, doc/synolon.md §4)"
           | .join _ _ jb  => expRefs fuel acc jb
         expRefs fuel acc e
     | .jump _ es    => es.foldlM (expRefs fuel) acc
@@ -1324,7 +1324,7 @@ def enterPure (defns : HashMap Int Defn) (unchecked : HashMap Int Defn) (fuel : 
         | none => pure done
     | some d =>
         if stack.contains u then
-          throw s!"recursion among pure definitions reachable from a process: {d.name.render} (the pure call graph must be acyclic, doc/eidos.md §7.4)"
+          throw s!"recursion among pure definitions reachable from a process: {d.name.render} (the pure call graph must be acyclic, doc/synolon.md §4)"
         else if done.contains u then pure done
         else do
           let refs ← expRefs expFuel #[] d.body
@@ -1377,10 +1377,10 @@ end Check
 /-! ## The whole-program judgment -/
 
 open Check in
-/-- The machine-mode well-formedness judgment (module header): the
+/-- The Synolon well-formedness judgment (module header): the
 whole-program pre-ToHyle check — global binder uniqueness and name
 distinctness, datatype well-formedness, the definition rules on the
-non-carrier definitions, the §7.4 machine rules per process,
+non-carrier definitions, the doc/synolon.md §4 machine rules per process,
 pure-acyclicity, and the `top` rule — succeeding exactly when every
 rule holds, with the first violation reported. -/
 def Program.checkMachine (p : Program) : Except String Unit := do

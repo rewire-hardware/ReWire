@@ -1,7 +1,7 @@
 /-
-The Eidos-M pure evaluator: call-by-value big-step evaluation of the
-machine-mode pure fragment (doc/eidos.md §7.5.2) with the full builtin
-denotation table of §7.6, over the committed value domain
+The Synolon pure evaluator: call-by-value big-step evaluation of the
+pure fragment of Synolon (doc/synolon.md §5.2) with the full builtin
+denotation table of doc/synolon.md §6, over the committed value domain
 (Rwv.Eidos.Value). The bit-level rows ("as hyle op") reuse the Hyle
 primitive denotations (Rwv.Hyle.Semantics.Sem.evalOp) through the bv
 readings, so SMT-LIB division/modulus, shift, and reduction conventions
@@ -16,7 +16,7 @@ API (see also the exported wrappers at the bottom):
 
 Fuel discipline: every evaluator function consumes one unit of fuel on
 entry, so fuel bounds total evaluation *work* (steps), not merely the
-call depth. Exhaustion is an error (a well-formed machine-mode program
+call depth. Exhaustion is an error (a well-formed Synolon program
 has an acyclic pure call graph, so exhaustion at generous fuel means
 ill-formed input — e.g. recursion — or too little fuel). Pass generous
 fuel (10^6 is plenty for the test corpus).
@@ -26,7 +26,7 @@ Decisions where the spec leaves latitude (candidates for doc folding):
    not in `Val` — join continuations are not first-class. Lambda
    closures do not capture the join environment: a jump out of a
    closure body to an enclosing join is rejected as unbound (jumps are
-   tail transfers, so machine-mode programs cannot exercise this).
+   tail transfers, so Synolon programs cannot exercise this).
 2. Literal alternatives match via `rep` at the scrutinee's
    representation width (integer: 128-bit residue; Finite: nbits-width
    residue; Vec n Bool: width-n residue) — exactly the translated
@@ -44,11 +44,11 @@ Decisions where the spec leaves latitude (candidates for doc folding):
    global-definition heads and lambdas as function-valued arguments).
 5. The default alternative is accepted anywhere in the alternative
    list (the syntactically first one is used); non-default
-   alternatives are tried in syntactic order first (§7.5.2).
+   alternatives are tried in syntactic order first (doc/synolon.md §5.2).
 6. `litList` evaluates to `Val.vec`, like `litVec` — a list literal is
    only legal as `rwPrimVecFromList`'s static argument (which passes
    it through) and in extern/cryptol argument positions.
-7. §7.6 static-argument requirements mostly vanish at evaluation time
+7. doc/synolon.md §6 static-argument requirements mostly vanish at evaluation time
    (arguments are already values); their side conditions are checked
    dynamically: `rwPrimFinite` range, `rwPrimToFinite` 2^m ≤ n,
    `rwPrimFromFinite` n ≤ 2^m, `rwPrimBitSlice` j+1 ≥ i,
@@ -56,7 +56,7 @@ Decisions where the spec leaves latitude (candidates for doc folding):
 8. Eliminated (`bind`/`ret`/…) and reserved (`usingExtern`/
    `vecFoldR`/`vecFoldL`) builtins evaluate to errors naming the
    builtin — the machine fragment never reaches them.
-9. FOREIGN rows (doc/eidos.md §7.5.5): a SATURATED
+9. FOREIGN rows (doc/synolon.md §5.5): a SATURATED
    `rwPrimCryptol f n impl ā` (`f`/`n` string literals, as ToHyle
    requires after inlining) evaluates the value arguments ā, reps
    them, applies the foreign denotation `Δ.cryF f n τ_impl` — which
@@ -96,7 +96,7 @@ binding first (shadowing by consing). `Val.closL` closures store
 exactly this representation. -/
 abbrev Env := List (Int × Val)
 
-/-- A join-point continuation (§7.5.2): parameters, the captured value
+/-- A join-point continuation (doc/synolon.md §5.2): parameters, the captured value
 and join environments (lexical — a join body may jump to joins that
 enclose its own binding), and the body. -/
 inductive JoinClos where
@@ -120,10 +120,10 @@ def fuelErr : String := "eval: fuel exhausted (recursion in the pure fragment, o
 qualified). -/
 def boolTy : Ty := .con "Bool"
 
-/-- Booleans are ADT values of the prim-basis `Bool` (§7.5.1). -/
+/-- Booleans are ADT values of the prim-basis `Bool` (doc/synolon.md §5.1). -/
 def boolVal (b : Bool) : Val := .con boolTy (if b then "True" else "False") []
 
-/-- The bv reading (§7.5.1) of a value as a Hyle bit vector, via the
+/-- The bv reading (doc/synolon.md §5.1) of a value as a Hyle bit vector, via the
 data-to-bits representation `Val.rep` (on `Vec n Bool` values this is
 exactly the MSB-first bit reading). -/
 def valToBits (Δ : DEnv) (fuel : Nat) (v : Val) : Except String BV :=
@@ -163,7 +163,7 @@ def finBound (who : String) (t : Ty) : Except String Nat :=
       | none   => throw s!"{who}: open Finite bound"
   | _ => throw s!"{who}: expected a Finite type"
 
-/-- The index of a `Proxy n` type (the §7.6 rows whose static data
+/-- The index of a `Proxy n` type (the doc/synolon.md §6 rows whose static data
 rides on a Proxy argument's type, read off the builtin occurrence's
 instantiated signature). -/
 def proxyNatOf (who : String) (t : Ty) : Except String Nat :=
@@ -192,7 +192,7 @@ def domTy (who : String) (doms : List Ty) (k : Nat) : Except String Ty :=
   | none   => throw s!"{who}: missing argument type in the instantiated builtin type"
 
 /-- Flatten an application spine to its head and term arguments; type
-arguments are erased (they may appear in poly-mode fixtures; §7.5.2
+arguments are erased (they may appear in poly-mode fixtures; doc/synolon.md §5.2
 evaluates them away). -/
 def flattenApp (e : Exp) : Exp × List Exp := go [] e
 where go (acc : List Exp) : Exp → Exp × List Exp
@@ -251,7 +251,7 @@ where go (i : Nat) : List Exp → Option (List (String × Nat))
           else none
       | _ => none
 
-/-- The denotation of an integer literal at its carried type (§7.5.1):
+/-- The denotation of an integer literal at its carried type (doc/synolon.md §5.1):
 the 128-bit residue at `Integer`; the (fit-checked) value at
 `Finite n`; the MSB-first width-n residue at `Vec n Bool`. -/
 def litIntVal (ty : Ty) (n : Int) : Except String Val :=
@@ -271,7 +271,7 @@ def litIntVal (ty : Ty) (n : Int) : Except String Val :=
       else throw "integer literal at a non-Bool Vec type"
   | _ => throw s!"integer literal {n} at an unsupported type"
 
-/-- Literal-alternative matching (§7.5.2): the scrutinee equals the
+/-- Literal-alternative matching (doc/synolon.md §5.2): the scrutinee equals the
 literal's denotation at the scrutinee's type — uniformly through
 `rep`, mirroring the translated if-chain's comparison at the
 scrutinee's representation width. -/
@@ -306,7 +306,7 @@ def bvRed (Δ : DEnv) (fuel : Nat) (op : Rwv.Hyle.Op) (negated : Bool) (v : Val)
 
 mutual
 
-/-- E⟦e⟧ρ (§7.5.2): call-by-value big-step evaluation. Application
+/-- E⟦e⟧ρ (doc/synolon.md §5.2): call-by-value big-step evaluation. Application
 spines are flattened (type arguments erased); heads dispatch to
 environment/definition lookup, constructor values, or the builtin
 table. -/
@@ -451,7 +451,7 @@ def evalList (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (es : List Exp)
       pure (v :: vs)
 termination_by fuel
 
-/-- A call to a global definition (§7.5.2): under-application yields a
+/-- A call to a global definition (doc/synolon.md §5.2): under-application yields a
 `closD` partial application; saturation evaluates the body with the
 parameters bound in a fresh environment (definitions are closed);
 over-application applies the result to the leftover arguments. -/
@@ -507,7 +507,7 @@ def applyAll (C : Ctx) (fuel : Nat) (f : Val) (xs : List Val)
       pure (y :: ys)
 termination_by fuel
 
-/-- Case selection (§7.5.2): the first matching non-default
+/-- Case selection (doc/synolon.md §5.2): the first matching non-default
 alternative fires, binding the case binder to the scrutinee's value
 and the field binders to its components; the default (syntactically
 first when present) fires only when no other alternative matches,
@@ -540,7 +540,7 @@ def tryAlts (C : Ctx) (fuel : Nat) (env : Env) (jenv : JEnv) (binder : Id) (v : 
           else tryAlts C fuel env jenv binder v rest dflt E
 termination_by fuel
 
-/-- The builtin denotation table of §7.6, complete (all 60 rows),
+/-- The builtin denotation table of doc/synolon.md §6, complete (all 60 rows),
 plus error arms for the four retired enum entries. The occurrence's
 carried instantiated type `pty` supplies the static data: result
 widths and bounds from the result type, Proxy indices from the
@@ -706,11 +706,11 @@ def evalBuiltin (C : Ctx) (fuel : Nat) (pty : Ty) (b : Builtin) (vs : List Val)
           | .vec (h :: _) => pure h
           | .vec []       => throw "rwPrimMSBit: zero-width argument"
           | _             => throw "rwPrimMSBit: expected a Vec value")
-    -- Eliminated before the M level (§7.6): purification consumes
+    -- Eliminated by procification (doc/eidos.md §7), which consumes
     -- these; none may be reachable from a process.
     | .bind, _ | .ret, _ | .put, _ | .get, _ | .signal, _ | .lift, _ | .extrude, _ | .unfold, _ =>
         throw s!"{b.name}: eliminated before the machine level (must not appear in an evaluated program)"
-    -- Foreign mechanisms: denoted by η (§7.5.5), not by this table —
+    -- Foreign mechanisms: denoted by η (doc/synolon.md §5.5), not by this table —
     -- `evalCore` routes their occurrences to the foreign rows above,
     -- so this arm is unreachable from it.
     | .«extern», _ | .cryptol, _ =>
@@ -730,7 +730,7 @@ the evaluator's definition environment). -/
 def mkDefnMap (defns : List Defn) : HashMap Int Defn :=
   HashMap.ofList (defns.map fun d => (d.name.uniq, d))
 
-/-- E⟦e⟧ρ (doc/eidos.md §7.5.2): evaluate an expression against a
+/-- E⟦e⟧ρ (doc/synolon.md §5.2): evaluate an expression against a
 datatype environment, the global definitions (keyed by name unique —
 see `mkDefnMap`), and a value environment; the join environment starts
 empty. Fuel is consumed on every evaluator step (it bounds total work);
@@ -740,7 +740,7 @@ def eval (Δ : DEnv) (defns : HashMap Int Defn) (fuel : Nat) (env : Eval.Env) (e
   Eval.evalCore ⟨Δ, defns⟩ fuel env [] e E
 
 /-- Apply a function value (`Val.closL`/`Val.closD`) to an argument
-(§7.5.2's semantic application, needed by the machine semantics and
+(doc/synolon.md §5.2's semantic application, needed by the machine semantics and
 used internally by `VecMap`/`VecGenerate`). -/
 def applyVal (Δ : DEnv) (defns : HashMap Int Defn) (fuel : Nat) (f a : Val)
     (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Except String Val :=

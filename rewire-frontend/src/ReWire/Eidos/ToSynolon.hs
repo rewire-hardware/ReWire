@@ -3,7 +3,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
--- | procify (doc/eidos.md §7): convert the reactive fragment of a
+-- | procify (doc/synolon.md §8): convert the reactive fragment of a
 --   monomorphic ANF program into one process. The traversal is
 --   CPS-shaped — @compile e k@ compiles a reactive computation under a
 --   continuation — which right-associates binds by construction:
@@ -15,7 +15,7 @@
 --     resolved from the operation's own residual state stack;
 --   * @rwPrimExtrude m s@ is a cell write (@put@) followed by @m@ — cells
 --     written in entry before the first pause become register initials
---     (§7.1), so no separate initials extraction exists;
+--     (doc/synolon.md §3.4), so no separate initials extraction exists;
 --   * a reactive case becomes a terminator case (arms with commands get
 --     their own blocks — continuations are shared blocks, so the retired
 --     lift-once rule is the default by construction);

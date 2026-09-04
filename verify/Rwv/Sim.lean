@@ -1,7 +1,7 @@
 /-
 The simulation metatheorem skeleton, at the abstract level: Mealy
-machines with halt (the shared shape of the Eidos-M machine
-semantics, doc/eidos.md §7.5.3–§7.5.4, and the Hyle device
+machines with halt (the shared shape of the Synolon machine
+semantics, doc/synolon.md §5.3–§5.4, and the Hyle device
 semantics, doc/hyle.md §6.4, restricted to finite stimulus), and the
 forward-simulation theorem — related initial states plus per-step
 agreement give equal observable traces, up to and excluding the halt.
@@ -19,7 +19,7 @@ namespace Rwv.Sim
 
 /-- A Mealy machine with halt: a step yields an output and a next
 state, or halts (yielding no defined output for that cycle —
-doc/eidos.md §7.5.4). -/
+doc/synolon.md §5.4). -/
 structure Mealy (S I O : Type) where
   step : S → I → Option (O × S)
 

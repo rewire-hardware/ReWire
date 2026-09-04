@@ -19,7 +19,7 @@ must not validate vacuously; eta saturation to signature arity; and
 the library validator (`validateProcE`).
 
 `validateBundle_sound` is the top-level theorem: a `.validated` result
-alone yields the §7.5.6 correspondence for the eta-saturated program
+alone yields the doc/synolon.md §5.6 correspondence for the eta-saturated program
 the artifacts determine — every side condition (including the
 `ForeignC` premise, discharged at the empty foreign environment the
 bundle actually builds) is internal. The scans themselves are
@@ -415,7 +415,7 @@ theorem validateBundle_inv {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}
     exact ⟨p₀, hp, p, pr, rfl, rfl, hhc, ⟨F, hfe⟩, hinst, heta, hprocs, hv⟩
 
 /-- The top-level soundness theorem: a `.validated` bundle result
-alone — no side conditions — yields the §7.5.6 correspondence, at
+alone — no side conditions — yields the doc/synolon.md §5.6 correspondence, at
 every evaluation/goto fuel at least the bundle's and every extern
 interpretation, for the eta-saturated program the artifacts determine.
 The artifacts' processing chain is part of the conclusion, so a caller

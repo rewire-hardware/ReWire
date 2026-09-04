@@ -35,7 +35,7 @@ not compile (there is no runtime to defer to).
 - **Classes across modules**: a class in one module, instances in another
   (orphans included), uses in a third.
 - **Methods with reactive types** (`ReacT`/`Dev` results): dictionaries are
-  eliminated before purification, so class-selected state machines compose
+  eliminated before procification, so class-selected state machines compose
   like any others.
 - **`INLINE`/`NOINLINE` pragmas on instance methods** carry through; a
   `NOINLINE` method does not obstruct dictionary elimination.
@@ -113,8 +113,8 @@ The GHC front end desugars classes to Core dictionaries; the bridge keeps
 user-class dictionaries as ordinary data (constraints become value
 arrows, instance definitions become inlinable definitions, method calls
 become field projections) while erasing built-in evidence (`KnownNat`,
-`Monad`, ...). The Eidos front half then monomorphizes by specialization,
-inlines the instance dictionaries, and partial-evaluates until every
+`Monad`, ...). The Eidos passes then monomorphize by specialization,
+inline the instance dictionaries, and partial-evaluate until every
 definition is representable and dictionary-free — a fixpoint the compiler
 *requires*: if a dictionary survives (for example, one selected by a
 runtime value), compilation fails rather than emitting dynamic dispatch.

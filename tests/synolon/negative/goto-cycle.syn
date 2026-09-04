@@ -1,5 +1,5 @@
 -- EXPECT-LINT-ERROR: crosses no pause
--- Signal-guardedness (doc/eidos.md section 7.4): the goto-only subgraph
+-- Signal-guardedness (doc/synolon.md section 4): the goto-only subgraph
 -- must be acyclic; a#1 and b#3 goto each other without pausing.
 data Bool * {
       False :: Bool;

@@ -1,5 +1,5 @@
 -- A primitive occurrence whose carried type does not instantiate the
--- builtin signature table (doc/eidos.md, section 7.6): rwPrimAdd is
+-- builtin signature table (doc/eidos.md, section 7): rwPrimAdd is
 -- Vec n Bool -> Vec n Bool -> Vec n Bool, never Integer arithmetic.
 -- EXPECT-LINT-ERROR: does not instantiate its signature
 -- EXPECT-LINT-ERROR: rwPrimAdd

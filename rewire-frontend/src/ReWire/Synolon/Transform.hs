@@ -48,7 +48,7 @@ optimizeProc = fixpoint (purgeUnreachable . mergeBlocks . inlineEpsilon)
             sameShape :: Proc -> Proc -> Bool
             sameShape a b = map (idUniq . fst) (procBlocks a) == map (idUniq . fst) (procBlocks b)
 
--- | The machine accounting (doc/eidos.md §7.3): states are the pause
+-- | The machine accounting (doc/synolon.md §7): states are the pause
 --   targets plus the entry (reset) state; the tag is their count's bit
 --   width. Printed as a verbose diagnostic by ReWire.ModCache.
 machineSummary :: Proc -> Text

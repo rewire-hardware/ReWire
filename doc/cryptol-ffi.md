@@ -76,7 +76,7 @@ backend uses (`doc/hyle.md` §8.4):
 - An `enum` value is `tag # padding # arguments`: the constructor's
   declaration index in `nbits(#constructors)` bits at the most-significant
   end, zero-padded to the widest constructor, then the argument bits — the
-  same convention the Eidos fold uses for ReWire ADTs.
+  same convention the Synolon-to-Hyle fold uses for ReWire ADTs.
 - `Z n` is `[nbits n]` holding the residue.
 
 **Interior-only.** Records, enums, and `Z n` are supported *inside* a

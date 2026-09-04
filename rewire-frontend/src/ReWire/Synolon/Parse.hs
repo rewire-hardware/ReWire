@@ -2,8 +2,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Safe #-}
--- | Parser for the Synolon concrete syntax (@.syn@; doc/eidos.md sections
---   7.1 and 9): the process declarations, and the program that embeds Eidos
+-- | Parser for the Synolon concrete syntax (@.syn@; doc/synolon.md sections
+--   3.4 and 9): the process declarations, and the program that embeds Eidos
 --   datatypes and definitions (parsed and elaborated by
 --   'ReWire.Eidos.Parse', as are the expressions inside blocks).
 --   'ReWire.Synolon.Pretty' is the other half of the round-trip contract.

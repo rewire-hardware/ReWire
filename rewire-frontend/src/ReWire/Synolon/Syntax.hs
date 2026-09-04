@@ -3,7 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE Safe #-}
 -- | The abstract syntax of Synolon, the machine-level IR between Eidos and
---   Hyle (doc/eidos.md §7): the
+--   Hyle (doc/synolon.md): the
 --   process calculus — state cells, labeled blocks with commands, and
 --   @pause@/@goto@/@halt@ terminators — over the Eidos expression language,
 --   which this module re-exports: command right-hand sides, cell initials,
@@ -30,7 +30,7 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 
 
--- | A process (doc/eidos.md §7.1): input/output types, an optional clock
+-- | A process (doc/synolon.md §3.4): input/output types, an optional clock
 --   name, named state cells (one per retired state layer), the reset
 --   block (@entry@: parameterless, implicitly labeled), and labeled
 --   blocks. Cell and process names are their own (Text) namespaces;
@@ -75,7 +75,7 @@ data Cmd = CmdBind Annote !Id !Exp
          | CmdPut  Annote !Text !Exp
       deriving (Show, Generic, Typeable, Data, NFData)
 
--- | A block terminator (doc/eidos.md §7.1). A @pause@ supplies all of
+-- | A block terminator (doc/synolon.md §3.4). A @pause@ supplies all of
 --   its target's parameters except the last (the resumed input, supplied
 --   by the machine); a @goto@ supplies all of them.
 data Term = Pause Annote !Exp !Id ![Exp]

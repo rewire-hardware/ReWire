@@ -1,11 +1,11 @@
 /-
 The Eidos typed IR, deep-embedded: a transcription of the abstract
-syntax of doc/eidos.md §3 (Eidos-P) and §7.1 (Eidos-M), mirroring
+syntax of doc/eidos.md §3 and doc/synolon.md §3.4, mirroring
 rewire-frontend ReWire.Eidos.Syntax. As in the implementation, there
 is no separate well-typed machine-level datatype: the pre-ToHyle
-fragment is carved out of the one expression type by the machine-mode
-well-formedness judgment (doc/eidos.md §4.1, §7.4), which is where the
-lint invariants live.
+fragment is carved out of the one expression type by the Synolon
+well-formedness judgment (doc/eidos.md §4.1 and doc/synolon.md §4),
+which is where the lint invariants live.
 
 Names are pairs of display text and unique; equality and hashing are
 by unique only (§2). Annotations are omitted (semantically inert).
@@ -16,9 +16,9 @@ namespace Rwv.Eidos
 
 /-- The 60 builtins of ReWire.Builtins, plus four retired names
 (`unfold`, `vecFoldR`, `vecFoldL`, `usingExtern`) the parser still
-accepts so older dumps load — they have no §7.6 signature and no
+accepts so older dumps load — they have no doc/synolon.md §6 signature and no
 denotation. Occurrences print as `rwPrim<Name>`; signatures and
-machine-level denotations: doc/eidos.md §7.6. -/
+machine-level denotations: doc/synolon.md §6. -/
 inductive Builtin where
   | error | «extern» | cryptol
   | bind | ret
@@ -220,17 +220,17 @@ structure DataDefn where
   cons : List DataCon
 deriving Repr
 
-/-! ## The M level (§7.1) -/
+/-! ## Processes (doc/synolon.md §3.4) -/
 
 /-- A state cell: name, type, and optional initial (none = `undef`,
-which denotes the zero value of the type; §7.1, §7.5.4). -/
+which denotes the zero value of the type; doc/synolon.md §3.4, doc/synolon.md §5.4). -/
 structure Cell where
   name : String
   ty   : Ty
   init : Option Exp
 deriving Repr
 
-/-- Commands (§7.1): pure computation, cell read, cell write. -/
+/-- Commands (doc/synolon.md §3.4): pure computation, cell read, cell write. -/
 inductive Cmd where
   | bind (x : Id) (e : Exp)
   | get  (x : Id) (cell : String)
@@ -239,7 +239,7 @@ deriving Repr
 
 mutual
 
-/-- Terminators (§7.1): pause (emit and resume next cycle), goto
+/-- Terminators (doc/synolon.md §3.4): pause (emit and resume next cycle), goto
 (intra-cycle transfer, saturated), halt, terminator case. -/
 inductive Term where
   | pause (out : Exp) (l : Id) (args : List Exp)
@@ -248,7 +248,7 @@ inductive Term where
   | cases (scrut : Exp) (alts : List TAlt)
 deriving Repr
 
-/-- A terminator-case alternative (no case binder, §7.1). -/
+/-- A terminator-case alternative (no case binder, doc/synolon.md §3.4). -/
 inductive TAlt where
   | mk (con : AltCon) (binders : List Id) (term : Term)
 deriving Repr
@@ -263,7 +263,7 @@ structure Block where
   term   : Term
 deriving Repr
 
-/-- A process (§7.1): input/output types, optional clock-domain
+/-- A process (doc/synolon.md §3.4): input/output types, optional clock-domain
 annotation, cells, the parameterless entry block, and labeled blocks. -/
 structure Proc where
   name   : String

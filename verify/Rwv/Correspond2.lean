@@ -1,6 +1,6 @@
 /-
 The concrete instantiation legs of the simulation metatheorem: the two
-stream semantics (`Rwv.Eidos.Proc.run`, doc/eidos.md §7.5.4, and
+stream semantics (`Rwv.Eidos.Proc.run`, doc/synolon.md §5.4, and
 `Rwv.Hyle.Sem.run`, doc/hyle.md §6.4) presented as induced
 `Rwv.Sim.MealyE` machines, with proved run-equivalence lemmas
 connecting each concrete run function to `MealyE.run` of its induced
@@ -111,15 +111,15 @@ theorem run_eq_mealy (F : Sem.FEnv) (X : Sem.XEnv) (dev : Device)
 
 end Hyle
 
-/-! ## The Eidos-M process as an induced Mealy machine
-     (doc/eidos.md §7.5.3–§7.5.4) -/
+/-! ## The Synolon process as an induced Mealy machine
+     (doc/synolon.md §5.3–§5.4) -/
 
 namespace Eidos
 
-/-- The Mealy machine induced by an Eidos-M process's block graph:
+/-- The Mealy machine induced by an Synolon process's block graph:
 states are machine states, one step is `Machine.step`, and a halt
 terminator halts the machine — the halt answer is not part of the
-observable output trace (doc/eidos.md §7.5.4). -/
+observable output trace (doc/synolon.md §5.4). -/
 def inducedMealy (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel gotoFuel : Nat)
     (blocks : HashMap Int Block)
     (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) : Rwv.Sim.MealyE MState Val Val where
@@ -215,7 +215,7 @@ the halt answer) or stepped to an initial machine state from which the
 induced machine's run produces exactly the trace's outputs. The
 trace's `halted` component is deliberately unrelated to the machine
 run past this — the halt answer is not part of the observable output
-trace (doc/eidos.md §7.5.4). -/
+trace (doc/synolon.md §5.4). -/
 theorem run_outs_eq_mealy (Δ : DEnv) (defns : HashMap Int Defn)
     (evalFuel gotoFuel : Nat) (p : Proc) (inputs : List Val) (mt : MTrace)
     (blocks : HashMap Int Block) {E : Rwv.Hyle.Sem.EEnv}

@@ -1,5 +1,5 @@
 /-
-The Eidos↔Hyle correspondence, stated formally (doc/eidos.md §7.5.6):
+The Eidos↔Hyle correspondence, stated formally (doc/synolon.md §5.6):
 well-typedness of semantic values, agreement of a machine trace with a
 device trace through the representation function (up to and excluding
 the halting cycle), and the top-level correspondence Prop over the two
@@ -18,7 +18,7 @@ namespace Rwv.Eidos
 open Std (HashMap)
 
 /-- Well-typedness of a semantic value at a representable type
-(doc/eidos.md §7.5.1): the inductive carving of `V_τ` out of `Val`.
+(doc/synolon.md §5.1): the inductive carving of `V_τ` out of `Val`.
 Constructor values must be constructors of the type's datatype with
 fields well-typed at the instantiated field types. -/
 inductive Val.HasTy (Δ : DEnv) : Val → Ty → Prop where
@@ -53,7 +53,7 @@ inductive Val.HasTy (Δ : DEnv) : Val → Ty → Prop where
 /-- Agreement of a machine trace with a device trace through the
 representation function: the rep-encoded machine outputs equal the
 device outputs cycle for cycle; when the machine halted, they are a
-prefix (the device's remaining cycles are unspecified, §7.5.4). -/
+prefix (the device's remaining cycles are unspecified, doc/synolon.md §5.4). -/
 def TraceAgrees (Δ : DEnv) (fuel : Nat) (outTy : Ty)
     (mt : MTrace) (ht : List (List Rwv.Hyle.BV)) : Prop :=
   ∃ encOuts, mt.outs.mapM (Val.portSplit Δ fuel outTy) = .ok encOuts ∧
@@ -61,7 +61,7 @@ def TraceAgrees (Δ : DEnv) (fuel : Nat) (outTy : Ty)
     | none   => ht = encOuts
     | some _ => encOuts <+: ht
 
-/-- The §7.5.6 correspondence between a machine-mode process and a
+/-- The doc/synolon.md §5.6 correspondence between a Synolon process and a
 compiled Hyle program, over the two mechanized semantics: for every
 well-typed input trace, whenever both sides run successfully — the
 machine on the algebraic inputs, the device on their port-split
@@ -118,7 +118,7 @@ theorem Refines.corresponds {Δ : DEnv} {defns : HashMap Int Defn}
 
 /-! ## The zero value is well typed
 
-`DEnv.zeroVal` (doc/eidos.md §7.5.1) fails on every type with no
+`DEnv.zeroVal` (doc/synolon.md §5.1) fails on every type with no
 values — `Finite 0` (uninhabited, matching Data.Finite), empty
 datatypes, open bounds — so its success is itself the inhabitation
 witness: whatever it returns inhabits the requested type,

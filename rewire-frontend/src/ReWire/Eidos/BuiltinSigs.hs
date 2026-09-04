@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
--- | The Eidos-level builtin signature table (doc/eidos.md §7.6): the
+-- | The Eidos-level builtin signature table (doc/eidos.md §7, doc/synolon.md §6): the
 --   signature scheme every 'Prim' occurrence must instantiate, and the
 --   one-way matcher the linter checks occurrences with.
 --
@@ -59,7 +59,7 @@ matchesSig (Sig tvs sigT) t = case go sigT (natNorm t) (Map.empty, []) of
                   (Just n, Just n') -> n == n'
                   _                 -> True -- open on either side: unchecked.
 
--- | The signature scheme of each builtin (doc/eidos.md §7.6).
+-- | The signature scheme of each builtin (doc/eidos.md §7, doc/synolon.md §6).
 builtinSig :: Builtin -> Maybe Sig
 builtinSig = \ case
       Error           -> Just $ Sig [aS] $ string --> va

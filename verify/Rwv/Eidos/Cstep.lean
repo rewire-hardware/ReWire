@@ -8965,7 +8965,7 @@ end DagLegSound
 
 set_option maxHeartbeats 1600000 in
 /-- THE end-to-end theorem: a passing `validateProc` run certifies the
-§7.5.6 correspondence, at every evaluation fuel at least the
+doc/synolon.md §5.6 correspondence, at every evaluation fuel at least the
 validator's own and at every goto fuel. The composition is exactly the
 schema's: `SimP` from `checkLabel_sound` per label (a Hyle device
 never halts, so the right machine never stops first), `hasTy_vty` for
@@ -9098,8 +9098,8 @@ bit-level behavior is exactly `rep (η (decode …))`, cycle for
 cycle. -/
 
 /-- Algebraic extern environments: per extern name AND static generic
-instantiation, an interpretation on machine values (doc/eidos.md
-§7.5.5's η over ℕ^g, for the model-less combinational tier — distinct
+instantiation, an interpretation on machine values (doc/synolon.md
+§5.5's η over ℕ^g, for the model-less combinational tier — distinct
 instantiations are distinct black boxes). -/
 def EtaAlg := String → List Nat → Option (List Val → Except String Val)
 

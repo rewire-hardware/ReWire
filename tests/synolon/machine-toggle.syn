@@ -1,7 +1,7 @@
 -- A one-cell toggler: exercises cells (with a closed initial), entry
 -- (write before first pause), get/put commands, a pure-computation
 -- command calling a definition, a pause-and-goto-free terminator case,
--- and a self-pausing block (doc/eidos.md sections 7.1 and 7.4).
+-- and a self-pausing block (doc/synolon.md sections 3.4 and 4).
 data Bool * {
       False :: Bool;
       True :: Bool

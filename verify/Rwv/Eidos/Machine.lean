@@ -1,5 +1,5 @@
 /-
-The Eidos-M machine semantics (doc/eidos.md §7.5.3–§7.5.4): machine
+The Synolon machine semantics (doc/synolon.md §5.3–§5.4): machine
 states, block-body execution with intra-cycle goto chasing, the
 one-cycle step, initialization by entry-block execution, and the
 halt-prefix stream semantics.
@@ -24,7 +24,7 @@ namespace Rwv.Eidos
 
 open Std (HashMap)
 
-/-- A machine state (§7.5.3): a pause-target label (by unique), saved
+/-- A machine state (doc/synolon.md §5.3): a pause-target label (by unique), saved
 values for its parameters except the resumed input, and the cell
 store. -/
 structure MState where
@@ -40,11 +40,11 @@ inductive StepOut where
 
 namespace Machine
 
-/-- Select a terminator-case alternative (§7.5.3, selection as in
-§7.5.2, literal matching shared with the pure evaluator): first
+/-- Select a terminator-case alternative (doc/synolon.md §5.3, selection as in
+doc/synolon.md §5.2, literal matching shared with the pure evaluator): first
 matching constructor or literal alternative; the default
 (syntactically first, when present) fires only when no other matches.
-Terminator cases have no case binder (§7.1). -/
+Terminator cases have no case binder (doc/synolon.md §3.4). -/
 def selectTAlt (Δ : DEnv) (fuel : Nat) (scrut : Val) (alts : List TAlt) :
     Except String (List Id × Term) := do
   for alt in alts do
@@ -68,7 +68,7 @@ def bindFields (env : Eval.Env) (scrut : Val) (bs : List Id) : Eval.Env :=
   | _ => env
 
 /-- Run a block's commands, threading the environment and cell store
-(the command clauses of `X⟦·⟧`, §7.5.3). -/
+(the command clauses of `X⟦·⟧`, doc/synolon.md §5.3). -/
 def runCmds (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel : Nat)
     (env₀ : Eval.Env) (cells₀ : HashMap String Val) (cmds : List Cmd)
     (E : Rwv.Hyle.Sem.EEnv := Rwv.Hyle.Sem.eEmpty) :
@@ -86,7 +86,7 @@ def runCmds (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel : Nat)
         let v ← eval Δ defns evalFuel env a E
         pure (env, cells.insert s v)
 
-/-- Execute a block body (`X⟦cmds; term⟧` of §7.5.3) under an
+/-- Execute a block body (`X⟦cmds; term⟧` of doc/synolon.md §5.3) under an
 environment already binding the block's parameters: thread the cell
 store through the commands, then run the terminator. Gotos transfer to
 another block intra-cycle, consuming goto fuel (bounded by
@@ -128,7 +128,7 @@ where
         | gotoFuel' + 1 => runTerm gotoFuel' (bindFields env scrut bs) cells t
   termination_by t => (gotoFuel, sizeOf t)
 
-/-- The initial cell store σ₀ (§7.5.4): declared initials evaluated
+/-- The initial cell store σ₀ (doc/synolon.md §5.4): declared initials evaluated
 closed (none exist on the current pipeline); `undef` initials are the
 zero value of the cell's type. -/
 def initCells (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel : Nat) (p : Proc)
@@ -140,7 +140,7 @@ def initCells (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel : Nat) (p : Proc)
       | none   => Δ.zeroVal evalFuel c.ty
     pure (σ.insert c.name v)
 
-/-- The one-cycle step (§7.5.3): resume the state's block with its
+/-- The one-cycle step (doc/synolon.md §5.3): resume the state's block with its
 saved arguments and the cycle's input in the last parameter slot. -/
 def step (Δ : DEnv) (defns : HashMap Int Defn) (blocks : HashMap Int Block)
     (evalFuel gotoFuel : Nat) (s : MState) (input : Val)
@@ -174,13 +174,13 @@ def foldStep (Δ : DEnv) (defns : HashMap Int Defn) (blocks : HashMap Int Block)
 
 end Machine
 
-/-- A finite observable trace (§7.5.4): the outputs up to (and
+/-- A finite observable trace (doc/synolon.md §5.4): the outputs up to (and
 excluding) the halting cycle, and the process result if it halted. -/
 structure MTrace where
   outs   : List Val
   halted : Option Val
 
-/-- The n-prefix of 𝔐⟦P⟧ (§7.5.4): initialize the cells, run the
+/-- The n-prefix of 𝔐⟦P⟧ (doc/synolon.md §5.4): initialize the cells, run the
 parameterless entry block to its first pause (the emitted value is
 unobservable — the reset step), then iterate the one-cycle step over
 the stimulus, ending early at a halt. -/

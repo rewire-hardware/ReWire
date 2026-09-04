@@ -71,7 +71,7 @@ the exact pinned Lean version automatically):
 
 ```
 $ rwc --certify -o fibo1.sv tests/golden/fibo1.hs
-certify: VALIDATED: the compiled device (fibo1.rwc) implements the Eidos machine (fibo1.eir).
+certify: VALIDATED: the compiled device (fibo1.rwc) implements the Synolon machine (fibo1.syn).
 ```
 
 (Without the validator installed, the same command writes `fibo1.sv` but

@@ -1,7 +1,7 @@
 /-
 rwv-eidos-diff: the differential-testing driver for the mechanized
-Eidos-M machine semantics (doc/eidos.md §7.5) against rwc's compiled
-Hyle program — the §7.5.6 correspondence, checked per test by trace
+Synolon machine semantics (doc/synolon.md §5) against rwc's compiled
+Hyle program — the doc/synolon.md §5.6 correspondence, checked per test by trace
 comparison.
 
     rwv-eidos-diff <file.syn> <file.rwc> [--cycles N] [--seed S]
@@ -20,7 +20,7 @@ the proc's input type τ_I, and
     format — a YAML block sequence of `port: value` maps, every port
     written every cycle (so rwc's sticky-map semantics is inert), the
     values the decimal readings of `Val.portSplit v` at τ_I;
-  * runs the §7.5.4 halt-prefix machine semantics (`Proc.run`) on the
+  * runs the doc/synolon.md §5.4 halt-prefix machine semantics (`Proc.run`) on the
     algebraic inputs and prints the output trace to stdout in exactly
     rwc's YAML trace format (via Rwv.Diff.printTrace, port-splitting
     each output value at τ_O against the device's output port names),
@@ -296,8 +296,8 @@ interpretation per extern (a canonical value of the occurrence's
 result type, drawn from a seed mixing the extern's name and the
 argument bits, then `rep`ped — canonical by construction, so the
 decode gate always passes), installs it as the bit-level extern
-environment `E` for BOTH mechanized semantics, and checks the §7.5.6
-correspondence INTERNALLY: the Eidos-M trace against the mechanized
+environment `E` for BOTH mechanized semantics, and checks the doc/synolon.md §5.6
+correspondence INTERNALLY: the Synolon trace against the mechanized
 Hyle device run at the same `E` (the ∀η statement at one concrete η).
 The result types are scraped from the machine dump's own rwPrimExtern
 occurrences (the impl monotype, argument 7). -/
@@ -385,12 +385,12 @@ def main (argv : List String) : IO UInt32 := do
     | .error e => err s!"{args.eirFile}: parse error: {e}"
     | .ok p₀ => do
       let p₁ := addPrims p₀
-      -- The machine-mode well-formedness judgment (Rwv.Eidos.Check),
+      -- The Synolon well-formedness judgment (Rwv.Eidos.Check),
       -- on the program as rwc dumped it (pre eta-saturation, which is
       -- this driver's local workaround) — so the differential harness
       -- exercises the judgment corpus-wide before every run.
       match p₁.checkMachine with
-      | .error e => err s!"{args.eirFile}: machine-mode well-formedness: {e}"
+      | .error e => err s!"{args.eirFile}: Synolon well-formedness: {e}"
       | .ok () => do
       match etaSaturate 1000000000 p₁ with
       | .error e => err s!"{args.eirFile}: eta-saturation: {e}"
@@ -474,5 +474,5 @@ def main (argv : List String) : IO UInt32 := do
                           if outBVs == hyTrace.take outBVs.length then
                             IO.eprintln s!"rwv-eidos-diff: eta self-test OK ({outBVs.length} cycle(s), externs: {String.intercalate "," (etaTys.map (·.1))})"
                           else
-                            return ← err "eta self-test: the Eidos-M trace and the mechanized Hyle trace DISAGREE at the synthesized η"
+                            return ← err "eta self-test: the Synolon trace and the mechanized Hyle trace DISAGREE at the synthesized η"
                     return 0

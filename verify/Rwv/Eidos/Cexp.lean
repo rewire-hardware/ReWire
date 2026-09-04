@@ -1,6 +1,6 @@
 /-
 The verified Eidos-side expression compiler: `cexp` compiles the CORE
-machine-mode pure fragment of Eidos (doc/eidos.md §7.5.2, §7.6) into
+pure fragment of Synolon (doc/synolon.md §5.2, §6) into
 the Hyle-side normal-form language of the verified reflection bridge
 (Rwv.Hyle.Bridge.NF), mirroring the reference lowering
 (rewire-frontend ReWire.Eidos.ToHyle: transExp / caseChain / toPrim)
@@ -20,19 +20,19 @@ construct for construct:
   * saturated calls to pure definitions (inlined through the
     definition map, fuel-decremented, exactly as Bridge.symExp inlines
     Hyle calls),
-  * the `toPrim` bit-vector rows of §7.6: Add Sub Mul Div Mod Pow,
+  * the `toPrim` bit-vector rows of doc/synolon.md §6: Add Sub Mul Div Mod Pow,
     And Or XOr XNor Not, LShift RShift RShiftArith, Eq Gt GtEq Lt
     LtEq, LAnd LOr LNot (redor expansions), RAnd RNAnd ROr RNor RXOr
     RXNor, MSBit, plus Bits (the identity) and Resize (zext/trunc).
 
-The second half of this file finishes the machine-mode fragment
+The second half of this file finishes the Synolon fragment
 with the FULL compiler `cexpJ`/`cexpFull`: join points and jumps in
 pure bodies (a compile-time join environment mirroring the
 evaluator's `JEnv`), ToHyle's commuting rewrites (lambda applied,
 let-headed and case-headed applications — realized as a `pend`ing
 list of already-compiled arguments, with definition calls consuming
 a prefix and passing the remainder into the body, mirroring
-`applyMany`), the remaining first-order §7.6 rows (the Finite
+`applyMany`), the remaining first-order doc/synolon.md §6 rows (the Finite
 family, VecReplicate/Concat/Reverse/Slice/RSlice/Index/IndexProxy/
 FromList, NatVal, BitSlice/BitIndex at syntactic Finite literals,
 and live `error` as the checked zero value), and the HIGHER-ORDER
@@ -80,7 +80,7 @@ Three further gaps are closed:
     and `vty_teqN` transports canonicality across (see the teqN
     section header; nat arithmetic inside a datatype's own arguments
     remains outside the fragment and is rejected honestly).
-  * FromFinite at ANY §7.6-legal width (n ≤ 2^m): `VTy.finite` now
+  * FromFinite at ANY doc/synolon.md §6-legal width (n ≤ 2^m): `VTy.finite` now
     tracks `i < bound` (matching `Val.HasTy`), which makes the
     resize value-preserving on both the widening and narrowing side.
     The tracked bound is maintained by every producer — the Finite
@@ -127,7 +127,7 @@ Honest side conditions, stated exactly:
     assumes it of the definition's arguments).
   * `denvOk Δ` — the prim-basis `Bool` declaration is present and
     standard (the bit-level builtin rows produce `Bool`-typed values
-    through the shared §7.5.1 bit readings, and their representation
+    through the shared doc/synolon.md §5.1 bit readings, and their representation
     facts need Bool's two-constructor layout).
   * Both sides read the SAME definition map (the evaluator's context
     is `⟨Δ, dmap⟩`), and the eval-side join environment is arbitrary
@@ -174,7 +174,7 @@ variable {E : Rwv.Hyle.Sem.EEnv}
 Structural equality on var-free types: the compiler compares types
 where the soundness proof must transport canonicality, and syntactic
 equality transports for free. Type variables are never equal (the
-machine-mode fragment is monomorphic; a variable in a compared
+Synolon fragment is monomorphic; a variable in a compared
 position is a compile-time rejection, not a soundness question). -/
 
 def teq : Ty → Ty → Bool
@@ -429,7 +429,7 @@ private theorem flatten_eq_two : ∀ {t h₀ a b : Ty}, Ty.flatten t = (h₀, [a
 
 /-! ## The datatype-environment side condition
 
-The bit-level builtin rows produce `Bool` values through the §7.5.1
+The bit-level builtin rows produce `Bool` values through the doc/synolon.md §5.1
 bit readings (`Eval.bitsToVec`, `Eval.boolVal`); their representation
 facts need the prim-basis `Bool` declaration to be present and
 standard. -/
@@ -461,7 +461,7 @@ lenient `matchTy` the sizing functions use — determinism of `matchTy`
 makes the compiler's and the predicate's substitutions coincide).
 Finite values track `i < bound` (matching `Val.HasTy`) —
 the fact that makes `rwPrimFromFinite`'s resize value-preserving at
-every §7.6-legal width. -/
+every doc/synolon.md §6-legal width. -/
 
 def ctorOf (Δ : DEnv) (t : Ty) (c : String) : Prop :=
   match Ty.flatten t with
@@ -613,7 +613,7 @@ def sliceNF (off w : Nat) (e : NF) : NF :=
 
 Fuel-free: all static data comes from the occurrence's instantiated
 type (result widths from the result type) and from the compiled
-arguments' annotated widths. Only the §7.6 rows named in the header
+arguments' annotated widths. Only the doc/synolon.md §6 rows named in the header
 are accepted. -/
 
 /-- The length of a `Vec n Bool` type (the element type must be
@@ -729,7 +729,7 @@ def mkGamma (params : List Id) (pas : List (NF × Ty)) : HashMap Int (NF × Ty) 
   bindFieldsΓ params pas ∅
 
 /-- An integer literal at its carried type (ToHyle: `bitVec sz n` at
-the type's width), restricted to the three §7.5.1 bit-reading types. -/
+the type's width), restricted to the three doc/synolon.md §5.1 bit-reading types. -/
 def clitInt (ty : Ty) (n : Int) : Except String (NF × Ty) :=
   match Ty.flatten ty with
   | (.con "Integer", []) => .ok (.lit ⟨128, BitVec.ofInt 128 n⟩, ty)
@@ -3970,7 +3970,7 @@ def mkParamRho (hps : List String) (hws : List Nat) : HashMap String NF :=
 
 /-! # The full compiler
 
-The core fragment extended with the remaining machine-mode pure forms,
+The core fragment extended with the remaining Synolon pure forms,
 mirroring the reference lowering construct for construct:
 
   * join points and jumps in pure bodies (`letE join` binds a
@@ -3985,9 +3985,9 @@ mirroring the reference lowering construct for construct:
     syntax but by a `pend`ing list of already-compiled arguments that
     heads consume (definition calls may leave a remainder for the
     body's result, mirroring `applyMany`);
-  * the remaining first-order §7.6 rows: Finite (literal,
+  * the remaining first-order doc/synolon.md §6 rows: Finite (literal,
     range-checked), FiniteMin/MaxBound, ToFinite, ToFiniteMod,
-    FromFinite (at any §7.6-legal width, n ≤ 2^m — `VTy.finite`'s
+    FromFinite (at any doc/synolon.md §6-legal width, n ≤ 2^m — `VTy.finite`'s
     tracked bound makes the resize value-preserving),
     VecReplicate, VecConcat, VecReverse, VecSlice, VecRSlice,
     VecIndexProxy, VecIndex (the dynamic shift construction),
@@ -4167,7 +4167,7 @@ def rowFromFinite (res : Ty) : List (NF × Ty) → Except String (NF × Ty)
   | [(a, ta)] => do
       let n ← finBoundT "rwPrimFromFinite" ta
       let m ← vecBoolLen "rwPrimFromFinite" res
-      -- §7.6: any m with n ≤ 2^m — the canonicality (`VTy.finite`'s
+      -- doc/synolon.md §6: any m with n ≤ 2^m — the canonicality (`VTy.finite`'s
       -- tracked bound) makes the resize value-preserving
       if n ≤ 2 ^ m then .ok (resizeNF m (nbits n) a, res)
       else .error "rwPrimFromFinite: Finite bound not representable"
@@ -5518,7 +5518,7 @@ private theorem setWidth_ofNat {w m v : Nat} (hv : v < 2 ^ w) (hvm : v < 2 ^ m) 
   rw [BitVec.toNat_setWidth, BitVec.toNat_ofNat, BitVec.toNat_ofNat,
       Nat.mod_eq_of_lt hv]
 
-/-- The width-1 slice at LSB index `i` is the §7.5.1 bit reading. -/
+/-- The width-1 slice at LSB index `i` is the doc/synolon.md §5.1 bit reading. -/
 private theorem extract_one_b1 (x : BV) (i : Nat) :
     (⟨1, x.bits.extractLsb' i 1⟩ : BV) = Rwv.Hyle.Sem.b1 (x.bits.getLsbD i) := by
   cases hb : x.bits.getLsbD i with

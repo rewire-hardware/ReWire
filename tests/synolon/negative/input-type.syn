@@ -1,6 +1,6 @@
 -- EXPECT-LINT-ERROR: not the process input type
 -- A pause target's last parameter is the resumed input, typed by the
--- process input type (doc/eidos.md section 7.1).
+-- process input type (doc/synolon.md section 3.4).
 data Bool * {
       False :: Bool;
       True :: Bool

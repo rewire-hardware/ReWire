@@ -1,6 +1,6 @@
 /-
 The canonical bits-to-data decoder `decode` — the inverse of the
-representation function `Val.rep` (doc/eidos.md §7.5.1, ToHyle's
+representation function `Val.rep` (doc/synolon.md §5.1, ToHyle's
 ctorRep layout: tag | zero pad | fields, MSB-first) — and THE
 round-trip lemma of the foreign tier's semantic heart:
 

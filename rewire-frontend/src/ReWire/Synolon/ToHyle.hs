@@ -3,7 +3,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Trustworthy #-} -- Trustworthy, not Safe: invokes rwcry (the Cryptol translator).
--- | The Synolon-to-Hyle producer (the direct fold; doc/eidos.md §7.3): the
+-- | The Synolon-to-Hyle producer (the direct fold; doc/synolon.md §7): the
 --   pure fragment translates per-construct (n-ary cases compile to
 --   if-chains over constructor tags; joins are lifted to definitions
 --   first), and each process folds to an explicit device: one definition
