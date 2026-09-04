@@ -20,5 +20,3 @@ proc looper : Bool ~> Bool {
             goto a#1 (v#4)
       }
 }
-
-top Main.start#10

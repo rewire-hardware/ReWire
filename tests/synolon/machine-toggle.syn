@@ -30,5 +30,3 @@ proc main : Bool ~> Bool {
             }
       }
 }
-
-top Main.start#20

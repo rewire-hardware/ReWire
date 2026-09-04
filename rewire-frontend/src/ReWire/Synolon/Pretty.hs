@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
--- | The Synolon concrete syntax pretty-printer (doc/eidos.md §7.1, §9):
+-- | The Synolon concrete syntax (@.syn@) pretty-printer (doc/eidos.md §7.1,
+--   §9):
 --   the process declarations, and the program that embeds Eidos datatypes
 --   and definitions (printed by 'ReWire.Eidos.Pretty', as are the
 --   expressions inside blocks). 'ReWire.Synolon.Parse' is the other half of
@@ -27,7 +28,7 @@ import ReWire.Synolon.Syntax
 import Data.List (intersperse)
 import Data.Text (Text)
 
--- | Render a whole program in the concrete syntax.
+-- | Render a whole program in the .syn concrete syntax.
 prettyProgram :: Program -> Text
 prettyProgram = prettyPrint' . ppProgram
 
@@ -103,14 +104,13 @@ ppAtomE e = case e of
       _          -> parens $ ppExp e
 
 
--- | A whole program: datatypes, definitions, processes, and the @top@
---   designation, separated by blank lines.
+-- | A whole program: datatypes, definitions, and processes, separated by
+--   blank lines.
 ppProgram :: Program -> Doc an
-ppProgram (Program datas defns procs top) = vsep $ intersperse (text "") $
+ppProgram (Program datas defns procs) = vsep $ intersperse (text "") $
       map ppDataDefn datas
       <> map ppDefn defns
       <> map ppProc procs
-      <> [ text "top" <+> ppId top ]
 
 ---
 --- Pretty instances (the Eidos types keep theirs in ReWire.Eidos.Pretty).

@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Config
-      ( interpret, Config, getOutFile, machineFile
+      ( interpret, Config, getOutFile, eidosFile, synolonFile
       , Language (..), ResetFlag (..), OutFlag (..), Certify (..)
       , verbose, pretty, flatten
       , target, clock, reset
@@ -11,7 +11,7 @@ module ReWire.Config
       , inputSigs, stateSigs, outputSigs
       , vhdlPackages, inputsFile, defaultInputsFile, outFile
       , noWarn, wError
-      , start, top, loadPath, cycles, depth, dump, source, rtlOpt, eidos, certify, noHalt, debugLint
+      , start, top, loadPath, cycles, depth, dump, source, rtlOpt, eidos, synolon, certify, noHalt, debugLint
       , testbench
       , stableNames, locators, noLocators
       , pDebug
@@ -69,8 +69,9 @@ data Config = Config
       , _cycles       :: Maybe Natural -- ^ --cycles: Nothing means derive a default from the inputs (see effectiveCycles).
       , _depth        :: Natural
       , _dump         :: Natural -> Bool
-      , _eidos        :: Bool
-      , _certify      :: Certify -- ^ --certify: validate the compiled device against the Eidos machine IR with the verified validator.
+      , _eidos        :: Bool -- ^ --eidos: dump the Eidos IR after its last pass (<out>.eir).
+      , _synolon      :: Bool -- ^ --synolon: dump the Synolon IR after its last pass (<out>.syn).
+      , _certify      :: Certify -- ^ --certify: validate the compiled device against the Synolon IR with the verified validator.
       , _noHalt       :: Bool
       , _debugLint    :: Bool
       , _rtlOpt       :: Natural
@@ -105,6 +106,7 @@ defaultConfig = Config
       , _depth        = 8
       , _dump         = const False
       , _eidos        = False
+      , _synolon      = False
       , _certify      = CertifyOff
       , _noHalt       = False
       , _debugLint    = False
@@ -140,11 +142,15 @@ setOutFlag f conf ins | ins       = over outFlags (Set.insert f) conf
 
 type ErrorMsg = Text
 
--- | The machine-level IR dump beside the output — the @--eidos@ dump, and
---   the @--certify@ source artifact (both writer and validator invocation
---   compute the path here): @<out>.eir@.
-machineFile :: Config -> FilePath -> FilePath
-machineFile c filename = fromMaybe filename (c^.outFile) -<.> "eir"
+-- | The Eidos IR dump beside the output (the @--eidos@ dump): @<out>.eir@.
+eidosFile :: Config -> FilePath -> FilePath
+eidosFile c filename = fromMaybe filename (c^.outFile) -<.> "eir"
+
+-- | The Synolon IR dump beside the output — the @--synolon@ dump, and the
+--   @--certify@ source artifact (both the writer and the validator
+--   invocation compute the path here): @<out>.syn@.
+synolonFile :: Config -> FilePath -> FilePath
+synolonFile c filename = fromMaybe filename (c^.outFile) -<.> "syn"
 
 getOutFile :: Config -> FilePath -> FilePath
 getOutFile c filename = flip fromMaybe (c^.outFile) $ case c^.target of
@@ -195,6 +201,7 @@ interpret = foldM interp defaultConfig
                   FlagCycles n                    -> readNat "--cycles" n  >>= \ v -> pure $ cycles .~ Just v $ c
                   FlagEvalDepth n                 -> readNat "--depth" n   >>= \ v -> pure $ depth .~ v $ c
                   FlagEidos                       -> pure $ eidos .~ True $ c
+                  FlagSynolon                     -> pure $ synolon .~ True $ c
                   FlagCertify Nothing             -> pure $ certify .~ CertifyRequired $ c
                   FlagCertify (Just "required")   -> pure $ certify .~ CertifyRequired $ c
                   FlagCertify (Just "warn")       -> pure $ certify .~ CertifyWarn $ c

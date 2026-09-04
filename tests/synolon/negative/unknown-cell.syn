@@ -18,5 +18,3 @@ proc main : Bool ~> Bool {
             pause i#2 -> go#1 ()
       }
 }
-
-top Main.start#10

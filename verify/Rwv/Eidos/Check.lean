@@ -537,7 +537,7 @@ def checkTy (env : Env) (t : Ty) : Except String Unit := do
   checkTyScope env t
   checkClosed (Ty.natNorm t)
   if t.reacOrStateT then
-    throw s!"reactive type {t.render} in machine mode (purification has retired ReacT/StateT/Identity)"
+    throw s!"reactive type {t.render} in Synolon (procification has retired ReacT/StateT/Identity)"
 
 /-! ## Occurrences and binders -/
 

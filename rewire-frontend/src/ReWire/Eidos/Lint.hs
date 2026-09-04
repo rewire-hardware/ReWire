@@ -40,7 +40,7 @@
 --   representable-closure type grammar of §4.1 (a permit-list of type
 --   constructors — Vec, Finite, Bool, (), tuples, monomorphic ADTs,
 --   Integer, Proxy, String in literal positions — plus
---   ReacT/StateT/Identity until purification); it checks the ANF shape,
+--   ReacT/StateT/Identity until procification); it checks the ANF shape,
 --   first-order value binders, no-polymorphism, and nat-closure.
 --   TODO(eidos): type arguments and constructor fields are not kind-checked
 --   (there is no kind table for built-in type constructors); type-variable
@@ -747,7 +747,7 @@ checkTy env an t = do
       checkTyScope env an t
       when (envMode env >= LintMono) $ checkClosed an $ natNorm t
       when (envBanReactive env && reacOrStateT t) $ failAt an
-            $ "reactive type " <> prettyPrint t <> " in machine mode (purification has retired ReacT/StateT/Identity)"
+            $ "reactive type " <> prettyPrint t <> " in Synolon (procification has retired ReacT/StateT/Identity)"
 
 checkTyScope :: MonadError AstError m => Env -> Annote -> Ty -> m ()
 checkTyScope env an = go

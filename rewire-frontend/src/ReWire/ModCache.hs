@@ -44,7 +44,7 @@ type LoadPath = [FilePath]
 
 -- The numbered pass pipeline: run rwc -v to see the bracketed pass numbers;
 -- -d N (or --dump-all) dumps the IR after pass N to a file beside the
--- output (e.g., MiniISA.6.eir). Pass 1 is the front end: GHC
+-- output (e.g., MiniISA.6.eir, MiniISA.8.syn). Pass 1 is the front end: GHC
 -- (parse/typecheck/desugar over the whole home module graph) followed by
 -- the Core-to-Eidos bridge. Passes 2-6 are the Eidos passes (doc/eidos.md),
 -- pass 7 is procification (Eidos to Synolon), pass 8 the Synolon
@@ -56,7 +56,7 @@ getDevice conf fp = do
       eir <- passEidos 1 "GHC front end and Core-to-Eidos bridge."
             (loadCore conf >=> toEidos conf) fp
       Eidos.lint Eidos.LintPoly eir
-      -- The front half of the Eidos pipeline: specialize away
+      -- The Eidos passes: specialize away
       -- polymorphism, inline INLINE-annotated definitions, neuter externs
       -- (before the partial evaluator, always), and partially evaluate to
       -- the synthable/dictionary-free fixpoint. The standing lints run
@@ -74,15 +74,19 @@ getDevice conf fp = do
       eirPE <- passEidos 5 "Partial evaluation (eidos)."
             (Eidos.simplify (conf^.C.depth)) eirExt
       Eidos.lint Eidos.LintMono eirPE
-      -- Normalize the reactive fragment to ANF (the last Eidos pass), then
-      -- the machine level: procify to Synolon, clean the block graph, and
-      -- check the machine rules.
+      -- Normalize the reactive fragment to ANF (the last Eidos pass; the
+      -- --eidos dump is this program), then the machine level: procify to
+      -- Synolon, clean the block graph, and check the machine rules.
       eirANF <- passEidos 6 "Normalizing to ANF (eidos)."
             Eidos.normalize eirPE
       Eidos.lint Eidos.LintMonoANF eirANF
-      pr0 <- passSynolon 7 "Procifying (eidos)."
+      when (conf^.C.eidos) $ writeDump (C.eidosFile conf fp) "Eidos" $ Eidos.prettyProgram eirANF
+      pr0 <- passSynolon 7 "Procifying (eidos to synolon)."
             procify eirANF
-      pr <- passSynolon 8 "Cleaning the machine block graph (eidos)."
+      -- The lint before the cleanup skips signal-guardedness, the one rule
+      -- the cleanup may establish (it removes orphaned blocks).
+      when (conf^.C.debugLint) $ Synolon.lintPre pr0
+      pr <- passSynolon 8 "Cleaning the machine block graph (synolon)."
             (pure . optimizeProcs) pr0
       Synolon.lint pr
       mapM_ (flip verb () . Synolon.machineSummary) $ Synolon.progProcs pr
@@ -90,16 +94,10 @@ getDevice conf fp = do
       -- reachable after the block-graph cleanup, so any halt terminator
       -- is a state the device can actually freeze in.
       when (conf^.C.noHalt) $ mapM_ noHaltCheck $ Synolon.progProcs pr
-      -- --certify validates against exactly this dump (the machine-level
-      -- IR the fold consumes), so it implies --eidos.
-      when (conf^.C.eidos || conf^.C.certify /= C.CertifyOff) $ do
-            let eirFile = C.machineFile conf fp
-            verb ("Writing machine IR to file: " <> pack eirFile) ()
-            -- Same-directory temporary plus rename, so a crash can't
-            -- leave a torn artifact that later validates or replays.
-            liftIO $ do
-                  T.writeFile (eirFile <> ".tmp") $ Synolon.prettyProgram pr
-                  renameFile (eirFile <> ".tmp") eirFile
+      -- --certify validates against exactly this dump (the Synolon program
+      -- the fold consumes), so it implies --synolon.
+      when (conf^.C.synolon || conf^.C.certify /= C.CertifyOff)
+            $ writeDump (C.synolonFile conf fp) "Synolon" $ Synolon.prettyProgram pr
       -- The fold owns the lowering: Synolon straight to Hyle
       -- (ReWire.Synolon.ToHyle).
       pass conf fp 9 "Translating to Hyle." "rwc" prettyPrint (synolonToHyle conf) pr
@@ -108,7 +106,17 @@ getDevice conf fp = do
             passEidos n name = pass conf fp n name "eir" Eidos.prettyProgram
 
             passSynolon :: MonadIO n => Natural -> Text -> (a -> n Synolon.Program) -> a -> n Synolon.Program
-            passSynolon n name = pass conf fp n name "eir" Synolon.prettyProgram
+            passSynolon n name = pass conf fp n name "syn" Synolon.prettyProgram
+
+            -- An IR dump beside the output, published by a same-directory
+            -- temporary plus rename, so a crash can't leave a torn artifact
+            -- that later validates or replays.
+            writeDump :: MonadIO n => FilePath -> Text -> Text -> n ()
+            writeDump file what txt = do
+                  verb ("Writing " <> what <> " IR to file: " <> pack file) ()
+                  liftIO $ do
+                        T.writeFile (file <> ".tmp") txt
+                        renameFile (file <> ".tmp") file
 
             neuterExterns :: (MonadError AstError m', MonadIO m') => Eidos.Program -> m' Eidos.Program
             neuterExterns p = do

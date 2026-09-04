@@ -2,8 +2,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Safe #-}
--- | Parser for the Synolon concrete syntax (doc/eidos.md sections 7.1
---   and 9): the process declarations, and the program that embeds Eidos
+-- | Parser for the Synolon concrete syntax (@.syn@; doc/eidos.md sections
+--   7.1 and 9): the process declarations, and the program that embeds Eidos
 --   datatypes and definitions (parsed and elaborated by
 --   'ReWire.Eidos.Parse', as are the expressions inside blocks).
 --   'ReWire.Synolon.Pretty' is the other half of the round-trip contract.
@@ -23,9 +23,8 @@ import ReWire.Synolon.Syntax
 import Control.Monad (foldM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.HashMap.Strict (HashMap)
-import Data.List (find)
 import Data.Text (Text)
-import Text.Megaparsec (many, try, (<|>), (<?>), parse, sepBy, optional, eof)
+import Text.Megaparsec (many, some, try, (<|>), (<?>), parse, sepBy, optional, eof)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Text           as T
@@ -37,19 +36,10 @@ parseSyn p = liftIO (T.readFile p) >>= flip parseSynText p
 parseSynText :: MonadError AstError m => Text -> FilePath -> m Program
 parseSynText txt p = either failParse elabProgram $ parse (space *> programP <* eof) p txt
 
--- | @data* defn* proc* 'top' var@. @top@ must name a parsed definition
---   (matched by unique) and takes that definition's 'Id'.
+-- | @data* defn* proc+@: a Synolon program has no @top@ (its processes are
+--   its roots) and at least one process.
 programP :: Parser Program
-programP = do
-      ds <- many dataDefnP
-      fs <- many defnP
-      ps <- many procP
-      keyword "top"
-      (occ, u) <- uniqName
-      case find ((== u) . idUniq . defnId) fs of
-            Just d  -> pure $ Program ds fs ps $ defnId d
-            Nothing -> fail $ "top: designated device root " <> T.unpack occ <> "#" <> show u
-                           <> " does not name a definition"
+programP = Program <$> many dataDefnP <*> many defnP <*> some procP
       <?> "program"
 
 
@@ -206,10 +196,10 @@ resolveBlock ltab (Block an ps cmds term) = Block an ps cmds <$> resolveTerm ter
 ---
 
 elabProgram :: MonadError AstError m => Program -> m Program
-elabProgram (Program ds fs ps top) = do
+elabProgram (Program ds fs ps) = do
       fs' <- mapM (elabDefn env) fs
       ps' <- mapM (elabProc env) ps
-      pure $ Program ds fs' ps' top
+      pure $ Program ds fs' ps'
       where env :: Env
             env = Env (Map.fromList [ (idUniq $ defnId d, defnId d) | d <- fs ]) mempty
 

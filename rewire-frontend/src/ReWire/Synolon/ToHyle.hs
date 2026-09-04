@@ -142,7 +142,7 @@ scopeName sc base = (sc { scUsed = Set.insert nm $ scUsed sc }, nm)
 data LSt = LSt { lsSup :: !Uniq, lsOrd :: !Int, lsNew :: ![Defn] }
 
 liftJoins :: Program -> Program
-liftJoins p@(Program datas defns procs top) = Program datas defns' procs top
+liftJoins p@(Program datas defns procs) = Program datas defns' procs
       where tops :: IS.IntSet
             tops = IS.fromList $ map (idUniq . defnId) defns
 
@@ -238,7 +238,7 @@ liftJoins p@(Program datas defns procs top) = Program datas defns' procs top
 
 synolonToHyle :: (MonadIO m, MonadError AstError m) => Config -> Program -> m A.Program
 synolonToHyle conf p0 = do
-      let p1@(Program datas defns procs _top) = liftJoins p0
+      let p1@(Program datas defns procs) = liftJoins p0
       pr <- case procs of
             [pr] -> pure pr
             _    -> failAt noAnn $ "expected exactly one process, got " <> showt (length procs)
@@ -261,7 +261,7 @@ synolonToHyle conf p0 = do
       mapM_ (\ (Warning an msg) -> warnAt conf an msg) $ nubOrd $ sWarns s
       pure p
       where -- Primitive-named definitions (undotted; the polymorphic prim
-            -- carriers among them ride through the front half untranslated)
+            -- carriers among them ride through the Eidos passes untranslated)
             -- and the reactive fragment (subsumed by the processes) don't
             -- lower.
             emit :: Defn -> Bool
@@ -298,8 +298,15 @@ compileCryptols conf p = case uses of
       (an0, _, _, _) : _ -> do
             rwcry <- liftIO findRwcry >>= maybe (failAt an0 missingRwcry) pure
             foldM (step rwcry) (mempty, []) uses
-      where uses :: [(Annote, Text, Text, Ty)]
-            uses = nubOrdOn (\ (_, f, n, t) -> (f, n, tyKey t)) $ mapMaybe cryUse $ query p
+      where -- One fragment per distinct instantiation, in a canonical order
+            -- (by module file, function, and type) rather than the order of
+            -- discovery, so that the emitted definitions do not move when
+            -- unrelated code around a use changes.
+            uses :: [(Annote, Text, Text, Ty)]
+            uses = sortOn key $ nubOrdOn key $ mapMaybe cryUse $ query p
+
+            key :: (Annote, Text, Text, Ty) -> (Text, Text, Text)
+            key (_, f, n, t) = (f, n, tyKey t)
 
             step :: FilePath -> (HashMap (Text, Text, Text) A.GId, [A.Defn]) -> (Annote, Text, Text, Ty) -> m (HashMap (Text, Text, Text) A.GId, [A.Defn])
             step rwcry (memo, ds) (an, f, n, t) = do

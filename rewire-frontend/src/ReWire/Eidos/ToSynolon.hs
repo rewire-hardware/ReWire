@@ -49,7 +49,7 @@ import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Eidos.Naming (blockLabel)
 import ReWire.Eidos.Pretty ()
 import ReWire.Eidos.Subst (nextUniq, freeUniqs, occIds)
-import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, flattenTyApp, reacOrStateT)
+import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, flattenTyApp, reacOrStateT, machineDefn)
 import ReWire.Pretty (showt, prettyPrint)
 import ReWire.Synolon.Syntax
 
@@ -64,16 +64,18 @@ import qualified Data.IntSet         as IS
 import qualified ReWire.Eidos.Syntax as E (Program (..))
 
 -- | The Synolon program of an Eidos program: the process compiled from
---   the reactive root, over the program's datatypes and definitions (all
---   of which ride along). The root must be a nullary @ReacT@ computation
---   (the mono lint's device rule).
+--   the reactive root, over the program's datatypes and the definitions
+--   the machine calls ('machineDefn', in their order — Hyle names are
+--   assigned by position; the consumed reactive definitions and the
+--   builtin signature carriers do not ride along). The root must be a
+--   nullary @ReacT@ computation (the mono lint's device rule).
 procify :: forall m. MonadError AstError m => E.Program -> m Program
 procify p@(E.Program datas defns top)
       | (TyCon _ "ReacT", [ti, to, _, _]) <- flattenTyApp $ sigTy $ idSig top
       , [] <- fst (flattenArrow $ sigTy $ idSig top) = do
             let cells = stackCells $ maxStack [ typeOf $ defnBody d | d <- reactives ]
             pr <- evalStateT (compileRoot ti to cells) $ PSt (nextUniq p) [] mempty mempty mempty
-            pure $ Program datas defns [pr] top
+            pure $ Program datas (filter machineDefn defns) [pr]
       | otherwise = failAt (ann $ sigTy $ idSig top)
             $ "the device root " <> idOcc top <> " is not a reactive computation (its type is "
             <> prettyPrint (sigTy $ idSig top) <> "; a device root has type ReacT i o Identity a)."

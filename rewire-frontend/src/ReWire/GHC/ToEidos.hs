@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
 -- | The Core -> Eidos bridge: translates the -O0 desugared Core of the
---   whole home module graph into an Eidos-P 'Program' (doc/eidos.md §3) by
+--   whole home module graph into an Eidos 'Program' (doc/eidos.md §3) by
 --   near-transliteration. Where the retired Crust bridge lowered lets to
 --   beta-redexes (with demand-order rescheduling), crushed cases to
 --   single-arm cascades, and discarded type instantiations for the

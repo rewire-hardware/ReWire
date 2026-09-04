@@ -17,6 +17,7 @@ module ReWire.Eidos.Types
       , flattenApp
       , evalNat, natNorm, tyEq
       , hasArrow, higherOrder, fundamental, reacOrStateT, synthable
+      , machineDefn
       ) where
 
 import ReWire.Annotation (Annote, ann)
@@ -27,6 +28,7 @@ import Data.Text (Text)
 import Numeric.Natural (Natural)
 
 import qualified Data.HashMap.Strict as Map
+import qualified Data.Text           as T
 
 -- | Substitution of types for type variables. No renaming is ever needed:
 --   types contain no binders.
@@ -206,6 +208,14 @@ evalNat t = case t of
 --   the compiler is structural equality after 'natNorm' (annotations are
 --   already ignored by 'Eq Ty'). Subtraction does not distribute (naturals
 --   truncate): @a - b@ normalizes its operands and is otherwise an atom.
+-- | A definition the machine level keeps and the fold lowers: dotted-named
+--   (not a builtin signature carrier, which is undotted), monomorphic, and
+--   not reactive-typed (the reactive fragment is consumed by procification).
+machineDefn :: Defn -> Bool
+machineDefn d = T.any (== '.') (idOcc $ defnId d)
+      && null (sigTVs $ idSig $ defnId d)
+      && not (reacOrStateT $ sigTy $ idSig $ defnId d)
+
 -- | Structural equality after normalization — the compiler-wide notion of
 --   type equality (doc/eidos.md §5).
 tyEq :: Ty -> Ty -> Bool

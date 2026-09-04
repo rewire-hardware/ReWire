@@ -14,14 +14,15 @@
 --
 --   Process binding sites are scoped, not globally unique: procify splices
 --   one definition per continuation and passes one binder along goto
---   chains, so a unique is legitimately bound by several blocks; labels
---   are distinct per process, and in-block binding is validated by scoping
---   and occurrence-signature agreement.
-module ReWire.Synolon.Lint (lint, lintProc) where
+--   chains, so a unique is legitimately bound by several blocks. Labels
+--   and cells are distinct per process; within a block every binding site
+--   is distinct and disjoint from the definition-level sites; and in-block
+--   binding is validated by scoping and occurrence-signature agreement.
+module ReWire.Synolon.Lint (lint, lintPre, lintProc) where
 
-import ReWire.Annotation (Annote, noAnn)
-import ReWire.Eidos.Lint (Env (..), LintMode (..), envFromDecls, bindVar, nonTail, checkExp, checkAgainst, checkTy, checkValueBinder, checkOccSig, checkDistinct, checkDataDefn, checkDefn, lookupCon, dconFieldTys, LitRep (..), litRep, fitsRep, declSites)
-import ReWire.Eidos.Types (tyEq, reacOrStateT)
+import ReWire.Annotation (Annote)
+import ReWire.Eidos.Lint (Env (..), LintMode (..), envFromDecls, bindVar, nonTail, checkExp, checkAgainst, checkTy, checkValueBinder, checkOccSig, checkDistinct, checkDataDefn, checkDefn, lookupCon, dconFieldTys, LitRep (..), litRep, fitsRep, declSites, expSites, idSite)
+import ReWire.Eidos.Types (tyEq)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Eidos.Pretty ()
 import ReWire.Pretty (prettyPrint, showt)
@@ -34,63 +35,68 @@ import Data.Text (Text)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
-import qualified Data.Text           as T
 
 -- | The environment of the machine rules: the datatypes and every
 --   definition in scope, at mono+ANF strength, with the reactive types
 --   banned from the type grammar.
 machineEnv :: Program -> Env
-machineEnv (Program datas defns _ _) = (envFromDecls LintMonoANF datas defns) { envBanReactive = True }
+machineEnv (Program datas defns _) = (envFromDecls LintMonoANF datas defns) { envBanReactive = True }
 
 -- | Check a whole program: name distinctness, global uniqueness over the
---   datatype-and-definition fragment, the datatypes, the definitions the
---   machine calls (the definitions the fold lowers: dotted-named,
---   monomorphic, and not reactive-typed — the builtin-named signature
---   carriers and the consumed reactive definitions a program may still
---   carry are skipped, as the fold skips them), @top@ (which must name a
---   definition), and every process.
-lint :: forall m. MonadError AstError m => Program -> m ()
-lint p@(Program datas defns procs top) = do
-      checkDistinct $ declSites datas defns
+--   datatype-and-definition fragment, the datatypes, every definition
+--   (all of them are the machine's: pure, monomorphic, first-order), and
+--   every process.
+lint :: MonadError AstError m => Program -> m ()
+lint = lintWith True
+
+-- | 'lint' for the program before the block-graph cleanup: the same rules
+--   except signal-guardedness, the one rule the cleanup may establish
+--   (procify can leave an orphaned, unguarded block — the continuation of
+--   a computation that never returns — which the cleanup removes).
+lintPre :: MonadError AstError m => Program -> m ()
+lintPre = lintWith False
+
+lintWith :: forall m. MonadError AstError m => Bool -> Program -> m ()
+lintWith guarded p@(Program datas defns procs) = do
+      checkDistinct decls
       checkDistinct [ (dataName d, dataAnnote d, "datatype name " <> dataName d) | d <- datas ]
       checkDistinct [ (c, an, "data constructor name " <> c) | d <- datas, DataCon an c _ <- dataCons d ]
       checkDistinct [ (procName pr, procAnnote pr, "process name " <> procName pr) | pr <- procs ]
       mapM_ (checkDataDefn env) datas
-      mapM_ (checkDefn env) $ filter lowered defns
-      case [ d | d <- defns, idUniq (defnId d) == idUniq top ] of
-            []    -> failAt noAnn $ "top: designated device root " <> prettyPrint top <> " does not name a definition"
-            d : _ -> checkOccSig (defnAnnote d) top $ defnId d
-      mapM_ (checkProc env) procs
+      mapM_ (checkDefn env) defns
+      mapM_ (checkProcWith decls guarded env) procs
       where env :: Env
             env = machineEnv p
 
-            lowered :: Defn -> Bool
-            lowered d = T.any (== '.') (idOcc $ defnId d)
-                  && null (sigTVs $ idSig $ defnId d)
-                  && not (reacOrStateT $ sigTy $ idSig $ defnId d)
+            decls :: [(Uniq, Annote, Text)]
+            decls = declSites datas defns
 
 -- | Check a single process (the machine rules) against a program's global
 --   context.
 lintProc :: MonadError AstError m => Program -> Proc -> m ()
-lintProc p = checkProc (machineEnv p)
+lintProc p@(Program datas defns _) = checkProcWith (declSites datas defns) True (machineEnv p)
 
 ---
 --- Processes (doc/eidos.md §7.4): the machine rules, per-proc.
 ---
 
 
-checkProc :: forall m. MonadError AstError m => Env -> Proc -> m ()
-checkProc env pr@(Proc an n it ot _clk cells entry blocks) = do
+-- | The machine rules of one process, given the program's definition-level
+--   binding sites (every block's own sites must be disjoint from them) and
+--   whether to check signal-guardedness.
+checkProcWith :: forall m. MonadError AstError m => [(Uniq, Annote, Text)] -> Bool -> Env -> Proc -> m ()
+checkProcWith decls guarded env pr@(Proc an n it ot _clk cells entry blocks) = do
       checkTy env an it
       checkTy env an ot
       checkDistinct [ (cellName c, cellAnnote c, "state cell " <> cellName c <> " of process " <> n) | c <- cells ]
+      checkDistinct [ (idUniq l, blkAnnote b, "block label " <> prettyPrint l <> " of process " <> n) | (l, b) <- blocks ]
       mapM_ checkCell cells
       checkBlock entry
       mapM_ (checkBlock . snd) blocks
       mapM_ checkInput blocks
       unless (anyPause $ map (blkTerm . snd) blocks <> [blkTerm entry]) $ failAt an
             $ "process " <> n <> " never pauses (no machine to generate)"
-      checkGuarded
+      when guarded checkGuarded
       where ltab :: HashMap Uniq (Id, Block)
             ltab = Map.fromList [ (idUniq l, (l, b)) | (l, b) <- blocks ]
 
@@ -111,7 +117,8 @@ checkProc env pr@(Proc an n it ot _clk cells entry blocks) = do
                                     <> prettyPrint t' <> ", not the cell's type " <> prettyPrint t
 
             checkBlock :: Block -> m ()
-            checkBlock (Block ban ps cmds term) = do
+            checkBlock b@(Block ban ps cmds term) = do
+                  checkDistinct $ decls <> blockSites b
                   mapM_ (checkValueBinder env ban "block parameter") ps
                   env' <- foldM checkCmd (foldr bindVar env ps) cmds
                   checkTerm env' term
@@ -133,6 +140,25 @@ checkProc env pr@(Proc an n it ot _clk cells entry blocks) = do
                         t <- cell can s
                         checkAgainst (nonTail env') a t
                         pure env'
+
+            -- Every binding site of a block: its parameters, its command
+            -- binders, the binders inside its expressions, and its
+            -- terminator alternatives' pattern binders.
+            blockSites :: Block -> [(Uniq, Annote, Text)]
+            blockSites (Block ban ps cmds term) =
+                  map (idSite ban "block parameter") ps
+                        <> concatMap cmdSites cmds
+                        <> termSites term
+                  where cmdSites :: Cmd -> [(Uniq, Annote, Text)]
+                        cmdSites = \ case
+                              CmdBind can x e -> idSite can "command binder" x : expSites e
+                              CmdGet can x _  -> [idSite can "command binder" x]
+                              CmdPut _ _ e    -> expSites e
+
+                        termSites :: Term -> [(Uniq, Annote, Text)]
+                        termSites = \ case
+                              TCase _ a alts -> expSites a <> concat [ map (idSite tan "pattern binder") xs <> termSites t | TAlt tan _ xs t <- alts ]
+                              t              -> concatMap expSites $ termExps t
 
             cell :: Annote -> Text -> m Ty
             cell can s = maybe (failAt can $ "unknown state cell: " <> s <> " (process " <> n <> ")") pure

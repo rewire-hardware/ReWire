@@ -7,14 +7,14 @@ correspondence, checked per test by trace comparison.
 For each tests/golden/<base>.rwc with a <base>.hs source:
 
   1. generate the pass-8 Eidos dump and the raw-fold .rwc:
-       rwc --eidos -d 9 -o <work>/<base>.sv tests/golden/<base>.hs
-     (writes <base>.eir and <base>.9.rwc beside the output;
+       rwc --synolon -d 9 -o <work>/<base>.sv tests/golden/<base>.hs
+     (writes <base>.syn and <base>.9.rwc beside the output;
      parallelized with a small pool — this is the expensive phase);
   2. run the Lean side, which generates the canonical algebraic
      stimulus (deterministic xorshift32 keyed on the base name),
      validates the port convention against the .rwc device, writes the
      stimulus in rwc's inputs format, and prints the machine trace:
-       rwv-eidos-diff <base>.eir <base>.rwc --cycles N
+       rwv-eidos-diff <base>.syn <base>.rwc --cycles N
            --stim <stim> --foreign <base>.9.rwc > <eidos.yaml>
   3. run the Haskell reference on the SAME stimulus and the COMPILED
      .rwc golden:
@@ -39,7 +39,7 @@ harness reports these as OK (eta self-test) on driver success.
 Usage:
   verify/test/eidos-diff-goldens.py [--only SUBSTR] [--cycles N]
       [--workdir DIR] [--rwc PATH] [--lean-exe PATH] [--goldens DIR]
-      [--jobs N] [--reuse-eir] [--timeout SECS] [-v]
+      [--jobs N] [--reuse-dump] [--timeout SECS] [-v]
 """
 
 import argparse
@@ -169,14 +169,14 @@ def main():
     ap.add_argument("--cycles", type=int, default=20,
                     help="cycles of generated stimulus (default: 20)")
     ap.add_argument("--workdir", default=str(VERIFY / "test" / "out-eidos"),
-                    help="where .eir/stimulus/trace files go (default: verify/test/out-eidos)")
+                    help="where .syn/stimulus/trace files go (default: verify/test/out-eidos)")
     ap.add_argument("--rwc", default=None, help="path to the rwc executable")
     ap.add_argument("--lean-exe", default=None,
                     help="path to the rwv-eidos-diff executable")
     ap.add_argument("--jobs", type=int, default=4,
-                    help="parallel rwc --eidos compilations (default: 4)")
-    ap.add_argument("--reuse-eir", action="store_true",
-                    help="reuse an existing <workdir>/<base>.eir instead of recompiling")
+                    help="parallel rwc --synolon compilations (default: 4)")
+    ap.add_argument("--reuse-dump", action="store_true",
+                    help="reuse an existing <workdir>/<base>.syn instead of recompiling")
     ap.add_argument("--timeout", type=int, default=300,
                     help="per-invocation timeout in seconds (default: 300)")
     ap.add_argument("-v", "--verbose", action="store_true")
@@ -201,7 +201,7 @@ def main():
     print(f"rwv-eidos-diff: {lean_exe}")
     print(f"workdir:        {work}\n")
 
-    # Phase 1: pre-filter and generate the .eir dumps in a pool.
+    # Phase 1: pre-filter and generate the .syn dumps in a pool.
     todo = []            # (base, rwc_golden, eir_path)
     results = []         # (name, status, detail)
     width = max(len(f.stem) for f in files)
@@ -209,16 +209,16 @@ def main():
     def gen_eir(f: Path):
         """Returns (base, status, detail); status None means proceed."""
         base = f.stem
-        eir = work / f"{base}.eir"
+        eir = work / f"{base}.syn"
         raw9 = work / f"{base}.9.rwc"
-        if args.reuse_eir and eir.exists() and raw9.exists():
-            return base, None, "reused .eir"
+        if args.reuse_dump and eir.exists() and raw9.exists():
+            return base, None, "reused .syn"
         eir.unlink(missing_ok=True)
         raw9.unlink(missing_ok=True)
         # -d 9 dumps the raw-fold .rwc beside the output: the pre-optimization
         # program still carrying every Cryptol splice (zero-argument splices
         # get constant-folded out of the final .rwc), for --foreign below.
-        cmd = [rwc, "--eidos", "-d", "9", "-o", str(work / f"{base}.sv"),
+        cmd = [rwc, "--synolon", "-d", "9", "-o", str(work / f"{base}.sv"),
                str(golden_dir / f"{base}.hs")]
         if args.verbose:
             print("  $", " ".join(cmd))
@@ -226,10 +226,10 @@ def main():
             r = subprocess.run(cmd, capture_output=True, text=True,
                                timeout=args.timeout, cwd=REPO)
         except subprocess.TimeoutExpired:
-            return base, "EIR-FAIL", f"rwc --eidos timed out after {args.timeout}s"
+            return base, "EIR-FAIL", f"rwc --synolon timed out after {args.timeout}s"
         if not eir.exists():
-            return base, "EIR-FAIL", "rwc --eidos: " + stderr_tail(r.stderr)
-        return base, None, "generated .eir"
+            return base, "EIR-FAIL", "rwc --synolon: " + stderr_tail(r.stderr)
+        return base, None, "generated .syn"
 
     pre = {}
     for f in files:
@@ -271,7 +271,7 @@ def main():
         # externs evaluate through the foreign hooks; model-LESS externs
         # run the --eta-synth internal check (rwc cannot interpret them,
         # so there is no external reference).
-        eir = work / f"{base}.eir"
+        eir = work / f"{base}.syn"
         eir_text = eir.read_text()
         eta_synth = []
         if "(rwPrimExtern ::" in eir_text:

@@ -138,12 +138,12 @@ testCompiler flags fn = do
             -- itself rather than reading another leg's output.
             [ testCase (takeBaseName fn <> " (machine dump)") $ do
                   cdTestdir
-                  withArgs (fn : ["--eidos", "--core", "-o", ofile "synleg.rwc"] <> extraFlags) RWC.main
+                  withArgs (fn : ["--synolon", "--core", "-o", ofile "synleg.rwc"] <> extraFlags) RWC.main
                   r <- runSyntaxError $ do
-                        p1 <- parseSyn $ ofile "synleg.eir"
+                        p1 <- parseSyn $ ofile "synleg.syn"
                         Synolon.lint p1
                         let t1 = Synolon.prettyProgram p1
-                        p2 <- parseSynText t1 $ ofile "synleg.eir"
+                        p2 <- parseSynText t1 $ ofile "synleg.syn"
                         Synolon.lint p2
                         pure (t1, Synolon.prettyProgram p2)
                   case r of
@@ -490,34 +490,78 @@ testWarning fn = testCase (takeBaseName fn <> " (expected warning)") $ do
 --   variations, interpreter cycle bounds, VHDL target). These only assert that
 --   rwc succeeds; outputs are not compared against goldens. Stdout (the
 --   verbose trace) is redirected to a log file next to the other outputs; the
---   pass dumps land beside the output file (foo.out.smoke-dumps.<N>.eir/.rwc).
+--   pass dumps land beside the output file (foo.out.smoke-dumps.<N>.eir, .syn,
+--   .rwc). The dumps and the --eidos/--synolon files are also parsed back and
+--   linted, so a wrong extension or a dump the parser does not read cannot
+--   pass silently.
 getSmokeTests :: IO TestTree
 getSmokeTests = do
       dir <- getDataFileName ("tests" </> "golden")
       pure $ testGroup "flags"
-            [ smoke dir "fibo1.hs" "dumps" "sv"
+            [ smokeThen dir "fibo1.hs" "dumps" "sv"
                   [ "-v", "--flatten", "--pretty", "--sync-reset", "--invert-reset"
                   , "--start", "Main.start", "--top", "smoke_top"
                   , "--inputs", "i0", "--outputs", "o0", "--states", "s0,s1"
                   , "--depth", "4", "--rtl-opt", "2", "--loadpath", "."
                   , "-d", intercalate "," (map show [1 :: Int .. 25]), "--dump-all"
-                  ]
+                  ] $ \ out -> do
+                        -- The Eidos passes dump .eir, the Synolon passes .syn,
+                        -- the Hyle passes .rwc.
+                        mapM_ (assertDump out) $ [ (show n <> ".eir", eidosDump) | n <- [1 :: Int .. 6] ]
+                              <> [ (show n <> ".syn", synolonDump) | n <- [7 :: Int, 8] ]
+                              <> [ (show n <> ".rwc", hyleDump) | n <- [9 :: Int .. 11] ]
             , smoke dir "onestate.hs" "vhdl"      "vhdl" ["--vhdl", "-p", "ieee.std_logic_1164.all"]
             , smoke dir "fibo1.hs"    "noclock"   "sv"   ["--no-clock", "--no-reset"]
             , smoke dir "zerowidthRed.hs" "rtlopt0" "sv" ["--rtl-opt", "0"]
             , smoke dir "fibo1.hs"    "interp"    "yaml" ["--interpret", "--cycles", "3"]
             , smoke dir "fibo1.hs"    "debuglint" "rwc"  ["--debug-lint", "--core"]
-            , smoke dir "fibo1.hs"    "eirdump"   "rwc"  ["--eidos", "--core"]
+            , smokeThen dir "fibo1.hs" "eirdump"  "rwc"  ["--eidos", "--core"] $ \ out ->
+                  -- --eidos writes the Eidos program after its last pass.
+                  eidosDump $ out -<.> "eir"
+            , smokeThen dir "fibo1.hs" "syndump"  "rwc"  ["--synolon", "--core"] $ \ out ->
+                  -- --synolon writes the Synolon program after its last pass.
+                  synolonDump $ out -<.> "syn"
             , smoke dir "fibo1.hs"    "locators"  "rwc"  ["--locators", "--core"]
             , smoke dir "fibo1.hs"    "stnames"   "sv"   ["--stable-names"]
             ]
       where smoke :: FilePath -> FilePath -> String -> String -> [String] -> TestTree
-            smoke dir file name ext args = testCase (takeBaseName file <> " (flags: " <> name <> ")") $ do
+            smoke dir file name ext args = smokeThen dir file name ext args $ \ _ -> pure ()
+
+            -- A smoke leg with a check over the output file's name after rwc
+            -- succeeds (a dump beside it, parsed back).
+            smokeThen :: FilePath -> FilePath -> String -> String -> [String] -> (FilePath -> IO ()) -> TestTree
+            smokeThen dir file name ext args after = testCase (takeBaseName file <> " (flags: " <> name <> ")") $ do
                   let fn  = dir </> file
                       out = fn -<.> ("out.smoke-" <> name <> "." <> ext)
                   setCurrentDirectory dir
                   withStdoutTo (fn -<.> ("out.smoke-" <> name <> ".log")) $
                         withArgs ([fn, "-o", out] <> args) RWC.main
+                  after out
+
+            assertDump :: FilePath -> (String, FilePath -> IO ()) -> IO ()
+            assertDump out (ext, check) = do
+                  let f = out -<.> ext
+                  exists <- doesFileExist f
+                  assertBool ("expected dump " <> f) exists
+                  check f
+
+            -- An Eidos dump parses as an Eidos program (no process, a top).
+            eidosDump :: FilePath -> IO ()
+            eidosDump f = runSyntaxError (parseEir f >>= Eidos.lint Eidos.LintPoly) >>= \ case
+                  Left err -> assertFailure $ f <> ": " <> T.unpack (prettyPrint err)
+                  Right () -> pure ()
+
+            -- A Synolon dump parses as a Synolon program and lints (before the
+            -- cleanup, without the guardedness rule).
+            synolonDump :: FilePath -> IO ()
+            synolonDump f = runSyntaxError (parseSyn f >>= Synolon.lintPre) >>= \ case
+                  Left err -> assertFailure $ f <> ": " <> T.unpack (prettyPrint err)
+                  Right () -> pure ()
+
+            hyleDump :: FilePath -> IO ()
+            hyleDump f = runSyntaxError (parseHyle f) >>= \ case
+                  Left err -> assertFailure $ f <> ": " <> T.unpack (prettyPrint err)
+                  Right _  -> pure ()
 
 -- | The --certify test group: recompile a representative subset of the golden
 --   tests from Haskell source with --certify (required mode, the default),

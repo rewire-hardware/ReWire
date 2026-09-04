@@ -36,5 +36,3 @@ proc halty : Bool ~> Bool @ clock clk {
             }
       }
 }
-
-top Main.start#40

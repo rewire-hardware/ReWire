@@ -3,7 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE Safe #-}
 -- | The abstract syntax of Synolon, the machine-level IR between Eidos and
---   Hyle (doc/eidos.md §7, on its way to its own specification): the
+--   Hyle (doc/eidos.md §7): the
 --   process calculus — state cells, labeled blocks with commands, and
 --   @pause@/@goto@/@halt@ terminators — over the Eidos expression language,
 --   which this module re-exports: command right-hand sides, cell initials,
@@ -84,18 +84,19 @@ data Term = Pause Annote !Exp !Id ![Exp]
           | TCase Annote !Exp ![TAlt]
       deriving (Show, Generic, Typeable, Data, NFData)
 
--- | A terminator-case alternative (default first, as at the P level).
+-- | A terminator-case alternative (default first, as in an expression case).
 data TAlt = TAlt Annote !AltCon ![Id] !Term
       deriving (Show, Generic, Typeable, Data, NFData)
 
 
--- | A whole program: datatypes, the definitions the machine calls, the
---   processes, and the designated device root.
+-- | A whole program: datatypes, the definitions the machine calls (pure,
+--   monomorphic, first-order — 'ReWire.Eidos.Types.machineDefn'), and the
+--   processes, which are its roots. There is no @top@: procification
+--   consumed the device root into the process.
 data Program = Program
       { progDatas :: ![DataDefn]
       , progDefns :: ![Defn]
       , progProcs :: ![Proc]
-      , progTop   :: !Id
       }
       deriving (Show, Generic, Typeable, Data, NFData)
 

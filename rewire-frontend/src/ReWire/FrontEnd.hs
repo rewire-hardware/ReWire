@@ -162,8 +162,8 @@ compileFile conf filename = do
                         render = if conf^.Config.pretty then prettyPrint else fastPrint
 
             -- | --certify: write the certified pair beside the output --
-            --   the machine-mode Eidos IR (<out>.eir, the --eidos dump,
-            --   written by ReWire.ModCache) and the final backend-consumed
+            --   the Synolon IR (<out>.syn, the --synolon dump, written by
+            --   ReWire.ModCache) and the final backend-consumed
             --   Hyle program (<out>.rwc, byte-identical to the --core
             --   output) -- run the verified validator on it over the
             --   versioned response protocol, and surface the verdict: a
@@ -189,22 +189,22 @@ compileFile conf filename = do
                         liftIO findRwv >>= \ case
                               Left why  -> notCertified (filePath filename) why
                               Right rwv -> do
-                                    verb $ "certify: running the validator: " <> pack rwv <> " " <> pack eirFile <> " " <> pack rwcFile
-                                    (status, detail) <- liftIO $ runValidator rwv eirFile rwcFile
+                                    verb $ "certify: running the validator: " <> pack rwv <> " " <> pack synFile <> " " <> pack rwcFile
+                                    (status, detail) <- liftIO $ runValidator rwv synFile rwcFile
                                     case status of
                                           "validated" -> liftIO $ T.putStrLn
                                                 $ "certify: VALIDATED: the compiled device (" <> pack rwcFile
-                                                <> ") implements the Eidos machine (" <> pack eirFile <> ")."
+                                                <> ") implements the Synolon machine (" <> pack synFile <> ")."
                                           _ -> notCertified (filePath filename)
                                                 $ Text.toUpper status <> ": " <> detail
-                                                <> " (artifacts: " <> pack eirFile <> ", " <> pack rwcFile <> ")."
-                  -- Under --from-core the Eidos pipeline never runs, so
-                  -- there is no machine IR to validate against.
-                  _       -> notCertified noAnn "nothing to certify (certification requires compiling from Haskell source; no Eidos IR exists under --from-core)."
+                                                <> " (artifacts: " <> pack synFile <> ", " <> pack rwcFile <> ")."
+                  -- Under --from-core the front-end passes never run, so
+                  -- there is no Synolon IR to validate against.
+                  _       -> notCertified noAnn "nothing to certify (certification requires compiling from Haskell source; no Synolon IR exists under --from-core)."
 
             -- | Refuse up front (in required mode) an output naming under
             --   which certification would corrupt its own artifacts: the
-            --   pass-8 .eir dump and the final .rwc are written beside the
+            --   pass-8 .syn dump and the final .rwc are written beside the
             --   output, so the requested output must not claim either name
             --   (modulo case, for case-insensitive filesystems). Under
             --   --certify=warn the compilation proceeds and the collision
@@ -212,9 +212,9 @@ compileFile conf filename = do
             checkCertifyPaths :: (MonadError AstError m, MonadIO m) => m ()
             checkCertifyPaths = when (certifyOn && conf^.Config.certify == CertifyRequired && conf^.source == Haskell) $ do
                   let fout = getOutFile conf filename
-                  when (samePath fout eirFile) $ failAt (filePath filename)
+                  when (samePath fout synFile) $ failAt (filePath filename)
                         $ "certify: the requested output file (" <> pack fout
-                        <> ") collides with the certify artifact (" <> pack eirFile <> "); pass a different -o."
+                        <> ") collides with the certify artifact (" <> pack synFile <> "); pass a different -o."
                   when (conf^.target /= RWCore && samePath fout rwcFile) $ failAt (filePath filename)
                         $ "certify: the requested output file (" <> pack fout
                         <> ") collides with the certify artifact (" <> pack rwcFile <> "); pass a different -o."
@@ -236,7 +236,7 @@ compileFile conf filename = do
             samePath a b = map toLower a == map toLower b
 
             fout'   = fromMaybe filename $ conf^.Config.outFile
-            eirFile = Config.machineFile conf filename
+            synFile = Config.synolonFile conf filename
             rwcFile = fout' -<.> "rwc"
 
             verb :: MonadIO m => Text -> m ()
@@ -310,12 +310,12 @@ instance FromJSON RwvResponse where
 --   timeouts, nonzero exits, malformed or ambiguous output, and
 --   mismatched identities all classify as "error".
 runValidator :: FilePath -> FilePath -> FilePath -> IO (Text, Text)
-runValidator rwv eirFile rwcFile = do
-      eirHash <- hashHex <$> BS.readFile eirFile
+runValidator rwv synFile rwcFile = do
+      synHash <- hashHex <$> BS.readFile synFile
       rwcHash <- hashHex <$> BS.readFile rwcFile
-      nonce   <- (\ t -> hashHex $ encodeUtf8 $ eirHash <> rwcHash <> pack (show t)) <$> getMonotonicTimeNSec
+      nonce   <- (\ t -> hashHex $ encodeUtf8 $ synHash <> rwcHash <> pack (show t)) <$> getMonotonicTimeNSec
       r       <- try $ timeout (validatorTimeoutSecs * 1000000)
-            $ readCreateProcessWithExitCode (proc rwv [eirFile, rwcFile, "--protocol=2", "--nonce=" <> unpack nonce]) ""
+            $ readCreateProcessWithExitCode (proc rwv [synFile, rwcFile, "--protocol=2", "--nonce=" <> unpack nonce]) ""
       pure $ case r of
             Left (ex :: IOException)     -> ("error", "could not run the validator: " <> pack (show ex))
             Right Nothing                -> ("error", "the validator timed out after " <> showt validatorTimeoutSecs <> " seconds")
@@ -326,7 +326,7 @@ runValidator rwv eirFile rwcFile = do
                               | rwvTool resp /= "rwv-cstep-validate" -> ("error", "the response names an unexpected tool: " <> rwvTool resp)
                               | rwvProtocol resp /= 2                -> ("error", "the response speaks an unexpected protocol version: " <> showt (rwvProtocol resp))
                               | rwvNonce resp /= nonce               -> ("error", "the response does not echo this invocation's nonce")
-                              | rwvSource resp /= eirHash            -> ("error", "the response's source hash does not match the artifact bytes")
+                              | rwvSource resp /= synHash            -> ("error", "the response's source hash does not match the artifact bytes")
                               | rwvTarget resp /= rwcHash            -> ("error", "the response's target hash does not match the artifact bytes")
                               | rwvStatus resp == "validated", code /= ExitSuccess -> ("error", "the validator reported validated but exited nonzero")
                               | rwvStatus resp /= "validated", code == ExitSuccess -> ("error", "the validator exited successfully without reporting validated")

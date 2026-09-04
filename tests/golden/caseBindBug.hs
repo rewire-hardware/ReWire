@@ -5,7 +5,7 @@
 -- lambda lifting and rejected by purification with "the left-hand side of
 -- this bind (RVar) might pause". Kept as a shape test for case-headed
 -- reactive binds (a pausing bind LHS now compiles by splicing the callee's
--- block graph; see Eidos.Procify).
+-- block graph; see ReWire.Eidos.ToSynolon).
 import ReWire hiding (Bit)
 
 data Bit = C | S

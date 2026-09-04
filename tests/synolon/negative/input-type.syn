@@ -22,5 +22,3 @@ proc main : Bool ~> Bool {
             pause (True :: Bool) -> go#1 ((W1 :: Wide))
       }
 }
-
-top Main.start#10

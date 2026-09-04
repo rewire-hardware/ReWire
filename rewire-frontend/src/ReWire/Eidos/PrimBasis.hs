@@ -5,7 +5,7 @@
 --   bridged programs may reference without declaring — the unit and tuple
 --   families, Bool, Maybe/Either (base names, as the bridge emits them),
 --   the abstract width-bearing types (Vec, Finite, Proxy), and the reactive
---   stack types (which exist at the P level only; the M level deletes
+--   stack types (which exist in Eidos only; Synolon's type grammar bans
 --   them). The bridge prepends these to every program so the linter can
 --   resolve constructor occurrences.
 --

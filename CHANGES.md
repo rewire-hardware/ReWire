@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+* The machine level of the Eidos IR is now its own IR, *Synolon*
+  (`ReWire.Synolon.*`, specified in `doc/synolon.md`), with its own
+  textual format (`.syn`): a Synolon program is the datatypes, the pure
+  definitions the machine calls, and the processes -- no `top` line and
+  none of the reactive or builtin-named carrier definitions the old
+  machine-level `.eir` dumps carried. Eidos (`ReWire.Eidos.*`,
+  `doc/eidos.md`, `.eir`) is the functional level only. Passes 1-6 are
+  the Eidos passes (dumps `.eir`), pass 7 procifies Eidos to Synolon and
+  pass 8 cleans the block graph (dumps `.syn`), pass 9 is the
+  Synolon-to-Hyle fold. The new `--synolon` flag dumps the Synolon
+  program after its last pass as `<out>.syn`, which is now the
+  `--certify` source artifact (`rwv-cstep-validate <out>.syn <out>.rwc`;
+  the validator still accepts the old form); `--eidos` now dumps the
+  Eidos program after its last pass as `<out>.eir`. Machine-level test
+  fixtures live in `tests/synolon/`. A Cryptol or extern use reachable
+  only through the continuation of an `error` at monadic type is no
+  longer compiled (or diagnosed): it is dead code the process never
+  reaches.
 * Removed unused primitives `rwPrimUnfold`, `rwPrimUsingExtern`,
   `rwPrimVecFoldR`, `rwPrimVecFoldL`. Refactored and fixed several remaining
   primitive definitions.
@@ -112,7 +130,7 @@
   `.eir`/`.rwc` syntax.
 * New `rwc --certify` flag: emit a per-compilation, machine-checked proof
   that the compiled device implements its source state machine. Alongside
-  the output it writes the machine-level Eidos IR (`<out>.eir`) and the
+  the output it writes the machine-level IR (`<out>.eir`; now `<out>.syn`, see above) and the
   final Hyle IR (`<out>.rwc`, byte-identical to `--core` output), runs
   the formally verified validator (`rwv-cstep-validate`, built from the
   Lean development in `verify/`) on the pair, and prints a one-line
