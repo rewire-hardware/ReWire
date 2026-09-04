@@ -55,7 +55,15 @@
 --   @Vec ((i + n) + m) a@ become deferred equations, checked only when
 --   nat-closed on both sides after substitution. Shape and everything
 --   matching binds directly are always checked.
-module ReWire.Eidos.Lint (LintMode (..), lint, lintDefn, lintProc) where
+module ReWire.Eidos.Lint
+      ( LintMode (..), lint, lintDefn, lintProc
+        -- * The expression-level checker, for reuse by other checkers
+      , Env (..), envFromDecls, bindVar, nonTail
+      , checkExp, checkAgainst, checkTy, checkValueBinder, checkOccSig, checkDistinct
+      , checkDataDefn, checkDefn, lookupCon, dconFieldTys
+      , LitRep (..), litRep, fitsRep
+      , declSites, expSites, idSite, tvSite
+      ) where
 
 import ReWire.Annotation (Annote, ann, noAnn)
 import ReWire.Builtins (builtins)
@@ -64,7 +72,7 @@ import ReWire.Eidos.BuiltinSigs (builtinSig, matchesSig)
 import ReWire.Error (AstError, MonadError, failAt, failAtWith)
 import ReWire.Eidos.Pretty ()
 import ReWire.Eidos.Syntax
-import ReWire.Eidos.Types (natNorm, evalNat, instantiate, substTv, flattenApp, flattenArrow, flattenTyApp, reacOrStateT, typeOf)
+import ReWire.Eidos.Types (natNorm, tyEq, hasArrow, evalNat, instantiate, substTv, flattenApp, flattenArrow, flattenTyApp, reacOrStateT, typeOf)
 import ReWire.Pretty (prettyPrint, showt)
 
 import Control.Monad (foldM, foldM_, unless, void, when, zipWithM_)
@@ -119,7 +127,12 @@ data Env = Env
       }
 
 mkEnv :: LintMode -> Program -> Env
-mkEnv mode (Program datas defns _ _) = Env
+mkEnv mode (Program datas defns _ _) = envFromDecls mode datas defns
+
+-- | The checking environment over a datatype and definition table: the
+--   whole-program scope every rule starts from.
+envFromDecls :: LintMode -> [DataDefn] -> [Defn] -> Env
+envFromDecls mode datas defns = Env
       { envMode  = mode
       , envCons  = Map.fromList [ (c, (dataName d, sig)) | d <- datas, DataCon _ c sig <- dataCons d ]
       , envScope = Map.fromList [ (idUniq $ defnId d, defnId d) | d <- defns ]
@@ -199,55 +212,8 @@ checkDistinct = foldM_ ins mempty
 --   datatype parameters. Occurrences (which share their binder's unique)
 --   contribute nothing.
 uniqSites :: Program -> [(Uniq, Annote, Text)]
-uniqSites (Program datas defns procs _) = concatMap dataSites datas <> concatMap defnSites defns <> concatMap procSites procs
-      where -- Constructors of one datatype share the datatype's parameter
-            -- uniques ('checkDataDefn' enforces that their quantifier lists
-            -- coincide), so only the first constructor's list contributes
-            -- binding sites.
-            dataSites :: DataDefn -> [(Uniq, Annote, Text)]
-            dataSites d = case dataCons d of
-                  DataCon an _ (Sig tvs _) : _ -> map (tvSite an "datatype parameter") tvs
-                  []                           -> []
-
-            defnSites :: Defn -> [(Uniq, Annote, Text)]
-            defnSites (Defn an x ps body _ _) =
-                  idSite an "definition name" x
-                        : map (tvSite an "signature type variable") (sigTVs $ idSig x)
-                        <> map (idSite an "parameter") ps
-                        <> expSites body
-
-            expSites :: Exp -> [(Uniq, Annote, Text)]
-            expSites = \ case
-                  Var {}             -> []
-                  Con {}             -> []
-                  Prim {}            -> []
-                  LitInt {}          -> []
-                  LitStr {}          -> []
-                  LitList _ _ es     -> concatMap expSites es
-                  LitVec _ _ es      -> concatMap expSites es
-                  App _ e a          -> expSites e <> argSites a
-                  Lam an x e         -> idSite an "lambda parameter" x : expSites e
-                  Let an b e         -> bindSites an b <> expSites e
-                  Jump _ _ es        -> concatMap expSites es
-                  Case an _ e x alts -> expSites e <> (idSite an "case binder" x : concatMap altSites alts)
-
-            argSites :: Arg -> [(Uniq, Annote, Text)]
-            argSites = \ case
-                  EArg e -> expSites e
-                  TArg _ -> []
-
-            bindSites :: Annote -> Bind -> [(Uniq, Annote, Text)]
-            bindSites an = \ case
-                  NonRec x e  -> idSite an "let binder" x : expSites e
-                  Rec bs      -> concatMap (\ (x, e) -> idSite an "recursive let binder" x : expSites e) bs
-                  Join j xs e -> idSite an "join point" (jpId j)
-                        : map (idSite an "join point parameter") xs
-                        <> expSites e
-
-            altSites :: Alt -> [(Uniq, Annote, Text)]
-            altSites (Alt an _ xs e) = map (idSite an "pattern binder") xs <> expSites e
-
-            procSites :: Proc -> [(Uniq, Annote, Text)]
+uniqSites (Program datas defns procs _) = declSites datas defns <> concatMap procSites procs
+      where procSites :: Proc -> [(Uniq, Annote, Text)]
             procSites (Proc _ _ _ _ _ cells entry blocks) =
                   concatMap cellSites cells
                         <> blockSites entry
@@ -277,11 +243,64 @@ uniqSites (Program datas defns procs _) = concatMap dataSites datas <> concatMap
                         taltSites :: TAlt -> [(Uniq, Annote, Text)]
                         taltSites (TAlt an _ xs t) = map (idSite an "pattern binder") xs <> termSites t
 
-            idSite :: Annote -> Text -> Id -> (Uniq, Annote, Text)
-            idSite an what x = (idUniq x, an, "binding unique #" <> showt (idUniq x) <> " (" <> what <> " " <> prettyPrint x <> ")")
+-- | Every binding site of the datatype-and-definition fragment, in
+--   deterministic order.
+declSites :: [DataDefn] -> [Defn] -> [(Uniq, Annote, Text)]
+declSites datas defns = concatMap dataSites datas <> concatMap defnSites defns
+      where -- Constructors of one datatype share the datatype's parameter
+            -- uniques ('checkDataDefn' enforces that their quantifier lists
+            -- coincide), so only the first constructor's list contributes
+            -- binding sites.
+            dataSites :: DataDefn -> [(Uniq, Annote, Text)]
+            dataSites d = case dataCons d of
+                  DataCon an _ (Sig tvs _) : _ -> map (tvSite an "datatype parameter") tvs
+                  []                           -> []
 
-            tvSite :: Annote -> Text -> TyVar -> (Uniq, Annote, Text)
-            tvSite an what v = (tvUniq v, an, "binding unique #" <> showt (tvUniq v) <> " (" <> what <> " " <> prettyPrint v <> ")")
+            defnSites :: Defn -> [(Uniq, Annote, Text)]
+            defnSites (Defn an x ps body _ _) =
+                  idSite an "definition name" x
+                        : map (tvSite an "signature type variable") (sigTVs $ idSig x)
+                        <> map (idSite an "parameter") ps
+                        <> expSites body
+
+-- | Every binding site inside an expression.
+expSites :: Exp -> [(Uniq, Annote, Text)]
+expSites = \ case
+      Var {}             -> []
+      Con {}             -> []
+      Prim {}            -> []
+      LitInt {}          -> []
+      LitStr {}          -> []
+      LitList _ _ es     -> concatMap expSites es
+      LitVec _ _ es      -> concatMap expSites es
+      App _ e a          -> expSites e <> argSites a
+      Lam an x e         -> idSite an "lambda parameter" x : expSites e
+      Let an b e         -> bindSites an b <> expSites e
+      Jump _ _ es        -> concatMap expSites es
+      Case an _ e x alts -> expSites e <> (idSite an "case binder" x : concatMap altSites alts)
+      where argSites :: Arg -> [(Uniq, Annote, Text)]
+            argSites = \ case
+                  EArg e -> expSites e
+                  TArg _ -> []
+
+            bindSites :: Annote -> Bind -> [(Uniq, Annote, Text)]
+            bindSites an = \ case
+                  NonRec x e  -> idSite an "let binder" x : expSites e
+                  Rec bs      -> concatMap (\ (x, e) -> idSite an "recursive let binder" x : expSites e) bs
+                  Join j xs e -> idSite an "join point" (jpId j)
+                        : map (idSite an "join point parameter") xs
+                        <> expSites e
+
+            altSites :: Alt -> [(Uniq, Annote, Text)]
+            altSites (Alt an _ xs e) = map (idSite an "pattern binder") xs <> expSites e
+
+-- | A term binding site, keyed by unique, with its diagnostic text.
+idSite :: Annote -> Text -> Id -> (Uniq, Annote, Text)
+idSite an what x = (idUniq x, an, "binding unique #" <> showt (idUniq x) <> " (" <> what <> " " <> prettyPrint x <> ")")
+
+-- | A type-variable binding site, keyed by unique, with its diagnostic text.
+tvSite :: Annote -> Text -> TyVar -> (Uniq, Annote, Text)
+tvSite an what v = (tvUniq v, an, "binding unique #" <> showt (tvUniq v) <> " (" <> what <> " " <> prettyPrint v <> ")")
 
 ---
 --- Processes (doc/eidos.md §7.4): the machine rules, per-proc, checked in
@@ -534,7 +553,7 @@ checkANF d = tailOk $ defnBody d
                         | reacOrStateT t || hasJump e -> caseOk e
                         | otherwise -> failAt an "ANF: a pure case in tail position (must be let-bound)"
                   App {}
-                        | reacOrStateT (typeOf e) || hasArrowTy (typeOf e) -> spineOk e
+                        | reacOrStateT (typeOf e) || hasArrow (typeOf e) -> spineOk e
                         | otherwise -> failAt (ann e) "ANF: a pure application in tail position (must be let-bound)"
                   Lam _ _ b -> tailOk b -- residual reactive-continuation lambda
                   _ -> failAt (ann e) "ANF: not a let chain ending in an atom, jump, or reactive tail"
@@ -566,18 +585,12 @@ checkANF d = tailOk $ defnBody d
                               | atomOk a                = pure ()
                               | Lam {} <- a             = tailOk a
                               | (Prim {}, _) <- flattenApp a = spineOk a
-                              | hasArrowTy $ typeOf a   = case a of
+                              | hasArrow $ typeOf a     = case a of
                                     App {} -> spineOk a
                                     _      -> pure ()
                               | reacOrStateT $ typeOf a = tailOk a
                               | otherwise               = failAt (ann a)
                                     "ANF: a representable non-atom argument (must be let-bound)"
-
-            hasArrowTy :: Ty -> Bool
-            hasArrowTy = \ case
-                  Arrow {}      -> True
-                  TyApp _ t1 t2 -> hasArrowTy t1 || hasArrowTy t2
-                  _             -> False
 
             atom :: Annote -> Text -> Exp -> m ()
             atom an what e = unless (atomOk e) $ failAt an $ "ANF: " <> what <> " is not an atom"
@@ -635,11 +648,6 @@ checkValueBinder env an what x = do
       checkLocalBinder env an what x
       when (envMode env >= LintMonoANF && hasArrow (sigTy $ idSig x)) $ failAt an
             $ what <> " " <> prettyPrint x <> " has a function type (higher-order binders are not representable past the ANF stage)"
-      where hasArrow :: Ty -> Bool
-            hasArrow = \ case
-                  Arrow {}    -> True
-                  TyApp _ a b -> hasArrow a || hasArrow b
-                  _           -> False
 
 ---
 --- Expressions (doc/eidos.md §4.2): synthesis with all checks inline.
@@ -943,11 +951,6 @@ checkLitInt env an t n = when (envMode env >= LintMono) $ case litRep t of
 ---
 --- Types.
 ---
-
--- | Structural equality after normalization — the compiler-wide notion of
---   type equality (doc/eidos.md §5).
-tyEq :: Ty -> Ty -> Bool
-tyEq t t' = natNorm t == natNorm t'
 
 -- | Scoping (every type variable bound, at its binder's kind) plus, in
 --   mono mode, closedness; in machine mode, the reactive types are out of

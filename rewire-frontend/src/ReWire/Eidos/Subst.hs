@@ -33,6 +33,7 @@ import ReWire.Eidos.Types (substTv)
 import ReWire.SYB (queryWith)
 
 import Control.Monad.State.Strict (MonadState, get, put)
+import Data.Data (Data)
 import Data.HashMap.Strict (HashMap)
 import Data.Text (Text)
 
@@ -40,9 +41,10 @@ import qualified Data.HashMap.Strict as Map
 import qualified Data.IntMap.Strict  as IM
 import qualified Data.IntSet         as IS
 
--- | The largest unique occurring anywhere in a program (binders and
---   occurrences; the primitive basis' negative uniques never win).
-maxUniq :: Program -> Uniq
+-- | The largest unique occurring anywhere in a program — or any other
+--   'Data' value holding 'Id's and 'TyVar's — (binders and occurrences;
+--   the primitive basis' negative uniques never win).
+maxUniq :: Data a => a -> Uniq
 maxUniq p = maximum $ 0 : ids <> tvs
       where ids :: [Uniq]
             ids = queryWith (\ x -> [idUniq x]) p
@@ -51,7 +53,7 @@ maxUniq p = maximum $ 0 : ids <> tvs
             tvs = queryWith (\ v -> [tvUniq v]) p
 
 -- | A safe starting value for a pass's unique supply.
-nextUniq :: Program -> Uniq
+nextUniq :: Data a => a -> Uniq
 nextUniq = succ . maxUniq
 
 freshU :: MonadState Uniq m => m Uniq

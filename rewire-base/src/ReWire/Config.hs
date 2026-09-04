@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Config
-      ( interpret, Config, getOutFile
+      ( interpret, Config, getOutFile, machineFile
       , Language (..), ResetFlag (..), OutFlag (..), Certify (..)
       , verbose, pretty, flatten
       , target, clock, reset
@@ -139,6 +139,12 @@ setOutFlag f conf ins | ins       = over outFlags (Set.insert f) conf
                       | otherwise = over outFlags (Set.delete f) conf
 
 type ErrorMsg = Text
+
+-- | The machine-level IR dump beside the output — the @--eidos@ dump, and
+--   the @--certify@ source artifact (both writer and validator invocation
+--   compute the path here): @<out>.eir@.
+machineFile :: Config -> FilePath -> FilePath
+machineFile c filename = fromMaybe filename (c^.outFile) -<.> "eir"
 
 getOutFile :: Config -> FilePath -> FilePath
 getOutFile c filename = flip fromMaybe (c^.outFile) $ case c^.target of

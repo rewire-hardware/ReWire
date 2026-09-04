@@ -35,6 +35,7 @@ library
       ReWire.Eidos.BuiltinSigs
       ReWire.Eidos.Externs
       ReWire.Eidos.Inline
+      ReWire.Eidos.Lexer
       ReWire.Eidos.Lint
       ReWire.Eidos.Naming
       ReWire.Eidos.Parse

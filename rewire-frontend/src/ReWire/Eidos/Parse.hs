@@ -45,8 +45,9 @@
 --   whole process is parsed.
 module ReWire.Eidos.Parse (parseEir, parseEirText) where
 
-import ReWire.Annotation (Annote, noAnn, srcAnnote)
+import ReWire.Annotation (Annote, noAnn)
 import ReWire.Builtins (Builtin, builtins)
+import ReWire.Eidos.Lexer
 import ReWire.Eidos.Syntax
 import ReWire.Eidos.Types (dstArrow, flattenApp, instantiate)
 import ReWire.Error (failAt, MonadError, AstError)
@@ -54,34 +55,23 @@ import ReWire.Pretty (showt)
 
 import Control.Monad (foldM, unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Char (isAlpha, isAlphaNum)
-import Data.Functor (void, ($>))
 import Data.HashMap.Strict (HashMap)
 import Data.List (find)
-import Data.Text (Text, pack)
-import Data.Void (Void)
-import Numeric.Natural (Natural)
-import Text.Megaparsec (Parsec, many, some, try, (<|>), (<?>), manyTill, parse, between, sepBy, notFollowedBy, optional, satisfy, anySingle, eof, empty, getSourcePos, attachSourcePos, errorOffset, bundleErrors, bundlePosState, parseErrorTextPretty)
-import Text.Megaparsec.Char (char, space1)
-import Text.Megaparsec.Pos (SourcePos (..), unPos)
+import Data.Text (Text)
+import Text.Megaparsec (many, some, try, (<|>), (<?>), parse, sepBy, notFollowedBy, optional, eof)
+import Text.Megaparsec.Char (char)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
-import qualified Data.List.NonEmpty  as NE
 import qualified Data.Text           as T
 import qualified Data.Text.IO        as T
 import qualified Text.Megaparsec.Char.Lexer as L
-
-type Parser = Parsec Void Text
 
 parseEir :: (MonadError AstError m, MonadIO m) => FilePath -> m Program
 parseEir p = liftIO (T.readFile p) >>= flip parseEirText p
 
 parseEirText :: MonadError AstError m => Text -> FilePath -> m Program
 parseEirText txt p = either failParse elabProgram $ parse (space *> programP <* eof) p txt
-      where failParse bundle = failAt (srcAnnote (sourceName pos) (lc pos) (lc pos)) (pack $ parseErrorTextPretty e)
-                  where (e, pos)  = NE.head $ fst $ attachSourcePos errorOffset (bundleErrors bundle) (bundlePosState bundle)
-            lc sp = (unPos $ sourceLine sp, unPos $ sourceColumn sp)
 
 ---
 --- Scopes threaded through the grammar.
@@ -103,154 +93,6 @@ data Scope = Scope
 --   every one of them is replaced by elaboration.
 pendingSig :: Sig
 pendingSig = monoSig $ TyCon noAnn "()"
-
----
---- Lexing.
----
-
-space :: Parser ()
-space = L.space (void space1) (L.skipLineComment "--") empty
-
-lexeme :: Parser a -> Parser a
-lexeme = L.lexeme space
-
-symbol :: Text -> Parser Text
-symbol = L.symbol space
-
--- | Run a parser that builds a node from an annotation, supplying it the
---   source span the parser consumed so the node carries a real location.
-withSpan :: Parser (Annote -> a) -> Parser a
-withSpan p = do
-      s <- getSourcePos
-      f <- p
-      e <- getSourcePos
-      pure $ f $ srcAnnote (sourceName s) (lc s) (lc e)
-      where lc sp = (unPos $ sourceLine sp, unPos $ sourceColumn sp)
-
--- | A point annotation at the current position (for nodes built by folds,
---   where 'withSpan' does not fit).
-getAnn :: Parser Annote
-getAnn = do
-      s <- getSourcePos
-      pure $ srcAnnote (sourceName s) (lc s) (lc s)
-      where lc sp = (unPos $ sourceLine sp, unPos $ sourceColumn sp)
-
--- | @#@ separates an identifier from its unique, so it terminates keywords
---   too: @case#1@ is a name token, not the keyword @case@.
-keyword :: Text -> Parser ()
-keyword k = lexeme $ try $ string' k *> notFollowedBy (identChar <|> char '#')
-      where string' :: Text -> Parser ()
-            string' = mapM_ char . T.unpack
-
-reservedWords :: Set.HashSet Text
-reservedWords = Set.fromList
-      [ "let", "in", "rec", "join", "jump", "case", "of", "top", "data"
-      , "forall", "inline", "noinline", "from", "baked", "list", "vec"
-      , "proc", "entry", "block", "state", "put", "get", "pause", "goto", "halt", "undef"
-      , "Nat"
-      ]
-
-identStartChar :: Parser Char
-identStartChar = satisfy $ \ c -> isAlpha c || c == '_' || c == '$'
-
-identChar :: Parser Char
-identChar = satisfy $ \ c -> isAlphaNum c || c `elem` ("_.$'" :: String)
-
--- | Raw (non-lexeme) dotted identifier text, or a backtick-quoted name
---   (arbitrary text; the printer quotes occurrences that do not lex as
---   identifiers, e.g. operator names).
-identRaw :: Parser Text
-identRaw = quoted <|> plain
-      where plain :: Parser Text
-            plain = do
-                  c  <- identStartChar
-                  cs <- many identChar
-                  pure $ pack $ c : cs
-
-            quoted :: Parser Text
-            quoted = do
-                  _  <- char '`'
-                  cs <- many $ satisfy (/= '`')
-                  _  <- char '`'
-                  pure $ pack cs
-
--- | A unique-carrying name token, @occ#uniq@ (term variables, type
---   variables, labels). Reserved words are admitted as occurrence text:
---   the @#@ disambiguates them from keywords.
-uniqName :: Parser (Text, Uniq)
-uniqName = lexeme (try $ (,) <$> identRaw <*> (char '#' *> L.signed (pure ()) L.decimal))
-      <?> "name#unique"
-
--- | A bare dotted name with no unique (type/data constructors, primitives,
---   provenance names).
-bareName :: Parser Text
-bareName = lexeme (try $ do
-      x <- identRaw
-      when (x `Set.member` reservedWords) $ fail "reserved word"
-      -- A bare "_" is not a name: a constructor named "_" would print
-      -- identically to the default case alternative. ("_#u" names are fine.)
-      when (x == "_") $ fail "'_' is not a name"
-      notFollowedBy $ char '#'
-      pure x)
-      <?> "name"
-
--- | The unit and tuple constructor names: @()@, @(,)@, @(,,)@, ...
---   (written tightly, as printed).
-tupleName :: Parser Text
-tupleName = lexeme (try $ do
-      _  <- char '('
-      cs <- many $ char ','
-      _  <- char ')'
-      pure $ pack $ "(" <> cs <> ")")
-      <?> "tuple constructor"
-
--- | A constructor name position: bare, the @(,)@ family, or the list type
---   constructors (which appear as declared datatype names in dumps).
-conName :: Parser Text
-conName = bareName <|> tupleName <|> listConName
-
-listConName :: Parser Text
-listConName = lexeme (try ("[_]" <$ symbol "[_]") <|> try ("[]" <$ symbol "[]"))
-      <?> "list constructor"
-
--- | The default-alternative wildcard (@_@ alone is also a valid identifier
---   start, so it needs the same guards as a keyword).
-underscore :: Parser ()
-underscore = lexeme $ try $ char '_' *> notFollowedBy (identChar <|> char '#')
-
-natural :: Parser Natural
-natural = lexeme L.decimal
-
-integer :: Parser Integer
-integer = lexeme $ L.signed (pure ()) L.decimal
-
--- | String literals, with exactly the escapes the printer emits:
---   @\\\\ \\\" \\n \\t \\r@.
-stringLit :: Parser Text
-stringLit = lexeme (char '"' *> (pack <$> manyTill strChar (char '"')))
-      <?> "string literal"
-      where strChar :: Parser Char
-            strChar = (char '\\' *> escChar) <|> anySingle
-
-            escChar :: Parser Char
-            escChar = char '\\'
-                  <|> char '"'
-                  <|> (char 'n' $> '\n')
-                  <|> (char 't' $> '\t')
-                  <|> (char 'r' $> '\r')
-                  <?> "escape character (one of \\\\ \\\" \\n \\t \\r)"
-
-comma, semi, arrow, dcolon, equals :: Parser ()
-comma  = void $ symbol ","
-semi   = void $ symbol ";"
-arrow  = void $ symbol "->"
-dcolon = void $ symbol "::"
-equals = void $ symbol "="
-
-parens, braces, brackets :: Parser a -> Parser a
-parens   = between (symbol "(") $ symbol ")"
-braces   = between (symbol "{") $ symbol "}"
-brackets = between (symbol "[") $ symbol "]"
 
 ---
 --- Kinds, types, signatures.

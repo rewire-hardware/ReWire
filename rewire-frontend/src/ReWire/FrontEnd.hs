@@ -236,7 +236,7 @@ compileFile conf filename = do
             samePath a b = map toLower a == map toLower b
 
             fout'   = fromMaybe filename $ conf^.Config.outFile
-            eirFile = fout' -<.> "eir"
+            eirFile = Config.machineFile conf filename
             rwcFile = fout' -<.> "rwc"
 
             verb :: MonadIO m => Text -> m ()

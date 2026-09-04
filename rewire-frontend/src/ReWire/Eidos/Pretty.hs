@@ -32,17 +32,19 @@ module ReWire.Eidos.Pretty
       , ppExp, ppBind, ppAlt
       , ppTy, ppSig, ppKind
       , ppId, ppTyVar, ppBinder, ppName
+      , ppOcc, ppOcc', ppAtom, ppStrLit
       ) where
 
 import ReWire.Builtins (builtinName)
+import ReWire.Eidos.Lexer (reservedWords, isIdentStart, isIdentChar)
 import ReWire.Eidos.Syntax
 import ReWire.Pretty (Doc, Pretty (pretty), text, int, vsep, hsep, nest, align, parens, brackets, dquotes, punctuate, comma, semi, space, (<+>), prettyPrint')
 
-import Data.Char (isAlpha, isAlphaNum)
 import Data.List (intersperse)
 import Data.Text (Text)
 
-import qualified Data.Text as T
+import qualified Data.HashSet as Set
+import qualified Data.Text    as T
 
 -- | Render a whole program in the .eir concrete syntax.
 prettyProgram :: Program -> Text
@@ -66,25 +68,16 @@ ppOcc' occ
       | T.isPrefixOf "(" occ                 = text occ
       | otherwise                            = ppOcc occ
 
--- | Occurrence text, backtick-quoted unless it lexes as an identifier.
+-- | Occurrence text, backtick-quoted unless it lexes as an identifier
+--   (the lexer's own predicate and reserved-word table decide).
 ppOcc :: Text -> Doc an
 ppOcc occ
       | lexable   = text occ
       | otherwise = text "`" <> text occ <> text "`"
       where lexable :: Bool
             lexable = case T.uncons occ of
-                  Just (c, _) -> (isAlpha c || c == '_' || c == '$')
-                        && T.all (\ ch -> isAlphaNum ch || ch `elem` ("_.$'" :: String)) occ
-                        && occ `notElem` reservedOccs
+                  Just (c, _) -> isIdentStart c && T.all isIdentChar occ && not (occ `Set.member` reservedWords)
                   Nothing     -> False
-
-            reservedOccs :: [Text]
-            reservedOccs =
-                  [ "let", "in", "rec", "join", "jump", "case", "of", "top", "data"
-                  , "forall", "inline", "noinline", "from", "list", "vec"
-                  , "proc", "entry", "block", "state", "put", "get", "pause", "goto", "halt", "undef"
-                  , "Nat", "_"
-                  ]
 
 -- | A term name occurrence: @x#12@ (the type is read off the binder).
 ppId :: Id -> Doc an

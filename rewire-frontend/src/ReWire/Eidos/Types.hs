@@ -15,7 +15,7 @@ module ReWire.Eidos.Types
       , mkArrow, dstArrow, flattenArrow
       , flattenTyApp, mkTyApp
       , flattenApp
-      , evalNat, natNorm
+      , evalNat, natNorm, tyEq
       , hasArrow, higherOrder, fundamental, reacOrStateT, synthable
       ) where
 
@@ -206,6 +206,11 @@ evalNat t = case t of
 --   the compiler is structural equality after 'natNorm' (annotations are
 --   already ignored by 'Eq Ty'). Subtraction does not distribute (naturals
 --   truncate): @a - b@ normalizes its operands and is otherwise an atom.
+-- | Structural equality after normalization — the compiler-wide notion of
+--   type equality (doc/eidos.md §5).
+tyEq :: Ty -> Ty -> Bool
+tyEq t t' = natNorm t == natNorm t'
+
 natNorm :: Ty -> Ty
 natNorm t = case sumOf t of
       Just s  -> rebuild (ann t) s

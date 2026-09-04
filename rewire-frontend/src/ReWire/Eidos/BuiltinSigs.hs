@@ -21,7 +21,7 @@ module ReWire.Eidos.BuiltinSigs (builtinSig, matchesSig) where
 import ReWire.Annotation (Annote (MsgAnnote))
 import ReWire.Builtins (Builtin (..))
 import ReWire.Eidos.Syntax
-import ReWire.Eidos.Types (natNorm, evalNat, substTv, flattenTyApp)
+import ReWire.Eidos.Types (natNorm, tyEq, evalNat, substTv, flattenTyApp)
 
 import Data.HashMap.Strict (HashMap)
 
@@ -58,9 +58,6 @@ matchesSig (Sig tvs sigT) t = case go sigT (natNorm t) (Map.empty, []) of
             checkDeferred bnds (s, tgt) = case (evalNat $ substTv bnds s, evalNat tgt) of
                   (Just n, Just n') -> n == n'
                   _                 -> True -- open on either side: unchecked.
-
-            tyEq :: Ty -> Ty -> Bool
-            tyEq t1 t2 = natNorm t1 == natNorm t2
 
 -- | The signature scheme of each builtin (doc/eidos.md §7.6).
 builtinSig :: Builtin -> Maybe Sig

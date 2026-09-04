@@ -21,11 +21,9 @@ import Control.Lens ((^.))
 import Control.Monad (when, (>=>))
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State.Strict (MonadState)
-import Data.Maybe (fromMaybe)
 import Data.Text (Text, pack)
 import Numeric.Natural (Natural)
 import System.Directory (renameFile)
-import System.FilePath ((-<.>))
 
 import qualified Data.Text.IO                 as T
 import qualified ReWire.Eidos.ANF             as Eidos
@@ -90,7 +88,7 @@ getDevice conf fp = do
       -- --certify validates against exactly this dump (the machine-mode
       -- Eidos IR the fold consumes), so it implies --eidos.
       when (conf^.C.eidos || conf^.C.certify /= C.CertifyOff) $ do
-            let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
+            let eirFile = C.machineFile conf fp
             verb ("Writing Eidos IR to file: " <> pack eirFile) ()
             -- Same-directory temporary plus rename, so a crash can't
             -- leave a torn artifact that later validates or replays.

@@ -14,11 +14,11 @@
 --     appears only in 'Sig', as a plain type-variable list. Every binder
 --     carries its full signature, so 'typeOf' is total and synthesizing.
 --   * There is no term equality instance: comparing terms for alpha
---     equivalence is an explicit operation (canonical renumbering via
---     'ReWire.Eidos.Subst.refreshExp', as in ReWire.Eidos.Simplify's
---     canonKey and ReWire.Eidos.ProcOpt's blockKey), never accidental
---     structural comparison (which would be annotation- and
---     unique-sensitive).
+--     equivalence is an explicit operation — canonical renumbering, as in
+--     ReWire.Eidos.Simplify's canonKey (through
+--     'ReWire.Eidos.Subst.refreshExp') and ReWire.Eidos.ProcOpt's
+--     blockKey (its own dense renumbering) — never accidental structural
+--     comparison (which would be annotation- and unique-sensitive).
 --   * Annotations ('Annote') are semantically inert and never compared.
 module ReWire.Eidos.Syntax
       ( Uniq, TyConId, DataConId
