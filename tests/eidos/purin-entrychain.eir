@@ -1,4 +1,4 @@
--- Procify input shape: a state0-style entry chain — several binds of
+-- Purify input shape: a state0-style entry chain — several binds of
 -- returns before the first pause, with non-alpha-equal lambda
 -- continuations.
 data Bool * {

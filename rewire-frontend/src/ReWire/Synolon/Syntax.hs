@@ -91,7 +91,7 @@ data TAlt = TAlt Annote !AltCon ![Id] !Term
 
 -- | A whole program: datatypes, the definitions the machine calls (pure,
 --   monomorphic, first-order — 'ReWire.Eidos.Types.machineDefn'), and the
---   processes, which are its roots. There is no @top@: procification
+--   processes, which are its roots. There is no @top@: purification
 --   consumed the device root into the process.
 data Program = Program
       { progDatas :: ![DataDefn]

@@ -204,7 +204,7 @@ genClassInsts n = unlines $
 -- | A reactive loop with a chain of n conditional signal points followed by
 --   one unconditional signal (so the recursion is guarded and the program
 --   valid). Each conditional pause splits the continuation, so this stresses
---   the reactive A-normalization (Eidos.ANF), procify's per-continuation
+--   the reactive A-normalization (Eidos.ANF), purify's per-continuation
 --   state minting, and ToHyle's dispatch construction -- the
 --   chained-conditional shape behind the historical whenchain divergence.
 genWhenChain :: Int -> String
@@ -238,7 +238,7 @@ genWhenChain n = unlines $
       ]
 
 -- | A stateful device whose state is an n-tuple of words, updated each
---   cycle. Stresses procify (state cells) and ToHyle (tuple sizing).
+--   cycle. Stresses purify (state cells) and ToHyle (tuple sizing).
 genStateVars :: Int -> String
 genStateVars n = unlines $
       [ "{-# LANGUAGE DataKinds #-}"

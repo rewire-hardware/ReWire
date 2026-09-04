@@ -13,7 +13,7 @@ marks the point at which the program stops being a description and becomes
 a particular machine — its states, transitions, and data path fixed — that
 Hyle then realizes in bits.
 
-A Synolon program is produced by *procification* (`ReWire.Eidos.ToSynolon`)
+A Synolon program is produced by *purification* (`ReWire.Eidos.ToSynolon`)
 from the mono+ANF restriction of an Eidos program (doc/eidos.md §6), and
 consumed by the fold to Hyle (`ReWire.Synolon.ToHyle`, §7). Its expression
 language is Eidos's: command right-hand sides, cell initials, and
@@ -37,7 +37,7 @@ files, §9).
 - **G2 — Scoped uniqueness.** The datatype and definition fragment keeps
   Eidos's global binder uniqueness (doc/eidos.md §1, G2); process binding
   sites are scoped — labels distinct per process, sites distinct per block
-  — because procification legitimately binds one unique in several blocks
+  — because purification legitimately binds one unique in several blocks
   (§4).
 - **G3 — Types are plain data.** Inherited from Eidos: no binders inside
   types, one mandatory type per binder, a total `typeOf`; here further
@@ -54,7 +54,7 @@ files, §9).
 Non-goals at this writing: multi-clock semantics (procs carry an optional
 clock-domain annotation, default the single implicit domain); multiple
 processes and process composition operators (the program grammar admits a
-proc list; the singleton restriction is only a property of what procify
+proc list; the singleton restriction is only a property of what purify
 mints, not a grammar, parser, or lint rule); memory primitives.
 
 ## 2. Metavariables and annotations
@@ -86,7 +86,7 @@ type in the *representable closure*:
   return representable values); no binder, parameter, or cell has a
   function type.
 - The reactive types (`ReacT`, `StateT`, `Identity`) are out of the type
-  grammar entirely: procification retired them.
+  grammar entirely: purification retired them.
 
 This closure is the type universe the machine semantics is defined over
 (§5.1). The lint enforces it: the exclusion of the reactive types,
@@ -137,7 +137,7 @@ occurs only as an argument (a higher-order builtin's function argument),
 kept in place with its body or arguments in this form; an application's
 head is a definition, constructor, or primitive, never a lambda. This is
 the shape the A-normalization of doc/eidos.md §6 establishes for the
-reactive fragment; procification carries it into blocks, the cleanup
+reactive fragment; purification carries it into blocks, the cleanup
 transforms preserve it (epsilon-block inlining substitutes operands for
 block parameters, and takes a hop only where the result is still in the
 form — a parameter may sit where only an atom may, under a lambda or in a
@@ -150,7 +150,7 @@ hand-written `.syn` file can violate the form — and be rejected.
 Definitions and datatypes are Eidos's (doc/eidos.md §3.5–§3.6). A Synolon
 program carries the definitions the machine calls — pure, monomorphic,
 first-order (`ReWire.Eidos.Types.machineDefn`: dotted-named, no quantified
-type variables, not reactive-typed), in the order procification found
+type variables, not reactive-typed), in the order purification found
 them (Hyle names are assigned by position) — with their provenance
 attributes (`from f₀ (τ̄)`, `baked f₀`) riding along for dumps and stable
 HDL naming. The consumed reactive definitions and the builtin signature
@@ -211,7 +211,7 @@ right-hand sides; *sequential* (clocked) extern calls are legal only as
 commands, and each syntactic occurrence denotes one device instance.
 
 Labels are a distinct namespace, per-proc; all generated names (label
-enum, step record, cells) are qualified by the proc name (procify names
+enum, step record, cells) are qualified by the proc name (purify names
 the single proc `main`).
 
 ### 3.5 Degenerate forms
@@ -225,9 +225,9 @@ Hyle handles zero-width values (doc/hyle.md §8.6).
     prog ::= data* defn* proc+
 
 A Synolon program has no designated root: its processes are its roots.
-There is no `top` — procification consumed the device root into the
+There is no `top` — purification consumed the device root into the
 process. The restriction that the reactive root set is a singleton is a
-property of the current pipeline: procify mints exactly one proc (named
+property of the current pipeline: purify mints exactly one proc (named
 `main`), and the fold requires exactly one; the grammar, the parser, and
 the lint admit a list, and a multi-process program has no machine meaning
 yet (`--certify` reports it UNSUPPORTED). Process composition is future
@@ -248,7 +248,7 @@ work.
   mono+ANF strength (every definition monomorphic, every type nat-closed,
   every value binder first-order) with the reactive types out of the type
   grammar entirely; a `Prim` occurrence instantiates its scheme of §6, and
-  the seven builtins procification eliminates (doc/eidos.md §7) may not
+  the seven builtins purification eliminates (doc/eidos.md §7) may not
   occur.
 - **Pure-acyclicity**: the call graph of the pure definitions reachable
   from the process (block bodies, cell initials, and transitively) is
@@ -270,7 +270,7 @@ work.
   doc/eidos.md §4.4; checked whole-program); labels and cells are distinct per
   process; within a block every binding site is distinct and disjoint
   from the definition-level sites; but one unique may be bound in
-  several blocks — procification splices one definition per continuation
+  several blocks — purification splices one definition per continuation
   and passes one binder along goto chains — so process binding sites are
   validated by scoping and occurrence-signature agreement, not by global
   uniqueness. Fresh uniques for a Synolon pass come from the maximum over
@@ -462,13 +462,13 @@ a machine-checked validator (doc/certify.md).
 ## 6. Builtin signatures and denotations
 
 The signature scheme and the machine-level denotation of every builtin
-that survives procification (`ReWire.Builtins`; occurrences print as
+that survives purification (`ReWire.Builtins`; occurrences print as
 `rwPrim<Name>`, doc/eidos.md §9). The scheme rule is doc/eidos.md §7's —
 a `Prim` occurrence's carried type must be a substitution instance of its
 builtin's scheme, checked by both lints against the one implementation
 table (`ReWire.Eidos.BuiltinSigs`); the `rwPrimExtern` row is the one
 exception, its occurrence types trusted rather than checked. The seven
-builtins procification eliminates (the reactive operations) are listed
+builtins purification eliminates (the reactive operations) are listed
 there and have no denotation here. Quantified `n, m, i` have kind `Nat`;
 `a, b` kind `*`. In denotations, `x = bv(v)` and `y = bv(w)` are the bit
 readings of the first and second `Vec _ Bool` arguments (§5.1), and `⟨·⟩ₙ`
@@ -579,7 +579,7 @@ program at least as well-formed as it found it), preserves binder
 uniqueness where it holds (duplication goes through the refreshing clone
 of doc/eidos.md §8), and is annotation-transparent.
 
-**Procification** (`ReWire.Eidos.ToSynolon`, pass 7) consumes the
+**Purification** (`ReWire.Eidos.ToSynolon`, pass 7) consumes the
 mono+ANF restriction of an Eidos program (doc/eidos.md §6), keeps the
 definitions the machine calls and the datatypes they and the process
 mention (§3.3), and mints one process from the device root: a `signal` becomes a `pause` to the
@@ -622,7 +622,7 @@ three transforms to a fixpoint (until the block-label sequence is stable):
    minimal — an `INLINE`-duplicated continuation mints many identical
    pause targets. The key is the *printed* canonical block (§9), so the
    printer is normative for state counts.
-3. *Unreachable-block purge*: procification drops the continuation of a
+3. *Unreachable-block purge*: purification drops the continuation of a
    computation that cannot return (an `error` at monadic type), orphaning
    the blocks compiled for it; orphaned pause targets would otherwise mint
    machine states and mask the never-pauses rule, so blocks unreachable
@@ -634,10 +634,10 @@ merge-headroom diagnostic (how many further blocks and states a
 bisimulation-style partition refinement would remove).
 
 **The lint** (`ReWire.Synolon.Lint`) runs unconditionally after the
-cleanup; under `--debug-lint` it also runs after procification, without
+cleanup; under `--debug-lint` it also runs after purification, without
 the signal-guardedness rule (the one rule the cleanup may establish, by
 removing an orphaned unguarded block). Block normal form is checked at
-both points: procification establishes it and the cleanup preserves it. **`--no-halt`** then rejects any
+both points: purification establishes it and the cleanup preserves it. **`--no-halt`** then rejects any
 reachable `halt` — after the purge every block is reachable, so this is
 syntactic presence of a `halt` terminator, including under terminator
 cases. **The dump** the fold consumes is what `--synolon` writes as
@@ -698,7 +698,7 @@ monomorphic, join-free scope.
 | §6 (builtin signatures) | `ReWire.Eidos.BuiltinSigs` (shared) |
 | §5 (machine semantics) | no Haskell evaluator (as doc/eidos.md §5 says of Eidos): mechanized in `verify/Rwv/Eidos/Value.lean` (values, zero), `Eval.lean` (pure evaluation and the builtin table), and `verify/Rwv/Synolon/Machine.lean` (block execution, the step, streams); differentially tested by `rwv-synolon-diff` against `rwc --interpret` and by the four-way cosimulation in `rwc-test` |
 | §7 (the machine fold, Synolon → Hyle) | `ReWire.Synolon.ToHyle` |
-| §8 (procification, Eidos → Synolon) | `ReWire.Eidos.ToSynolon` |
+| §8 (purification, Eidos → Synolon) | `ReWire.Eidos.ToSynolon` |
 | §8 (block-graph cleanup, machine accounting) | `ReWire.Synolon.Transform` |
 | §9 (`.syn`) | `ReWire.Synolon.Pretty`, `ReWire.Synolon.Parse` (over `ReWire.Eidos.Pretty`, `ReWire.Eidos.Parse`, `ReWire.Eidos.Lexer`) |
 | minted-name conventions (labels, lifted joins) | `ReWire.Eidos.Naming` (shared) |

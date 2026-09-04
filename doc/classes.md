@@ -35,7 +35,7 @@ not compile (there is no runtime to defer to).
 - **Classes across modules**: a class in one module, instances in another
   (orphans included), uses in a third.
 - **Methods with reactive types** (`ReacT`/`Dev` results): dictionaries are
-  eliminated before procification, so class-selected state machines compose
+  eliminated before purification, so class-selected state machines compose
   like any others.
 - **`INLINE`/`NOINLINE` pragmas on instance methods** carry through; a
   `NOINLINE` method does not obstruct dictionary elimination.

@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
--- | A-normalization to procify's input form (doc/eidos.md §6): every
+-- | A-normalization to purify's input form (doc/eidos.md §6): every
 --   reactive definition body becomes a let chain over simple right-hand
 --   sides ending in an atom (or a jump), by the spec's small ordered ruleset —
 --   eta-expansion (definitions reach their signature arity, parameters in
@@ -18,7 +18,7 @@
 --   slices, finite literals — where they stand).
 --
 --   The *reactive* fragment is the deliberate exemption — it is what
---   procify consumes, and its structure must survive:
+--   purify consumes, and its structure must survive:
 --
 --   * a spine whose type mentions the reactive stack stays a spine; its
 --     computed arguments are named, its lambda arguments (bind
@@ -27,12 +27,12 @@
 --     reactive arguments normalize recursively in place (a pure let may
 --     wrap them);
 --   * a case with a reactive result type stays in tail position (its
---     scrutinee is named, its alternatives normalize as tails) — procify
+--     scrutinee is named, its alternatives normalize as tails) — purify
 --     turns it into a terminator case; a pure-resulted case is let-bound
 --     like any other computation.
 --
 --   Runs after the partial evaluator (ReWire.ModCache pass 6),
---   immediately before procify.
+--   immediately before purify.
 module ReWire.Eidos.ANF (normalize, hasJump, isAtom, isPrimExp) where
 
 import ReWire.Annotation (Annote)
@@ -43,7 +43,7 @@ import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, hasArrow, reacOrSta
 
 import Control.Monad.State.Strict (StateT, evalStateT, get, put)
 
--- | Only the reactive fragment normalizes: procify consumes the reactive
+-- | Only the reactive fragment normalizes: purify consumes the reactive
 --   skeleton, and the Eidos-to-Hyle fold lowers pure expressions in any
 --   shape, so naming every intermediate of the large,
 --   partially-evaluated pure bodies would cost compile time for nothing.
@@ -120,7 +120,7 @@ reactive = reacOrStateT . typeOf
 --   join's signature and its jumps' carried ids are rebuilt to the
 --   applied type). Scope-safe under the uniqueness discipline: the
 --   arguments predate the binders. Commuting here is what puts the
---   reactive case or spine back in tail position for procify.
+--   reactive case or spine back in tail position for purify.
 commuteCaseApp :: Exp -> Maybe Exp
 commuteCaseApp e = case flattenApp e of
       (h@Case {}, args@(_ : _)) -> Just $ pushE h args
@@ -229,7 +229,7 @@ normTail e = case e of
       Jump an j es   -> do
             (bs, as) <- atomizeMany es
             pure $ wrapLets bs $ Jump an j as
-      -- A reactive-resulted case (a terminator case, after procify) and a
+      -- A reactive-resulted case (a terminator case, after purify) and a
       -- case whose alternatives jump (the scope of a join point — jumps
       -- are tail-only, so the case cannot be let-bound) stay in tail
       -- position.

@@ -706,7 +706,7 @@ def evalBuiltin (C : Ctx) (fuel : Nat) (pty : Ty) (b : Builtin) (vs : List Val)
           | .vec (h :: _) => pure h
           | .vec []       => throw "rwPrimMSBit: zero-width argument"
           | _             => throw "rwPrimMSBit: expected a Vec value")
-    -- Eliminated by procification (doc/eidos.md §7), which consumes
+    -- Eliminated by purification (doc/eidos.md §7), which consumes
     -- these; none may be reachable from a process.
     | .bind, _ | .ret, _ | .put, _ | .get, _ | .signal, _ | .lift, _ | .extrude, _ | .unfold, _ =>
         throw s!"{b.name}: eliminated before the machine level (must not appear in an evaluated program)"

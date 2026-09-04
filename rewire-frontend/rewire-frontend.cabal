@@ -7,7 +7,7 @@ cabal-version: 1.12
 name:           rewire-frontend
 version:        2.8
 synopsis:       A Haskell-to-Verilog/VHDL compiler, front end (GHC driver, Eidos, Synolon)
-description:    The ReWire front end. The GHC driver and Core-to-Eidos bridge (ReWire.GHC.*), the Eidos typed functional IR and its passes (ReWire.Eidos.*), the Synolon machine-level IR, procification, and the Synolon-to-Hyle fold (ReWire.Synolon.*), and the pass-pipeline orchestration. Produces a ReWire.Hyle device; depends on rewire-backend for the Hyle IR and RTL backends and on rewire-base for shared utilities.
+description:    The ReWire front end. The GHC driver and Core-to-Eidos bridge (ReWire.GHC.*), the Eidos typed functional IR and its passes (ReWire.Eidos.*), the Synolon machine-level IR, purification, and the Synolon-to-Hyle fold (ReWire.Synolon.*), and the pass-pipeline orchestration. Produces a ReWire.Hyle device; depends on rewire-backend for the Hyle IR and RTL backends and on rewire-base for shared utilities.
 category:       Language
 homepage:       https://github.com/rewire-hardware/ReWire#readme
 bug-reports:    https://github.com/rewire-hardware/ReWire/issues

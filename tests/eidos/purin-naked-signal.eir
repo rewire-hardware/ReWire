@@ -1,4 +1,4 @@
--- Procify input shape (doc/eidos.md section 6): a naked signal — the
+-- Purify input shape (doc/eidos.md section 6): a naked signal — the
 -- whole reactive body is a single rwPrimSignal application, no bind
 -- spine.
 data Bool * {

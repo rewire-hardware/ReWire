@@ -1,4 +1,4 @@
--- Procify input shape: extrude under case (the signalFirst corpus
+-- Purify input shape: extrude under case (the signalFirst corpus
 -- shape) -- the extruded reactive computation is selected by a case, and
 -- each arm is a lifted-state signal loop.
 data Bool * {

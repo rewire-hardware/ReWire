@@ -8,7 +8,7 @@ module ReWire.ModCache
       ) where
 
 import ReWire.Config (Config)
-import ReWire.Eidos.ToSynolon (procify)
+import ReWire.Eidos.ToSynolon (purify)
 import ReWire.GHC.Session (loadCore)
 import ReWire.GHC.ToEidos (toEidos)
 import ReWire.Error (AstError, MonadError, Warning (..), failAt, warnAt)
@@ -47,7 +47,7 @@ type LoadPath = [FilePath]
 -- output (e.g., MiniISA.6.eir, MiniISA.8.syn). Pass 1 is the front end: GHC
 -- (parse/typecheck/desugar over the whole home module graph) followed by
 -- the Core-to-Eidos bridge. Passes 2-6 are the Eidos passes (doc/eidos.md),
--- pass 7 is procification (Eidos to Synolon), pass 8 the Synolon
+-- pass 7 is purification (Eidos to Synolon), pass 8 the Synolon
 -- block-graph cleanup, and pass 9 the Synolon-to-Hyle fold; the Hyle-level
 -- passes (10-11) run in ReWire.FrontEnd, numbered after these so -d
 -- numbering is uniform.
@@ -75,14 +75,14 @@ getDevice conf fp = do
             (Eidos.simplify (conf^.C.depth)) eirExt
       Eidos.lint Eidos.LintMono eirPE
       -- Normalize the reactive fragment to ANF (the last Eidos pass; the
-      -- --eidos dump is this program), then the machine level: procify to
+      -- --eidos dump is this program), then the machine level: purify to
       -- Synolon, clean the block graph, and check the machine rules.
       eirANF <- passEidos 6 "Normalizing to ANF (eidos)."
             Eidos.normalize eirPE
       Eidos.lint Eidos.LintMonoANF eirANF
       when (conf^.C.eidos) $ writeDump (C.eidosFile conf fp) "Eidos" $ Eidos.prettyProgram eirANF
-      pr0 <- passSynolon 7 "Procifying (eidos to synolon)."
-            procify eirANF
+      pr0 <- passSynolon 7 "Purifying (eidos to synolon)."
+            purify eirANF
       -- The lint before the cleanup skips signal-guardedness, the one rule
       -- the cleanup may establish (it removes orphaned blocks).
       when (conf^.C.debugLint) $ Synolon.lintPre pr0

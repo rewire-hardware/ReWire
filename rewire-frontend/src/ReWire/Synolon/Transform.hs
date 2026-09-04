@@ -1,7 +1,7 @@
 {-# LANGUAGE Safe #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
--- | Process-level cleanups of the block graph, between procify and the
+-- | Process-level cleanups of the block graph, between purify and the
 --   machine lint:
 --
 --   * /Epsilon-block inlining/: a block with no commands whose terminator
@@ -20,7 +20,7 @@
 --     This is what keeps the state count minimal — an INLINE-duplicated
 --     continuation mints many identical pause targets.
 --
---   * /Unreachable-block purge/: procify drops the continuation of a
+--   * /Unreachable-block purge/: purify drops the continuation of a
 --     computation that cannot return (an error at monadic type), which
 --     orphans the blocks compiled for it. Orphaned pause targets would
 --     otherwise mint machine states (and dispatch entries) and mask the

@@ -191,7 +191,7 @@ REJECTED, never an unsound VALIDATED.
 What is covered is the compiler's middle and back half: the
 Synolon-to-Hyle fold (pass 9) and the Hyle-level optimization and inlining
 (passes 10–11). Passes before the pass-8 dump (the GHC front end, the
-Eidos passes, procification) and the HDL backends after Hyle are not
+Eidos passes, purification) and the HDL backends after Hyle are not
 covered; the cosimulation legs of rwc-test remain the check on those.
 
 ## Support matrix

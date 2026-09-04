@@ -52,7 +52,7 @@ nothing reachable from the machine ever has an unchecked body.
 Skipped definitions still contribute their names to scope and *all*
 their binding sites to the global-uniqueness rule, exactly as in the
 reference. Relatedly, the global-uniqueness rule covers the
-datatype-and-definition fragment only: procify splices one definition
+datatype-and-definition fragment only: purify splices one definition
 per continuation and passes one binder along goto chains, so a unique
 is legitimately bound by several blocks (see the uniqueness section).
 
@@ -87,7 +87,7 @@ Rwv.Synolon.Check); and `checkTop`'s
 device-type rule (the root has type `ReacT i o Identity a`) holds
 whenever a `top` is present, with or without processes — in a legacy
 dump with processes, `top` names the reactive machine-root definition
-procify consumed, which retains exactly that type as skipped residue.
+purify consumed, which retains exactly that type as skipped residue.
 A Synolon program carries no `top` (its processes are its roots) and
 the rule does not apply.
 -/
@@ -414,10 +414,10 @@ definition names, signature type variables, parameters, all local
 binders, and datatype parameters. Occurrences (which share their
 binder's unique) contribute nothing. Skipped (carrier) definitions
 contribute their sites like any other: the datatype-and-definition
-fragment is untouched by procify, and the pass-6 whole-program lint
+fragment is untouched by purify, and the pass-6 whole-program lint
 guaranteed its global uniqueness.
 
-Process binding sites are deliberately NOT part of the rule: procify
+Process binding sites are deliberately NOT part of the rule: purify
 splices one definition per continuation and passes the same binder
 along goto chains, so one unique is legitimately bound by several
 blocks (and, in a legacy dump that still carries the consumed reactive
@@ -539,7 +539,7 @@ def checkTy (env : Env) (t : Ty) : Except String Unit := do
   checkTyScope env t
   checkClosed (Ty.natNorm t)
   if t.reacOrStateT then
-    throw s!"reactive type {t.render} in Synolon (procification has retired ReacT/StateT/Identity)"
+    throw s!"reactive type {t.render} in Synolon (purification has retired ReacT/StateT/Identity)"
 
 /-! ## Occurrences and binders -/
 
@@ -994,7 +994,7 @@ def checkDefn (env : Env) (d : Defn) : Except String Unit := do
 or hand-written input; a Synolon program has none): it resolves to a
 definition, its occurrence signature matches the binder's, and it has
 the device-root type `ReacT i o Identity a` — the reactive machine-root
-definition procify consumed, retained as skipped residue (module
+definition purify consumed, retained as skipped residue (module
 header). -/
 def checkTop (defns : List Defn) (top : Id) : Except String Unit := do
   match defns.find? (fun d => d.name.uniq == top.uniq) with

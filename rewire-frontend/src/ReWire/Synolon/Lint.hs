@@ -19,7 +19,7 @@
 --   the definitions reachable from a process is acyclic, and no recursive
 --   let is reachable).
 --
---   Process binding sites are scoped, not globally unique: procify splices
+--   Process binding sites are scoped, not globally unique: purify splices
 --   one definition per continuation and passes one binder along goto
 --   chains, so a unique is legitimately bound by several blocks. Labels
 --   and cells are distinct per process; within a block every binding site
@@ -65,7 +65,7 @@ lint = lintWith True
 
 -- | 'lint' for the program before the block-graph cleanup: the same rules
 --   except signal-guardedness, the one rule the cleanup may establish
---   (procify can leave an orphaned, unguarded block — the continuation of
+--   (purify can leave an orphaned, unguarded block — the continuation of
 --   a computation that never returns — which the cleanup removes).
 lintPre :: MonadError AstError m => Program -> m ()
 lintPre = lintWith False
@@ -313,7 +313,7 @@ checkProcWith decls guarded env pr@(Proc an n it ot _clk cells entry blocks) = d
 --   function-typed forms — the higher-order builtins' function
 --   arguments, kept in place with A-normalized bodies, and partial
 --   applications. A-normalization establishes this shape for the
---   reactive fragment (doc/eidos.md §6), procification carries it into
+--   reactive fragment (doc/eidos.md §6), purification carries it into
 --   blocks, and the cleanup transforms preserve it (epsilon inlining
 --   substitutes operands for block parameters only where the result is
 --   still in the form, 'isOperand').

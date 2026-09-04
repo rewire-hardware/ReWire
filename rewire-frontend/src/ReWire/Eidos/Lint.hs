@@ -22,10 +22,10 @@
 --     and check in poly mode. Value binders may still be higher-order here:
 --     first-orderization is the partial evaluator's job, downstream of
 --     specialization, so the first-order rule belongs to mono+ANF.
---   * 'LintMonoANF' (procify's input contract): additionally, value
+--   * 'LintMonoANF' (purify's input contract): additionally, value
 --     binders are first-order and reactive definition bodies are in the
 --     ANF shape of §6 (let chains over simple right-hand sides; the
---     reactive fragment — procify's input skeleton — is exempt from
+--     reactive fragment — purify's input skeleton — is exempt from
 --     naming, and pure definition bodies are exempt entirely — the fold
 --     lowers them in any shape).
 --
@@ -40,7 +40,7 @@
 --   representable-closure type grammar of §4.1 (a permit-list of type
 --   constructors — Vec, Finite, Bool, (), tuples, monomorphic ADTs,
 --   Integer, Proxy, String in literal positions — plus
---   ReacT/StateT/Identity until procification); it checks the ANF shape,
+--   ReacT/StateT/Identity until purification); it checks the ANF shape,
 --   first-order value binders, no-polymorphism, and nat-closure. The
 --   Synolon lint enforces representability at a fixed bit width through
 --   'envRepr'.
@@ -328,7 +328,7 @@ checkDefn env0 d@(Defn _ x0 _ _ _ _)
 -- | The ANF shape (doc/eidos.md §6): a definition body is a let chain
 --   over simple right-hand sides ending in an atom, a jump, a reactive
 --   spine, or a reactive case — the reactive fragment is exempt from
---   naming (it is procify's input skeleton): reactive spines keep lambda
+--   naming (it is purify's input skeleton): reactive spines keep lambda
 --   (continuation) arguments and in-place reactive arguments; a reactive
 --   case stays in tail position. Types were already checked; this is
 --   purely structural.
@@ -764,7 +764,7 @@ checkTy env an t = do
       checkTyScope env an t
       when (envMode env >= LintMono) $ checkClosed an $ natNorm t
       when (envBanReactive env && reacOrStateT t) $ failAt an
-            $ "reactive type " <> prettyPrint t <> " in Synolon (procification has retired ReacT/StateT/Identity)"
+            $ "reactive type " <> prettyPrint t <> " in Synolon (purification has retired ReacT/StateT/Identity)"
 
 checkTyScope :: MonadError AstError m => Env -> Annote -> Ty -> m ()
 checkTyScope env an = go

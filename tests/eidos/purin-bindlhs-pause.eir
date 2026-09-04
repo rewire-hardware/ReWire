@@ -1,4 +1,4 @@
--- Procify input shape (accepted): a pausing reactive callee in bind-LHS
+-- Purify input shape (accepted): a pausing reactive callee in bind-LHS
 -- position splices its block graph once per continuation — sequential
 -- machine composition. The callee's internal tail recursion re-enters
 -- under the same continuation and closes through the (definition,

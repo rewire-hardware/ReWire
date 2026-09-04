@@ -3,7 +3,7 @@
 -- | The shared naming and ordering conventions for compiler-minted
 --   definitions and machine-level labels: one function per naming
 --   decision, so independently-minted artifacts that must correspond
---   (procify's block labels; the join continuations the machine fold
+--   (purify's block labels; the join continuations the machine fold
 --   lifts) agree by construction, and regenerated goldens drift
 --   minimally.
 --
@@ -24,7 +24,7 @@ import Numeric (showHex)
 
 import qualified Data.Text as T
 
--- | The label for a procify-minted block: @$L.\<source>@ for a source
+-- | The label for a purify-minted block: @$L.\<source>@ for a source
 --   name's first block, @$L.\<source>\<ordinal>@ from the second on. The
 --   ordinal is per source name, so an upstream edit renumbers only that
 --   name's later blocks, never the whole process. (The machine fold

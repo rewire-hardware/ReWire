@@ -1,7 +1,7 @@
 -- EXPECT-ERROR: might pause
 -- EXPECT-ERROR: NOINLINE
 -- The left-hand side of the bind in start is a NOINLINE (pausing) device:
--- NOINLINE is the user's opt-out from procify's per-continuation block
+-- NOINLINE is the user's opt-out from purify's per-continuation block
 -- splicing, so the call is rejected. (Without the pragma this program
 -- compiles by splicing -- see tests/golden/subfsm.hs.)
 {-# LANGUAGE DataKinds #-}

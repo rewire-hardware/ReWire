@@ -210,7 +210,7 @@ evalNat t = case t of
 --   truncate): @a - b@ normalizes its operands and is otherwise an atom.
 -- | A definition the machine level keeps and the fold lowers: dotted-named
 --   (not a builtin signature carrier, which is undotted), monomorphic, and
---   not reactive-typed (the reactive fragment is consumed by procification).
+--   not reactive-typed (the reactive fragment is consumed by purification).
 machineDefn :: Defn -> Bool
 machineDefn d = T.any (== '.') (idOcc $ defnId d)
       && null (sigTVs $ idSig $ defnId d)

@@ -1,4 +1,4 @@
--- Procify input shape: case-commuting depth — a reactive case whose
+-- Purify input shape: case-commuting depth — a reactive case whose
 -- scrutinee is itself a case, in bind-LHS position.
 data Bool * {
       False :: Bool;

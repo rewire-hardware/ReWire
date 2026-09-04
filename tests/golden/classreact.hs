@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 -- Class methods with reactive result types: dictionaries are eliminated
--- before procification, and the selected methods' signal loops compile into
+-- before purification, and the selected methods' signal loops compile into
 -- a multi-phase machine (distinct states must survive in the device).
 import ReWire
 import ReWire.Bits (lit, (+), (-), (==))

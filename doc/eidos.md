@@ -12,7 +12,7 @@ Eidos is the IR of the compiler's front-end passes; the pipeline is
 the functional program the machine will compute, *Synolon* (σύνολον, the
 composite whole) the particular machine — states, transitions, data path
 — that program becomes, and Hyle that machine realized in bits. The
-producer (`ReWire.GHC.ToEidos`) and the consumer (procification,
+producer (`ReWire.GHC.ToEidos`) and the consumer (purification,
 `ReWire.Eidos.ToSynolon`, which consumes the mono+ANF restriction of §6
 and produces Synolon) are outside the scope of this document: everything
 below treats Eidos programs as given, whether produced by the compiler or
@@ -36,7 +36,7 @@ cannot be resolved statically fails compilation — so no class construct
 ever reaches Synolon or Hyle.
 
 The machine level — the process calculus of state cells, labeled blocks,
-and `pause`/`goto`/`halt` terminators that procification produces from
+and `pause`/`goto`/`halt` terminators that purification produces from
 the mono+ANF fragment — is Synolon's, specified in doc/synolon.md; it
 embeds Eidos's expression, definition, and datatype syntax.
 
@@ -45,7 +45,7 @@ embeds Eidos's expression, definition, and datatype syntax.
 - **G1 — One machine story.** The temporal structure of a program is
   expressed by a dedicated calculus with its own checker — Synolon
   (doc/synolon.md, G1) — not by conventions among passes over this
-  functional IR; Eidos's job ends at the mono+ANF form procification
+  functional IR; Eidos's job ends at the mono+ANF form purification
   consumes (§6).
 - **G2 — Globally unique binders.** Every binding site carries a distinct
   unique. Substitution never captures because the invariant is maintained,
@@ -169,7 +169,7 @@ every `jump L (…)` supplies exactly `k` arguments, and jumps occur only in
 *tail position* of the join's scope (the let body, or transitively the tail
 of other join bodies bound in it). Join points are the IR-level residue of
 GHC's pattern-match decision trees and of continuation sharing; passes must
-preserve them (G4) — a join point that survives to procification becomes a
+preserve them (G4) — a join point that survives to purification becomes a
 shared Synolon block (doc/synolon.md §3.4), i.e. one resumption state
 instead of one per reference.
 
@@ -199,7 +199,7 @@ applications at use sites by first-order matching.
 
     prog ::= data* defn* top f
 
-A program designates one *device root* with `top`; procification consumes
+A program designates one *device root* with `top`; purification consumes
 it into a Synolon process (doc/synolon.md §3.6).
 
 ## 4. Static semantics
@@ -221,13 +221,13 @@ The linter checks a program in one of three cumulative modes:
   become `Prim` occurrences at the bridge), and they check in poly mode.
   (`Prim` occurrences themselves are checked against the builtin signature
   table of §7, in every mode.)
-- **mono+ANF** (procification's input contract): additionally, value
+- **mono+ANF** (purification's input contract): additionally, value
   binders are first-order and the type grammar is restricted to the
   *representable closure* of doc/synolon.md §3.1 — `Vec n τ`, `Finite n`,
   `Bool`, `()`, tuples, monomorphic ADTs, `Integer`, `Proxy n`, `String`
   (literal positions only), with arrows only in definition signatures —
   plus the reactive types (`ReacT`, `StateT`, `Identity`), which are
-  permitted *only* until procification — plus the ANF restriction of §6.
+  permitted *only* until purification — plus the ANF restriction of §6.
 
 The machine stage that follows has its own checker (doc/synolon.md §4),
 under which the reactive types are out of the grammar entirely.
@@ -305,7 +305,7 @@ transitively, by Hyle's denotational semantics (doc/hyle.md §6). Eidos is a
 *transformation* level; no interpreter for it is provided or needed —
 behavioral oracles run at the Hyle level.
 
-## 6. The mono+ANF restriction (procification's input)
+## 6. The mono+ANF restriction (purification's input)
 
 The ANF productions are shared with the full grammar (they are a
 restriction, not a new syntax): in mono+ANF mode every *reactive*
@@ -345,14 +345,14 @@ chosen by a case) is rejected here, since no consumer can lower it.
 doc/synolon.md §3.2 states the resulting block normal form, which the
 Synolon lint requires of every block.
 
-The *reactive fragment is exempt from naming* — it is procification's
+The *reactive fragment is exempt from naming* — it is purification's
 input skeleton, and its structure must survive: a spine whose type
 mentions the reactive stack (`rwPrimBind`, `rwPrimSignal`, `rwPrimGet`, …)
 stays a spine, keeping its lambda (continuation) arguments in place with
 A-normalized bodies and its reactive arguments in place (a pure let may
 wrap them), while its pure non-atom arguments are named; and a case with
 a reactive result type stays in tail position (scrutinee named,
-alternatives A-normalized) — procification turns it into a terminator
+alternatives A-normalized) — purification turns it into a terminator
 case. A case whose alternatives jump (the scope of a join point) likewise
 stays in tail position, since jumps are tail-only. Any other pure-resulted
 case or call is named like any other computation.
@@ -368,9 +368,9 @@ the `rwPrimExtern` row is the one exception — its occurrence types are
 trusted, not checked). Quantified `n, m, i` have kind `Nat`; `a, b` kind
 `*`; `m̂` ranges over the reactive stack.
 
-The schemes of every builtin that survives procification are the signature
+The schemes of every builtin that survives purification are the signature
 column of doc/synolon.md §6, which also gives their machine-level
-denotations. The seven reactive operations do not survive — procification
+denotations. The seven reactive operations do not survive — purification
 consumes them, and none may appear in a process or in any definition
 reachable from one:
 
@@ -537,4 +537,4 @@ and `[_]` the list type constructors, applied via `tyatom` spines.
 | the bridge (GHC Core → Eidos) | `ReWire.GHC.ToEidos` |
 | §9 (`.eir`) | `ReWire.Eidos.Pretty`, `ReWire.Eidos.Parse`, `ReWire.Eidos.Lexer` |
 | §6 (ANF, reactive fragment) | `ReWire.Eidos.ANF` |
-| procification (Eidos → Synolon; doc/synolon.md §8) | `ReWire.Eidos.ToSynolon` |
+| purification (Eidos → Synolon; doc/synolon.md §8) | `ReWire.Eidos.ToSynolon` |

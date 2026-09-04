@@ -1,4 +1,4 @@
--- Procify input shape: an eta-reduced bind — the continuation is a
+-- Purify input shape: an eta-reduced bind — the continuation is a
 -- top-level definition reference, not a lambda (the react/cubehash
 -- corpus shape).
 data Bool * {

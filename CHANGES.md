@@ -29,7 +29,7 @@
   none of the reactive or builtin-named carrier definitions the old
   machine-level `.eir` dumps carried. Eidos (`ReWire.Eidos.*`,
   `doc/eidos.md`, `.eir`) is the functional level only. Passes 1-6 are
-  the Eidos passes (dumps `.eir`), pass 7 procifies Eidos to Synolon and
+  the Eidos passes (dumps `.eir`), pass 7 purifies Eidos to Synolon and
   pass 8 cleans the block graph (dumps `.syn`), pass 9 is the
   Synolon-to-Hyle fold. The new `--synolon` flag dumps the Synolon
   program after its last pass as `<out>.syn`, which is now the
@@ -181,12 +181,12 @@
   `verify/test/synolon-diff-goldens.py`) and the parser check
   `rwv-eir-parse-check` is renamed `rwv-syn-parse-check`.
 * A Synolon program declares only the datatypes it mentions (closed under
-  constructor fields): procification drops the reactive stack's
+  constructor fields): purification drops the reactive stack's
   declarations along with the reactive fragment, and the unused part of
   the primitive basis and the tuple family with them. The `.syn` dumps
   shrink accordingly; the validator re-adds absent basis declarations
   itself, so certification is unaffected. Generated code is unchanged.
-* Two procification rejections of valid programs are fixed: a stateful
+* Two purification rejections of valid programs are fixed: a stateful
   computation written (or inlined by the partial evaluator) directly
   under `extrude`, with no reactive definition carrying its `StateT`
   layer, failed with "cannot resolve the state cell (rwc bug)" — the

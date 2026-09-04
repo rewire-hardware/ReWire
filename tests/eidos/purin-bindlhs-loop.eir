@@ -1,5 +1,5 @@
--- EXPECT-PROCIFY-ERROR: unbounded resumption stack
--- Procify input shape (negative): recursion THROUGH a bind's left-hand
+-- EXPECT-PURIFY-ERROR: unbounded resumption stack
+-- Purify input shape (negative): recursion THROUGH a bind's left-hand
 -- side — badloop re-enters its own open splice under a fresh
 -- continuation, so it would need an unbounded resumption stack (only
 -- tail recursion compiles to a finite machine). Mirrors

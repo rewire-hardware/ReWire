@@ -1,5 +1,5 @@
 -- Extrude applied to a parameterized device: the device expression reaching
--- procify (ReWire.Eidos.ToSynolon) is an application of a lifted definition,
+-- purify (ReWire.Eidos.ToSynolon) is an application of a lifted definition,
 -- exercising the application case of its rwPrimExtrude handling.
 {-# LANGUAGE DataKinds #-}
 import Prelude hiding ((+))

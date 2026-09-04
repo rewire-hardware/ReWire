@@ -292,13 +292,13 @@ testEirSpec fn = testCase (takeBaseName fn <> " (eir front passes)") $ do
             Left err -> assertFailure $ "eir front passes failed: " <> T.unpack (prettyPrint err)
             Right () -> pure ()
 
--- | Runs a fixture through the front passes, ANF, and procify: fixtures
---   with EXPECT-PROCIFY-ERROR comments must be rejected (the
+-- | Runs a fixture through the front passes, ANF, and purify: fixtures
+--   with EXPECT-PURIFY-ERROR comments must be rejected (the
 --   predicate: a recursive-or-NOINLINE reactive callee at bind-LHS might
 --   pause); the Synolon program constructed from the others must pass the
 --   machine lint and round-trip through the Synolon printer and parser.
-testEirProcify :: FilePath -> TestTree
-testEirProcify fn = testCase (takeBaseName fn <> " (eir procify)") $ do
+testEirPurify :: FilePath -> TestTree
+testEirPurify fn = testCase (takeBaseName fn <> " (eir purify)") $ do
       r <- runSyntaxError $ do
             p  <- parseEir fn
             p' <- Eidos.specialize 10 p
@@ -306,22 +306,22 @@ testEirProcify fn = testCase (takeBaseName fn <> " (eir procify)") $ do
                   >>= (fmap fst . Eidos.neuterExterns)
                   >>= Eidos.simplify 8
                   >>= Eidos.normalize
-                  >>= Eidos.procify
+                  >>= Eidos.purify
             Synolon.lint p'
             let t1 = Synolon.prettyProgram p'
             p'' <- parseSynText t1 fn
             Synolon.lint p''
-            unless (Synolon.prettyProgram p'' == t1) $ fail "procify output does not round-trip through the Synolon printer and parser"
+            unless (Synolon.prettyProgram p'' == t1) $ fail "purify output does not round-trip through the Synolon printer and parser"
             pure $ length $ Synolon.progProcs p'
-      expected <- mapMaybe (stripPrefix "-- EXPECT-PROCIFY-ERROR: ") . lines <$> readFile fn
+      expected <- mapMaybe (stripPrefix "-- EXPECT-PURIFY-ERROR: ") . lines <$> readFile fn
       case r of
             Left err
                   | not (null expected) -> mapM_ (\ e -> assertBool ("rejection does not mention " <> show e <> "; got: " <> T.unpack (prettyPrint err))
                         $ e `isInfixOf` T.unpack (prettyPrint err)) expected
-                  | otherwise -> assertFailure $ "eir procify failed: " <> T.unpack (prettyPrint err)
+                  | otherwise -> assertFailure $ "eir purify failed: " <> T.unpack (prettyPrint err)
             Right n
-                  | not (null expected) -> assertFailure "procify accepted a rejection fixture"
-                  | "procin-" `isInfixOf` takeBaseName fn -> assertBool "no process constructed" $ n >= 1
+                  | not (null expected) -> assertFailure "purify accepted a rejection fixture"
+                  | "purin-" `isInfixOf` takeBaseName fn -> assertBool "no process constructed" $ n >= 1
                   | otherwise -> pure ()
 
 -- | An .eir fixture that must fail to lint (in the fixture's mode), with a
@@ -712,7 +712,7 @@ main = do
       warnTests  <- testsFrom "warning"    (\ f -> pure [testWarning f])
       -- Eidos .eir fixtures: the parse/print fixpoint property of
       -- doc/eidos.md §9, plus a lint of both parses (poly mode), the
-      -- front-half passes, and procify on the procin- fixtures.
+      -- front-half passes, and purify on the purin- fixtures.
       eirTests   <- do
             dir      <- getDataFileName ("tests" </> "eidos")
             files    <- map (dir </>) . filter (".eir" `isSuffixOf`) <$> listDirectory dir
@@ -720,7 +720,7 @@ main = do
             negFiles <- map (negDir </>) . filter (".eir" `isSuffixOf`) <$> listDirectory negDir
             pure $ testGroup "eidos" $ [testManifest dir ".eir", testManifest negDir ".eir"]
                                     <> map testEir files <> map testEirRefresh files <> map testEirSpec files
-                                    <> map testEirProcify (filter (("procin-" `isInfixOf`) . takeBaseName) files)
+                                    <> map testEirPurify (filter (("purin-" `isInfixOf`) . takeBaseName) files)
                                     <> map testEirBad negFiles
       -- Synolon .syn fixtures: round-trip, refresh, block-graph cleanup, and
       -- the machine lint's negatives.

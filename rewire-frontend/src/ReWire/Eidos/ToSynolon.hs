@@ -3,7 +3,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
--- | procify (doc/synolon.md §8): convert the reactive fragment of a
+-- | purify (doc/synolon.md §8): convert the reactive fragment of a
 --   monomorphic ANF program into one process. The traversal is
 --   CPS-shaped — @compile e k@ compiles a reactive computation under a
 --   continuation — which right-associates binds by construction:
@@ -41,7 +41,7 @@
 --   block graph is then cleaned by 'ReWire.Synolon.Transform', checked by
 --   the machine lint ('ReWire.Synolon.Lint'), and lowered by the
 --   Synolon-to-Hyle fold ('ReWire.Synolon.ToHyle').
-module ReWire.Eidos.ToSynolon (procify) where
+module ReWire.Eidos.ToSynolon (purify) where
 
 import ReWire.Annotation (Annote, ann, noAnn)
 import ReWire.Builtins (Builtin (..))
@@ -74,8 +74,8 @@ import qualified ReWire.Eidos.Syntax as E (Program (..))
 --   do not ride along) and the datatypes those mention ('usedDatas'). The
 --   root must be a nullary @ReacT@ computation (the mono lint's device
 --   rule).
-procify :: forall m. MonadError AstError m => E.Program -> m Program
-procify p@(E.Program datas defns top)
+purify :: forall m. MonadError AstError m => E.Program -> m Program
+purify p@(E.Program datas defns top)
       | (TyCon _ "ReacT", [ti, to, _, _]) <- flattenTyApp $ sigTy $ idSig top
       , [] <- fst (flattenArrow $ sigTy $ idSig top) = do
             let cells = stackCells $ maxStack
@@ -176,7 +176,7 @@ procify p@(E.Program datas defns top)
                               , cxJoins = mempty, cxRLets = mempty }
                   body <- case IM.lookup (idUniq top) dmap of
                         Just d  -> pure $ defnBody d
-                        Nothing -> failAt (ann $ sigTy $ idSig top) "procify: device root has no definition (rwc bug)."
+                        Nothing -> failAt (ann $ sigTy $ idSig top) "purify: device root has no definition (rwc bug)."
                   (cmds, term) <- compile cx body KHalt
                   blks <- gets stBlocks
                   pure $ closureConvert Proc
@@ -210,10 +210,10 @@ procify p@(E.Program datas defns top)
                         (jcmds, jterm) <- compile cx b k
                         emitBlock l $ Block (ann b) ps jcmds jterm
                         compile (cx { cxJoins = IM.insert (idUniq $ jpId j) l $ cxJoins cx }) body k
-                  Let an (Rec _) _ -> failAt an "procify: unsupported local recursive binding."
+                  Let an (Rec _) _ -> failAt an "purify: unsupported local recursive binding."
                   Jump an j args -> case IM.lookup (idUniq $ jpId j) $ cxJoins cx of
                         Just l  -> pure ([], Goto an l args)
-                        Nothing -> failAt an "procify: jump to an uncompiled join point (rwc bug)."
+                        Nothing -> failAt an "purify: jump to an uncompiled join point (rwc bug)."
                   Case an t s cb alts | reacOrStateT t -> do
                         -- A terminator case has no binder: the case binder
                         -- aliases the scrutinee, an atom in ANF output, so
@@ -230,7 +230,7 @@ procify p@(E.Program datas defns top)
                         | otherwise -> call cx an x [] k
                   App {}  -> spine cx e k
                   Prim {} -> spine cx e k -- bare nullary operation (get)
-                  _ -> failAt (ann e) "procify: unsupported reactive tail."
+                  _ -> failAt (ann e) "purify: unsupported reactive tail."
 
             altBody :: Alt -> Exp
             altBody (Alt _ _ _ b) = b
@@ -282,7 +282,7 @@ procify p@(E.Program datas defns top)
                   -- (the arguments predate the binder, so this is scope-safe).
                   (Let lan bnd body, args) ->
                         compile cx (Let lan bnd $ foldl (App lan) body args) k
-                  (h, _) -> failAt (ann e) $ "procify: unsupported reactive computation (head: " <> headKind h <> ")."
+                  (h, _) -> failAt (ann e) $ "purify: unsupported reactive computation (head: " <> headKind h <> ")."
 
             -- Apply the continuation to a value: goto (or halt at the root).
             applyK :: Annote -> Cx -> K -> Exp -> PM m ([Cmd], Term)
@@ -327,7 +327,7 @@ procify p@(E.Program datas defns top)
             -- compiles to a finite machine).
             call :: Cx -> Annote -> Id -> [Exp] -> K -> PM m ([Cmd], Term)
             call cx an f args k = do
-                  d <- maybe (failAt an $ "procify: call to an unknown reactive definition: " <> idOcc f) pure
+                  d <- maybe (failAt an $ "purify: call to an unknown reactive definition: " <> idOcc f) pure
                         $ IM.lookup (idUniq f) dmap
                   let noinline = defnAttr d == Just NoInline
                       bindLhs  = case k of { KHalt -> False; KLabel {} -> True }
@@ -357,7 +357,7 @@ procify p@(E.Program datas defns top)
                   Just st | not (null st)
                           , idx <- length (cxCells cx) - length st
                           , idx >= 0, idx < length (cxCells cx) -> pure $ fst $ cxCells cx !! idx
-                  _ -> failAt an "procify: cannot resolve the state cell for this operation (rwc bug)."
+                  _ -> failAt an "purify: cannot resolve the state cell for this operation (rwc bug)."
 
 headKind :: Exp -> Text
 headKind = \ case
