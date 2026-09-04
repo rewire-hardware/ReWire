@@ -1,0 +1,32 @@
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      tag i2 = 0
+      let $res = let p$i0 = eq __in0 8'h3 in
+            let v$i17 = (let $f0$i1 = __in0[7 +: 1] in
+            let $a$i2 = (if not p$i0 then $f0$i1
+                  else 1'h0) in
+            $a$i2) # (let $f1$i3 = __in0[6 +: 1] in
+            let $a$i4 = (if not p$i0 then $f1$i3
+                  else 1'h0) in
+            $a$i4) # (let $f2$i5 = __in0[5 +: 1] in
+            let $a$i6 = (if not p$i0 then $f2$i5
+                  else 1'h0) in
+            $a$i6) # (let $f3$i7 = __in0[4 +: 1] in
+            let $a$i8 = (if not p$i0 then $f3$i7
+                  else 1'h0) in
+            $a$i8) # (let $f4$i9 = __in0[3 +: 1] in
+            let $a$i10 = (if not p$i0 then $f4$i9
+                  else 1'h0) in
+            $a$i10) # (let $f5$i11 = __in0[2 +: 1] in
+            let $a$i12 = (if not p$i0 then $f5$i11
+                  else 1'h0) in
+            $a$i12) # (let $f6$i13 = __in0[1 +: 1] in
+            let $a$i14 = (if not p$i0 then $f6$i13
+                  else 1'h0) in
+            $a$i14) # (let $f7$i15 = __in0[0 +: 1] in
+            let $a$i16 = (if not p$i0 then $f7$i15
+                  else 1'h0) in
+            $a$i16) in
+            v$i17
+      __out0 := $res

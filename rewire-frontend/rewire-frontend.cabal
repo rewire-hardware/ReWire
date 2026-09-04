@@ -57,6 +57,7 @@ library
       ReWire.Synolon.Lint
       ReWire.Synolon.Parse
       ReWire.Synolon.Pretty
+      ReWire.Synolon.Repr
       ReWire.Synolon.Syntax
       ReWire.Synolon.ToHyle
       ReWire.Synolon.Transform

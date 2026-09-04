@@ -1,0 +1,18 @@
+-- EXPECT-LINT-ERROR: beta-redex
+-- Block normal form (doc/synolon.md section 3.2): a command's right-hand
+-- side is a simple computation — an application's head is a definition,
+-- constructor, or primitive, never a lambda.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+proc main : Bool ~> Bool {
+      entry {
+            pause (False :: Bool) -> go#1 ()
+      }
+      block go#1 ((i#2 :: Bool)) {
+            x#3 :: Bool <- (\ (w#5 :: Bool) -> w#5) i#2;
+            pause x#3 -> go#1 ()
+      }
+}

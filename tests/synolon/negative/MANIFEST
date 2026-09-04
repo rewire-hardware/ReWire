@@ -1,3 +1,10 @@
+cell-width-arith.syn
+cell-width.syn
+fn-case-arg.syn
 goto-cycle.syn
 input-type.syn
+operand-shape.syn
+pure-cycle.syn
+rec-let.syn
+redex.syn
 unknown-cell.syn

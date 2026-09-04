@@ -18,22 +18,25 @@ out of the type grammar.
 Also here: the doc/synolon.md §6 builtin signature table (`builtinSig`, `matchesSig`
 — a port of ReWire.Eidos.BuiltinSigs, same schemes, same negative
 table-tyvar uniques, same one-way matching with deferred nat-arithmetic
-equations), checked at every `Prim` occurrence; and two rules the
-Haskell linter does not enforce yet but doc/synolon.md §4 states normatively:
+equations), checked at every `Prim` occurrence; and two rules of
+doc/synolon.md §4 that the Haskell linter (ReWire.Synolon.Lint) also
+enforces:
 
 * **pure-acyclicity** — the call graph of the pure definitions
   reachable from a process (block bodies, cell initials, and
-  transitively) is acyclic (enforced today downstream by the Hyle
-  checker's recursion rule; a fueled DFS in the style of
-  Rwv.Hyle.Check.checkRecursion). A `rec` binding *reachable from a
+  transitively) is acyclic (a fueled DFS in the style of
+  Rwv.Hyle.Check.checkRecursion; the Hyle checker's recursion rule
+  covers the fold's output too). A `rec` binding *reachable from a
   process* is rejected by the same rule (local recursion breaks the
   same well-foundedness; the reference's evaluator-side counterpart is
   Rwv.Eidos.Eval's rejection of `recB`) — an unreachable `rec` is legal
   Eidos and is checked structurally like any binding;
-* **representability** — every value binder, block parameter, and
-  state cell has a fixed bit width (`DEnv.sizeOf`, shared with the
-  translation's sizing in Rwv.Eidos.Value) — so `Integer` = 128 bits,
-  recursive datatypes are rejected, open widths are rejected.
+* **representability** — every value binder, block parameter, state
+  cell, process port, and halt answer has a fixed bit width (`DEnv.sizeOf`, shared with the
+  translation's sizing in Rwv.Eidos.Value; the reference's is
+  ReWire.Synolon.Repr, shared between its lint and its fold) — so
+  `Integer` = 128 bits, recursive datatypes are rejected, open widths
+  are rejected.
 
 Carrier-definition tolerance (doc/eidos.md §4.1): a Synolon program
 (the machine-level `.syn` dump) carries only the definitions the fold
@@ -1263,10 +1266,10 @@ def checkProc (env : Env) (pr : Proc) : Except String Unit := do
     throw s!"process {pr.name} never pauses (no machine to generate)"
   checkGuarded pr
 
-/-! ## Pure-acyclicity (doc/synolon.md §4, normative; not yet enforced
-by the Haskell linter — downstream today via the Hyle checker's
-recursion rule): the call graph of the pure definitions reachable from
-a process is acyclic, and no `rec` binding is reachable. A fueled DFS
+/-! ## Pure-acyclicity (doc/synolon.md §4; the Haskell linter enforces
+it too, and the Hyle checker's recursion rule covers the fold's
+output): the call graph of the pure definitions reachable from a
+process is acyclic, and no `rec` binding is reachable. A fueled DFS
 in the style of Rwv.Hyle.Check.checkRecursion. Intrinsic carriers are
 leaves (their bodies are the validated error stubs, edge-free); a
 reference into any other skipped definition is an error here as it is

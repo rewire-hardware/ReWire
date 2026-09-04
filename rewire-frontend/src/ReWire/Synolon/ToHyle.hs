@@ -30,13 +30,14 @@ import ReWire.Eidos.Pretty ()
 import ReWire.Synolon.Syntax
 import ReWire.Eidos.Naming (liftedJoinName, labelBase, defnBase, originTag)
 import ReWire.Eidos.Subst (nextUniq, freeUniqs, occIds)
-import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, flattenTyApp, evalNat, substTv, higherOrder, fundamental, reacOrStateT)
+import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, flattenTyApp, evalNat, higherOrder, fundamental, reacOrStateT)
 import ReWire.Hyle.Interp (evalExp, IEnv (..))
 import ReWire.Hyle.Mangle (pickFresh, seedNames)
 import ReWire.Hyle.Parse (parseHyleDefns)
 import ReWire.Hyle.Transform (hoistInstances)
 import ReWire.Pretty (showt, prettyPrint)
 import ReWire.SYB (query)
+import ReWire.Synolon.Repr (DataEnv (..), dataEnv, Sizes, sizeOfM, isTupleCon)
 
 import Control.Lens ((^.))
 import Control.Monad (unless, foldM)
@@ -71,14 +72,13 @@ import qualified ReWire.Annotation   as Ann
 ---
 
 data Env = Env
-      { envCtors   :: HashMap TyConId [DataConId]      -- ^ Constructors of each datatype, in declaration order.
-      , envCtorSig :: HashMap DataConId Sig            -- ^ Each constructor's declared signature.
+      { envData    :: DataEnv                          -- ^ The datatype table (constructors in declaration order, and their signatures).
       , envTops    :: IM.IntMap A.GId                  -- ^ Hyle names of the translated top-level definitions.
       , envCry     :: HashMap (Text, Text, Text) A.GId -- ^ Hyle entry names of the compiled Cryptol foreign functions, by (module file, function, type key).
       }
 
 data S = S
-      { sSizes   :: !(HashMap Ty A.Size)
+      { sSizes   :: !Sizes
       , sWarns   :: ![Warning]
       , sCtr     :: !Int
       , sExterns :: !(HashMap A.Name A.Extern)
@@ -251,8 +251,7 @@ synolonToHyle conf p0 = do
                 -- user's, so both seed the used map that pure-defn and
                 -- block naming disambiguate against.
                 (tops, used) = buildNameMap (seedNames $ map A.defnName cryDefns <> mapMaybe externName (query p1)) pures
-                env   = Env { envCtors   = Map.fromList [ (dataName d, [ c | DataCon _ c _ <- dataCons d ]) | d <- datas ]
-                            , envCtorSig = Map.fromList [ (c, sig) | d <- datas, DataCon _ c sig <- dataCons d ]
+                env   = Env { envData    = dataEnv datas
                             , envTops    = tops
                             , envCry     = cryMap
                             }
@@ -446,68 +445,29 @@ globalName env an x = maybe (failAt an $ "unknown global: " <> idOcc x) pure
 --- Type sizing.
 ---
 
-isTupleCon :: Text -> Bool
-isTupleCon c = T.length c >= 2 && T.head c == '(' && T.last c == ')'
-            && T.all (== ',') (T.init $ T.tail c)
-
 intTy :: Ty
 intTy = TyCon noAnn "Integer"
 
+-- | The width of a type ('ReWire.Synolon.Repr', memoized in 'sSizes'; the
+--   Synolon lint has already rejected a binder, block parameter, cell,
+--   port, or halt answer whose type has none — a definition's codomain or
+--   an expression's instantiation is sized only here). The label names
+--   the position in the diagnostic.
 sizeOf :: MonadError AstError m => Env -> Text -> Annote -> Ty -> TM m A.Size
-sizeOf env s an = sizeOfW env s an mempty
-
-sizeOfW :: MonadError AstError m => Env -> Text -> Annote -> HashSet Ty -> Ty -> TM m A.Size
-sizeOfW env s an visited t = do
-      m  <- gets sSizes
-      sz <- case Map.lookup t m of
-            Just sz -> pure sz
-            Nothing -> case flattenTyApp t of
-                  (TyCon _ "Vec", [n, te])
-                        | Just k <- evalNat n     -> (fromIntegral k *) <$> sizeOfW env s an visited te
-                        | otherwise               -> failAt an $ "can't determine the size of a Vec. (" <> prettyPrint (unAnnT t) <> ")"
-                  (TyCon _ "Finite", [n])
-                        | Just k <- evalNat n     -> pure $ fromIntegral $ nbits k
-                        | otherwise               -> failAt an $ "can't determine the size of a Finite. (" <> prettyPrint (unAnnT t) <> ")"
-                  (TyCon _ "Integer", [])         -> pure 128
-                  (TyCon _ "Proxy", _)            -> pure 0
-                  (TyCon _ c, args)
-                        | isTupleCon c            -> sum <$> mapM (sizeOfW env s an visited) args
-                        | t `Set.member` visited  -> failAt an $ "can't determine the size of a recursive datatype: " <> c
-                        | Just ctors <- Map.lookup c (envCtors env) -> do
-                              ws <- mapM (ctorWidth env an (Set.insert t visited) t) ctors
-                              pure $ fromIntegral (nbits $ genericLength ctors) + maximum (0 : ws)
-                  (TyVarT {}, _)                  -> pure 0
-                  _                               -> failAt an $ s <> ": couldn't calculate the size of a type: " <> prettyPrint (unAnnT t)
-      modify $ \ st -> st { sSizes = Map.insert t sz $ sSizes st }
-      pure sz
-      where unAnnT :: Ty -> Ty
-            unAnnT = Ann.unAnn
-
-ctorWidth :: MonadError AstError m => Env -> Annote -> HashSet Ty -> Ty -> DataConId -> TM m A.Size
-ctorWidth env an visited t d = case Map.lookup d (envCtorSig env) of
-      Just (Sig _ ct) -> do
-            let (targs, tres) = flattenArrow ct
-            sub <- matchTy an tres t
-            sum <$> mapM (sizeOfW env "ctorWidth" an visited . substTv sub) targs
-      Nothing         -> pure 0
-
-matchTy :: MonadError AstError m => Annote -> Ty -> Ty -> m (HashMap TyVar Ty)
-matchTy an (TyApp _ t1 t2) (TyApp _ t1' t2') = do
-      s1 <- matchTy an t1 t1'
-      s2 <- matchTy an t2 t2'
-      merge s1 s2
-      where merge :: MonadError AstError m => HashMap TyVar Ty -> HashMap TyVar Ty -> m (HashMap TyVar Ty)
-            merge s1 s2 | and (Map.intersectionWith (==) s1 s2) = pure $ Map.union s1 s2
-                        | otherwise = failInternal an "matchTy: inconsistent assignment of a type variable"
-matchTy _ (TyVarT _ v) t = pure $ Map.singleton v t
-matchTy _ _ _            = pure mempty
+sizeOf env s an t = do
+      m <- gets sSizes
+      case runStateT (sizeOfM (envData env) t) m of
+            Left e         -> failAt an $ s <> ": " <> e
+            Right (sz, m') -> do
+                  modify $ \ st -> st { sSizes = m' }
+                  pure $ fromIntegral sz
 
 -- | The tag value and width of a constructor of the given (concrete) type.
 ctorTag :: MonadError AstError m => Env -> Annote -> Ty -> DataConId -> TM m (A.Value, A.Size)
 ctorTag env an t d = case flattenTyApp t of
       (TyCon _ c, _)
             | isTupleCon c -> pure (0, 0)
-            | Just ctors <- Map.lookup c (envCtors env) -> case findIndex (== d) ctors of
+            | Just ctors <- Map.lookup c (deCtors $ envData env) -> case findIndex (== d) ctors of
                   Just idx -> pure (toInteger idx, fromIntegral $ nbits $ genericLength ctors)
                   Nothing  -> failInternal an $ "ctorTag: unknown ctor: " <> d <> " of type " <> c
       _ -> failInternal an $ "ctorTag: unexpected type: " <> prettyPrint (Ann.unAnn t)

@@ -1,0 +1,24 @@
+-- EXPECT-LINT-ERROR: lock normal form
+-- EXPECT-LINT-ERROR: goto argument is neither an atom nor a primitive expression
+-- Block normal form (doc/synolon.md section 3.2): terminator operands are
+-- atoms — a definition call must be let-bound first.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.not#1 :: Bool -> Bool
+Main.not#1 (b#2 :: Bool) =
+      case b#2 of scrut#3 { _ -> (True :: Bool); True -> (False :: Bool) } :: Bool
+
+proc main : Bool ~> Bool {
+      entry {
+            pause (False :: Bool) -> go#1 ()
+      }
+      block go#1 ((i#22 :: Bool)) {
+            goto out#3 ((Main.not#1 i#22))
+      }
+      block out#3 ((v#24 :: Bool)) {
+            pause v#24 -> go#1 ()
+      }
+}

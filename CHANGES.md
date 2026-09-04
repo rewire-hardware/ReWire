@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- The Synolon lint enforces the machine rules that were left to later
+  passes: representability at a fixed bit width (every binder, block
+  parameter, cell, port, and halt answer sizes; the sizing is
+  `ReWire.Synolon.Repr`, shared with the fold), pure-acyclicity (the
+  definitions reachable from a process form an acyclic call graph, and
+  no recursive let is reachable; a recursive pure definition under a
+  device is now rejected before the fold, as "unsupported use of
+  recursion"), and block normal form (definition calls, constructor
+  applications, and cases are named, one command each; primitive
+  expressions nest freely over atoms; terminator operands and put
+  payloads are atoms or primitive expressions; an application's head is
+  never a lambda). A-normalization establishes exactly that form, and
+  now reduces a residual beta-redex to a let instead of leaving the
+  lambda's body un-normalized; a function-typed argument that is a case
+  (a function chosen at run time) is rejected there with a located
+  message. The block-graph cleanup inlines a forwarding block only where
+  substituting the caller's operands keeps the form. The sizing compares
+  types after nat normalization, so a datatype recursive through
+  type-level arithmetic is rejected instead of unfolded without end.
+  Generated code is unchanged.
 * The machine level of the Eidos IR is now its own IR, *Synolon*
   (`ReWire.Synolon.*`, specified in `doc/synolon.md`), with its own
   textual format (`.syn`): a Synolon program is the datatypes, the pure

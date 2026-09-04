@@ -6,17 +6,24 @@
 --   reactive definition body becomes a let chain over simple right-hand
 --   sides ending in an atom (or a jump), by the spec's small ordered ruleset —
 --   eta-expansion (definitions reach their signature arity, parameters in
---   the telescope), argument naming (non-atom arguments of pure spines
---   are let-bound), subject naming (case scrutinees are atoms),
---   let-flattening (no lets in right-hand sides), and alternative
---   flattening (alternative bodies are themselves ANF).
+--   the telescope), argument naming (the computed arguments of spines —
+--   definition calls, constructor applications, cases — are let-bound),
+--   subject naming (case scrutinees are atoms), head reduction (a
+--   residual beta-redex becomes a let), let-flattening (no lets in
+--   right-hand sides), and alternative flattening (alternative bodies are
+--   themselves ANF). Primitive applications are transparent: a
+--   primitive-headed argument is not named but normalized in place, so
+--   the pure data path stays an expression tree of primitives over atoms
+--   (the fold lowers it inline, and pattern-matches its idioms — bit
+--   slices, finite literals — where they stand).
 --
 --   The *reactive* fragment is the deliberate exemption — it is what
 --   procify consumes, and its structure must survive:
 --
 --   * a spine whose type mentions the reactive stack stays a spine; its
---     pure non-atom arguments are named, its lambda arguments (bind
---     continuations) stay in place with A-normalized bodies, and its
+--     computed arguments are named, its lambda arguments (bind
+--     continuations, like the higher-order primitives' function
+--     arguments) stay in place with A-normalized bodies, and its
 --     reactive arguments normalize recursively in place (a pure let may
 --     wrap them);
 --   * a case with a reactive result type stays in tail position (its
@@ -26,10 +33,10 @@
 --
 --   Runs after the partial evaluator (ReWire.ModCache pass 6),
 --   immediately before procify.
-module ReWire.Eidos.ANF (normalize, hasJump) where
+module ReWire.Eidos.ANF (normalize, hasJump, isAtom, isPrimExp) where
 
 import ReWire.Annotation (Annote)
-import ReWire.Error (AstError, MonadError)
+import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Eidos.Subst (nextUniq)
 import ReWire.Eidos.Syntax
 import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, hasArrow, reacOrStateT)
@@ -94,6 +101,14 @@ isAtom = \ case
       LitList _ _ es  -> all isAtom es
       LitVec _ _ es   -> all isAtom es
       _               -> False
+
+-- | A primitive expression: a primitive applied to arguments. Transparent
+--   to naming (its arguments normalize in place), so it may nest: the
+--   pure data path is a tree of primitives over atoms.
+isPrimExp :: Exp -> Bool
+isPrimExp e = case flattenApp e of
+      (Prim {}, _ : _) -> True
+      _                -> False
 
 reactive :: Exp -> Bool
 reactive = reacOrStateT . typeOf
@@ -162,6 +177,14 @@ commuteCaseApp e = case flattenApp e of
                               Rec bs       -> Rec [ (x, go rhs) | (x, rhs) <- bs ]
                               Join jj ps b -> Join jj ps $ go b
 
+-- | A residual beta-redex — a lambda head applied to arguments (the
+--   simplifier's single round can leave one) — is a let, whose right-hand
+--   side and body then normalize like any other.
+betaHead :: Exp -> Maybe Exp
+betaHead e = case flattenApp e of
+      (Lam an x b, EArg a : rest) -> Just $ Let an (NonRec x a) $ foldl (App an) b rest
+      _                           -> Nothing
+
 -- | Does the expression contain a jump (anywhere)? Jumps are tail-only
 --   on lint-clean input, so a jump-containing case is a join point's
 --   scope and must stay in tail position.
@@ -218,6 +241,7 @@ normTail e = case e of
             | otherwise -> named
       App {}
             | Just e' <- commuteCaseApp e       -> normTail e'
+            | Just e' <- betaHead e             -> normTail e'
             | reactive e || hasArrow (typeOf e) -> do
                   (bs, e') <- normSpine e
                   pure $ wrapLets bs e'
@@ -249,17 +273,23 @@ normR e = case e of
             pure (bs, Case an t sa cb alts')
       App {}
             | Just e' <- commuteCaseApp e -> normR e'
+            | Just e' <- betaHead e       -> normR e'
             | otherwise                   -> normSpine e
       LitList {}   -> atomize e
       LitVec {}    -> atomize e
       _            -> pure ([], e)
 
--- | A spine normalized in place: representable non-atom arguments are
---   named and hoisted (argument naming); lambda arguments (continuations,
---   pure higher-order primitive arguments) keep their place with
---   normalized bodies; function-typed arguments (partial applications,
---   definition references) keep their place with their own arguments
---   normalized; reactive arguments normalize recursively in place.
+-- | A spine normalized in place (the head — a variable, constructor, or
+--   primitive once case, let, and lambda heads are commuted or reduced —
+--   is kept): computed arguments are named and hoisted (argument naming);
+--   primitive-headed arguments normalize in place (primitive expressions
+--   are transparent); lambda arguments (continuations, the higher-order
+--   primitives' function arguments) keep their place with normalized
+--   bodies; function-typed arguments (partial applications, definition,
+--   constructor, and operator references) keep their place with their
+--   own arguments normalized — any other function-typed form (a function
+--   chosen by a case) is rejected, since no consumer can lower it;
+--   reactive arguments normalize recursively in place.
 normSpine :: forall m. MonadError AstError m => Exp -> NM m (Hoist, Exp)
 normSpine e = do
       let (h, args) = flattenApp e
@@ -277,15 +307,18 @@ normSpine e = do
             one a | isAtom a               = atomize a
                   | App {} <- a
                   , Just a' <- commuteCaseApp a = one a'
+                  | App {} <- a
+                  , Just a' <- betaHead a  = one a'
                   | Lam {} <- a            = ([], ) <$> normTail a
-                  -- Primitive applications are naming-transparent: the
-                  -- backends pattern-match primitive idioms (bit slices,
-                  -- finite literals), so a primitive-headed argument
-                  -- normalizes in place.
-                  | (Prim {}, _) <- flattenApp a = normSpine a
+                  | isPrimExp a            = normSpine a
                   | App {} <- a
                   , hasArrow $ typeOf a    = normSpine a
-                  | hasArrow $ typeOf a    = pure ([], a)
+                  | Con {} <- a
+                  , hasArrow $ typeOf a    = pure ([], a) -- a bare constructor reference
+                  | Prim {} <- a
+                  , hasArrow $ typeOf a    = pure ([], a) -- a bare operator primitive
+                  | hasArrow $ typeOf a    = failAt (ann' a)
+                        "unsupported function-typed argument: a function chosen by a case or let cannot be lowered (use a lambda, a partial application, or a named definition)"
                   | reactive a             = ([], ) <$> normTail a
                   | otherwise              = atomize a
 

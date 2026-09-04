@@ -29,6 +29,7 @@ module ReWire.Synolon.Transform (optimizeProc, machineSummary) where
 
 import ReWire.Eidos.Subst (substVars)
 import ReWire.Pretty (prettyPrint)
+import ReWire.Synolon.Lint (isOperand)
 import ReWire.Synolon.Pretty ()
 import ReWire.Synolon.Syntax
 
@@ -115,9 +116,9 @@ machineSummary pr = "proc " <> procName pr
 ---
 
 inlineEpsilon :: Proc -> Proc
-inlineEpsilon pr = pr { procEntry  = retermB $ procEntry pr
-                      , procBlocks = [ (l, retermB b) | (l, b) <- procBlocks pr, not $ IM.member (idUniq l) eps ]
-                      }
+inlineEpsilon pr = purgeUnreachable pr { procEntry  = retermB $ procEntry pr
+                                       , procBlocks = [ (l, retermB b) | (l, b) <- procBlocks pr ]
+                                       }
       where -- Blocks that pause-resume must survive (they are states).
             pauseTargets :: IM.IntMap ()
             pauseTargets = IM.fromList [ (u, ()) | b <- procEntry pr : map snd (procBlocks pr), u <- pt (blkTerm b) ]
@@ -137,9 +138,16 @@ inlineEpsilon pr = pr { procEntry  = retermB $ procEntry pr
                               , idUniq l' /= idUniq l ]
 
             -- Follow (acyclic) epsilon chains from a goto site. Arguments
-            -- can be compound (primitive applications are
-            -- naming-transparent in ANF), so the substitution is a full
-            -- expression substitution, not an atom swap.
+            -- can be compound (primitive expressions are transparent in
+            -- ANF), so the substitution is a full expression substitution,
+            -- not an atom swap — and a hop is taken only when the
+            -- substituted arguments are still operands of the block normal
+            -- form: a parameter can sit where only an atom may (a case
+            -- scrutinee or the tail of a lambda body, a literal's
+            -- element), and a primitive expression substituted there
+            -- would break the form. A block whose hop is refused simply
+            -- stays; one whose references were all redirected becomes
+            -- unreachable and the purge removes it.
             -- Bounded by the block count: a mutual epsilon cycle (an
             -- unguarded pauseless loop, rejected by the machine lint
             -- downstream) must not hang here first.
@@ -149,10 +157,11 @@ inlineEpsilon pr = pr { procEntry  = retermB $ procEntry pr
                         go fuel l as
                               | fuel <= 0 = (l, as)
                               | otherwise = case IM.lookup (idUniq l) eps of
-                                    Just (ps, l', as') ->
-                                          let sub = IM.fromList $ zip (map idUniq ps) as
-                                          in go (fuel - 1) l' $ map (substVars sub) as'
-                                    Nothing            -> (l, as)
+                                    Just (ps, l', as')
+                                          | let sub  = IM.fromList $ zip (map idUniq ps) as
+                                                as'' = map (substVars sub) as'
+                                          , all isOperand as'' -> go (fuel - 1) l' as''
+                                    _ -> (l, as)
 
             retermB :: Block -> Block
             retermB b = b { blkTerm = reterm $ blkTerm b }

@@ -1,0 +1,24 @@
+-- EXPECT-LINT-ERROR: not representable at a fixed bit width
+-- EXPECT-LINT-ERROR: recursive datatype
+-- Representability (doc/synolon.md sections 3.1 and 4): a state cell has a
+-- fixed bit width — a recursive datatype has none.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+data Main.L * {
+      Main.N :: Main.L;
+      Main.C :: Bool -> Main.L -> Main.L
+}
+
+proc main : Bool ~> Bool {
+      state s : Main.L := undef;
+      entry {
+            put s (Main.N :: Main.L);
+            pause (False :: Bool) -> go#1 ()
+      }
+      block go#1 ((i#2 :: Bool)) {
+            pause i#2 -> go#1 ()
+      }
+}

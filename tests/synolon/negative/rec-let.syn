@@ -1,0 +1,21 @@
+-- EXPECT-LINT-ERROR: recursive let binding is reachable from a process
+-- Pure-acyclicity (doc/synolon.md section 4): no recursive let is
+-- reachable from a process — Main.knot#1's body binds one, and a block
+-- calls Main.knot#1.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.knot#1 :: Bool -> Bool
+Main.knot#1 (b#2 :: Bool) = let rec { g#3 :: Bool = g#3 } in g#3
+
+proc main : Bool ~> Bool {
+      entry {
+            pause (False :: Bool) -> go#1 ()
+      }
+      block go#1 ((i#22 :: Bool)) {
+            x#23 :: Bool <- Main.knot#1 i#22;
+            pause x#23 -> go#1 ()
+      }
+}

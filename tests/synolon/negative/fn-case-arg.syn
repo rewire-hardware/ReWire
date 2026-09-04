@@ -1,0 +1,26 @@
+-- EXPECT-LINT-ERROR: function-typed argument
+-- Block normal form (doc/synolon.md section 3.2): a function-typed
+-- argument is a lambda, a partial application, or a definition,
+-- constructor, or primitive reference — never a function chosen by a case.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.id#1 :: Bool -> Bool
+Main.id#1 (b#2 :: Bool) = b#2
+
+Main.not#3 :: Bool -> Bool
+Main.not#3 (b#4 :: Bool) =
+      case b#4 of scrut#5 { _ -> (True :: Bool); True -> (False :: Bool) } :: Bool
+
+proc main : Bool ~> Vec 2 Bool {
+      entry {
+            pause (vec [(False :: Bool), (True :: Bool)] :: Vec 2 Bool) -> go#1 ()
+      }
+      block go#1 ((i#22 :: Bool)) {
+            v#23 :: Vec 2 Bool <- (rwPrimVecFromList :: [_] Bool -> Vec 2 Bool) (list [i#22, i#22] :: [_] Bool);
+            y#24 :: Vec 2 Bool <- (rwPrimVecMap :: (Bool -> Bool) -> Vec 2 Bool -> Vec 2 Bool) (case i#22 of s#25 { _ -> Main.id#1; True -> Main.not#3 } :: Bool -> Bool) v#23;
+            pause y#24 -> go#1 ()
+      }
+}

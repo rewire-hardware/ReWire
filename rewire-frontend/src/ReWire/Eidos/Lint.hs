@@ -41,7 +41,9 @@
 --   constructors — Vec, Finite, Bool, (), tuples, monomorphic ADTs,
 --   Integer, Proxy, String in literal positions — plus
 --   ReacT/StateT/Identity until procification); it checks the ANF shape,
---   first-order value binders, no-polymorphism, and nat-closure.
+--   first-order value binders, no-polymorphism, and nat-closure. The
+--   Synolon lint enforces representability at a fixed bit width through
+--   'envRepr'.
 --   TODO(eidos): type arguments and constructor fields are not kind-checked
 --   (there is no kind table for built-in type constructors); type-variable
 --   occurrences are checked against their binders' kinds.
@@ -54,7 +56,7 @@ module ReWire.Eidos.Lint
       ( LintMode (..), lint, lintDefn
         -- * The expression-level checker, for reuse by other checkers
       , Env (..), envFromDecls, bindVar, nonTail
-      , checkExp, checkAgainst, checkTy, checkValueBinder, checkOccSig, checkDistinct
+      , checkExp, checkAgainst, checkTy, checkRepr, checkValueBinder, checkOccSig, checkDistinct
       , checkDataDefn, checkDefn, lookupCon, dconFieldTys
       , LitRep (..), litRep, fitsRep
       , declSites, expSites, idSite, tvSite
@@ -62,7 +64,7 @@ module ReWire.Eidos.Lint
 
 import ReWire.Annotation (Annote, ann, noAnn)
 import ReWire.Builtins (builtins)
-import ReWire.Eidos.ANF (hasJump)
+import ReWire.Eidos.ANF (hasJump, isAtom, isPrimExp)
 import ReWire.Eidos.BuiltinSigs (builtinSig, matchesSig)
 import ReWire.Error (AstError, MonadError, failAt, failAtWith)
 import ReWire.Eidos.Pretty ()
@@ -108,6 +110,7 @@ data JoinDef = JoinDef !JoinId ![Ty] !Ty
 data Env = Env
       { envMode        :: LintMode
       , envBanReactive :: Bool                       -- the reactive types are out of the type grammar (the machine level)
+      , envRepr        :: Maybe (Ty -> Either Text Natural) -- the representable closure: the width of a type, or why it has none (the machine level)
       , envCons  :: HashMap DataConId (TyConId, Sig) -- data constructors, by name
       , envScope :: HashMap Uniq Id                  -- term binders in scope
       , envTVs   :: HashMap Uniq TyVar               -- signature type variables in scope
@@ -124,6 +127,7 @@ envFromDecls :: LintMode -> [DataDefn] -> [Defn] -> Env
 envFromDecls mode datas defns = Env
       { envMode  = mode
       , envBanReactive = False
+      , envRepr  = Nothing
       , envCons  = Map.fromList [ (c, (dataName d, sig)) | d <- datas, DataCon _ c sig <- dataCons d ]
       , envScope = Map.fromList [ (idUniq $ defnId d, defnId d) | d <- defns ]
       , envTVs   = mempty
@@ -312,7 +316,7 @@ checkDataDefn env (DataDefn an t k cs) = do
 --   ('checkANF').
 checkDefn :: MonadError AstError m => Env -> Defn -> m ()
 checkDefn env0 d@(Defn _ x0 _ _ _ _)
-      | envMode env0 >= LintMono, Set.member (idOcc x0) primNames = checkDefn' (env0 { envMode = LintPoly }) d
+      | envMode env0 >= LintMono, Set.member (idOcc x0) primNames = checkDefn' (env0 { envMode = LintPoly, envRepr = Nothing }) d
       | otherwise = do
             checkDefn' env0 d
             -- Only the reactive fragment is A-normalized (the fold
@@ -359,39 +363,43 @@ checkANF d = tailOk $ defnBody d
                   mapM_ (\ (Alt _ _ _ b) -> tailOk b) alts
             caseOk e = failAt (ann e) "ANF: expected a case (rwc bug)"
 
-            -- Arguments are atoms, except the naming-exempt forms: lambda
-            -- and function-typed arguments (continuations, higher-order
-            -- primitive arguments, partial applications) and reactive
-            -- arguments, all normalized in place.
+            -- The head is a variable, constructor, or primitive (a
+            -- lambda head is a residual beta-redex, which normalization
+            -- turns into a let); arguments are atoms, except the
+            -- naming-exempt forms, all normalized in place: primitive
+            -- expressions (transparent, nesting freely), lambda and
+            -- function-typed arguments (continuations, higher-order
+            -- primitive arguments, partial applications), and reactive
+            -- arguments.
             spineOk :: Exp -> m ()
             spineOk e = do
-                  let (_, args) = flattenApp e
+                  let (h, args) = flattenApp e
+                  case h of
+                        Var {}  -> pure ()
+                        Con {}  -> pure ()
+                        Prim {} -> pure ()
+                        Lam {}  -> failAt (ann e) "ANF: a residual beta-redex (the application's lambda head must be let-bound)"
+                        _       -> failAt (ann e) "ANF: the application's head is not a variable, constructor, or primitive"
                   mapM_ argOk [ a | EArg a <- args ]
                   where argOk :: Exp -> m ()
                         argOk a
                               | atomOk a                = pure ()
                               | Lam {} <- a             = tailOk a
-                              | (Prim {}, _) <- flattenApp a = spineOk a
+                              | isPrimExp a             = spineOk a
                               | hasArrow $ typeOf a     = case a of
-                                    App {} -> spineOk a
-                                    _      -> pure ()
+                                    App {}  -> spineOk a
+                                    Con {}  -> pure () -- a bare constructor reference
+                                    Prim {} -> pure () -- a bare operator primitive
+                                    _       -> failAt (ann a) "ANF: a function-typed argument must be a lambda, a partial application, or a definition, constructor, or primitive reference"
                               | reacOrStateT $ typeOf a = tailOk a
                               | otherwise               = failAt (ann a)
-                                    "ANF: a representable non-atom argument (must be let-bound)"
+                                    "ANF: a computed argument (must be let-bound)"
 
             atom :: Annote -> Text -> Exp -> m ()
             atom an what e = unless (atomOk e) $ failAt an $ "ANF: " <> what <> " is not an atom"
 
             atomOk :: Exp -> Bool
-            atomOk = \ case
-                  Var {}         -> True
-                  LitInt {}      -> True
-                  LitStr {}      -> True
-                  Con _ t _      -> null $ fst $ flattenArrow t
-                  Prim _ t _     -> null $ fst $ flattenArrow t
-                  LitList _ _ es -> all atomOk es
-                  LitVec _ _ es  -> all atomOk es
-                  _              -> False
+            atomOk = isAtom
 
 checkDefn' :: MonadError AstError m => Env -> Defn -> m ()
 checkDefn' env (Defn an x ps body _ _) = do
@@ -435,6 +443,15 @@ checkValueBinder env an what x = do
       checkLocalBinder env an what x
       when (envMode env >= LintMonoANF && hasArrow (sigTy $ idSig x)) $ failAt an
             $ what <> " " <> prettyPrint x <> " has a function type (higher-order binders are not representable past the ANF stage)"
+      checkRepr env an (what <> " " <> prettyPrint x) $ sigTy $ idSig x
+
+-- | Representability at a fixed bit width, when the environment carries
+--   the representable closure ('envRepr': the machine level).
+checkRepr :: MonadError AstError m => Env -> Annote -> Text -> Ty -> m ()
+checkRepr env an what t = case envRepr env of
+      Just sizeOf | Left e <- sizeOf t -> failAt an
+            $ what <> " is not representable at a fixed bit width (" <> e <> ")"
+      _ -> pure ()
 
 ---
 --- Expressions (doc/eidos.md §4.2): synthesis with all checks inline.

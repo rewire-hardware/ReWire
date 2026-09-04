@@ -1,0 +1,25 @@
+-- EXPECT-LINT-ERROR: nsupported use of recursion
+-- EXPECT-LINT-ERROR: Main.spin#1
+-- Pure-acyclicity (doc/synolon.md section 4): a definition reachable from
+-- a process may not be recursive — Main.spin#1 calls itself, and a block
+-- calls it.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.spin#1 :: Bool -> Bool
+Main.spin#1 (b#2 :: Bool) = Main.spin#1 b#2
+
+Main.start#10 :: Bool -> Bool
+Main.start#10 (i#11 :: Bool) = i#11
+
+proc main : Bool ~> Bool {
+      entry {
+            pause (False :: Bool) -> go#1 ()
+      }
+      block go#1 ((i#22 :: Bool)) {
+            x#23 :: Bool <- Main.spin#1 i#22;
+            pause x#23 -> go#1 ()
+      }
+}

@@ -1,0 +1,26 @@
+-- EXPECT-LINT-ERROR: not representable at a fixed bit width
+-- EXPECT-LINT-ERROR: recursive datatype
+-- Representability (doc/synolon.md section 3.1): a datatype recursive
+-- through type-level arithmetic (Main.T (+ n 0) under Main.T n) has no
+-- width; instances compare after nat normalization, so the recursion is
+-- met rather than unfolded without end.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+data Main.T Nat -> * {
+      Main.N :: forall (n#1 :: Nat). Main.T n#1;
+      Main.C :: forall (n#1 :: Nat). Bool -> Main.T (+ n#1 0) -> Main.T n#1
+}
+
+proc main : Bool ~> Bool {
+      state s : Main.T 4 := undef;
+      entry {
+            put s (Main.N :: Main.T 4);
+            pause (False :: Bool) -> go#1 ()
+      }
+      block go#1 ((i#22 :: Bool)) {
+            pause i#22 -> go#1 ()
+      }
+}

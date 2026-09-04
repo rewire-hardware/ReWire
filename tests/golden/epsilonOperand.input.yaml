@@ -1,0 +1,14 @@
+# epsilonOperand: mask the input when it equals 3.
+#
+# Device: ReacT (W 8) (W 8) with no state; each cycle's output is the
+# previous input, zeroed when that input was 3.
+- __in0: 1
+- __in0: 3
+- __in0: 7
+- __in0: 3
+- __in0: 255
+- __in0: 0
+- __in0: 3
+- __in0: 16
+- __in0: 42
+- __in0: 3

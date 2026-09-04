@@ -146,6 +146,7 @@ data-files:
     tests/golden/dissex.hs
     tests/golden/dissex2.hs
     tests/golden/divzero.hs
+    tests/golden/epsilonOperand.hs
     tests/golden/exp2.hs
     tests/golden/extern.hs
     tests/golden/externGeneric.hs
@@ -234,6 +235,7 @@ data-files:
     tests/golden/dissex.sv
     tests/golden/dissex2.sv
     tests/golden/divzero.sv
+    tests/golden/epsilonOperand.sv
     tests/golden/exp2.sv
     tests/golden/extern.sv
     tests/golden/externGeneric.sv
@@ -322,6 +324,7 @@ data-files:
     tests/golden/dissex.rwc
     tests/golden/dissex2.rwc
     tests/golden/divzero.rwc
+    tests/golden/epsilonOperand.rwc
     tests/golden/exp2.rwc
     tests/golden/extern.rwc
     tests/golden/externGeneric.rwc
@@ -410,6 +413,7 @@ data-files:
     tests/golden/dissex.vhdl
     tests/golden/dissex2.vhdl
     tests/golden/divzero.vhdl
+    tests/golden/epsilonOperand.vhdl
     tests/golden/exp2.vhdl
     tests/golden/extern.vhdl
     tests/golden/externGeneric.vhdl
@@ -498,6 +502,7 @@ data-files:
     tests/golden/dissex.cry
     tests/golden/dissex2.cry
     tests/golden/divzero.cry
+    tests/golden/epsilonOperand.cry
     tests/golden/exp2.cry
     tests/golden/externGeneric.cry
     tests/golden/externModel.cry
@@ -610,6 +615,8 @@ data-files:
     tests/golden/dissex2.yaml
     tests/golden/divzero.input.yaml
     tests/golden/divzero.yaml
+    tests/golden/epsilonOperand.input.yaml
+    tests/golden/epsilonOperand.yaml
     tests/golden/exp2.input.yaml
     tests/golden/exp2.yaml
     tests/golden/externModel.input.yaml
@@ -756,8 +763,15 @@ data-files:
     tests/synolon/machine-degen.syn
     tests/synolon/machine-dup-cycle.syn
     tests/synolon/machine-toggle.syn
+    tests/synolon/negative/cell-width-arith.syn
+    tests/synolon/negative/cell-width.syn
+    tests/synolon/negative/fn-case-arg.syn
     tests/synolon/negative/goto-cycle.syn
     tests/synolon/negative/input-type.syn
+    tests/synolon/negative/operand-shape.syn
+    tests/synolon/negative/pure-cycle.syn
+    tests/synolon/negative/rec-let.syn
+    tests/synolon/negative/redex.syn
     tests/synolon/negative/unknown-cell.syn
     tests/synolon/MANIFEST
     tests/synolon/negative/MANIFEST

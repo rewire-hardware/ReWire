@@ -313,7 +313,12 @@ definition body is (pure bodies are exempt — the fold lowers them in any
 shape)
 
     e ::= let x :: τ = r in e  |  ret a  |  jump L (ā)
-    r ::= a  |  x a₁ … a_k  |  C ā  |  p ā  |  case a of x { alt; … } :: τ
+    r ::= a  |  x ᾱ  |  C ᾱ  |  p ᾱ  |  case a of x { alt; … } :: τ
+    α ::= a  |  p ᾱ  |  λ (x :: τ) → e  |  f ᾱ  |  C  |  p
+                                          arguments: atoms, primitive
+                                          expressions, lambdas, function-typed
+                                          partial applications, and bare
+                                          constructor or operator references
     a ::= x  |  lit :: τ  |  C :: τ  |  p :: τ  |  "…"  |  list [ā] :: τ  |  vec [ā] :: τ
                                           atoms (variables, literals, and
                                           nullary constructor and primitive
@@ -324,12 +329,21 @@ jumps are tails with atom arguments); `ret a` marks a tail. The
 normalization from the full grammar to mono+ANF is a small ordered
 ruleset (eta-expansion to signature arity with parameters in the
 telescope, argument- and subject-naming, alternative flattening,
-let-flattening). Two deliberate exemptions leave the pure right-hand
-sides broader than the `r` forms: primitive applications are
-naming-transparent (a primitive-headed argument normalizes in place, so
-the backends can pattern-match primitive idioms), and an application's
-head is not normalized (a residual beta-redex can remain a right-hand
-side). doc/synolon.md §3.2 states the resulting block normal form.
+let-flattening, and head reduction: a residual beta-redex — a lambda head
+applied to arguments, which the partial evaluator's single round can
+leave — becomes a let). Primitive applications are *transparent*: a
+primitive-headed argument is normalized in place rather than named, so
+the pure data path stays one expression tree of primitives over atoms —
+the fold lowers it inline (a literal idiom such as `resize (bits n)`
+compositionally, folding downstream in Hyle) and matches its static
+idioms (a bit-slice or bit-index position is a `finite` literal) where
+they stand. Two more argument forms normalize in place: lambdas (a
+higher-order builtin's function argument, its body a tail) and
+function-typed partial applications, along with bare constructor and
+operator references; any other function-typed argument (a function
+chosen by a case) is rejected here, since no consumer can lower it.
+doc/synolon.md §3.2 states the resulting block normal form, which the
+Synolon lint requires of every block.
 
 The *reactive fragment is exempt from naming* — it is procification's
 input skeleton, and its structure must survive: a spine whose type

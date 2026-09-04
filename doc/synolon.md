@@ -89,10 +89,14 @@ type in the *representable closure*:
   grammar entirely: procification retired them.
 
 This closure is the type universe the machine semantics is defined over
-(§5.1). The lint enforces the exclusion of the reactive types, monomorphism,
-and the first-order binder rule; representability at a fixed bit width is
-established downstream, by the fold's sizing, and the mechanized checker
-(`verify/Rwv/Eidos/Check.lean`) enforces it outright.
+(§5.1). The lint enforces it: the exclusion of the reactive types,
+monomorphism, the first-order binder rule, and representability at a
+fixed bit width — every binder, block parameter, cell, port, and halt
+answer sizes (`ReWire.Synolon.Repr`, the one sizing the fold also lays
+values out by, so the two agree on which types have a width; a type in a
+position only the fold sizes — a definition's codomain, a primitive's
+instantiation — gets the same diagnostic there). The mechanized checker
+(`verify/Rwv/Eidos/Check.lean`) enforces the same rule.
 
 ### 3.2 Pure expressions
 
@@ -101,23 +105,45 @@ initials, terminator operands, and the bodies of the definitions the
 machine calls — are Eidos expressions (doc/eidos.md §3.3–§3.4) without type
 arguments (every head is monomorphic), without `rec` bindings reachable
 from a process (§4, pure-acyclicity), and without reactive types. Lambdas
-occur, with first-order binders, as function arguments to the higher-order
-builtins and, residually, as application heads (§4, block normal form);
-join points and jumps occur only in definition bodies, never in blocks.
+occur, with first-order binders, only as function arguments to the
+higher-order builtins; join points and jumps occur only in definition
+bodies, never in blocks.
 
-Procification aims at a *block normal form* for what it puts in blocks:
-command right-hand sides that are simple computations
+What a block holds is in *block normal form*: command right-hand sides
+and cell initials are simple computations `r`, and terminator operands
+and put payloads are operands `o`:
 
-    r ::= a  |  x a₁ … a_k  |  C ā  |  p ā  |  case a of x { alt; … } :: τ
+    r ::= a  |  x ᾱ  |  C ᾱ  |  π  |  case a of x { alt; … } :: τ
+    π ::= p ᾱ                                   primitive expression
+    α ::= a  |  π  |  λ (x :: τ) → e  |  f ᾱ  |  C  |  p
+                                                argument: an atom, a primitive
+                                                expression, a lambda (its body
+                                                a tail), a function-typed
+                                                partial application, or a bare
+                                                constructor or operator
+    o ::= a  |  π                               operand
     a ::= x  |  lit :: τ  |  C :: τ  |  p :: τ  |  "…"  |  list [ā] :: τ  |  vec [ā] :: τ
 
-and terminator operands that are atoms `a`. This is the shape the
-A-normalization of doc/eidos.md §6 establishes for the reactive fragment,
-restated here with the implementation's atom set. It is a normal form,
-not a grammar: the abstract syntax admits any pure expression in these
-positions, the printer parenthesizes non-atom forms there (§9), and the
-lint type-checks them without requiring the shape (§4 records what the
-producer does and does not establish).
+Primitive expressions are *transparent*: a primitive applied to arguments
+is not named but nests freely, so the pure data path of a block — bit
+arithmetic, slices, resizes, the literal idioms `resize (bits n)` and
+`finite n` — is one expression tree of primitives over atoms, which the
+fold lowers inline (and whose static idioms, a bit-slice index being a
+`finite` literal, it matches where they stand). Every other computation
+is named, one command each: a definition call, a constructor application,
+a case (over an atom, with alternatives that are let chains over `r`
+ending in an atom). A lambda or a function-typed partial application
+occurs only as an argument (a higher-order builtin's function argument),
+kept in place with its body or arguments in this form; an application's
+head is a definition, constructor, or primitive, never a lambda. This is
+the shape the A-normalization of doc/eidos.md §6 establishes for the
+reactive fragment; procification carries it into blocks, the cleanup
+transforms preserve it (epsilon-block inlining substitutes operands for
+block parameters, and takes a hop only where the result is still in the
+form — a parameter may sit where only an atom may, under a lambda or in a
+literal — otherwise the block stays), and the lint requires it (§4). The abstract syntax admits any pure expression in these
+positions and the printer parenthesizes a non-atom operand (§9), so a
+hand-written `.syn` file can violate the form — and be rejected.
 
 ### 3.3 Definitions and datatypes
 
@@ -207,36 +233,32 @@ work.
   acyclic — every cycle crosses a `pause`. This one rule yields: divergent
   (pause-free) loops are rejected with a located error; entry evaluation
   terminates without fuel; blocks lower to acyclic Hyle definitions.
-- **Constness** of cell initials; **representability** (fixed bit width)
-  of every binder, parameter, and cell; full-arity pauses and gotos; the
-  input parameter typed `τ_I`; "root proc never pauses" (a proc with no
-  pause target has no machine) — all with located diagnostics.
+- **Constness** of cell initials; **representability** (fixed bit width,
+  §3.1) of every binder, block parameter, cell, port, and halt answer;
+  full-arity pauses and gotos; the input parameter typed `τ_I`; "root
+  proc never pauses" (a proc with no pause target has no machine) — all
+  with located diagnostics.
 - **Typing** of the embedded expressions is doc/eidos.md §4.2's, at
   mono+ANF strength (every definition monomorphic, every type nat-closed,
   every value binder first-order) with the reactive types out of the type
   grammar entirely; a `Prim` occurrence instantiates its scheme of §6, and
   the seven builtins procification eliminates (doc/eidos.md §7) may not
-  occur. No `join` or `jump` occurs inside a cell initial or a block.
+  occur.
 - **Pure-acyclicity**: the call graph of the pure definitions reachable
   from the process (block bodies, cell initials, and transitively) is
-  acyclic. Together with guardedness this makes the machine semantics
-  (§5) a well-founded definition and block lowering total. (Enforced
-  today downstream, by the Hyle checker's recursion rule and the
-  translation's entry-evaluation check; Eidos-level lint enforcement is
-  pending.)
-- **Block normal form** (the shape procification aims at, §3.2): command
-  right-hand sides are simple computations — an atom, a saturated call
-  of a definition, constructor, or primitive, or a case over an atom —
-  and terminator operands are atoms. This is a normal form, not a rule
-  the lint enforces: the AST admits any pure expression in these
-  positions and the checker type-checks it; and the producer does not
-  fully establish the shape either — A-normalization keeps primitive
-  spines nested in place (the backends pattern-match primitive idioms),
-  admits constructor and literal atoms beyond variables, and leaves an
-  application's head un-normalized, so a residual beta-redex can appear
-  as a right-hand side. What holds by construction is the tail
-  discipline: jumps, join bindings, and reactive spines are excluded
-  from blocks (doc/eidos.md §3.4); joins survive only in pure definition bodies.
+  acyclic, and no `rec` binding is reachable. Together with guardedness
+  this makes the machine semantics (§5) a well-founded definition and
+  block lowering total. The lint walks the reachable definitions
+  depth-first from every block expression and cell initial; the Hyle
+  checker's recursion rule remains the check on the fold's output.
+- **Block normal form** (§3.2): command right-hand sides and cell
+  initials are simple computations, terminator operands and put payloads
+  are atoms or primitive expressions, case scrutinees are atoms and case
+  alternatives let chains ending in an atom, and an application's head is
+  a definition, constructor, or primitive (never a lambda: a residual
+  beta-redex is a let). Jumps, join bindings, and reactive spines are
+  thereby excluded from blocks (doc/eidos.md §3.4); joins survive only in
+  pure definition bodies.
 - **Scope of the uniqueness invariant**: every binding site of the
   datatype and definition fragment is globally unique (doc/eidos.md §2,
   doc/eidos.md §4.4; checked whole-program); labels and cells are distinct per
@@ -602,7 +624,8 @@ bisimulation-style partition refinement would remove).
 **The lint** (`ReWire.Synolon.Lint`) runs unconditionally after the
 cleanup; under `--debug-lint` it also runs after procification, without
 the signal-guardedness rule (the one rule the cleanup may establish, by
-removing an orphaned unguarded block). **`--no-halt`** then rejects any
+removing an orphaned unguarded block). Block normal form is checked at
+both points: procification establishes it and the cleanup preserves it. **`--no-halt`** then rejects any
 reachable `halt` — after the purge every block is reachable, so this is
 syntactic presence of a `halt` terminator, including under terminator
 cases. **The dump** the fold consumes is what `--synolon` writes as
@@ -658,6 +681,8 @@ monomorphic, join-free scope.
 | §3.4 (proc syntax), §3.6 (programs) | `ReWire.Synolon.Syntax` (embedding `ReWire.Eidos.Syntax`) |
 | §3.1–§3.3 (types, expressions, definitions) | `ReWire.Eidos.Syntax`, `ReWire.Eidos.Types` (shared) |
 | §4 (the machine rules) | `ReWire.Synolon.Lint`, over `ReWire.Eidos.Lint`'s expression checker |
+| §3.1 (representability: the width of a type) | `ReWire.Synolon.Repr` (shared by the lint and the fold) |
+| §3.2 (atoms and primitive expressions) | `ReWire.Eidos.ANF` (`isAtom`, `isPrimExp`; shared by both lints) |
 | §6 (builtin signatures) | `ReWire.Eidos.BuiltinSigs` (shared) |
 | §5 (machine semantics) | no Haskell evaluator (as doc/eidos.md §5 says of Eidos): mechanized in `verify/Rwv/Eidos/Value.lean` (values, zero), `Eval.lean` (pure evaluation and the builtin table), and `Machine.lean` (block execution, the step, streams); differentially tested by `rwv-eidos-diff` against `rwc --interpret` and by the four-way cosimulation in `rwc-test` |
 | §7 (the machine fold, Synolon → Hyle) | `ReWire.Synolon.ToHyle` |
