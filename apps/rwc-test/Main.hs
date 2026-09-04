@@ -463,6 +463,10 @@ getCertifyTests = findValidator >>= \ case
                   , "state.hs", "multireg.hs", "records.hs", "subfsm.hs"
                   , "UpCounter1.hs", "wordArith.hs", "PreludeTest.hs"
                   , "Sha256.hs", "zerowidth.hs", "TinyISA.hs"
+                  , "zerowidthRed.hs" -- reductions over a zero-width
+                                      -- resize: the fold and the
+                                      -- validator both collapse the
+                                      -- operand to the nil literal
                   , "externModel.hs" -- model-carrying externs: the source
                                      -- meaning is the extern's own Eidos
                                      -- implementation argument

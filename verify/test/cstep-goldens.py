@@ -45,15 +45,9 @@ EXPECTED_UNSUPPORTED = {
 }
 
 
-# Known validator gaps, expected REJECTED: the symbolic tier disagrees
-# with rwc on reductions over zero-width operands (zerowidthRed's
-# `redand`/`redor` of a `[0]` value; the value tier and rwv-eidos-diff
-# agree with rwc, and the compiled device is right). A fix belongs to
-# the validator; until then the rejection is expected so that any OTHER
-# rejection is still unexpected.
-EXPECTED_REJECTED = {
-    "zerowidthRed",
-}
+# Tests expected REJECTED (known validator gaps, recorded here so that
+# any OTHER rejection stays unexpected). Currently none.
+EXPECTED_REJECTED: set = set()
 
 
 def expected(test: str) -> str:

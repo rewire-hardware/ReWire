@@ -1037,6 +1037,7 @@ toPrim b sz w = case b of
 
 resize :: (MonadError AstError m, MonadState S m) => Annote -> A.Size -> A.Exp -> m A.Exp
 resize an sz a
+      | sz == 0          = pure $ A.Lit an BV.nil -- (as slice0: no operand survives at width 0)
       | sz == A.sizeOf a = pure a
       | sz >  A.sizeOf a = pure $ A.Prim an sz (A.ZExt sz) [a]
       | otherwise        = pure $ A.Prim an sz (A.Trunc sz) [a]

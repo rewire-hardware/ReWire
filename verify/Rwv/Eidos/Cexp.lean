@@ -662,7 +662,11 @@ def cprim (pty : Ty) (b : Builtin) (pas : List (NF × Ty)) : Except String (NF �
   | .resize, [(a, ta)] => do
       let m ← vecBoolLen "rwPrimResize" res
       let wa ← vecBoolLen "rwPrimResize" ta
-      if m = wa then pure (a, res)
+      -- A zero-width result is the nil literal (as ToHyle's `resize`
+      -- and `slice0` produce, and as the Hyle printer renders every
+      -- zero-width expression): no operand survives at width 0.
+      if m = 0 then pure (.lit BV.nil, res)
+      else if m = wa then pure (a, res)
       else if wa < m then pure (.prim1 (.zext m) a, res)
       else pure (.prim1 (.trunc m) a, res)
   | .add, [(a, ta), (b', _)] => arithRow .add  res ta a b'
@@ -2312,6 +2316,12 @@ private theorem redRow_sound {Δ : DEnv} (hΔ : denvOk Δ = true) {σ : String �
   · exact error_ne_ok hc
 
 
+/-- Any two zero-width bit vectors are equal. -/
+private theorem bv_width0_eq {x y : BV} (hx : x.width = 0) (hy : y.width = 0) : x = y := by
+  refine bv_ext (by omega) ?_
+  intro i
+  rw [getLsbD_ge x.bits (by omega), getLsbD_ge y.bits (by omega)]
+
 set_option maxHeartbeats 3200000 in
 /-- Soundness of the builtin row table: if the row compiles and the
 committed builtin evaluator produces a value, the value is canonical
@@ -2617,7 +2627,8 @@ private theorem cprim_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk 
       have hxw : (a.eval σ E).width = wa :=
         vty_vecBool_rep_width hΔ hfda hna hba h0.1 hka
       split at hc
-      · rename_i hmwa
+      · -- m = 0: the nil literal (no operand survives at width 0)
+        rename_i hm0
         rw [except_pure_def] at hc
         injection hc with hc
         injection hc with hnf hty
@@ -2625,19 +2636,13 @@ private theorem cprim_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk 
         constructor
         · exact vty_bitsToVec hΔ hfr hnr hbr rfl
         · refine ⟨3, ?_⟩
-          have hbv : (⟨m', (a.eval σ E).bits.setWidth m'⟩ : BV) = a.eval σ E := by
-            refine bv_ext (show m' = (a.eval σ E).width by omega) ?_
-            intro i
-            show ((a.eval σ E).bits.setWidth m').getLsbD i = _
-            rw [BitVec.getLsbD_setWidth]
-            by_cases hi : i < m'
-            · simp [hi]
-            · rw [decide_eq_false hi, Bool.false_and,
-                  getLsbD_ge (a.eval σ E).bits (by omega)]
-          rw [hbv]
-          exact rep_bitsToVec hΔ (a.eval σ E) 0
-      · split at hc
-        · rename_i hne hlt
+          have hbv : (⟨m', (a.eval σ E).bits.setWidth m'⟩ : BV) = BV.nil :=
+            bv_width0_eq hm0 rfl
+          rw [show (NF.lit BV.nil).eval σ E = BV.nil from rfl, ← hbv]
+          exact rep_bitsToVec hΔ _ 0
+      · rename_i hm0
+        split at hc
+        · rename_i hmwa
           rw [except_pure_def] at hc
           injection hc with hc
           injection hc with hnf hty
@@ -2645,26 +2650,46 @@ private theorem cprim_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk 
           constructor
           · exact vty_bitsToVec hΔ hfr hnr hbr rfl
           · refine ⟨3, ?_⟩
-            have hnf : (NF.prim1 (.zext m') a).eval σ E
-                = (⟨m', (a.eval σ E).bits.setWidth m'⟩ : BV) := by
-              simp only [NF.eval]
-              rfl
-            rw [hnf]
-            exact rep_bitsToVec hΔ _ 0
-        · rename_i hne hge
-          rw [except_pure_def] at hc
-          injection hc with hc
-          injection hc with hnf hty
-          subst hnf; subst hty
-          constructor
-          · exact vty_bitsToVec hΔ hfr hnr hbr rfl
-          · refine ⟨3, ?_⟩
-            have hnf : (NF.prim1 (.trunc m') a).eval σ E
-                = (⟨m', (a.eval σ E).bits.setWidth m'⟩ : BV) := by
-              simp only [NF.eval]
-              rfl
-            rw [hnf]
-            exact rep_bitsToVec hΔ _ 0
+            have hbv : (⟨m', (a.eval σ E).bits.setWidth m'⟩ : BV) = a.eval σ E := by
+              refine bv_ext (show m' = (a.eval σ E).width by omega) ?_
+              intro i
+              show ((a.eval σ E).bits.setWidth m').getLsbD i = _
+              rw [BitVec.getLsbD_setWidth]
+              by_cases hi : i < m'
+              · simp [hi]
+              · rw [decide_eq_false hi, Bool.false_and,
+                    getLsbD_ge (a.eval σ E).bits (by omega)]
+            rw [hbv]
+            exact rep_bitsToVec hΔ (a.eval σ E) 0
+        · split at hc
+          · rename_i hne hlt
+            rw [except_pure_def] at hc
+            injection hc with hc
+            injection hc with hnf hty
+            subst hnf; subst hty
+            constructor
+            · exact vty_bitsToVec hΔ hfr hnr hbr rfl
+            · refine ⟨3, ?_⟩
+              have hnf : (NF.prim1 (.zext m') a).eval σ E
+                  = (⟨m', (a.eval σ E).bits.setWidth m'⟩ : BV) := by
+                simp only [NF.eval]
+                rfl
+              rw [hnf]
+              exact rep_bitsToVec hΔ _ 0
+          · rename_i hne hge
+            rw [except_pure_def] at hc
+            injection hc with hc
+            injection hc with hnf hty
+            subst hnf; subst hty
+            constructor
+            · exact vty_bitsToVec hΔ hfr hnr hbr rfl
+            · refine ⟨3, ?_⟩
+              have hnf : (NF.prim1 (.trunc m') a).eval σ E
+                  = (⟨m', (a.eval σ E).bits.setWidth m'⟩ : BV) := by
+                simp only [NF.eval]
+                rfl
+              rw [hnf]
+              exact rep_bitsToVec hΔ _ 0
   case msBit =>
       rcases pas with _ | ⟨⟨a, ta⟩, _ | ⟨p2, r2⟩⟩ <;>
         dsimp only [cprim] at hc <;> try exact error_ne_ok hc
@@ -4036,11 +4061,13 @@ def domTyT (who : String) (doms : List Ty) (k : Nat) : Except String Ty :=
   | some t => .ok t
   | none => .error s!"{who}: missing argument type in the instantiated builtin type"
 
-/-- ToHyle's `resize`: identity at the same width, `zext` when
-widening, `trunc` when narrowing (`wa` is the operand's type-derived
-width). -/
+/-- ToHyle's `resize`: the nil literal at width zero (no operand
+survives; the printer renders every zero-width expression so), identity
+at the same width, `zext` when widening, `trunc` when narrowing (`wa`
+is the operand's type-derived width). -/
 def resizeNF (m wa : Nat) (a : NF) : NF :=
-  if m = wa then a
+  if m = 0 then .lit BV.nil
+  else if m = wa then a
   else if wa < m then .prim1 (.zext m) a
   else .prim1 (.trunc m) a
 
@@ -5463,6 +5490,10 @@ private theorem resizeNF_eval {σ : String → BV} {m wa : Nat} {a : NF}
     (hw : (a.eval σ E).width = wa) :
     (resizeNF m wa a).eval σ E = ⟨m, (a.eval σ E).bits.setWidth m⟩ := by
   rw [resizeNF]
+  by_cases h0 : m = 0
+  · rw [if_pos h0]
+    exact bv_width0_eq rfl h0
+  rw [if_neg h0]
   by_cases h1 : m = wa
   · rw [if_pos h1]
     refine bv_ext (by dsimp only; omega) ?_
@@ -5762,12 +5793,6 @@ private theorem mapM_reverse_ok {α β : Type} {g : α → Except String β} :
       exact mapM_append_ok (ih hbs)
         (by rw [List.mapM_cons, hb, except_bind_ok, List.mapM_nil, except_pure_def,
                 except_bind_ok, except_pure_def])
-
-/-- Any two zero-width bit vectors are equal. -/
-private theorem bv_width0_eq {x y : BV} (hx : x.width = 0) (hy : y.width = 0) : x = y := by
-  refine bv_ext (by omega) ?_
-  intro i
-  rw [getLsbD_ge x.bits (by omega), getLsbD_ge y.bits (by omega)]
 
 /-- The element slice at a dynamic index, as the compiled shift
 computes it: `sliceBV` of the concatenation. -/
@@ -9431,6 +9456,8 @@ private theorem resizeNF_varsWF {P : String → Nat → Prop} {m wa : Nat} {a : 
     (h : NF.VarsWF P a) : NF.VarsWF P (resizeNF m wa a) := by
   rw [resizeNF]
   split
+  · trivial
+  split
   · exact h
   split
   · exact h
@@ -9507,6 +9534,12 @@ private theorem cprim_varsWF {P : String → Nat → Prop} {pty : Ty} {b : Built
       obtain ⟨m, hm, hc⟩ := except_bind_eq_ok hc
       obtain ⟨wa, hwa, hc⟩ := except_bind_eq_ok hc
       have ha := h _ List.mem_cons_self
+      split at hc
+      · rw [except_pure_def] at hc
+        injection hc with hc
+        injection hc with h1 _
+        subst h1
+        trivial
       split at hc
       · rw [except_pure_def] at hc
         injection hc with hc
@@ -10755,7 +10788,8 @@ def sliceNFD (d : Dag) (off w e : Nat) : Dag × Nat :=
 
 /-- `Cexp.resizeNF` on indices. -/
 def resizeNFD (d : Dag) (m wa : Nat) (a : Nat) : Dag × Nat :=
-  if m = wa then (d, a)
+  if m = 0 then d.mkLit Rwv.Hyle.BV.nil
+  else if m = wa then (d, a)
   else if wa < m then d.rawPrim1 (.zext m) a
   else d.rawPrim1 (.trunc m) a
 
@@ -10802,7 +10836,10 @@ def cprimD (d : Dag) (pty : Ty) (b : Builtin) (pas : List (Nat × Ty)) :
   | .resize, [(a, ta)] => do
       let m ← vecBoolLen "rwPrimResize" res
       let wa ← vecBoolLen "rwPrimResize" ta
-      if m = wa then .ok (d, a, res)
+      if m = 0 then
+        let dr := d.mkLit Rwv.Hyle.BV.nil
+        .ok (dr.1, dr.2, res)
+      else if m = wa then .ok (d, a, res)
       else if wa < m then
         let (d₁, r) := d.rawPrim1 (.zext m) a
         .ok (d₁, r, res)
@@ -11712,6 +11749,10 @@ theorem sliceNFD_spec {d : Dag} (hwf : d.WF) {e : Nat} (off w : Nat)
 theorem resizeNFD_spec {d : Dag} (hwf : d.WF) {m wa a : Nat} (ha : a < d.size) :
     Mk d (resizeNFD d m wa a) (resizeNF m wa (d.read a)) := by
   rw [resizeNFD, resizeNF]
+  by_cases h0 : m = 0
+  · rw [if_pos h0, if_pos h0]
+    exact mkLit_spec hwf _
+  rw [if_neg h0, if_neg h0]
   by_cases h1 : m = wa
   · rw [if_pos h1, if_pos h1]
     exact self_mk hwf ha
@@ -11951,8 +11992,9 @@ theorem cprimD_sim {d : Dag} (hwf : d.WF) {pty : Ty} {b : Builtin}
     obtain ⟨wa, hwa, h⟩ := except_bind_eq_ok h
     have htree : ∀ (out : NF),
         d'.read r = out →
-        (if m = wa then (Except.ok ((d.read a : NF), (Ty.flattenArrow pty).2) :
+        (if m = 0 then (Except.ok ((.lit BV.nil : NF), (Ty.flattenArrow pty).2) :
               Except String (NF × Ty))
+         else if m = wa then .ok ((d.read a : NF), (Ty.flattenArrow pty).2)
          else if wa < m then .ok (.prim1 (.zext m) (d.read a), (Ty.flattenArrow pty).2)
          else .ok (.prim1 (.trunc m) (d.read a), (Ty.flattenArrow pty).2)) = .ok (out, ty) →
         cprim pty .resize [((d.read a : NF), ta)] = .ok (d'.read r, ty) := by
@@ -11960,38 +12002,50 @@ theorem cprimD_sim {d : Dag} (hwf : d.WF) {pty : Ty} {b : Builtin}
       show (do
         let m ← vecBoolLen "rwPrimResize" (Ty.flattenArrow pty).2
         let wa ← vecBoolLen "rwPrimResize" ta
-        if m = wa then pure ((d.read a : NF), (Ty.flattenArrow pty).2)
+        if m = 0 then pure ((.lit BV.nil : NF), (Ty.flattenArrow pty).2)
+        else if m = wa then pure ((d.read a : NF), (Ty.flattenArrow pty).2)
         else if wa < m then pure (.prim1 (.zext m) (d.read a), (Ty.flattenArrow pty).2)
         else pure (.prim1 (.trunc m) (d.read a), (Ty.flattenArrow pty).2)) = _
       rw [hm, except_bind_ok, hwa, except_bind_ok]
       rw [hout]
       exact htr
     split at h
-    · -- m = wa: identity
-      rename_i hcond
+    · -- m = 0: the nil literal
+      rename_i hm0
+      rcases hml : d.mkLit Rwv.Hyle.BV.nil with ⟨d₁, r₁⟩
+      rw [hml] at h
       obtain ⟨hd, hr, hty⟩ := triple_eq h
       subst hd; subst hr; subst hty
-      refine ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, hpas (a, ta) (by simp), ?_⟩
-      exact htree _ rfl (by rw [if_pos hcond])
-    · split at h
-      · -- zext
-        rename_i hne hlt
-        rcases hp : d.rawPrim1 (.zext m) a with ⟨d₁, r₁⟩
-        rw [hp] at h
+      obtain ⟨W, E, L, R⟩ := mk_out (mkLit_spec hwf _) hml
+      refine ⟨W, E, L, ?_⟩
+      exact htree _ R (by rw [if_pos hm0])
+    · rename_i hm0
+      split at h
+      · -- m = wa: identity
+        rename_i hcond
         obtain ⟨hd, hr, hty⟩ := triple_eq h
         subst hd; subst hr; subst hty
-        obtain ⟨W, E, L, R⟩ := mk_out (rawPrim1_spec hwf (show a < d.size from hpas (a, ta) (by simp)) rfl) hp
-        refine ⟨W, E, L, ?_⟩
-        exact htree _ R (by rw [if_neg hne, if_pos hlt])
-      · -- trunc
-        rename_i hne hnlt
-        rcases hp : d.rawPrim1 (.trunc m) a with ⟨d₁, r₁⟩
-        rw [hp] at h
-        obtain ⟨hd, hr, hty⟩ := triple_eq h
-        subst hd; subst hr; subst hty
-        obtain ⟨W, E, L, R⟩ := mk_out (rawPrim1_spec hwf (show a < d.size from hpas (a, ta) (by simp)) rfl) hp
-        refine ⟨W, E, L, ?_⟩
-        exact htree _ R (by rw [if_neg hne, if_neg hnlt])
+        refine ⟨hwf, Rwv.Hyle.BridgeDag.Dag.Ext.refl d, hpas (a, ta) (by simp), ?_⟩
+        exact htree _ rfl (by rw [if_neg hm0, if_pos hcond])
+      · split at h
+        · -- zext
+          rename_i hne hlt
+          rcases hp : d.rawPrim1 (.zext m) a with ⟨d₁, r₁⟩
+          rw [hp] at h
+          obtain ⟨hd, hr, hty⟩ := triple_eq h
+          subst hd; subst hr; subst hty
+          obtain ⟨W, E, L, R⟩ := mk_out (rawPrim1_spec hwf (show a < d.size from hpas (a, ta) (by simp)) rfl) hp
+          refine ⟨W, E, L, ?_⟩
+          exact htree _ R (by rw [if_neg hm0, if_neg hne, if_pos hlt])
+        · -- trunc
+          rename_i hne hnlt
+          rcases hp : d.rawPrim1 (.trunc m) a with ⟨d₁, r₁⟩
+          rw [hp] at h
+          obtain ⟨hd, hr, hty⟩ := triple_eq h
+          subst hd; subst hr; subst hty
+          obtain ⟨W, E, L, R⟩ := mk_out (rawPrim1_spec hwf (show a < d.size from hpas (a, ta) (by simp)) rfl) hp
+          refine ⟨W, E, L, ?_⟩
+          exact htree _ R (by rw [if_neg hm0, if_neg hne, if_neg hnlt])
   · exact harith .add  rfl rfl h
   · exact harith .sub  rfl rfl h
   · exact harith .mul  rfl rfl h

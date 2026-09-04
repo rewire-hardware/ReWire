@@ -38,10 +38,9 @@ def main():
         if r.returncode != 0 or not exe.exists():
             sys.exit("cexp-goldens: cannot build rwv-cexp-validate")
 
-    # Known gap (see cstep-goldens.py EXPECTED_REJECTED): the symbolic
-    # tier mismatches on zerowidthRed's zero-width reductions; a
-    # mismatch there is reported but not counted as a failure.
-    known_mismatch = {"zerowidthRed"}
+    # Tests whose mismatch is a known gap (reported, not counted as a
+    # failure; see cstep-goldens.py EXPECTED_REJECTED). Currently none.
+    known_mismatch: set = set()
 
     ext = ".10.rwc" if args.pass10 else ".9.rwc"
     tests = sorted(p.name[:-len(".8.eir")] for p in dumps.glob("*.8.eir"))
