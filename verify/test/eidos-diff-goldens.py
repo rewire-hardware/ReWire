@@ -206,14 +206,14 @@ def main():
     results = []         # (name, status, detail)
     width = max(len(f.stem) for f in files)
 
-    def gen_eir(f: Path):
+    def gen_syn(f: Path):
         """Returns (base, status, detail); status None means proceed."""
         base = f.stem
-        eir = work / f"{base}.syn"
+        syn = work / f"{base}.syn"
         raw9 = work / f"{base}.9.rwc"
-        if args.reuse_dump and eir.exists() and raw9.exists():
+        if args.reuse_dump and syn.exists() and raw9.exists():
             return base, None, "reused .syn"
-        eir.unlink(missing_ok=True)
+        syn.unlink(missing_ok=True)
         raw9.unlink(missing_ok=True)
         # -d 9 dumps the raw-fold .rwc beside the output: the pre-optimization
         # program still carrying every Cryptol splice (zero-argument splices
@@ -227,7 +227,7 @@ def main():
                                timeout=args.timeout, cwd=REPO)
         except subprocess.TimeoutExpired:
             return base, "EIR-FAIL", f"rwc --synolon timed out after {args.timeout}s"
-        if not eir.exists():
+        if not syn.exists():
             return base, "EIR-FAIL", "rwc --synolon: " + stderr_tail(r.stderr)
         return base, None, "generated .syn"
 
@@ -245,7 +245,7 @@ def main():
 
     gen_status = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as pool:
-        for base, status, detail in pool.map(gen_eir, todo):
+        for base, status, detail in pool.map(gen_syn, todo):
             gen_status[base] = (status, detail)
 
     # Phase 2: per-test differential run, in name order.
@@ -271,16 +271,16 @@ def main():
         # externs evaluate through the foreign hooks; model-LESS externs
         # run the --eta-synth internal check (rwc cannot interpret them,
         # so there is no external reference).
-        eir = work / f"{base}.syn"
-        eir_text = eir.read_text()
+        syn = work / f"{base}.syn"
+        syn_text = syn.read_text()
         eta_synth = []
-        if "(rwPrimExtern ::" in eir_text:
+        if "(rwPrimExtern ::" in syn_text:
             eta_synth = modelless_externs(f)
 
         # The Lean side: stimulus + Synolon trace.
         stim = work / f"{base}.stim.yaml"
         eidos_out = work / f"{base}.eidos.yaml"
-        cmd = [lean_exe, str(eir), str(f),
+        cmd = [lean_exe, str(syn), str(f),
                "--cycles", str(args.cycles), "--stim", str(stim)]
         raw9 = work / f"{base}.9.rwc"
         if raw9.exists():

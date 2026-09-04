@@ -107,8 +107,9 @@ def gen_dumps(rwc, src: Path, work: Path, force: bool, verbose: bool):
             and raw_cached.stat().st_mtime >= src.stat().st_mtime:
         pass  # cached
     else:
-        for old in work.glob(f"{base}.*.rwc"):
-            old.unlink()
+        for pat in (f"{base}.*.rwc", f"{base}.*.eir", f"{base}.*.syn"):
+            for old in work.glob(pat):
+                old.unlink()
         cmd = [rwc, "--dump-all", "-o", str(work / f"{base}.sv"), str(src)]
         if verbose:
             print("  $", " ".join(cmd), file=sys.stderr)

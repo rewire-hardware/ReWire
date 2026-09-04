@@ -40,16 +40,16 @@ def check(name, ok, detail=""):
         failures.append(name)
 
 
-def run_validator(exe, eir, rwc, *extra):
-    r = subprocess.run([str(exe), str(eir), str(rwc), *extra],
+def run_validator(exe, syn, rwc, *extra):
+    r = subprocess.run([str(exe), str(syn), str(rwc), *extra],
                        capture_output=True, text=True, timeout=600)
     summaries = [l for l in (r.stdout + r.stderr).splitlines() if l.startswith("summary:")]
     verdict = summaries[-1].removeprefix("summary: ").split(" ", 1)[0].split(";", 1)[0] if summaries else "?"
     return verdict, r
 
 
-def expect(exe, name, eir, rwc, want, detail_substr=""):
-    verdict, r = run_validator(exe, eir, rwc)
+def expect(exe, name, syn, rwc, want, detail_substr=""):
+    verdict, r = run_validator(exe, syn, rwc)
     ok = verdict == want and r.returncode == EXIT[want]
     if ok and detail_substr:
         ok = detail_substr in r.stdout + r.stderr
@@ -77,10 +77,8 @@ def replace_defn_body(text, head_prefix, new_body):
 
 
 def machine_dump(dumps, test):
-    """The pass-8 machine-level dump of a test: .8.syn, or the legacy
-    .8.eir form."""
-    syn = dumps / f"{test}.8.syn"
-    return syn if syn.exists() else dumps / f"{test}.8.eir"
+    """The pass-8 Synolon dump of a test."""
+    return dumps / f"{test}.8.syn"
 
 
 def validator_tests(exe, dumps, work):
@@ -89,11 +87,11 @@ def validator_tests(exe, dumps, work):
         p.write_text(text)
         return p
 
-    case1_eir = machine_dump(dumps, "case1")
+    case1_syn = machine_dump(dumps, "case1")
     case1_rwc = dumps / "case1.11.rwc"
 
     # Baseline: the pure corpus validates.
-    expect(exe, "pure baseline validates", case1_eir, case1_rwc, "VALIDATED")
+    expect(exe, "pure baseline validates", case1_syn, case1_rwc, "VALIDATED")
 
     # The extern-model tier: an occurrence's source-side meaning is its
     # own Eidos implementation argument, so the tier validates with
@@ -109,7 +107,7 @@ def validator_tests(exe, dumps, work):
     smut = (machine_dump(dumps, "externModel")).read_text().replace("(rwPrimAnd :: ", "(rwPrimOr :: ")
     assert smut != (machine_dump(dumps, "externModel")).read_text()
     expect(exe, "source-only extern-model mutation rejects",
-           w("externModel.srcmut.8.eir", smut), dumps / "externModel.11.rwc", "REJECTED")
+           w("externModel.srcmut.8.syn", smut), dumps / "externModel.11.rwc", "REJECTED")
     # The rest of the foreign tier stays outside the certified profile.
     expect(exe, "Cryptol splices are unsupported",
            machine_dump(dumps, "cryptolffi"), dumps / "cryptolffi.11.rwc", "UNSUPPORTED")
@@ -146,27 +144,27 @@ def validator_tests(exe, dumps, work):
     # a different uninterpreted symbol — REJECTED by the comparison —
     # and a declaration generic-name edit breaks the source-descriptor
     # cross-check.
-    eg_eir = machine_dump(dumps, "externGeneric")
+    eg_syn = machine_dump(dumps, "externGeneric")
     eg_rwc = dumps / "externGeneric.11.rwc"
     expect(exe, "generic model-less extern validates end to end",
-           eg_eir, eg_rwc, "VALIDATED")
+           eg_syn, eg_rwc, "VALIDATED")
     genval = eg_rwc.read_text().replace("addk<3>", "addk<4>")
     assert genval != eg_rwc.read_text()
     expect(exe, "target-only generic value mutation rejects",
-           eg_eir, w("externGeneric.genval.11.rwc", genval), "REJECTED")
+           eg_syn, w("externGeneric.genval.11.rwc", genval), "REJECTED")
     genname = eg_rwc.read_text().replace("      generic K", "      generic J")
     assert genname != eg_rwc.read_text()
     expect(exe, "target generic-name mutation rejects (descriptor cross-check)",
-           eg_eir, w("externGeneric.genname.11.rwc", genname), "REJECTED",
+           eg_syn, w("externGeneric.genname.11.rwc", genname), "REJECTED",
            "do not match the target declaration's generics")
 
     # The primitive basis is never silently substituted.
-    boolswap = (case1_eir.read_text()
+    boolswap = (case1_syn.read_text()
                 .replace("data Bool * {\n      False :: Bool;\n      True :: Bool",
                          "data Bool * {\n      True :: Bool;\n      False :: Bool"))
-    assert boolswap != case1_eir.read_text()
+    assert boolswap != case1_syn.read_text()
     expect(exe, "conflicting Bool redeclaration is an input error",
-           w("case1.boolswap.8.eir", boolswap), case1_rwc, "ERROR",
+           w("case1.boolswap.8.syn", boolswap), case1_rwc, "ERROR",
            "conflicting redeclaration")
 
     # Uniques inside the eta fresh range are refused, not risked. The
@@ -174,29 +172,29 @@ def validator_tests(exe, dumps, work):
     # binder found by pattern rather than by a literal unique, so it
     # tracks renumbering upstream (type-variable uniques don't collide
     # with eta-minted term binders and rightly pass).
-    case1_text = case1_eir.read_text()
+    case1_text = case1_syn.read_text()
     m = re.search(r"^\s*block \S+ \(\(\w+#(\d+) ::", case1_text, re.M)
     assert m, "no block with a parameter in case1's machine dump"
     etaclash = re.sub(rf"#{m.group(1)}\b", "#-1000000005", case1_text)
     assert etaclash != case1_text
     expect(exe, "reserved eta-unique range is refused",
-           w("case1.etaclash.8.eir", etaclash), case1_rwc, "ERROR", "reserved")
+           w("case1.etaclash.8.syn", etaclash), case1_rwc, "ERROR", "reserved")
 
     # Finite 0 is uninhabited (matching Data.Finite): an undef-init cell
     # of an empty type has no zero value, so initialization must fail.
-    zw_eir = machine_dump(dumps, "zerowidth")
+    zw_syn = machine_dump(dumps, "zerowidth")
     zw_rwc = dumps / "zerowidth.11.rwc"
-    f0 = zw_eir.read_text().replace(
+    f0 = zw_syn.read_text().replace(
         "      state s1 : Vec 0 Bool := undef;\n",
         "      state s1 : Vec 0 Bool := undef;\n      state s2 : Finite 0 := undef;\n")
-    assert f0 != zw_eir.read_text()
+    assert f0 != zw_syn.read_text()
     expect(exe, "Finite 0 cell initialization rejects (uninhabited)",
-           w("zerowidth.f0.8.eir", f0), zw_rwc, "REJECTED", "uninhabited")
+           w("zerowidth.f0.8.syn", f0), zw_rwc, "REJECTED", "uninhabited")
 
     # A target that cannot denote cannot validate vacuously.
     rec = "unusedRec : ([8]) -> [8]\nunusedRec x =\n      unusedRec x\n\n" + case1_rwc.read_text()
     expect(exe, "unused recursive target definition rejects",
-           case1_eir, w("case1.rec.11.rwc", rec), "REJECTED", "recursion")
+           case1_syn, w("case1.rec.11.rwc", rec), "REJECTED", "recursion")
     dup = case1_rwc.read_text()
     m = re.search(r"^([\w.$]+) : ", dup, re.M)
     if m:
@@ -205,7 +203,7 @@ def validator_tests(exe, dumps, work):
         block_end = first_defn.find("\n\n")
         dup = dup[:m.start()] + first_defn[:block_end + 2] + dup[m.start():]
         expect(exe, "duplicate target definition names reject",
-               case1_eir, w("case1.dup.11.rwc", dup), "REJECTED", "duplicate")
+               case1_syn, w("case1.dup.11.rwc", dup), "REJECTED", "duplicate")
 
     # Typed assignment-coverage keys: an output literally named
     # "next r" must not satisfy register r's next-assignment.
@@ -217,20 +215,20 @@ def validator_tests(exe, dumps, work):
         '      "next r" := __in0',
         '',
     ])
-    verdict, r = run_validator(exe, case1_eir, w("collide.11.rwc", collide))
+    verdict, r = run_validator(exe, case1_syn, w("collide.11.rwc", collide))
     check("output named \"next r\" does not cover register r",
           verdict == "REJECTED" and "never assigned" in r.stdout + r.stderr,
           f"got {verdict}: {(r.stdout + r.stderr).strip().splitlines()[:2]}")
 
     # Strict CLI and protocol behavior.
-    _, r = run_validator(exe, case1_eir, case1_rwc, "--fuel=garbage")
+    _, r = run_validator(exe, case1_syn, case1_rwc, "--fuel=garbage")
     check("malformed fuel is a usage error", r.returncode == 2)
-    _, r = run_validator(exe, case1_eir, case1_rwc, "--no-such-flag")
+    _, r = run_validator(exe, case1_syn, case1_rwc, "--no-such-flag")
     check("unknown options are usage errors", r.returncode == 2)
-    _, r = run_validator(exe, case1_eir, work / "does-not-exist.rwc")
+    _, r = run_validator(exe, case1_syn, work / "does-not-exist.rwc")
     check("missing input file is an ERROR", r.returncode == 2)
 
-    verdict, r = run_validator(exe, case1_eir, case1_rwc, "--protocol=2", "--nonce=mut-test")
+    verdict, r = run_validator(exe, case1_syn, case1_rwc, "--protocol=2", "--nonce=mut-test")
     stdout_lines = [l for l in r.stdout.splitlines() if l.strip()]
     ok = len(stdout_lines) == 1
     resp = None
@@ -242,7 +240,7 @@ def validator_tests(exe, dumps, work):
     if ok and resp is not None:
         ok = (resp["status"] == "validated" and resp["nonce"] == "mut-test"
               and resp["protocol"] == 2
-              and resp["source"]["sha256"] == hashlib.sha256(case1_eir.read_bytes()).hexdigest()
+              and resp["source"]["sha256"] == hashlib.sha256(case1_syn.read_bytes()).hexdigest()
               and resp["target"]["sha256"] == hashlib.sha256(case1_rwc.read_bytes()).hexdigest())
     check("protocol response is a single bound JSON object", ok)
 

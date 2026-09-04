@@ -51,15 +51,12 @@ EXPECTED_REJECTED: set = set()
 
 
 def machine_dumps(dumps: Path):
-    """Test names with a pass-8 machine-level dump (.8.syn, or the legacy
-    .8.eir form)."""
-    return {p.name[:-len(".8.syn")] for p in dumps.glob("*.8.syn")} \
-         | {p.name[:-len(".8.eir")] for p in dumps.glob("*.8.eir")}
+    """Test names with a pass-8 Synolon dump (.8.syn)."""
+    return {p.name[:-len(".8.syn")] for p in dumps.glob("*.8.syn")}
 
 
 def machine_dump(dumps: Path, test: str) -> Path:
-    syn = dumps / f"{test}.8.syn"
-    return syn if syn.exists() else dumps / f"{test}.8.eir"
+    return dumps / f"{test}.8.syn"
 
 
 def expected(test: str) -> str:
@@ -103,13 +100,13 @@ def main():
     total = {}
     validated = rejected = unsupported = other = unexpected = 0
     for t in tests:
-        eir = machine_dump(dumps, t)
+        syn = machine_dump(dumps, t)
         rwc = dumps / f"{t}{ext}"
         if not rwc.exists():
             print(f"{t:<20} FAILED (no {ext} dump)")
             unexpected += 1
             continue
-        cmd = [str(exe), str(eir), str(rwc)]
+        cmd = [str(exe), str(syn), str(rwc)]
         if args.measure:
             cmd.append("--measure")
         try:
