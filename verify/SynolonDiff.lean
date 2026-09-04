@@ -350,7 +350,7 @@ def scanProgram (p : Program) : Except String (List (String × Ty)) := do
   occs.foldlM (init := []) fun acc (s, ity) =>
     match acc.lookup s with
     | some ity' =>
-        if Cexp.teq ity ity' then pure acc
+        if Ty.eq ity ity' then pure acc
         else throw s!"--eta-synth: extern {s} used at two impl monotypes"
     | none => pure ((s, ity) :: acc)
 

@@ -9,6 +9,7 @@ import Rwv.Eidos.Syntax
 import Rwv.Synolon.Syntax
 import Rwv.Eidos.Types
 import Rwv.Eidos.Value
+import Rwv.Eidos.NatNorm
 import Rwv.Eidos.Decode
 import Rwv.Eidos.PrimBasis
 import Rwv.Synolon.PrimBasis

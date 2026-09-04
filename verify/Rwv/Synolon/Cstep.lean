@@ -35,11 +35,14 @@ the device:
     same tag-slice if-chains as `Cexp.cchain`. Pure expressions
     compile through `Cexp.cexpFull` (the full compiler — joins, the
     extended first-order rows, live `error`), which bounds this
-    fragment. The pause-output type check compares with `Cexp.teqN`
-    (type-level nat arithmetic evaluated on Vec/Finite spines, e.g.
-    `Vec (+ 8 8) Bool` against the declared `Vec 16 Bool`), with
-    `vty_teqN` transporting the output's canonicality to the process
-    output type.
+    fragment. Every type comparison — put values against cell types,
+    goto/pause arguments against block parameters, the pause output
+    against the process output type, the resumed input against the
+    process input type, and the halt-answer table's keys — is
+    `Ty.eq`, structural equality modulo evaluated type-level nat
+    arithmetic (the lint's equality; a generic definition's
+    `Vec (+ 7 1) Bool` against its call site's `Vec 8 Bool`), with
+    `Cexp.vty_tyEq` transporting canonicality across it.
   * `checkLabel` — the per-label obligation: compile the step from
     pause target L into a record normal form over the device's
     registers and inputs (saved args are slices of the resumption-tag
@@ -169,7 +172,7 @@ open Std (HashMap)
 open Rwv.Eidos
 open Rwv.Hyle (BV Op)
 open Rwv.Hyle.Bridge (NF)
-open Rwv.Eidos.Cexp (teq teqAll teqN vty_teqN cexp catNF sliceNF denvOk VTy ctorOfB)
+open Rwv.Eidos.Cexp (teqAll vty_tyEq cexp catNF sliceNF denvOk denvOk_natOk VTy ctorOfB)
 
 /- The extern environment of the η tier: a section-implicit
 threaded through every denotational statement (Cexp's convention).
@@ -272,9 +275,9 @@ def expTy (Δ : DEnv) : Nat → Exp → Except String Ty
             | _ => throw "expTy: application of a non-arrow"
 
 /-- Order-preserving first-occurrence dedup (mkLayout's `nubOrd` on
-rendered type keys, here on structural type equality). -/
+nat-normalized rendered type keys, here on `Ty.eq`). -/
 def firstOcc (ts : List Ty) : List Ty :=
-  ts.foldl (fun acc t => if acc.any (· == t) then acc else acc ++ [t]) []
+  ts.foldl (fun acc t => if acc.any (Ty.eq · t) then acc else acc ++ [t]) []
 
 /-- ToHyle's `mkLayout`, transcribed: the step-record accounting. -/
 def mkLayoutL (Δ : DEnv) (fuel : Nat) (p : Proc) : Except String Layout := do
@@ -476,7 +479,7 @@ def vtyB (Δ : DEnv) : Nat → Val → Ty → Bool
       | (.con "Proxy", _) => true
       | _ => false)
   | fuel + 1, .con ty c fields, t =>
-      teq ty t &&
+      Ty.eq ty t &&
       (match Δ.ctorSig.get? c with
       | some sig =>
           (match DEnv.matchTy (Ty.flattenArrow sig.ty).2 t with
@@ -586,7 +589,7 @@ def goCmds (C : Ctx) : Nat → HashMap Int (NF × Ty) → List CellNF → List C
           let (nf, ty) ← Rwv.Eidos.Cexp.cexpFull C.Δ C.edm C.cexpFuel Γ e
           match cells.find? (fun d => d.name == c) with
           | some d =>
-              if teq ty d.ty then
+              if Ty.eq ty d.ty then
                 goCmds C fuel Γ
                   (cells.map fun d' => if d'.name == c then { d' with nf } else d')
                   rest term
@@ -603,7 +606,7 @@ def goTerm (C : Ctx) : Nat → HashMap Int (NF × Ty) → List CellNF → Term �
       match term with
       | .pause out l args => do
           let (onf, oty) ← Rwv.Eidos.Cexp.cexpFull C.Δ C.edm C.cexpFuel Γ out
-          if teqN C.Δ oty C.outTy then
+          if Ty.eq oty C.outTy then
             match C.lo.targets.find? (fun t => t.uniq == l.uniq) with
             | none => throw s!"cstep: pause to an unknown target {l.occ}"
             | some tgt => do
@@ -625,7 +628,7 @@ def goTerm (C : Ctx) : Nat → HashMap Int (NF × Ty) → List CellNF → Term �
               else throw s!"cstep: goto {l.occ} argument mismatch"
       | .halt e => do
           let (anf, aty) ← Rwv.Eidos.Cexp.cexpFull C.Δ C.edm C.cexpFuel Γ e
-          let (atag, aw) ← match C.lo.halts.find? (fun h => h.1 == aty) with
+          let (atag, aw) ← match C.lo.halts.find? (fun h => Ty.eq h.1 aty) with
             | some (_, tag, w) => pure (tag, w)
             | none => throw "cstep: halt at an unknown answer type"
           pure (haltRec C anf atag aw cells)
@@ -766,7 +769,7 @@ def checkLabel (C : Ctx) (plan : Plan) (dev : Rwv.Hyle.Device)
     match blk.params.getLast? with
     | none => throw "checkLabel: parameterless pause target"
     | some inP =>
-      if teq inP.sig.ty inTy then do
+      if Ty.eq inP.sig.ty inTy then do
         let tagVar : NF := match plan.tagReg with
           | some (r, w) => .var w r
           | none => .lit BV.nil
@@ -891,7 +894,7 @@ def goCmdsD (C : Ctx) : Nat → DGamma → List CellNFD → List Cmd → Term �
           let (d₁, r, ty) ← cexpFullD C.Δ C.edm C.cexpFuel Γ e d
           match cells.find? (fun cc => cc.name == c) with
           | some cc =>
-              if teq ty cc.ty then
+              if Ty.eq ty cc.ty then
                 goCmdsD C fuel Γ
                   (cells.map fun c' => if c'.name == c then { c' with nf := r } else c')
                   rest term d₁
@@ -906,7 +909,7 @@ def goTermD (C : Ctx) : Nat → DGamma → List CellNFD → Term → Dag →
       match term with
       | .pause out l args => do
           let (d₁, onf, oty) ← cexpFullD C.Δ C.edm C.cexpFuel Γ out d
-          if teqN C.Δ oty C.outTy then
+          if Ty.eq oty C.outTy then
             match C.lo.targets.find? (fun t => t.uniq == l.uniq) with
             | none => .error s!"cstep: pause to an unknown target {l.occ}"
             | some tgt => do
@@ -928,7 +931,7 @@ def goTermD (C : Ctx) : Nat → DGamma → List CellNFD → Term → Dag →
               else .error s!"cstep: goto {l.occ} argument mismatch"
       | .halt e => do
           let (d₁, anf, aty) ← cexpFullD C.Δ C.edm C.cexpFuel Γ e d
-          let (atag, aw) ← match C.lo.halts.find? (fun h => h.1 == aty) with
+          let (atag, aw) ← match C.lo.halts.find? (fun h => Ty.eq h.1 aty) with
             | some (_, tag, w) => pure (tag, w)
             | none => .error "cstep: halt at an unknown answer type"
           .ok (haltRecD C d₁ anf atag aw cells)
@@ -1113,7 +1116,7 @@ def checkLabelDag (C : Ctx) (plan : Plan) (dev : Rwv.Hyle.Device)
     match blk.params.getLast? with
     | none => .error "checkLabelDag: parameterless pause target"
     | some inP =>
-      if teq inP.sig.ty inTy then do
+      if Ty.eq inP.sig.ty inTy then do
         let (d₁, tagVar) := match plan.tagReg with
           | some (r, w) => d0.mkVar w r
           | none => d0.mkLit Rwv.Hyle.BV.nil
@@ -1416,15 +1419,13 @@ theorem vtyB_sound {Δ : DEnv} : ∀ (fuel : Nat) {v : Val} {t : Ty},
           rw [vtyB] at h
           simp only [Bool.and_eq_true] at h
           obtain ⟨hty, h⟩ := h
-          have hty' : ty = t := Rwv.Eidos.Cexp.teq_eq hty
-          subst hty'
           split at h
           · rename_i sig hsig
             split at h
             · rename_i sub hsub
               simp only [Bool.and_eq_true, beq_iff_eq] at h
               obtain ⟨⟨hlen, hctor⟩, hall⟩ := h
-              exact VTy.con hsig hsub hlen (ctorOfB_sound hctor)
+              exact VTy.con hty hsig hsub hlen (ctorOfB_sound hctor)
                 fun pr hpr => ih (List.all_eq_true.mp hall pr hpr)
             · cases h
           · cases h
@@ -1729,7 +1730,7 @@ theorem hasTy_vty {Δ : DEnv} (htup : tupleCtorsOk Δ = true) :
   | integer hty => exact VTy.integer hty
   | proxy hty => exact VTy.proxy hty rfl
   | @con t tc c fields sig sub doms hty hctor hsig hmatch hdoms hlen _hfields ih =>
-      refine VTy.con hsig hmatch ?_ ?_ ?_
+      refine VTy.con (Ty.eq_refl _) hsig hmatch ?_ ?_ ?_
       · rw [hlen, hdoms, List.length_map]
       · -- ctorOf: rebuild the flattened head from `(Ty.flatten t).1`.
         have hfl : Ty.flatten t = (.con tc, (Ty.flatten t).2) := by
@@ -2397,7 +2398,7 @@ private theorem rep_con_inv {Δ : DEnv} {k : Nat} {ty : Ty} {c : String}
 
 /-- The representation width of a canonical value is its type's
 `sizeOf` (Cexp's private `vty_rep_width`, re-proved). -/
-private theorem vty_rep_width {Δ : DEnv} :
+private theorem vty_rep_width {Δ : DEnv} (hΔ : denvOk Δ = true) :
     ∀ {v : Val} {t : Ty}, VTy Δ v t → ∀ {k : Nat} {bv : BV}, Val.rep Δ k v = .ok bv →
       ∀ {k' : Nat} {w : Nat}, Δ.sizeOf k' [] t = .ok w → bv.width = w := by
   intro v t hv
@@ -2477,13 +2478,13 @@ private theorem vty_rep_width {Δ : DEnv} :
           | succ k' =>
               rw [sizeOf_inv_proxy hfl hsz]
               rfl
-  | con hsig hmatch hlen hctor hfields ih =>
-      rename_i t c fields sig sub
+  | con hteq hsig hmatch hlen hctor hfields ih =>
+      rename_i t' t c fields sig sub
       intro k bv hrep k' w hsz
       obtain ⟨k'', whole, tag, tagW, bs, hk, hwhole, htg, hbs, hle, hbv⟩ := rep_con_inv hrep
       subst hbv
       rw [bvConcat3, bvCat_width, bvCat_width]
-      have : whole = w := sizeOf_det hwhole hsz
+      have : whole = w := sizeOf_det (DEnv.sizeOf_eq₀ (denvOk_natOk hΔ) hteq hwhole) hsz
       dsimp only [BV.width]
       omega
 
@@ -2495,12 +2496,12 @@ soundness statement is here with its supporting inversions. -/
 private theorem vec_not_tuple {Δ : DEnv} (h : denvOk Δ = true) :
     Ty.isTupleCon "Vec" = false := by
   simp only [denvOk, Bool.and_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true] at h
-  exact h.1.2
+  exact h.1.1.2
 
 private theorem vec_abstract {Δ : DEnv} (h : denvOk Δ = true) {cs : List String}
     (hcs : Δ.ctors.get? "Vec" = some cs) : cs = [] := by
   simp only [denvOk, Bool.and_eq_true] at h
-  have h2 := h.2
+  have h2 := h.1.2
   rw [hcs] at h2
   cases cs with
   | nil => rfl
@@ -2561,8 +2562,8 @@ theorem vty_rep_total {Δ : DEnv} (hΔ : denvOk Δ = true) :
       cases k with
       | zero => rw [repOkB] at hok; cases hok
       | succ k => exact ⟨_, by rw [Val.rep]; rfl⟩
-  | con hsig hmatch hlen hctor hfields ih =>
-      rename_i t c fields sig sub
+  | con hteq hsig hmatch hlen hctor hfields ih =>
+      rename_i t' t c fields sig sub
       intro k hok
       cases k with
       | zero => rw [repOkB] at hok; cases hok
@@ -2662,7 +2663,7 @@ theorem vty_rep_total {Δ : DEnv} (hΔ : denvOk Δ = true) :
                     rw [show ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub))[i]'(by omega)
                           = DEnv.substTv sub ((Ty.flattenArrow sig.ty).1[i]'(by omega))
                         from List.getElem_map _] at hszi
-                    exact vty_rep_width (hfvty i (by omega)) hrepi hszi
+                    exact vty_rep_width hΔ (hfvty i (by omega)) hrepi hszi
                   have hsum : (Val.bvConcat bs).width = ws.sum := by
                     rw [bvConcat_eq, catAll_width]
                     congr 1
@@ -2672,7 +2673,9 @@ theorem vty_rep_total {Δ : DEnv} (hΔ : denvOk Δ = true) :
                     exact hbw i (by omega)
                   refine ⟨Val.bvConcat [⟨tagW, BitVec.ofNat _ tag⟩,
                     ⟨whole - tagW - (Val.bvConcat bs).width, 0⟩, Val.bvConcat bs], ?_⟩
-                  rw [Val.rep, hwhole, except_bind_ok, htg, except_bind_ok]
+                  rw [Val.rep, DEnv.sizeOf_eq₀ (denvOk_natOk hΔ) (Ty.eq_symm hteq) hwhole,
+                      except_bind_ok, DEnv.ctorTag_eq (denvOk_natOk hΔ) (Ty.eq_symm hteq) htg,
+                      except_bind_ok]
                   dsimp only
                   rw [mapM_attach_erase, hbs, except_bind_ok,
                       if_pos (by rw [hsum]; exact hbound)]
@@ -2744,11 +2747,55 @@ private theorem absHeadsOk_int_not_tuple {Δ : DEnv} (h : absHeadsOk Δ = true) 
   obtain ⟨_, h4⟩ := h
   simpa using h4
 
+/-- Strict canonicality: `Cexp.VTy` with every constructor value
+carrying exactly its judged type (the spelling `decode` produces),
+the domain on which `decode` inverts `rep` value for value. -/
+inductive VTyS (Δ : DEnv) : Val → Ty → Prop where
+  | vec {elems : List Val} {t n te : Ty} {k : Nat} :
+      Ty.flatten t = (.con "Vec", [n, te]) →
+      Ty.evalNat n = some k →
+      elems.length = k →
+      (∀ e ∈ elems, VTyS Δ e te) →
+      VTyS Δ (.vec elems) t
+  | integer {x : BitVec 128} {t : Ty} :
+      Ty.flatten t = (.con "Integer", []) →
+      VTyS Δ (.integer x) t
+  | finite {b i : Nat} {t n : Ty} :
+      Ty.flatten t = (.con "Finite", [n]) →
+      Ty.evalNat n = some b →
+      i < b →
+      VTyS Δ (.finite b i) t
+  | proxy {t : Ty} {h : Ty} {args : List Ty} :
+      Ty.flatten t = (.con "Proxy", args) →
+      h = .con "Proxy" →
+      VTyS Δ .proxy t
+  | con {t : Ty} {c : String} {fields : List Val} {sig : Sig}
+      {sub : HashMap TyVar Ty} :
+      Δ.ctorSig.get? c = some sig →
+      DEnv.matchTy (Ty.flattenArrow sig.ty).2 t = .ok sub →
+      fields.length = (Ty.flattenArrow sig.ty).1.length →
+      Rwv.Eidos.Cexp.ctorOf Δ t c →
+      (∀ p ∈ (Ty.flattenArrow sig.ty).1.zip fields,
+        VTyS Δ p.2 (DEnv.substTv sub p.1)) →
+      VTyS Δ (.con t c fields) t
+
+/-- Strict canonicality is canonicality. -/
+theorem vtyS_vty {Δ : DEnv} : ∀ {v : Val} {t : Ty}, VTyS Δ v t → VTy Δ v t := by
+  intro v t h
+  induction h with
+  | vec hfl hn hlen _ ih => exact VTy.vec hfl hn hlen ih
+  | integer hfl => exact VTy.integer hfl
+  | finite hfl hn hlt => exact VTy.finite hfl hn hlt
+  | proxy hfl hh => exact VTy.proxy hfl hh
+  | con hsig hmatch hlen hctor _ ih => exact VTy.con (Ty.eq_refl _) hsig hmatch hlen hctor ih
+
 open Rwv.Eidos.Decode in
-/-- THE inverse round-trip lemma: on the canonical domain, decoding a
-value's representation gives the value back, at the same fuel. -/
+/-- THE inverse round-trip lemma: on the strictly canonical domain
+(constructor values spelled at their judged types, as `decode` spells
+them), decoding a value's representation gives the value back, at the
+same fuel. -/
 theorem rep_decode {Δ : DEnv} (hΔ : denvOk Δ = true) (habs : absHeadsOk Δ = true) :
-    ∀ {v : Val} {t : Ty}, VTy Δ v t →
+    ∀ {v : Val} {t : Ty}, VTyS Δ v t →
       ∀ {fuel : Nat} {bv : BV}, Val.RepCanon v →
         repOkB Δ fuel t = true →
         Val.rep Δ fuel v = .ok bv →
@@ -2802,7 +2849,7 @@ theorem rep_decode {Δ : DEnv} (hΔ : denvOk Δ = true) (habs : absHeadsOk Δ = 
           have hbw : ∀ i (hi : i < bs.length), bs[i].width = we := by
             intro i hi
             obtain ⟨_, hrepi⟩ := hbpt i (by omega)
-            exact vty_rep_width (helems _ (List.getElem_mem _)) hrepi hwe
+            exact vty_rep_width hΔ (vtyS_vty (helems _ (List.getElem_mem _))) hrepi hwe
           rw [decode_vec_red hfl, hkk2]
           dsimp only
           rw [hwe, except_bind_ok]
@@ -2932,7 +2979,7 @@ theorem rep_decode {Δ : DEnv} (hΔ : denvOk Δ = true) (habs : absHeadsOk Δ = 
           have hwlen2 : ws.length = fields.length := by
             rw [hwlen, List.length_map, hlen]
           have hfvty : ∀ i (hi : i < fields.length),
-              VTy Δ (fields[i]'hi)
+              VTyS Δ (fields[i]'hi)
                 (DEnv.substTv sub ((Ty.flattenArrow sig.ty).1[i]'(by omega))) := by
             intro i hi
             have hmem : (((Ty.flattenArrow sig.ty).1[i]'(by omega)), fields[i]'hi)
@@ -2950,7 +2997,7 @@ theorem rep_decode {Δ : DEnv} (hΔ : denvOk Δ = true) (habs : absHeadsOk Δ = 
             rw [show ((Ty.flattenArrow sig.ty).1.map (DEnv.substTv sub))[i]'(by omega)
                   = DEnv.substTv sub ((Ty.flattenArrow sig.ty).1[i]'(by omega))
                 from List.getElem_map _] at hszi
-            exact vty_rep_width (hfvty i (by omega)) hrepi hszi
+            exact vty_rep_width hΔ (vtyS_vty (hfvty i (by omega))) hrepi hszi
           have hsum : (Val.bvConcat bs).width = ws.sum := by
             rw [bvConcat_eq, catAll_width]
             congr 1
@@ -4215,7 +4262,8 @@ tested constructor genuinely among its constructors) is a constructor
 application carrying the scrutinee type. -/
 private theorem vty_con_of_ctorOfB {Δ : DEnv} (hΔ : denvOk Δ = true) {v : Val} {t : Ty}
     {cn : String} (hv : VTy Δ v t) (hab : abstractHead t = false)
-    (hcb : ctorOfB Δ t cn = true) : ∃ cv fields, v = .con t cv fields := by
+    (hcb : ctorOfB Δ t cn = true) :
+    ∃ t' cv fields, Ty.eq t' t = true ∧ v = .con t' cv fields := by
   cases hv with
   | vec hfl _ _ _ =>
       exfalso
@@ -4240,9 +4288,9 @@ private theorem vty_con_of_ctorOfB {Δ : DEnv} (hΔ : denvOk Δ = true) {v : Val
       exfalso
       rw [abstractHead, hfl] at hab
       simp at hab
-  | con hsig hmatch hlen hctor hfields =>
-      rename_i c fields sig sub
-      exact ⟨c, fields, rfl⟩
+  | con hteq hsig hmatch hlen hctor hfields =>
+      rename_i t' c fields sig sub
+      exact ⟨t', c, fields, hteq, rfl⟩
 
 /-! ## The machine-step soundness statements -/
 
@@ -4472,7 +4520,7 @@ private theorem pcmds_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
               let (nf, ty) ← Rwv.Eidos.Cexp.cexpFull C.Δ C.edm C.cexpFuel Γ e
               match cells.find? (fun d => d.name == cname) with
               | some d =>
-                  if teq ty d.ty then
+                  if Ty.eq ty d.ty then
                     goCmds C N Γ
                       (cells.map fun d' => if d'.name == cname then { d' with nf } else d')
                       rest term
@@ -4501,8 +4549,7 @@ private theorem pcmds_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
               subst hb1; subst hb2
               obtain ⟨hvty, k, hrep⟩ := Rwv.Eidos.Cexp.cexpFull_sound hS.hden hS.hfor.choose_spec.choose_spec C.cexpFuel Γ e
                 nf₁ ty₁ ef env [] v hnt heval hE
-              have htyd : ty₁ = d.ty := Rwv.Eidos.Cexp.teq_eq hteq
-              subst htyd
+              have hvty := vty_tyEq hS.hden hvty hteq
               -- the updated symbolic cells still correspond
               refine hcmds Γ _ rest term rec env _ ef gf so hgo hE ⟨?_, ?_, ?_⟩ hrest
               · rw [show (cells.map fun d' =>
@@ -4553,7 +4600,7 @@ private theorem pcmds_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
                     injection h2 with h2 h3
                     rw [h2] at hsz
                     rw [← h3]
-                    exact vty_rep_width hvty hrep hsz
+                    exact vty_rep_width hS.hden hvty hrep hsz
                 · rw [if_neg (by simp only [Bool.not_eq_true] at hn0; simp [hn0])] at hupd
                   subst hupd
                   obtain ⟨v₀, k₀, hget, hvty₀, hrep₀, hw₀⟩ := hC.2.2 d₀ hd₀
@@ -4587,7 +4634,7 @@ private theorem palt1_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
     hgo hE hC hvty hrepE hszE hnone hcont bs t' hsel hrun
   obtain ⟨ks, hks⟩ := hrepE
   obtain ⟨kt, hkt⟩ := hszE
-  have hw : (dn.eval σ E).width = szT := vty_rep_width hvty hks hkt
+  have hw : (dn.eval σ E).width = szT := vty_rep_width hS.hden hvty hks hkt
   obtain ⟨con, abs, at'⟩ := alt
   cases con with
   | default => exact (goAlt1_default hgo).elim
@@ -4699,19 +4746,21 @@ private theorem palt1_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
       obtain ⟨bnf', hbnf', hgo4⟩ := except_bind_eq_ok hgo3
       clear hgo3
       -- the scrutinee is a constructor value at the scrutinee type
-      obtain ⟨cv, fields, hsv⟩ := vty_con_of_ctorOfB hS.hden hvty hab' hcb
+      obtain ⟨svty, cv, fields, _, hsv⟩ := vty_con_of_ctorOfB hS.hden hvty hab' hcb
       subst hsv
       cases hvty with
-      | con hsigv hmatchv hlenv hctorv hfieldsv =>
+      | con hteqv hsigv hmatchv hlenv hctorv hfieldsv =>
       rename_i sigv subv
       -- the representation, dissected
       obtain ⟨ks', whole, tagv, tagWv, bsR, hks1, hwhole, htagv, hbs, hguard, hbv⟩ :=
         rep_con_inv hks
-      have hwhsz : whole = szT := sizeOf_det hwhole hkt
+      have hwhsz : whole = szT :=
+        sizeOf_det (DEnv.sizeOf_eq₀ (denvOk_natOk hS.hden) hteqv hwhole) hkt
       rw [hwhsz] at hguard hbv
       -- the two constructors live in the same head datatype
       obtain ⟨tc, argsT, hflT, hdisj⟩ := ctorTag_inv htag
-      obtain ⟨tc', argsT', hflT', hdisj'⟩ := ctorTag_inv htagv
+      obtain ⟨tc', argsT', hflT', hdisj'⟩ :=
+        ctorTag_inv (DEnv.ctorTag_eq (denvOk_natOk hS.hden) hteqv htagv)
       rw [hflT] at hflT'
       have htcc : tc = tc' := by
         have := congrArg Prod.fst hflT'
@@ -4777,9 +4826,9 @@ private theorem palt1_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
         rw [hbv, bvConcat3, sliceBV_cat_high (Nat.le_of_eq hFw), hFw, Nat.sub_self]
         exact sliceBV_all _
       -- the concrete selection at a constructor scrutinee
-      rw [show selSpec C.Δ ef (.con dty cv fields) (.mk (.dataAlt cn) abs at' :: rest) after
+      rw [show selSpec C.Δ ef (.con svty cv fields) (.mk (.dataAlt cn) abs at' :: rest) after
             = (if cn = cv then .ok (abs, at')
-               else selSpec C.Δ ef (.con dty cv fields) rest after) from rfl] at hsel
+               else selSpec C.Δ ef (.con svty cv fields) rest after) from rfl] at hsel
       by_cases hcc : cn = cv
       · -- selected: bind the fields, run the branch
         rw [if_pos hcc] at hsel
@@ -4821,7 +4870,7 @@ private theorem palt1_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
                     rw [List.length_zip]; omega)
                 from List.getElem_zip.symm]
             exact List.getElem_mem _
-          exact vty_rep_width hfv hri hsi
+          exact vty_rep_width hS.hden hfv hri hsi
         have hsum : (Val.bvConcat bsR).width = szXs.sum := by
           rw [bvConcat_eq, catAll_width]
           congr 1
@@ -5206,7 +5255,6 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
               have hplen' : pas.length = blk.params.length := by
                 have := Rwv.Eidos.Cexp.teqAll_length hteqa
                 simpa using this
-              have htys := Rwv.Eidos.Cexp.teqAll_types hteqa
               have hE' := envC_foldl_zip blk.params pas vs envC_empty
                 (by omega) (by omega)
                 (fun i h1 h2 h3 => by
@@ -5258,11 +5306,11 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
       -- output facts
       obtain ⟨hovty0, ko, horep⟩ := Rwv.Eidos.Cexp.cexpFull_sound hS.hden hS.hfor.choose_spec.choose_spec C.cexpFuel Γ out
         onf oty ef env [] o hot ho hE
-      -- the pause-output check is teqN: transport the canonicality to
+      -- the pause-output check is `Ty.eq`: transport the canonicality to
       -- the process output type (widths re-derive from the target)
-      have hovty : VTy C.Δ o C.outTy := vty_teqN hovty0 hteqo
+      have hovty : VTy C.Δ o C.outTy := vty_tyEq hS.hden hovty0 hteqo
       obtain ⟨kout, hkout⟩ := hS.outsz
-      have hbw : (onf.eval σ E).width = C.lo.outW := vty_rep_width hovty horep hkout
+      have hbw : (onf.eval σ E).width = C.lo.outW := vty_rep_width hS.hden hovty horep hkout
       -- target facts
       have htgtmem : tgt ∈ C.lo.targets := List.mem_of_find?_eq_some hfind
       have htgtuq : tgt.uniq = l.uniq := by
@@ -5274,7 +5322,6 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
       -- argument facts
       obtain ⟨hplen, hppt⟩ := mapM_ok_idx hpas
       obtain ⟨hvlen, hvpt⟩ := mapM_ok_idx hvs
-      have hptys := Rwv.Eidos.Cexp.teqAll_types hteqa
       have hplen' : pas.length = tgt.argTys.length := by
         have := Rwv.Eidos.Cexp.teqAll_length hteqa
         simpa using this
@@ -5289,20 +5336,16 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
             rw [show ((pas[i]'(by omega)).1, (pas[i]'(by omega)).2)
                   = pas[i]'(by omega) from rfl]
             exact hpi) hvi hE
-      have hatys : ∀ i (hi : i < pas.length), (pas[i]'hi).2 = tgt.argTys[i]'(by omega) := by
-        intro i hi
-        have h1 : (pas.map (·.2))[i]? = tgt.argTys[i]? := by rw [hptys]
-        rw [List.getElem?_eq_getElem (by rw [List.length_map]; omega),
-            List.getElem?_eq_getElem (by omega), List.getElem_map] at h1
-        exact Option.some.inj h1
+      have hatys : ∀ i (hi : i < pas.length),
+          Ty.eq (pas[i]'hi).2 (tgt.argTys[i]'(by omega)) = true := fun i hi =>
+        Rwv.Eidos.Cexp.teqAll_get hteqa i hi (by omega)
       -- per-argument sizes and rep widths
       have hrepw : ∀ i (hi : i < pas.length),
           ((pas[i]'hi).1.eval σ E).width = tgt.argWs[i]'(by omega) := by
         intro i hi
         obtain ⟨_, hszi⟩ := hApt i (by omega)
         obtain ⟨hvt, k, hrp⟩ := hargpt i (by omega)
-        rw [hatys i hi] at hvt
-        exact vty_rep_width hvt hrp hszi
+        exact vty_rep_width hS.hden (vty_tyEq hS.hden hvt (hatys i hi)) hrp hszi
       -- the record's piece widths
       have hcw : ∀ d ∈ cells, (d.nf.eval σ E).width = d.width := by
         intro d hd
@@ -5386,8 +5429,7 @@ private theorem pterm_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
         rw [← hpri]
         show VTy C.Δ (vs[i]'(by omega)) (tgt.argTys[i]'(by omega))
         obtain ⟨hvt, _⟩ := hargpt i (by omega)
-        rw [hatys i (by omega)] at hvt
-        exact hvt
+        exact vty_tyEq hS.hden hvt (hatys i (by omega))
       · obtain ⟨K, hK⟩ := mapM_rep_exists (Δ := C.Δ) (vs := vs)
           (bs := pas.map (fun p => p.1.eval σ E)) (by rw [List.length_map]; omega)
           (fun i h1 h2 => by
@@ -5711,7 +5753,7 @@ theorem goCmds_varsWF {C : Ctx} {P : String → Nat → Prop} :
                     let (nf, ty) ← Rwv.Eidos.Cexp.cexpFull C.Δ C.edm C.cexpFuel Γ e
                     match cells.find? (fun d => d.name == c) with
                     | some d =>
-                        if teq ty d.ty then
+                        if Ty.eq ty d.ty then
                           goCmds C N Γ
                             (cells.map fun d' =>
                               if d'.name == c then { d' with nf } else d')
@@ -5819,7 +5861,7 @@ theorem goCmds_varsWF {C : Ctx} {P : String → Nat → Prop} :
             obtain ⟨at0, hat, h⟩ := except_bind_eq_ok h
             obtain ⟨anf, aty⟩ := at0
             dsimp only at h
-            cases hfd : C.lo.halts.find? (fun h => h.1 == aty) with
+            cases hfd : C.lo.halts.find? (fun h => Ty.eq h.1 aty) with
             | none =>
                 rw [hfd] at h
                 exact error_ne_ok h
@@ -7853,7 +7895,7 @@ private theorem goD_sim (C : Ctx) :
                     dsimp only
                     rw [hfindS]
                     dsimp only
-                    rw [if_pos (show teq t0 ccS.ty = true from by rw [← hty]; exact hteq)]
+                    rw [if_pos (show Ty.eq t0 ccS.ty = true from by rw [← hty]; exact hteq)]
                     exact S₂
       · -- goTermD
         intro Γ cellsD term d d' r ΓS cellsS hwf hG hCells hc
@@ -7939,7 +7981,7 @@ private theorem goD_sim (C : Ctx) :
             obtain ⟨d₁, anf, aty⟩ := dat
             dsimp only at hc
             obtain ⟨W₁, E₁, L₁, S₁⟩ := cexpFullD_sim hwf hG he
-            cases hh : C.lo.halts.find? (fun h => h.1 == aty) with
+            cases hh : C.lo.halts.find? (fun h => Ty.eq h.1 aty) with
             | none =>
                 rw [hh] at hc
                 dsimp only at hc
@@ -9150,7 +9192,7 @@ def etaB (Δ : DEnv) (K : Nat) (Ξ : EtaSig) (η : EtaAlg) : Rwv.Hyle.Sem.EEnv :
 the device side's `Sem.xapply` width clamp is inert on `etaB`
 environments (the non-vacuity half of the η story; the agreement half
 needs no `WFEta` at all). -/
-theorem etaB_width {Δ : DEnv} {K : Nat} {Ξ : EtaSig} {η : EtaAlg}
+theorem etaB_width {Δ : DEnv} (hΔ : denvOk Δ = true) {K : Nat} {Ξ : EtaSig} {η : EtaAlg}
     (hη : WFEta Δ Ξ η) {s : String} {doms : List Ty} {res : Ty}
     {g : List Val → Except String Val} {f : BV → Except String BV} {gs : List Nat}
     (hΞ : Ξ s gs = some (doms, res)) (hg : η s gs = some g)
@@ -9161,7 +9203,7 @@ theorem etaB_width {Δ : DEnv} {K : Nat} {Ξ : EtaSig} {η : EtaAlg}
   subst hf
   obtain ⟨vs, hvs, hr⟩ := except_bind_eq_ok hr
   obtain ⟨v, hv, hr⟩ := except_bind_eq_ok hr
-  exact vty_rep_width (hη s gs doms res g hΞ hg vs v hv) hr hsz
+  exact vty_rep_width hΔ (hη s gs doms res g hΞ hg vs v hv) hr hsz
 
 /-- THE ∀η headline: a passing `validateProc` run certifies the
 correspondence at EVERY algebraic extern interpretation — the ∀E

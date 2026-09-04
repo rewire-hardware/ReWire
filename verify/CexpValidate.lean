@@ -151,12 +151,14 @@ def etaSaturateDefns (p : Program) : Program :=
 
 /-! ## Nat-normalization (a driver pre-pass)
 
-The verified compiler compares types syntactically (`teq`), while
-pass-8 dumps carry unevaluated type arithmetic (`Vec (+ 9 1) Bool`).
-Fold every nat-closed subterm to its literal, program-wide — the
-semantic functions (`flatten`/`evalNat`/`matchTy`/`sizeOf`) are
-insensitive to this, so it is measurement plumbing of the same status
-as eta-saturation. -/
+Pass-8 dumps carry unevaluated type arithmetic (`Vec (+ 9 1) Bool`).
+The verified compiler compares types modulo `natNorm` (`Ty.eq`), so
+this pass is no longer needed for acceptance; it is kept so the
+measurement reports the same normal forms as before. Fold every
+nat-closed subterm to its literal, program-wide — the semantic
+functions (`flatten`/`evalNat`/`matchTy`/`sizeOf`) are insensitive to
+this, so it is measurement plumbing of the same status as
+eta-saturation. -/
 
 namespace NatNorm
 

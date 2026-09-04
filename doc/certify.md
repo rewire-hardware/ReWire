@@ -125,6 +125,26 @@ its error cases. The one checked construct the semantics nevertheless
 rejects — device instances — is refused a verdict (UNSUPPORTED) by an
 explicit bundle gate.
 
+**Types are compared modulo nat arithmetic.** Every type comparison
+the validator makes — a `put` payload against its cell, `goto`/`pause`
+arguments against block parameters, the pause output and the resumed
+input against the process types, case-alternative results,
+constructor fields, definition-call arguments, the vector rows'
+element types, and the halt-answer table's keys — is `Ty.eq`:
+structural equality after `natNorm`, the equality the compiler's own
+lint uses (doc/eidos.md §3.1). A generic definition's spelling of a
+width (`Vec (+ 7 1) Bool`, from `W (n+1)` instantiated at 7) and its
+call site's (`Vec 8 Bool`) are therefore the same type under every
+head, datatype and tuple heads included, and the halt-answer tags are
+keyed by the normalized type on both sides (rwc's `mkLayout` and the
+validator's). The soundness proofs transport value canonicality
+across this equality (`Rwv.Eidos.Cexp.vty_tyEq`), which rests on two
+facts about the datatype environment that the validator decides up
+front (`DEnv.natOk`, folded into `denvOk`): no datatype is named after
+a type-level arithmetic operator, and every constructor's result type
+is its datatype applied to type variables — the rule the checker
+enforces on data declarations.
+
 One boundary caveat qualifies the theorem:
 
 - **The certified source artifact is the eta-saturated program.** The

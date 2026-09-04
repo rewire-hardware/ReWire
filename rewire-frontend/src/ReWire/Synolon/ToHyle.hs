@@ -30,7 +30,7 @@ import ReWire.Eidos.Pretty ()
 import ReWire.Synolon.Syntax
 import ReWire.Eidos.Naming (liftedJoinName, labelBase, defnBase, originTag)
 import ReWire.Eidos.Subst (nextUniq, freeUniqs, occIds)
-import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, flattenTyApp, evalNat, higherOrder, fundamental, reacOrStateT)
+import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, flattenTyApp, evalNat, natNorm, higherOrder, fundamental, reacOrStateT)
 import ReWire.Hyle.Interp (evalExp, IEnv (..))
 import ReWire.Hyle.Mangle (pickFresh, seedNames)
 import ReWire.Hyle.Parse (parseHyleDefns)
@@ -1101,7 +1101,7 @@ data Layout = Layout
       , loRPayW   :: !A.Size                      -- ^ Max summed pause-argument width.
       , loCells   :: ![(Text, A.Size)]            -- ^ Cell names and widths, in declaration order.
       , loTargets :: ![(Uniq, Integer, [A.Size])] -- ^ Pause targets: unique, tag value, argument widths.
-      , loHalts   :: !(HashMap Text (Integer, A.Size)) -- ^ Halt answer types (by rendered key): tag value and width.
+      , loHalts   :: !(HashMap Text (Integer, A.Size)) -- ^ Halt answer types (by 'haltKey'): tag value and width.
       , loATagW   :: !A.Size
       , loAPayW   :: !A.Size
       }
@@ -1111,6 +1111,14 @@ loRW l     = loRTagW l + loRPayW l
 loCellsW l = sum $ map snd $ loCells l
 loAW l     = loATagW l + loAPayW l
 
+-- | The key of a halt answer type in the layout's halt table: the type
+--   rendered after nat normalization, so that two spellings of one type
+--   (@Vec (+ 7 1) Bool@ and @Vec 8 Bool@, from a generic definition and
+--   its call site) share one answer tag — the equality the lint and the
+--   certify validator use.
+haltKey :: Ty -> Text
+haltKey = prettyPrint . Ann.unAnn . natNorm
+
 mkLayout :: MonadError AstError m => Env -> Proc -> TM m Layout
 mkLayout env pr = do
       outW  <- sizeOf env "proc output" (procAnnote pr) $ procOutTy pr
@@ -1119,7 +1127,7 @@ mkLayout env pr = do
                   szs <- mapM (sizeOf env "pause target param" (blkAnnote b) . sigTy . idSig) $ initSafe $ blkParams b
                   pure (idUniq l, toInteger i, szs))
             $ zip [0 :: Int ..] [ (l, b) | (l, b) <- procBlocks pr, idUniq l `Set.member` pauseTargets ]
-      haltSzs <- mapM (\ t -> (prettyPrint (Ann.unAnn t), ) <$> sizeOf env "halt answer" (procAnnote pr) t) haltTys
+      haltSzs <- mapM (\ t -> (haltKey t, ) <$> sizeOf env "halt answer" (procAnnote pr) t) haltTys
       let haltList = nubOrd haltSzs
           rTagW  = fromIntegral $ nbits $ genericLength targets
           rPayW  = maximum $ 0 : [ sum szs | (_, _, szs) <- targets ]
@@ -1179,7 +1187,7 @@ buildPause lo an o tgt args cells = do
 buildHalt :: MonadError AstError m => Layout -> Annote -> Ty -> A.Exp -> [A.Exp] -> TM m A.Exp
 buildHalt lo an aty a cells = do
       (tagv, _) <- maybe (failInternal an "halt at an unknown answer type (rwc bug).") pure
-            $ Map.lookup (prettyPrint $ Ann.unAnn aty) $ loHalts lo
+            $ Map.lookup (haltKey aty) $ loHalts lo
       let padW  = fromIntegral (loRecW lo) - fromIntegral (loPTagW lo) - fromIntegral (loAW lo) - fromIntegral (loCellsW lo) :: Integer
           aPadW = fromIntegral (loAPayW lo) - fromIntegral (A.sizeOf a) :: Integer
       pure $ A.cat $ [ A.Lit an $ bitVec (fromIntegral $ loPTagW lo) (0 :: Integer) | loPTagW lo > 0 ]
