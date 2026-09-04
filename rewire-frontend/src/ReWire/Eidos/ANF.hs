@@ -41,11 +41,11 @@ import Control.Monad.State.Strict (StateT, evalStateT, get, put)
 --   shape, so naming every intermediate of the large,
 --   partially-evaluated pure bodies would cost compile time for nothing.
 normalize :: forall m. MonadError AstError m => Program -> m Program
-normalize p@(Program datas defns procs top) = evalStateT go $ nextUniq p
+normalize p@(Program datas defns top) = evalStateT go $ nextUniq p
       where go :: StateT Uniq m Program
             go = do
                   defns' <- mapM (\ d -> if reactiveDefn d then normDefn d else pure d) defns
-                  pure $ Program datas defns' procs top
+                  pure $ Program datas defns' top
 
             reactiveDefn :: Defn -> Bool
             reactiveDefn d = reacOrStateT $ sigTy $ idSig $ defnId d

@@ -59,6 +59,12 @@ data-files:
 - tests/integration/cry/*.cry
 - tests/eidos/*.eir
 - tests/eidos/negative/*.eir
+- tests/eidos/MANIFEST
+- tests/eidos/negative/MANIFEST
+- tests/synolon/*.syn
+- tests/synolon/negative/*.syn
+- tests/synolon/MANIFEST
+- tests/synolon/negative/MANIFEST
 - rewire-user/src/*.hs
 - rewire-user/src/RWC/*.hs
 - rewire-user/src/ReWire/*.hs

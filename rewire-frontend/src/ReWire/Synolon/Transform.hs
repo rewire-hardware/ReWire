@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | Process-level cleanups of the block graph, between procify and the
---   machine-mode lint:
+--   machine lint:
 --
 --   * /Epsilon-block inlining/: a block with no commands whose terminator
 --     is a single goto is glue; references to it re-target its successor
@@ -25,12 +25,12 @@
 --     orphans the blocks compiled for it. Orphaned pause targets would
 --     otherwise mint machine states (and dispatch entries) and mask the
 --     never-pauses lint, so blocks unreachable from the entry are removed.
-module ReWire.Eidos.ProcOpt (optimizeProc, machineSummary) where
+module ReWire.Synolon.Transform (optimizeProc, machineSummary) where
 
-import ReWire.Eidos.Pretty ()
 import ReWire.Eidos.Subst (substVars)
-import ReWire.Eidos.Syntax
 import ReWire.Pretty (prettyPrint)
+import ReWire.Synolon.Pretty ()
+import ReWire.Synolon.Syntax
 
 import Control.Monad.State.Strict (State, evalState, get, put)
 import Data.Maybe (fromMaybe)

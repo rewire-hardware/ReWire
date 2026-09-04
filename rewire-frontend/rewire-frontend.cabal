@@ -41,13 +41,11 @@ library
       ReWire.Eidos.Parse
       ReWire.Eidos.Pretty
       ReWire.Eidos.PrimBasis
-      ReWire.Eidos.Procify
-      ReWire.Eidos.ProcOpt
       ReWire.Eidos.Simplify
       ReWire.Eidos.Spec
       ReWire.Eidos.Subst
       ReWire.Eidos.Syntax
-      ReWire.Eidos.ToHyle
+      ReWire.Eidos.ToSynolon
       ReWire.Eidos.Types
       ReWire.FrontEnd
       ReWire.GHC.PackagePath
@@ -56,6 +54,12 @@ library
       ReWire.GHC.ToEidos
       ReWire.ModCache
       ReWire.Pass
+      ReWire.Synolon.Lint
+      ReWire.Synolon.Parse
+      ReWire.Synolon.Pretty
+      ReWire.Synolon.Syntax
+      ReWire.Synolon.ToHyle
+      ReWire.Synolon.Transform
   other-modules:
       Paths_rewire_frontend
   hs-source-dirs:

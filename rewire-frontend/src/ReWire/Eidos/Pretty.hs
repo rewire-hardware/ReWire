@@ -24,8 +24,9 @@
 --   line — the @defn@ production's newline between the signature line and
 --   the equation line is what terminates the signature's type.
 --
---   M-level 'proc' declarations print via 'ppProc' (§7.1, §9), after the
---   program's datatypes and definitions.
+--   The machine level's process declarations print through
+--   'ReWire.Synolon.Pretty', which reuses these printers for the
+--   expressions, definitions, and datatypes a Synolon program embeds.
 module ReWire.Eidos.Pretty
       ( prettyProgram
       , ppProgram, ppDataDefn, ppDefn
@@ -38,7 +39,7 @@ module ReWire.Eidos.Pretty
 import ReWire.Builtins (builtinName)
 import ReWire.Eidos.Lexer (reservedWords, isIdentStart, isIdentChar)
 import ReWire.Eidos.Syntax
-import ReWire.Pretty (Doc, Pretty (pretty), text, int, vsep, hsep, nest, align, parens, brackets, dquotes, punctuate, comma, semi, space, (<+>), prettyPrint')
+import ReWire.Pretty (Doc, Pretty (pretty), text, int, vsep, hsep, nest, align, parens, brackets, dquotes, punctuate, comma, semi, (<+>), prettyPrint')
 
 import Data.List (intersperse)
 import Data.Text (Text)
@@ -272,87 +273,12 @@ ppDataDefn (DataDefn _ n k cs) = vsep
 ppDataCon :: DataCon -> Doc an
 ppDataCon (DataCon _ c sig) = ppOcc' c <+> text "::" <+> ppSig sig
 
----
---- Processes (the M level, doc/eidos.md §7.1, §9).
----
-
--- | @proc P : ty ~> ty clock? { state* entry block* }@.
-ppProc :: Proc -> Doc an
-ppProc (Proc _ n it ot clk cells entry blocks) = vsep
-      [ nest 6 $ vsep $ (text "proc" <+> ppOcc' n <+> text ":" <+> ppTy it <+> text "~>" <+> ppTy ot <> maybe mempty ppClock clk <+> text "{")
-                      : map ppCell cells
-                      <> [ppEntry entry]
-                      <> map (uncurry ppBlock) blocks
-      , text "}"
-      ]
-      where ppClock :: Text -> Doc an
-            ppClock c = space <> text "@" <+> text "clock" <+> ppOcc' c
-
-ppCell :: Cell -> Doc an
-ppCell (Cell _ s t e0) = text "state" <+> ppOcc' s <+> text ":" <+> ppTy t
-      <+> text ":=" <+> maybe (text "undef") ppExp e0 <> semi
-
-ppEntry :: Block -> Doc an
-ppEntry b = vsep [ nest 6 $ vsep $ text "entry {" : ppBlockBody b, text "}" ]
-
-ppBlock :: Id -> Block -> Doc an
-ppBlock l b = vsep
-      [ nest 6 $ vsep $ (text "block" <+> ppId l <+> parens (hsep $ punctuate comma $ map ppBinder $ blkParams b) <+> text "{")
-                      : ppBlockBody b
-      , text "}"
-      ]
-
-ppBlockBody :: Block -> [Doc an]
-ppBlockBody b = map ppCmd (blkCmds b) <> [ppTerm $ blkTerm b]
-
-ppCmd :: Cmd -> Doc an
-ppCmd = \ case
-      CmdBind _ x e -> ppId x <+> text "::" <+> ppTy (sigTy $ idSig x) <+> text "<-" <+> align (ppExp e) <> semi
-      CmdGet _ x s  -> ppId x <+> text "::" <+> ppTy (sigTy $ idSig x) <+> text "<-" <+> text "get" <+> ppOcc' s <> semi
-      CmdPut _ s a  -> text "put" <+> ppOcc' s <+> ppAtomE a <> semi
-
-ppTerm :: Term -> Doc an
-ppTerm = \ case
-      Pause _ a l args -> text "pause" <+> ppAtomE a <+> text "->" <+> ppId l
-            <+> parens (hsep $ punctuate comma $ map ppAtomE args)
-      Goto _ l args    -> text "goto" <+> ppId l
-            <+> parens (hsep $ punctuate comma $ map ppAtomE args)
-      Halt _ a         -> text "halt" <+> ppAtomE a
-      TCase _ a alts   -> vsep
-            [ nest 6 $ vsep $ (text "case" <+> ppAtomE a <+> text "of" <+> text "{")
-                            : punctuate semi (map ppTAlt alts)
-            , text "}"
-            ]
-
-ppTAlt :: TAlt -> Doc an
-ppTAlt (TAlt _ c xs t) = case c of
-      DefaultAlt -> text "_" <+> text "->" <+> align (ppTerm t)
-      DataAlt d  -> hsep (ppOcc' d : map ppBinder xs) <+> text "->" <+> align (ppTerm t)
-      LitAlt n   -> pretty n <+> text "->" <+> align (ppTerm t)
-
--- | An expression in an atom position of the machine grammar: the
---   already-atom-shaped forms (variables, literals, constructor and
---   primitive occurrences, which self-parenthesize) print as themselves;
---   anything else parenthesizes (the parser's atom production admits a
---   parenthesized expression).
-ppAtomE :: Exp -> Doc an
-ppAtomE e = case e of
-      Var {}     -> ppExp e
-      LitStr {}  -> ppExp e
-      LitInt {}  -> ppExp e
-      LitList {} -> ppExp e
-      LitVec {}  -> ppExp e
-      Con {}     -> ppExp e
-      Prim {}    -> ppExp e
-      _          -> parens $ ppExp e
-
--- | A whole program: datatypes, definitions, processes, and the @top@
---   designation, separated by blank lines.
+-- | A whole program: datatypes, definitions, and the @top@ designation,
+--   separated by blank lines.
 ppProgram :: Program -> Doc an
-ppProgram (Program datas defns procs top) = vsep $ intersperse (text "") $
+ppProgram (Program datas defns top) = vsep $ intersperse (text "") $
       map ppDataDefn datas
       <> map ppDefn defns
-      <> map ppProc procs
       <> [ text "top" <+> ppId top ]
 
 ---
@@ -395,9 +321,6 @@ instance Pretty DataCon where
 
 instance Pretty DataDefn where
       pretty = ppDataDefn
-
-instance Pretty Block where
-      pretty b = vsep $ parens (hsep $ punctuate comma $ map ppBinder $ blkParams b) : ppBlockBody b
 
 instance Pretty Program where
       pretty = ppProgram

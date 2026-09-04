@@ -3,7 +3,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Trustworthy #-} -- Trustworthy, not Safe: invokes rwcry (the Cryptol translator).
--- | The Eidos-to-Hyle producer (the direct fold; doc/eidos.md §7.3): the
+-- | The Synolon-to-Hyle producer (the direct fold; doc/eidos.md §7.3): the
 --   pure fragment translates per-construct (n-ary cases compile to
 --   if-chains over constructor tags; joins are lifted to definitions
 --   first), and each process folds to an explicit device: one definition
@@ -19,7 +19,7 @@
 --   of the retired @R_@ datatype (tag at the field's MSB, arguments
 --   LSB-aligned), and a halt step carries the retired @A_@ encoding (one
 --   tag per distinct answer type) in place of @out | label@.
-module ReWire.Eidos.ToHyle (eidosToHyle) where
+module ReWire.Synolon.ToHyle (synolonToHyle) where
 
 import ReWire.Annotation (Annote, noAnn, Annotated (ann), Provenance (..), Span (..), annProv)
 import ReWire.BitVector (BV, bitVec, zeros, nbits)
@@ -27,7 +27,7 @@ import ReWire.Builtins (Builtin (..))
 import ReWire.Config (Config, inputSigs, outputSigs, stateSigs, top, loadPath, stableNames)
 import ReWire.Error (failAt, failAtWith, failInternal, warnAt, AstError, MonadError, Warning (..), relocatingTo)
 import ReWire.Eidos.Pretty ()
-import ReWire.Eidos.Syntax
+import ReWire.Synolon.Syntax
 import ReWire.Eidos.Naming (liftedJoinName, labelBase, defnBase, originTag)
 import ReWire.Eidos.Subst (nextUniq, freeUniqs, occIds)
 import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, flattenTyApp, evalNat, substTv, higherOrder, fundamental, reacOrStateT)
@@ -236,8 +236,8 @@ liftJoins p@(Program datas defns procs top) = Program datas defns' procs top
 --- Entry point.
 ---
 
-eidosToHyle :: (MonadIO m, MonadError AstError m) => Config -> Program -> m A.Program
-eidosToHyle conf p0 = do
+synolonToHyle :: (MonadIO m, MonadError AstError m) => Config -> Program -> m A.Program
+synolonToHyle conf p0 = do
       let p1@(Program datas defns procs _top) = liftJoins p0
       pr <- case procs of
             [pr] -> pure pr

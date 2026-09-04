@@ -37,19 +37,21 @@
 --   parameters, with every pause/goto site supplying them (this is the
 --   machine record's @args@ field).
 --
---   This stage constructs the process; the block graph is then cleaned
---   by 'ReWire.Eidos.ProcOpt', checked by the machine-mode lint, and
---   lowered by the Eidos-to-Hyle fold ('ReWire.Eidos.ToHyle').
-module ReWire.Eidos.Procify (procify) where
+--   This stage constructs the process — the Eidos-to-Synolon boundary; the
+--   block graph is then cleaned by 'ReWire.Synolon.Transform', checked by
+--   the machine lint ('ReWire.Synolon.Lint'), and lowered by the
+--   Synolon-to-Hyle fold ('ReWire.Synolon.ToHyle').
+module ReWire.Eidos.ToSynolon (procify) where
 
 import ReWire.Annotation (Annote, ann, noAnn)
 import ReWire.Builtins (Builtin (..))
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Eidos.Naming (blockLabel)
+import ReWire.Eidos.Pretty ()
 import ReWire.Eidos.Subst (nextUniq, freeUniqs, occIds)
-import ReWire.Eidos.Syntax
 import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, flattenTyApp, reacOrStateT)
-import ReWire.Pretty (showt)
+import ReWire.Pretty (showt, prettyPrint)
+import ReWire.Synolon.Syntax
 
 import Control.Monad (when)
 import Control.Monad.State.Strict (StateT, evalStateT, gets, modify)
@@ -59,18 +61,22 @@ import Data.Text (Text)
 import qualified Data.HashMap.Strict as Map
 import qualified Data.IntMap.Strict  as IM
 import qualified Data.IntSet         as IS
+import qualified ReWire.Eidos.Syntax as E (Program (..))
 
--- | Add the process compiled from the program's reactive root; the
---   definitions are left in place (the P-level fall-through). A program
---   whose root is not reactive is returned unchanged.
-procify :: forall m. MonadError AstError m => Program -> m Program
-procify p@(Program datas defns procs top)
+-- | The Synolon program of an Eidos program: the process compiled from
+--   the reactive root, over the program's datatypes and definitions (all
+--   of which ride along). The root must be a nullary @ReacT@ computation
+--   (the mono lint's device rule).
+procify :: forall m. MonadError AstError m => E.Program -> m Program
+procify p@(E.Program datas defns top)
       | (TyCon _ "ReacT", [ti, to, _, _]) <- flattenTyApp $ sigTy $ idSig top
       , [] <- fst (flattenArrow $ sigTy $ idSig top) = do
             let cells = stackCells $ maxStack [ typeOf $ defnBody d | d <- reactives ]
             pr <- evalStateT (compileRoot ti to cells) $ PSt (nextUniq p) [] mempty mempty mempty
-            pure $ Program datas defns (procs <> [pr]) top
-      | otherwise = pure p
+            pure $ Program datas defns [pr] top
+      | otherwise = failAt (ann $ sigTy $ idSig top)
+            $ "the device root " <> idOcc top <> " is not a reactive computation (its type is "
+            <> prettyPrint (sigTy $ idSig top) <> "; a device root has type ReacT i o Identity a)."
       where dmap :: IM.IntMap Defn
             dmap = IM.fromList [ (idUniq $ defnId d, d) | d <- defns ]
 

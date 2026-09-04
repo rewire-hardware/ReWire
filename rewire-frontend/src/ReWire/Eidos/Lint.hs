@@ -7,8 +7,10 @@
 --   (synthesis-plus-comparison) type checking, the join point discipline,
 --   and the definition and program rules — all with located diagnostics.
 --
---   The linter runs in one of four cumulative modes ('LintMode'),
---   corresponding to the pipeline's invariant stages (§4.1):
+--   The linter runs in one of three cumulative modes ('LintMode'),
+--   corresponding to the pipeline's invariant stages (§4.1); the machine
+--   level's rules are 'ReWire.Synolon.Lint''s, built on the expression
+--   checker exported here:
 --
 --   * 'LintPoly' (post-bridge): the rules of §4.2–§4.4.
 --   * 'LintMono' (post-specialization): additionally, every definition
@@ -26,13 +28,6 @@
 --     reactive fragment — procify's input skeleton — is exempt from
 --     naming, and pure definition bodies are exempt entirely — the fold
 --     lowers them in any shape).
---   * 'LintMachine' (post-procification): additionally, the per-process
---     machine rules of §7.4 — signal-guardedness (the goto-only subgraph
---     of the block graph is acyclic), cell-initial constness and typing,
---     full-arity pauses and gotos, the resumed-input parameter rule, and
---     "the process pauses" — and the reactive types are out of the
---     grammar entirely. The @top@ device-type rule is suspended when
---     processes are present (the process is the machine).
 --
 --   There is no inference and no unification anywhere: every binder carries
 --   its type, so every expression synthesizes, and checking an expression
@@ -56,7 +51,7 @@
 --   nat-closed on both sides after substitution. Shape and everything
 --   matching binds directly are always checked.
 module ReWire.Eidos.Lint
-      ( LintMode (..), lint, lintDefn, lintProc
+      ( LintMode (..), lint, lintDefn
         -- * The expression-level checker, for reuse by other checkers
       , Env (..), envFromDecls, bindVar, nonTail
       , checkExp, checkAgainst, checkTy, checkValueBinder, checkOccSig, checkDistinct
@@ -75,7 +70,7 @@ import ReWire.Eidos.Syntax
 import ReWire.Eidos.Types (natNorm, tyEq, hasArrow, evalNat, instantiate, substTv, flattenApp, flattenArrow, flattenTyApp, reacOrStateT, typeOf)
 import ReWire.Pretty (prettyPrint, showt)
 
-import Control.Monad (foldM, foldM_, unless, void, when, zipWithM_)
+import Control.Monad (foldM, foldM_, unless, when, zipWithM_)
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
@@ -88,7 +83,7 @@ import qualified Data.HashSet        as Set
 -- | The linter's mode: which stage of the pipeline's cumulative static
 --   discipline to enforce (doc/eidos.md §4.1). Modes are ordered by
 --   strength.
-data LintMode = LintPoly | LintMono | LintMonoANF | LintMachine
+data LintMode = LintPoly | LintMono | LintMonoANF
       deriving (Eq, Ord, Show)
 
 -- | Check a whole program in the given mode; succeeds exactly when every
@@ -102,13 +97,6 @@ lint mode p = checkProgram (mkEnv mode p) p
 lintDefn :: MonadError AstError m => LintMode -> Program -> Defn -> m ()
 lintDefn mode p d = checkDefn (mkEnv mode p) d
 
--- | Check a single process (the §7.4 machine rules) against a program's
---   global context — usable while the program's definitions still carry
---   the reactive fragment the process was compiled from (the whole-program
---   machine mode would reject those).
-lintProc :: MonadError AstError m => Program -> Proc -> m ()
-lintProc p = checkProc (mkEnv LintMachine p)
-
 ---
 --- Environments.
 ---
@@ -118,7 +106,8 @@ lintProc p = checkProc (mkEnv LintMachine p)
 data JoinDef = JoinDef !JoinId ![Ty] !Ty
 
 data Env = Env
-      { envMode  :: LintMode
+      { envMode        :: LintMode
+      , envBanReactive :: Bool                       -- the reactive types are out of the type grammar (the machine level)
       , envCons  :: HashMap DataConId (TyConId, Sig) -- data constructors, by name
       , envScope :: HashMap Uniq Id                  -- term binders in scope
       , envTVs   :: HashMap Uniq TyVar               -- signature type variables in scope
@@ -127,13 +116,14 @@ data Env = Env
       }
 
 mkEnv :: LintMode -> Program -> Env
-mkEnv mode (Program datas defns _ _) = envFromDecls mode datas defns
+mkEnv mode (Program datas defns _) = envFromDecls mode datas defns
 
 -- | The checking environment over a datatype and definition table: the
 --   whole-program scope every rule starts from.
 envFromDecls :: LintMode -> [DataDefn] -> [Defn] -> Env
 envFromDecls mode datas defns = Env
       { envMode  = mode
+      , envBanReactive = False
       , envCons  = Map.fromList [ (c, (dataName d, sig)) | d <- datas, DataCon _ c sig <- dataCons d ]
       , envScope = Map.fromList [ (idUniq $ defnId d, defnId d) | d <- defns ]
       , envTVs   = mempty
@@ -165,29 +155,24 @@ nonTail env = env { envTail = mempty }
 ---
 
 checkProgram :: MonadError AstError m => Env -> Program -> m ()
-checkProgram env p@(Program datas defns procs top) = do
+checkProgram env p@(Program datas defns top) = do
       checkDistinct $ uniqSites p
       checkDistinct [ (dataName d, dataAnnote d, "datatype name " <> dataName d) | d <- datas ]
       checkDistinct [ (c, an, "data constructor name " <> c) | d <- datas, DataCon an c _ <- dataCons d ]
-      checkDistinct [ (procName pr, procAnnote pr, "process name " <> procName pr) | pr <- procs ]
       mapM_ (checkDataDefn env) datas
       mapM_ (checkDefn env) defns
-      mapM_ (checkProc env) procs
-      checkTop env defns (not $ null procs) top
+      checkTop env defns top
 
 -- | @top@ resolves to a definition, its occurrence signature matches the
 --   binder's, and (in mono mode) the definition has the device type
 --   @ReacT i o Identity a@ (doc/eidos.md §4.3; the result type is
---   unconstrained — a non-halting device never produces it). When
---   processes are present the device-type rule is suspended: the process
---   is the machine, and the machine-level device assembly (§7.3) owns the
---   root story.
-checkTop :: MonadError AstError m => Env -> [Defn] -> Bool -> Id -> m ()
-checkTop env defns hasProcs top = case [ d | d <- defns, idUniq (defnId d) == idUniq top ] of
+--   unconstrained — a non-halting device never produces it).
+checkTop :: MonadError AstError m => Env -> [Defn] -> Id -> m ()
+checkTop env defns top = case [ d | d <- defns, idUniq (defnId d) == idUniq top ] of
       []    -> failAt noAnn $ "top: designated device root " <> prettyPrint top <> " does not name a definition"
       d : _ -> do
             checkOccSig (defnAnnote d) top $ defnId d
-            when (envMode env >= LintMono && not hasProcs) $ checkDeviceTy (defnAnnote d) $ sigTy $ idSig $ defnId d
+            when (envMode env >= LintMono) $ checkDeviceTy (defnAnnote d) $ sigTy $ idSig $ defnId d
       where checkDeviceTy :: MonadError AstError m => Annote -> Ty -> m ()
             checkDeviceTy an t = case flattenTyApp $ natNorm t of
                   (TyCon _ "ReacT", [_, _, TyCon _ "Identity", _]) -> pure ()
@@ -212,36 +197,7 @@ checkDistinct = foldM_ ins mempty
 --   datatype parameters. Occurrences (which share their binder's unique)
 --   contribute nothing.
 uniqSites :: Program -> [(Uniq, Annote, Text)]
-uniqSites (Program datas defns procs _) = declSites datas defns <> concatMap procSites procs
-      where procSites :: Proc -> [(Uniq, Annote, Text)]
-            procSites (Proc _ _ _ _ _ cells entry blocks) =
-                  concatMap cellSites cells
-                        <> blockSites entry
-                        <> concatMap (\ (l, b) -> idSite (blkAnnote b) "block label" l : blockSites b) blocks
-                  where cellSites :: Cell -> [(Uniq, Annote, Text)]
-                        cellSites c = maybe [] expSites $ cellInit c
-
-                        blockSites :: Block -> [(Uniq, Annote, Text)]
-                        blockSites (Block an ps cmds term) =
-                              map (idSite an "block parameter") ps
-                                    <> concatMap cmdSites cmds
-                                    <> termSites term
-
-                        cmdSites :: Cmd -> [(Uniq, Annote, Text)]
-                        cmdSites = \ case
-                              CmdBind an x e -> idSite an "command binder" x : expSites e
-                              CmdGet an x _  -> [idSite an "command binder" x]
-                              CmdPut _ _ e   -> expSites e
-
-                        termSites :: Term -> [(Uniq, Annote, Text)]
-                        termSites = \ case
-                              Pause _ a _ args -> expSites a <> concatMap expSites args
-                              Goto _ _ args    -> concatMap expSites args
-                              Halt _ a         -> expSites a
-                              TCase _ a alts   -> expSites a <> concatMap taltSites alts
-
-                        taltSites :: TAlt -> [(Uniq, Annote, Text)]
-                        taltSites (TAlt an _ xs t) = map (idSite an "pattern binder") xs <> termSites t
+uniqSites (Program datas defns _) = declSites datas defns
 
 -- | Every binding site of the datatype-and-definition fragment, in
 --   deterministic order.
@@ -301,175 +257,6 @@ idSite an what x = (idUniq x, an, "binding unique #" <> showt (idUniq x) <> " ("
 -- | A type-variable binding site, keyed by unique, with its diagnostic text.
 tvSite :: Annote -> Text -> TyVar -> (Uniq, Annote, Text)
 tvSite an what v = (tvUniq v, an, "binding unique #" <> showt (tvUniq v) <> " (" <> what <> " " <> prettyPrint v <> ")")
-
----
---- Processes (doc/eidos.md §7.4): the machine rules, per-proc, checked in
---- machine mode only (lower modes cover uniqueness via 'uniqSites').
----
-
-checkProc :: forall m. MonadError AstError m => Env -> Proc -> m ()
-checkProc env pr@(Proc an n it ot _clk cells entry blocks) = when (envMode env >= LintMachine) $ do
-      checkTy env an it
-      checkTy env an ot
-      checkDistinct [ (cellName c, cellAnnote c, "state cell " <> cellName c <> " of process " <> n) | c <- cells ]
-      mapM_ checkCell cells
-      checkBlock entry
-      mapM_ (checkBlock . snd) blocks
-      mapM_ checkInput blocks
-      unless (anyPause $ map (blkTerm . snd) blocks <> [blkTerm entry]) $ failAt an
-            $ "process " <> n <> " never pauses (no machine to generate)"
-      checkGuarded
-      where ltab :: HashMap Uniq (Id, Block)
-            ltab = Map.fromList [ (idUniq l, (l, b)) | (l, b) <- blocks ]
-
-            ctab :: HashMap Text Ty
-            ctab = Map.fromList [ (cellName c, cellTy c) | c <- cells ]
-
-            -- Cell initials are closed (checked in the top-level-only
-            -- environment: no locals are in scope) and cell-typed.
-            checkCell :: Cell -> m ()
-            checkCell (Cell can s t e0) = do
-                  checkTy env can t
-                  case e0 of
-                        Nothing -> pure ()
-                        Just e  -> do
-                              t' <- checkExp (nonTail env) e
-                              unless (tyEq t t') $ failAt can
-                                    $ "the initial value of state cell " <> s <> " has type "
-                                    <> prettyPrint t' <> ", not the cell's type " <> prettyPrint t
-
-            checkBlock :: Block -> m ()
-            checkBlock (Block ban ps cmds term) = do
-                  mapM_ (checkValueBinder env ban "block parameter") ps
-                  env' <- foldM checkCmd (foldr bindVar env ps) cmds
-                  checkTerm env' term
-
-            checkCmd :: Env -> Cmd -> m Env
-            checkCmd env' = \ case
-                  CmdBind can x rhs -> do
-                        checkValueBinder env' can "command binder" x
-                        checkAgainst (nonTail env') rhs $ sigTy $ idSig x
-                        pure $ bindVar x env'
-                  CmdGet can x s    -> do
-                        checkValueBinder env' can "command binder" x
-                        t <- cell can s
-                        unless (tyEq (sigTy $ idSig x) t) $ failAt can
-                              $ "get: binder " <> prettyPrint x <> " has type " <> prettyPrint (sigTy $ idSig x)
-                              <> ", not the type of state cell " <> s <> " (" <> prettyPrint t <> ")"
-                        pure $ bindVar x env'
-                  CmdPut can s a    -> do
-                        t <- cell can s
-                        checkAgainst (nonTail env') a t
-                        pure env'
-
-            cell :: Annote -> Text -> m Ty
-            cell can s = maybe (failAt can $ "unknown state cell: " <> s <> " (process " <> n <> ")") pure
-                  $ Map.lookup s ctab
-
-            checkTerm :: Env -> Term -> m ()
-            checkTerm env' = \ case
-                  Pause tan a l args -> do
-                        checkAgainst (nonTail env') a ot
-                        (lB, b) <- target tan l
-                        when (null $ blkParams b) $ failAt tan
-                              $ "pause target " <> prettyPrint lB <> " has no parameters (the last is the resumed input)"
-                        unless (length args == length (blkParams b) - 1) $ failAt tan
-                              $ "pause to " <> prettyPrint lB <> " supplies " <> showt (length args)
-                              <> " arguments (its target takes " <> showt (length (blkParams b) - 1)
-                              <> " plus the resumed input)"
-                        zipWithM_ (\ a' p -> checkAgainst (nonTail env') a' $ sigTy $ idSig p) args $ blkParams b
-                  Goto tan l args    -> do
-                        (lB, b) <- target tan l
-                        unless (length args == length (blkParams b)) $ failAt tan
-                              $ "goto " <> prettyPrint lB <> " supplies " <> showt (length args)
-                              <> " arguments (its target takes " <> showt (length $ blkParams b) <> ")"
-                        zipWithM_ (\ a' p -> checkAgainst (nonTail env') a' $ sigTy $ idSig p) args $ blkParams b
-                  Halt _ a           -> void $ checkExp (nonTail env') a
-                  TCase tan a alts   -> do
-                        ts <- checkExp (nonTail env') a
-                        case [ tan' | TAlt tan' DefaultAlt _ _ <- drop 1 alts ] of
-                              tan' : _ -> failAt tan' "the default terminator alternative must come first"
-                              []       -> pure ()
-                        checkDistinct [ (c, tan', "terminator alternative for constructor " <> c) | TAlt tan' (DataAlt c) _ _ <- alts ]
-                        when (null alts) $ failAt tan "terminator case with no alternatives"
-                        mapM_ (checkTAlt env' ts) alts
-
-            checkTAlt :: Env -> Ty -> TAlt -> m ()
-            checkTAlt env' ts (TAlt tan c xs t) = case c of
-                  DefaultAlt -> do
-                        unless (null xs) $ failAt tan "default terminator alternative binds fields"
-                        checkTerm env' t
-                  LitAlt ln  -> do
-                        unless (null xs) $ failAt tan "literal terminator alternative binds fields"
-                        case litRep ts of
-                              RepBad -> failAt tan $ "literal terminator alternative on a scrutinee of type " <> prettyPrint ts
-                              rep    -> unless (fitsRep rep ln) $ failAt tan
-                                    $ "literal " <> showt ln <> " is not representable at the scrutinee type " <> prettyPrint ts
-                        checkTerm env' t
-                  DataAlt c' -> do
-                        (tcon, sig) <- lookupCon env tan c'
-                        fields      <- dconFieldTys tan c' tcon sig ts
-                        unless (length xs == length fields) $ failAt tan
-                              $ "terminator alternative for " <> c' <> " binds " <> showt (length xs)
-                              <> " fields (the constructor has " <> showt (length fields) <> ")"
-                        mapM_ (checkValueBinder env' tan "pattern binder") xs
-                        checkTerm (foldr bindVar env' xs) t
-
-            target :: Annote -> Id -> m (Id, Block)
-            target tan l = case Map.lookup (idUniq l) ltab of
-                  Just lb -> checkOccSig tan l (fst lb) >> pure lb
-                  Nothing -> failAt tan $ "terminator targets an undeclared block label: " <> prettyPrint l
-
-            anyPause :: [Term] -> Bool
-            anyPause = any go
-                  where go :: Term -> Bool
-                        go = \ case
-                              Pause {}       -> True
-                              TCase _ _ alts -> any (\ (TAlt _ _ _ t) -> go t) alts
-                              _              -> False
-
-            -- Pause targets: their last parameter is the resumed input.
-            checkInput :: (Id, Block) -> m ()
-            checkInput (l, b)
-                  | idUniq l `Set.member` pauseTargets
-                  , p : _ <- reverse $ blkParams b
-                  , not $ tyEq (sigTy $ idSig p) it = failAt (blkAnnote b)
-                        $ "the last parameter of pause target " <> prettyPrint l
-                        <> " (the resumed input) has type " <> prettyPrint (sigTy $ idSig p)
-                        <> ", not the process input type " <> prettyPrint it
-                  | otherwise = pure ()
-
-            pauseTargets :: HashSet Uniq
-            pauseTargets = Set.fromList $ concatMap (pt . blkTerm) $ entry : map snd blocks
-                  where pt :: Term -> [Uniq]
-                        pt = \ case
-                              Pause _ _ l _  -> [idUniq l]
-                              TCase _ _ alts -> concatMap (\ (TAlt _ _ _ t) -> pt t) alts
-                              _              -> []
-
-            -- Signal-guardedness (§7.4): the goto-only subgraph of the
-            -- block graph is acyclic — every cycle crosses a pause.
-            checkGuarded :: m ()
-            checkGuarded = mapM_ (visit mempty) $ Map.keys gotoEdges
-                  where gotoEdges :: HashMap Uniq [Id]
-                        gotoEdges = Map.fromList $ (entryKey, gotos $ blkTerm entry)
-                              : [ (idUniq l, gotos $ blkTerm b) | (l, b) <- blocks ]
-
-                        entryKey :: Uniq
-                        entryKey = minBound
-
-                        gotos :: Term -> [Id]
-                        gotos = \ case
-                              Goto _ l _     -> [l]
-                              TCase _ _ alts -> concatMap (\ (TAlt _ _ _ t) -> gotos t) alts
-                              _              -> []
-
-                        visit :: HashSet Uniq -> Uniq -> m ()
-                        visit stack u
-                              | Set.member u stack = failAt (procAnnote pr)
-                                    $ "process " <> n <> ": a cycle of gotos crosses no pause (is recursion guarded by signal?)"
-                              | otherwise = mapM_ (visit (Set.insert u stack) . idUniq)
-                                    $ Map.lookupDefault [] u gotoEdges
 
 ---
 --- Datatypes (doc/eidos.md §3.6, §4.3).
@@ -953,13 +740,13 @@ checkLitInt env an t n = when (envMode env >= LintMono) $ case litRep t of
 ---
 
 -- | Scoping (every type variable bound, at its binder's kind) plus, in
---   mono mode, closedness; in machine mode, the reactive types are out of
---   the grammar entirely (doc/eidos.md §4.1).
+--   mono mode, closedness; at the machine level ('envBanReactive'), the
+--   reactive types are out of the grammar entirely (doc/eidos.md §4.1).
 checkTy :: MonadError AstError m => Env -> Annote -> Ty -> m ()
 checkTy env an t = do
       checkTyScope env an t
       when (envMode env >= LintMono) $ checkClosed an $ natNorm t
-      when (envMode env >= LintMachine && reacOrStateT t) $ failAt an
+      when (envBanReactive env && reacOrStateT t) $ failAt an
             $ "reactive type " <> prettyPrint t <> " in machine mode (purification has retired ReacT/StateT/Identity)"
 
 checkTyScope :: MonadError AstError m => Env -> Annote -> Ty -> m ()

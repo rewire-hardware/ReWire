@@ -7,15 +7,14 @@ module ReWire.ModCache
       , LoadPath
       ) where
 
-import ReWire.Annotation (noAnn)
 import ReWire.Config (Config)
-import ReWire.Eidos.Pretty (prettyProgram)
-import ReWire.Eidos.ToHyle (eidosToHyle)
+import ReWire.Eidos.ToSynolon (procify)
 import ReWire.GHC.Session (loadCore)
 import ReWire.GHC.ToEidos (toEidos)
 import ReWire.Error (AstError, MonadError, Warning (..), failAt, warnAt)
 import ReWire.Pass (pass, verb')
 import ReWire.Pretty (prettyPrint)
+import ReWire.Synolon.ToHyle (synolonToHyle)
 
 import Control.Lens ((^.))
 import Control.Monad (when, (>=>))
@@ -30,12 +29,15 @@ import qualified ReWire.Eidos.ANF             as Eidos
 import qualified ReWire.Eidos.Externs         as Eidos
 import qualified ReWire.Eidos.Inline          as Eidos
 import qualified ReWire.Eidos.Lint            as Eidos
-import qualified ReWire.Eidos.ProcOpt         as Eidos
-import qualified ReWire.Eidos.Procify         as Eidos
+import qualified ReWire.Eidos.Pretty          as Eidos
 import qualified ReWire.Eidos.Simplify        as Eidos
 import qualified ReWire.Eidos.Spec            as Eidos
 import qualified ReWire.Eidos.Syntax          as Eidos
-import qualified ReWire.Hyle.Syntax         as Hyle
+import qualified ReWire.Synolon.Lint          as Synolon
+import qualified ReWire.Synolon.Pretty        as Synolon
+import qualified ReWire.Synolon.Syntax        as Synolon
+import qualified ReWire.Synolon.Transform     as Synolon
+import qualified ReWire.Hyle.Syntax           as Hyle
 import qualified ReWire.Config                as C
 
 type LoadPath = [FilePath]
@@ -44,9 +46,11 @@ type LoadPath = [FilePath]
 -- -d N (or --dump-all) dumps the IR after pass N to a file beside the
 -- output (e.g., MiniISA.6.eir). Pass 1 is the front end: GHC
 -- (parse/typecheck/desugar over the whole home module graph) followed by
--- the Core-to-Eidos bridge. Passes 2-8 are the Eidos passes (doc/eidos.md)
--- and pass 9 is the Eidos-to-Hyle fold; the Hyle-level passes (10-11) run
--- in ReWire.FrontEnd, numbered after these so -d numbering is uniform.
+-- the Core-to-Eidos bridge. Passes 2-6 are the Eidos passes (doc/eidos.md),
+-- pass 7 is procification (Eidos to Synolon), pass 8 the Synolon
+-- block-graph cleanup, and pass 9 the Synolon-to-Hyle fold; the Hyle-level
+-- passes (10-11) run in ReWire.FrontEnd, numbered after these so -d
+-- numbering is uniform.
 getDevice :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> m Hyle.Program
 getDevice conf fp = do
       eir <- passEidos 1 "GHC front end and Core-to-Eidos bridge."
@@ -70,41 +74,41 @@ getDevice conf fp = do
       eirPE <- passEidos 5 "Partial evaluation (eidos)."
             (Eidos.simplify (conf^.C.depth)) eirExt
       Eidos.lint Eidos.LintMono eirPE
-      -- The machine half: normalize the reactive fragment to ANF,
-      -- procify it, clean the block graph, and check the machine rules.
+      -- Normalize the reactive fragment to ANF (the last Eidos pass), then
+      -- the machine level: procify to Synolon, clean the block graph, and
+      -- check the machine rules.
       eirANF <- passEidos 6 "Normalizing to ANF (eidos)."
             Eidos.normalize eirPE
       Eidos.lint Eidos.LintMonoANF eirANF
-      pr0 <- passEidos 7 "Procifying (eidos)."
-            Eidos.procify eirANF
-      eirPE' <- passEidos 8 "Cleaning the machine block graph (eidos)."
+      pr0 <- passSynolon 7 "Procifying (eidos)."
+            procify eirANF
+      pr <- passSynolon 8 "Cleaning the machine block graph (eidos)."
             (pure . optimizeProcs) pr0
-      mapM_ (Eidos.lintProc eirPE') $ Eidos.progProcs eirPE'
-      mapM_ (flip verb () . Eidos.machineSummary) $ Eidos.progProcs eirPE'
+      Synolon.lint pr
+      mapM_ (flip verb () . Synolon.machineSummary) $ Synolon.progProcs pr
       -- The strict reachable-halt check (--no-halt): every block is
       -- reachable after the block-graph cleanup, so any halt terminator
       -- is a state the device can actually freeze in.
-      when (conf^.C.noHalt) $ mapM_ noHaltCheck $ Eidos.progProcs eirPE'
-      -- --certify validates against exactly this dump (the machine-mode
-      -- Eidos IR the fold consumes), so it implies --eidos.
+      when (conf^.C.noHalt) $ mapM_ noHaltCheck $ Synolon.progProcs pr
+      -- --certify validates against exactly this dump (the machine-level
+      -- IR the fold consumes), so it implies --eidos.
       when (conf^.C.eidos || conf^.C.certify /= C.CertifyOff) $ do
             let eirFile = C.machineFile conf fp
-            verb ("Writing Eidos IR to file: " <> pack eirFile) ()
+            verb ("Writing machine IR to file: " <> pack eirFile) ()
             -- Same-directory temporary plus rename, so a crash can't
             -- leave a torn artifact that later validates or replays.
             liftIO $ do
-                  T.writeFile (eirFile <> ".tmp") $ prettyProgram eirPE'
+                  T.writeFile (eirFile <> ".tmp") $ Synolon.prettyProgram pr
                   renameFile (eirFile <> ".tmp") eirFile
-      -- Every well-formed device has a reactive root (the mono lint's
-      -- device rule), hence a process.
-      when (null $ Eidos.progProcs eirPE') $ failAt noAnn
-            "no process was constructed for the device root (rwc bug)."
-      -- The fold owns the lowering: Eidos straight to Hyle
-      -- (ReWire.Eidos.ToHyle).
-      pass conf fp 9 "Translating to Hyle." "rwc" prettyPrint (eidosToHyle conf) eirPE'
+      -- The fold owns the lowering: Synolon straight to Hyle
+      -- (ReWire.Synolon.ToHyle).
+      pass conf fp 9 "Translating to Hyle." "rwc" prettyPrint (synolonToHyle conf) pr
 
       where passEidos :: MonadIO n => Natural -> Text -> (a -> n Eidos.Program) -> a -> n Eidos.Program
-            passEidos n name = pass conf fp n name "eir" prettyProgram
+            passEidos n name = pass conf fp n name "eir" Eidos.prettyProgram
+
+            passSynolon :: MonadIO n => Natural -> Text -> (a -> n Synolon.Program) -> a -> n Synolon.Program
+            passSynolon n name = pass conf fp n name "eir" Synolon.prettyProgram
 
             neuterExterns :: (MonadError AstError m', MonadIO m') => Eidos.Program -> m' Eidos.Program
             neuterExterns p = do
@@ -112,8 +116,8 @@ getDevice conf fp = do
                   mapM_ (\ (Warning a m') -> warnAt conf a m') ws
                   pure p'
 
-            optimizeProcs :: Eidos.Program -> Eidos.Program
-            optimizeProcs pr = pr { Eidos.progProcs = map Eidos.optimizeProc $ Eidos.progProcs pr }
+            optimizeProcs :: Synolon.Program -> Synolon.Program
+            optimizeProcs p = p { Synolon.progProcs = map Synolon.optimizeProc $ Synolon.progProcs p }
 
             -- The bound on the type-specialization fixpoint: at least the
             -- historical bound of 10; --depth raises it (e.g. for deep
@@ -121,15 +125,11 @@ getDevice conf fp = do
             specDepth :: Natural
             specDepth = max 10 $ conf^.C.depth
 
-            noHaltCheck :: MonadError AstError m => Eidos.Proc -> m ()
-            noHaltCheck pr = case concatMap (halts . Eidos.blkTerm) $ Eidos.procEntry pr : map snd (Eidos.procBlocks pr) of
-                  an : _ -> failAt an $ "process " <> Eidos.procName pr
+            noHaltCheck :: MonadError AstError m => Synolon.Proc -> m ()
+            noHaltCheck p = case concatMap (Synolon.haltSites . Synolon.blkTerm) $ Synolon.allBlocks p of
+                  an : _ -> failAt an $ "process " <> Synolon.procName p
                         <> " can halt, and post-halt outputs are unspecified (rejected by --no-halt)."
                   []     -> pure ()
-                  where halts = \ case
-                              Eidos.Halt an _      -> [an]
-                              Eidos.TCase _ _ alts -> concat [ halts t | Eidos.TAlt _ _ _ t <- alts ]
-                              _                    -> []
 
             -- The standing lints (post-bridge, post-inline, post-PE,
             -- post-ANF) run always; --debug-lint re-lints after the

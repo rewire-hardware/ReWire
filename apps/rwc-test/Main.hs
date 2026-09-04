@@ -9,20 +9,25 @@ module Main (main) where
 import qualified RWC
 
 import ReWire.Eidos.Parse (parseEir, parseEirText)
-import ReWire.Eidos.Pretty (prettyProgram)
 import ReWire.Error (runSyntaxError)
 import ReWire.Hyle.Parse (parseHyle, parseHyleText)
 import ReWire.Pretty (prettyPrint)
+import ReWire.Synolon.Parse (parseSyn, parseSynText)
 
 import qualified ReWire.Eidos.ANF as Eidos
 import qualified ReWire.Eidos.Externs as Eidos
 import qualified ReWire.Eidos.Inline as Eidos
 import qualified ReWire.Eidos.Lint as Eidos
-import qualified ReWire.Eidos.Procify as Eidos
+import qualified ReWire.Eidos.Pretty as Eidos
 import qualified ReWire.Eidos.Simplify as Eidos
 import qualified ReWire.Eidos.Spec as Eidos
 import qualified ReWire.Eidos.Subst as Eidos
 import qualified ReWire.Eidos.Syntax as Eidos
+import qualified ReWire.Eidos.ToSynolon as Eidos
+import qualified ReWire.Synolon.Lint as Synolon
+import qualified ReWire.Synolon.Pretty as Synolon
+import qualified ReWire.Synolon.Syntax as Synolon
+import qualified ReWire.Synolon.Transform as Synolon
 
 import qualified Cosim
 import TestUtil (withStderrTo, withStdoutTo, sq, externArgs)
@@ -30,7 +35,7 @@ import TestUtil (withStderrTo, withStdoutTo, sq, externArgs)
 import Control.Exception (try, finally)
 import Control.Monad (unless, when, msum)
 import Control.Monad.State.Strict (evalState)
-import Data.List (isSuffixOf, isInfixOf, stripPrefix, intercalate)
+import Data.List (isSuffixOf, isInfixOf, stripPrefix, intercalate, sort)
 import Data.Maybe (fromMaybe, mapMaybe)
 import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
 import System.Directory (listDirectory, setCurrentDirectory, getCurrentDirectory, doesFileExist, findExecutable, makeAbsolute)
@@ -126,6 +131,26 @@ testCompiler flags fn = do
                         cdTestdir
                         withArgs ((fn -<.> "rwc") : ["--from-core"] <> interpArgs <> ["-o", ofile "yaml"] <> extraFlags) RWC.main
 
+      let machineDumpTests =
+            -- The machine-level dump of the real program (the --certify
+            -- source artifact), parsed, linted, and round-tripped through
+            -- the Synolon printer and parser. Self-contained: it runs rwc
+            -- itself rather than reading another leg's output.
+            [ testCase (takeBaseName fn <> " (machine dump)") $ do
+                  cdTestdir
+                  withArgs (fn : ["--eidos", "--core", "-o", ofile "synleg.rwc"] <> extraFlags) RWC.main
+                  r <- runSyntaxError $ do
+                        p1 <- parseSyn $ ofile "synleg.eir"
+                        Synolon.lint p1
+                        let t1 = Synolon.prettyProgram p1
+                        p2 <- parseSynText t1 $ ofile "synleg.eir"
+                        Synolon.lint p2
+                        pure (t1, Synolon.prettyProgram p2)
+                  case r of
+                        Left err       -> assertFailure $ "machine dump failed: " <> T.unpack (prettyPrint err)
+                        Right (t1, t2) -> assertBool "parse . prettyProgram . parse differs from parse" $ t1 == t2
+            ]
+
       let roundTripTests =
             -- Parse/print round trip on the .rwc golden. The golden is fastPrint
             -- output, so the first parse also covers the compact printer; the
@@ -174,7 +199,7 @@ testCompiler flags fn = do
             -- one test per backend, unless --no-check.
             if check then Cosim.cosimTests fn else pure []
 
-      pure $ ghcTests <> coreTests <> yamlTests <> roundTripTests <> verilogTests <> vhdlTests <> cryTests <> cosimTests
+      pure $ ghcTests <> coreTests <> machineDumpTests <> yamlTests <> roundTripTests <> verilogTests <> vhdlTests <> cryTests <> cosimTests
 
       where check :: Bool
             check = FlagNoCheck `notElem` flags
@@ -210,24 +235,18 @@ testCompiler flags fn = do
             diff :: FilePath -> FilePath -> [String]
             diff ref new = ["diff", "-bu", ref, new]
 
--- | The lint mode for an .eir fixture: machine mode when processes are
---   present (their rules only fire there), poly mode otherwise.
-fixtureMode :: Eidos.Program -> Eidos.LintMode
-fixtureMode p | null (Eidos.progProcs p) = Eidos.LintPoly
-              | otherwise                = Eidos.LintMachine
-
 -- | Round-trips an .eir fixture — parse, print, re-parse, re-print; the two
 --   prints must agree (the fixpoint property of doc/eidos.md §9) — and lints
---   both parses (machine mode when the fixture declares processes).
+--   both parses (poly mode).
 testEir :: FilePath -> TestTree
 testEir fn = testCase (takeBaseName fn <> " (eir round-trip)") $ do
       r <- runSyntaxError $ do
             p1 <- parseEir fn
-            Eidos.lint (fixtureMode p1) p1
-            let t1 = prettyProgram p1
+            Eidos.lint Eidos.LintPoly p1
+            let t1 = Eidos.prettyProgram p1
             p2 <- parseEirText t1 fn
-            Eidos.lint (fixtureMode p2) p2
-            pure (t1, prettyProgram p2)
+            Eidos.lint Eidos.LintPoly p2
+            pure (t1, Eidos.prettyProgram p2)
       case r of
             Left err       -> assertFailure $ "eir round-trip failed: " <> T.unpack (prettyPrint err)
             Right (t1, t2) -> assertBool "parse . prettyProgram . parse differs from parse" $ t1 == t2
@@ -245,7 +264,7 @@ testEirRefresh fn = testCase (takeBaseName fn <> " (eir refresh)") $ do
                         ds  <- mapM (\ d -> (\ b -> d { Eidos.defnBody = b }) <$> Eidos.refreshExp (Eidos.defnBody d)) $ Eidos.progDefns p
                         dup <- mapM Eidos.refreshDefn ds
                         pure p { Eidos.progDefns = ds <> dup }
-            Eidos.lint (fixtureMode p') p'
+            Eidos.lint Eidos.LintPoly p'
       case r of
             Left err -> assertFailure $ "eir refresh failed: " <> T.unpack (prettyPrint err)
             Right () -> pure ()
@@ -264,10 +283,10 @@ testEirSpec fn = testCase (takeBaseName fn <> " (eir front passes)") $ do
                   >>= Eidos.inlineAnnotated
                   >>= (fmap fst . Eidos.neuterExterns)
                   >>= Eidos.simplify 8
-            Eidos.lint (fixtureMode p') p'
+            Eidos.lint Eidos.LintPoly p'
             mapM_ (Eidos.lintDefn Eidos.LintMono p') $ Eidos.progDefns p'
             p'' <- Eidos.normalize p'
-            Eidos.lint (fixtureMode p'') p''
+            Eidos.lint Eidos.LintPoly p''
             mapM_ (Eidos.lintDefn Eidos.LintMonoANF p'') $ Eidos.progDefns p''
       case r of
             Left err -> assertFailure $ "eir front passes failed: " <> T.unpack (prettyPrint err)
@@ -276,8 +295,8 @@ testEirSpec fn = testCase (takeBaseName fn <> " (eir front passes)") $ do
 -- | Runs a fixture through the front passes, ANF, and procify: fixtures
 --   with EXPECT-PROCIFY-ERROR comments must be rejected (the
 --   predicate: a recursive-or-NOINLINE reactive callee at bind-LHS might
---   pause); every process constructed from the others must pass the
---   machine-mode lint.
+--   pause); the Synolon program constructed from the others must pass the
+--   machine lint and round-trip through the Synolon printer and parser.
 testEirProcify :: FilePath -> TestTree
 testEirProcify fn = testCase (takeBaseName fn <> " (eir procify)") $ do
       r <- runSyntaxError $ do
@@ -288,8 +307,12 @@ testEirProcify fn = testCase (takeBaseName fn <> " (eir procify)") $ do
                   >>= Eidos.simplify 8
                   >>= Eidos.normalize
                   >>= Eidos.procify
-            mapM_ (Eidos.lintProc p') $ Eidos.progProcs p'
-            pure $ length $ Eidos.progProcs p'
+            Synolon.lint p'
+            let t1 = Synolon.prettyProgram p'
+            p'' <- parseSynText t1 fn
+            Synolon.lint p''
+            unless (Synolon.prettyProgram p'' == t1) $ fail "procify output does not round-trip through the Synolon printer and parser"
+            pure $ length $ Synolon.progProcs p'
       expected <- mapMaybe (stripPrefix "-- EXPECT-PROCIFY-ERROR: ") . lines <$> readFile fn
       case r of
             Left err
@@ -309,13 +332,84 @@ testEirBad fn = testCase (takeBaseName fn <> " (eir lint error)") $ do
       expected <- mapMaybe (stripPrefix "-- EXPECT-LINT-ERROR: ") . lines <$> readFile fn
       r <- runSyntaxError $ do
             p <- parseEir fn
-            Eidos.lint (fixtureMode p) p
+            Eidos.lint Eidos.LintPoly p
       case r of
             Right () -> assertFailure "fixture linted cleanly (expected a lint error)"
             Left err -> do
                   let msg = T.unpack $ prettyPrint err
                   mapM_ (\ e -> assertBool ("lint error does not mention \"" <> e <> "\"; got: " <> msg)
                                     $ e `isInfixOf` msg) expected
+
+-- | Round-trips a .syn fixture — parse, print, re-parse, re-print; the two
+--   prints must agree — and lints both parses with the Synolon lint.
+testSyn :: FilePath -> TestTree
+testSyn fn = testCase (takeBaseName fn <> " (syn round-trip)") $ do
+      r <- runSyntaxError $ do
+            p1 <- parseSyn fn
+            Synolon.lint p1
+            let t1 = Synolon.prettyProgram p1
+            p2 <- parseSynText t1 fn
+            Synolon.lint p2
+            pure (t1, Synolon.prettyProgram p2)
+      case r of
+            Left err       -> assertFailure $ "syn round-trip failed: " <> T.unpack (prettyPrint err)
+            Right (t1, t2) -> assertBool "parse . prettyProgram . parse differs from parse" $ t1 == t2
+
+-- | Refreshes every definition body of a .syn fixture through the audited
+--   clone primitive (with a supply above the whole program's uniques,
+--   processes included), then re-lints.
+testSynRefresh :: FilePath -> TestTree
+testSynRefresh fn = testCase (takeBaseName fn <> " (syn refresh)") $ do
+      r <- runSyntaxError $ do
+            p <- parseSyn fn
+            let p' = flip evalState (Eidos.nextUniq p) $ do
+                        ds <- mapM (\ d -> (\ b -> d { Eidos.defnBody = b }) <$> Eidos.refreshExp (Eidos.defnBody d)) $ Synolon.progDefns p
+                        pure p { Synolon.progDefns = ds }
+            Synolon.lint p'
+      case r of
+            Left err -> assertFailure $ "syn refresh failed: " <> T.unpack (prettyPrint err)
+            Right () -> pure ()
+
+-- | Cleans every process of a .syn fixture with the block-graph transforms:
+--   the result must lint, and the cleanup must be a fixpoint.
+testSynOpt :: FilePath -> TestTree
+testSynOpt fn = testCase (takeBaseName fn <> " (syn optimize)") $ do
+      r <- runSyntaxError $ do
+            p <- parseSyn fn
+            let opt q = q { Synolon.progProcs = map Synolon.optimizeProc $ Synolon.progProcs q }
+                p'  = opt p
+            Synolon.lint p'
+            pure (Synolon.prettyProgram p', Synolon.prettyProgram $ opt p')
+      case r of
+            Left err       -> assertFailure $ "syn optimize failed: " <> T.unpack (prettyPrint err)
+            Right (t1, t2) -> assertBool "block-graph cleanup is not a fixpoint" $ t1 == t2
+
+-- | A .syn fixture that must fail the Synolon lint, with a diagnostic
+--   containing each substring declared by "-- EXPECT-LINT-ERROR:" lines.
+testSynBad :: FilePath -> TestTree
+testSynBad fn = testCase (takeBaseName fn <> " (syn lint error)") $ do
+      expected <- mapMaybe (stripPrefix "-- EXPECT-LINT-ERROR: ") . lines <$> readFile fn
+      r <- runSyntaxError $ do
+            p <- parseSyn fn
+            Synolon.lint p
+      case r of
+            Right () -> assertFailure "fixture linted cleanly (expected a lint error)"
+            Left err -> do
+                  let msg = T.unpack $ prettyPrint err
+                  mapM_ (\ e -> assertBool ("lint error does not mention \"" <> e <> "\"; got: " <> msg)
+                                    $ e `isInfixOf` msg) expected
+
+-- | The fixtures a directory actually holds are exactly the ones its
+--   MANIFEST lists: a fixture missing from the package's data-files globs
+--   (never installed) and a stale copy of a moved or deleted fixture (never
+--   removed from the data dir) both fail here instead of silently
+--   vanishing or lingering.
+testManifest :: FilePath -> String -> TestTree
+testManifest dir ext = testCase (takeFileName (takeDirectory dir) <> "/" <> takeFileName dir <> " (manifest)") $ do
+      listed <- filter (not . null) . lines <$> readFile (dir </> "MANIFEST")
+      found  <- filter (ext `isSuffixOf`) <$> listDirectory dir
+      assertBool ("fixtures on disk " <> show (sort found) <> " differ from MANIFEST " <> show (sort listed))
+            $ sort found == sort listed
 
 -- | A test that must fail to compile with rwc. Each test file declares (one or
 --   more of) the expected error with a comment line:
@@ -573,16 +667,27 @@ main = do
             pure $ testGroup "negative" $ map testNegative files
       warnTests  <- testsFrom "warning"    (\ f -> pure [testWarning f])
       -- Eidos .eir fixtures: the parse/print fixpoint property of
-      -- doc/eidos.md §9, plus a lint of both parses in the fixture's mode
-      -- (machine when it declares processes, poly otherwise).
+      -- doc/eidos.md §9, plus a lint of both parses (poly mode), the
+      -- front-half passes, and procify on the procin- fixtures.
       eirTests   <- do
             dir      <- getDataFileName ("tests" </> "eidos")
             files    <- map (dir </>) . filter (".eir" `isSuffixOf`) <$> listDirectory dir
             negDir   <- getDataFileName ("tests" </> "eidos" </> "negative")
             negFiles <- map (negDir </>) . filter (".eir" `isSuffixOf`) <$> listDirectory negDir
-            pure $ testGroup "eidos" $ map testEir files <> map testEirRefresh files <> map testEirSpec files
+            pure $ testGroup "eidos" $ [testManifest dir ".eir", testManifest negDir ".eir"]
+                                    <> map testEir files <> map testEirRefresh files <> map testEirSpec files
                                     <> map testEirProcify (filter (("procin-" `isInfixOf`) . takeBaseName) files)
                                     <> map testEirBad negFiles
+      -- Synolon .syn fixtures: round-trip, refresh, block-graph cleanup, and
+      -- the machine lint's negatives.
+      synTests   <- do
+            dir      <- getDataFileName ("tests" </> "synolon")
+            files    <- map (dir </>) . filter (".syn" `isSuffixOf`) <$> listDirectory dir
+            negDir   <- getDataFileName ("tests" </> "synolon" </> "negative")
+            negFiles <- map (negDir </>) . filter (".syn" `isSuffixOf`) <$> listDirectory negDir
+            pure $ testGroup "synolon" $ [testManifest dir ".syn", testManifest negDir ".syn"]
+                                      <> map testSyn files <> map testSynRefresh files <> map testSynOpt files
+                                      <> map testSynBad negFiles
       smokeTests   <- getSmokeTests
       certifyTests <- getCertifyTests
       -- The integration directory holds full-program golden tests (same legs as
@@ -601,7 +706,7 @@ main = do
       cwd0 <- getCurrentDirectory
       withArgs (concatMap toTastyArg flags)
             (defaultMain $ localOption (NumThreads 1)
-                  $ testGroup "Tests" ([goldTests, smokeTests, certifyTests, negTests, warnTests, eirTests] <> intgTests))
+                  $ testGroup "Tests" ([goldTests, smokeTests, certifyTests, negTests, warnTests, eirTests, synTests] <> intgTests))
             `finally` setCurrentDirectory cwd0
 
       where toTastyArg :: Flag -> [String]
