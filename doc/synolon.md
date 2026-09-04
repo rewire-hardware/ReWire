@@ -96,7 +96,7 @@ answer sizes (`ReWire.Synolon.Repr`, the one sizing the fold also lays
 values out by, so the two agree on which types have a width; a type in a
 position only the fold sizes — a definition's codomain, a primitive's
 instantiation — gets the same diagnostic there). The mechanized checker
-(`verify/Rwv/Eidos/Check.lean`) enforces the same rule.
+(`verify/Rwv/Synolon/Check.lean`) enforces the same rule.
 
 ### 3.2 Pure expressions
 
@@ -684,7 +684,7 @@ monomorphic, join-free scope.
 | §3.1 (representability: the width of a type) | `ReWire.Synolon.Repr` (shared by the lint and the fold) |
 | §3.2 (atoms and primitive expressions) | `ReWire.Eidos.ANF` (`isAtom`, `isPrimExp`; shared by both lints) |
 | §6 (builtin signatures) | `ReWire.Eidos.BuiltinSigs` (shared) |
-| §5 (machine semantics) | no Haskell evaluator (as doc/eidos.md §5 says of Eidos): mechanized in `verify/Rwv/Eidos/Value.lean` (values, zero), `Eval.lean` (pure evaluation and the builtin table), and `Machine.lean` (block execution, the step, streams); differentially tested by `rwv-eidos-diff` against `rwc --interpret` and by the four-way cosimulation in `rwc-test` |
+| §5 (machine semantics) | no Haskell evaluator (as doc/eidos.md §5 says of Eidos): mechanized in `verify/Rwv/Eidos/Value.lean` (values, zero), `Eval.lean` (pure evaluation and the builtin table), and `verify/Rwv/Synolon/Machine.lean` (block execution, the step, streams); differentially tested by `rwv-synolon-diff` against `rwc --interpret` and by the four-way cosimulation in `rwc-test` |
 | §7 (the machine fold, Synolon → Hyle) | `ReWire.Synolon.ToHyle` |
 | §8 (procification, Eidos → Synolon) | `ReWire.Eidos.ToSynolon` |
 | §8 (block-graph cleanup, machine accounting) | `ReWire.Synolon.Transform` |

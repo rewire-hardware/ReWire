@@ -65,7 +65,7 @@ theorem sim_run {S T I O : Type} {m₁ : Mealy S I O} {m₂ : Mealy T I O}
 
 /-! ## The Except-aware layer
 
-The concrete semantics (`Rwv.Eidos.Proc.run`, `Rwv.Hyle.Program.run`)
+The concrete semantics (`Rwv.Synolon.Proc.run`, `Rwv.Hyle.Program.run`)
 evaluate in `Except String` — fuel exhaustion and the deliberate
 rejections are errors, not machine behavior. `MealyE` is the shape
 they actually inhabit; the simulation theorem here concludes equality

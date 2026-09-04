@@ -127,7 +127,7 @@ nothing anywhere in this file is `sorry`d):
     zip-walk (`run_shift`/`cells_walk`) across `PlanInv.regsplit`.
   * `validateProc_corresponds` — THE end-to-end statement:
     `validateProc Δ edm p H fuel = true → fuel ≤ ef →
-    Rwv.Eidos.Corresponds Δ edm ef gf p H E` (every goto fuel, and
+    Rwv.Synolon.Corresponds Δ edm ef gf p H E` (every goto fuel, and
     every extern environment E: the ∀η statement), by constructing the
     schema's `SimP` from `checkLabel_sound` (the input-precomposed
     device never returns a halt, so the right machine never stops
@@ -146,7 +146,7 @@ after normalization (sound for any interpretation, since equal
 argument images feed the same `Sem.xapply`); the compiled Cryptol
 splices are checked extern-free (`NF.xcallFree`), pinning their
 denotations across environments; and the initial-state check runs
-once at the empty environment and transports by `Rwv.Eidos.FuelMono`'s
+once at the empty environment and transports by `Rwv.Synolon.FuelMono`'s
 eta family (a successful empty-environment run never consulted the
 hooks). The algebraic extern tier (η_alg) section at the file's tail
 gives that reading (`EtaAlg`/`WFEta`/`etaB`, and the specialization
@@ -157,15 +157,16 @@ and model-less calls (generic or not) read through the
 (name, generics)-keyed extern environment.
 -/
 import Rwv.Eidos.Cexp
-import Rwv.Eidos.Machine
-import Rwv.Eidos.FuelMono
+import Rwv.Synolon.Machine
+import Rwv.Synolon.FuelMono
 import Rwv.Hyle.Bridge
 import Rwv.Hyle.BridgeDag
 import Rwv.Schema
 
-namespace Rwv.Eidos.Cstep
+namespace Rwv.Synolon.Cstep
 
 open Std (HashMap)
+open Rwv.Eidos
 open Rwv.Hyle (BV Op)
 open Rwv.Hyle.Bridge (NF)
 open Rwv.Eidos.Cexp (teq teqAll teqN vty_teqN cexp catNF sliceNF denvOk VTy ctorOfB)
@@ -1428,7 +1429,7 @@ theorem vtyB_sound {Δ : DEnv} : ∀ (fuel : Nat) {v : Val} {t : Ty},
             · cases h
           · cases h
 
-/-! ## Fuel determinism (via Rwv.Eidos.FuelMono) -/
+/-! ## Fuel determinism (via Rwv.Synolon.FuelMono) -/
 
 private theorem initCells_det {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     {a b : Nat} {x y : HashMap String Val}
@@ -1520,7 +1521,7 @@ set_option linter.unusedVariables false in
 /-- THE initial-state theorem: a passing `checkInit` discharges the
 `hinit` hypothesis of `Rwv.stepObligations_corresponds` for
 `R := stateRel …` — for EVERY evaluation and goto fuel of the
-hypothesis (the check ran at its own fuels; `Rwv.Eidos.FuelMono`'s
+hypothesis (the check ran at its own fuels; `Rwv.Synolon.FuelMono`'s
 monotonicity makes any two successful runs agree). An entry block that
 halts at the checker's fuels makes the hypothesis vacuous the same
 way. -/
@@ -8976,7 +8977,7 @@ theorem validateProc_corresponds {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     {H : Rwv.Hyle.Program} {fuel ef gf : Nat}
     (hv : validateProc Δ edm p H fuel = true) (hef : fuel ≤ ef)
     (hFor : ∃ Xf Ff, Rwv.Eidos.Cexp.ForeignC Δ Xf Ff) :
-    Rwv.Eidos.Corresponds Δ edm ef gf p H E := by
+    Rwv.Synolon.Corresponds Δ edm ef gf p H E := by
   have hvE : validateProcE Δ edm p H fuel = .ok () := by
     rw [validateProc] at hv
     split at hv
@@ -9170,12 +9171,12 @@ statement (`validateProc_corresponds`) instantiated at the
 never consults the semantic hooks, the per-label extern discharge is
 uninterpreted-node equality (sound for any interpretation), and the
 initial-state check transports from the empty environment by
-`Rwv.Eidos.FuelMono`'s eta family. -/
+`Rwv.Synolon.FuelMono`'s eta family. -/
 theorem validateProc_corresponds_eta {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
     {H : Rwv.Hyle.Program} {fuel ef gf K : Nat} {Ξ : EtaSig} {η : EtaAlg}
     (hv : validateProc Δ edm p H fuel = true) (hef : fuel ≤ ef)
     (hFor : ∃ Xf Ff, Rwv.Eidos.Cexp.ForeignC Δ Xf Ff) :
-    Rwv.Eidos.Corresponds Δ edm ef gf p H (etaB Δ K Ξ η) :=
+    Rwv.Synolon.Corresponds Δ edm ef gf p H (etaB Δ K Ξ η) :=
   validateProc_corresponds hv hef hFor
 
 /-! ## Axiom audit -/
@@ -9212,4 +9213,4 @@ theorem validateProc_corresponds_eta {Δ : DEnv} {edm : HashMap Int Defn} {p : P
 #print axioms Rwv.Eidos.Cexp.decode_vty
 #print axioms rep_decode
 
-end Rwv.Eidos.Cstep
+end Rwv.Synolon.Cstep

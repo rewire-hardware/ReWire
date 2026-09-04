@@ -6,7 +6,7 @@ For each tests/golden/*.hs:
 
   1. generate the compiler's numbered .rwc dumps with
          rwc --dump-all -o <work>/<base>.sv tests/golden/<base>.hs
-     (the dumps land beside the output; pass 9 is the raw Eidos-to-Hyle
+     (the dumps land beside the output; pass 9 is the raw Synolon-to-Hyle
      fold, the highest-numbered .rwc dump — pass 11, post-inline — is
      the program the backends consume; compiling to .sv rather than
      --core makes the pass-11 inline leg run at all; the harness picks

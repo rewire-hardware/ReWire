@@ -317,9 +317,11 @@ theorem run_length {F : Sem.FEnv} {X : Sem.XEnv} {dev : Device} {E : Sem.EEnv}
 
 end Hyle
 
-/-! ## Length lemmas, Eidos leg -/
+/-! ## Length lemmas, Synolon leg -/
 
-namespace Eidos
+namespace Synolon
+
+open Rwv.Eidos
 
 /-- Once `Proc.run`'s fold has no live state, the remaining inputs are
 consumed as no-ops (Correspond2's dead-state lemma, private there). -/
@@ -425,7 +427,7 @@ theorem run_no_halt_length {Δ : DEnv} {defns : HashMap Int Defn}
       have hlen := fold_live_length Δ defns _ evalFuel gotoFuel E inputs [] s₀ outsRev s? hf
       simpa using hlen
 
-end Eidos
+end Synolon
 
 /-! ## The obligation package and the glue theorem -/
 
@@ -440,15 +442,15 @@ it the agreement is undischargeable, see `SimP`). This is the package
 a validator discharges per label (by combinational equivalence);
 `R` is the canonicality-invariant graph of the state encoding. -/
 def StepObligations (Δ : Eidos.DEnv) (defns : HashMap Int Eidos.Defn)
-    (evalFuel gotoFuel : Nat) (blocks : HashMap Int Eidos.Block)
-    (F : Hyle.Sem.FEnv) (X : Hyle.Sem.XEnv) (dev : Hyle.Device) (p : Eidos.Proc)
-    (R : Eidos.MState → HashMap String Hyle.BV → Prop)
+    (evalFuel gotoFuel : Nat) (blocks : HashMap Int Synolon.Block)
+    (F : Hyle.Sem.FEnv) (X : Hyle.Sem.XEnv) (dev : Hyle.Device) (p : Synolon.Proc)
+    (R : Synolon.MState → HashMap String Hyle.BV → Prop)
     (E : Hyle.Sem.EEnv := Hyle.Sem.eEmpty) : Prop :=
-  Rwv.Sim.SimP (Eidos.inducedMealy Δ defns evalFuel gotoFuel blocks E)
+  Rwv.Sim.SimP (Synolon.inducedMealy Δ defns evalFuel gotoFuel blocks E)
       ((Hyle.inducedMealy F X dev E).mapIn (Eidos.Val.portSplit Δ evalFuel p.inTy))
       R
       (fun v bs => Eidos.Val.portSplit Δ evalFuel p.outTy v = .ok bs)
-      (fun v => Eidos.Val.HasTy Δ v p.inTy)
+      (fun v => Synolon.Val.HasTy Δ v p.inTy)
 
 /-- The glue theorem: the step obligations, plus the initial-state
 obligation (the entry block's post-reset state is `R`-related to the
@@ -460,19 +462,19 @@ simulation (`simP_run`), and in the unhalted case upgrade the prefix
 to equality by the two length lemmas. -/
 theorem stepObligations_corresponds
     {Δ : Eidos.DEnv} {defns : HashMap Int Eidos.Defn} {evalFuel gotoFuel : Nat}
-    {p : Eidos.Proc} {H : Hyle.Program} {F : Hyle.Sem.FEnv} {X : Hyle.Sem.XEnv}
-    {dev : Hyle.Device} {blocks : HashMap Int Eidos.Block}
-    {R : Eidos.MState → HashMap String Hyle.BV → Prop} {E : Hyle.Sem.EEnv}
+    {p : Synolon.Proc} {H : Hyle.Program} {F : Hyle.Sem.FEnv} {X : Hyle.Sem.XEnv}
+    {dev : Hyle.Device} {blocks : HashMap Int Synolon.Block}
+    {R : Synolon.MState → HashMap String Hyle.BV → Prop} {E : Hyle.Sem.EEnv}
     (hF : Hyle.Sem.mkFEnv H E = .ok F)
     (hX : X = Hyle.Sem.xenv H)
     (hdev : dev = H.device)
     (hblocks : blocks = HashMap.ofList (p.blocks.map fun (l, b) => (l.uniq, b)))
     (hR : StepObligations Δ defns evalFuel gotoFuel blocks F X dev p R E)
-    (hinit : ∀ σ₀ o s₀, Eidos.Machine.initCells Δ defns evalFuel p E = .ok σ₀ →
-        Eidos.Machine.execBlock Δ defns blocks evalFuel gotoFuel [] σ₀ p.entry E
+    (hinit : ∀ σ₀ o s₀, Synolon.Machine.initCells Δ defns evalFuel p E = .ok σ₀ →
+        Synolon.Machine.execBlock Δ defns blocks evalFuel gotoFuel [] σ₀ p.entry E
           = .ok (.step o s₀) →
         R s₀ (Hyle.Sem.initRegs dev)) :
-    Eidos.Corresponds Δ defns evalFuel gotoFuel p H E := by
+    Synolon.Corresponds Δ defns evalFuel gotoFuel p H E := by
   subst hX hdev
   intro ins hty encIns hmapM mt hmrun ht hhrun
   -- Expose the stream semantics inside `Program.run`.
@@ -491,7 +493,7 @@ theorem stepObligations_corresponds
     exact hsem
   -- The Eidos side as its induced machine.
   obtain ⟨σ₀, hσ, hcase⟩ :=
-    Eidos.run_outs_eq_mealy Δ defns evalFuel gotoFuel p ins mt blocks hblocks hmrun
+    Synolon.run_outs_eq_mealy Δ defns evalFuel gotoFuel p ins mt blocks hblocks hmrun
   cases hcase with
   | inl hhalt =>
       -- Entry-block halt: the machine trace is empty, and the empty
@@ -509,7 +511,7 @@ theorem stepObligations_corresponds
       | some a => exact hpre
       | none =>
           -- Unhalted: upgrade the prefix to equality by lengths.
-          have h₁ : mt.outs.length = ins.length := Eidos.run_no_halt_length hmrun hh
+          have h₁ : mt.outs.length = ins.length := Synolon.run_no_halt_length hmrun hh
           have h₂ : mt.outs.length = os₂'.length := List.Forall₂.length_eq hfa
           have h₃ : encIns.length = ins.length := mapM_ok_length hmapM
           have h₄ : os₂'.length = ht.length := by omega

@@ -20,7 +20,7 @@ compiled as an ordinary expression.)
 (`Rwv.Eidos.Cexp.ForeignC`) for the constructed environment: the
 semantic hook is BY CONSTRUCTION the denotation of the definition the
 syntactic map designates, so the premise of
-`Rwv.Eidos.Cstep.validateProc_corresponds` is machine-checkably
+`Rwv.Synolon.Cstep.validateProc_corresponds` is machine-checkably
 satisfiable for the environments the drivers actually build.
 
 The foreign program may be (and for the validator should be) the

@@ -14,12 +14,12 @@ name = "rwv-parse-check"
 root = "ParseCheck"
 
 [[lean_exe]]
-name = "rwv-eir-parse-check"
-root = "EirParseCheck"
+name = "rwv-syn-parse-check"
+root = "SynParseCheck"
 
 [[lean_exe]]
-name = "rwv-eidos-diff"
-root = "EidosDiff"
+name = "rwv-synolon-diff"
+root = "SynolonDiff"
 
 [[lean_exe]]
 name = "rwv-hyle-equiv"

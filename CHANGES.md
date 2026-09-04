@@ -170,6 +170,16 @@
   Lean toolchain (build-time only) and finishing with a
   compile-and-certify smoke test. The README's installation section now
   documents all dependencies.
+* The Lean development behind `--certify` (`verify/`) follows the
+  Eidos/Synolon split: the machine-level modules (syntax, parser,
+  checker, semantics, fuel monotonicity, eta saturation, the prim-basis
+  entry point, the machine-step validator, the correspondence, and the
+  bundle validator) now live under `verify/Rwv/Synolon/` in the
+  namespace `Rwv.Synolon`, while `Rwv.Eidos` keeps the expression level
+  only; the proofs are unchanged. The differential-testing driver
+  `rwv-eidos-diff` is renamed `rwv-synolon-diff` (its harness is
+  `verify/test/synolon-diff-goldens.py`) and the parser check
+  `rwv-eir-parse-check` is renamed `rwv-syn-parse-check`.
 
 ## 2.8 (2026-07)
 

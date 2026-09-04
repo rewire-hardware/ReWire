@@ -18,11 +18,11 @@ The companion lemmas live downstream of their dependencies:
   * `decode_vty` (decoded values are `VTy`-canonical) in
     Rwv.Eidos.Cexp, where `VTy` lives;
   * `rep_decode` (decode ∘ rep = id on canonical, proxy-normal
-    values) in Rwv.Eidos.Cstep.
+    values) in Rwv.Synolon.Cstep.
 
 `Val.RepCanon` (defined here — it needs only `Val`) carves out the
 domain on which `rep` is injective, for `rep_decode` (the inverse
-direction, proved in Rwv.Eidos.Cstep): proxy-normal constructor forms
+direction, proved in Rwv.Synolon.Cstep): proxy-normal constructor forms
 — the prim basis declares an actual `Proxy` data constructor, so both
 `.proxy` and `.con _ "Proxy" []` inhabit `Proxy n` with the same
 (empty) representation, and `decode` canonically produces `.proxy` —
@@ -371,7 +371,7 @@ end
 `Proxy n` is `.proxy` (never the prim basis' `Proxy` data constructor
 applied — both rep to the empty bit vector), and `Finite` values are
 in range (out-of-range values rep to their wrapped residues). The
-inverse round trip `rep_decode` (Rwv.Eidos.Cstep) holds on this
+inverse round trip `rep_decode` (Rwv.Synolon.Cstep) holds on this
 domain. -/
 inductive Val.RepCanon : Val → Prop where
   | vec {es : List Val} : (∀ e ∈ es, Val.RepCanon e) → Val.RepCanon (.vec es)

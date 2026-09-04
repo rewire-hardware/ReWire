@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Differential-test harness: the mechanized Synolon machine semantics
-(rwv-eidos-diff) vs rwc's Haskell Hyle interpreter on the COMPILED
+(rwv-synolon-diff) vs rwc's Haskell Hyle interpreter on the COMPILED
 program, across the golden corpus — the doc/synolon.md §5.6
 correspondence, checked per test by trace comparison.
 
 For each tests/golden/<base>.rwc with a <base>.hs source:
 
-  1. generate the pass-8 Eidos dump and the raw-fold .rwc:
+  1. generate the pass-8 Synolon dump and the raw-fold .rwc:
        rwc --synolon -d 9 -o <work>/<base>.sv tests/golden/<base>.hs
      (writes <base>.syn and <base>.9.rwc beside the output;
      parallelized with a small pool — this is the expensive phase);
@@ -14,13 +14,13 @@ For each tests/golden/<base>.rwc with a <base>.hs source:
      stimulus (deterministic xorshift32 keyed on the base name),
      validates the port convention against the .rwc device, writes the
      stimulus in rwc's inputs format, and prints the machine trace:
-       rwv-eidos-diff <base>.syn <base>.rwc --cycles N
-           --stim <stim> --foreign <base>.9.rwc > <eidos.yaml>
+       rwv-synolon-diff <base>.syn <base>.rwc --cycles N
+           --stim <stim> --foreign <base>.9.rwc > <synolon.yaml>
   3. run the Haskell reference on the SAME stimulus and the COMPILED
      .rwc golden:
        rwc <base>.rwc --from-core --interpret=<stim> --cycles N
            -o <hs.yaml>
-  4. byte-compare the traces. If the Eidos side halted early (reported
+  4. byte-compare the traces. If the Synolon side halted early (reported
      on its stderr), compare the common prefix instead and report the
      prefix length.
 
@@ -37,7 +37,7 @@ device run at the same η (the ∀η statement at one concrete η); the
 harness reports these as OK (eta self-test) on driver success.
 
 Usage:
-  verify/test/eidos-diff-goldens.py [--only SUBSTR] [--cycles N]
+  verify/test/synolon-diff-goldens.py [--only SUBSTR] [--cycles N]
       [--workdir DIR] [--rwc PATH] [--lean-exe PATH] [--goldens DIR]
       [--jobs N] [--reuse-dump] [--timeout SECS] [-v]
 """
@@ -102,7 +102,7 @@ def resolve_rwc(explicit):
     found = shutil.which("rwc")
     if found:
         return found
-    sys.exit("eidos-diff-goldens: cannot find rwc (build with `stack build`, "
+    sys.exit("synolon-diff-goldens: cannot find rwc (build with `stack build`, "
              "or pass --rwc / set $RWC)")
 
 
@@ -116,18 +116,18 @@ def resolve_lake():
 
 
 def build_lean(explicit):
-    """Build rwv-eidos-diff; return its path, or (None, reason)."""
+    """Build rwv-synolon-diff; return its path, or (None, reason)."""
     if explicit:
         return explicit, None
     lake = resolve_lake()
     if lake is None:
         return None, "lake not found (install elan, or pass --lean-exe)"
-    r = subprocess.run([lake, "build", "rwv-eidos-diff"], cwd=VERIFY,
+    r = subprocess.run([lake, "build", "rwv-synolon-diff"], cwd=VERIFY,
                        capture_output=True, text=True)
     if r.returncode != 0:
         tail = (r.stderr or r.stdout).strip().splitlines()
-        return None, "lake build rwv-eidos-diff failed: " + (tail[-1] if tail else "?")
-    exe = VERIFY / ".lake" / "build" / "bin" / "rwv-eidos-diff"
+        return None, "lake build rwv-synolon-diff failed: " + (tail[-1] if tail else "?")
+    exe = VERIFY / ".lake" / "build" / "bin" / "rwv-synolon-diff"
     if not exe.exists():
         return None, f"built, but {exe} not found"
     return str(exe), None
@@ -168,11 +168,11 @@ def main():
                     help="run only tests whose base name contains SUBSTR")
     ap.add_argument("--cycles", type=int, default=20,
                     help="cycles of generated stimulus (default: 20)")
-    ap.add_argument("--workdir", default=str(VERIFY / "test" / "out-eidos"),
-                    help="where .syn/stimulus/trace files go (default: verify/test/out-eidos)")
+    ap.add_argument("--workdir", default=str(VERIFY / "test" / "out-synolon"),
+                    help="where .syn/stimulus/trace files go (default: verify/test/out-synolon)")
     ap.add_argument("--rwc", default=None, help="path to the rwc executable")
     ap.add_argument("--lean-exe", default=None,
-                    help="path to the rwv-eidos-diff executable")
+                    help="path to the rwv-synolon-diff executable")
     ap.add_argument("--jobs", type=int, default=4,
                     help="parallel rwc --synolon compilations (default: 4)")
     ap.add_argument("--reuse-dump", action="store_true",
@@ -187,7 +187,7 @@ def main():
     if args.only:
         files = [f for f in files if args.only in f.stem]
     if not files:
-        sys.exit(f"eidos-diff-goldens: no .rwc files matching in {golden_dir}")
+        sys.exit(f"synolon-diff-goldens: no .rwc files matching in {golden_dir}")
 
     work = Path(args.workdir)
     work.mkdir(parents=True, exist_ok=True)
@@ -195,14 +195,14 @@ def main():
     rwc = resolve_rwc(args.rwc)
     lean_exe, lean_reason = build_lean(args.lean_exe)
     if lean_exe is None:
-        sys.exit(f"eidos-diff-goldens: {lean_reason}")
+        sys.exit(f"synolon-diff-goldens: {lean_reason}")
 
     print(f"rwc:            {rwc}")
-    print(f"rwv-eidos-diff: {lean_exe}")
+    print(f"rwv-synolon-diff: {lean_exe}")
     print(f"workdir:        {work}\n")
 
     # Phase 1: pre-filter and generate the .syn dumps in a pool.
-    todo = []            # (base, rwc_golden, eir_path)
+    todo = []            # (base, rwc_golden, syn_path)
     results = []         # (name, status, detail)
     width = max(len(f.stem) for f in files)
 
@@ -226,9 +226,9 @@ def main():
             r = subprocess.run(cmd, capture_output=True, text=True,
                                timeout=args.timeout, cwd=REPO)
         except subprocess.TimeoutExpired:
-            return base, "EIR-FAIL", f"rwc --synolon timed out after {args.timeout}s"
+            return base, "SYN-FAIL", f"rwc --synolon timed out after {args.timeout}s"
         if not syn.exists():
-            return base, "EIR-FAIL", "rwc --synolon: " + stderr_tail(r.stderr)
+            return base, "SYN-FAIL", "rwc --synolon: " + stderr_tail(r.stderr)
         return base, None, "generated .syn"
 
     pre = {}
@@ -258,7 +258,7 @@ def main():
         if base in pre:
             report(base, *pre[base])
             continue
-        status, detail = gen_status.get(base, ("EIR-FAIL", "no generation result"))
+        status, detail = gen_status.get(base, ("SYN-FAIL", "no generation result"))
         if status is not None:
             report(base, status, detail)
             continue
@@ -279,7 +279,7 @@ def main():
 
         # The Lean side: stimulus + Synolon trace.
         stim = work / f"{base}.stim.yaml"
-        eidos_out = work / f"{base}.eidos.yaml"
+        synolon_out = work / f"{base}.synolon.yaml"
         cmd = [lean_exe, str(syn), str(f),
                "--cycles", str(args.cycles), "--stim", str(stim)]
         raw9 = work / f"{base}.9.rwc"
@@ -292,9 +292,9 @@ def main():
         try:
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=args.timeout)
         except subprocess.TimeoutExpired:
-            report(base, "LEAN-FAIL", f"rwv-eidos-diff timed out after {args.timeout}s")
+            report(base, "LEAN-FAIL", f"rwv-synolon-diff timed out after {args.timeout}s")
             continue
-        eidos_out.write_text(r.stdout)
+        synolon_out.write_text(r.stdout)
         if r.returncode != 0:
             report(base, "LEAN-FAIL", stderr_tail(r.stderr))
             continue
@@ -330,18 +330,18 @@ def main():
 
         # Comparison: whole trace, or the halt prefix.
         if not halted:
-            if hs_out.read_bytes() == eidos_out.read_bytes():
+            if hs_out.read_bytes() == synolon_out.read_bytes():
                 report(base, "OK", f"{args.cycles} cycles")
             else:
-                report(base, "DIFF", f"diff {hs_out} {eidos_out}")
+                report(base, "DIFF", f"diff {hs_out} {synolon_out}")
         else:
             he = trace_entries(hs_out.read_text())
-            ee = trace_entries(eidos_out.read_text())
+            ee = trace_entries(synolon_out.read_text())
             k = len(ee)
             if he[:k] == ee:
                 report(base, "OK", f"halt prefix ({k} of {args.cycles} cycles)")
             else:
-                report(base, "DIFF", f"halt prefix mismatch: diff {hs_out} {eidos_out}")
+                report(base, "DIFF", f"halt prefix mismatch: diff {hs_out} {synolon_out}")
 
     counts = {}
     for _, status, _ in results:
@@ -349,7 +349,7 @@ def main():
     print("\n" + ", ".join(f"{v} {k.lower()}" for k, v in sorted(counts.items()))
           + f" (of {len(results)})")
 
-    bad = sum(counts.get(s, 0) for s in ("DIFF", "EIR-FAIL", "HS-FAIL", "LEAN-FAIL"))
+    bad = sum(counts.get(s, 0) for s in ("DIFF", "SYN-FAIL", "HS-FAIL", "LEAN-FAIL"))
     sys.exit(1 if bad else 0)
 
 

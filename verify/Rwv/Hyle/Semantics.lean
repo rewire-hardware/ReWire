@@ -123,7 +123,7 @@ extern are distinct functions), a function of the CONCATENATION of
 the input ports (MSB-first, in port order). The correspondence
 statement quantifies over this environment with both semantics
 reading the SAME one — the algebraic η_alg enters by instantiating
-it at `rep ∘ η ∘ decode` (Rwv.Eidos.Cstep.etaB). -/
+it at `rep ∘ η ∘ decode` (Rwv.Synolon.Cstep.etaB). -/
 abbrev EEnv := String → List Nat → Option (BV → Except String BV)
 
 /-- The empty extern environment: every model-less extern

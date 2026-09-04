@@ -248,7 +248,7 @@ compileFile conf filename = do
 scrubSpans :: Program -> Program
 scrubSpans = unAnn
 
--- | The verified Eidos-to-Hyle validator executable (built from verify/
+-- | The verified Synolon-to-Hyle validator executable (built from verify/
 --   with Lake; see doc/certify.md).
 rwvExe :: String
 rwvExe = "rwv-cstep-validate"

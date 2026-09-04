@@ -18,11 +18,13 @@ run reads, which is what "both runs at the same η" means in the
 correspondence statement.
 -/
 import Rwv.Eidos.Eval
+import Rwv.Synolon.Syntax
 import Std.Data.HashMap
 
-namespace Rwv.Eidos
+namespace Rwv.Synolon
 
 open Std (HashMap)
+open Rwv.Eidos
 
 /-- A machine state (doc/synolon.md §5.3): a pause-target label (by unique), saved
 values for its parameters except the resumed input, and the cell
@@ -197,4 +199,4 @@ def Proc.run (Δ : DEnv) (defns : HashMap Int Defn) (evalFuel gotoFuel : Nat)
           (Machine.foldStep Δ defns blocks evalFuel gotoFuel E)
       pure ⟨outsRev.reverse, halted⟩
 
-end Rwv.Eidos
+end Rwv.Synolon

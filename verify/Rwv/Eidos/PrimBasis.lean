@@ -7,7 +7,8 @@ programs may reference without declaring — the unit and tuple families
 bridge emits them), the abstract width-bearing types (Vec, Finite,
 Proxy), and the reactive stack types (which exist only in Eidos, before procification).
 The bridge prepends these to every program so consumers can resolve
-constructor occurrences.
+constructor occurrences (`Rwv.Synolon.addPrims`, the program-level
+entry point over `primDatas`).
 
 The basis' type-variable uniques are NEGATIVE: the bridge mints
 non-negative uniques, so basis binders can never collide with program
@@ -96,11 +97,5 @@ def primDatas : List DataDefn :=
   , eitherData
   ]
   ++ ((List.range 61).map fun i => mkTuple (i + 2))
-
-/-- Prepend the primitive basis (dropping any duplicate declarations,
-which the bridge does not produce but hand-written input might). -/
-def addPrims (p : Program) : Program :=
-  let basisNames := primDatas.map (·.name)
-  { p with datas := primDatas ++ p.datas.filter (fun d => ¬ basisNames.contains d.name) }
 
 end Rwv.Eidos

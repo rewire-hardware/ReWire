@@ -89,7 +89,7 @@ the trust base below.)
 
 The validator is a Lean 4 program (under `verify/`) whose acceptance
 carries a kernel-checked soundness theorem (`validateProc_corresponds`,
-in `Rwv.Eidos.Cstep`; axiom-clean up to `propext`, `Classical.choice`,
+in `Rwv.Synolon.Cstep`; axiom-clean up to `propext`, `Classical.choice`,
 `Quot.sound`). When it accepts a pair, the theorem concludes the
 correspondence of doc/synolon.md §5.6 for the dumped process and program:
 for every input trace of well-typed semantic values, whenever the
@@ -101,7 +101,7 @@ excluding) the halting cycle when it does (the doc/synolon.md §5.4
 prefix reading).
 
 The gap between the executable and the theorem is closed by one pure
-entry point: `Rwv.Eidos.validateBundle` owns every gate between the
+entry point: `Rwv.Synolon.validateBundle` owns every gate between the
 artifact texts and the library validator, and its top-level theorem
 `validateBundle_sound` (axiom-clean, same three axioms) concludes the
 correspondence from a `.validated` result alone — parsing, the

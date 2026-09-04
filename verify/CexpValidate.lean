@@ -8,7 +8,7 @@ parses the machine-level pass-8 dump and the compiled .rwc, mirrors the
 reference translation's definition normalization (transDefn: peel
 lambdas into parameters, eta-expand to signature arity; plus the
 under-applied constructor/primitive saturation the differ uses —
-see EidosDiff.lean's header), matches Eidos pure definitions to Hyle
+see SynolonDiff.lean's header), matches Eidos pure definitions to Hyle
 definitions by simulating the fold's naming (ToHyle.buildNameMap:
 `defnBase` — the `$LL.` marker stripped — disambiguated by
 `pickFresh` numeric suffixes over the emitted definitions in order),
@@ -37,8 +37,8 @@ eta-saturation pre-pass and the name-map simulation); the verified
 statement is Rwv.Eidos.Cexp.checkDefnPair_sound, about the saturated
 definition pair actually passed to it.
 -/
-import Rwv.Eidos.Parse
-import Rwv.Eidos.PrimBasis
+import Rwv.Synolon.Parse
+import Rwv.Synolon.PrimBasis
 import Rwv.Eidos.ForeignEnv
 import Rwv.Eidos.Cexp
 import Rwv.Hyle.Parse
@@ -46,12 +46,13 @@ import Rwv.Hyle.Bridge
 import Rwv.Hyle.BridgeDag
 
 open Rwv.Eidos
+open Rwv.Synolon
 open Rwv.Eidos.Cexp
 open Rwv.Hyle (BV)
 open Rwv.Hyle.Bridge (NF)
 open Std (HashMap)
 
-/-! ## Eta saturation (EidosDiff's pre-pass, defn-level extended)
+/-! ## Eta saturation (SynolonDiff's pre-pass, defn-level extended)
 
 Under-applied constructor/primitive occurrences are wrapped in
 lambdas supplying the missing arguments (fresh uniques minted from
@@ -319,7 +320,7 @@ def main (argv : List String) : IO UInt32 := do
   | [eirFile, rwcFile] => do
     let eirTxt ← IO.FS.readFile ⟨eirFile⟩
     let rwcTxt ← IO.FS.readFile ⟨rwcFile⟩
-    match parseEir eirTxt eirFile, Rwv.Hyle.parseProgram rwcTxt rwcFile with
+    match parseSyn eirTxt eirFile, Rwv.Hyle.parseProgram rwcTxt rwcFile with
     | .error e, _ => IO.eprintln s!"cexp-validate: {eirFile}: {e}"; return 1
     | _, .error e => IO.eprintln s!"cexp-validate: {rwcFile}: {e}"; return 1
     | .ok p₀, .ok hp => do

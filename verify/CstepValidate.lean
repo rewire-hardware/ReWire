@@ -1,6 +1,6 @@
 /-
 rwv-cstep-validate: the headline driver for the machine-step validator
-(Rwv.Eidos.Cstep), with an optional per-label measurement mode.
+(Rwv.Synolon.Cstep), with an optional per-label measurement mode.
 
     rwv-cstep-validate <file.syn> <file.rwc> [--fuel=N] [--measure]
         [--protocol=2] [--nonce=STR] [-v]
@@ -29,12 +29,12 @@ final (post-pass-11) .rwc, and applies, in order:
     a source/target disagreement about whether an extern carries a
     model is REJECTED;
   * a REJECTED gate: the Eidos machine well-formedness judgment
-    (Rwv.Eidos.Check.checkMachine, on the canonical-basis pre-eta
+    (Rwv.Synolon.Check.checkMachine, on the canonical-basis pre-eta
     program), the Hyle well-formedness judgment
     (Rwv.Hyle.Program.check), and the target definition environment
     (Rwv.Hyle.Sem.mkFEnv) — a target that cannot denote or execute
     must not validate vacuously;
-  * eta saturation to signature arity (Rwv.Eidos.etaSaturate — the
+  * eta saturation to signature arity (Rwv.Synolon.etaSaturate — the
     same normalization rwc's own pipeline applies before the fold; the
     validated artifact is the saturated proc);
   * the library validator validateProcE (DAG dispatcher with tree-tier
@@ -82,14 +82,14 @@ Plus an INIT line (the initial-state check: entry run + encode vs
 declared register initials).
 
 This driver is UNTRUSTED measurement plumbing; the verified statements
-live in Rwv.Eidos.Cstep.
+live in Rwv.Synolon.Cstep.
 -/
 import Rwv.Sha256
-import Rwv.Eidos.Parse
-import Rwv.Eidos.PrimBasis
-import Rwv.Eidos.EtaSat
-import Rwv.Eidos.Check
-import Rwv.Eidos.Cstep
+import Rwv.Synolon.Parse
+import Rwv.Synolon.PrimBasis
+import Rwv.Synolon.EtaSat
+import Rwv.Synolon.Check
+import Rwv.Synolon.Cstep
 import Rwv.Bundle
 import Rwv.Hyle.Parse
 import Rwv.Hyle.Check
@@ -97,7 +97,8 @@ import Rwv.Hyle.Bridge
 import Rwv.Hyle.BridgeDag
 
 open Rwv.Eidos
-open Rwv.Eidos.Cstep
+open Rwv.Synolon
+open Rwv.Synolon.Cstep
 open Rwv.Eidos.Cexp (sliceNF catNF)
 open Rwv.Hyle (BV)
 open Rwv.Hyle.Bridge (NF)
@@ -332,7 +333,7 @@ def main (argv : List String) : IO UInt32 := do
     let vOk := match verdict with
       | .validated => true
       | _ => false
-    match parseEir eirTxt eirFile, Rwv.Hyle.parseProgram rwcTxt rwcFile with
+    match parseSyn eirTxt eirFile, Rwv.Hyle.parseProgram rwcTxt rwcFile with
     | .error _, _ | _, .error _ =>
         -- The bundle already reported the parse failure.
         return verdict.exitCode

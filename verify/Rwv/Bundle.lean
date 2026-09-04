@@ -31,18 +31,19 @@ library carries no partial definitions); exhaustion fails closed — the
 scan reports an error and the unique-minimum collapses to the refused
 floor.
 -/
-import Rwv.Eidos.Parse
-import Rwv.Eidos.PrimBasis
-import Rwv.Eidos.EtaSat
-import Rwv.Eidos.Check
-import Rwv.Eidos.Cstep
+import Rwv.Synolon.Parse
+import Rwv.Synolon.PrimBasis
+import Rwv.Synolon.EtaSat
+import Rwv.Synolon.Check
+import Rwv.Synolon.Cstep
 import Rwv.Hyle.Parse
 import Rwv.Hyle.Check
 import Rwv.Hyle.Progress
 
-namespace Rwv.Eidos
+namespace Rwv.Synolon
 
 open Std (HashMap)
+open Rwv.Eidos
 
 namespace Bundle
 
@@ -272,7 +273,7 @@ deriving Repr
 /-- The bundle validator (see the module header): every gate between
 the artifact texts and the library validator, in order. -/
 def validateBundle (srcName srcTxt tgtName tgtTxt : String) (fuel : Nat) : BundleResult :=
-  match parseEir srcTxt srcName with
+  match parseSyn srcTxt srcName with
   | .error e => .error s!"{srcName}: {e}"
   | .ok p₀ =>
     match Rwv.Hyle.parseProgram tgtTxt tgtName with
@@ -345,7 +346,7 @@ library validator's acceptance. The downstream theorems
 theorem validateBundle_inv {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}
     (h : validateBundle srcName srcTxt tgtName tgtTxt fuel = .validated) :
     ∃ p₀ hp p pr,
-      parseEir srcTxt srcName = .ok p₀
+      parseSyn srcTxt srcName = .ok p₀
       ∧ Rwv.Hyle.parseProgram tgtTxt tgtName = .ok hp
       ∧ hp.check = .ok ()
       ∧ (∃ F, Rwv.Hyle.Sem.mkFEnv hp = .ok F)
@@ -353,7 +354,7 @@ theorem validateBundle_inv {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}
       ∧ etaSaturate Bundle.structuralFuel (addPrims p₀) = .ok p
       ∧ p.procs = [pr]
       ∧ Cstep.validateProcE (DEnv.ofDatas p.datas) (mkDefnMap p.defns) pr hp fuel = .ok () := by
-  cases hpe : parseEir srcTxt srcName with
+  cases hpe : parseSyn srcTxt srcName with
   | error e => rw [validateBundle, hpe] at h; exact absurd h (by simp)
   | ok p₀ =>
   cases hhp : Rwv.Hyle.parseProgram tgtTxt tgtName with
@@ -423,7 +424,7 @@ knows exactly which program was certified. -/
 theorem validateBundle_sound {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}
     (h : validateBundle srcName srcTxt tgtName tgtTxt fuel = .validated) :
     ∃ p₀ hp p pr,
-      parseEir srcTxt srcName = .ok p₀
+      parseSyn srcTxt srcName = .ok p₀
       ∧ Rwv.Hyle.parseProgram tgtTxt tgtName = .ok hp
       ∧ etaSaturate Bundle.structuralFuel (addPrims p₀) = .ok p
       ∧ p.procs = [pr]
@@ -611,7 +612,7 @@ target that can never run cannot satisfy this theorem. -/
 theorem validateBundle_refines {srcName srcTxt tgtName tgtTxt : String} {fuel : Nat}
     (h : validateBundle srcName srcTxt tgtName tgtTxt fuel = .validated) :
     ∃ p₀ hp p pr,
-      parseEir srcTxt srcName = .ok p₀
+      parseSyn srcTxt srcName = .ok p₀
       ∧ Rwv.Hyle.parseProgram tgtTxt tgtName = .ok hp
       ∧ etaSaturate Bundle.structuralFuel (addPrims p₀) = .ok p
       ∧ p.procs = [pr]
@@ -658,7 +659,7 @@ theorem validateBundle_refines {srcName srcTxt tgtName tgtTxt : String} {fuel : 
     Rwv.Hyle.Progress.Program.run_progress hhc hinst' hstim hFE
   exact ⟨ht, hht, hcorr ins hty encIns henc mt hmt ht hht⟩
 
-#print axioms Rwv.Eidos.validateBundle_sound
-#print axioms Rwv.Eidos.validateBundle_refines
+#print axioms Rwv.Synolon.validateBundle_sound
+#print axioms Rwv.Synolon.validateBundle_refines
 
-end Rwv.Eidos
+end Rwv.Synolon

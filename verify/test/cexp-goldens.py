@@ -2,7 +2,7 @@
 """Per-definition validation harness for the verified Eidos-side
 expression compiler (rwv-cexp-validate, Rwv.Eidos.Cexp).
 
-For each test with a pass-8 Eidos dump, runs the per-defn validator
+For each test with a pass-8 Synolon dump, runs the per-defn validator
 against the RAW fold output (<base>.9.rwc — every definition present,
 the purest cexp-vs-transExp measurement) or, with --pass10, against
 the post-optimize dump (<base>.10.rwc), tabulating the verdicts. Dumps

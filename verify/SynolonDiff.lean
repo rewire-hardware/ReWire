@@ -1,10 +1,10 @@
 /-
-rwv-eidos-diff: the differential-testing driver for the mechanized
+rwv-synolon-diff: the differential-testing driver for the mechanized
 Synolon machine semantics (doc/synolon.md §5) against rwc's compiled
 Hyle program — the doc/synolon.md §5.6 correspondence, checked per test by trace
 comparison.
 
-    rwv-eidos-diff <file.syn> <file.rwc> [--cycles N] [--seed S]
+    rwv-synolon-diff <file.syn> <file.rwc> [--cycles N] [--seed S]
         [--stim FILE] [--fuel N] [--foreign FILE.rwc] [--eta-synth]
 
 parses the machine-level pass-8 dump (must contain exactly one proc),
@@ -30,7 +30,7 @@ so with the same stimulus file
     rwc <file.rwc> --from-core --interpret=FILE --cycles N -o hs.yaml
 
 must agree byte for byte (up to the halt prefix). Driven across the
-golden corpus by verify/test/eidos-diff-goldens.py.
+golden corpus by verify/test/synolon-diff-goldens.py.
 
 ## The stimulus generator
 
@@ -106,16 +106,17 @@ Exit codes: 0 success (including an early halt, which is reported on
 stderr and prints only the trace prefix), 1 parse/mismatch/evaluation
 failure, 2 usage error.
 -/
-import Rwv.Eidos.Parse
-import Rwv.Eidos.PrimBasis
-import Rwv.Eidos.Check
-import Rwv.Eidos.Machine
-import Rwv.Eidos.EtaSat
+import Rwv.Synolon.Parse
+import Rwv.Synolon.PrimBasis
+import Rwv.Synolon.Check
+import Rwv.Synolon.Machine
+import Rwv.Synolon.EtaSat
 import Rwv.Eidos.ForeignEnv
 import Rwv.Hyle.Parse
 import Rwv.Diff
 
 open Rwv.Eidos
+open Rwv.Synolon
 open Rwv.Hyle (BV)
 open Std (HashMap)
 
@@ -132,7 +133,7 @@ structure Args where
   etaSynth : Bool := false
 
 def usage : String :=
-  "usage: rwv-eidos-diff <file.syn> <file.rwc> [--cycles N] [--seed S] [--stim FILE] [--fuel N] [--foreign FILE.rwc] [--eta-synth]"
+  "usage: rwv-synolon-diff <file.syn> <file.rwc> [--cycles N] [--seed S] [--stim FILE] [--fuel N] [--foreign FILE.rwc] [--eta-synth]"
 
 private def natOpt (flag val : String) : Except String Nat :=
   match val.toNat? with
@@ -182,7 +183,7 @@ def parseArgs (argv : List String) : Except String Args := do
   | _          => throw usage
 
 /-- The base name of a path: strip directories and the last extension
-(`verify/test/out-eidos/fibo1.syn` ↦ `fibo1`) — the default PRNG seed
+(`verify/test/out-synolon/fibo1.syn` ↦ `fibo1`) — the default PRNG seed
 key. -/
 def baseName (path : String) : String :=
   let name := ((path.splitOn "/").getLast?.getD path)
@@ -372,20 +373,20 @@ depth, not work — generous). -/
 def repFuel : Nat := 1000000
 
 def err (msg : String) : IO UInt32 := do
-  IO.eprintln s!"rwv-eidos-diff: {msg}"
+  IO.eprintln s!"rwv-synolon-diff: {msg}"
   return 1
 
 def main (argv : List String) : IO UInt32 := do
   match parseArgs argv with
-  | .error e => IO.eprintln s!"rwv-eidos-diff: {e}"; return 2
+  | .error e => IO.eprintln s!"rwv-synolon-diff: {e}"; return 2
   | .ok args => do
-    -- The Eidos side: parse, add the prim basis, find the single proc.
+    -- The Synolon side: parse, add the prim basis, find the single proc.
     let eirTxt ← IO.FS.readFile ⟨args.eirFile⟩
-    match parseEir eirTxt args.eirFile with
+    match parseSyn eirTxt args.eirFile with
     | .error e => err s!"{args.eirFile}: parse error: {e}"
     | .ok p₀ => do
       let p₁ := addPrims p₀
-      -- The Synolon well-formedness judgment (Rwv.Eidos.Check),
+      -- The Synolon well-formedness judgment (Rwv.Synolon.Check),
       -- on the program as rwc dumped it (pre eta-saturation, which is
       -- this driver's local workaround) — so the differential harness
       -- exercises the judgment corpus-wide before every run.
@@ -419,7 +420,7 @@ def main (argv : List String) : IO UInt32 := do
                 let t ← IO.FS.readFile ⟨path⟩
                 match Rwv.Hyle.parseProgram t path with
                 | .error e =>
-                    IO.eprintln s!"rwv-eidos-diff: {path}: parse error: {e}"
+                    IO.eprintln s!"rwv-synolon-diff: {path}: parse error: {e}"
                     return 1
                 | .ok fp => pure (t, fp)
           let Δ := addForeign Δ frTxt frProg
@@ -461,9 +462,9 @@ def main (argv : List String) : IO UInt32 := do
                   | .ok outBVs => do
                     match Rwv.Diff.printTrace (dev.outputs.map (·.1)) outBVs with
                     | .ok out => IO.print out
-                    | .error e => IO.eprintln s!"rwv-eidos-diff: {e}"; return 1
+                    | .error e => IO.eprintln s!"rwv-synolon-diff: {e}"; return 1
                     if tr.halted.isSome then
-                      IO.eprintln s!"rwv-eidos-diff: note: halted after {tr.outs.length} observable cycle(s) (of {args.cycles} inputs); the trace is the halt prefix"
+                      IO.eprintln s!"rwv-synolon-diff: note: halted after {tr.outs.length} observable cycle(s) (of {args.cycles} inputs); the trace is the halt prefix"
                     -- The internal correspondence check — the mechanized
                     -- Hyle device at the SAME synthesized η.
                     if args.etaSynth then
@@ -472,7 +473,7 @@ def main (argv : List String) : IO UInt32 := do
                           return ← err s!"eta self-test: mechanized Hyle run failed: {e}"
                       | .ok hyTrace =>
                           if outBVs == hyTrace.take outBVs.length then
-                            IO.eprintln s!"rwv-eidos-diff: eta self-test OK ({outBVs.length} cycle(s), externs: {String.intercalate "," (etaTys.map (·.1))})"
+                            IO.eprintln s!"rwv-synolon-diff: eta self-test OK ({outBVs.length} cycle(s), externs: {String.intercalate "," (etaTys.map (·.1))})"
                           else
                             return ← err "eta self-test: the Synolon trace and the mechanized Hyle trace DISAGREE at the synthesized η"
                     return 0

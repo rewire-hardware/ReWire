@@ -1,6 +1,6 @@
 /-
 The concrete instantiation legs of the simulation metatheorem: the two
-stream semantics (`Rwv.Eidos.Proc.run`, doc/synolon.md §5.4, and
+stream semantics (`Rwv.Synolon.Proc.run`, doc/synolon.md §5.4, and
 `Rwv.Hyle.Sem.run`, doc/hyle.md §6.4) presented as induced
 `Rwv.Sim.MealyE` machines, with proved run-equivalence lemmas
 connecting each concrete run function to `MealyE.run` of its induced
@@ -9,7 +9,7 @@ machine. With these, the abstract simulation metatheorem
 `SimE` between the induced machines gives equality of the concrete
 successful traces.
 -/
-import Rwv.Eidos.Machine
+import Rwv.Synolon.Machine
 import Rwv.Hyle.Semantics
 import Rwv.Sim
 
@@ -114,7 +114,9 @@ end Hyle
 /-! ## The Synolon process as an induced Mealy machine
      (doc/synolon.md §5.3–§5.4) -/
 
-namespace Eidos
+namespace Synolon
+
+open Rwv.Eidos
 
 /-- The Mealy machine induced by an Synolon process's block graph:
 states are machine states, one step is `Machine.step`, and a halt
@@ -278,6 +280,6 @@ theorem run_outs_eq_mealy (Δ : DEnv) (defns : HashMap Int Defn)
           rw [hrun, ← hmt]
           exact congrArg Except.ok hos.symm
 
-end Eidos
+end Synolon
 
 end Rwv

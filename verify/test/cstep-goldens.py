@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Per-label validation harness for the verified machine-step
-validator (rwv-cstep-validate, Rwv.Eidos.Cstep).
+validator (rwv-cstep-validate, Rwv.Synolon.Cstep).
 
-For each test with a pass-8 Eidos dump, runs the machine-step
+For each test with a pass-8 Synolon dump, runs the machine-step
 validator against the FINAL Hyle program (<base>.11.rwc — the
 post-inline program the backends consume; --pass9/--pass10 select the
 earlier dumps), checking the headline verdict against the test's

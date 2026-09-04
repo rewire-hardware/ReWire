@@ -6,16 +6,17 @@ the halting cycle), and the top-level correspondence Prop over the two
 mechanized semantics. This is the statement the differential harness
 tests empirically per golden, and the statement the validator's
 soundness theorem concludes (`validateProc_corresponds` and its ∀η
-variant in Rwv.Eidos.Cstep, with `Rwv.Sim.simP_run` as the induction
+variant in Rwv.Synolon.Cstep, with `Rwv.Sim.simP_run` as the induction
 connecting per-step obligations to it).
 -/
-import Rwv.Eidos.Machine
+import Rwv.Synolon.Machine
 import Rwv.Hyle.Semantics
 import Std.Data.HashMap
 
-namespace Rwv.Eidos
+namespace Rwv.Synolon
 
 open Std (HashMap)
+open Rwv.Eidos
 
 /-- Well-typedness of a semantic value at a representable type
 (doc/synolon.md §5.1): the inductive carving of `V_τ` out of `Val`.
@@ -74,7 +75,7 @@ model-less-extern environment `E`, with BOTH runs reading the SAME
 one — the machine through `Eval.evalExt`'s decode-gated foreign row,
 the device through `evalExp`'s total `Sem.xapply` reading. The
 algebraic quantification (∀ η_alg) is this parameter at
-`rep ∘ η ∘ decode` instantiations (`Rwv.Eidos.Cstep.etaB`); the
+`rep ∘ η ∘ decode` instantiations (`Rwv.Synolon.Cstep.etaB`); the
 validator's soundness theorem concludes the statement for EVERY `E`,
 which is the ∀η reading. At the default (empty) environment the
 definition is exactly the pre-extension statement. -/
@@ -252,6 +253,6 @@ example {Δ : DEnv} {fuel : Nat} {a : TyVar} :
   rw [DEnv.zeroVal]
   rfl
 
-#print axioms Rwv.Eidos.DEnv.zeroVal_hasTy
+#print axioms Rwv.Synolon.DEnv.zeroVal_hasTy
 
-end Rwv.Eidos
+end Rwv.Synolon
