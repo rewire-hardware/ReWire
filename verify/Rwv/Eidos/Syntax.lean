@@ -275,13 +275,16 @@ structure Proc where
   blocks : List (Id × Block)
 deriving Repr
 
-/-- A program (§3.7): datatypes, definitions, processes, and the
-designated device root. -/
+/-- A program: datatypes, definitions, processes, and — in a legacy
+Eidos machine-level dump, or hand-written input — the designated
+device root. A machine-level (Synolon) program has no `top`: its
+processes are its roots, so the field is `none` for compiler output
+and the `top` rule (`Check.checkTop`) applies only when it is present. -/
 structure Program where
   datas : List DataDefn
   defns : List Defn
   procs : List Proc
-  top   : Id
+  top   : Option Id := none
 deriving Repr
 
 end Rwv.Eidos

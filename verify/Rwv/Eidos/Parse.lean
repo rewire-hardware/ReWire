@@ -919,8 +919,11 @@ def pProc : PM Proc := do
 
 /-! ## Programs -/
 
-/-- `data* defn* proc* 'top' var`, to end of input. `top` must name a
-parsed definition (matched by unique) and takes that definition's `Id`. -/
+/-- `data* defn* proc* ('top' var)?`, to end of input. The machine-level
+(Synolon, `.syn`) form has no `top` line; a legacy Eidos machine-level
+dump or a hand-written program may carry one, in which case it must
+name a parsed definition (matched by unique) and takes that
+definition's `Id`. -/
 partial def pProgram : PM Program := do
   let ds ← manyOpt do
     if ← keywordOpt "data" then some <$> pDataDefn else pure none
@@ -930,12 +933,14 @@ partial def pProgram : PM Program := do
     | _ => pure none
   let ps ← manyOpt do
     if ← keywordOpt "proc" then some <$> pProc else pure none
-  keyword "top"
-  let (occ, u) ← pUniqName
+  let top? ← if ← keywordOpt "top" then some <$> pUniqName else pure none
   unless (← atEOF) do errP "expected end of input"
-  match fs.find? (fun d => d.name.uniq == u) with
-  | some d => pure { datas := ds, defns := fs, procs := ps, top := d.name }
-  | none   => errP s!"top: designated device root {occ}#{u} does not name a definition"
+  match top? with
+  | none => pure { datas := ds, defns := fs, procs := ps, top := none }
+  | some (occ, u) =>
+    match fs.find? (fun d => d.name.uniq == u) with
+    | some d => pure { datas := ds, defns := fs, procs := ps, top := some d.name }
+    | none   => errP s!"top: designated device root {occ}#{u} does not name a definition"
 
 /-! ## Elaboration
 
@@ -1060,10 +1065,11 @@ def elabProgram (p : Program) : Except String Program := do
 
 end Parse
 
-/-- Parse an Eidos program from the concrete syntax of doc/eidos.md §9
-(the `.eir` format printed by `rwc --eidos`), P and M levels,
-reconstructing the binder types the format leaves implicit. The optional
-`fname` is used in error messages. -/
+/-- Parse a program from the concrete syntax of doc/eidos.md §9 — the
+machine-level `.syn` format (no `top` line), or a legacy Eidos
+machine-level `.eir` dump with one — reconstructing the binder types
+the format leaves implicit. The optional `fname` is used in error
+messages. -/
 def parseEir (input : String) (fname : String := "<input>") : Except String Program := do
   let toks ← Parse.lexAll fname input
   match Parse.pProgram.run { fname := fname, toks := toks, i := 0 } with

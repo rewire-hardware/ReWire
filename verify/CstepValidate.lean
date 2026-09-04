@@ -2,10 +2,12 @@
 rwv-cstep-validate: the headline driver for the machine-step validator
 (Rwv.Eidos.Cstep), with an optional per-label measurement mode.
 
-    rwv-cstep-validate <file.eir> <file.rwc> [--fuel=N] [--measure]
+    rwv-cstep-validate <file.syn> <file.rwc> [--fuel=N] [--measure]
         [--protocol=2] [--nonce=STR] [-v]
 
-parses the pass-8 Eidos dump (must contain exactly one proc) and the
+parses the machine-level pass-8 dump (`.syn`; a legacy `.eir` machine
+dump with a `top` line is accepted too; must contain exactly one proc)
+and the
 final (post-pass-11) .rwc, and applies, in order:
 
   * an ERROR gate: unreadable/undecodable files, parse failures, a
@@ -240,7 +242,7 @@ def emit (cfg : Cfg) (src tgt : ArtifactId) (v : Verdict) : IO UInt32 := do
   return v.exitCode
 
 def usage : String := String.intercalate "\n"
-  [ "usage: rwv-cstep-validate <file.eir> <file.rwc> [options]"
+  [ "usage: rwv-cstep-validate <file.syn> <file.rwc> [options]"
   , ""
   , "options:"
   , "  --fuel=N       evaluation fuel (default 1000000)"
@@ -424,5 +426,5 @@ def main (argv : List String) : IO UInt32 := do
         IO.println s!"{verdict.summaryLine}; {t.okV} ok-v, {t.okW} ok-w, \
           {t.okDag} ok-dag, {t.mismatch} mismatch, {t.gap} gap; init {initV}"
         return (if t.mismatch > 0 || !initOk || !vOk then 1 else 0)
-      | [] => IO.println "SKIP      (no proc in the Eidos dump)"; return 1
+      | [] => IO.println "SKIP      (no proc in the source dump)"; return 1
       | _ :: _ :: _ => IO.println "SKIP      (multiple procs)"; return 1

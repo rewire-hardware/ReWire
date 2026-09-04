@@ -43,7 +43,8 @@ def main():
     known_mismatch: set = set()
 
     ext = ".10.rwc" if args.pass10 else ".9.rwc"
-    tests = sorted(p.name[:-len(".8.eir")] for p in dumps.glob("*.8.eir"))
+    tests = sorted({p.name[:-len(".8.syn")] for p in dumps.glob("*.8.syn")}
+                   | {p.name[:-len(".8.eir")] for p in dumps.glob("*.8.eir")})
     if args.only:
         tests = [t for t in tests if args.only in t]
     if not tests:
@@ -52,7 +53,9 @@ def main():
     total = {}
     bad = 0
     for t in tests:
-        eir = dumps / f"{t}.8.eir"
+        eir = dumps / f"{t}.8.syn"
+        if not eir.exists():
+            eir = dumps / f"{t}.8.eir"
         rwc = dumps / f"{t}{ext}"
         if not rwc.exists():
             print(f"{t:<20} FAILED (no {ext} dump)")

@@ -4,11 +4,11 @@ Eidos-M machine semantics (doc/eidos.md §7.5) against rwc's compiled
 Hyle program — the §7.5.6 correspondence, checked per test by trace
 comparison.
 
-    rwv-eidos-diff <file.eir> <file.rwc> [--cycles N] [--seed S]
+    rwv-eidos-diff <file.syn> <file.rwc> [--cycles N] [--seed S]
         [--stim FILE] [--fuel N] [--foreign FILE.rwc] [--eta-synth]
 
-parses the pass-8 Eidos dump (`rwc --eidos`; must contain exactly one
-proc), parses the compiled .rwc to obtain the device's port names and
+parses the machine-level pass-8 dump (must contain exactly one proc),
+parses the compiled .rwc to obtain the device's port names and
 widths, generates a deterministic pseudorandom ALGEBRAIC stimulus of
 the proc's input type τ_I, and
 
@@ -40,7 +40,7 @@ bits in ADT encodings are zero by construction on both sides. The
 generator is a 32-bit xorshift PRNG with the exact constants of
 apps/rwc-test/Cosim.hs (xorshift32 with shifts 13/17/5; seed
 `seed0 name` = fold h·31+ord(c) over the test's base name from
-0x12345678), seeded from the .eir file's base name (or --seed, which
+0x12345678), seeded from the machine dump's base name (or --seed, which
 overrides). One cycle's value of type τ is drawn structurally:
 
   * `Vec n τ`   — n elements, generated left to right;
@@ -132,7 +132,7 @@ structure Args where
   etaSynth : Bool := false
 
 def usage : String :=
-  "usage: rwv-eidos-diff <file.eir> <file.rwc> [--cycles N] [--seed S] [--stim FILE] [--fuel N] [--foreign FILE.rwc] [--eta-synth]"
+  "usage: rwv-eidos-diff <file.syn> <file.rwc> [--cycles N] [--seed S] [--stim FILE] [--fuel N] [--foreign FILE.rwc] [--eta-synth]"
 
 private def natOpt (flag val : String) : Except String Nat :=
   match val.toNat? with
@@ -182,7 +182,7 @@ def parseArgs (argv : List String) : Except String Args := do
   | _          => throw usage
 
 /-- The base name of a path: strip directories and the last extension
-(`verify/test/out-eidos/fibo1.eir` ↦ `fibo1`) — the default PRNG seed
+(`verify/test/out-eidos/fibo1.syn` ↦ `fibo1`) — the default PRNG seed
 key. -/
 def baseName (path : String) : String :=
   let name := ((path.splitOn "/").getLast?.getD path)
@@ -299,7 +299,7 @@ decode gate always passes), installs it as the bit-level extern
 environment `E` for BOTH mechanized semantics, and checks the §7.5.6
 correspondence INTERNALLY: the Eidos-M trace against the mechanized
 Hyle device run at the same `E` (the ∀η statement at one concrete η).
-The result types are scraped from the .eir's own rwPrimExtern
+The result types are scraped from the machine dump's own rwPrimExtern
 occurrences (the impl monotype, argument 7). -/
 
 /-- Collect `(extern name, impl monotype)` from every saturated

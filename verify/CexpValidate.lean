@@ -2,9 +2,9 @@
 rwv-cexp-validate: the per-definition measurement driver for the
 verified Eidos-side expression compiler (Rwv.Eidos.Cexp).
 
-    rwv-cexp-validate <file.eir> <file.rwc> [--fuel=N] [-v]
+    rwv-cexp-validate <file.syn> <file.rwc> [--fuel=N] [-v]
 
-parses the pass-8 Eidos dump and the compiled .rwc, mirrors the
+parses the machine-level pass-8 dump and the compiled .rwc, mirrors the
 reference translation's definition normalization (transDefn: peel
 lambdas into parameters, eta-expand to signature arity; plus the
 under-applied constructor/primitive saturation the differ uses —
@@ -390,4 +390,4 @@ def main (argv : List String) : IO UInt32 := do
                           t := { t with mismatch := t.mismatch + 1 }
       IO.println s!"summary: {t.okV} ok-v, {t.ok} ok-w, {t.okDag} ok-dag, {t.mismatch} mismatch, {t.gap} gap, {t.skip} skip"
       return (if t.mismatch > 0 then 1 else 0)
-  | _ => IO.eprintln "usage: rwv-cexp-validate <file.eir> <file.rwc> [--fuel=N] [-v]"; return 2
+  | _ => IO.eprintln "usage: rwv-cexp-validate <file.syn> <file.rwc> [--fuel=N] [-v]"; return 2

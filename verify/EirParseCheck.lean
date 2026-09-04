@@ -12,7 +12,7 @@ def main (args : List String) : IO UInt32 := do
     | "--dump" :: rest => (true, rest)
     | _                => (false, args)
   if files.isEmpty then
-    IO.eprintln "usage: rwv-eir-parse-check [--dump] <file.eir>..."
+    IO.eprintln "usage: rwv-eir-parse-check [--dump] <file.syn|file.eir>..."
     return 2
   let mut failed := 0
   for f in files do

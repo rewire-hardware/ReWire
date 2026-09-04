@@ -98,7 +98,7 @@ def primDatas : List DataDefn :=
   ++ ((List.range 61).map fun i => mkTuple (i + 2))
 
 /-- Prepend the primitive basis (dropping any duplicate declarations,
-which the bridge does not produce but hand-written .eir might). -/
+which the bridge does not produce but hand-written input might). -/
 def addPrims (p : Program) : Program :=
   let basisNames := primDatas.map (·.name)
   { p with datas := primDatas ++ p.datas.filter (fun d => ¬ basisNames.contains d.name) }

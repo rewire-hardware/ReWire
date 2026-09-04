@@ -50,6 +50,18 @@ EXPECTED_UNSUPPORTED = {
 EXPECTED_REJECTED: set = set()
 
 
+def machine_dumps(dumps: Path):
+    """Test names with a pass-8 machine-level dump (.8.syn, or the legacy
+    .8.eir form)."""
+    return {p.name[:-len(".8.syn")] for p in dumps.glob("*.8.syn")} \
+         | {p.name[:-len(".8.eir")] for p in dumps.glob("*.8.eir")}
+
+
+def machine_dump(dumps: Path, test: str) -> Path:
+    syn = dumps / f"{test}.8.syn"
+    return syn if syn.exists() else dumps / f"{test}.8.eir"
+
+
 def expected(test: str) -> str:
     if test in EXPECTED_UNSUPPORTED:
         return "UNSUPPORTED"
@@ -82,8 +94,7 @@ def main():
             sys.exit("cstep-goldens: cannot build rwv-cstep-validate")
 
     ext = ".9.rwc" if args.pass9 else ".10.rwc" if args.pass10 else ".11.rwc"
-    tests = sorted((p.name[:-len(".8.eir")] for p in dumps.glob("*.8.eir")),
-                   key=str.lower)
+    tests = sorted(machine_dumps(dumps), key=str.lower)
     if args.only:
         tests = [t for t in tests if args.only in t]
     if not tests:
@@ -92,7 +103,7 @@ def main():
     total = {}
     validated = rejected = unsupported = other = unexpected = 0
     for t in tests:
-        eir = dumps / f"{t}.8.eir"
+        eir = machine_dump(dumps, t)
         rwc = dumps / f"{t}{ext}"
         if not rwc.exists():
             print(f"{t:<20} FAILED (no {ext} dump)")

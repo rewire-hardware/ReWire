@@ -313,7 +313,7 @@ def validateBundle (srcName srcTxt tgtName tgtTxt : String) (fuel : Nat) : Bundl
                   | .error e => .error s!"{srcName}: eta-saturation: {e}"
                   | .ok p =>
                     match p.procs with
-                    | [] => .error "no proc in the Eidos dump (a machine-level \
+                    | [] => .error "no proc in the source dump (a machine-level \
                         pass-8 dump is required)"
                     | _ :: _ :: _ => .unsupported "multiple procs"
                     | [pr] =>

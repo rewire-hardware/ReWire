@@ -76,13 +76,20 @@ def replace_defn_body(text, head_prefix, new_body):
     return "\n".join(out)
 
 
+def machine_dump(dumps, test):
+    """The pass-8 machine-level dump of a test: .8.syn, or the legacy
+    .8.eir form."""
+    syn = dumps / f"{test}.8.syn"
+    return syn if syn.exists() else dumps / f"{test}.8.eir"
+
+
 def validator_tests(exe, dumps, work):
     def w(name, text):
         p = work / name
         p.write_text(text)
         return p
 
-    case1_eir = dumps / "case1.8.eir"
+    case1_eir = machine_dump(dumps, "case1")
     case1_rwc = dumps / "case1.11.rwc"
 
     # Baseline: the pure corpus validates.
@@ -94,20 +101,20 @@ def validator_tests(exe, dumps, work):
     # alone rejects (the flagship regression: a target model can no
     # longer define the meaning it is checked against).
     expect(exe, "model-carrying externs validate end-to-end",
-           dumps / "externModel.8.eir", dumps / "externModel.11.rwc", "VALIDATED")
+           machine_dump(dumps, "externModel"), dumps / "externModel.11.rwc", "VALIDATED")
     mut = (dumps / "externModel.11.rwc").read_text().replace("      and a b", "      or a b")
     assert mut != (dumps / "externModel.11.rwc").read_text()
     expect(exe, "target-only extern-model mutation rejects",
-           dumps / "externModel.8.eir", w("externModel.and2or.11.rwc", mut), "REJECTED")
-    smut = (dumps / "externModel.8.eir").read_text().replace("(rwPrimAnd :: ", "(rwPrimOr :: ")
-    assert smut != (dumps / "externModel.8.eir").read_text()
+           machine_dump(dumps, "externModel"), w("externModel.and2or.11.rwc", mut), "REJECTED")
+    smut = (machine_dump(dumps, "externModel")).read_text().replace("(rwPrimAnd :: ", "(rwPrimOr :: ")
+    assert smut != (machine_dump(dumps, "externModel")).read_text()
     expect(exe, "source-only extern-model mutation rejects",
            w("externModel.srcmut.8.eir", smut), dumps / "externModel.11.rwc", "REJECTED")
     # The rest of the foreign tier stays outside the certified profile.
     expect(exe, "Cryptol splices are unsupported",
-           dumps / "cryptolffi.8.eir", dumps / "cryptolffi.11.rwc", "UNSUPPORTED")
+           machine_dump(dumps, "cryptolffi"), dumps / "cryptolffi.11.rwc", "UNSUPPORTED")
     expect(exe, "clocked externs are unsupported",
-           dumps / "extern.8.eir", dumps / "extern.11.rwc", "UNSUPPORTED")
+           machine_dump(dumps, "extern"), dumps / "extern.11.rwc", "UNSUPPORTED")
 
     # The two checked-but-nonprogressing constructs are refused a
     # verdict up front (they could otherwise only validate vacuously;
@@ -119,7 +126,7 @@ def validator_tests(exe, dumps, work):
             "      output p1 : [1]\n\n"
             + inst.rstrip("\n") + "\n      i0.p0 := __in0\n")
     expect(exe, "target-only device instance is unsupported",
-           dumps / "iter.8.eir", w("iter.inst.11.rwc", inst), "UNSUPPORTED")
+           machine_dump(dumps, "iter"), w("iter.inst.11.rwc", inst), "UNSUPPORTED")
     # Generic model-less xcalls now have expressible semantics: the
     # extern environment is keyed by (name, generics), so a generic
     # call in an UNUSED target definition is well-formed, denoting
@@ -132,14 +139,14 @@ def validator_tests(exe, dumps, work):
            "      output p1 : [1]\n\n"
            "gfun : ([1]) -> [1]\ngfun x =\n      gext<3>(x)\n\n") + iter_base
     expect(exe, "unused generic model-less extern definition validates",
-           dumps / "iter.8.eir", w("iter.gen.11.rwc", gen), "VALIDATED")
+           machine_dump(dumps, "iter"), w("iter.gen.11.rwc", gen), "VALIDATED")
 
     # The generics tier proper: the source's parameter values ride the
     # compiled node, so a device-reachable target generic-value edit is
     # a different uninterpreted symbol — REJECTED by the comparison —
     # and a declaration generic-name edit breaks the source-descriptor
     # cross-check.
-    eg_eir = dumps / "externGeneric.8.eir"
+    eg_eir = machine_dump(dumps, "externGeneric")
     eg_rwc = dumps / "externGeneric.11.rwc"
     expect(exe, "generic model-less extern validates end to end",
            eg_eir, eg_rwc, "VALIDATED")
@@ -169,7 +176,7 @@ def validator_tests(exe, dumps, work):
     # with eta-minted term binders and rightly pass).
     case1_text = case1_eir.read_text()
     m = re.search(r"^\s*block \S+ \(\(\w+#(\d+) ::", case1_text, re.M)
-    assert m, "no block with a parameter in case1.8.eir"
+    assert m, "no block with a parameter in case1's machine dump"
     etaclash = re.sub(rf"#{m.group(1)}\b", "#-1000000005", case1_text)
     assert etaclash != case1_text
     expect(exe, "reserved eta-unique range is refused",
@@ -177,7 +184,7 @@ def validator_tests(exe, dumps, work):
 
     # Finite 0 is uninhabited (matching Data.Finite): an undef-init cell
     # of an empty type has no zero value, so initialization must fail.
-    zw_eir = dumps / "zerowidth.8.eir"
+    zw_eir = machine_dump(dumps, "zerowidth")
     zw_rwc = dumps / "zerowidth.11.rwc"
     f0 = zw_eir.read_text().replace(
         "      state s1 : Vec 0 Bool := undef;\n",
@@ -335,7 +342,7 @@ def main():
         r = subprocess.run(["lake", "build", "rwv-cstep-validate"], cwd=VERIFY)
         if r.returncode != 0 or not exe.exists():
             sys.exit("mutation-tests: cannot build rwv-cstep-validate")
-    if not (dumps / "case1.8.eir").exists():
+    if not machine_dump(dumps, "case1").exists():
         sys.exit(f"mutation-tests: no dumps in {dumps} "
                  "(generate them with verify/test/hyle-equiv-goldens.py)")
 

@@ -35,29 +35,25 @@ Haskell linter does not enforce yet but §7.4 states normatively:
   translation's sizing in Rwv.Eidos.Value) — so `Integer` = 128 bits,
   recursive datatypes are rejected, open widths are rejected.
 
-Carrier-definition tolerance (doc/eidos.md §4.1): the pass-8 program
-dump is a superset of the fragment the fold lowers. Definitions that
-are builtin-named (`rwPrim*` signature carriers), have polymorphic
+Carrier-definition tolerance (doc/eidos.md §4.1): a Synolon program
+(the machine-level `.syn` dump) carries only the definitions the fold
+lowers, but a legacy Eidos machine-level `.eir` dump is a superset of
+that fragment, and hand-written input may be too. Definitions that are
+builtin-named (`rwPrim*` signature carriers), have polymorphic
 signatures, or have reactive (`ReacT`/`StateT`/`Identity`-mentioning)
-types are *skipped* — the fold's `emit` filters them out, so they are
-not part of the checked fragment (divergence from the Haskell
-whole-program lint, which checks carriers in poly mode and would
-reject reactive definitions in machine mode; the pipeline's pass-8
-check is `lintProc`, which checks neither). "Skipped" is not
-"trusted", though: a builtin-named carrier must be the *canonical
-intrinsic stub* — its body an application headed by the `error`
-builtin, the shape the bridge emits — and a reference from checked
-code (a process, or a checked definition) to any *other* skipped
-definition is rejected, so nothing reachable from the machine ever
-has an unchecked body.
+types are therefore *skipped* — the fold's `emit` filters them out, so
+they are not part of the checked fragment. "Skipped" is not "trusted",
+though: a builtin-named carrier must be the *canonical intrinsic stub*
+— its body an application headed by the `error` builtin, the shape the
+bridge emits — and a reference from checked code (a process, or a
+checked definition) to any *other* skipped definition is rejected, so
+nothing reachable from the machine ever has an unchecked body.
 Skipped definitions still contribute their names to scope and *all*
 their binding sites to the global-uniqueness rule, exactly as in the
 reference. Relatedly, the global-uniqueness rule covers the
-datatype-and-definition (P) fragment only: procify builds proc blocks
-from the binders of the reactive fragment it consumes — which remains
-in the dump as skipped residue, and one binder rides goto chains into
-several blocks — so pass-8 programs genuinely alias proc binding sites
-with P-fragment ones (a corpus finding; see the uniqueness section).
+datatype-and-definition fragment only: procify splices one definition
+per continuation and passes one binder along goto chains, so a unique
+is legitimately bound by several blocks (see the uniqueness section).
 
 Shape notes (differences forced by the embedding, none semantic):
 
@@ -87,9 +83,11 @@ types against the constructor's instantiated field types, exactly as
 expression-level `case` does; terminator-case literal alternatives
 are distinctness-checked, like expression-level ones; and `checkTop`'s
 device-type rule (the root has type `ReacT i o Identity a`) holds
-whether or not processes are present — with processes, `top` names
-the reactive machine-root definition procify consumed, which retains
-exactly that type as skipped residue.
+whenever a `top` is present, with or without processes — in a legacy
+dump with processes, `top` names the reactive machine-root definition
+procify consumed, which retains exactly that type as skipped residue.
+A Synolon program carries no `top` (its processes are its roots) and
+the rule does not apply.
 -/
 import Rwv.Eidos.Types
 import Rwv.Eidos.Value
@@ -417,14 +415,11 @@ contribute their sites like any other: the datatype-and-definition
 fragment is untouched by procify, and the pass-6 whole-program lint
 guaranteed its global uniqueness.
 
-Process binding sites are deliberately NOT part of the rule (a
-divergence from the reference's whole-program `uniqSites`, which no
-pipeline stage runs on the pass-8 program): procify builds block
-parameters and command binders from the binders of the reactive
-fragment it consumes — whose defns remain in the dump as skipped
-residue, still carrying those uniques — and passes the same binder
+Process binding sites are deliberately NOT part of the rule: procify
+splices one definition per continuation and passes the same binder
 along goto chains, so one unique is legitimately bound by several
-blocks. Pass 8's own check (`lintProc`) checks no uniqueness; scoping
+blocks (and, in a legacy dump that still carries the consumed reactive
+definitions as skipped residue, by those definitions too). Scoping
 inside blocks is by innermost binding, which occurrence-signature
 checking still validates per occurrence. Block *labels* are checked
 distinct per-proc below (the label table must be well-defined). -/
@@ -993,11 +988,12 @@ def checkDefn (env : Env) (d : Defn) : Except String Unit := do
   let rest := (doms.drop d.params.length).foldr Ty.arrow res
   checkAgainst (d.params.foldr bindVar env) expFuel d.body rest
 
-/-- `top` resolves to a definition, its occurrence signature matches
-the binder's, and it has the device-root type `ReacT i o Identity a`
-— with processes present, `top` names the reactive machine-root
-definition procify consumed, which retains exactly that type as
-skipped residue (module header). -/
+/-- When a program carries a `top` (a legacy Eidos machine-level dump
+or hand-written input; a Synolon program has none): it resolves to a
+definition, its occurrence signature matches the binder's, and it has
+the device-root type `ReacT i o Identity a` — the reactive machine-root
+definition procify consumed, retained as skipped residue (module
+header). -/
 def checkTop (defns : List Defn) (top : Id) : Except String Unit := do
   match defns.find? (fun d => d.name.uniq == top.uniq) with
   | none => throw s!"top: designated device root {top.render} does not name a definition"
@@ -1400,6 +1396,8 @@ def Program.checkMachine (p : Program) : Except String Unit := do
     else checkDefn env d
   p.procs.forM (checkProc env)
   checkPureAcyclic p
-  checkTop p.defns p.top
+  match p.top with
+  | some t => checkTop p.defns t
+  | none   => pure ()
 
 end Rwv.Eidos
