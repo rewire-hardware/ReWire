@@ -158,11 +158,17 @@ carriers do not ride along.
 
 Datatypes stay parametric (constructor signatures quantify the datatype's
 parameters); consumers size constructor applications at use sites. A
-program declares the full Eidos primitive basis, including the reactive
-types `ReacT`, `StateT`, and `Identity`: those declarations are inert here
-(no Synolon type may mention them, §3.1) and are retained because the
-certify validator's basis gate compares a program's basis declarations
-against its canonical basis.
+program declares exactly the datatypes it mentions: those named by some
+type in its definitions or processes (a constructor occurrence carries
+its instantiated type, a case alternative names its constructor; a
+definition's provenance attribute does not count), closed under the
+field types of their constructors. The rest of an Eidos
+program's declarations do not ride along — the reactive stack `ReacT`,
+`StateT`, `Identity`, retired with the reactive fragment (no Synolon type
+may mention them, §3.1), and whatever of the primitive basis and the
+tuple family the program never uses. The certify validator re-adds the
+absent basis declarations itself; its basis gate rejects only a basis
+declaration that is present and differs from the canonical one.
 
 ### 3.4 Processes
 
@@ -574,8 +580,9 @@ uniqueness where it holds (duplication goes through the refreshing clone
 of doc/eidos.md §8), and is annotation-transparent.
 
 **Procification** (`ReWire.Eidos.ToSynolon`, pass 7) consumes the
-mono+ANF restriction of an Eidos program (doc/eidos.md §6) and mints one
-process from the device root: a `signal` becomes a `pause` to the
+mono+ANF restriction of an Eidos program (doc/eidos.md §6), keeps the
+definitions the machine calls and the datatypes they and the process
+mention (§3.3), and mints one process from the device root: a `signal` becomes a `pause` to the
 continuation's block (whose last parameter is the resumed input), a
 `return` a `goto` (or a `halt` at the root), lifted `get`/`put` operations
 cell commands (cells resolved from the operation's own residual state

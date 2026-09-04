@@ -180,6 +180,12 @@
   `rwv-eidos-diff` is renamed `rwv-synolon-diff` (its harness is
   `verify/test/synolon-diff-goldens.py`) and the parser check
   `rwv-eir-parse-check` is renamed `rwv-syn-parse-check`.
+* A Synolon program declares only the datatypes it mentions (closed under
+  constructor fields): procification drops the reactive stack's
+  declarations along with the reactive fragment, and the unused part of
+  the primitive basis and the tuple family with them. The `.syn` dumps
+  shrink accordingly; the validator re-adds absent basis declarations
+  itself, so certification is unaffected. Generated code is unchanged.
 
 ## 2.8 (2026-07)
 

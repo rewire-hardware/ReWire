@@ -51,36 +51,81 @@ import ReWire.Eidos.Pretty ()
 import ReWire.Eidos.Subst (nextUniq, freeUniqs, occIds)
 import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, flattenTyApp, reacOrStateT, machineDefn)
 import ReWire.Pretty (showt, prettyPrint)
+import ReWire.SYB (query)
 import ReWire.Synolon.Syntax
 
 import Control.Monad (when)
 import Control.Monad.State.Strict (StateT, evalStateT, gets, modify)
+import Data.Data (Data)
+import Data.HashSet (HashSet)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 
 import qualified Data.HashMap.Strict as Map
+import qualified Data.HashSet        as Set
 import qualified Data.IntMap.Strict  as IM
 import qualified Data.IntSet         as IS
 import qualified ReWire.Eidos.Syntax as E (Program (..))
 
 -- | The Synolon program of an Eidos program: the process compiled from
---   the reactive root, over the program's datatypes and the definitions
---   the machine calls ('machineDefn', in their order — Hyle names are
---   assigned by position; the consumed reactive definitions and the
---   builtin signature carriers do not ride along). The root must be a
---   nullary @ReacT@ computation (the mono lint's device rule).
+--   the reactive root, over the definitions the machine calls
+--   ('machineDefn', in their order — Hyle names are assigned by position;
+--   the consumed reactive definitions and the builtin signature carriers
+--   do not ride along) and the datatypes those mention ('usedDatas'). The
+--   root must be a nullary @ReacT@ computation (the mono lint's device
+--   rule).
 procify :: forall m. MonadError AstError m => E.Program -> m Program
 procify p@(E.Program datas defns top)
       | (TyCon _ "ReacT", [ti, to, _, _]) <- flattenTyApp $ sigTy $ idSig top
       , [] <- fst (flattenArrow $ sigTy $ idSig top) = do
             let cells = stackCells $ maxStack [ typeOf $ defnBody d | d <- reactives ]
             pr <- evalStateT (compileRoot ti to cells) $ PSt (nextUniq p) [] mempty mempty mempty
-            pure $ Program datas (filter machineDefn defns) [pr]
+            let defns' = filter machineDefn defns
+            pure $ Program (usedDatas datas defns' [pr]) defns' [pr]
       | otherwise = failAt (ann $ sigTy $ idSig top)
             $ "the device root " <> idOcc top <> " is not a reactive computation (its type is "
             <> prettyPrint (sigTy $ idSig top) <> "; a device root has type ReacT i o Identity a)."
       where dmap :: IM.IntMap Defn
             dmap = IM.fromList [ (idUniq $ defnId d, d) | d <- defns ]
+
+            -- The datatypes the machine mentions: those named by some
+            -- type in the definitions or the process (a constructor
+            -- occurrence carries its instantiated type; a case alternative
+            -- names its constructor; a definition's provenance tag does
+            -- not count), closed under the field types of their
+            -- constructors. The rest is dropped — the reactive
+            -- stack, retired with the reactive fragment, and the unused
+            -- part of the primitive basis and the tuple family — so a
+            -- Synolon program declares the type universe it lives in and
+            -- nothing else. (The certify validator re-adds the absent
+            -- basis declarations itself; its basis gate rejects only a
+            -- declaration that is present and differs from the canonical
+            -- one.)
+            usedDatas :: [DataDefn] -> [Defn] -> [Proc] -> [DataDefn]
+            usedDatas ds defns' procs = [ d | d <- ds, dataName d `Set.member` keep ]
+                  where keep :: HashSet TyConId
+                        keep = close $ Set.fromList $ tyCons (code, procs) <> altDatas (code, procs)
+
+                        code :: [Defn]
+                        code = [ d { defnOrigin = Nothing } | d <- defns' ]
+
+                        dtab :: Map.HashMap TyConId DataDefn
+                        dtab = Map.fromList [ (dataName d, d) | d <- ds ]
+
+                        ctab :: Map.HashMap DataConId TyConId
+                        ctab = Map.fromList [ (c, dataName d) | d <- ds, DataCon _ c _ <- dataCons d ]
+
+                        tyCons :: Data a => a -> [TyConId]
+                        tyCons x = [ c | TyCon _ c <- query x ]
+
+                        altDatas :: Data a => a -> [TyConId]
+                        altDatas x = [ t | DataAlt c <- query x, Just t <- [Map.lookup c ctab] ]
+
+                        close :: HashSet TyConId -> HashSet TyConId
+                        close s | s' == s   = s
+                                | otherwise = close s'
+                              where s' = Set.union s $ Set.fromList
+                                          $ concat [ tyCons d | n <- Set.toList s, Just d <- [Map.lookup n dtab] ]
 
             -- The reactive code (monomorphic; the polymorphic rwPrim*
             -- signature carriers are type assumptions, not code).

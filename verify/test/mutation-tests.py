@@ -158,10 +158,12 @@ def validator_tests(exe, dumps, work):
            eg_syn, w("externGeneric.genname.11.rwc", genname), "REJECTED",
            "do not match the target declaration's generics")
 
-    # The primitive basis is never silently substituted.
-    boolswap = (case1_syn.read_text()
-                .replace("data Bool * {\n      False :: Bool;\n      True :: Bool",
-                         "data Bool * {\n      True :: Bool;\n      False :: Bool"))
+    # The primitive basis is never silently substituted: a declaration of
+    # a basis datatype that differs from the canonical one is an input
+    # error (a dump declares only the datatypes it mentions, so the
+    # conflicting declaration is inserted rather than edited in place).
+    boolswap = case1_syn.read_text().replace(
+        "proc ", "data Bool * {\n      True :: Bool;\n      False :: Bool\n}\n\nproc ", 1)
     assert boolswap != case1_syn.read_text()
     expect(exe, "conflicting Bool redeclaration is an input error",
            w("case1.boolswap.8.syn", boolswap), case1_rwc, "ERROR",
