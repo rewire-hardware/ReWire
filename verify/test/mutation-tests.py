@@ -162,11 +162,16 @@ def validator_tests(exe, dumps, work):
            w("case1.boolswap.8.eir", boolswap), case1_rwc, "ERROR",
            "conflicting redeclaration")
 
-    # Uniques inside the eta fresh range are refused, not risked.
-    # #220 is a term binder in case1.8.eir (type-variable uniques don't
-    # collide with eta-minted term binders and rightly pass).
-    etaclash = re.sub(r"#220\b", "#-1000000005", case1_eir.read_text())
-    assert etaclash != case1_eir.read_text()
+    # Uniques inside the eta fresh range are refused, not risked. The
+    # anchor is the first block parameter of case1's process — a term
+    # binder found by pattern rather than by a literal unique, so it
+    # tracks renumbering upstream (type-variable uniques don't collide
+    # with eta-minted term binders and rightly pass).
+    case1_text = case1_eir.read_text()
+    m = re.search(r"^\s*block \S+ \(\(\w+#(\d+) ::", case1_text, re.M)
+    assert m, "no block with a parameter in case1.8.eir"
+    etaclash = re.sub(rf"#{m.group(1)}\b", "#-1000000005", case1_text)
+    assert etaclash != case1_text
     expect(exe, "reserved eta-unique range is refused",
            w("case1.etaclash.8.eir", etaclash), case1_rwc, "ERROR", "reserved")
 
