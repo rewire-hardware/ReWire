@@ -1,5 +1,5 @@
 --| block '$L._unused7' of process main
-main._unused7 : ([1], [2], [81]) -> [106]
+main._unused7 : ([1], [2], [81]) -> [105]
 main._unused7 rEn r s0 =
       let $a$i0 = Main.pc s0 in
       let $a$i1 = Main.plusCW8$sMain_oneW8_False_Bool $a$i0 in
@@ -7,10 +7,10 @@ main._unused7 rEn r s0 =
       y$i2) in
       let $a2$i4 = Main.setPC s0 $a1$i3 in
       let $a$i5 = Main.outputs $a2$i4 in
-      $a$i5 # 4'h0 # rEn # r # $a2$i4
+      $a$i5 # 3'h0 # rEn # r # $a2$i4
 
 --| block '$L.d' of process main
-main.d : ([1], [2], [8], [81]) -> [106]
+main.d : ([1], [2], [8], [81]) -> [105]
 main.d rEn r d s0 =
       let $a$i0 = Main.outputs s0 in
       let $a$i1 = Main.setDataOut $a$i0 d in
@@ -18,7 +18,7 @@ main.d rEn r d s0 =
       main._unused7 rEn r $a1$i2
 
 --| block '$L.a2' of process main
-main.a2 : ([1], [1], [8], [81]) -> [106]
+main.a2 : ([1], [1], [8], [81]) -> [105]
 main.a2 rEn wEn a s0 =
       let $a$i0 = Main.outputs s0 in
       let $a$i1 = Main.setWeOut $a$i0 1'h0 in
@@ -27,10 +27,10 @@ main.a2 rEn wEn a s0 =
       let $a$i4 = Main.setAddrOut $a$i3 a in
       let $a1$i5 = Main.setOutputs $a1$i2 $a$i4 in
       let $a$i6 = Main.outputs $a1$i5 in
-      $a$i6 # 5'h8 # rEn # wEn # $a1$i5
+      $a$i6 # 4'h8 # rEn # wEn # $a1$i5
 
 --| block '$L.v2' of process main
-main.v2 : ([8], [8], [81]) -> [106]
+main.v2 : ([8], [8], [81]) -> [105]
 main.v2 a v s0 =
       let $a$i0 = Main.outputs s0 in
       let $a$i1 = Main.setWeOut $a$i0 1'h1 in
@@ -44,7 +44,7 @@ main.v2 a v s0 =
       main.zzz $a1$i8
 
 --| block '$L.a3' of process main
-main.a3 : ([1], [1], [8], [81]) -> [106]
+main.a3 : ([1], [1], [8], [81]) -> [105]
 main.a3 rEn wEn a s0 =
       let $a = Main.mkReg rEn wEn in
       if eq $a 2'h0 then (let $a$i0 = Main.r0 s0 in
@@ -54,88 +54,119 @@ main.a3 rEn wEn a s0 =
             main.v2 a $a$i2 s0) else let $a$i3 = Main.r3 s0 in
             main.v2 a $a$i3 s0
 
---| block '$L._unused17' of process main
-main._unused17 : ([81]) -> [106]
-main._unused17 s0 =
-      let o$i0 = Main.outputs s0 in
-      o$i0 # 7'h40 # s0
+--| block '$L.arm29' of process main
+main.arm29 : ([8], [81]) -> [105]
+main.arm29 v s0 =
+      let $a$i0 = Main.setR0 s0 v in
+      main.zzz $a$i0
+
+--| block '$L.arm30' of process main
+main.arm30 : ([8], [81]) -> [105]
+main.arm30 v s0 =
+      let $a$i0 = Main.setR1 s0 v in
+      main.zzz $a$i0
+
+--| block '$L.arm31' of process main
+main.arm31 : ([8], [81]) -> [105]
+main.arm31 v s0 =
+      let $a$i0 = Main.setR2 s0 v in
+      main.zzz $a$i0
+
+--| block '$L.arm32' of process main
+main.arm32 : ([8], [81]) -> [105]
+main.arm32 v s0 =
+      let $a$i0 = Main.setR3 s0 v in
+      main.zzz $a$i0
 
 --| block '$L.s63' of process main
-main.s63 : ([2], [9], [81], [81]) -> [106]
+main.s63 : ([2], [9], [81], [81]) -> [105]
 main.s63 rD p s s0 =
-      let s01 = Main.setCFlag s (let x = p[8 +: 1] in
+      let $a = (let x = p[8 +: 1] in
       x) in
+      let $a1 = Main.setCFlag s $a in
       let v$i1 = (let y$i0 = p[0 +: 8] in
       y$i0) in
-      if eq rD 2'h0 then (let s01$i2 = Main.setR0 s01 v$i1 in
-            main._unused17 s01$i2)
-            else if eq rD 2'h1 then (let s01$i3 = Main.setR1 s01 v$i1 in
-            main._unused17 s01$i3) else if eq rD 2'h2 then (let s01$i4 = Main.setR2 s01 v$i1 in
-            main._unused17 s01$i4) else let s01$i5 = Main.setR3 s01 v$i1 in
-            main._unused17 s01$i5
+      if eq rD 2'h0 then main.arm29 v$i1 $a1
+            else if eq rD 2'h1 then main.arm30 v$i1 $a1 else if eq rD 2'h2 then main.arm31 v$i1 $a1 else main.arm32 v$i1 $a1
 
 --| block '$L.vS' of process main
-main.vS : ([2], [8], [8], [81]) -> [106]
+main.vS : ([2], [8], [8], [81]) -> [105]
 main.vS rD vD vS s0 =
       let p = (let s$i0 = add (add (zext 9 vD) (zext 9 vS)) 9'h0 in
       s$i0[8 +: 1] # trunc 8 s$i0) in
       main.s63 rD p s0 s0
 
 --| block '$L.vD' of process main
-main.vD : ([2], [2], [8], [81]) -> [106]
+main.vD : ([2], [2], [8], [81]) -> [105]
 main.vD rD rS vD s0 =
-      if eq rS 2'h0 then main.vS rD vD (Main.r0 s0) s0
-            else if eq rS 2'h1 then main.vS rD vD (Main.r1 s0) s0 else if eq rS 2'h2 then main.vS rD vD (Main.r2 s0) s0 else main.vS rD vD (Main.r3 s0) s0
+      if eq rS 2'h0 then (let $a$i0 = Main.r0 s0 in
+            main.vS rD vD $a$i0 s0)
+            else if eq rS 2'h1 then (let $a$i1 = Main.r1 s0 in
+            main.vS rD vD $a$i1 s0) else if eq rS 2'h2 then (let $a$i2 = Main.r2 s0 in
+            main.vS rD vD $a$i2 s0) else let $a$i3 = Main.r3 s0 in
+            main.vS rD vD $a$i3 s0
 
 --| block '$L.vS2' of process main
-main.vS2 : ([2], [8], [8], [81]) -> [106]
+main.vS2 : ([2], [8], [8], [81]) -> [105]
 main.vS2 rD vD vS s0 =
-      let cin$i0 = Main.cFlag s0 in
-      let p$i2 = (let s$i1 = add (add (zext 9 vD) (zext 9 vS)) (zext 9 cin$i0) in
+      let $a$i0 = Main.cFlag s0 in
+      let p$i2 = (let s$i1 = add (add (zext 9 vD) (zext 9 vS)) (zext 9 $a$i0) in
       s$i1[8 +: 1] # trunc 8 s$i1) in
       main.s63 rD p$i2 s0 s0
 
 --| block '$L.vD2' of process main
-main.vD2 : ([2], [2], [8], [81]) -> [106]
+main.vD2 : ([2], [2], [8], [81]) -> [105]
 main.vD2 rD rS vD s0 =
-      if eq rS 2'h0 then main.vS2 rD vD (Main.r0 s0) s0
-            else if eq rS 2'h1 then main.vS2 rD vD (Main.r1 s0) s0 else if eq rS 2'h2 then main.vS2 rD vD (Main.r2 s0) s0 else main.vS2 rD vD (Main.r3 s0) s0
+      if eq rS 2'h0 then (let $a$i0 = Main.r0 s0 in
+            main.vS2 rD vD $a$i0 s0)
+            else if eq rS 2'h1 then (let $a$i1 = Main.r1 s0 in
+            main.vS2 rD vD $a$i1 s0) else if eq rS 2'h2 then (let $a$i2 = Main.r2 s0 in
+            main.vS2 rD vD $a$i2 s0) else let $a$i3 = Main.r3 s0 in
+            main.vS2 rD vD $a$i3 s0
 
 --| block '$L.vS3' of process main
-main.vS3 : ([2], [8], [8], [81]) -> [106]
+main.vS3 : ([2], [8], [8], [81]) -> [105]
 main.vS3 rD vD vS s0 =
       let p = Main.minusCW8$sFalse_Bool vD vS in
       main.s63 rD p s0 s0
 
 --| block '$L.vD3' of process main
-main.vD3 : ([2], [2], [8], [81]) -> [106]
+main.vD3 : ([2], [2], [8], [81]) -> [105]
 main.vD3 rD rS vD s0 =
-      if eq rS 2'h0 then main.vS3 rD vD (Main.r0 s0) s0
-            else if eq rS 2'h1 then main.vS3 rD vD (Main.r1 s0) s0 else if eq rS 2'h2 then main.vS3 rD vD (Main.r2 s0) s0 else main.vS3 rD vD (Main.r3 s0) s0
+      if eq rS 2'h0 then (let $a$i0 = Main.r0 s0 in
+            main.vS3 rD vD $a$i0 s0)
+            else if eq rS 2'h1 then (let $a$i1 = Main.r1 s0 in
+            main.vS3 rD vD $a$i1 s0) else if eq rS 2'h2 then (let $a$i2 = Main.r2 s0 in
+            main.vS3 rD vD $a$i2 s0) else let $a$i3 = Main.r3 s0 in
+            main.vS3 rD vD $a$i3 s0
 
 --| block '$L.vS4' of process main
-main.vS4 : ([2], [8], [8], [81]) -> [106]
+main.vS4 : ([2], [8], [8], [81]) -> [105]
 main.vS4 rD vD vS s0 =
-      let cin$i0 = Main.cFlag s0 in
-      let p$i2 = (let s$i1 = sub (sub (zext 9 vD) (zext 9 vS)) (zext 9 cin$i0) in
+      let $a$i0 = Main.cFlag s0 in
+      let p$i2 = (let s$i1 = sub (sub (zext 9 vD) (zext 9 vS)) (zext 9 $a$i0) in
       s$i1[8 +: 1] # trunc 8 s$i1) in
       main.s63 rD p$i2 s0 s0
 
 --| block '$L.vD4' of process main
-main.vD4 : ([2], [2], [8], [81]) -> [106]
+main.vD4 : ([2], [2], [8], [81]) -> [105]
 main.vD4 rD rS vD s0 =
-      if eq rS 2'h0 then main.vS4 rD vD (Main.r0 s0) s0
-            else if eq rS 2'h1 then main.vS4 rD vD (Main.r1 s0) s0 else if eq rS 2'h2 then main.vS4 rD vD (Main.r2 s0) s0 else main.vS4 rD vD (Main.r3 s0) s0
+      if eq rS 2'h0 then (let $a$i0 = Main.r0 s0 in
+            main.vS4 rD vD $a$i0 s0)
+            else if eq rS 2'h1 then (let $a$i1 = Main.r1 s0 in
+            main.vS4 rD vD $a$i1 s0) else if eq rS 2'h2 then (let $a$i2 = Main.r2 s0 in
+            main.vS4 rD vD $a$i2 s0) else let $a$i3 = Main.r3 s0 in
+            main.vS4 rD vD $a$i3 s0
 
 --| block '$L.zzz' of process main
 --| also: main._unused15
-main.zzz : ([81]) -> [106]
+main.zzz : ([81]) -> [105]
 main.zzz s0 =
       let $a$i0 = Main.outputs s0 in
-      $a$i0 # 7'h30 # s0
+      $a$i0 # 6'h30 # s0
 
 --| block '$L.x2' of process main
-main.x2 : ([1], [1], [8], [81]) -> [106]
+main.x2 : ([1], [1], [8], [81]) -> [105]
 main.x2 rEn wEn x s0 =
       let $a = Main.mkReg rEn wEn in
       if eq $a 2'h0 then (let $a$i0 = Main.setR0 s0 x in
@@ -146,77 +177,89 @@ main.x2 rEn wEn x s0 =
             main.zzz $a$i3
 
 --| block '$L._unused24' of process main
-main._unused24 : ([8], [81]) -> [106]
+main._unused24 : ([8], [81]) -> [105]
 main._unused24 vD' s0 =
-      let s01$i0 = Main.setCFlag s0 1'h0 in
-      let s01$i1 = Main.setZFlag s01$i0 (eq vD' 8'h0) in
-      main._unused17 s01$i1
+      let $a$i0 = Main.setCFlag s0 1'h0 in
+      let $a$i1 = Main.setZFlag $a$i0 (eq vD' 8'h0) in
+      main.zzz $a$i1
 
 --| block '$L.arm90' of process main
-main.arm90 : ([8], [81]) -> [106]
+main.arm90 : ([8], [81]) -> [105]
 main.arm90 vD' s0 =
-      let s01$i0 = Main.setR0 s0 vD' in
-      main._unused24 vD' s01$i0
+      let $a$i0 = Main.setR0 s0 vD' in
+      main._unused24 vD' $a$i0
 
 --| block '$L.arm91' of process main
-main.arm91 : ([8], [81]) -> [106]
+main.arm91 : ([8], [81]) -> [105]
 main.arm91 vD' s0 =
-      let s01$i0 = Main.setR1 s0 vD' in
-      main._unused24 vD' s01$i0
+      let $a$i0 = Main.setR1 s0 vD' in
+      main._unused24 vD' $a$i0
 
 --| block '$L.arm92' of process main
-main.arm92 : ([8], [81]) -> [106]
+main.arm92 : ([8], [81]) -> [105]
 main.arm92 vD' s0 =
-      let s01$i0 = Main.setR2 s0 vD' in
-      main._unused24 vD' s01$i0
+      let $a$i0 = Main.setR2 s0 vD' in
+      main._unused24 vD' $a$i0
 
 --| block '$L.arm93' of process main
-main.arm93 : ([8], [81]) -> [106]
+main.arm93 : ([8], [81]) -> [105]
 main.arm93 vD' s0 =
-      let s01$i0 = Main.setR3 s0 vD' in
-      main._unused24 vD' s01$i0
+      let $a$i0 = Main.setR3 s0 vD' in
+      main._unused24 vD' $a$i0
 
 --| block '$L.vS5' of process main
-main.vS5 : ([2], [8], [8], [81]) -> [106]
+main.vS5 : ([2], [8], [8], [81]) -> [105]
 main.vS5 rD vD vS s0 =
       let vD' = or vD vS in
       if eq rD 2'h0 then main.arm90 vD' s0
             else if eq rD 2'h1 then main.arm91 vD' s0 else if eq rD 2'h2 then main.arm92 vD' s0 else main.arm93 vD' s0
 
 --| block '$L.vD5' of process main
-main.vD5 : ([2], [2], [8], [81]) -> [106]
+main.vD5 : ([2], [2], [8], [81]) -> [105]
 main.vD5 rD rS vD s0 =
-      if eq rS 2'h0 then main.vS5 rD vD (Main.r0 s0) s0
-            else if eq rS 2'h1 then main.vS5 rD vD (Main.r1 s0) s0 else if eq rS 2'h2 then main.vS5 rD vD (Main.r2 s0) s0 else main.vS5 rD vD (Main.r3 s0) s0
+      if eq rS 2'h0 then (let $a$i0 = Main.r0 s0 in
+            main.vS5 rD vD $a$i0 s0)
+            else if eq rS 2'h1 then (let $a$i1 = Main.r1 s0 in
+            main.vS5 rD vD $a$i1 s0) else if eq rS 2'h2 then (let $a$i2 = Main.r2 s0 in
+            main.vS5 rD vD $a$i2 s0) else let $a$i3 = Main.r3 s0 in
+            main.vS5 rD vD $a$i3 s0
 
 --| block '$L.vS6' of process main
-main.vS6 : ([2], [8], [8], [81]) -> [106]
+main.vS6 : ([2], [8], [8], [81]) -> [105]
 main.vS6 rD vD vS s0 =
       let vD' = and vD vS in
       if eq rD 2'h0 then main.arm90 vD' s0
             else if eq rD 2'h1 then main.arm91 vD' s0 else if eq rD 2'h2 then main.arm92 vD' s0 else main.arm93 vD' s0
 
 --| block '$L.vD6' of process main
-main.vD6 : ([2], [2], [8], [81]) -> [106]
+main.vD6 : ([2], [2], [8], [81]) -> [105]
 main.vD6 rD rS vD s0 =
-      if eq rS 2'h0 then main.vS6 rD vD (Main.r0 s0) s0
-            else if eq rS 2'h1 then main.vS6 rD vD (Main.r1 s0) s0 else if eq rS 2'h2 then main.vS6 rD vD (Main.r2 s0) s0 else main.vS6 rD vD (Main.r3 s0) s0
+      if eq rS 2'h0 then (let $a$i0 = Main.r0 s0 in
+            main.vS6 rD vD $a$i0 s0)
+            else if eq rS 2'h1 then (let $a$i1 = Main.r1 s0 in
+            main.vS6 rD vD $a$i1 s0) else if eq rS 2'h2 then (let $a$i2 = Main.r2 s0 in
+            main.vS6 rD vD $a$i2 s0) else let $a$i3 = Main.r3 s0 in
+            main.vS6 rD vD $a$i3 s0
 
 --| block '$L.vS7' of process main
-main.vS7 : ([2], [8], [8], [81]) -> [106]
+main.vS7 : ([2], [8], [8], [81]) -> [105]
 main.vS7 rD vD vS s0 =
       let vD' = xor vD vS in
       if eq rD 2'h0 then main.arm90 vD' s0
             else if eq rD 2'h1 then main.arm91 vD' s0 else if eq rD 2'h2 then main.arm92 vD' s0 else main.arm93 vD' s0
 
 --| block '$L.vD7' of process main
-main.vD7 : ([2], [2], [8], [81]) -> [106]
+main.vD7 : ([2], [2], [8], [81]) -> [105]
 main.vD7 rD rS vD s0 =
-      if eq rS 2'h0 then main.vS7 rD vD (Main.r0 s0) s0
-            else if eq rS 2'h1 then main.vS7 rD vD (Main.r1 s0) s0 else if eq rS 2'h2 then main.vS7 rD vD (Main.r2 s0) s0 else main.vS7 rD vD (Main.r3 s0) s0
+      if eq rS 2'h0 then (let $a$i0 = Main.r0 s0 in
+            main.vS7 rD vD $a$i0 s0)
+            else if eq rS 2'h1 then (let $a$i1 = Main.r1 s0 in
+            main.vS7 rD vD $a$i1 s0) else if eq rS 2'h2 then (let $a$i2 = Main.r2 s0 in
+            main.vS7 rD vD $a$i2 s0) else let $a$i3 = Main.r3 s0 in
+            main.vS7 rD vD $a$i3 s0
 
 --| block '$L.vS8' of process main
-main.vS8 : ([8], [8], [81]) -> [106]
+main.vS8 : ([8], [8], [81]) -> [105]
 main.vS8 vD vS s0 =
       let p = Main.minusCW8$sFalse_Bool vD vS in
       let $a$i1 = (let x$i0 = p[8 +: 1] in
@@ -228,7 +271,7 @@ main.vS8 vD vS s0 =
       main.zzz $a1$i5
 
 --| block '$L.vD8' of process main
-main.vD8 : ([1], [1], [8], [81]) -> [106]
+main.vD8 : ([1], [1], [8], [81]) -> [105]
 main.vD8 b0 b1 vD s0 =
       let $a = Main.mkReg b0 b1 in
       if eq $a 2'h0 then (let $a$i0 = Main.r0 s0 in
@@ -239,13 +282,13 @@ main.vD8 b0 b1 vD s0 =
             main.vS8 vD $a$i3 s0
 
 --| block '$L.pc3' of process main
-main.pc3 : ([8], [81]) -> [106]
+main.pc3 : ([8], [81]) -> [105]
 main.pc3 pc s0 =
       let $a$i0 = Main.setPC s0 pc in
       main.zzz $a$i0
 
 --| block '$L.arm142' of process main
-main.arm142 : ([1], [1], [81]) -> [106]
+main.arm142 : ([1], [1], [81]) -> [105]
 main.arm142 b0 b1 s0 =
       let $a = Main.mkReg b0 b1 in
       if eq $a 2'h0 then (let $a$i0 = Main.r0 s0 in
@@ -256,44 +299,20 @@ main.arm142 b0 b1 s0 =
             main.pc3 $a$i3 s0
 
 --| block '$L.x3' of process main
-main.x3 : ([8], [81]) -> [106]
+main.x3 : ([8], [81]) -> [105]
 main.x3 x s0 =
       let $a$i0 = Main.setPC s0 x in
       main.zzz $a$i0
 
---| block '$L.arm170' of process main
-main.arm170 : ([8], [81]) -> [106]
-main.arm170 v s0 =
-      let $a$i0 = Main.setR0 s0 v in
-      main.zzz $a$i0
-
---| block '$L.arm171' of process main
-main.arm171 : ([8], [81]) -> [106]
-main.arm171 v s0 =
-      let $a$i0 = Main.setR1 s0 v in
-      main.zzz $a$i0
-
---| block '$L.arm172' of process main
-main.arm172 : ([8], [81]) -> [106]
-main.arm172 v s0 =
-      let $a$i0 = Main.setR2 s0 v in
-      main.zzz $a$i0
-
---| block '$L.arm173' of process main
-main.arm173 : ([8], [81]) -> [106]
-main.arm173 v s0 =
-      let $a$i0 = Main.setR3 s0 v in
-      main.zzz $a$i0
-
 --| block '$L.v3' of process main
-main.v3 : ([2], [8], [81]) -> [106]
+main.v3 : ([2], [8], [81]) -> [105]
 main.v3 r v s0 =
       let v1 = not v in
-      if eq r 2'h0 then main.arm170 v1 s0
-            else if eq r 2'h1 then main.arm171 v1 s0 else if eq r 2'h2 then main.arm172 v1 s0 else main.arm173 v1 s0
+      if eq r 2'h0 then main.arm29 v1 s0
+            else if eq r 2'h1 then main.arm30 v1 s0 else if eq r 2'h2 then main.arm31 v1 s0 else main.arm32 v1 s0
 
 --| block '$L._unused44' of process main
-main._unused44 : ([9], [8], [81]) -> [106]
+main._unused44 : ([9], [8], [81]) -> [105]
 main._unused44 p v' s0 =
       let $a$i1 = (let x$i0 = p[8 +: 1] in
       x$i0) in
@@ -302,31 +321,31 @@ main._unused44 p v' s0 =
       main.zzz $a$i3
 
 --| block '$L.arm184' of process main
-main.arm184 : ([9], [8], [81]) -> [106]
+main.arm184 : ([9], [8], [81]) -> [105]
 main.arm184 p v' s0 =
       let $a$i0 = Main.setR0 s0 v' in
       main._unused44 p v' $a$i0
 
 --| block '$L.arm185' of process main
-main.arm185 : ([9], [8], [81]) -> [106]
+main.arm185 : ([9], [8], [81]) -> [105]
 main.arm185 p v' s0 =
       let $a$i0 = Main.setR1 s0 v' in
       main._unused44 p v' $a$i0
 
 --| block '$L.arm186' of process main
-main.arm186 : ([9], [8], [81]) -> [106]
+main.arm186 : ([9], [8], [81]) -> [105]
 main.arm186 p v' s0 =
       let $a$i0 = Main.setR2 s0 v' in
       main._unused44 p v' $a$i0
 
 --| block '$L.arm187' of process main
-main.arm187 : ([9], [8], [81]) -> [106]
+main.arm187 : ([9], [8], [81]) -> [105]
 main.arm187 p v' s0 =
       let $a$i0 = Main.setR3 s0 v' in
       main._unused44 p v' $a$i0
 
 --| block '$L.v4' of process main
-main.v4 : ([2], [8], [81]) -> [106]
+main.v4 : ([2], [8], [81]) -> [105]
 main.v4 r v s0 =
       let p = Main.plusCW8$sMain_oneW8_False_Bool v in
       let v' = (let y = p[0 +: 8] in
@@ -335,7 +354,7 @@ main.v4 r v s0 =
             else if eq r 2'h1 then main.arm185 p v' s0 else if eq r 2'h2 then main.arm186 p v' s0 else main.arm187 p v' s0
 
 --| block '$L.v5' of process main
-main.v5 : ([2], [8], [81]) -> [106]
+main.v5 : ([2], [8], [81]) -> [105]
 main.v5 r v s0 =
       let p = (let s$i0 = sub (sub (zext 9 v) 9'h1) 9'h0 in
       s$i0[8 +: 1] # trunc 8 s$i0) in
@@ -345,21 +364,21 @@ main.v5 r v s0 =
             else if eq r 2'h1 then main.arm185 p v' s0 else if eq r 2'h2 then main.arm186 p v' s0 else main.arm187 p v' s0
 
 --| block '$L.v6' of process main
-main.v6 : ([2], [8], [81]) -> [106]
+main.v6 : ([2], [8], [81]) -> [105]
 main.v6 r v s0 =
       let v1 = or (shl v 8'h1) (lshr v 8'h7) in
-      if eq r 2'h0 then main.arm170 v1 s0
-            else if eq r 2'h1 then main.arm171 v1 s0 else if eq r 2'h2 then main.arm172 v1 s0 else main.arm173 v1 s0
+      if eq r 2'h0 then main.arm29 v1 s0
+            else if eq r 2'h1 then main.arm30 v1 s0 else if eq r 2'h2 then main.arm31 v1 s0 else main.arm32 v1 s0
 
 --| block '$L.v7' of process main
-main.v7 : ([2], [8], [81]) -> [106]
+main.v7 : ([2], [8], [81]) -> [105]
 main.v7 r v s0 =
       let v1 = or (lshr v 8'h1) (shl v 8'h7) in
-      if eq r 2'h0 then main.arm170 v1 s0
-            else if eq r 2'h1 then main.arm171 v1 s0 else if eq r 2'h2 then main.arm172 v1 s0 else main.arm173 v1 s0
+      if eq r 2'h0 then main.arm29 v1 s0
+            else if eq r 2'h1 then main.arm30 v1 s0 else if eq r 2'h2 then main.arm31 v1 s0 else main.arm32 v1 s0
 
 --| block '$L.v8' of process main
-main.v8 : ([1], [1], [2], [8], [81]) -> [106]
+main.v8 : ([1], [1], [2], [8], [81]) -> [105]
 main.v8 rEn wEn r v s0 =
       let p = (if not wEn then (let $a = (if not rEn then (let $a = Main.msbW8 v in
                   let $a1 = Main.msbW8 v # or (shl v 8'h1) (zext 8 $a) in
@@ -379,7 +398,7 @@ main.v8 rEn wEn r v s0 =
             else if eq r 2'h1 then main.arm185 p v' s0 else if eq r 2'h2 then main.arm186 p v' s0 else main.arm187 p v' s0
 
 --| block '$L.$fail' of process main
-main.$fail : ([10], [81]) -> [106]
+main.$fail : ([10], [81]) -> [105]
 main.$fail inp s0 =
       let i = Main.dataIn inp in
       let $ds1 = i[6 +: 1] in
@@ -396,7 +415,7 @@ main.$fail inp s0 =
                               let $a$i3 = Main.setAddrOut $a$i2 $a$i1 in
                               let $a1$i4 = Main.setOutputs s0 $a$i3 in
                               let $a$i5 = Main.outputs $a1$i4 in
-                              $a$i5 # 3'h1 # rEn # wEn # r$i0 # $a1$i4)
+                              $a$i5 # 2'h1 # rEn # wEn # r$i0 # $a1$i4)
                               else let $a$i6 = Main.mkReg b0 b1 in
                               if eq $a$i6 2'h0 then (let $a$i7 = Main.r0 s0 in
                                     main.a2 rEn wEn $a$i7 s0)
@@ -411,127 +430,155 @@ main.$fail inp s0 =
                               main.a3 rEn wEn $a$i13 s0) else if eq $a$i11 2'h2 then (let $a$i14 = Main.r2 s0 in
                               main.a3 rEn wEn $a$i14 s0) else let $a$i15 = Main.r3 s0 in
                               main.a3 rEn wEn $a$i15 s0) else let rD$i16 = Main.mkReg rEn wEn in
-                        let $a$i17 = Main.mkReg b0 b1 in
-                        if eq rD$i16 2'h0 then main.vD rD$i16 $a$i17 (Main.r0 s0) s0
-                              else if eq rD$i16 2'h1 then main.vD rD$i16 $a$i17 (Main.r1 s0) s0 else if eq rD$i16 2'h2 then main.vD rD$i16 $a$i17 (Main.r2 s0) s0 else main.vD rD$i16 $a$i17 (Main.r3 s0) s0)
-                  else if not $ds2 then (if not $ds3 then (let rD$i18 = Main.mkReg rEn wEn in
-                        let $a$i19 = Main.mkReg b0 b1 in
-                        if eq rD$i18 2'h0 then main.vD2 rD$i18 $a$i19 (Main.r0 s0) s0
-                              else if eq rD$i18 2'h1 then main.vD2 rD$i18 $a$i19 (Main.r1 s0) s0 else if eq rD$i18 2'h2 then main.vD2 rD$i18 $a$i19 (Main.r2 s0) s0 else main.vD2 rD$i18 $a$i19 (Main.r3 s0) s0)
-                        else let rD$i20 = Main.mkReg rEn wEn in
-                        let $a$i21 = Main.mkReg b0 b1 in
-                        if eq rD$i20 2'h0 then main.vD3 rD$i20 $a$i21 (Main.r0 s0) s0
-                              else if eq rD$i20 2'h1 then main.vD3 rD$i20 $a$i21 (Main.r1 s0) s0 else if eq rD$i20 2'h2 then main.vD3 rD$i20 $a$i21 (Main.r2 s0) s0 else main.vD3 rD$i20 $a$i21 (Main.r3 s0) s0) else if not $ds3 then (let rD$i22 = Main.mkReg rEn wEn in
-                  let $a$i23 = Main.mkReg b0 b1 in
-                  if eq rD$i22 2'h0 then main.vD4 rD$i22 $a$i23 (Main.r0 s0) s0
-                        else if eq rD$i22 2'h1 then main.vD4 rD$i22 $a$i23 (Main.r1 s0) s0 else if eq rD$i22 2'h2 then main.vD4 rD$i22 $a$i23 (Main.r2 s0) s0 else main.vD4 rD$i22 $a$i23 (Main.r3 s0) s0) else let $a$i24 = Main.mkReg b0 b1 in
-                  if eq $a$i24 2'h0 then (let $a$i25 = Main.r0 s0 in
-                        main.x2 rEn wEn $a$i25 s0)
-                        else if eq $a$i24 2'h1 then (let $a$i26 = Main.r1 s0 in
-                        main.x2 rEn wEn $a$i26 s0) else if eq $a$i24 2'h2 then (let $a$i27 = Main.r2 s0 in
-                        main.x2 rEn wEn $a$i27 s0) else let $a$i28 = Main.r3 s0 in
-                        main.x2 rEn wEn $a$i28 s0)
-            else if not $ds1 then (if not $ds2 then (if not $ds3 then (let rD$i29 = Main.mkReg rEn wEn in
-                        let $a$i30 = Main.mkReg b0 b1 in
-                        if eq rD$i29 2'h0 then main.vD5 rD$i29 $a$i30 (Main.r0 s0) s0
-                              else if eq rD$i29 2'h1 then main.vD5 rD$i29 $a$i30 (Main.r1 s0) s0 else if eq rD$i29 2'h2 then main.vD5 rD$i29 $a$i30 (Main.r2 s0) s0 else main.vD5 rD$i29 $a$i30 (Main.r3 s0) s0)
-                        else let rD$i31 = Main.mkReg rEn wEn in
-                        let $a$i32 = Main.mkReg b0 b1 in
-                        if eq rD$i31 2'h0 then main.vD6 rD$i31 $a$i32 (Main.r0 s0) s0
-                              else if eq rD$i31 2'h1 then main.vD6 rD$i31 $a$i32 (Main.r1 s0) s0 else if eq rD$i31 2'h2 then main.vD6 rD$i31 $a$i32 (Main.r2 s0) s0 else main.vD6 rD$i31 $a$i32 (Main.r3 s0) s0)
-                  else if not $ds3 then (let rD$i33 = Main.mkReg rEn wEn in
-                  let $a$i34 = Main.mkReg b0 b1 in
-                  if eq rD$i33 2'h0 then main.vD7 rD$i33 $a$i34 (Main.r0 s0) s0
-                        else if eq rD$i33 2'h1 then main.vD7 rD$i33 $a$i34 (Main.r1 s0) s0 else if eq rD$i33 2'h2 then main.vD7 rD$i33 $a$i34 (Main.r2 s0) s0 else main.vD7 rD$i33 $a$i34 (Main.r3 s0) s0) else let $a$i35 = Main.mkReg rEn wEn in
-                  if eq $a$i35 2'h0 then (let $a$i36 = Main.r0 s0 in
-                        main.vD8 b0 b1 $a$i36 s0)
-                        else if eq $a$i35 2'h1 then (let $a$i37 = Main.r1 s0 in
-                        main.vD8 b0 b1 $a$i37 s0) else if eq $a$i35 2'h2 then (let $a$i38 = Main.r2 s0 in
-                        main.vD8 b0 b1 $a$i38 s0) else let $a$i39 = Main.r3 s0 in
-                        main.vD8 b0 b1 $a$i39 s0) else if not $ds2 then (if not $ds3 then (if not rEn then (if not wEn then (let $a$i40 = Main.zFlag s0 in
-                              if not $a$i40 then main.zzz s0
+                        let rS$i17 = Main.mkReg b0 b1 in
+                        if eq rD$i16 2'h0 then (let $a$i18 = Main.r0 s0 in
+                              main.vD rD$i16 rS$i17 $a$i18 s0)
+                              else if eq rD$i16 2'h1 then (let $a$i19 = Main.r1 s0 in
+                              main.vD rD$i16 rS$i17 $a$i19 s0) else if eq rD$i16 2'h2 then (let $a$i20 = Main.r2 s0 in
+                              main.vD rD$i16 rS$i17 $a$i20 s0) else let $a$i21 = Main.r3 s0 in
+                              main.vD rD$i16 rS$i17 $a$i21 s0)
+                  else if not $ds2 then (if not $ds3 then (let rD$i22 = Main.mkReg rEn wEn in
+                        let rS$i23 = Main.mkReg b0 b1 in
+                        if eq rD$i22 2'h0 then (let $a$i24 = Main.r0 s0 in
+                              main.vD2 rD$i22 rS$i23 $a$i24 s0)
+                              else if eq rD$i22 2'h1 then (let $a$i25 = Main.r1 s0 in
+                              main.vD2 rD$i22 rS$i23 $a$i25 s0) else if eq rD$i22 2'h2 then (let $a$i26 = Main.r2 s0 in
+                              main.vD2 rD$i22 rS$i23 $a$i26 s0) else let $a$i27 = Main.r3 s0 in
+                              main.vD2 rD$i22 rS$i23 $a$i27 s0)
+                        else let rD$i28 = Main.mkReg rEn wEn in
+                        let rS$i29 = Main.mkReg b0 b1 in
+                        if eq rD$i28 2'h0 then (let $a$i30 = Main.r0 s0 in
+                              main.vD3 rD$i28 rS$i29 $a$i30 s0)
+                              else if eq rD$i28 2'h1 then (let $a$i31 = Main.r1 s0 in
+                              main.vD3 rD$i28 rS$i29 $a$i31 s0) else if eq rD$i28 2'h2 then (let $a$i32 = Main.r2 s0 in
+                              main.vD3 rD$i28 rS$i29 $a$i32 s0) else let $a$i33 = Main.r3 s0 in
+                              main.vD3 rD$i28 rS$i29 $a$i33 s0) else if not $ds3 then (let rD$i34 = Main.mkReg rEn wEn in
+                  let rS$i35 = Main.mkReg b0 b1 in
+                  if eq rD$i34 2'h0 then (let $a$i36 = Main.r0 s0 in
+                        main.vD4 rD$i34 rS$i35 $a$i36 s0)
+                        else if eq rD$i34 2'h1 then (let $a$i37 = Main.r1 s0 in
+                        main.vD4 rD$i34 rS$i35 $a$i37 s0) else if eq rD$i34 2'h2 then (let $a$i38 = Main.r2 s0 in
+                        main.vD4 rD$i34 rS$i35 $a$i38 s0) else let $a$i39 = Main.r3 s0 in
+                        main.vD4 rD$i34 rS$i35 $a$i39 s0) else let $a$i40 = Main.mkReg b0 b1 in
+                  if eq $a$i40 2'h0 then (let $a$i41 = Main.r0 s0 in
+                        main.x2 rEn wEn $a$i41 s0)
+                        else if eq $a$i40 2'h1 then (let $a$i42 = Main.r1 s0 in
+                        main.x2 rEn wEn $a$i42 s0) else if eq $a$i40 2'h2 then (let $a$i43 = Main.r2 s0 in
+                        main.x2 rEn wEn $a$i43 s0) else let $a$i44 = Main.r3 s0 in
+                        main.x2 rEn wEn $a$i44 s0)
+            else if not $ds1 then (if not $ds2 then (if not $ds3 then (let rD$i45 = Main.mkReg rEn wEn in
+                        let rS$i46 = Main.mkReg b0 b1 in
+                        if eq rD$i45 2'h0 then (let $a$i47 = Main.r0 s0 in
+                              main.vD5 rD$i45 rS$i46 $a$i47 s0)
+                              else if eq rD$i45 2'h1 then (let $a$i48 = Main.r1 s0 in
+                              main.vD5 rD$i45 rS$i46 $a$i48 s0) else if eq rD$i45 2'h2 then (let $a$i49 = Main.r2 s0 in
+                              main.vD5 rD$i45 rS$i46 $a$i49 s0) else let $a$i50 = Main.r3 s0 in
+                              main.vD5 rD$i45 rS$i46 $a$i50 s0)
+                        else let rD$i51 = Main.mkReg rEn wEn in
+                        let rS$i52 = Main.mkReg b0 b1 in
+                        if eq rD$i51 2'h0 then (let $a$i53 = Main.r0 s0 in
+                              main.vD6 rD$i51 rS$i52 $a$i53 s0)
+                              else if eq rD$i51 2'h1 then (let $a$i54 = Main.r1 s0 in
+                              main.vD6 rD$i51 rS$i52 $a$i54 s0) else if eq rD$i51 2'h2 then (let $a$i55 = Main.r2 s0 in
+                              main.vD6 rD$i51 rS$i52 $a$i55 s0) else let $a$i56 = Main.r3 s0 in
+                              main.vD6 rD$i51 rS$i52 $a$i56 s0)
+                  else if not $ds3 then (let rD$i57 = Main.mkReg rEn wEn in
+                  let rS$i58 = Main.mkReg b0 b1 in
+                  if eq rD$i57 2'h0 then (let $a$i59 = Main.r0 s0 in
+                        main.vD7 rD$i57 rS$i58 $a$i59 s0)
+                        else if eq rD$i57 2'h1 then (let $a$i60 = Main.r1 s0 in
+                        main.vD7 rD$i57 rS$i58 $a$i60 s0) else if eq rD$i57 2'h2 then (let $a$i61 = Main.r2 s0 in
+                        main.vD7 rD$i57 rS$i58 $a$i61 s0) else let $a$i62 = Main.r3 s0 in
+                        main.vD7 rD$i57 rS$i58 $a$i62 s0) else let $a$i63 = Main.mkReg rEn wEn in
+                  if eq $a$i63 2'h0 then (let $a$i64 = Main.r0 s0 in
+                        main.vD8 b0 b1 $a$i64 s0)
+                        else if eq $a$i63 2'h1 then (let $a$i65 = Main.r1 s0 in
+                        main.vD8 b0 b1 $a$i65 s0) else if eq $a$i63 2'h2 then (let $a$i66 = Main.r2 s0 in
+                        main.vD8 b0 b1 $a$i66 s0) else let $a$i67 = Main.r3 s0 in
+                        main.vD8 b0 b1 $a$i67 s0) else if not $ds2 then (if not $ds3 then (if not rEn then (if not wEn then (let $a$i68 = Main.zFlag s0 in
+                              if not $a$i68 then main.zzz s0
                                     else main.arm142 b0 b1 s0)
-                              else let $a$i41 = Main.zFlag s0 in
-                              let $a$i42 = Main.notb $a$i41 in
-                              if not $a$i42 then main.zzz s0
+                              else let $a$i69 = Main.zFlag s0 in
+                              let $a$i70 = Main.notb $a$i69 in
+                              if not $a$i70 then main.zzz s0
                                     else main.arm142 b0 b1 s0)
-                        else if not wEn then (let $a$i43 = Main.cFlag s0 in
-                        if not $a$i43 then main.zzz s0
-                              else main.arm142 b0 b1 s0) else let $a$i44 = Main.cFlag s0 in
-                        let $a$i45 = Main.notb $a$i44 in
-                        if not $a$i45 then main.zzz s0
+                        else if not wEn then (let $a$i71 = Main.cFlag s0 in
+                        if not $a$i71 then main.zzz s0
+                              else main.arm142 b0 b1 s0) else let $a$i72 = Main.cFlag s0 in
+                        let $a$i73 = Main.notb $a$i72 in
+                        if not $a$i73 then main.zzz s0
                               else main.arm142 b0 b1 s0)
-                  else if not rEn then (if not wEn then (let $a$i46 = Main.mkReg b0 b1 in
-                        if eq $a$i46 2'h0 then (let $a$i47 = Main.r0 s0 in
-                              main.x3 $a$i47 s0)
-                              else if eq $a$i46 2'h1 then (let $a$i48 = Main.r1 s0 in
-                              main.x3 $a$i48 s0) else if eq $a$i46 2'h2 then (let $a$i49 = Main.r2 s0 in
-                              main.x3 $a$i49 s0) else let $a$i50 = Main.r3 s0 in
-                              main.x3 $a$i50 s0)
-                        else if not b0 then (let $a$i51 = Main.setIEFlag s0 b1 in
-                        main.zzz $a$i51) else if not b1 then (let $a$i52 = Main.outputs s0 in
-                        let $a$i56 = (let a_o$i53 = $a$i52[10 +: 8] in
-                        let d_o$i54 = $a$i52[2 +: 8] in
-                        let we_o$i55 = $a$i52[1 +: 1] in
-                        a_o$i53 # d_o$i54 # we_o$i55 # 1'h1) in
-                        let $a1$i57 = Main.setOutputs s0 $a$i56 in
-                        main.zzz $a1$i57) else let $a$i58 = Main.setIEFlag s0 1'h1 in
-                        let $a$i60 = (let pcs$i59 = $a$i58[32 +: 8] in
-                        pcs$i59) in
-                        let $a$i61 = Main.setPC $a$i58 $a$i60 in
-                        let $a$i63 = (let zs$i62 = $a$i61[41 +: 1] in
-                        zs$i62) in
-                        let $a$i64 = Main.setZFlag $a$i61 $a$i63 in
-                        let $a$i66 = (let cs$i65 = $a$i64[40 +: 1] in
-                        cs$i65) in
-                        let $a$i67 = Main.setCFlag $a$i64 $a$i66 in
-                        main.zzz $a$i67) else if not wEn then (let r$i68 = Main.mkReg b0 b1 in
-                  if eq r$i68 2'h0 then (let $a$i69 = Main.r0 s0 in
-                        main.v3 r$i68 $a$i69 s0)
-                        else if eq r$i68 2'h1 then (let $a$i70 = Main.r1 s0 in
-                        main.v3 r$i68 $a$i70 s0) else if eq r$i68 2'h2 then (let $a$i71 = Main.r2 s0 in
-                        main.v3 r$i68 $a$i71 s0) else let $a$i72 = Main.r3 s0 in
-                        main.v3 r$i68 $a$i72 s0) else let $a$i73 = Main.mkReg b0 b1 in
-                  if eq $a$i73 2'h0 then (let $a$i74 = Main.setR0 s0 8'h0 in
-                        main.zzz $a$i74)
-                        else if eq $a$i73 2'h1 then (let $a$i75 = Main.setR1 s0 8'h0 in
-                        main.zzz $a$i75) else if eq $a$i73 2'h2 then (let $a$i76 = Main.setR2 s0 8'h0 in
-                        main.zzz $a$i76) else let $a$i77 = Main.setR3 s0 8'h0 in
-                        main.zzz $a$i77) else if not $ds3 then (if not rEn then (if not wEn then (let r$i78 = Main.mkReg b0 b1 in
-                        if eq r$i78 2'h0 then (let $a$i79 = Main.r0 s0 in
-                              main.v4 r$i78 $a$i79 s0)
-                              else if eq r$i78 2'h1 then (let $a$i80 = Main.r1 s0 in
-                              main.v4 r$i78 $a$i80 s0) else if eq r$i78 2'h2 then (let $a$i81 = Main.r2 s0 in
-                              main.v4 r$i78 $a$i81 s0) else let $a$i82 = Main.r3 s0 in
-                              main.v4 r$i78 $a$i82 s0)
-                        else let r$i83 = Main.mkReg b0 b1 in
-                        if eq r$i83 2'h0 then (let $a$i84 = Main.r0 s0 in
-                              main.v5 r$i83 $a$i84 s0)
-                              else if eq r$i83 2'h1 then (let $a$i85 = Main.r1 s0 in
-                              main.v5 r$i83 $a$i85 s0) else if eq r$i83 2'h2 then (let $a$i86 = Main.r2 s0 in
-                              main.v5 r$i83 $a$i86 s0) else let $a$i87 = Main.r3 s0 in
-                              main.v5 r$i83 $a$i87 s0)
-                  else let r$i88 = Main.mkReg b0 b1 in
-                  if not wEn then (if eq r$i88 2'h0 then (let $a$i89 = Main.r0 s0 in
-                              main.v6 r$i88 $a$i89 s0)
-                              else if eq r$i88 2'h1 then (let $a$i90 = Main.r1 s0 in
-                              main.v6 r$i88 $a$i90 s0) else if eq r$i88 2'h2 then (let $a$i91 = Main.r2 s0 in
-                              main.v6 r$i88 $a$i91 s0) else let $a$i92 = Main.r3 s0 in
-                              main.v6 r$i88 $a$i92 s0)
-                        else if eq r$i88 2'h0 then (let $a$i93 = Main.r0 s0 in
-                        main.v7 r$i88 $a$i93 s0) else if eq r$i88 2'h1 then (let $a$i94 = Main.r1 s0 in
-                        main.v7 r$i88 $a$i94 s0) else if eq r$i88 2'h2 then (let $a$i95 = Main.r2 s0 in
-                        main.v7 r$i88 $a$i95 s0) else let $a$i96 = Main.r3 s0 in
-                        main.v7 r$i88 $a$i96 s0) else let r$i97 = Main.mkReg b0 b1 in
-            if eq r$i97 2'h0 then (let $a$i98 = Main.r0 s0 in
-                  main.v8 rEn wEn r$i97 $a$i98 s0)
-                  else if eq r$i97 2'h1 then (let $a$i99 = Main.r1 s0 in
-                  main.v8 rEn wEn r$i97 $a$i99 s0) else if eq r$i97 2'h2 then (let $a$i100 = Main.r2 s0 in
-                  main.v8 rEn wEn r$i97 $a$i100 s0) else let $a$i101 = Main.r3 s0 in
-                  main.v8 rEn wEn r$i97 $a$i101 s0
+                  else if not rEn then (if not wEn then (let $a$i74 = Main.mkReg b0 b1 in
+                        if eq $a$i74 2'h0 then (let $a$i75 = Main.r0 s0 in
+                              main.x3 $a$i75 s0)
+                              else if eq $a$i74 2'h1 then (let $a$i76 = Main.r1 s0 in
+                              main.x3 $a$i76 s0) else if eq $a$i74 2'h2 then (let $a$i77 = Main.r2 s0 in
+                              main.x3 $a$i77 s0) else let $a$i78 = Main.r3 s0 in
+                              main.x3 $a$i78 s0)
+                        else if not b0 then (let $a$i79 = Main.setIEFlag s0 b1 in
+                        main.zzz $a$i79) else if not b1 then (let $a$i80 = Main.outputs s0 in
+                        let $a$i84 = (let a_o$i81 = $a$i80[10 +: 8] in
+                        let d_o$i82 = $a$i80[2 +: 8] in
+                        let we_o$i83 = $a$i80[1 +: 1] in
+                        a_o$i81 # d_o$i82 # we_o$i83 # 1'h1) in
+                        let $a1$i85 = Main.setOutputs s0 $a$i84 in
+                        main.zzz $a1$i85) else let $a$i86 = Main.setIEFlag s0 1'h1 in
+                        let $a$i88 = (let pcs$i87 = $a$i86[32 +: 8] in
+                        pcs$i87) in
+                        let $a$i89 = Main.setPC $a$i86 $a$i88 in
+                        let $a$i91 = (let zs$i90 = $a$i89[41 +: 1] in
+                        zs$i90) in
+                        let $a$i92 = Main.setZFlag $a$i89 $a$i91 in
+                        let $a$i94 = (let cs$i93 = $a$i92[40 +: 1] in
+                        cs$i93) in
+                        let $a$i95 = Main.setCFlag $a$i92 $a$i94 in
+                        main.zzz $a$i95) else if not wEn then (let r$i96 = Main.mkReg b0 b1 in
+                  if eq r$i96 2'h0 then (let $a$i97 = Main.r0 s0 in
+                        main.v3 r$i96 $a$i97 s0)
+                        else if eq r$i96 2'h1 then (let $a$i98 = Main.r1 s0 in
+                        main.v3 r$i96 $a$i98 s0) else if eq r$i96 2'h2 then (let $a$i99 = Main.r2 s0 in
+                        main.v3 r$i96 $a$i99 s0) else let $a$i100 = Main.r3 s0 in
+                        main.v3 r$i96 $a$i100 s0) else let $a$i101 = Main.mkReg b0 b1 in
+                  if eq $a$i101 2'h0 then (let $a$i102 = Main.setR0 s0 8'h0 in
+                        main.zzz $a$i102)
+                        else if eq $a$i101 2'h1 then (let $a$i103 = Main.setR1 s0 8'h0 in
+                        main.zzz $a$i103) else if eq $a$i101 2'h2 then (let $a$i104 = Main.setR2 s0 8'h0 in
+                        main.zzz $a$i104) else let $a$i105 = Main.setR3 s0 8'h0 in
+                        main.zzz $a$i105) else if not $ds3 then (if not rEn then (if not wEn then (let r$i106 = Main.mkReg b0 b1 in
+                        if eq r$i106 2'h0 then (let $a$i107 = Main.r0 s0 in
+                              main.v4 r$i106 $a$i107 s0)
+                              else if eq r$i106 2'h1 then (let $a$i108 = Main.r1 s0 in
+                              main.v4 r$i106 $a$i108 s0) else if eq r$i106 2'h2 then (let $a$i109 = Main.r2 s0 in
+                              main.v4 r$i106 $a$i109 s0) else let $a$i110 = Main.r3 s0 in
+                              main.v4 r$i106 $a$i110 s0)
+                        else let r$i111 = Main.mkReg b0 b1 in
+                        if eq r$i111 2'h0 then (let $a$i112 = Main.r0 s0 in
+                              main.v5 r$i111 $a$i112 s0)
+                              else if eq r$i111 2'h1 then (let $a$i113 = Main.r1 s0 in
+                              main.v5 r$i111 $a$i113 s0) else if eq r$i111 2'h2 then (let $a$i114 = Main.r2 s0 in
+                              main.v5 r$i111 $a$i114 s0) else let $a$i115 = Main.r3 s0 in
+                              main.v5 r$i111 $a$i115 s0)
+                  else let r$i116 = Main.mkReg b0 b1 in
+                  if not wEn then (if eq r$i116 2'h0 then (let $a$i117 = Main.r0 s0 in
+                              main.v6 r$i116 $a$i117 s0)
+                              else if eq r$i116 2'h1 then (let $a$i118 = Main.r1 s0 in
+                              main.v6 r$i116 $a$i118 s0) else if eq r$i116 2'h2 then (let $a$i119 = Main.r2 s0 in
+                              main.v6 r$i116 $a$i119 s0) else let $a$i120 = Main.r3 s0 in
+                              main.v6 r$i116 $a$i120 s0)
+                        else if eq r$i116 2'h0 then (let $a$i121 = Main.r0 s0 in
+                        main.v7 r$i116 $a$i121 s0) else if eq r$i116 2'h1 then (let $a$i122 = Main.r1 s0 in
+                        main.v7 r$i116 $a$i122 s0) else if eq r$i116 2'h2 then (let $a$i123 = Main.r2 s0 in
+                        main.v7 r$i116 $a$i123 s0) else let $a$i124 = Main.r3 s0 in
+                        main.v7 r$i116 $a$i124 s0) else let r$i125 = Main.mkReg b0 b1 in
+            if eq r$i125 2'h0 then (let $a$i126 = Main.r0 s0 in
+                  main.v8 rEn wEn r$i125 $a$i126 s0)
+                  else if eq r$i125 2'h1 then (let $a$i127 = Main.r1 s0 in
+                  main.v8 rEn wEn r$i125 $a$i127 s0) else if eq r$i125 2'h2 then (let $a$i128 = Main.r2 s0 in
+                  main.v8 rEn wEn r$i125 $a$i128 s0) else let $a$i129 = Main.r3 s0 in
+                  main.v8 rEn wEn r$i125 $a$i129 s0
 
 --| block '$L.Main.loop' of process main
-main.loop : ([81]) -> [106]
+main.loop : ([81]) -> [105]
 main.loop s0 =
       let $a$i0 = Main.inputs s0 in
       let $a$i2 = (let r_i$i1 = $a$i0[1 +: 1] in
@@ -860,15 +907,14 @@ device top_level
       output __out1 : [8]
       output __out2 : [1]
       output __out3 : [1]
-      register __resumption_tag : [7] init 7'h30
+      register __resumption_tag : [6] init 6'h30
       register __st0 : [81] init 81'h0
       tag i2 = 0
       tag i4 = 1
       tag i6 = 2
       tag i7 = 3
-      tag i8 = 4
       let $res = let i$i1 = __in0 # __in1 # __in2 in
-            if eq __resumption_tag[4 +: 3] 3'h0 then (let rEn$i2 = __resumption_tag[2 +: 1] in
+            if eq __resumption_tag[4 +: 2] 2'h0 then (let rEn$i2 = __resumption_tag[2 +: 1] in
                   let r$i3 = __resumption_tag[0 +: 2] in
                   let $a$i5 = Main.setInputs __st0 i$i1 in
                   if not rEn$i2 then main.loop $a$i5
@@ -880,7 +926,7 @@ device top_level
                               main.loop $a$i9) else if eq r$i3 2'h2 then (let $a$i10 = Main.setR2 $a$i5 $a$i7 in
                               main.loop $a$i10) else let $a$i11 = Main.setR3 $a$i5 $a$i7 in
                               main.loop $a$i11)
-                  else if eq __resumption_tag[4 +: 3] 3'h1 then (let rEn$i12 = __resumption_tag[3 +: 1] in
+                  else if eq __resumption_tag[4 +: 2] 2'h1 then (let rEn$i12 = __resumption_tag[3 +: 1] in
                   let wEn$i13 = __resumption_tag[2 +: 1] in
                   let r$i14 = __resumption_tag[0 +: 2] in
                   let $a$i16 = Main.setInputs __st0 i$i1 in
@@ -897,7 +943,7 @@ device top_level
                         main.d rEn$i12 r$i14 $a$i25 $a1$i24) else if eq r$i14 2'h1 then (let $a$i26 = Main.r1 $a1$i24 in
                         main.d rEn$i12 r$i14 $a$i26 $a1$i24) else if eq r$i14 2'h2 then (let $a$i27 = Main.r2 $a1$i24 in
                         main.d rEn$i12 r$i14 $a$i27 $a1$i24) else let $a$i28 = Main.r3 $a1$i24 in
-                        main.d rEn$i12 r$i14 $a$i28 $a1$i24) else if eq __resumption_tag[4 +: 3] 3'h2 then (let rEn$i29 = __resumption_tag[1 +: 1] in
+                        main.d rEn$i12 r$i14 $a$i28 $a1$i24) else if eq __resumption_tag[4 +: 2] 2'h2 then (let rEn$i29 = __resumption_tag[1 +: 1] in
                   let wEn$i30 = __resumption_tag[0 +: 1] in
                   let $a$i32 = Main.setInputs __st0 i$i1 in
                   let $a$i33 = Main.inputs $a$i32 in
@@ -908,12 +954,11 @@ device top_level
                         else if eq $a$i35 2'h1 then (let $a$i37 = Main.setR1 $a$i32 $a$i34 in
                         main.loop $a$i37) else if eq $a$i35 2'h2 then (let $a$i38 = Main.setR2 $a$i32 $a$i34 in
                         main.loop $a$i38) else let $a$i39 = Main.setR3 $a$i32 $a$i34 in
-                        main.loop $a$i39) else if eq __resumption_tag[4 +: 3] 3'h3 then (let $a$i41 = Main.setInputs __st0 i$i1 in
-                  main.loop $a$i41) else let s01$i43 = Main.setInputs __st0 i$i1 in
-                  main.loop s01$i43
-      __out0 := $res[98 +: 8]
-      __out1 := $res[90 +: 8]
-      __out2 := $res[89 +: 1]
-      __out3 := $res[88 +: 1]
-      next __resumption_tag := $res[81 +: 7]
+                        main.loop $a$i39) else let $a$i41 = Main.setInputs __st0 i$i1 in
+                  main.loop $a$i41
+      __out0 := $res[97 +: 8]
+      __out1 := $res[89 +: 8]
+      __out2 := $res[88 +: 1]
+      __out3 := $res[87 +: 1]
+      next __resumption_tag := $res[81 +: 6]
       next __st0 := $res[0 +: 81]

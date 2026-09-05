@@ -290,42 +290,42 @@ architecture rtl of top_level is
             port (\rEn\ : in std_logic_vector (0 downto 0);
                   r : in std_logic_vector (1 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_d is
             port (\rEn\ : in std_logic_vector (0 downto 0);
                   r : in std_logic_vector (1 downto 0);
                   d : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_loop is
             port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       -- state registers
-      -- __resumption_tag: 7 bits, init 0x30
-      --   states: 0=i2 1=i4 2=i6 3=i7 4=i8
+      -- __resumption_tag: 6 bits, init 0x30
+      --   states: 0=i2 1=i4 2=i6 3=i7
       -- __st0: 81 bits, init 0x0
-      signal \__resumption_tag\ : std_logic_vector (6 downto 0) := std_logic_vector'(B"0110000");
-      signal \__resumption_tag_next\ : std_logic_vector (6 downto 0);
+      signal \__resumption_tag\ : std_logic_vector (5 downto 0) := std_logic_vector'(B"110000");
+      signal \__resumption_tag_next\ : std_logic_vector (5 downto 0);
       signal \__st0\ : std_logic_vector (80 downto 0) := (others => '0');
       signal \__st0_next\ : std_logic_vector (80 downto 0);
       signal i : std_logic_vector (9 downto 0);
       signal ren : std_logic_vector (0 downto 0);
       signal r : std_logic_vector (1 downto 0);
       signal main_setinputs_out : std_logic_vector (80 downto 0);
-      signal main_loop_out : std_logic_vector (105 downto 0);
+      signal main_loop_out : std_logic_vector (104 downto 0);
       signal main_inputs_out : std_logic_vector (9 downto 0);
       signal main_datain_out : std_logic_vector (7 downto 0);
       signal main_setr0_out : std_logic_vector (80 downto 0);
-      signal main_loop_out_r1 : std_logic_vector (105 downto 0);
+      signal main_loop_out_r1 : std_logic_vector (104 downto 0);
       signal main_setr1_out : std_logic_vector (80 downto 0);
-      signal main_loop_out_r2 : std_logic_vector (105 downto 0);
+      signal main_loop_out_r2 : std_logic_vector (104 downto 0);
       signal main_setr2_out : std_logic_vector (80 downto 0);
-      signal main_loop_out_r3 : std_logic_vector (105 downto 0);
+      signal main_loop_out_r3 : std_logic_vector (104 downto 0);
       signal main_setr3_out : std_logic_vector (80 downto 0);
-      signal main_loop_out_r4 : std_logic_vector (105 downto 0);
+      signal main_loop_out_r4 : std_logic_vector (104 downto 0);
       signal ren_r1 : std_logic_vector (0 downto 0);
       signal main_outputs_out : std_logic_vector (17 downto 0);
       signal main_setaddrout_out : std_logic_vector (17 downto 0);
@@ -333,19 +333,19 @@ architecture rtl of top_level is
       signal main_outputs_out_r1 : std_logic_vector (17 downto 0);
       signal main_setweout_out : std_logic_vector (17 downto 0);
       signal main_setoutputs_out_r1 : std_logic_vector (80 downto 0);
-      signal \main__unused7_out\ : std_logic_vector (105 downto 0);
+      signal \main__unused7_out\ : std_logic_vector (104 downto 0);
       signal main_r0_out : std_logic_vector (7 downto 0);
-      signal main_d_out : std_logic_vector (105 downto 0);
+      signal main_d_out : std_logic_vector (104 downto 0);
       signal main_r1_out : std_logic_vector (7 downto 0);
-      signal main_d_out_r1 : std_logic_vector (105 downto 0);
+      signal main_d_out_r1 : std_logic_vector (104 downto 0);
       signal main_r2_out : std_logic_vector (7 downto 0);
-      signal main_d_out_r2 : std_logic_vector (105 downto 0);
+      signal main_d_out_r2 : std_logic_vector (104 downto 0);
       signal main_r3_out : std_logic_vector (7 downto 0);
-      signal main_d_out_r3 : std_logic_vector (105 downto 0);
+      signal main_d_out_r3 : std_logic_vector (104 downto 0);
       signal ren_r2 : std_logic_vector (0 downto 0);
       signal wen : std_logic_vector (0 downto 0);
       signal main_mkreg_out : std_logic_vector (1 downto 0);
-      signal zres : std_logic_vector (105 downto 0);
+      signal zres : std_logic_vector (104 downto 0);
 begin
       -- combinational logic
       i <= (\__in0\ & \__in1\ & \__in2\);
@@ -382,24 +382,23 @@ begin
       ren_r2 <= \__resumption_tag\(1 downto 1);
       wen <= \__resumption_tag\(0 downto 0);
       mkreg_i : \Main_mkReg\ port map (ren_r2, wen, main_mkreg_out);
-      with \__resumption_tag\(6 downto 4) select zres <=
-            rw_cond(rw_not(ren), main_loop_out, rw_cond(rw_eq(r, std_logic_vector'(B"00")), main_loop_out_r1, rw_cond(rw_eq(r, std_logic_vector'(B"01")), main_loop_out_r2, rw_cond(rw_eq(r, std_logic_vector'(B"10")), main_loop_out_r3, main_loop_out_r4)))) when "000",
-            rw_cond(rw_not(ren), \main__unused7_out\, rw_cond(rw_eq(r, std_logic_vector'(B"00")), main_d_out, rw_cond(rw_eq(r, std_logic_vector'(B"01")), main_d_out_r1, rw_cond(rw_eq(r, std_logic_vector'(B"10")), main_d_out_r2, main_d_out_r3)))) when "001",
-            rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_loop_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_loop_out_r2, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_loop_out_r3, main_loop_out_r4))) when "010",
-            main_loop_out when "011",
+      with \__resumption_tag\(5 downto 4) select zres <=
+            rw_cond(rw_not(ren), main_loop_out, rw_cond(rw_eq(r, std_logic_vector'(B"00")), main_loop_out_r1, rw_cond(rw_eq(r, std_logic_vector'(B"01")), main_loop_out_r2, rw_cond(rw_eq(r, std_logic_vector'(B"10")), main_loop_out_r3, main_loop_out_r4)))) when "00",
+            rw_cond(rw_not(ren), \main__unused7_out\, rw_cond(rw_eq(r, std_logic_vector'(B"00")), main_d_out, rw_cond(rw_eq(r, std_logic_vector'(B"01")), main_d_out_r1, rw_cond(rw_eq(r, std_logic_vector'(B"10")), main_d_out_r2, main_d_out_r3)))) when "01",
+            rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_loop_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_loop_out_r2, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_loop_out_r3, main_loop_out_r4))) when "10",
             main_loop_out when others;
-      \__resumption_tag_next\ <= zres(87 downto 81);
+      \__resumption_tag_next\ <= zres(86 downto 81);
       \__st0_next\ <= zres(80 downto 0);
       -- outputs
-      \__out0\ <= zres(105 downto 98);
-      \__out1\ <= zres(97 downto 90);
-      \__out2\ <= zres(89 downto 89);
-      \__out3\ <= zres(88 downto 88);
+      \__out0\ <= zres(104 downto 97);
+      \__out1\ <= zres(96 downto 89);
+      \__out2\ <= zres(88 downto 88);
+      \__out3\ <= zres(87 downto 87);
       -- state register update
       process (clk, rst)
       begin
             if rst = std_logic_vector'(B"1") then
-                  \__resumption_tag\ <= std_logic_vector'(B"0110000");
+                  \__resumption_tag\ <= std_logic_vector'(B"110000");
                   \__st0\ <= std_logic_vector'(B"000000000000000000000000000000000000000000000000000000000000000000000000000000000");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
@@ -418,7 +417,7 @@ entity \main___unused7\ is
       port (\rEn\ : in std_logic_vector (0 downto 0);
             r : in std_logic_vector (1 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main___unused7\ is
@@ -450,7 +449,7 @@ begin
       y <= \main_pluscw8$smain_onew8_false_bool_out\(7 downto 0);
       setpc_i : \Main_setPC\ port map (s0, y, main_setpc_out);
       outputs_i : \Main_outputs\ port map (main_setpc_out, main_outputs_out);
-      res <= (main_outputs_out & std_logic_vector'(X"0") & \rEn\ & r & main_setpc_out);
+      res <= (main_outputs_out & std_logic_vector'(B"000") & \rEn\ & r & main_setpc_out);
 end architecture;
 
 -- main.d
@@ -464,7 +463,7 @@ entity main_d is
             r : in std_logic_vector (1 downto 0);
             d : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_d is
@@ -486,12 +485,12 @@ architecture rtl of main_d is
             port (\rEn\ : in std_logic_vector (0 downto 0);
                   r : in std_logic_vector (1 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_outputs_out : std_logic_vector (17 downto 0);
       signal main_setdataout_out : std_logic_vector (17 downto 0);
       signal main_setoutputs_out : std_logic_vector (80 downto 0);
-      signal \main__unused7_out\ : std_logic_vector (105 downto 0);
+      signal \main__unused7_out\ : std_logic_vector (104 downto 0);
 begin
       outputs_i : \Main_outputs\ port map (s0, main_outputs_out);
       setdataout_i : \Main_setDataOut\ port map (main_outputs_out, d, main_setdataout_out);
@@ -511,7 +510,7 @@ entity main_a2 is
             \wEn\ : in std_logic_vector (0 downto 0);
             a : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_a2 is
@@ -549,7 +548,7 @@ begin
       setaddrout_i : \Main_setAddrOut\ port map (main_outputs_out_r1, a, main_setaddrout_out);
       setoutputs_i_r1 : \Main_setOutputs\ port map (main_setoutputs_out, main_setaddrout_out, main_setoutputs_out_r1);
       outputs_i_r2 : \Main_outputs\ port map (main_setoutputs_out_r1, main_outputs_out_r2);
-      res <= (main_outputs_out_r2 & std_logic_vector'(B"01000") & \rEn\ & \wEn\ & main_setoutputs_out_r1);
+      res <= (main_outputs_out_r2 & std_logic_vector'(X"8") & \rEn\ & \wEn\ & main_setoutputs_out_r1);
 end architecture;
 
 -- main.v2
@@ -562,7 +561,7 @@ entity main_v2 is
       port (a : in std_logic_vector (7 downto 0);
             v : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_v2 is
@@ -592,7 +591,7 @@ architecture rtl of main_v2 is
       end component;
       component main_zzz is
             port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_outputs_out : std_logic_vector (17 downto 0);
       signal main_setweout_out : std_logic_vector (17 downto 0);
@@ -603,7 +602,7 @@ architecture rtl of main_v2 is
       signal main_outputs_out_r2 : std_logic_vector (17 downto 0);
       signal main_setaddrout_out : std_logic_vector (17 downto 0);
       signal main_setoutputs_out_r2 : std_logic_vector (80 downto 0);
-      signal main_zzz_out : std_logic_vector (105 downto 0);
+      signal main_zzz_out : std_logic_vector (104 downto 0);
 begin
       outputs_i : \Main_outputs\ port map (s0, main_outputs_out);
       setweout_i : \Main_setWeOut\ port map (main_outputs_out, std_logic_vector'(B"1"), main_setweout_out);
@@ -629,7 +628,7 @@ entity main_a3 is
             \wEn\ : in std_logic_vector (0 downto 0);
             a : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_a3 is
@@ -658,17 +657,17 @@ architecture rtl of main_a3 is
             port (a : in std_logic_vector (7 downto 0);
                   v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_mkreg_out : std_logic_vector (1 downto 0);
       signal main_r0_out : std_logic_vector (7 downto 0);
-      signal main_v2_out : std_logic_vector (105 downto 0);
+      signal main_v2_out : std_logic_vector (104 downto 0);
       signal main_r1_out : std_logic_vector (7 downto 0);
-      signal main_v2_out_r1 : std_logic_vector (105 downto 0);
+      signal main_v2_out_r1 : std_logic_vector (104 downto 0);
       signal main_r2_out : std_logic_vector (7 downto 0);
-      signal main_v2_out_r2 : std_logic_vector (105 downto 0);
+      signal main_v2_out_r2 : std_logic_vector (104 downto 0);
       signal main_r3_out : std_logic_vector (7 downto 0);
-      signal main_v2_out_r3 : std_logic_vector (105 downto 0);
+      signal main_v2_out_r3 : std_logic_vector (104 downto 0);
 begin
       mkreg_i : \Main_mkReg\ port map (\rEn\, \wEn\, main_mkreg_out);
       r0_i : \Main_r0\ port map (s0, main_r0_out);
@@ -686,26 +685,124 @@ begin
             main_v2_out_r3 when others;
 end architecture;
 
--- main._unused17
--- block '$L._unused17' of process main
+-- main.arm29
+-- block '$L.arm29' of process main
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \main___unused17\ is
-      port (s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+entity main_arm29 is
+      port (v : in std_logic_vector (7 downto 0);
+            s0 : in std_logic_vector (80 downto 0);
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
-architecture rtl of \main___unused17\ is
-      component \Main_outputs\ is
+architecture rtl of main_arm29 is
+      component \Main_setR0\ is
             port (\Zds\ : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (17 downto 0));
+                  r0 : in std_logic_vector (7 downto 0);
+                  res : out std_logic_vector (80 downto 0));
       end component;
-      signal main_outputs_out : std_logic_vector (17 downto 0);
+      component main_zzz is
+            port (s0 : in std_logic_vector (80 downto 0);
+                  res : out std_logic_vector (104 downto 0));
+      end component;
+      signal main_setr0_out : std_logic_vector (80 downto 0);
+      signal main_zzz_out : std_logic_vector (104 downto 0);
 begin
-      outputs_i : \Main_outputs\ port map (s0, main_outputs_out);
-      res <= (main_outputs_out & std_logic_vector'(B"1000000") & s0);
+      setr0_i : \Main_setR0\ port map (s0, v, main_setr0_out);
+      zzz_i : main_zzz port map (main_setr0_out, main_zzz_out);
+      res <= main_zzz_out;
+end architecture;
+
+-- main.arm30
+-- block '$L.arm30' of process main
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity main_arm30 is
+      port (v : in std_logic_vector (7 downto 0);
+            s0 : in std_logic_vector (80 downto 0);
+            res : out std_logic_vector (104 downto 0));
+end entity;
+
+architecture rtl of main_arm30 is
+      component \Main_setR1\ is
+            port (\Zds\ : in std_logic_vector (80 downto 0);
+                  r1 : in std_logic_vector (7 downto 0);
+                  res : out std_logic_vector (80 downto 0));
+      end component;
+      component main_zzz is
+            port (s0 : in std_logic_vector (80 downto 0);
+                  res : out std_logic_vector (104 downto 0));
+      end component;
+      signal main_setr1_out : std_logic_vector (80 downto 0);
+      signal main_zzz_out : std_logic_vector (104 downto 0);
+begin
+      setr1_i : \Main_setR1\ port map (s0, v, main_setr1_out);
+      zzz_i : main_zzz port map (main_setr1_out, main_zzz_out);
+      res <= main_zzz_out;
+end architecture;
+
+-- main.arm31
+-- block '$L.arm31' of process main
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity main_arm31 is
+      port (v : in std_logic_vector (7 downto 0);
+            s0 : in std_logic_vector (80 downto 0);
+            res : out std_logic_vector (104 downto 0));
+end entity;
+
+architecture rtl of main_arm31 is
+      component \Main_setR2\ is
+            port (\Zds\ : in std_logic_vector (80 downto 0);
+                  r2 : in std_logic_vector (7 downto 0);
+                  res : out std_logic_vector (80 downto 0));
+      end component;
+      component main_zzz is
+            port (s0 : in std_logic_vector (80 downto 0);
+                  res : out std_logic_vector (104 downto 0));
+      end component;
+      signal main_setr2_out : std_logic_vector (80 downto 0);
+      signal main_zzz_out : std_logic_vector (104 downto 0);
+begin
+      setr2_i : \Main_setR2\ port map (s0, v, main_setr2_out);
+      zzz_i : main_zzz port map (main_setr2_out, main_zzz_out);
+      res <= main_zzz_out;
+end architecture;
+
+-- main.arm32
+-- block '$L.arm32' of process main
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity main_arm32 is
+      port (v : in std_logic_vector (7 downto 0);
+            s0 : in std_logic_vector (80 downto 0);
+            res : out std_logic_vector (104 downto 0));
+end entity;
+
+architecture rtl of main_arm32 is
+      component \Main_setR3\ is
+            port (\Zds\ : in std_logic_vector (80 downto 0);
+                  r3 : in std_logic_vector (7 downto 0);
+                  res : out std_logic_vector (80 downto 0));
+      end component;
+      component main_zzz is
+            port (s0 : in std_logic_vector (80 downto 0);
+                  res : out std_logic_vector (104 downto 0));
+      end component;
+      signal main_setr3_out : std_logic_vector (80 downto 0);
+      signal main_zzz_out : std_logic_vector (104 downto 0);
+begin
+      setr3_i : \Main_setR3\ port map (s0, v, main_setr3_out);
+      zzz_i : main_zzz port map (main_setr3_out, main_zzz_out);
+      res <= main_zzz_out;
 end architecture;
 
 -- main.s63
@@ -719,7 +816,7 @@ entity main_s63 is
             p : in std_logic_vector (8 downto 0);
             s : in std_logic_vector (80 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_s63 is
@@ -728,58 +825,46 @@ architecture rtl of main_s63 is
                   c : in std_logic_vector (0 downto 0);
                   res : out std_logic_vector (80 downto 0));
       end component;
-      component \Main_setR0\ is
-            port (\Zds\ : in std_logic_vector (80 downto 0);
-                  r0 : in std_logic_vector (7 downto 0);
-                  res : out std_logic_vector (80 downto 0));
+      component main_arm29 is
+            port (v : in std_logic_vector (7 downto 0);
+                  s0 : in std_logic_vector (80 downto 0);
+                  res : out std_logic_vector (104 downto 0));
       end component;
-      component \Main_setR1\ is
-            port (\Zds\ : in std_logic_vector (80 downto 0);
-                  r1 : in std_logic_vector (7 downto 0);
-                  res : out std_logic_vector (80 downto 0));
+      component main_arm30 is
+            port (v : in std_logic_vector (7 downto 0);
+                  s0 : in std_logic_vector (80 downto 0);
+                  res : out std_logic_vector (104 downto 0));
       end component;
-      component \Main_setR2\ is
-            port (\Zds\ : in std_logic_vector (80 downto 0);
-                  r2 : in std_logic_vector (7 downto 0);
-                  res : out std_logic_vector (80 downto 0));
+      component main_arm31 is
+            port (v : in std_logic_vector (7 downto 0);
+                  s0 : in std_logic_vector (80 downto 0);
+                  res : out std_logic_vector (104 downto 0));
       end component;
-      component \Main_setR3\ is
-            port (\Zds\ : in std_logic_vector (80 downto 0);
-                  r3 : in std_logic_vector (7 downto 0);
-                  res : out std_logic_vector (80 downto 0));
-      end component;
-      component \main___unused17\ is
-            port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+      component main_arm32 is
+            port (v : in std_logic_vector (7 downto 0);
+                  s0 : in std_logic_vector (80 downto 0);
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal x : std_logic_vector (0 downto 0);
       signal main_setcflag_out : std_logic_vector (80 downto 0);
       signal y : std_logic_vector (7 downto 0);
-      signal main_setr0_out : std_logic_vector (80 downto 0);
-      signal \main__unused17_out\ : std_logic_vector (105 downto 0);
-      signal main_setr1_out : std_logic_vector (80 downto 0);
-      signal \main__unused17_out_r1\ : std_logic_vector (105 downto 0);
-      signal main_setr2_out : std_logic_vector (80 downto 0);
-      signal \main__unused17_out_r2\ : std_logic_vector (105 downto 0);
-      signal main_setr3_out : std_logic_vector (80 downto 0);
-      signal \main__unused17_out_r3\ : std_logic_vector (105 downto 0);
+      signal main_arm29_out : std_logic_vector (104 downto 0);
+      signal main_arm30_out : std_logic_vector (104 downto 0);
+      signal main_arm31_out : std_logic_vector (104 downto 0);
+      signal main_arm32_out : std_logic_vector (104 downto 0);
 begin
       x <= p(8 downto 8);
       setcflag_i : \Main_setCFlag\ port map (s, x, main_setcflag_out);
       y <= p(7 downto 0);
-      setr0_i : \Main_setR0\ port map (main_setcflag_out, y, main_setr0_out);
-      \_unused17_i\ : \main___unused17\ port map (main_setr0_out, \main__unused17_out\);
-      setr1_i : \Main_setR1\ port map (main_setcflag_out, y, main_setr1_out);
-      \_unused17_i_r1\ : \main___unused17\ port map (main_setr1_out, \main__unused17_out_r1\);
-      setr2_i : \Main_setR2\ port map (main_setcflag_out, y, main_setr2_out);
-      \_unused17_i_r2\ : \main___unused17\ port map (main_setr2_out, \main__unused17_out_r2\);
-      setr3_i : \Main_setR3\ port map (main_setcflag_out, y, main_setr3_out);
-      \_unused17_i_r3\ : \main___unused17\ port map (main_setr3_out, \main__unused17_out_r3\);
+      arm29_i : main_arm29 port map (y, main_setcflag_out, main_arm29_out);
+      arm30_i : main_arm30 port map (y, main_setcflag_out, main_arm30_out);
+      arm31_i : main_arm31 port map (y, main_setcflag_out, main_arm31_out);
+      arm32_i : main_arm32 port map (y, main_setcflag_out, main_arm32_out);
       with \rD\ select res <=
-            \main__unused17_out\ when "00",
-            \main__unused17_out_r1\ when "01",
-            \main__unused17_out_r2\ when "10",
-            \main__unused17_out_r3\ when others;
+            main_arm29_out when "00",
+            main_arm30_out when "01",
+            main_arm31_out when "10",
+            main_arm32_out when others;
 end architecture;
 
 -- main.vS
@@ -793,7 +878,7 @@ entity \main_vS\ is
             \vD\ : in std_logic_vector (7 downto 0);
             \vS\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vS\ is
@@ -802,11 +887,11 @@ architecture rtl of \main_vS\ is
                   p : in std_logic_vector (8 downto 0);
                   s : in std_logic_vector (80 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal s : std_logic_vector (8 downto 0);
       signal p : std_logic_vector (8 downto 0);
-      signal main_s63_out : std_logic_vector (105 downto 0);
+      signal main_s63_out : std_logic_vector (104 downto 0);
 begin
       s <= rw_add(rw_add(rw_resize(\vD\, 9), rw_resize(\vS\, 9)), std_logic_vector'(B"000000000"));
       p <= (s(8 downto 8) & rw_resize(s, 8));
@@ -825,7 +910,7 @@ entity \main_vD\ is
             \rS\ : in std_logic_vector (1 downto 0);
             \vD\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vD\ is
@@ -850,16 +935,16 @@ architecture rtl of \main_vD\ is
                   \vD\ : in std_logic_vector (7 downto 0);
                   \vS\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_r0_out : std_logic_vector (7 downto 0);
-      signal main_vs_out : std_logic_vector (105 downto 0);
+      signal main_vs_out : std_logic_vector (104 downto 0);
       signal main_r1_out : std_logic_vector (7 downto 0);
-      signal main_vs_out_r1 : std_logic_vector (105 downto 0);
+      signal main_vs_out_r1 : std_logic_vector (104 downto 0);
       signal main_r2_out : std_logic_vector (7 downto 0);
-      signal main_vs_out_r2 : std_logic_vector (105 downto 0);
+      signal main_vs_out_r2 : std_logic_vector (104 downto 0);
       signal main_r3_out : std_logic_vector (7 downto 0);
-      signal main_vs_out_r3 : std_logic_vector (105 downto 0);
+      signal main_vs_out_r3 : std_logic_vector (104 downto 0);
 begin
       r0_i : \Main_r0\ port map (s0, main_r0_out);
       vs_i : \main_vS\ port map (\rD\, \vD\, main_r0_out, s0, main_vs_out);
@@ -887,7 +972,7 @@ entity \main_vS2\ is
             \vD\ : in std_logic_vector (7 downto 0);
             \vS\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vS2\ is
@@ -900,12 +985,12 @@ architecture rtl of \main_vS2\ is
                   p : in std_logic_vector (8 downto 0);
                   s : in std_logic_vector (80 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_cflag_out : std_logic_vector (0 downto 0);
       signal s : std_logic_vector (8 downto 0);
       signal p : std_logic_vector (8 downto 0);
-      signal main_s63_out : std_logic_vector (105 downto 0);
+      signal main_s63_out : std_logic_vector (104 downto 0);
 begin
       cflag_i : \Main_cFlag\ port map (s0, main_cflag_out);
       s <= rw_add(rw_add(rw_resize(\vD\, 9), rw_resize(\vS\, 9)), rw_resize(main_cflag_out, 9));
@@ -925,7 +1010,7 @@ entity \main_vD2\ is
             \rS\ : in std_logic_vector (1 downto 0);
             \vD\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vD2\ is
@@ -950,16 +1035,16 @@ architecture rtl of \main_vD2\ is
                   \vD\ : in std_logic_vector (7 downto 0);
                   \vS\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_r0_out : std_logic_vector (7 downto 0);
-      signal main_vs2_out : std_logic_vector (105 downto 0);
+      signal main_vs2_out : std_logic_vector (104 downto 0);
       signal main_r1_out : std_logic_vector (7 downto 0);
-      signal main_vs2_out_r1 : std_logic_vector (105 downto 0);
+      signal main_vs2_out_r1 : std_logic_vector (104 downto 0);
       signal main_r2_out : std_logic_vector (7 downto 0);
-      signal main_vs2_out_r2 : std_logic_vector (105 downto 0);
+      signal main_vs2_out_r2 : std_logic_vector (104 downto 0);
       signal main_r3_out : std_logic_vector (7 downto 0);
-      signal main_vs2_out_r3 : std_logic_vector (105 downto 0);
+      signal main_vs2_out_r3 : std_logic_vector (104 downto 0);
 begin
       r0_i : \Main_r0\ port map (s0, main_r0_out);
       vs2_i : \main_vS2\ port map (\rD\, \vD\, main_r0_out, s0, main_vs2_out);
@@ -987,7 +1072,7 @@ entity \main_vS3\ is
             \vD\ : in std_logic_vector (7 downto 0);
             \vS\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vS3\ is
@@ -1001,10 +1086,10 @@ architecture rtl of \main_vS3\ is
                   p : in std_logic_vector (8 downto 0);
                   s : in std_logic_vector (80 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal \main_minuscw8$sfalse_bool_out\ : std_logic_vector (8 downto 0);
-      signal main_s63_out : std_logic_vector (105 downto 0);
+      signal main_s63_out : std_logic_vector (104 downto 0);
 begin
       \minuscw8$sfalse_bool_i\ : \Main_minusCW8$sFalse__Bool\ port map (\vD\, \vS\, \main_minuscw8$sfalse_bool_out\);
       s63_i : main_s63 port map (\rD\, \main_minuscw8$sfalse_bool_out\, s0, s0, main_s63_out);
@@ -1022,7 +1107,7 @@ entity \main_vD3\ is
             \rS\ : in std_logic_vector (1 downto 0);
             \vD\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vD3\ is
@@ -1047,16 +1132,16 @@ architecture rtl of \main_vD3\ is
                   \vD\ : in std_logic_vector (7 downto 0);
                   \vS\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_r0_out : std_logic_vector (7 downto 0);
-      signal main_vs3_out : std_logic_vector (105 downto 0);
+      signal main_vs3_out : std_logic_vector (104 downto 0);
       signal main_r1_out : std_logic_vector (7 downto 0);
-      signal main_vs3_out_r1 : std_logic_vector (105 downto 0);
+      signal main_vs3_out_r1 : std_logic_vector (104 downto 0);
       signal main_r2_out : std_logic_vector (7 downto 0);
-      signal main_vs3_out_r2 : std_logic_vector (105 downto 0);
+      signal main_vs3_out_r2 : std_logic_vector (104 downto 0);
       signal main_r3_out : std_logic_vector (7 downto 0);
-      signal main_vs3_out_r3 : std_logic_vector (105 downto 0);
+      signal main_vs3_out_r3 : std_logic_vector (104 downto 0);
 begin
       r0_i : \Main_r0\ port map (s0, main_r0_out);
       vs3_i : \main_vS3\ port map (\rD\, \vD\, main_r0_out, s0, main_vs3_out);
@@ -1084,7 +1169,7 @@ entity \main_vS4\ is
             \vD\ : in std_logic_vector (7 downto 0);
             \vS\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vS4\ is
@@ -1097,12 +1182,12 @@ architecture rtl of \main_vS4\ is
                   p : in std_logic_vector (8 downto 0);
                   s : in std_logic_vector (80 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_cflag_out : std_logic_vector (0 downto 0);
       signal s : std_logic_vector (8 downto 0);
       signal p : std_logic_vector (8 downto 0);
-      signal main_s63_out : std_logic_vector (105 downto 0);
+      signal main_s63_out : std_logic_vector (104 downto 0);
 begin
       cflag_i : \Main_cFlag\ port map (s0, main_cflag_out);
       s <= rw_sub(rw_sub(rw_resize(\vD\, 9), rw_resize(\vS\, 9)), rw_resize(main_cflag_out, 9));
@@ -1122,7 +1207,7 @@ entity \main_vD4\ is
             \rS\ : in std_logic_vector (1 downto 0);
             \vD\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vD4\ is
@@ -1147,16 +1232,16 @@ architecture rtl of \main_vD4\ is
                   \vD\ : in std_logic_vector (7 downto 0);
                   \vS\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_r0_out : std_logic_vector (7 downto 0);
-      signal main_vs4_out : std_logic_vector (105 downto 0);
+      signal main_vs4_out : std_logic_vector (104 downto 0);
       signal main_r1_out : std_logic_vector (7 downto 0);
-      signal main_vs4_out_r1 : std_logic_vector (105 downto 0);
+      signal main_vs4_out_r1 : std_logic_vector (104 downto 0);
       signal main_r2_out : std_logic_vector (7 downto 0);
-      signal main_vs4_out_r2 : std_logic_vector (105 downto 0);
+      signal main_vs4_out_r2 : std_logic_vector (104 downto 0);
       signal main_r3_out : std_logic_vector (7 downto 0);
-      signal main_vs4_out_r3 : std_logic_vector (105 downto 0);
+      signal main_vs4_out_r3 : std_logic_vector (104 downto 0);
 begin
       r0_i : \Main_r0\ port map (s0, main_r0_out);
       vs4_i : \main_vS4\ port map (\rD\, \vD\, main_r0_out, s0, main_vs4_out);
@@ -1182,7 +1267,7 @@ use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity main_zzz is
       port (s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_zzz is
@@ -1193,7 +1278,7 @@ architecture rtl of main_zzz is
       signal main_outputs_out : std_logic_vector (17 downto 0);
 begin
       outputs_i : \Main_outputs\ port map (s0, main_outputs_out);
-      res <= (main_outputs_out & std_logic_vector'(B"0110000") & s0);
+      res <= (main_outputs_out & std_logic_vector'(B"110000") & s0);
 end architecture;
 
 -- main.x2
@@ -1207,7 +1292,7 @@ entity main_x2 is
             \wEn\ : in std_logic_vector (0 downto 0);
             x : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_x2 is
@@ -1238,17 +1323,17 @@ architecture rtl of main_x2 is
       end component;
       component main_zzz is
             port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_mkreg_out : std_logic_vector (1 downto 0);
       signal main_setr0_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out : std_logic_vector (105 downto 0);
+      signal main_zzz_out : std_logic_vector (104 downto 0);
       signal main_setr1_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out_r1 : std_logic_vector (105 downto 0);
+      signal main_zzz_out_r1 : std_logic_vector (104 downto 0);
       signal main_setr2_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out_r2 : std_logic_vector (105 downto 0);
+      signal main_zzz_out_r2 : std_logic_vector (104 downto 0);
       signal main_setr3_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out_r3 : std_logic_vector (105 downto 0);
+      signal main_zzz_out_r3 : std_logic_vector (104 downto 0);
 begin
       mkreg_i : \Main_mkReg\ port map (\rEn\, \wEn\, main_mkreg_out);
       setr0_i : \Main_setR0\ port map (s0, x, main_setr0_out);
@@ -1275,7 +1360,7 @@ use work.rw_helpers.all;
 entity \main___unused24\ is
       port (\vD$\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main___unused24\ is
@@ -1289,20 +1374,20 @@ architecture rtl of \main___unused24\ is
                   z : in std_logic_vector (0 downto 0);
                   res : out std_logic_vector (80 downto 0));
       end component;
-      component \main___unused17\ is
+      component main_zzz is
             port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_setcflag_out : std_logic_vector (80 downto 0);
       signal conn : std_logic_vector (0 downto 0);
       signal main_setzflag_out : std_logic_vector (80 downto 0);
-      signal \main__unused17_out\ : std_logic_vector (105 downto 0);
+      signal main_zzz_out : std_logic_vector (104 downto 0);
 begin
       setcflag_i : \Main_setCFlag\ port map (s0, std_logic_vector'(B"0"), main_setcflag_out);
       conn <= rw_eq(\vD$\, std_logic_vector'(X"00"));
       setzflag_i : \Main_setZFlag\ port map (main_setcflag_out, conn, main_setzflag_out);
-      \_unused17_i\ : \main___unused17\ port map (main_setzflag_out, \main__unused17_out\);
-      res <= \main__unused17_out\;
+      zzz_i : main_zzz port map (main_setzflag_out, main_zzz_out);
+      res <= main_zzz_out;
 end architecture;
 
 -- main.arm90
@@ -1314,7 +1399,7 @@ use work.rw_helpers.all;
 entity main_arm90 is
       port (\vD$\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_arm90 is
@@ -1326,10 +1411,10 @@ architecture rtl of main_arm90 is
       component \main___unused24\ is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_setr0_out : std_logic_vector (80 downto 0);
-      signal \main__unused24_out\ : std_logic_vector (105 downto 0);
+      signal \main__unused24_out\ : std_logic_vector (104 downto 0);
 begin
       setr0_i : \Main_setR0\ port map (s0, \vD$\, main_setr0_out);
       \_unused24_i\ : \main___unused24\ port map (\vD$\, main_setr0_out, \main__unused24_out\);
@@ -1345,7 +1430,7 @@ use work.rw_helpers.all;
 entity main_arm91 is
       port (\vD$\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_arm91 is
@@ -1357,10 +1442,10 @@ architecture rtl of main_arm91 is
       component \main___unused24\ is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_setr1_out : std_logic_vector (80 downto 0);
-      signal \main__unused24_out\ : std_logic_vector (105 downto 0);
+      signal \main__unused24_out\ : std_logic_vector (104 downto 0);
 begin
       setr1_i : \Main_setR1\ port map (s0, \vD$\, main_setr1_out);
       \_unused24_i\ : \main___unused24\ port map (\vD$\, main_setr1_out, \main__unused24_out\);
@@ -1376,7 +1461,7 @@ use work.rw_helpers.all;
 entity main_arm92 is
       port (\vD$\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_arm92 is
@@ -1388,10 +1473,10 @@ architecture rtl of main_arm92 is
       component \main___unused24\ is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_setr2_out : std_logic_vector (80 downto 0);
-      signal \main__unused24_out\ : std_logic_vector (105 downto 0);
+      signal \main__unused24_out\ : std_logic_vector (104 downto 0);
 begin
       setr2_i : \Main_setR2\ port map (s0, \vD$\, main_setr2_out);
       \_unused24_i\ : \main___unused24\ port map (\vD$\, main_setr2_out, \main__unused24_out\);
@@ -1407,7 +1492,7 @@ use work.rw_helpers.all;
 entity main_arm93 is
       port (\vD$\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_arm93 is
@@ -1419,10 +1504,10 @@ architecture rtl of main_arm93 is
       component \main___unused24\ is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_setr3_out : std_logic_vector (80 downto 0);
-      signal \main__unused24_out\ : std_logic_vector (105 downto 0);
+      signal \main__unused24_out\ : std_logic_vector (104 downto 0);
 begin
       setr3_i : \Main_setR3\ port map (s0, \vD$\, main_setr3_out);
       \_unused24_i\ : \main___unused24\ port map (\vD$\, main_setr3_out, \main__unused24_out\);
@@ -1440,35 +1525,35 @@ entity \main_vS5\ is
             \vD\ : in std_logic_vector (7 downto 0);
             \vS\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vS5\ is
       component main_arm90 is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm91 is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm92 is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm93 is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal \vd$\ : std_logic_vector (7 downto 0);
-      signal main_arm90_out : std_logic_vector (105 downto 0);
-      signal main_arm91_out : std_logic_vector (105 downto 0);
-      signal main_arm92_out : std_logic_vector (105 downto 0);
-      signal main_arm93_out : std_logic_vector (105 downto 0);
+      signal main_arm90_out : std_logic_vector (104 downto 0);
+      signal main_arm91_out : std_logic_vector (104 downto 0);
+      signal main_arm92_out : std_logic_vector (104 downto 0);
+      signal main_arm93_out : std_logic_vector (104 downto 0);
 begin
       \vd$\ <= rw_or(\vD\, \vS\);
       arm90_i : main_arm90 port map (\vd$\, s0, main_arm90_out);
@@ -1493,7 +1578,7 @@ entity \main_vD5\ is
             \rS\ : in std_logic_vector (1 downto 0);
             \vD\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vD5\ is
@@ -1518,16 +1603,16 @@ architecture rtl of \main_vD5\ is
                   \vD\ : in std_logic_vector (7 downto 0);
                   \vS\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_r0_out : std_logic_vector (7 downto 0);
-      signal main_vs5_out : std_logic_vector (105 downto 0);
+      signal main_vs5_out : std_logic_vector (104 downto 0);
       signal main_r1_out : std_logic_vector (7 downto 0);
-      signal main_vs5_out_r1 : std_logic_vector (105 downto 0);
+      signal main_vs5_out_r1 : std_logic_vector (104 downto 0);
       signal main_r2_out : std_logic_vector (7 downto 0);
-      signal main_vs5_out_r2 : std_logic_vector (105 downto 0);
+      signal main_vs5_out_r2 : std_logic_vector (104 downto 0);
       signal main_r3_out : std_logic_vector (7 downto 0);
-      signal main_vs5_out_r3 : std_logic_vector (105 downto 0);
+      signal main_vs5_out_r3 : std_logic_vector (104 downto 0);
 begin
       r0_i : \Main_r0\ port map (s0, main_r0_out);
       vs5_i : \main_vS5\ port map (\rD\, \vD\, main_r0_out, s0, main_vs5_out);
@@ -1555,35 +1640,35 @@ entity \main_vS6\ is
             \vD\ : in std_logic_vector (7 downto 0);
             \vS\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vS6\ is
       component main_arm90 is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm91 is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm92 is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm93 is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal \vd$\ : std_logic_vector (7 downto 0);
-      signal main_arm90_out : std_logic_vector (105 downto 0);
-      signal main_arm91_out : std_logic_vector (105 downto 0);
-      signal main_arm92_out : std_logic_vector (105 downto 0);
-      signal main_arm93_out : std_logic_vector (105 downto 0);
+      signal main_arm90_out : std_logic_vector (104 downto 0);
+      signal main_arm91_out : std_logic_vector (104 downto 0);
+      signal main_arm92_out : std_logic_vector (104 downto 0);
+      signal main_arm93_out : std_logic_vector (104 downto 0);
 begin
       \vd$\ <= rw_and(\vD\, \vS\);
       arm90_i : main_arm90 port map (\vd$\, s0, main_arm90_out);
@@ -1608,7 +1693,7 @@ entity \main_vD6\ is
             \rS\ : in std_logic_vector (1 downto 0);
             \vD\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vD6\ is
@@ -1633,16 +1718,16 @@ architecture rtl of \main_vD6\ is
                   \vD\ : in std_logic_vector (7 downto 0);
                   \vS\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_r0_out : std_logic_vector (7 downto 0);
-      signal main_vs6_out : std_logic_vector (105 downto 0);
+      signal main_vs6_out : std_logic_vector (104 downto 0);
       signal main_r1_out : std_logic_vector (7 downto 0);
-      signal main_vs6_out_r1 : std_logic_vector (105 downto 0);
+      signal main_vs6_out_r1 : std_logic_vector (104 downto 0);
       signal main_r2_out : std_logic_vector (7 downto 0);
-      signal main_vs6_out_r2 : std_logic_vector (105 downto 0);
+      signal main_vs6_out_r2 : std_logic_vector (104 downto 0);
       signal main_r3_out : std_logic_vector (7 downto 0);
-      signal main_vs6_out_r3 : std_logic_vector (105 downto 0);
+      signal main_vs6_out_r3 : std_logic_vector (104 downto 0);
 begin
       r0_i : \Main_r0\ port map (s0, main_r0_out);
       vs6_i : \main_vS6\ port map (\rD\, \vD\, main_r0_out, s0, main_vs6_out);
@@ -1670,35 +1755,35 @@ entity \main_vS7\ is
             \vD\ : in std_logic_vector (7 downto 0);
             \vS\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vS7\ is
       component main_arm90 is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm91 is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm92 is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm93 is
             port (\vD$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal \vd$\ : std_logic_vector (7 downto 0);
-      signal main_arm90_out : std_logic_vector (105 downto 0);
-      signal main_arm91_out : std_logic_vector (105 downto 0);
-      signal main_arm92_out : std_logic_vector (105 downto 0);
-      signal main_arm93_out : std_logic_vector (105 downto 0);
+      signal main_arm90_out : std_logic_vector (104 downto 0);
+      signal main_arm91_out : std_logic_vector (104 downto 0);
+      signal main_arm92_out : std_logic_vector (104 downto 0);
+      signal main_arm93_out : std_logic_vector (104 downto 0);
 begin
       \vd$\ <= rw_xor(\vD\, \vS\);
       arm90_i : main_arm90 port map (\vd$\, s0, main_arm90_out);
@@ -1723,7 +1808,7 @@ entity \main_vD7\ is
             \rS\ : in std_logic_vector (1 downto 0);
             \vD\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vD7\ is
@@ -1748,16 +1833,16 @@ architecture rtl of \main_vD7\ is
                   \vD\ : in std_logic_vector (7 downto 0);
                   \vS\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_r0_out : std_logic_vector (7 downto 0);
-      signal main_vs7_out : std_logic_vector (105 downto 0);
+      signal main_vs7_out : std_logic_vector (104 downto 0);
       signal main_r1_out : std_logic_vector (7 downto 0);
-      signal main_vs7_out_r1 : std_logic_vector (105 downto 0);
+      signal main_vs7_out_r1 : std_logic_vector (104 downto 0);
       signal main_r2_out : std_logic_vector (7 downto 0);
-      signal main_vs7_out_r2 : std_logic_vector (105 downto 0);
+      signal main_vs7_out_r2 : std_logic_vector (104 downto 0);
       signal main_r3_out : std_logic_vector (7 downto 0);
-      signal main_vs7_out_r3 : std_logic_vector (105 downto 0);
+      signal main_vs7_out_r3 : std_logic_vector (104 downto 0);
 begin
       r0_i : \Main_r0\ port map (s0, main_r0_out);
       vs7_i : \main_vS7\ port map (\rD\, \vD\, main_r0_out, s0, main_vs7_out);
@@ -1784,7 +1869,7 @@ entity \main_vS8\ is
       port (\vD\ : in std_logic_vector (7 downto 0);
             \vS\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vS8\ is
@@ -1805,7 +1890,7 @@ architecture rtl of \main_vS8\ is
       end component;
       component main_zzz is
             port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal \main_minuscw8$sfalse_bool_out\ : std_logic_vector (8 downto 0);
       signal x : std_logic_vector (0 downto 0);
@@ -1813,7 +1898,7 @@ architecture rtl of \main_vS8\ is
       signal y : std_logic_vector (7 downto 0);
       signal conn : std_logic_vector (0 downto 0);
       signal main_setzflag_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out : std_logic_vector (105 downto 0);
+      signal main_zzz_out : std_logic_vector (104 downto 0);
 begin
       \minuscw8$sfalse_bool_i\ : \Main_minusCW8$sFalse__Bool\ port map (\vD\, \vS\, \main_minuscw8$sfalse_bool_out\);
       x <= \main_minuscw8$sfalse_bool_out\(8 downto 8);
@@ -1836,7 +1921,7 @@ entity \main_vD8\ is
             b1 : in std_logic_vector (0 downto 0);
             \vD\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_vD8\ is
@@ -1865,17 +1950,17 @@ architecture rtl of \main_vD8\ is
             port (\vD\ : in std_logic_vector (7 downto 0);
                   \vS\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_mkreg_out : std_logic_vector (1 downto 0);
       signal main_r0_out : std_logic_vector (7 downto 0);
-      signal main_vs8_out : std_logic_vector (105 downto 0);
+      signal main_vs8_out : std_logic_vector (104 downto 0);
       signal main_r1_out : std_logic_vector (7 downto 0);
-      signal main_vs8_out_r1 : std_logic_vector (105 downto 0);
+      signal main_vs8_out_r1 : std_logic_vector (104 downto 0);
       signal main_r2_out : std_logic_vector (7 downto 0);
-      signal main_vs8_out_r2 : std_logic_vector (105 downto 0);
+      signal main_vs8_out_r2 : std_logic_vector (104 downto 0);
       signal main_r3_out : std_logic_vector (7 downto 0);
-      signal main_vs8_out_r3 : std_logic_vector (105 downto 0);
+      signal main_vs8_out_r3 : std_logic_vector (104 downto 0);
 begin
       mkreg_i : \Main_mkReg\ port map (b0, b1, main_mkreg_out);
       r0_i : \Main_r0\ port map (s0, main_r0_out);
@@ -1902,7 +1987,7 @@ use work.rw_helpers.all;
 entity main_pc3 is
       port (pc : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_pc3 is
@@ -1913,10 +1998,10 @@ architecture rtl of main_pc3 is
       end component;
       component main_zzz is
             port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_setpc_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out : std_logic_vector (105 downto 0);
+      signal main_zzz_out : std_logic_vector (104 downto 0);
 begin
       setpc_i : \Main_setPC\ port map (s0, pc, main_setpc_out);
       zzz_i : main_zzz port map (main_setpc_out, main_zzz_out);
@@ -1933,7 +2018,7 @@ entity main_arm142 is
       port (b0 : in std_logic_vector (0 downto 0);
             b1 : in std_logic_vector (0 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_arm142 is
@@ -1961,17 +2046,17 @@ architecture rtl of main_arm142 is
       component main_pc3 is
             port (pc : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_mkreg_out : std_logic_vector (1 downto 0);
       signal main_r0_out : std_logic_vector (7 downto 0);
-      signal main_pc3_out : std_logic_vector (105 downto 0);
+      signal main_pc3_out : std_logic_vector (104 downto 0);
       signal main_r1_out : std_logic_vector (7 downto 0);
-      signal main_pc3_out_r1 : std_logic_vector (105 downto 0);
+      signal main_pc3_out_r1 : std_logic_vector (104 downto 0);
       signal main_r2_out : std_logic_vector (7 downto 0);
-      signal main_pc3_out_r2 : std_logic_vector (105 downto 0);
+      signal main_pc3_out_r2 : std_logic_vector (104 downto 0);
       signal main_r3_out : std_logic_vector (7 downto 0);
-      signal main_pc3_out_r3 : std_logic_vector (105 downto 0);
+      signal main_pc3_out_r3 : std_logic_vector (104 downto 0);
 begin
       mkreg_i : \Main_mkReg\ port map (b0, b1, main_mkreg_out);
       r0_i : \Main_r0\ port map (s0, main_r0_out);
@@ -1998,7 +2083,7 @@ use work.rw_helpers.all;
 entity main_x3 is
       port (x : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_x3 is
@@ -2009,133 +2094,13 @@ architecture rtl of main_x3 is
       end component;
       component main_zzz is
             port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_setpc_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out : std_logic_vector (105 downto 0);
+      signal main_zzz_out : std_logic_vector (104 downto 0);
 begin
       setpc_i : \Main_setPC\ port map (s0, x, main_setpc_out);
       zzz_i : main_zzz port map (main_setpc_out, main_zzz_out);
-      res <= main_zzz_out;
-end architecture;
-
--- main.arm170
--- block '$L.arm170' of process main
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity main_arm170 is
-      port (v : in std_logic_vector (7 downto 0);
-            s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
-end entity;
-
-architecture rtl of main_arm170 is
-      component \Main_setR0\ is
-            port (\Zds\ : in std_logic_vector (80 downto 0);
-                  r0 : in std_logic_vector (7 downto 0);
-                  res : out std_logic_vector (80 downto 0));
-      end component;
-      component main_zzz is
-            port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
-      end component;
-      signal main_setr0_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out : std_logic_vector (105 downto 0);
-begin
-      setr0_i : \Main_setR0\ port map (s0, v, main_setr0_out);
-      zzz_i : main_zzz port map (main_setr0_out, main_zzz_out);
-      res <= main_zzz_out;
-end architecture;
-
--- main.arm171
--- block '$L.arm171' of process main
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity main_arm171 is
-      port (v : in std_logic_vector (7 downto 0);
-            s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
-end entity;
-
-architecture rtl of main_arm171 is
-      component \Main_setR1\ is
-            port (\Zds\ : in std_logic_vector (80 downto 0);
-                  r1 : in std_logic_vector (7 downto 0);
-                  res : out std_logic_vector (80 downto 0));
-      end component;
-      component main_zzz is
-            port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
-      end component;
-      signal main_setr1_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out : std_logic_vector (105 downto 0);
-begin
-      setr1_i : \Main_setR1\ port map (s0, v, main_setr1_out);
-      zzz_i : main_zzz port map (main_setr1_out, main_zzz_out);
-      res <= main_zzz_out;
-end architecture;
-
--- main.arm172
--- block '$L.arm172' of process main
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity main_arm172 is
-      port (v : in std_logic_vector (7 downto 0);
-            s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
-end entity;
-
-architecture rtl of main_arm172 is
-      component \Main_setR2\ is
-            port (\Zds\ : in std_logic_vector (80 downto 0);
-                  r2 : in std_logic_vector (7 downto 0);
-                  res : out std_logic_vector (80 downto 0));
-      end component;
-      component main_zzz is
-            port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
-      end component;
-      signal main_setr2_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out : std_logic_vector (105 downto 0);
-begin
-      setr2_i : \Main_setR2\ port map (s0, v, main_setr2_out);
-      zzz_i : main_zzz port map (main_setr2_out, main_zzz_out);
-      res <= main_zzz_out;
-end architecture;
-
--- main.arm173
--- block '$L.arm173' of process main
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity main_arm173 is
-      port (v : in std_logic_vector (7 downto 0);
-            s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
-end entity;
-
-architecture rtl of main_arm173 is
-      component \Main_setR3\ is
-            port (\Zds\ : in std_logic_vector (80 downto 0);
-                  r3 : in std_logic_vector (7 downto 0);
-                  res : out std_logic_vector (80 downto 0));
-      end component;
-      component main_zzz is
-            port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
-      end component;
-      signal main_setr3_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out : std_logic_vector (105 downto 0);
-begin
-      setr3_i : \Main_setR3\ port map (s0, v, main_setr3_out);
-      zzz_i : main_zzz port map (main_setr3_out, main_zzz_out);
       res <= main_zzz_out;
 end architecture;
 
@@ -2149,46 +2114,46 @@ entity main_v3 is
       port (r : in std_logic_vector (1 downto 0);
             v : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_v3 is
-      component main_arm170 is
+      component main_arm29 is
             port (v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
-      component main_arm171 is
+      component main_arm30 is
             port (v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
-      component main_arm172 is
+      component main_arm31 is
             port (v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
-      component main_arm173 is
+      component main_arm32 is
             port (v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal v1 : std_logic_vector (7 downto 0);
-      signal main_arm170_out : std_logic_vector (105 downto 0);
-      signal main_arm171_out : std_logic_vector (105 downto 0);
-      signal main_arm172_out : std_logic_vector (105 downto 0);
-      signal main_arm173_out : std_logic_vector (105 downto 0);
+      signal main_arm29_out : std_logic_vector (104 downto 0);
+      signal main_arm30_out : std_logic_vector (104 downto 0);
+      signal main_arm31_out : std_logic_vector (104 downto 0);
+      signal main_arm32_out : std_logic_vector (104 downto 0);
 begin
       v1 <= rw_not(v);
-      arm170_i : main_arm170 port map (v1, s0, main_arm170_out);
-      arm171_i : main_arm171 port map (v1, s0, main_arm171_out);
-      arm172_i : main_arm172 port map (v1, s0, main_arm172_out);
-      arm173_i : main_arm173 port map (v1, s0, main_arm173_out);
+      arm29_i : main_arm29 port map (v1, s0, main_arm29_out);
+      arm30_i : main_arm30 port map (v1, s0, main_arm30_out);
+      arm31_i : main_arm31 port map (v1, s0, main_arm31_out);
+      arm32_i : main_arm32 port map (v1, s0, main_arm32_out);
       with r select res <=
-            main_arm170_out when "00",
-            main_arm171_out when "01",
-            main_arm172_out when "10",
-            main_arm173_out when others;
+            main_arm29_out when "00",
+            main_arm30_out when "01",
+            main_arm31_out when "10",
+            main_arm32_out when others;
 end architecture;
 
 -- main._unused44
@@ -2201,7 +2166,7 @@ entity \main___unused44\ is
       port (p : in std_logic_vector (8 downto 0);
             \v$\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main___unused44\ is
@@ -2217,13 +2182,13 @@ architecture rtl of \main___unused44\ is
       end component;
       component main_zzz is
             port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal x : std_logic_vector (0 downto 0);
       signal main_setcflag_out : std_logic_vector (80 downto 0);
       signal conn : std_logic_vector (0 downto 0);
       signal main_setzflag_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out : std_logic_vector (105 downto 0);
+      signal main_zzz_out : std_logic_vector (104 downto 0);
 begin
       x <= p(8 downto 8);
       setcflag_i : \Main_setCFlag\ port map (s0, x, main_setcflag_out);
@@ -2243,7 +2208,7 @@ entity main_arm184 is
       port (p : in std_logic_vector (8 downto 0);
             \v$\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_arm184 is
@@ -2256,10 +2221,10 @@ architecture rtl of main_arm184 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_setr0_out : std_logic_vector (80 downto 0);
-      signal \main__unused44_out\ : std_logic_vector (105 downto 0);
+      signal \main__unused44_out\ : std_logic_vector (104 downto 0);
 begin
       setr0_i : \Main_setR0\ port map (s0, \v$\, main_setr0_out);
       \_unused44_i\ : \main___unused44\ port map (p, \v$\, main_setr0_out, \main__unused44_out\);
@@ -2276,7 +2241,7 @@ entity main_arm185 is
       port (p : in std_logic_vector (8 downto 0);
             \v$\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_arm185 is
@@ -2289,10 +2254,10 @@ architecture rtl of main_arm185 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_setr1_out : std_logic_vector (80 downto 0);
-      signal \main__unused44_out\ : std_logic_vector (105 downto 0);
+      signal \main__unused44_out\ : std_logic_vector (104 downto 0);
 begin
       setr1_i : \Main_setR1\ port map (s0, \v$\, main_setr1_out);
       \_unused44_i\ : \main___unused44\ port map (p, \v$\, main_setr1_out, \main__unused44_out\);
@@ -2309,7 +2274,7 @@ entity main_arm186 is
       port (p : in std_logic_vector (8 downto 0);
             \v$\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_arm186 is
@@ -2322,10 +2287,10 @@ architecture rtl of main_arm186 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_setr2_out : std_logic_vector (80 downto 0);
-      signal \main__unused44_out\ : std_logic_vector (105 downto 0);
+      signal \main__unused44_out\ : std_logic_vector (104 downto 0);
 begin
       setr2_i : \Main_setR2\ port map (s0, \v$\, main_setr2_out);
       \_unused44_i\ : \main___unused44\ port map (p, \v$\, main_setr2_out, \main__unused44_out\);
@@ -2342,7 +2307,7 @@ entity main_arm187 is
       port (p : in std_logic_vector (8 downto 0);
             \v$\ : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_arm187 is
@@ -2355,10 +2320,10 @@ architecture rtl of main_arm187 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_setr3_out : std_logic_vector (80 downto 0);
-      signal \main__unused44_out\ : std_logic_vector (105 downto 0);
+      signal \main__unused44_out\ : std_logic_vector (104 downto 0);
 begin
       setr3_i : \Main_setR3\ port map (s0, \v$\, main_setr3_out);
       \_unused44_i\ : \main___unused44\ port map (p, \v$\, main_setr3_out, \main__unused44_out\);
@@ -2375,7 +2340,7 @@ entity main_v4 is
       port (r : in std_logic_vector (1 downto 0);
             v : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_v4 is
@@ -2387,32 +2352,32 @@ architecture rtl of main_v4 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm185 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm186 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm187 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal \main_pluscw8$smain_onew8_false_bool_out\ : std_logic_vector (8 downto 0);
       signal y : std_logic_vector (7 downto 0);
-      signal main_arm184_out : std_logic_vector (105 downto 0);
-      signal main_arm185_out : std_logic_vector (105 downto 0);
-      signal main_arm186_out : std_logic_vector (105 downto 0);
-      signal main_arm187_out : std_logic_vector (105 downto 0);
+      signal main_arm184_out : std_logic_vector (104 downto 0);
+      signal main_arm185_out : std_logic_vector (104 downto 0);
+      signal main_arm186_out : std_logic_vector (104 downto 0);
+      signal main_arm187_out : std_logic_vector (104 downto 0);
 begin
       \pluscw8$smain_onew8_false_bool_i\ : \Main_plusCW8$sMain__oneW8__False__Bool\ port map (v, \main_pluscw8$smain_onew8_false_bool_out\);
       y <= \main_pluscw8$smain_onew8_false_bool_out\(7 downto 0);
@@ -2437,7 +2402,7 @@ entity main_v5 is
       port (r : in std_logic_vector (1 downto 0);
             v : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_v5 is
@@ -2445,33 +2410,33 @@ architecture rtl of main_v5 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm185 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm186 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm187 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal s : std_logic_vector (8 downto 0);
       signal p : std_logic_vector (8 downto 0);
       signal y : std_logic_vector (7 downto 0);
-      signal main_arm184_out : std_logic_vector (105 downto 0);
-      signal main_arm185_out : std_logic_vector (105 downto 0);
-      signal main_arm186_out : std_logic_vector (105 downto 0);
-      signal main_arm187_out : std_logic_vector (105 downto 0);
+      signal main_arm184_out : std_logic_vector (104 downto 0);
+      signal main_arm185_out : std_logic_vector (104 downto 0);
+      signal main_arm186_out : std_logic_vector (104 downto 0);
+      signal main_arm187_out : std_logic_vector (104 downto 0);
 begin
       s <= rw_sub(rw_sub(rw_resize(v, 9), std_logic_vector'(B"000000001")), std_logic_vector'(B"000000000"));
       p <= (s(8 downto 8) & rw_resize(s, 8));
@@ -2497,46 +2462,46 @@ entity main_v6 is
       port (r : in std_logic_vector (1 downto 0);
             v : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_v6 is
-      component main_arm170 is
+      component main_arm29 is
             port (v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
-      component main_arm171 is
+      component main_arm30 is
             port (v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
-      component main_arm172 is
+      component main_arm31 is
             port (v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
-      component main_arm173 is
+      component main_arm32 is
             port (v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal v1 : std_logic_vector (7 downto 0);
-      signal main_arm170_out : std_logic_vector (105 downto 0);
-      signal main_arm171_out : std_logic_vector (105 downto 0);
-      signal main_arm172_out : std_logic_vector (105 downto 0);
-      signal main_arm173_out : std_logic_vector (105 downto 0);
+      signal main_arm29_out : std_logic_vector (104 downto 0);
+      signal main_arm30_out : std_logic_vector (104 downto 0);
+      signal main_arm31_out : std_logic_vector (104 downto 0);
+      signal main_arm32_out : std_logic_vector (104 downto 0);
 begin
       v1 <= rw_or(rw_shiftl(v, std_logic_vector'(X"01")), rw_shiftr(v, std_logic_vector'(X"07")));
-      arm170_i : main_arm170 port map (v1, s0, main_arm170_out);
-      arm171_i : main_arm171 port map (v1, s0, main_arm171_out);
-      arm172_i : main_arm172 port map (v1, s0, main_arm172_out);
-      arm173_i : main_arm173 port map (v1, s0, main_arm173_out);
+      arm29_i : main_arm29 port map (v1, s0, main_arm29_out);
+      arm30_i : main_arm30 port map (v1, s0, main_arm30_out);
+      arm31_i : main_arm31 port map (v1, s0, main_arm31_out);
+      arm32_i : main_arm32 port map (v1, s0, main_arm32_out);
       with r select res <=
-            main_arm170_out when "00",
-            main_arm171_out when "01",
-            main_arm172_out when "10",
-            main_arm173_out when others;
+            main_arm29_out when "00",
+            main_arm30_out when "01",
+            main_arm31_out when "10",
+            main_arm32_out when others;
 end architecture;
 
 -- main.v7
@@ -2549,46 +2514,46 @@ entity main_v7 is
       port (r : in std_logic_vector (1 downto 0);
             v : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_v7 is
-      component main_arm170 is
+      component main_arm29 is
             port (v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
-      component main_arm171 is
+      component main_arm30 is
             port (v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
-      component main_arm172 is
+      component main_arm31 is
             port (v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
-      component main_arm173 is
+      component main_arm32 is
             port (v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal v1 : std_logic_vector (7 downto 0);
-      signal main_arm170_out : std_logic_vector (105 downto 0);
-      signal main_arm171_out : std_logic_vector (105 downto 0);
-      signal main_arm172_out : std_logic_vector (105 downto 0);
-      signal main_arm173_out : std_logic_vector (105 downto 0);
+      signal main_arm29_out : std_logic_vector (104 downto 0);
+      signal main_arm30_out : std_logic_vector (104 downto 0);
+      signal main_arm31_out : std_logic_vector (104 downto 0);
+      signal main_arm32_out : std_logic_vector (104 downto 0);
 begin
       v1 <= rw_or(rw_shiftr(v, std_logic_vector'(X"01")), rw_shiftl(v, std_logic_vector'(X"07")));
-      arm170_i : main_arm170 port map (v1, s0, main_arm170_out);
-      arm171_i : main_arm171 port map (v1, s0, main_arm171_out);
-      arm172_i : main_arm172 port map (v1, s0, main_arm172_out);
-      arm173_i : main_arm173 port map (v1, s0, main_arm173_out);
+      arm29_i : main_arm29 port map (v1, s0, main_arm29_out);
+      arm30_i : main_arm30 port map (v1, s0, main_arm30_out);
+      arm31_i : main_arm31 port map (v1, s0, main_arm31_out);
+      arm32_i : main_arm32 port map (v1, s0, main_arm32_out);
       with r select res <=
-            main_arm170_out when "00",
-            main_arm171_out when "01",
-            main_arm172_out when "10",
-            main_arm173_out when others;
+            main_arm29_out when "00",
+            main_arm30_out when "01",
+            main_arm31_out when "10",
+            main_arm32_out when others;
 end architecture;
 
 -- main.v8
@@ -2603,7 +2568,7 @@ entity main_v8 is
             r : in std_logic_vector (1 downto 0);
             v : in std_logic_vector (7 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_v8 is
@@ -2619,25 +2584,25 @@ architecture rtl of main_v8 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm185 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm186 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm187 is
             port (p : in std_logic_vector (8 downto 0);
                   \v$\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_msbw8_out : std_logic_vector (0 downto 0);
       signal za1 : std_logic_vector (8 downto 0);
@@ -2649,10 +2614,10 @@ architecture rtl of main_v8 is
       signal za_r3 : std_logic_vector (8 downto 0);
       signal p : std_logic_vector (8 downto 0);
       signal y : std_logic_vector (7 downto 0);
-      signal main_arm184_out : std_logic_vector (105 downto 0);
-      signal main_arm185_out : std_logic_vector (105 downto 0);
-      signal main_arm186_out : std_logic_vector (105 downto 0);
-      signal main_arm187_out : std_logic_vector (105 downto 0);
+      signal main_arm184_out : std_logic_vector (104 downto 0);
+      signal main_arm185_out : std_logic_vector (104 downto 0);
+      signal main_arm186_out : std_logic_vector (104 downto 0);
+      signal main_arm187_out : std_logic_vector (104 downto 0);
 begin
       msbw8_i : \Main_msbW8\ port map (v, main_msbw8_out);
       za1 <= (main_msbw8_out & rw_or(rw_shiftl(v, std_logic_vector'(X"01")), rw_resize(main_msbw8_out, 8)));
@@ -2684,7 +2649,7 @@ use work.rw_helpers.all;
 entity \main_$fail\ is
       port (inp : in std_logic_vector (9 downto 0);
             s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of \main_$fail\ is
@@ -2788,50 +2753,50 @@ architecture rtl of \main_$fail\ is
                   \wEn\ : in std_logic_vector (0 downto 0);
                   a : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_a3 is
             port (\rEn\ : in std_logic_vector (0 downto 0);
                   \wEn\ : in std_logic_vector (0 downto 0);
                   a : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_arm142 is
             port (b0 : in std_logic_vector (0 downto 0);
                   b1 : in std_logic_vector (0 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_v3 is
             port (r : in std_logic_vector (1 downto 0);
                   v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_v4 is
             port (r : in std_logic_vector (1 downto 0);
                   v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_v5 is
             port (r : in std_logic_vector (1 downto 0);
                   v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_v6 is
             port (r : in std_logic_vector (1 downto 0);
                   v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_v7 is
             port (r : in std_logic_vector (1 downto 0);
                   v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_v8 is
             port (\rEn\ : in std_logic_vector (0 downto 0);
@@ -2839,79 +2804,79 @@ architecture rtl of \main_$fail\ is
                   r : in std_logic_vector (1 downto 0);
                   v : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component \main_vD\ is
             port (\rD\ : in std_logic_vector (1 downto 0);
                   \rS\ : in std_logic_vector (1 downto 0);
                   \vD\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component \main_vD2\ is
             port (\rD\ : in std_logic_vector (1 downto 0);
                   \rS\ : in std_logic_vector (1 downto 0);
                   \vD\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component \main_vD3\ is
             port (\rD\ : in std_logic_vector (1 downto 0);
                   \rS\ : in std_logic_vector (1 downto 0);
                   \vD\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component \main_vD4\ is
             port (\rD\ : in std_logic_vector (1 downto 0);
                   \rS\ : in std_logic_vector (1 downto 0);
                   \vD\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component \main_vD5\ is
             port (\rD\ : in std_logic_vector (1 downto 0);
                   \rS\ : in std_logic_vector (1 downto 0);
                   \vD\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component \main_vD6\ is
             port (\rD\ : in std_logic_vector (1 downto 0);
                   \rS\ : in std_logic_vector (1 downto 0);
                   \vD\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component \main_vD7\ is
             port (\rD\ : in std_logic_vector (1 downto 0);
                   \rS\ : in std_logic_vector (1 downto 0);
                   \vD\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component \main_vD8\ is
             port (b0 : in std_logic_vector (0 downto 0);
                   b1 : in std_logic_vector (0 downto 0);
                   \vD\ : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_x2 is
             port (\rEn\ : in std_logic_vector (0 downto 0);
                   \wEn\ : in std_logic_vector (0 downto 0);
                   x : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_x3 is
             port (x : in std_logic_vector (7 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_zzz is
             port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_datain_out : std_logic_vector (7 downto 0);
       signal zds1 : std_logic_vector (0 downto 0);
@@ -2929,72 +2894,72 @@ architecture rtl of \main_$fail\ is
       signal main_setoutputs_out : std_logic_vector (80 downto 0);
       signal main_outputs_out_r1 : std_logic_vector (17 downto 0);
       signal main_r0_out : std_logic_vector (7 downto 0);
-      signal main_a2_out : std_logic_vector (105 downto 0);
+      signal main_a2_out : std_logic_vector (104 downto 0);
       signal main_r1_out : std_logic_vector (7 downto 0);
-      signal main_a2_out_r1 : std_logic_vector (105 downto 0);
+      signal main_a2_out_r1 : std_logic_vector (104 downto 0);
       signal main_r2_out : std_logic_vector (7 downto 0);
-      signal main_a2_out_r2 : std_logic_vector (105 downto 0);
+      signal main_a2_out_r2 : std_logic_vector (104 downto 0);
       signal main_r3_out : std_logic_vector (7 downto 0);
-      signal main_a2_out_r3 : std_logic_vector (105 downto 0);
-      signal main_a3_out : std_logic_vector (105 downto 0);
-      signal main_a3_out_r1 : std_logic_vector (105 downto 0);
-      signal main_a3_out_r2 : std_logic_vector (105 downto 0);
-      signal main_a3_out_r3 : std_logic_vector (105 downto 0);
+      signal main_a2_out_r3 : std_logic_vector (104 downto 0);
+      signal main_a3_out : std_logic_vector (104 downto 0);
+      signal main_a3_out_r1 : std_logic_vector (104 downto 0);
+      signal main_a3_out_r2 : std_logic_vector (104 downto 0);
+      signal main_a3_out_r3 : std_logic_vector (104 downto 0);
       signal main_mkreg_out_r1 : std_logic_vector (1 downto 0);
-      signal main_vd_out : std_logic_vector (105 downto 0);
-      signal main_vd_out_r1 : std_logic_vector (105 downto 0);
-      signal main_vd_out_r2 : std_logic_vector (105 downto 0);
-      signal main_vd_out_r3 : std_logic_vector (105 downto 0);
-      signal main_vd2_out : std_logic_vector (105 downto 0);
-      signal main_vd2_out_r1 : std_logic_vector (105 downto 0);
-      signal main_vd2_out_r2 : std_logic_vector (105 downto 0);
-      signal main_vd2_out_r3 : std_logic_vector (105 downto 0);
-      signal main_vd3_out : std_logic_vector (105 downto 0);
-      signal main_vd3_out_r1 : std_logic_vector (105 downto 0);
-      signal main_vd3_out_r2 : std_logic_vector (105 downto 0);
-      signal main_vd3_out_r3 : std_logic_vector (105 downto 0);
-      signal main_vd4_out : std_logic_vector (105 downto 0);
-      signal main_vd4_out_r1 : std_logic_vector (105 downto 0);
-      signal main_vd4_out_r2 : std_logic_vector (105 downto 0);
-      signal main_vd4_out_r3 : std_logic_vector (105 downto 0);
-      signal main_x2_out : std_logic_vector (105 downto 0);
-      signal main_x2_out_r1 : std_logic_vector (105 downto 0);
-      signal main_x2_out_r2 : std_logic_vector (105 downto 0);
-      signal main_x2_out_r3 : std_logic_vector (105 downto 0);
-      signal main_vd5_out : std_logic_vector (105 downto 0);
-      signal main_vd5_out_r1 : std_logic_vector (105 downto 0);
-      signal main_vd5_out_r2 : std_logic_vector (105 downto 0);
-      signal main_vd5_out_r3 : std_logic_vector (105 downto 0);
-      signal main_vd6_out : std_logic_vector (105 downto 0);
-      signal main_vd6_out_r1 : std_logic_vector (105 downto 0);
-      signal main_vd6_out_r2 : std_logic_vector (105 downto 0);
-      signal main_vd6_out_r3 : std_logic_vector (105 downto 0);
-      signal main_vd7_out : std_logic_vector (105 downto 0);
-      signal main_vd7_out_r1 : std_logic_vector (105 downto 0);
-      signal main_vd7_out_r2 : std_logic_vector (105 downto 0);
-      signal main_vd7_out_r3 : std_logic_vector (105 downto 0);
-      signal main_vd8_out : std_logic_vector (105 downto 0);
-      signal main_vd8_out_r1 : std_logic_vector (105 downto 0);
-      signal main_vd8_out_r2 : std_logic_vector (105 downto 0);
-      signal main_vd8_out_r3 : std_logic_vector (105 downto 0);
+      signal main_vd_out : std_logic_vector (104 downto 0);
+      signal main_vd_out_r1 : std_logic_vector (104 downto 0);
+      signal main_vd_out_r2 : std_logic_vector (104 downto 0);
+      signal main_vd_out_r3 : std_logic_vector (104 downto 0);
+      signal main_vd2_out : std_logic_vector (104 downto 0);
+      signal main_vd2_out_r1 : std_logic_vector (104 downto 0);
+      signal main_vd2_out_r2 : std_logic_vector (104 downto 0);
+      signal main_vd2_out_r3 : std_logic_vector (104 downto 0);
+      signal main_vd3_out : std_logic_vector (104 downto 0);
+      signal main_vd3_out_r1 : std_logic_vector (104 downto 0);
+      signal main_vd3_out_r2 : std_logic_vector (104 downto 0);
+      signal main_vd3_out_r3 : std_logic_vector (104 downto 0);
+      signal main_vd4_out : std_logic_vector (104 downto 0);
+      signal main_vd4_out_r1 : std_logic_vector (104 downto 0);
+      signal main_vd4_out_r2 : std_logic_vector (104 downto 0);
+      signal main_vd4_out_r3 : std_logic_vector (104 downto 0);
+      signal main_x2_out : std_logic_vector (104 downto 0);
+      signal main_x2_out_r1 : std_logic_vector (104 downto 0);
+      signal main_x2_out_r2 : std_logic_vector (104 downto 0);
+      signal main_x2_out_r3 : std_logic_vector (104 downto 0);
+      signal main_vd5_out : std_logic_vector (104 downto 0);
+      signal main_vd5_out_r1 : std_logic_vector (104 downto 0);
+      signal main_vd5_out_r2 : std_logic_vector (104 downto 0);
+      signal main_vd5_out_r3 : std_logic_vector (104 downto 0);
+      signal main_vd6_out : std_logic_vector (104 downto 0);
+      signal main_vd6_out_r1 : std_logic_vector (104 downto 0);
+      signal main_vd6_out_r2 : std_logic_vector (104 downto 0);
+      signal main_vd6_out_r3 : std_logic_vector (104 downto 0);
+      signal main_vd7_out : std_logic_vector (104 downto 0);
+      signal main_vd7_out_r1 : std_logic_vector (104 downto 0);
+      signal main_vd7_out_r2 : std_logic_vector (104 downto 0);
+      signal main_vd7_out_r3 : std_logic_vector (104 downto 0);
+      signal main_vd8_out : std_logic_vector (104 downto 0);
+      signal main_vd8_out_r1 : std_logic_vector (104 downto 0);
+      signal main_vd8_out_r2 : std_logic_vector (104 downto 0);
+      signal main_vd8_out_r3 : std_logic_vector (104 downto 0);
       signal main_zflag_out : std_logic_vector (0 downto 0);
-      signal main_zzz_out : std_logic_vector (105 downto 0);
-      signal main_arm142_out : std_logic_vector (105 downto 0);
+      signal main_zzz_out : std_logic_vector (104 downto 0);
+      signal main_arm142_out : std_logic_vector (104 downto 0);
       signal main_notb_out : std_logic_vector (0 downto 0);
       signal main_cflag_out : std_logic_vector (0 downto 0);
       signal main_notb_out_r1 : std_logic_vector (0 downto 0);
-      signal main_x3_out : std_logic_vector (105 downto 0);
-      signal main_x3_out_r1 : std_logic_vector (105 downto 0);
-      signal main_x3_out_r2 : std_logic_vector (105 downto 0);
-      signal main_x3_out_r3 : std_logic_vector (105 downto 0);
+      signal main_x3_out : std_logic_vector (104 downto 0);
+      signal main_x3_out_r1 : std_logic_vector (104 downto 0);
+      signal main_x3_out_r2 : std_logic_vector (104 downto 0);
+      signal main_x3_out_r3 : std_logic_vector (104 downto 0);
       signal main_setieflag_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out_r1 : std_logic_vector (105 downto 0);
+      signal main_zzz_out_r1 : std_logic_vector (104 downto 0);
       signal a_o : std_logic_vector (7 downto 0);
       signal d_o : std_logic_vector (7 downto 0);
       signal we_o : std_logic_vector (0 downto 0);
       signal za_r1 : std_logic_vector (17 downto 0);
       signal main_setoutputs_out_r1 : std_logic_vector (80 downto 0);
-      signal main_zzz_out_r2 : std_logic_vector (105 downto 0);
+      signal main_zzz_out_r2 : std_logic_vector (104 downto 0);
       signal main_setieflag_out_r1 : std_logic_vector (80 downto 0);
       signal pcs : std_logic_vector (7 downto 0);
       signal main_setpc_out : std_logic_vector (80 downto 0);
@@ -3002,39 +2967,39 @@ architecture rtl of \main_$fail\ is
       signal main_setzflag_out : std_logic_vector (80 downto 0);
       signal cs : std_logic_vector (0 downto 0);
       signal main_setcflag_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out_r3 : std_logic_vector (105 downto 0);
-      signal main_v3_out : std_logic_vector (105 downto 0);
-      signal main_v3_out_r1 : std_logic_vector (105 downto 0);
-      signal main_v3_out_r2 : std_logic_vector (105 downto 0);
-      signal main_v3_out_r3 : std_logic_vector (105 downto 0);
+      signal main_zzz_out_r3 : std_logic_vector (104 downto 0);
+      signal main_v3_out : std_logic_vector (104 downto 0);
+      signal main_v3_out_r1 : std_logic_vector (104 downto 0);
+      signal main_v3_out_r2 : std_logic_vector (104 downto 0);
+      signal main_v3_out_r3 : std_logic_vector (104 downto 0);
       signal main_setr0_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out_r4 : std_logic_vector (105 downto 0);
+      signal main_zzz_out_r4 : std_logic_vector (104 downto 0);
       signal main_setr1_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out_r5 : std_logic_vector (105 downto 0);
+      signal main_zzz_out_r5 : std_logic_vector (104 downto 0);
       signal main_setr2_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out_r6 : std_logic_vector (105 downto 0);
+      signal main_zzz_out_r6 : std_logic_vector (104 downto 0);
       signal main_setr3_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out_r7 : std_logic_vector (105 downto 0);
-      signal main_v4_out : std_logic_vector (105 downto 0);
-      signal main_v4_out_r1 : std_logic_vector (105 downto 0);
-      signal main_v4_out_r2 : std_logic_vector (105 downto 0);
-      signal main_v4_out_r3 : std_logic_vector (105 downto 0);
-      signal main_v5_out : std_logic_vector (105 downto 0);
-      signal main_v5_out_r1 : std_logic_vector (105 downto 0);
-      signal main_v5_out_r2 : std_logic_vector (105 downto 0);
-      signal main_v5_out_r3 : std_logic_vector (105 downto 0);
-      signal main_v6_out : std_logic_vector (105 downto 0);
-      signal main_v6_out_r1 : std_logic_vector (105 downto 0);
-      signal main_v6_out_r2 : std_logic_vector (105 downto 0);
-      signal main_v6_out_r3 : std_logic_vector (105 downto 0);
-      signal main_v7_out : std_logic_vector (105 downto 0);
-      signal main_v7_out_r1 : std_logic_vector (105 downto 0);
-      signal main_v7_out_r2 : std_logic_vector (105 downto 0);
-      signal main_v7_out_r3 : std_logic_vector (105 downto 0);
-      signal main_v8_out : std_logic_vector (105 downto 0);
-      signal main_v8_out_r1 : std_logic_vector (105 downto 0);
-      signal main_v8_out_r2 : std_logic_vector (105 downto 0);
-      signal main_v8_out_r3 : std_logic_vector (105 downto 0);
+      signal main_zzz_out_r7 : std_logic_vector (104 downto 0);
+      signal main_v4_out : std_logic_vector (104 downto 0);
+      signal main_v4_out_r1 : std_logic_vector (104 downto 0);
+      signal main_v4_out_r2 : std_logic_vector (104 downto 0);
+      signal main_v4_out_r3 : std_logic_vector (104 downto 0);
+      signal main_v5_out : std_logic_vector (104 downto 0);
+      signal main_v5_out_r1 : std_logic_vector (104 downto 0);
+      signal main_v5_out_r2 : std_logic_vector (104 downto 0);
+      signal main_v5_out_r3 : std_logic_vector (104 downto 0);
+      signal main_v6_out : std_logic_vector (104 downto 0);
+      signal main_v6_out_r1 : std_logic_vector (104 downto 0);
+      signal main_v6_out_r2 : std_logic_vector (104 downto 0);
+      signal main_v6_out_r3 : std_logic_vector (104 downto 0);
+      signal main_v7_out : std_logic_vector (104 downto 0);
+      signal main_v7_out_r1 : std_logic_vector (104 downto 0);
+      signal main_v7_out_r2 : std_logic_vector (104 downto 0);
+      signal main_v7_out_r3 : std_logic_vector (104 downto 0);
+      signal main_v8_out : std_logic_vector (104 downto 0);
+      signal main_v8_out_r1 : std_logic_vector (104 downto 0);
+      signal main_v8_out_r2 : std_logic_vector (104 downto 0);
+      signal main_v8_out_r3 : std_logic_vector (104 downto 0);
 begin
       datain_i : \Main_dataIn\ port map (inp, main_datain_out);
       zds1 <= main_datain_out(6 downto 6);
@@ -3158,7 +3123,7 @@ begin
       v8_i_r1 : main_v8 port map (ren, wen, main_mkreg_out, main_r1_out, s0, main_v8_out_r1);
       v8_i_r2 : main_v8 port map (ren, wen, main_mkreg_out, main_r2_out, s0, main_v8_out_r2);
       v8_i_r3 : main_v8 port map (ren, wen, main_mkreg_out, main_r3_out, s0, main_v8_out_r3);
-      res <= rw_cond(rw_not(za), rw_cond(rw_not(zds1), rw_cond(rw_not(zds2), rw_cond(rw_not(zds3), (main_outputs_out_r1 & std_logic_vector'(B"001") & ren & wen & main_mkreg_out & main_setoutputs_out), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_a2_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_a2_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_a2_out_r2, main_a2_out_r3)))), rw_cond(rw_not(zds3), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_a3_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_a3_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_a3_out_r2, main_a3_out_r3))), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd_out_r2, main_vd_out_r3))))), rw_cond(rw_not(zds2), rw_cond(rw_not(zds3), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd2_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd2_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd2_out_r2, main_vd2_out_r3))), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd3_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd3_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd3_out_r2, main_vd3_out_r3)))), rw_cond(rw_not(zds3), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd4_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd4_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd4_out_r2, main_vd4_out_r3))), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_x2_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_x2_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_x2_out_r2, main_x2_out_r3)))))), rw_cond(rw_not(zds1), rw_cond(rw_not(zds2), rw_cond(rw_not(zds3), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd5_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd5_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd5_out_r2, main_vd5_out_r3))), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd6_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd6_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd6_out_r2, main_vd6_out_r3)))), rw_cond(rw_not(zds3), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd7_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd7_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd7_out_r2, main_vd7_out_r3))), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd8_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd8_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd8_out_r2, main_vd8_out_r3))))), rw_cond(rw_not(zds2), rw_cond(rw_not(zds3), rw_cond(rw_not(ren), rw_cond(rw_not(wen), rw_cond(rw_not(main_zflag_out), main_zzz_out, main_arm142_out), rw_cond(rw_not(main_notb_out), main_zzz_out, main_arm142_out)), rw_cond(rw_not(wen), rw_cond(rw_not(main_cflag_out), main_zzz_out, main_arm142_out), rw_cond(rw_not(main_notb_out_r1), main_zzz_out, main_arm142_out))), rw_cond(rw_not(ren), rw_cond(rw_not(wen), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_x3_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_x3_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_x3_out_r2, main_x3_out_r3))), rw_cond(rw_not(b0), main_zzz_out_r1, rw_cond(rw_not(b1), main_zzz_out_r2, main_zzz_out_r3))), rw_cond(rw_not(wen), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_v3_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_v3_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_v3_out_r2, main_v3_out_r3))), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_zzz_out_r4, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_zzz_out_r5, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_zzz_out_r6, main_zzz_out_r7)))))), rw_cond(rw_not(zds3), rw_cond(rw_not(ren), rw_cond(rw_not(wen), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_v4_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_v4_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_v4_out_r2, main_v4_out_r3))), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_v5_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_v5_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_v5_out_r2, main_v5_out_r3)))), rw_cond(rw_not(wen), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_v6_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_v6_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_v6_out_r2, main_v6_out_r3))), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_v7_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_v7_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_v7_out_r2, main_v7_out_r3))))), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_v8_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_v8_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_v8_out_r2, main_v8_out_r3)))))));
+      res <= rw_cond(rw_not(za), rw_cond(rw_not(zds1), rw_cond(rw_not(zds2), rw_cond(rw_not(zds3), (main_outputs_out_r1 & std_logic_vector'(B"01") & ren & wen & main_mkreg_out & main_setoutputs_out), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_a2_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_a2_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_a2_out_r2, main_a2_out_r3)))), rw_cond(rw_not(zds3), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_a3_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_a3_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_a3_out_r2, main_a3_out_r3))), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd_out_r2, main_vd_out_r3))))), rw_cond(rw_not(zds2), rw_cond(rw_not(zds3), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd2_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd2_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd2_out_r2, main_vd2_out_r3))), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd3_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd3_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd3_out_r2, main_vd3_out_r3)))), rw_cond(rw_not(zds3), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd4_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd4_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd4_out_r2, main_vd4_out_r3))), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_x2_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_x2_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_x2_out_r2, main_x2_out_r3)))))), rw_cond(rw_not(zds1), rw_cond(rw_not(zds2), rw_cond(rw_not(zds3), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd5_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd5_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd5_out_r2, main_vd5_out_r3))), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd6_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd6_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd6_out_r2, main_vd6_out_r3)))), rw_cond(rw_not(zds3), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd7_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd7_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd7_out_r2, main_vd7_out_r3))), rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"00")), main_vd8_out, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"01")), main_vd8_out_r1, rw_cond(rw_eq(main_mkreg_out_r1, std_logic_vector'(B"10")), main_vd8_out_r2, main_vd8_out_r3))))), rw_cond(rw_not(zds2), rw_cond(rw_not(zds3), rw_cond(rw_not(ren), rw_cond(rw_not(wen), rw_cond(rw_not(main_zflag_out), main_zzz_out, main_arm142_out), rw_cond(rw_not(main_notb_out), main_zzz_out, main_arm142_out)), rw_cond(rw_not(wen), rw_cond(rw_not(main_cflag_out), main_zzz_out, main_arm142_out), rw_cond(rw_not(main_notb_out_r1), main_zzz_out, main_arm142_out))), rw_cond(rw_not(ren), rw_cond(rw_not(wen), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_x3_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_x3_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_x3_out_r2, main_x3_out_r3))), rw_cond(rw_not(b0), main_zzz_out_r1, rw_cond(rw_not(b1), main_zzz_out_r2, main_zzz_out_r3))), rw_cond(rw_not(wen), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_v3_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_v3_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_v3_out_r2, main_v3_out_r3))), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_zzz_out_r4, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_zzz_out_r5, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_zzz_out_r6, main_zzz_out_r7)))))), rw_cond(rw_not(zds3), rw_cond(rw_not(ren), rw_cond(rw_not(wen), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_v4_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_v4_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_v4_out_r2, main_v4_out_r3))), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_v5_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_v5_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_v5_out_r2, main_v5_out_r3)))), rw_cond(rw_not(wen), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_v6_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_v6_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_v6_out_r2, main_v6_out_r3))), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_v7_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_v7_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_v7_out_r2, main_v7_out_r3))))), rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"00")), main_v8_out, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"01")), main_v8_out_r1, rw_cond(rw_eq(main_mkreg_out, std_logic_vector'(B"10")), main_v8_out_r2, main_v8_out_r3)))))));
 end architecture;
 
 -- main.loop
@@ -3169,7 +3134,7 @@ use ieee.numeric_std.all;
 use work.rw_helpers.all;
 entity main_loop is
       port (s0 : in std_logic_vector (80 downto 0);
-            res : out std_logic_vector (105 downto 0));
+            res : out std_logic_vector (104 downto 0));
 end entity;
 
 architecture rtl of main_loop is
@@ -3212,11 +3177,11 @@ architecture rtl of main_loop is
       component \main_$fail\ is
             port (inp : in std_logic_vector (9 downto 0);
                   s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       component main_zzz is
             port (s0 : in std_logic_vector (80 downto 0);
-                  res : out std_logic_vector (105 downto 0));
+                  res : out std_logic_vector (104 downto 0));
       end component;
       signal main_inputs_out : std_logic_vector (9 downto 0);
       signal r_i : std_logic_vector (0 downto 0);
@@ -3265,12 +3230,12 @@ architecture rtl of main_loop is
       signal r2_r2 : std_logic_vector (7 downto 0);
       signal r3_r2 : std_logic_vector (7 downto 0);
       signal za_r2 : std_logic_vector (80 downto 0);
-      signal main_zzz_out : std_logic_vector (105 downto 0);
-      signal \main_$fail_out\ : std_logic_vector (105 downto 0);
+      signal main_zzz_out : std_logic_vector (104 downto 0);
+      signal \main_$fail_out\ : std_logic_vector (104 downto 0);
       signal main_setcflag_out : std_logic_vector (80 downto 0);
       signal main_setzflag_out : std_logic_vector (80 downto 0);
       signal main_setoutputs_out : std_logic_vector (80 downto 0);
-      signal main_zzz_out_r1 : std_logic_vector (105 downto 0);
+      signal main_zzz_out_r1 : std_logic_vector (104 downto 0);
 begin
       inputs_i : \Main_inputs\ port map (s0, main_inputs_out);
       r_i <= main_inputs_out(1 downto 1);

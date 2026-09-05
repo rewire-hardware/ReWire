@@ -8,40 +8,40 @@ module top_level (input logic [0:0] clk,
   output logic [0:0] __out2,
   output logic [0:0] __out3);
   logic [80:0] Main_setInputs_out;
-  logic [105:0] main_loop_out;
+  logic [104:0] main_loop_out;
   logic [9:0] Main_inputs_out;
   logic [7:0] Main_dataIn_out;
   logic [80:0] Main_setR0_out;
-  logic [105:0] main_loop_outR1;
+  logic [104:0] main_loop_outR1;
   logic [80:0] Main_setR1_out;
-  logic [105:0] main_loop_outR2;
+  logic [104:0] main_loop_outR2;
   logic [80:0] Main_setR2_out;
-  logic [105:0] main_loop_outR3;
+  logic [104:0] main_loop_outR3;
   logic [80:0] Main_setR3_out;
-  logic [105:0] main_loop_outR4;
+  logic [104:0] main_loop_outR4;
   logic [17:0] Main_outputs_out;
   logic [17:0] Main_setAddrOut_out;
   logic [80:0] Main_setOutputs_out;
   logic [17:0] Main_outputs_outR1;
   logic [17:0] Main_setWeOut_out;
   logic [80:0] Main_setOutputs_outR1;
-  logic [105:0] main__unused7_out;
+  logic [104:0] main__unused7_out;
   logic [7:0] Main_r0_out;
-  logic [105:0] main_d_out;
+  logic [104:0] main_d_out;
   logic [7:0] Main_r1_out;
-  logic [105:0] main_d_outR1;
+  logic [104:0] main_d_outR1;
   logic [7:0] Main_r2_out;
-  logic [105:0] main_d_outR2;
+  logic [104:0] main_d_outR2;
   logic [7:0] Main_r3_out;
-  logic [105:0] main_d_outR3;
+  logic [104:0] main_d_outR3;
   logic [1:0] Main_mkReg_out;
-  logic [105:0] Zres;
+  logic [104:0] Zres;
   // state registers
-  // __resumption_tag: 7 bits, init 0x30
-  //   states: 0=i2 1=i4 2=i6 3=i7 4=i8
+  // __resumption_tag: 6 bits, init 0x30
+  //   states: 0=i2 1=i4 2=i6 3=i7
   // __st0: 81 bits, init 0x0
-  logic [6:0] __resumption_tag;
-  logic [6:0] __resumption_tag_next;
+  logic [5:0] __resumption_tag;
+  logic [5:0] __resumption_tag_next;
   logic [80:0] __st0;
   logic [80:0] __st0_next;
   // combinational logic
@@ -79,35 +79,34 @@ module top_level (input logic [0:0] clk,
   wire [0:0] rEnR2 = __resumption_tag[1];
   wire [0:0] wEn = __resumption_tag[0];
   Main_mkReg  mkReg_i (rEnR2, wEn, Main_mkReg_out);
-  wire [2:0] scrut = __resumption_tag[6:4];
+  wire [1:0] scrut = __resumption_tag[5:4];
   always_comb case (scrut)
-    3'h0: Zres = (~rEn) ? main_loop_out :
+    2'h0: Zres = (~rEn) ? main_loop_out :
       ((r == 2'h0) ? main_loop_outR1 :
         ((r == 2'h1) ? main_loop_outR2 :
           ((r == 2'h2) ? main_loop_outR3 : main_loop_outR4)));
-    3'h1: Zres = (~rEn) ? main__unused7_out :
+    2'h1: Zres = (~rEn) ? main__unused7_out :
       ((r == 2'h0) ? main_d_out :
         ((r == 2'h1) ? main_d_outR1 :
           ((r == 2'h2) ? main_d_outR2 : main_d_outR3)));
-    3'h2: Zres = (Main_mkReg_out == 2'h0) ? main_loop_outR1 :
+    2'h2: Zres = (Main_mkReg_out == 2'h0) ? main_loop_outR1 :
       ((Main_mkReg_out == 2'h1) ? main_loop_outR2 :
         ((Main_mkReg_out == 2'h2) ? main_loop_outR3 : main_loop_outR4));
-    3'h3: Zres = main_loop_out;
     default: Zres = main_loop_out;
   endcase
-  assign __resumption_tag_next = Zres[87:81];
+  assign __resumption_tag_next = Zres[86:81];
   assign __st0_next = Zres[80:0];
   // outputs
-  assign __out0 = Zres[105:98];
-  assign __out1 = Zres[97:90];
-  assign __out2 = Zres[89];
-  assign __out3 = Zres[88];
+  assign __out0 = Zres[104:97];
+  assign __out1 = Zres[96:89];
+  assign __out2 = Zres[88];
+  assign __out3 = Zres[87];
   // state register update
-  initial __resumption_tag = 7'h30;
+  initial __resumption_tag = 6'h30;
   initial __st0 = {7'h51{1'h0}};
   always @ (posedge clk or posedge rst) begin
     if (rst == 1'h1) begin
-      __resumption_tag <= 7'h30;
+      __resumption_tag <= 6'h30;
       __st0 <= {7'h51{1'h0}};
     end else begin
       __resumption_tag <= __resumption_tag_next;
@@ -121,7 +120,7 @@ endmodule
 module main___unused7 (input logic [0:0] rEn,
   input logic [1:0] r,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [7:0] Main_pc_out;
   logic [8:0] Main_plusCW8$sMain_oneW8_False_Bool_out;
   logic [80:0] Main_setPC_out;
@@ -131,7 +130,7 @@ module main___unused7 (input logic [0:0] rEn,
   wire [7:0] y = Main_plusCW8$sMain_oneW8_False_Bool_out[7:0];
   Main_setPC  setPC_i (s0, y, Main_setPC_out);
   Main_outputs  outputs_i (Main_setPC_out, Main_outputs_out);
-  assign res = {Main_outputs_out, 4'h0, rEn, r, Main_setPC_out};
+  assign res = {Main_outputs_out, 3'h0, rEn, r, Main_setPC_out};
 endmodule
 
 // main.d
@@ -140,11 +139,11 @@ module main_d (input logic [0:0] rEn,
   input logic [1:0] r,
   input logic [7:0] d,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [17:0] Main_outputs_out;
   logic [17:0] Main_setDataOut_out;
   logic [80:0] Main_setOutputs_out;
-  logic [105:0] main__unused7_out;
+  logic [104:0] main__unused7_out;
   Main_outputs  outputs_i (s0, Main_outputs_out);
   Main_setDataOut  setDataOut_i (Main_outputs_out, d, Main_setDataOut_out);
   Main_setOutputs  setOutputs_i (s0, Main_setDataOut_out, Main_setOutputs_out);
@@ -158,7 +157,7 @@ module main_a2 (input logic [0:0] rEn,
   input logic [0:0] wEn,
   input logic [7:0] a,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [17:0] Main_outputs_out;
   logic [17:0] Main_setWeOut_out;
   logic [80:0] Main_setOutputs_out;
@@ -173,7 +172,7 @@ module main_a2 (input logic [0:0] rEn,
   Main_setAddrOut  setAddrOut_i (Main_outputs_outR1, a, Main_setAddrOut_out);
   Main_setOutputs  setOutputs_iR1 (Main_setOutputs_out, Main_setAddrOut_out, Main_setOutputs_outR1);
   Main_outputs  outputs_iR2 (Main_setOutputs_outR1, Main_outputs_outR2);
-  assign res = {Main_outputs_outR2, 5'h8, rEn, wEn, Main_setOutputs_outR1};
+  assign res = {Main_outputs_outR2, 4'h8, rEn, wEn, Main_setOutputs_outR1};
 endmodule
 
 // main.v2
@@ -181,7 +180,7 @@ endmodule
 module main_v2 (input logic [7:0] a,
   input logic [7:0] v,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [17:0] Main_outputs_out;
   logic [17:0] Main_setWeOut_out;
   logic [80:0] Main_setOutputs_out;
@@ -191,7 +190,7 @@ module main_v2 (input logic [7:0] a,
   logic [17:0] Main_outputs_outR2;
   logic [17:0] Main_setAddrOut_out;
   logic [80:0] Main_setOutputs_outR2;
-  logic [105:0] main_zzz_out;
+  logic [104:0] main_zzz_out;
   Main_outputs  outputs_i (s0, Main_outputs_out);
   Main_setWeOut  setWeOut_i (Main_outputs_out, 1'h1, Main_setWeOut_out);
   Main_setOutputs  setOutputs_i (s0, Main_setWeOut_out, Main_setOutputs_out);
@@ -211,16 +210,16 @@ module main_a3 (input logic [0:0] rEn,
   input logic [0:0] wEn,
   input logic [7:0] a,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [1:0] Main_mkReg_out;
   logic [7:0] Main_r0_out;
-  logic [105:0] main_v2_out;
+  logic [104:0] main_v2_out;
   logic [7:0] Main_r1_out;
-  logic [105:0] main_v2_outR1;
+  logic [104:0] main_v2_outR1;
   logic [7:0] Main_r2_out;
-  logic [105:0] main_v2_outR2;
+  logic [104:0] main_v2_outR2;
   logic [7:0] Main_r3_out;
-  logic [105:0] main_v2_outR3;
+  logic [104:0] main_v2_outR3;
   Main_mkReg  mkReg_i (rEn, wEn, Main_mkReg_out);
   Main_r0  r0_i (s0, Main_r0_out);
   main_v2  v2_i (a, Main_r0_out, s0, main_v2_out);
@@ -238,13 +237,52 @@ module main_a3 (input logic [0:0] rEn,
   endcase
 endmodule
 
-// main._unused17
-// block '$L._unused17' of process main
-module main___unused17 (input logic [80:0] s0,
-  output logic [105:0] res);
-  logic [17:0] Main_outputs_out;
-  Main_outputs  outputs_i (s0, Main_outputs_out);
-  assign res = {Main_outputs_out, 7'h40, s0};
+// main.arm29
+// block '$L.arm29' of process main
+module main_arm29 (input logic [7:0] v,
+  input logic [80:0] s0,
+  output logic [104:0] res);
+  logic [80:0] Main_setR0_out;
+  logic [104:0] main_zzz_out;
+  Main_setR0  setR0_i (s0, v, Main_setR0_out);
+  main_zzz  zzz_i (Main_setR0_out, main_zzz_out);
+  assign res = main_zzz_out;
+endmodule
+
+// main.arm30
+// block '$L.arm30' of process main
+module main_arm30 (input logic [7:0] v,
+  input logic [80:0] s0,
+  output logic [104:0] res);
+  logic [80:0] Main_setR1_out;
+  logic [104:0] main_zzz_out;
+  Main_setR1  setR1_i (s0, v, Main_setR1_out);
+  main_zzz  zzz_i (Main_setR1_out, main_zzz_out);
+  assign res = main_zzz_out;
+endmodule
+
+// main.arm31
+// block '$L.arm31' of process main
+module main_arm31 (input logic [7:0] v,
+  input logic [80:0] s0,
+  output logic [104:0] res);
+  logic [80:0] Main_setR2_out;
+  logic [104:0] main_zzz_out;
+  Main_setR2  setR2_i (s0, v, Main_setR2_out);
+  main_zzz  zzz_i (Main_setR2_out, main_zzz_out);
+  assign res = main_zzz_out;
+endmodule
+
+// main.arm32
+// block '$L.arm32' of process main
+module main_arm32 (input logic [7:0] v,
+  input logic [80:0] s0,
+  output logic [104:0] res);
+  logic [80:0] Main_setR3_out;
+  logic [104:0] main_zzz_out;
+  Main_setR3  setR3_i (s0, v, Main_setR3_out);
+  main_zzz  zzz_i (Main_setR3_out, main_zzz_out);
+  assign res = main_zzz_out;
 endmodule
 
 // main.s63
@@ -253,32 +291,24 @@ module main_s63 (input logic [1:0] rD,
   input logic [8:0] p,
   input logic [80:0] s,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [80:0] Main_setCFlag_out;
-  logic [80:0] Main_setR0_out;
-  logic [105:0] main__unused17_out;
-  logic [80:0] Main_setR1_out;
-  logic [105:0] main__unused17_outR1;
-  logic [80:0] Main_setR2_out;
-  logic [105:0] main__unused17_outR2;
-  logic [80:0] Main_setR3_out;
-  logic [105:0] main__unused17_outR3;
+  logic [104:0] main_arm29_out;
+  logic [104:0] main_arm30_out;
+  logic [104:0] main_arm31_out;
+  logic [104:0] main_arm32_out;
   wire [0:0] x = p[8];
   Main_setCFlag  setCFlag_i (s, x, Main_setCFlag_out);
   wire [7:0] y = p[7:0];
-  Main_setR0  setR0_i (Main_setCFlag_out, y, Main_setR0_out);
-  main___unused17  _unused17_i (Main_setR0_out, main__unused17_out);
-  Main_setR1  setR1_i (Main_setCFlag_out, y, Main_setR1_out);
-  main___unused17  _unused17_iR1 (Main_setR1_out, main__unused17_outR1);
-  Main_setR2  setR2_i (Main_setCFlag_out, y, Main_setR2_out);
-  main___unused17  _unused17_iR2 (Main_setR2_out, main__unused17_outR2);
-  Main_setR3  setR3_i (Main_setCFlag_out, y, Main_setR3_out);
-  main___unused17  _unused17_iR3 (Main_setR3_out, main__unused17_outR3);
+  main_arm29  arm29_i (y, Main_setCFlag_out, main_arm29_out);
+  main_arm30  arm30_i (y, Main_setCFlag_out, main_arm30_out);
+  main_arm31  arm31_i (y, Main_setCFlag_out, main_arm31_out);
+  main_arm32  arm32_i (y, Main_setCFlag_out, main_arm32_out);
   always_comb case (rD)
-    2'h0: res = main__unused17_out;
-    2'h1: res = main__unused17_outR1;
-    2'h2: res = main__unused17_outR2;
-    default: res = main__unused17_outR3;
+    2'h0: res = main_arm29_out;
+    2'h1: res = main_arm30_out;
+    2'h2: res = main_arm31_out;
+    default: res = main_arm32_out;
   endcase
 endmodule
 
@@ -288,8 +318,8 @@ module main_vS (input logic [1:0] rD,
   input logic [7:0] vD,
   input logic [7:0] vS,
   input logic [80:0] s0,
-  output logic [105:0] res);
-  logic [105:0] main_s63_out;
+  output logic [104:0] res);
+  logic [104:0] main_s63_out;
   wire [8:0] s = ({1'h0, vD} + {1'h0, vS}) + 9'h0;
   wire [8:0] p = {s[8], s[7:0]};
   main_s63  s63_i (rD, p, s0, s0, main_s63_out);
@@ -302,15 +332,15 @@ module main_vD (input logic [1:0] rD,
   input logic [1:0] rS,
   input logic [7:0] vD,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [7:0] Main_r0_out;
-  logic [105:0] main_vS_out;
+  logic [104:0] main_vS_out;
   logic [7:0] Main_r1_out;
-  logic [105:0] main_vS_outR1;
+  logic [104:0] main_vS_outR1;
   logic [7:0] Main_r2_out;
-  logic [105:0] main_vS_outR2;
+  logic [104:0] main_vS_outR2;
   logic [7:0] Main_r3_out;
-  logic [105:0] main_vS_outR3;
+  logic [104:0] main_vS_outR3;
   Main_r0  r0_i (s0, Main_r0_out);
   main_vS  vS_i (rD, vD, Main_r0_out, s0, main_vS_out);
   Main_r1  r1_i (s0, Main_r1_out);
@@ -333,9 +363,9 @@ module main_vS2 (input logic [1:0] rD,
   input logic [7:0] vD,
   input logic [7:0] vS,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [0:0] Main_cFlag_out;
-  logic [105:0] main_s63_out;
+  logic [104:0] main_s63_out;
   Main_cFlag  cFlag_i (s0, Main_cFlag_out);
   wire [8:0] s = ({1'h0, vD} + {1'h0, vS}) + {8'h0, Main_cFlag_out};
   wire [8:0] p = {s[8], s[7:0]};
@@ -349,15 +379,15 @@ module main_vD2 (input logic [1:0] rD,
   input logic [1:0] rS,
   input logic [7:0] vD,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [7:0] Main_r0_out;
-  logic [105:0] main_vS2_out;
+  logic [104:0] main_vS2_out;
   logic [7:0] Main_r1_out;
-  logic [105:0] main_vS2_outR1;
+  logic [104:0] main_vS2_outR1;
   logic [7:0] Main_r2_out;
-  logic [105:0] main_vS2_outR2;
+  logic [104:0] main_vS2_outR2;
   logic [7:0] Main_r3_out;
-  logic [105:0] main_vS2_outR3;
+  logic [104:0] main_vS2_outR3;
   Main_r0  r0_i (s0, Main_r0_out);
   main_vS2  vS2_i (rD, vD, Main_r0_out, s0, main_vS2_out);
   Main_r1  r1_i (s0, Main_r1_out);
@@ -380,9 +410,9 @@ module main_vS3 (input logic [1:0] rD,
   input logic [7:0] vD,
   input logic [7:0] vS,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [8:0] Main_minusCW8$sFalse_Bool_out;
-  logic [105:0] main_s63_out;
+  logic [104:0] main_s63_out;
   Main_minusCW8$sFalse__Bool  minusCW8$sFalse_Bool_i (vD, vS, Main_minusCW8$sFalse_Bool_out);
   main_s63  s63_i (rD, Main_minusCW8$sFalse_Bool_out, s0, s0, main_s63_out);
   assign res = main_s63_out;
@@ -394,15 +424,15 @@ module main_vD3 (input logic [1:0] rD,
   input logic [1:0] rS,
   input logic [7:0] vD,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [7:0] Main_r0_out;
-  logic [105:0] main_vS3_out;
+  logic [104:0] main_vS3_out;
   logic [7:0] Main_r1_out;
-  logic [105:0] main_vS3_outR1;
+  logic [104:0] main_vS3_outR1;
   logic [7:0] Main_r2_out;
-  logic [105:0] main_vS3_outR2;
+  logic [104:0] main_vS3_outR2;
   logic [7:0] Main_r3_out;
-  logic [105:0] main_vS3_outR3;
+  logic [104:0] main_vS3_outR3;
   Main_r0  r0_i (s0, Main_r0_out);
   main_vS3  vS3_i (rD, vD, Main_r0_out, s0, main_vS3_out);
   Main_r1  r1_i (s0, Main_r1_out);
@@ -425,9 +455,9 @@ module main_vS4 (input logic [1:0] rD,
   input logic [7:0] vD,
   input logic [7:0] vS,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [0:0] Main_cFlag_out;
-  logic [105:0] main_s63_out;
+  logic [104:0] main_s63_out;
   Main_cFlag  cFlag_i (s0, Main_cFlag_out);
   wire [8:0] s = ({1'h0, vD} - {1'h0, vS}) - {8'h0, Main_cFlag_out};
   wire [8:0] p = {s[8], s[7:0]};
@@ -441,15 +471,15 @@ module main_vD4 (input logic [1:0] rD,
   input logic [1:0] rS,
   input logic [7:0] vD,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [7:0] Main_r0_out;
-  logic [105:0] main_vS4_out;
+  logic [104:0] main_vS4_out;
   logic [7:0] Main_r1_out;
-  logic [105:0] main_vS4_outR1;
+  logic [104:0] main_vS4_outR1;
   logic [7:0] Main_r2_out;
-  logic [105:0] main_vS4_outR2;
+  logic [104:0] main_vS4_outR2;
   logic [7:0] Main_r3_out;
-  logic [105:0] main_vS4_outR3;
+  logic [104:0] main_vS4_outR3;
   Main_r0  r0_i (s0, Main_r0_out);
   main_vS4  vS4_i (rD, vD, Main_r0_out, s0, main_vS4_out);
   Main_r1  r1_i (s0, Main_r1_out);
@@ -470,10 +500,10 @@ endmodule
 // block '$L.zzz' of process main
 // also: main._unused15
 module main_zzz (input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [17:0] Main_outputs_out;
   Main_outputs  outputs_i (s0, Main_outputs_out);
-  assign res = {Main_outputs_out, 7'h30, s0};
+  assign res = {Main_outputs_out, 6'h30, s0};
 endmodule
 
 // main.x2
@@ -482,16 +512,16 @@ module main_x2 (input logic [0:0] rEn,
   input logic [0:0] wEn,
   input logic [7:0] x,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [1:0] Main_mkReg_out;
   logic [80:0] Main_setR0_out;
-  logic [105:0] main_zzz_out;
+  logic [104:0] main_zzz_out;
   logic [80:0] Main_setR1_out;
-  logic [105:0] main_zzz_outR1;
+  logic [104:0] main_zzz_outR1;
   logic [80:0] Main_setR2_out;
-  logic [105:0] main_zzz_outR2;
+  logic [104:0] main_zzz_outR2;
   logic [80:0] Main_setR3_out;
-  logic [105:0] main_zzz_outR3;
+  logic [104:0] main_zzz_outR3;
   Main_mkReg  mkReg_i (rEn, wEn, Main_mkReg_out);
   Main_setR0  setR0_i (s0, x, Main_setR0_out);
   main_zzz  zzz_i (Main_setR0_out, main_zzz_out);
@@ -513,23 +543,23 @@ endmodule
 // block '$L._unused24' of process main
 module main___unused24 (input logic [7:0] vD$,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [80:0] Main_setCFlag_out;
   logic [80:0] Main_setZFlag_out;
-  logic [105:0] main__unused17_out;
+  logic [104:0] main_zzz_out;
   Main_setCFlag  setCFlag_i (s0, 1'h0, Main_setCFlag_out);
   Main_setZFlag  setZFlag_i (Main_setCFlag_out, vD$ == 8'h0, Main_setZFlag_out);
-  main___unused17  _unused17_i (Main_setZFlag_out, main__unused17_out);
-  assign res = main__unused17_out;
+  main_zzz  zzz_i (Main_setZFlag_out, main_zzz_out);
+  assign res = main_zzz_out;
 endmodule
 
 // main.arm90
 // block '$L.arm90' of process main
 module main_arm90 (input logic [7:0] vD$,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [80:0] Main_setR0_out;
-  logic [105:0] main__unused24_out;
+  logic [104:0] main__unused24_out;
   Main_setR0  setR0_i (s0, vD$, Main_setR0_out);
   main___unused24  _unused24_i (vD$, Main_setR0_out, main__unused24_out);
   assign res = main__unused24_out;
@@ -539,9 +569,9 @@ endmodule
 // block '$L.arm91' of process main
 module main_arm91 (input logic [7:0] vD$,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [80:0] Main_setR1_out;
-  logic [105:0] main__unused24_out;
+  logic [104:0] main__unused24_out;
   Main_setR1  setR1_i (s0, vD$, Main_setR1_out);
   main___unused24  _unused24_i (vD$, Main_setR1_out, main__unused24_out);
   assign res = main__unused24_out;
@@ -551,9 +581,9 @@ endmodule
 // block '$L.arm92' of process main
 module main_arm92 (input logic [7:0] vD$,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [80:0] Main_setR2_out;
-  logic [105:0] main__unused24_out;
+  logic [104:0] main__unused24_out;
   Main_setR2  setR2_i (s0, vD$, Main_setR2_out);
   main___unused24  _unused24_i (vD$, Main_setR2_out, main__unused24_out);
   assign res = main__unused24_out;
@@ -563,9 +593,9 @@ endmodule
 // block '$L.arm93' of process main
 module main_arm93 (input logic [7:0] vD$,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [80:0] Main_setR3_out;
-  logic [105:0] main__unused24_out;
+  logic [104:0] main__unused24_out;
   Main_setR3  setR3_i (s0, vD$, Main_setR3_out);
   main___unused24  _unused24_i (vD$, Main_setR3_out, main__unused24_out);
   assign res = main__unused24_out;
@@ -577,11 +607,11 @@ module main_vS5 (input logic [1:0] rD,
   input logic [7:0] vD,
   input logic [7:0] vS,
   input logic [80:0] s0,
-  output logic [105:0] res);
-  logic [105:0] main_arm90_out;
-  logic [105:0] main_arm91_out;
-  logic [105:0] main_arm92_out;
-  logic [105:0] main_arm93_out;
+  output logic [104:0] res);
+  logic [104:0] main_arm90_out;
+  logic [104:0] main_arm91_out;
+  logic [104:0] main_arm92_out;
+  logic [104:0] main_arm93_out;
   wire [7:0] vD$ = vD | vS;
   main_arm90  arm90_i (vD$, s0, main_arm90_out);
   main_arm91  arm91_i (vD$, s0, main_arm91_out);
@@ -601,15 +631,15 @@ module main_vD5 (input logic [1:0] rD,
   input logic [1:0] rS,
   input logic [7:0] vD,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [7:0] Main_r0_out;
-  logic [105:0] main_vS5_out;
+  logic [104:0] main_vS5_out;
   logic [7:0] Main_r1_out;
-  logic [105:0] main_vS5_outR1;
+  logic [104:0] main_vS5_outR1;
   logic [7:0] Main_r2_out;
-  logic [105:0] main_vS5_outR2;
+  logic [104:0] main_vS5_outR2;
   logic [7:0] Main_r3_out;
-  logic [105:0] main_vS5_outR3;
+  logic [104:0] main_vS5_outR3;
   Main_r0  r0_i (s0, Main_r0_out);
   main_vS5  vS5_i (rD, vD, Main_r0_out, s0, main_vS5_out);
   Main_r1  r1_i (s0, Main_r1_out);
@@ -632,11 +662,11 @@ module main_vS6 (input logic [1:0] rD,
   input logic [7:0] vD,
   input logic [7:0] vS,
   input logic [80:0] s0,
-  output logic [105:0] res);
-  logic [105:0] main_arm90_out;
-  logic [105:0] main_arm91_out;
-  logic [105:0] main_arm92_out;
-  logic [105:0] main_arm93_out;
+  output logic [104:0] res);
+  logic [104:0] main_arm90_out;
+  logic [104:0] main_arm91_out;
+  logic [104:0] main_arm92_out;
+  logic [104:0] main_arm93_out;
   wire [7:0] vD$ = vD & vS;
   main_arm90  arm90_i (vD$, s0, main_arm90_out);
   main_arm91  arm91_i (vD$, s0, main_arm91_out);
@@ -656,15 +686,15 @@ module main_vD6 (input logic [1:0] rD,
   input logic [1:0] rS,
   input logic [7:0] vD,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [7:0] Main_r0_out;
-  logic [105:0] main_vS6_out;
+  logic [104:0] main_vS6_out;
   logic [7:0] Main_r1_out;
-  logic [105:0] main_vS6_outR1;
+  logic [104:0] main_vS6_outR1;
   logic [7:0] Main_r2_out;
-  logic [105:0] main_vS6_outR2;
+  logic [104:0] main_vS6_outR2;
   logic [7:0] Main_r3_out;
-  logic [105:0] main_vS6_outR3;
+  logic [104:0] main_vS6_outR3;
   Main_r0  r0_i (s0, Main_r0_out);
   main_vS6  vS6_i (rD, vD, Main_r0_out, s0, main_vS6_out);
   Main_r1  r1_i (s0, Main_r1_out);
@@ -687,11 +717,11 @@ module main_vS7 (input logic [1:0] rD,
   input logic [7:0] vD,
   input logic [7:0] vS,
   input logic [80:0] s0,
-  output logic [105:0] res);
-  logic [105:0] main_arm90_out;
-  logic [105:0] main_arm91_out;
-  logic [105:0] main_arm92_out;
-  logic [105:0] main_arm93_out;
+  output logic [104:0] res);
+  logic [104:0] main_arm90_out;
+  logic [104:0] main_arm91_out;
+  logic [104:0] main_arm92_out;
+  logic [104:0] main_arm93_out;
   wire [7:0] vD$ = vD ^ vS;
   main_arm90  arm90_i (vD$, s0, main_arm90_out);
   main_arm91  arm91_i (vD$, s0, main_arm91_out);
@@ -711,15 +741,15 @@ module main_vD7 (input logic [1:0] rD,
   input logic [1:0] rS,
   input logic [7:0] vD,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [7:0] Main_r0_out;
-  logic [105:0] main_vS7_out;
+  logic [104:0] main_vS7_out;
   logic [7:0] Main_r1_out;
-  logic [105:0] main_vS7_outR1;
+  logic [104:0] main_vS7_outR1;
   logic [7:0] Main_r2_out;
-  logic [105:0] main_vS7_outR2;
+  logic [104:0] main_vS7_outR2;
   logic [7:0] Main_r3_out;
-  logic [105:0] main_vS7_outR3;
+  logic [104:0] main_vS7_outR3;
   Main_r0  r0_i (s0, Main_r0_out);
   main_vS7  vS7_i (rD, vD, Main_r0_out, s0, main_vS7_out);
   Main_r1  r1_i (s0, Main_r1_out);
@@ -741,11 +771,11 @@ endmodule
 module main_vS8 (input logic [7:0] vD,
   input logic [7:0] vS,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [8:0] Main_minusCW8$sFalse_Bool_out;
   logic [80:0] Main_setCFlag_out;
   logic [80:0] Main_setZFlag_out;
-  logic [105:0] main_zzz_out;
+  logic [104:0] main_zzz_out;
   Main_minusCW8$sFalse__Bool  minusCW8$sFalse_Bool_i (vD, vS, Main_minusCW8$sFalse_Bool_out);
   wire [0:0] x = Main_minusCW8$sFalse_Bool_out[8];
   Main_setCFlag  setCFlag_i (s0, x, Main_setCFlag_out);
@@ -761,16 +791,16 @@ module main_vD8 (input logic [0:0] b0,
   input logic [0:0] b1,
   input logic [7:0] vD,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [1:0] Main_mkReg_out;
   logic [7:0] Main_r0_out;
-  logic [105:0] main_vS8_out;
+  logic [104:0] main_vS8_out;
   logic [7:0] Main_r1_out;
-  logic [105:0] main_vS8_outR1;
+  logic [104:0] main_vS8_outR1;
   logic [7:0] Main_r2_out;
-  logic [105:0] main_vS8_outR2;
+  logic [104:0] main_vS8_outR2;
   logic [7:0] Main_r3_out;
-  logic [105:0] main_vS8_outR3;
+  logic [104:0] main_vS8_outR3;
   Main_mkReg  mkReg_i (b0, b1, Main_mkReg_out);
   Main_r0  r0_i (s0, Main_r0_out);
   main_vS8  vS8_i (vD, Main_r0_out, s0, main_vS8_out);
@@ -792,9 +822,9 @@ endmodule
 // block '$L.pc3' of process main
 module main_pc3 (input logic [7:0] pc,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [80:0] Main_setPC_out;
-  logic [105:0] main_zzz_out;
+  logic [104:0] main_zzz_out;
   Main_setPC  setPC_i (s0, pc, Main_setPC_out);
   main_zzz  zzz_i (Main_setPC_out, main_zzz_out);
   assign res = main_zzz_out;
@@ -805,16 +835,16 @@ endmodule
 module main_arm142 (input logic [0:0] b0,
   input logic [0:0] b1,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [1:0] Main_mkReg_out;
   logic [7:0] Main_r0_out;
-  logic [105:0] main_pc3_out;
+  logic [104:0] main_pc3_out;
   logic [7:0] Main_r1_out;
-  logic [105:0] main_pc3_outR1;
+  logic [104:0] main_pc3_outR1;
   logic [7:0] Main_r2_out;
-  logic [105:0] main_pc3_outR2;
+  logic [104:0] main_pc3_outR2;
   logic [7:0] Main_r3_out;
-  logic [105:0] main_pc3_outR3;
+  logic [104:0] main_pc3_outR3;
   Main_mkReg  mkReg_i (b0, b1, Main_mkReg_out);
   Main_r0  r0_i (s0, Main_r0_out);
   main_pc3  pc3_i (Main_r0_out, s0, main_pc3_out);
@@ -836,59 +866,11 @@ endmodule
 // block '$L.x3' of process main
 module main_x3 (input logic [7:0] x,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [80:0] Main_setPC_out;
-  logic [105:0] main_zzz_out;
+  logic [104:0] main_zzz_out;
   Main_setPC  setPC_i (s0, x, Main_setPC_out);
   main_zzz  zzz_i (Main_setPC_out, main_zzz_out);
-  assign res = main_zzz_out;
-endmodule
-
-// main.arm170
-// block '$L.arm170' of process main
-module main_arm170 (input logic [7:0] v,
-  input logic [80:0] s0,
-  output logic [105:0] res);
-  logic [80:0] Main_setR0_out;
-  logic [105:0] main_zzz_out;
-  Main_setR0  setR0_i (s0, v, Main_setR0_out);
-  main_zzz  zzz_i (Main_setR0_out, main_zzz_out);
-  assign res = main_zzz_out;
-endmodule
-
-// main.arm171
-// block '$L.arm171' of process main
-module main_arm171 (input logic [7:0] v,
-  input logic [80:0] s0,
-  output logic [105:0] res);
-  logic [80:0] Main_setR1_out;
-  logic [105:0] main_zzz_out;
-  Main_setR1  setR1_i (s0, v, Main_setR1_out);
-  main_zzz  zzz_i (Main_setR1_out, main_zzz_out);
-  assign res = main_zzz_out;
-endmodule
-
-// main.arm172
-// block '$L.arm172' of process main
-module main_arm172 (input logic [7:0] v,
-  input logic [80:0] s0,
-  output logic [105:0] res);
-  logic [80:0] Main_setR2_out;
-  logic [105:0] main_zzz_out;
-  Main_setR2  setR2_i (s0, v, Main_setR2_out);
-  main_zzz  zzz_i (Main_setR2_out, main_zzz_out);
-  assign res = main_zzz_out;
-endmodule
-
-// main.arm173
-// block '$L.arm173' of process main
-module main_arm173 (input logic [7:0] v,
-  input logic [80:0] s0,
-  output logic [105:0] res);
-  logic [80:0] Main_setR3_out;
-  logic [105:0] main_zzz_out;
-  Main_setR3  setR3_i (s0, v, Main_setR3_out);
-  main_zzz  zzz_i (Main_setR3_out, main_zzz_out);
   assign res = main_zzz_out;
 endmodule
 
@@ -897,21 +879,21 @@ endmodule
 module main_v3 (input logic [1:0] r,
   input logic [7:0] v,
   input logic [80:0] s0,
-  output logic [105:0] res);
-  logic [105:0] main_arm170_out;
-  logic [105:0] main_arm171_out;
-  logic [105:0] main_arm172_out;
-  logic [105:0] main_arm173_out;
+  output logic [104:0] res);
+  logic [104:0] main_arm29_out;
+  logic [104:0] main_arm30_out;
+  logic [104:0] main_arm31_out;
+  logic [104:0] main_arm32_out;
   wire [7:0] v1 = ~v;
-  main_arm170  arm170_i (v1, s0, main_arm170_out);
-  main_arm171  arm171_i (v1, s0, main_arm171_out);
-  main_arm172  arm172_i (v1, s0, main_arm172_out);
-  main_arm173  arm173_i (v1, s0, main_arm173_out);
+  main_arm29  arm29_i (v1, s0, main_arm29_out);
+  main_arm30  arm30_i (v1, s0, main_arm30_out);
+  main_arm31  arm31_i (v1, s0, main_arm31_out);
+  main_arm32  arm32_i (v1, s0, main_arm32_out);
   always_comb case (r)
-    2'h0: res = main_arm170_out;
-    2'h1: res = main_arm171_out;
-    2'h2: res = main_arm172_out;
-    default: res = main_arm173_out;
+    2'h0: res = main_arm29_out;
+    2'h1: res = main_arm30_out;
+    2'h2: res = main_arm31_out;
+    default: res = main_arm32_out;
   endcase
 endmodule
 
@@ -920,10 +902,10 @@ endmodule
 module main___unused44 (input logic [8:0] p,
   input logic [7:0] v$,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [80:0] Main_setCFlag_out;
   logic [80:0] Main_setZFlag_out;
-  logic [105:0] main_zzz_out;
+  logic [104:0] main_zzz_out;
   wire [0:0] x = p[8];
   Main_setCFlag  setCFlag_i (s0, x, Main_setCFlag_out);
   Main_setZFlag  setZFlag_i (Main_setCFlag_out, v$ == 8'h0, Main_setZFlag_out);
@@ -936,9 +918,9 @@ endmodule
 module main_arm184 (input logic [8:0] p,
   input logic [7:0] v$,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [80:0] Main_setR0_out;
-  logic [105:0] main__unused44_out;
+  logic [104:0] main__unused44_out;
   Main_setR0  setR0_i (s0, v$, Main_setR0_out);
   main___unused44  _unused44_i (p, v$, Main_setR0_out, main__unused44_out);
   assign res = main__unused44_out;
@@ -949,9 +931,9 @@ endmodule
 module main_arm185 (input logic [8:0] p,
   input logic [7:0] v$,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [80:0] Main_setR1_out;
-  logic [105:0] main__unused44_out;
+  logic [104:0] main__unused44_out;
   Main_setR1  setR1_i (s0, v$, Main_setR1_out);
   main___unused44  _unused44_i (p, v$, Main_setR1_out, main__unused44_out);
   assign res = main__unused44_out;
@@ -962,9 +944,9 @@ endmodule
 module main_arm186 (input logic [8:0] p,
   input logic [7:0] v$,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [80:0] Main_setR2_out;
-  logic [105:0] main__unused44_out;
+  logic [104:0] main__unused44_out;
   Main_setR2  setR2_i (s0, v$, Main_setR2_out);
   main___unused44  _unused44_i (p, v$, Main_setR2_out, main__unused44_out);
   assign res = main__unused44_out;
@@ -975,9 +957,9 @@ endmodule
 module main_arm187 (input logic [8:0] p,
   input logic [7:0] v$,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [80:0] Main_setR3_out;
-  logic [105:0] main__unused44_out;
+  logic [104:0] main__unused44_out;
   Main_setR3  setR3_i (s0, v$, Main_setR3_out);
   main___unused44  _unused44_i (p, v$, Main_setR3_out, main__unused44_out);
   assign res = main__unused44_out;
@@ -988,12 +970,12 @@ endmodule
 module main_v4 (input logic [1:0] r,
   input logic [7:0] v,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [8:0] Main_plusCW8$sMain_oneW8_False_Bool_out;
-  logic [105:0] main_arm184_out;
-  logic [105:0] main_arm185_out;
-  logic [105:0] main_arm186_out;
-  logic [105:0] main_arm187_out;
+  logic [104:0] main_arm184_out;
+  logic [104:0] main_arm185_out;
+  logic [104:0] main_arm186_out;
+  logic [104:0] main_arm187_out;
   Main_plusCW8$sMain__oneW8__False__Bool  plusCW8$sMain_oneW8_False_Bool_i (v, Main_plusCW8$sMain_oneW8_False_Bool_out);
   wire [7:0] y = Main_plusCW8$sMain_oneW8_False_Bool_out[7:0];
   main_arm184  arm184_i (Main_plusCW8$sMain_oneW8_False_Bool_out, y, s0, main_arm184_out);
@@ -1013,11 +995,11 @@ endmodule
 module main_v5 (input logic [1:0] r,
   input logic [7:0] v,
   input logic [80:0] s0,
-  output logic [105:0] res);
-  logic [105:0] main_arm184_out;
-  logic [105:0] main_arm185_out;
-  logic [105:0] main_arm186_out;
-  logic [105:0] main_arm187_out;
+  output logic [104:0] res);
+  logic [104:0] main_arm184_out;
+  logic [104:0] main_arm185_out;
+  logic [104:0] main_arm186_out;
+  logic [104:0] main_arm187_out;
   wire [8:0] s = ({1'h0, v} - 9'h1) - 9'h0;
   wire [8:0] p = {s[8], s[7:0]};
   wire [7:0] y = p[7:0];
@@ -1038,21 +1020,21 @@ endmodule
 module main_v6 (input logic [1:0] r,
   input logic [7:0] v,
   input logic [80:0] s0,
-  output logic [105:0] res);
-  logic [105:0] main_arm170_out;
-  logic [105:0] main_arm171_out;
-  logic [105:0] main_arm172_out;
-  logic [105:0] main_arm173_out;
+  output logic [104:0] res);
+  logic [104:0] main_arm29_out;
+  logic [104:0] main_arm30_out;
+  logic [104:0] main_arm31_out;
+  logic [104:0] main_arm32_out;
   wire [7:0] v1 = (v << 8'h1) | (v >> 8'h7);
-  main_arm170  arm170_i (v1, s0, main_arm170_out);
-  main_arm171  arm171_i (v1, s0, main_arm171_out);
-  main_arm172  arm172_i (v1, s0, main_arm172_out);
-  main_arm173  arm173_i (v1, s0, main_arm173_out);
+  main_arm29  arm29_i (v1, s0, main_arm29_out);
+  main_arm30  arm30_i (v1, s0, main_arm30_out);
+  main_arm31  arm31_i (v1, s0, main_arm31_out);
+  main_arm32  arm32_i (v1, s0, main_arm32_out);
   always_comb case (r)
-    2'h0: res = main_arm170_out;
-    2'h1: res = main_arm171_out;
-    2'h2: res = main_arm172_out;
-    default: res = main_arm173_out;
+    2'h0: res = main_arm29_out;
+    2'h1: res = main_arm30_out;
+    2'h2: res = main_arm31_out;
+    default: res = main_arm32_out;
   endcase
 endmodule
 
@@ -1061,21 +1043,21 @@ endmodule
 module main_v7 (input logic [1:0] r,
   input logic [7:0] v,
   input logic [80:0] s0,
-  output logic [105:0] res);
-  logic [105:0] main_arm170_out;
-  logic [105:0] main_arm171_out;
-  logic [105:0] main_arm172_out;
-  logic [105:0] main_arm173_out;
+  output logic [104:0] res);
+  logic [104:0] main_arm29_out;
+  logic [104:0] main_arm30_out;
+  logic [104:0] main_arm31_out;
+  logic [104:0] main_arm32_out;
   wire [7:0] v1 = (v >> 8'h1) | (v << 8'h7);
-  main_arm170  arm170_i (v1, s0, main_arm170_out);
-  main_arm171  arm171_i (v1, s0, main_arm171_out);
-  main_arm172  arm172_i (v1, s0, main_arm172_out);
-  main_arm173  arm173_i (v1, s0, main_arm173_out);
+  main_arm29  arm29_i (v1, s0, main_arm29_out);
+  main_arm30  arm30_i (v1, s0, main_arm30_out);
+  main_arm31  arm31_i (v1, s0, main_arm31_out);
+  main_arm32  arm32_i (v1, s0, main_arm32_out);
   always_comb case (r)
-    2'h0: res = main_arm170_out;
-    2'h1: res = main_arm171_out;
-    2'h2: res = main_arm172_out;
-    default: res = main_arm173_out;
+    2'h0: res = main_arm29_out;
+    2'h1: res = main_arm30_out;
+    2'h2: res = main_arm31_out;
+    default: res = main_arm32_out;
   endcase
 endmodule
 
@@ -1086,13 +1068,13 @@ module main_v8 (input logic [0:0] rEn,
   input logic [1:0] r,
   input logic [7:0] v,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [0:0] Main_msbW8_out;
   logic [0:0] Main_lsbW8_out;
-  logic [105:0] main_arm184_out;
-  logic [105:0] main_arm185_out;
-  logic [105:0] main_arm186_out;
-  logic [105:0] main_arm187_out;
+  logic [104:0] main_arm184_out;
+  logic [104:0] main_arm185_out;
+  logic [104:0] main_arm186_out;
+  logic [104:0] main_arm187_out;
   Main_msbW8  msbW8_i (v, Main_msbW8_out);
   wire [8:0] Za1 = {Main_msbW8_out, (v << 8'h1) | {7'h0, Main_msbW8_out}};
   wire [8:0] Za = {Main_msbW8_out, (v << 8'h1) | 8'h0};
@@ -1119,7 +1101,7 @@ endmodule
 // block '$L.$fail' of process main
 module main_$fail (input logic [9:0] inp,
   input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [7:0] Main_dataIn_out;
   logic [1:0] Main_mkReg_out;
   logic [7:0] Main_pc_out;
@@ -1128,105 +1110,105 @@ module main_$fail (input logic [9:0] inp,
   logic [80:0] Main_setOutputs_out;
   logic [17:0] Main_outputs_outR1;
   logic [7:0] Main_r0_out;
-  logic [105:0] main_a2_out;
+  logic [104:0] main_a2_out;
   logic [7:0] Main_r1_out;
-  logic [105:0] main_a2_outR1;
+  logic [104:0] main_a2_outR1;
   logic [7:0] Main_r2_out;
-  logic [105:0] main_a2_outR2;
+  logic [104:0] main_a2_outR2;
   logic [7:0] Main_r3_out;
-  logic [105:0] main_a2_outR3;
-  logic [105:0] main_a3_out;
-  logic [105:0] main_a3_outR1;
-  logic [105:0] main_a3_outR2;
-  logic [105:0] main_a3_outR3;
+  logic [104:0] main_a2_outR3;
+  logic [104:0] main_a3_out;
+  logic [104:0] main_a3_outR1;
+  logic [104:0] main_a3_outR2;
+  logic [104:0] main_a3_outR3;
   logic [1:0] Main_mkReg_outR1;
-  logic [105:0] main_vD_out;
-  logic [105:0] main_vD_outR1;
-  logic [105:0] main_vD_outR2;
-  logic [105:0] main_vD_outR3;
-  logic [105:0] main_vD2_out;
-  logic [105:0] main_vD2_outR1;
-  logic [105:0] main_vD2_outR2;
-  logic [105:0] main_vD2_outR3;
-  logic [105:0] main_vD3_out;
-  logic [105:0] main_vD3_outR1;
-  logic [105:0] main_vD3_outR2;
-  logic [105:0] main_vD3_outR3;
-  logic [105:0] main_vD4_out;
-  logic [105:0] main_vD4_outR1;
-  logic [105:0] main_vD4_outR2;
-  logic [105:0] main_vD4_outR3;
-  logic [105:0] main_x2_out;
-  logic [105:0] main_x2_outR1;
-  logic [105:0] main_x2_outR2;
-  logic [105:0] main_x2_outR3;
-  logic [105:0] main_vD5_out;
-  logic [105:0] main_vD5_outR1;
-  logic [105:0] main_vD5_outR2;
-  logic [105:0] main_vD5_outR3;
-  logic [105:0] main_vD6_out;
-  logic [105:0] main_vD6_outR1;
-  logic [105:0] main_vD6_outR2;
-  logic [105:0] main_vD6_outR3;
-  logic [105:0] main_vD7_out;
-  logic [105:0] main_vD7_outR1;
-  logic [105:0] main_vD7_outR2;
-  logic [105:0] main_vD7_outR3;
-  logic [105:0] main_vD8_out;
-  logic [105:0] main_vD8_outR1;
-  logic [105:0] main_vD8_outR2;
-  logic [105:0] main_vD8_outR3;
+  logic [104:0] main_vD_out;
+  logic [104:0] main_vD_outR1;
+  logic [104:0] main_vD_outR2;
+  logic [104:0] main_vD_outR3;
+  logic [104:0] main_vD2_out;
+  logic [104:0] main_vD2_outR1;
+  logic [104:0] main_vD2_outR2;
+  logic [104:0] main_vD2_outR3;
+  logic [104:0] main_vD3_out;
+  logic [104:0] main_vD3_outR1;
+  logic [104:0] main_vD3_outR2;
+  logic [104:0] main_vD3_outR3;
+  logic [104:0] main_vD4_out;
+  logic [104:0] main_vD4_outR1;
+  logic [104:0] main_vD4_outR2;
+  logic [104:0] main_vD4_outR3;
+  logic [104:0] main_x2_out;
+  logic [104:0] main_x2_outR1;
+  logic [104:0] main_x2_outR2;
+  logic [104:0] main_x2_outR3;
+  logic [104:0] main_vD5_out;
+  logic [104:0] main_vD5_outR1;
+  logic [104:0] main_vD5_outR2;
+  logic [104:0] main_vD5_outR3;
+  logic [104:0] main_vD6_out;
+  logic [104:0] main_vD6_outR1;
+  logic [104:0] main_vD6_outR2;
+  logic [104:0] main_vD6_outR3;
+  logic [104:0] main_vD7_out;
+  logic [104:0] main_vD7_outR1;
+  logic [104:0] main_vD7_outR2;
+  logic [104:0] main_vD7_outR3;
+  logic [104:0] main_vD8_out;
+  logic [104:0] main_vD8_outR1;
+  logic [104:0] main_vD8_outR2;
+  logic [104:0] main_vD8_outR3;
   logic [0:0] Main_zFlag_out;
-  logic [105:0] main_zzz_out;
-  logic [105:0] main_arm142_out;
+  logic [104:0] main_zzz_out;
+  logic [104:0] main_arm142_out;
   logic [0:0] Main_notb_out;
   logic [0:0] Main_cFlag_out;
   logic [0:0] Main_notb_outR1;
-  logic [105:0] main_x3_out;
-  logic [105:0] main_x3_outR1;
-  logic [105:0] main_x3_outR2;
-  logic [105:0] main_x3_outR3;
+  logic [104:0] main_x3_out;
+  logic [104:0] main_x3_outR1;
+  logic [104:0] main_x3_outR2;
+  logic [104:0] main_x3_outR3;
   logic [80:0] Main_setIEFlag_out;
-  logic [105:0] main_zzz_outR1;
+  logic [104:0] main_zzz_outR1;
   logic [80:0] Main_setOutputs_outR1;
-  logic [105:0] main_zzz_outR2;
+  logic [104:0] main_zzz_outR2;
   logic [80:0] Main_setIEFlag_outR1;
   logic [80:0] Main_setPC_out;
   logic [80:0] Main_setZFlag_out;
   logic [80:0] Main_setCFlag_out;
-  logic [105:0] main_zzz_outR3;
-  logic [105:0] main_v3_out;
-  logic [105:0] main_v3_outR1;
-  logic [105:0] main_v3_outR2;
-  logic [105:0] main_v3_outR3;
+  logic [104:0] main_zzz_outR3;
+  logic [104:0] main_v3_out;
+  logic [104:0] main_v3_outR1;
+  logic [104:0] main_v3_outR2;
+  logic [104:0] main_v3_outR3;
   logic [80:0] Main_setR0_out;
-  logic [105:0] main_zzz_outR4;
+  logic [104:0] main_zzz_outR4;
   logic [80:0] Main_setR1_out;
-  logic [105:0] main_zzz_outR5;
+  logic [104:0] main_zzz_outR5;
   logic [80:0] Main_setR2_out;
-  logic [105:0] main_zzz_outR6;
+  logic [104:0] main_zzz_outR6;
   logic [80:0] Main_setR3_out;
-  logic [105:0] main_zzz_outR7;
-  logic [105:0] main_v4_out;
-  logic [105:0] main_v4_outR1;
-  logic [105:0] main_v4_outR2;
-  logic [105:0] main_v4_outR3;
-  logic [105:0] main_v5_out;
-  logic [105:0] main_v5_outR1;
-  logic [105:0] main_v5_outR2;
-  logic [105:0] main_v5_outR3;
-  logic [105:0] main_v6_out;
-  logic [105:0] main_v6_outR1;
-  logic [105:0] main_v6_outR2;
-  logic [105:0] main_v6_outR3;
-  logic [105:0] main_v7_out;
-  logic [105:0] main_v7_outR1;
-  logic [105:0] main_v7_outR2;
-  logic [105:0] main_v7_outR3;
-  logic [105:0] main_v8_out;
-  logic [105:0] main_v8_outR1;
-  logic [105:0] main_v8_outR2;
-  logic [105:0] main_v8_outR3;
+  logic [104:0] main_zzz_outR7;
+  logic [104:0] main_v4_out;
+  logic [104:0] main_v4_outR1;
+  logic [104:0] main_v4_outR2;
+  logic [104:0] main_v4_outR3;
+  logic [104:0] main_v5_out;
+  logic [104:0] main_v5_outR1;
+  logic [104:0] main_v5_outR2;
+  logic [104:0] main_v5_outR3;
+  logic [104:0] main_v6_out;
+  logic [104:0] main_v6_outR1;
+  logic [104:0] main_v6_outR2;
+  logic [104:0] main_v6_outR3;
+  logic [104:0] main_v7_out;
+  logic [104:0] main_v7_outR1;
+  logic [104:0] main_v7_outR2;
+  logic [104:0] main_v7_outR3;
+  logic [104:0] main_v8_out;
+  logic [104:0] main_v8_outR1;
+  logic [104:0] main_v8_outR2;
+  logic [104:0] main_v8_outR3;
   Main_dataIn  dataIn_i (inp, Main_dataIn_out);
   wire [0:0] Zds1 = Main_dataIn_out[6];
   wire [0:0] Zds2 = Main_dataIn_out[5];
@@ -1349,7 +1331,7 @@ module main_$fail (input logic [9:0] inp,
   main_v8  v8_iR1 (rEn, wEn, Main_mkReg_out, Main_r1_out, s0, main_v8_outR1);
   main_v8  v8_iR2 (rEn, wEn, Main_mkReg_out, Main_r2_out, s0, main_v8_outR2);
   main_v8  v8_iR3 (rEn, wEn, Main_mkReg_out, Main_r3_out, s0, main_v8_outR3);
-  assign res = (~Za) ? ((~Zds1) ? ((~Zds2) ? ((~Zds3) ? {Main_outputs_outR1, 3'h1, rEn, wEn, Main_mkReg_out,
+  assign res = (~Za) ? ((~Zds1) ? ((~Zds2) ? ((~Zds3) ? {Main_outputs_outR1, 2'h1, rEn, wEn, Main_mkReg_out,
     Main_setOutputs_out} :
     ((Main_mkReg_out == 2'h0) ? main_a2_out :
       ((Main_mkReg_out == 2'h1) ? main_a2_outR1 :
@@ -1419,18 +1401,18 @@ endmodule
 // main.loop
 // block '$L.Main.loop' of process main
 module main_loop (input logic [80:0] s0,
-  output logic [105:0] res);
+  output logic [104:0] res);
   logic [9:0] Main_inputs_out;
   logic [80:0] Main_setIEFlag_out;
   logic [7:0] Main_pc_out;
   logic [0:0] Main_zFlag_out;
   logic [0:0] Main_cFlag_out;
-  logic [105:0] main_zzz_out;
-  logic [105:0] main_$fail_out;
+  logic [104:0] main_zzz_out;
+  logic [104:0] main_$fail_out;
   logic [80:0] Main_setCFlag_out;
   logic [80:0] Main_setZFlag_out;
   logic [80:0] Main_setOutputs_out;
-  logic [105:0] main_zzz_outR1;
+  logic [104:0] main_zzz_outR1;
   Main_inputs  inputs_i (s0, Main_inputs_out);
   wire [0:0] r_i = Main_inputs_out[1];
   wire [0:0] ie = s0[50];

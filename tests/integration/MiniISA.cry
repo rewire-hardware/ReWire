@@ -17,8 +17,8 @@ rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // main._unused7
-rw_main__unused7 : [1] -> [2] -> [81] -> [106]
-rw_main__unused7 x0 x1 x2 = s5 # (0x0 # (x0 # (x1 # s4)))
+rw_main__unused7 : [1] -> [2] -> [81] -> [105]
+rw_main__unused7 x0 x1 x2 = s5 # (0b000 # (x0 # (x1 # s4)))
   where
     s0 : [8]
     s0 = rw_Main_pc x2
@@ -34,7 +34,7 @@ rw_main__unused7 x0 x1 x2 = s5 # (0x0 # (x0 # (x1 # s4)))
     s5 = rw_Main_outputs s4
 
 // main.d
-rw_main_d : [1] -> [2] -> [8] -> [81] -> [106]
+rw_main_d : [1] -> [2] -> [8] -> [81] -> [105]
 rw_main_d x0 x1 x2 x3 = rw_main__unused7 x0 x1 s2
   where
     s0 : [18]
@@ -45,8 +45,8 @@ rw_main_d x0 x1 x2 x3 = rw_main__unused7 x0 x1 s2
     s2 = rw_Main_setOutputs x3 s1
 
 // main.a2
-rw_main_a2 : [1] -> [1] -> [8] -> [81] -> [106]
-rw_main_a2 x0 x1 x2 x3 = s6 # (0b01000 # (x0 # (x1 # s5)))
+rw_main_a2 : [1] -> [1] -> [8] -> [81] -> [105]
+rw_main_a2 x0 x1 x2 x3 = s6 # (0x8 # (x0 # (x1 # s5)))
   where
     s0 : [18]
     s0 = rw_Main_outputs x3
@@ -64,7 +64,7 @@ rw_main_a2 x0 x1 x2 x3 = s6 # (0b01000 # (x0 # (x1 # s5)))
     s6 = rw_Main_outputs s5
 
 // main.v2
-rw_main_v2 : [8] -> [8] -> [81] -> [106]
+rw_main_v2 : [8] -> [8] -> [81] -> [105]
 rw_main_v2 x0 x1 x2 = rw_main_zzz s8
   where
     s0 : [18]
@@ -87,7 +87,7 @@ rw_main_v2 x0 x1 x2 = rw_main_zzz s8
     s8 = rw_Main_setOutputs s5 s7
 
 // main.a3
-rw_main_a3 : [1] -> [1] -> [8] -> [81] -> [106]
+rw_main_a3 : [1] -> [1] -> [8] -> [81] -> [105]
 rw_main_a3 x0 x1 x2 x3 = if s0 == 0b00 then (rw_main_v2 x2 s1 x3) else (if s0 == 0b01 then (rw_main_v2 x2 s2 x3) else (if s0 == 0b10 then (rw_main_v2 x2 s3 x3) else (rw_main_v2 x2 s4 x3)))
   where
     s0 : [2]
@@ -101,36 +101,51 @@ rw_main_a3 x0 x1 x2 x3 = if s0 == 0b00 then (rw_main_v2 x2 s1 x3) else (if s0 ==
     s4 : [8]
     s4 = rw_Main_r3 x3
 
-// main._unused17
-rw_main__unused17 : [81] -> [106]
-rw_main__unused17 x0 = s0 # (0b1000000 # x0)
+// main.arm29
+rw_main_arm29 : [8] -> [81] -> [105]
+rw_main_arm29 x0 x1 = rw_main_zzz s0
   where
-    s0 : [18]
-    s0 = rw_Main_outputs x0
+    s0 : [81]
+    s0 = rw_Main_setR0 x1 x0
+
+// main.arm30
+rw_main_arm30 : [8] -> [81] -> [105]
+rw_main_arm30 x0 x1 = rw_main_zzz s0
+  where
+    s0 : [81]
+    s0 = rw_Main_setR1 x1 x0
+
+// main.arm31
+rw_main_arm31 : [8] -> [81] -> [105]
+rw_main_arm31 x0 x1 = rw_main_zzz s0
+  where
+    s0 : [81]
+    s0 = rw_Main_setR2 x1 x0
+
+// main.arm32
+rw_main_arm32 : [8] -> [81] -> [105]
+rw_main_arm32 x0 x1 = rw_main_zzz s0
+  where
+    s0 : [81]
+    s0 = rw_Main_setR3 x1 x0
 
 // main.s63
-rw_main_s63 : [2] -> [9] -> [81] -> [81] -> [106]
-rw_main_s63 x0 x1 x2 x3 = if x0 == 0b00 then (rw_main__unused17 s4) else (if x0 == 0b01 then (rw_main__unused17 s5) else (if x0 == 0b10 then (rw_main__unused17 s6) else (rw_main__unused17 s7)))
+rw_main_s63 : [2] -> [9] -> [81] -> [81] -> [105]
+rw_main_s63 x0 x1 x2 x3 = if x0 == 0b00 then (rw_main_arm29 s4 s2) else (if x0 == 0b01 then (rw_main_arm30 s4 s2) else (if x0 == 0b10 then (rw_main_arm31 s4 s2) else (rw_main_arm32 s4 s2)))
   where
     s0 : [1]
     s0 = take`{1} x1
-    s1 : [81]
-    s1 = rw_Main_setCFlag x2 s0
-    s2 : [8]
-    s2 = drop`{1} x1
+    s1 : [1]
+    s1 = s0
+    s2 : [81]
+    s2 = rw_Main_setCFlag x2 s1
     s3 : [8]
-    s3 = s2
-    s4 : [81]
-    s4 = rw_Main_setR0 s1 s3
-    s5 : [81]
-    s5 = rw_Main_setR1 s1 s3
-    s6 : [81]
-    s6 = rw_Main_setR2 s1 s3
-    s7 : [81]
-    s7 = rw_Main_setR3 s1 s3
+    s3 = drop`{1} x1
+    s4 : [8]
+    s4 = s3
 
 // main.vS
-rw_main_vS : [2] -> [8] -> [8] -> [81] -> [106]
+rw_main_vS : [2] -> [8] -> [8] -> [81] -> [105]
 rw_main_vS x0 x1 x2 x3 = rw_main_s63 x0 s1 x3 x3
   where
     s0 : [9]
@@ -139,11 +154,20 @@ rw_main_vS x0 x1 x2 x3 = rw_main_s63 x0 s1 x3 x3
     s1 = (take`{1} s0) # (rw'resize`{8} s0)
 
 // main.vD
-rw_main_vD : [2] -> [2] -> [8] -> [81] -> [106]
-rw_main_vD x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_vS x0 x2 (rw_Main_r0 x3) x3) else (if x1 == 0b01 then (rw_main_vS x0 x2 (rw_Main_r1 x3) x3) else (if x1 == 0b10 then (rw_main_vS x0 x2 (rw_Main_r2 x3) x3) else (rw_main_vS x0 x2 (rw_Main_r3 x3) x3)))
+rw_main_vD : [2] -> [2] -> [8] -> [81] -> [105]
+rw_main_vD x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_vS x0 x2 s0 x3) else (if x1 == 0b01 then (rw_main_vS x0 x2 s1 x3) else (if x1 == 0b10 then (rw_main_vS x0 x2 s2 x3) else (rw_main_vS x0 x2 s3 x3)))
+  where
+    s0 : [8]
+    s0 = rw_Main_r0 x3
+    s1 : [8]
+    s1 = rw_Main_r1 x3
+    s2 : [8]
+    s2 = rw_Main_r2 x3
+    s3 : [8]
+    s3 = rw_Main_r3 x3
 
 // main.vS2
-rw_main_vS2 : [2] -> [8] -> [8] -> [81] -> [106]
+rw_main_vS2 : [2] -> [8] -> [8] -> [81] -> [105]
 rw_main_vS2 x0 x1 x2 x3 = rw_main_s63 x0 s2 x3 x3
   where
     s0 : [1]
@@ -154,22 +178,40 @@ rw_main_vS2 x0 x1 x2 x3 = rw_main_s63 x0 s2 x3 x3
     s2 = (take`{1} s1) # (rw'resize`{8} s1)
 
 // main.vD2
-rw_main_vD2 : [2] -> [2] -> [8] -> [81] -> [106]
-rw_main_vD2 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_vS2 x0 x2 (rw_Main_r0 x3) x3) else (if x1 == 0b01 then (rw_main_vS2 x0 x2 (rw_Main_r1 x3) x3) else (if x1 == 0b10 then (rw_main_vS2 x0 x2 (rw_Main_r2 x3) x3) else (rw_main_vS2 x0 x2 (rw_Main_r3 x3) x3)))
+rw_main_vD2 : [2] -> [2] -> [8] -> [81] -> [105]
+rw_main_vD2 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_vS2 x0 x2 s0 x3) else (if x1 == 0b01 then (rw_main_vS2 x0 x2 s1 x3) else (if x1 == 0b10 then (rw_main_vS2 x0 x2 s2 x3) else (rw_main_vS2 x0 x2 s3 x3)))
+  where
+    s0 : [8]
+    s0 = rw_Main_r0 x3
+    s1 : [8]
+    s1 = rw_Main_r1 x3
+    s2 : [8]
+    s2 = rw_Main_r2 x3
+    s3 : [8]
+    s3 = rw_Main_r3 x3
 
 // main.vS3
-rw_main_vS3 : [2] -> [8] -> [8] -> [81] -> [106]
+rw_main_vS3 : [2] -> [8] -> [8] -> [81] -> [105]
 rw_main_vS3 x0 x1 x2 x3 = rw_main_s63 x0 s0 x3 x3
   where
     s0 : [9]
     s0 = rw_Main_minusCW8_sFalse_Bool x1 x2
 
 // main.vD3
-rw_main_vD3 : [2] -> [2] -> [8] -> [81] -> [106]
-rw_main_vD3 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_vS3 x0 x2 (rw_Main_r0 x3) x3) else (if x1 == 0b01 then (rw_main_vS3 x0 x2 (rw_Main_r1 x3) x3) else (if x1 == 0b10 then (rw_main_vS3 x0 x2 (rw_Main_r2 x3) x3) else (rw_main_vS3 x0 x2 (rw_Main_r3 x3) x3)))
+rw_main_vD3 : [2] -> [2] -> [8] -> [81] -> [105]
+rw_main_vD3 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_vS3 x0 x2 s0 x3) else (if x1 == 0b01 then (rw_main_vS3 x0 x2 s1 x3) else (if x1 == 0b10 then (rw_main_vS3 x0 x2 s2 x3) else (rw_main_vS3 x0 x2 s3 x3)))
+  where
+    s0 : [8]
+    s0 = rw_Main_r0 x3
+    s1 : [8]
+    s1 = rw_Main_r1 x3
+    s2 : [8]
+    s2 = rw_Main_r2 x3
+    s3 : [8]
+    s3 = rw_Main_r3 x3
 
 // main.vS4
-rw_main_vS4 : [2] -> [8] -> [8] -> [81] -> [106]
+rw_main_vS4 : [2] -> [8] -> [8] -> [81] -> [105]
 rw_main_vS4 x0 x1 x2 x3 = rw_main_s63 x0 s2 x3 x3
   where
     s0 : [1]
@@ -180,18 +222,27 @@ rw_main_vS4 x0 x1 x2 x3 = rw_main_s63 x0 s2 x3 x3
     s2 = (take`{1} s1) # (rw'resize`{8} s1)
 
 // main.vD4
-rw_main_vD4 : [2] -> [2] -> [8] -> [81] -> [106]
-rw_main_vD4 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_vS4 x0 x2 (rw_Main_r0 x3) x3) else (if x1 == 0b01 then (rw_main_vS4 x0 x2 (rw_Main_r1 x3) x3) else (if x1 == 0b10 then (rw_main_vS4 x0 x2 (rw_Main_r2 x3) x3) else (rw_main_vS4 x0 x2 (rw_Main_r3 x3) x3)))
+rw_main_vD4 : [2] -> [2] -> [8] -> [81] -> [105]
+rw_main_vD4 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_vS4 x0 x2 s0 x3) else (if x1 == 0b01 then (rw_main_vS4 x0 x2 s1 x3) else (if x1 == 0b10 then (rw_main_vS4 x0 x2 s2 x3) else (rw_main_vS4 x0 x2 s3 x3)))
+  where
+    s0 : [8]
+    s0 = rw_Main_r0 x3
+    s1 : [8]
+    s1 = rw_Main_r1 x3
+    s2 : [8]
+    s2 = rw_Main_r2 x3
+    s3 : [8]
+    s3 = rw_Main_r3 x3
 
 // main.zzz
-rw_main_zzz : [81] -> [106]
-rw_main_zzz x0 = s0 # (0b0110000 # x0)
+rw_main_zzz : [81] -> [105]
+rw_main_zzz x0 = s0 # (0b110000 # x0)
   where
     s0 : [18]
     s0 = rw_Main_outputs x0
 
 // main.x2
-rw_main_x2 : [1] -> [1] -> [8] -> [81] -> [106]
+rw_main_x2 : [1] -> [1] -> [8] -> [81] -> [105]
 rw_main_x2 x0 x1 x2 x3 = if s0 == 0b00 then (rw_main_zzz s1) else (if s0 == 0b01 then (rw_main_zzz s2) else (if s0 == 0b10 then (rw_main_zzz s3) else (rw_main_zzz s4)))
   where
     s0 : [2]
@@ -206,8 +257,8 @@ rw_main_x2 x0 x1 x2 x3 = if s0 == 0b00 then (rw_main_zzz s1) else (if s0 == 0b01
     s4 = rw_Main_setR3 x3 x2
 
 // main._unused24
-rw_main__unused24 : [8] -> [81] -> [106]
-rw_main__unused24 x0 x1 = rw_main__unused17 s1
+rw_main__unused24 : [8] -> [81] -> [105]
+rw_main__unused24 x0 x1 = rw_main_zzz s1
   where
     s0 : [81]
     s0 = rw_Main_setCFlag x1 0b0
@@ -215,68 +266,95 @@ rw_main__unused24 x0 x1 = rw_main__unused17 s1
     s1 = rw_Main_setZFlag s0 [x0 == 0x00]
 
 // main.arm90
-rw_main_arm90 : [8] -> [81] -> [106]
+rw_main_arm90 : [8] -> [81] -> [105]
 rw_main_arm90 x0 x1 = rw_main__unused24 x0 s0
   where
     s0 : [81]
     s0 = rw_Main_setR0 x1 x0
 
 // main.arm91
-rw_main_arm91 : [8] -> [81] -> [106]
+rw_main_arm91 : [8] -> [81] -> [105]
 rw_main_arm91 x0 x1 = rw_main__unused24 x0 s0
   where
     s0 : [81]
     s0 = rw_Main_setR1 x1 x0
 
 // main.arm92
-rw_main_arm92 : [8] -> [81] -> [106]
+rw_main_arm92 : [8] -> [81] -> [105]
 rw_main_arm92 x0 x1 = rw_main__unused24 x0 s0
   where
     s0 : [81]
     s0 = rw_Main_setR2 x1 x0
 
 // main.arm93
-rw_main_arm93 : [8] -> [81] -> [106]
+rw_main_arm93 : [8] -> [81] -> [105]
 rw_main_arm93 x0 x1 = rw_main__unused24 x0 s0
   where
     s0 : [81]
     s0 = rw_Main_setR3 x1 x0
 
 // main.vS5
-rw_main_vS5 : [2] -> [8] -> [8] -> [81] -> [106]
+rw_main_vS5 : [2] -> [8] -> [8] -> [81] -> [105]
 rw_main_vS5 x0 x1 x2 x3 = if x0 == 0b00 then (rw_main_arm90 s0 x3) else (if x0 == 0b01 then (rw_main_arm91 s0 x3) else (if x0 == 0b10 then (rw_main_arm92 s0 x3) else (rw_main_arm93 s0 x3)))
   where
     s0 : [8]
     s0 = x1 || x2
 
 // main.vD5
-rw_main_vD5 : [2] -> [2] -> [8] -> [81] -> [106]
-rw_main_vD5 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_vS5 x0 x2 (rw_Main_r0 x3) x3) else (if x1 == 0b01 then (rw_main_vS5 x0 x2 (rw_Main_r1 x3) x3) else (if x1 == 0b10 then (rw_main_vS5 x0 x2 (rw_Main_r2 x3) x3) else (rw_main_vS5 x0 x2 (rw_Main_r3 x3) x3)))
+rw_main_vD5 : [2] -> [2] -> [8] -> [81] -> [105]
+rw_main_vD5 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_vS5 x0 x2 s0 x3) else (if x1 == 0b01 then (rw_main_vS5 x0 x2 s1 x3) else (if x1 == 0b10 then (rw_main_vS5 x0 x2 s2 x3) else (rw_main_vS5 x0 x2 s3 x3)))
+  where
+    s0 : [8]
+    s0 = rw_Main_r0 x3
+    s1 : [8]
+    s1 = rw_Main_r1 x3
+    s2 : [8]
+    s2 = rw_Main_r2 x3
+    s3 : [8]
+    s3 = rw_Main_r3 x3
 
 // main.vS6
-rw_main_vS6 : [2] -> [8] -> [8] -> [81] -> [106]
+rw_main_vS6 : [2] -> [8] -> [8] -> [81] -> [105]
 rw_main_vS6 x0 x1 x2 x3 = if x0 == 0b00 then (rw_main_arm90 s0 x3) else (if x0 == 0b01 then (rw_main_arm91 s0 x3) else (if x0 == 0b10 then (rw_main_arm92 s0 x3) else (rw_main_arm93 s0 x3)))
   where
     s0 : [8]
     s0 = x1 && x2
 
 // main.vD6
-rw_main_vD6 : [2] -> [2] -> [8] -> [81] -> [106]
-rw_main_vD6 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_vS6 x0 x2 (rw_Main_r0 x3) x3) else (if x1 == 0b01 then (rw_main_vS6 x0 x2 (rw_Main_r1 x3) x3) else (if x1 == 0b10 then (rw_main_vS6 x0 x2 (rw_Main_r2 x3) x3) else (rw_main_vS6 x0 x2 (rw_Main_r3 x3) x3)))
+rw_main_vD6 : [2] -> [2] -> [8] -> [81] -> [105]
+rw_main_vD6 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_vS6 x0 x2 s0 x3) else (if x1 == 0b01 then (rw_main_vS6 x0 x2 s1 x3) else (if x1 == 0b10 then (rw_main_vS6 x0 x2 s2 x3) else (rw_main_vS6 x0 x2 s3 x3)))
+  where
+    s0 : [8]
+    s0 = rw_Main_r0 x3
+    s1 : [8]
+    s1 = rw_Main_r1 x3
+    s2 : [8]
+    s2 = rw_Main_r2 x3
+    s3 : [8]
+    s3 = rw_Main_r3 x3
 
 // main.vS7
-rw_main_vS7 : [2] -> [8] -> [8] -> [81] -> [106]
+rw_main_vS7 : [2] -> [8] -> [8] -> [81] -> [105]
 rw_main_vS7 x0 x1 x2 x3 = if x0 == 0b00 then (rw_main_arm90 s0 x3) else (if x0 == 0b01 then (rw_main_arm91 s0 x3) else (if x0 == 0b10 then (rw_main_arm92 s0 x3) else (rw_main_arm93 s0 x3)))
   where
     s0 : [8]
     s0 = x1 ^ x2
 
 // main.vD7
-rw_main_vD7 : [2] -> [2] -> [8] -> [81] -> [106]
-rw_main_vD7 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_vS7 x0 x2 (rw_Main_r0 x3) x3) else (if x1 == 0b01 then (rw_main_vS7 x0 x2 (rw_Main_r1 x3) x3) else (if x1 == 0b10 then (rw_main_vS7 x0 x2 (rw_Main_r2 x3) x3) else (rw_main_vS7 x0 x2 (rw_Main_r3 x3) x3)))
+rw_main_vD7 : [2] -> [2] -> [8] -> [81] -> [105]
+rw_main_vD7 x0 x1 x2 x3 = if x1 == 0b00 then (rw_main_vS7 x0 x2 s0 x3) else (if x1 == 0b01 then (rw_main_vS7 x0 x2 s1 x3) else (if x1 == 0b10 then (rw_main_vS7 x0 x2 s2 x3) else (rw_main_vS7 x0 x2 s3 x3)))
+  where
+    s0 : [8]
+    s0 = rw_Main_r0 x3
+    s1 : [8]
+    s1 = rw_Main_r1 x3
+    s2 : [8]
+    s2 = rw_Main_r2 x3
+    s3 : [8]
+    s3 = rw_Main_r3 x3
 
 // main.vS8
-rw_main_vS8 : [8] -> [8] -> [81] -> [106]
+rw_main_vS8 : [8] -> [8] -> [81] -> [105]
 rw_main_vS8 x0 x1 x2 = rw_main_zzz s6
   where
     s0 : [9]
@@ -295,7 +373,7 @@ rw_main_vS8 x0 x1 x2 = rw_main_zzz s6
     s6 = rw_Main_setZFlag s3 [s5 == 0x00]
 
 // main.vD8
-rw_main_vD8 : [1] -> [1] -> [8] -> [81] -> [106]
+rw_main_vD8 : [1] -> [1] -> [8] -> [81] -> [105]
 rw_main_vD8 x0 x1 x2 x3 = if s0 == 0b00 then (rw_main_vS8 x2 s1 x3) else (if s0 == 0b01 then (rw_main_vS8 x2 s2 x3) else (if s0 == 0b10 then (rw_main_vS8 x2 s3 x3) else (rw_main_vS8 x2 s4 x3)))
   where
     s0 : [2]
@@ -310,14 +388,14 @@ rw_main_vD8 x0 x1 x2 x3 = if s0 == 0b00 then (rw_main_vS8 x2 s1 x3) else (if s0 
     s4 = rw_Main_r3 x3
 
 // main.pc3
-rw_main_pc3 : [8] -> [81] -> [106]
+rw_main_pc3 : [8] -> [81] -> [105]
 rw_main_pc3 x0 x1 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setPC x1 x0
 
 // main.arm142
-rw_main_arm142 : [1] -> [1] -> [81] -> [106]
+rw_main_arm142 : [1] -> [1] -> [81] -> [105]
 rw_main_arm142 x0 x1 x2 = if s0 == 0b00 then (rw_main_pc3 s1 x2) else (if s0 == 0b01 then (rw_main_pc3 s2 x2) else (if s0 == 0b10 then (rw_main_pc3 s3 x2) else (rw_main_pc3 s4 x2)))
   where
     s0 : [2]
@@ -332,49 +410,21 @@ rw_main_arm142 x0 x1 x2 = if s0 == 0b00 then (rw_main_pc3 s1 x2) else (if s0 == 
     s4 = rw_Main_r3 x2
 
 // main.x3
-rw_main_x3 : [8] -> [81] -> [106]
+rw_main_x3 : [8] -> [81] -> [105]
 rw_main_x3 x0 x1 = rw_main_zzz s0
   where
     s0 : [81]
     s0 = rw_Main_setPC x1 x0
 
-// main.arm170
-rw_main_arm170 : [8] -> [81] -> [106]
-rw_main_arm170 x0 x1 = rw_main_zzz s0
-  where
-    s0 : [81]
-    s0 = rw_Main_setR0 x1 x0
-
-// main.arm171
-rw_main_arm171 : [8] -> [81] -> [106]
-rw_main_arm171 x0 x1 = rw_main_zzz s0
-  where
-    s0 : [81]
-    s0 = rw_Main_setR1 x1 x0
-
-// main.arm172
-rw_main_arm172 : [8] -> [81] -> [106]
-rw_main_arm172 x0 x1 = rw_main_zzz s0
-  where
-    s0 : [81]
-    s0 = rw_Main_setR2 x1 x0
-
-// main.arm173
-rw_main_arm173 : [8] -> [81] -> [106]
-rw_main_arm173 x0 x1 = rw_main_zzz s0
-  where
-    s0 : [81]
-    s0 = rw_Main_setR3 x1 x0
-
 // main.v3
-rw_main_v3 : [2] -> [8] -> [81] -> [106]
-rw_main_v3 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm170 s0 x2) else (if x0 == 0b01 then (rw_main_arm171 s0 x2) else (if x0 == 0b10 then (rw_main_arm172 s0 x2) else (rw_main_arm173 s0 x2)))
+rw_main_v3 : [2] -> [8] -> [81] -> [105]
+rw_main_v3 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm29 s0 x2) else (if x0 == 0b01 then (rw_main_arm30 s0 x2) else (if x0 == 0b10 then (rw_main_arm31 s0 x2) else (rw_main_arm32 s0 x2)))
   where
     s0 : [8]
     s0 = ~ x1
 
 // main._unused44
-rw_main__unused44 : [9] -> [8] -> [81] -> [106]
+rw_main__unused44 : [9] -> [8] -> [81] -> [105]
 rw_main__unused44 x0 x1 x2 = rw_main_zzz s3
   where
     s0 : [1]
@@ -387,35 +437,35 @@ rw_main__unused44 x0 x1 x2 = rw_main_zzz s3
     s3 = rw_Main_setZFlag s2 [x1 == 0x00]
 
 // main.arm184
-rw_main_arm184 : [9] -> [8] -> [81] -> [106]
+rw_main_arm184 : [9] -> [8] -> [81] -> [105]
 rw_main_arm184 x0 x1 x2 = rw_main__unused44 x0 x1 s0
   where
     s0 : [81]
     s0 = rw_Main_setR0 x2 x1
 
 // main.arm185
-rw_main_arm185 : [9] -> [8] -> [81] -> [106]
+rw_main_arm185 : [9] -> [8] -> [81] -> [105]
 rw_main_arm185 x0 x1 x2 = rw_main__unused44 x0 x1 s0
   where
     s0 : [81]
     s0 = rw_Main_setR1 x2 x1
 
 // main.arm186
-rw_main_arm186 : [9] -> [8] -> [81] -> [106]
+rw_main_arm186 : [9] -> [8] -> [81] -> [105]
 rw_main_arm186 x0 x1 x2 = rw_main__unused44 x0 x1 s0
   where
     s0 : [81]
     s0 = rw_Main_setR2 x2 x1
 
 // main.arm187
-rw_main_arm187 : [9] -> [8] -> [81] -> [106]
+rw_main_arm187 : [9] -> [8] -> [81] -> [105]
 rw_main_arm187 x0 x1 x2 = rw_main__unused44 x0 x1 s0
   where
     s0 : [81]
     s0 = rw_Main_setR3 x2 x1
 
 // main.v4
-rw_main_v4 : [2] -> [8] -> [81] -> [106]
+rw_main_v4 : [2] -> [8] -> [81] -> [105]
 rw_main_v4 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm184 s0 s2 x2) else (if x0 == 0b01 then (rw_main_arm185 s0 s2 x2) else (if x0 == 0b10 then (rw_main_arm186 s0 s2 x2) else (rw_main_arm187 s0 s2 x2)))
   where
     s0 : [9]
@@ -426,7 +476,7 @@ rw_main_v4 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm184 s0 s2 x2) else (if x0 =
     s2 = s1
 
 // main.v5
-rw_main_v5 : [2] -> [8] -> [81] -> [106]
+rw_main_v5 : [2] -> [8] -> [81] -> [105]
 rw_main_v5 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm184 s1 s3 x2) else (if x0 == 0b01 then (rw_main_arm185 s1 s3 x2) else (if x0 == 0b10 then (rw_main_arm186 s1 s3 x2) else (rw_main_arm187 s1 s3 x2)))
   where
     s0 : [9]
@@ -439,21 +489,21 @@ rw_main_v5 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm184 s1 s3 x2) else (if x0 =
     s3 = s2
 
 // main.v6
-rw_main_v6 : [2] -> [8] -> [81] -> [106]
-rw_main_v6 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm170 s0 x2) else (if x0 == 0b01 then (rw_main_arm171 s0 x2) else (if x0 == 0b10 then (rw_main_arm172 s0 x2) else (rw_main_arm173 s0 x2)))
+rw_main_v6 : [2] -> [8] -> [81] -> [105]
+rw_main_v6 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm29 s0 x2) else (if x0 == 0b01 then (rw_main_arm30 s0 x2) else (if x0 == 0b10 then (rw_main_arm31 s0 x2) else (rw_main_arm32 s0 x2)))
   where
     s0 : [8]
     s0 = (x1 << 0x01) || (x1 >> 0x07)
 
 // main.v7
-rw_main_v7 : [2] -> [8] -> [81] -> [106]
-rw_main_v7 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm170 s0 x2) else (if x0 == 0b01 then (rw_main_arm171 s0 x2) else (if x0 == 0b10 then (rw_main_arm172 s0 x2) else (rw_main_arm173 s0 x2)))
+rw_main_v7 : [2] -> [8] -> [81] -> [105]
+rw_main_v7 x0 x1 x2 = if x0 == 0b00 then (rw_main_arm29 s0 x2) else (if x0 == 0b01 then (rw_main_arm30 s0 x2) else (if x0 == 0b10 then (rw_main_arm31 s0 x2) else (rw_main_arm32 s0 x2)))
   where
     s0 : [8]
     s0 = (x1 >> 0x01) || (x1 << 0x07)
 
 // main.v8
-rw_main_v8 : [1] -> [1] -> [2] -> [8] -> [81] -> [106]
+rw_main_v8 : [1] -> [1] -> [2] -> [8] -> [81] -> [105]
 rw_main_v8 x0 x1 x2 x3 x4 = if x2 == 0b00 then (rw_main_arm184 s8 s10 x4) else (if x2 == 0b01 then (rw_main_arm185 s8 s10 x4) else (if x2 == 0b10 then (rw_main_arm186 s8 s10 x4) else (rw_main_arm187 s8 s10 x4)))
   where
     s0 : [1]
@@ -480,8 +530,8 @@ rw_main_v8 x0 x1 x2 x3 x4 = if x2 == 0b00 then (rw_main_arm184 s8 s10 x4) else (
     s10 = s9
 
 // main.$fail
-rw_main__fail : [10] -> [81] -> [106]
-rw_main__fail x0 x1 = if ~ (s8 @ 0) then (if ~ (s1 @ 0) then (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (s14 # (0b001 # (s4 # (s5 # (s9 # s13))))) else (if s15 == 0b00 then (rw_main_a2 s4 s5 s16 x1) else (if s15 == 0b01 then (rw_main_a2 s4 s5 s17 x1) else (if s15 == 0b10 then (rw_main_a2 s4 s5 s18 x1) else (rw_main_a2 s4 s5 s19 x1))))) else (if ~ (s3 @ 0) then (if s20 == 0b00 then (rw_main_a3 s4 s5 s21 x1) else (if s20 == 0b01 then (rw_main_a3 s4 s5 s22 x1) else (if s20 == 0b10 then (rw_main_a3 s4 s5 s23 x1) else (rw_main_a3 s4 s5 s24 x1)))) else (if s25 == 0b00 then (rw_main_vD s25 s26 (rw_Main_r0 x1) x1) else (if s25 == 0b01 then (rw_main_vD s25 s26 (rw_Main_r1 x1) x1) else (if s25 == 0b10 then (rw_main_vD s25 s26 (rw_Main_r2 x1) x1) else (rw_main_vD s25 s26 (rw_Main_r3 x1) x1)))))) else (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (if s27 == 0b00 then (rw_main_vD2 s27 s28 (rw_Main_r0 x1) x1) else (if s27 == 0b01 then (rw_main_vD2 s27 s28 (rw_Main_r1 x1) x1) else (if s27 == 0b10 then (rw_main_vD2 s27 s28 (rw_Main_r2 x1) x1) else (rw_main_vD2 s27 s28 (rw_Main_r3 x1) x1)))) else (if s29 == 0b00 then (rw_main_vD3 s29 s30 (rw_Main_r0 x1) x1) else (if s29 == 0b01 then (rw_main_vD3 s29 s30 (rw_Main_r1 x1) x1) else (if s29 == 0b10 then (rw_main_vD3 s29 s30 (rw_Main_r2 x1) x1) else (rw_main_vD3 s29 s30 (rw_Main_r3 x1) x1))))) else (if ~ (s3 @ 0) then (if s31 == 0b00 then (rw_main_vD4 s31 s32 (rw_Main_r0 x1) x1) else (if s31 == 0b01 then (rw_main_vD4 s31 s32 (rw_Main_r1 x1) x1) else (if s31 == 0b10 then (rw_main_vD4 s31 s32 (rw_Main_r2 x1) x1) else (rw_main_vD4 s31 s32 (rw_Main_r3 x1) x1)))) else (if s33 == 0b00 then (rw_main_x2 s4 s5 s34 x1) else (if s33 == 0b01 then (rw_main_x2 s4 s5 s35 x1) else (if s33 == 0b10 then (rw_main_x2 s4 s5 s36 x1) else (rw_main_x2 s4 s5 s37 x1))))))) else (if ~ (s1 @ 0) then (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (if s38 == 0b00 then (rw_main_vD5 s38 s39 (rw_Main_r0 x1) x1) else (if s38 == 0b01 then (rw_main_vD5 s38 s39 (rw_Main_r1 x1) x1) else (if s38 == 0b10 then (rw_main_vD5 s38 s39 (rw_Main_r2 x1) x1) else (rw_main_vD5 s38 s39 (rw_Main_r3 x1) x1)))) else (if s40 == 0b00 then (rw_main_vD6 s40 s41 (rw_Main_r0 x1) x1) else (if s40 == 0b01 then (rw_main_vD6 s40 s41 (rw_Main_r1 x1) x1) else (if s40 == 0b10 then (rw_main_vD6 s40 s41 (rw_Main_r2 x1) x1) else (rw_main_vD6 s40 s41 (rw_Main_r3 x1) x1))))) else (if ~ (s3 @ 0) then (if s42 == 0b00 then (rw_main_vD7 s42 s43 (rw_Main_r0 x1) x1) else (if s42 == 0b01 then (rw_main_vD7 s42 s43 (rw_Main_r1 x1) x1) else (if s42 == 0b10 then (rw_main_vD7 s42 s43 (rw_Main_r2 x1) x1) else (rw_main_vD7 s42 s43 (rw_Main_r3 x1) x1)))) else (if s44 == 0b00 then (rw_main_vD8 s6 s7 s45 x1) else (if s44 == 0b01 then (rw_main_vD8 s6 s7 s46 x1) else (if s44 == 0b10 then (rw_main_vD8 s6 s7 s47 x1) else (rw_main_vD8 s6 s7 s48 x1)))))) else (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (if ~ (s4 @ 0) then (if ~ (s5 @ 0) then (if ~ (s49 @ 0) then (rw_main_zzz x1) else (rw_main_arm142 s6 s7 x1)) else (if ~ (s51 @ 0) then (rw_main_zzz x1) else (rw_main_arm142 s6 s7 x1))) else (if ~ (s5 @ 0) then (if ~ (s52 @ 0) then (rw_main_zzz x1) else (rw_main_arm142 s6 s7 x1)) else (if ~ (s54 @ 0) then (rw_main_zzz x1) else (rw_main_arm142 s6 s7 x1)))) else (if ~ (s4 @ 0) then (if ~ (s5 @ 0) then (if s55 == 0b00 then (rw_main_x3 s56 x1) else (if s55 == 0b01 then (rw_main_x3 s57 x1) else (if s55 == 0b10 then (rw_main_x3 s58 x1) else (rw_main_x3 s59 x1)))) else (if ~ (s6 @ 0) then (rw_main_zzz s60) else (if ~ (s7 @ 0) then (rw_main_zzz s66) else (rw_main_zzz s76)))) else (if ~ (s5 @ 0) then (if s77 == 0b00 then (rw_main_v3 s77 s78 x1) else (if s77 == 0b01 then (rw_main_v3 s77 s79 x1) else (if s77 == 0b10 then (rw_main_v3 s77 s80 x1) else (rw_main_v3 s77 s81 x1)))) else (if s82 == 0b00 then (rw_main_zzz s83) else (if s82 == 0b01 then (rw_main_zzz s84) else (if s82 == 0b10 then (rw_main_zzz s85) else (rw_main_zzz s86))))))) else (if ~ (s3 @ 0) then (if ~ (s4 @ 0) then (if ~ (s5 @ 0) then (if s87 == 0b00 then (rw_main_v4 s87 s88 x1) else (if s87 == 0b01 then (rw_main_v4 s87 s89 x1) else (if s87 == 0b10 then (rw_main_v4 s87 s90 x1) else (rw_main_v4 s87 s91 x1)))) else (if s92 == 0b00 then (rw_main_v5 s92 s93 x1) else (if s92 == 0b01 then (rw_main_v5 s92 s94 x1) else (if s92 == 0b10 then (rw_main_v5 s92 s95 x1) else (rw_main_v5 s92 s96 x1))))) else (if ~ (s5 @ 0) then (if s97 == 0b00 then (rw_main_v6 s97 s98 x1) else (if s97 == 0b01 then (rw_main_v6 s97 s99 x1) else (if s97 == 0b10 then (rw_main_v6 s97 s100 x1) else (rw_main_v6 s97 s101 x1)))) else (if s97 == 0b00 then (rw_main_v7 s97 s102 x1) else (if s97 == 0b01 then (rw_main_v7 s97 s103 x1) else (if s97 == 0b10 then (rw_main_v7 s97 s104 x1) else (rw_main_v7 s97 s105 x1)))))) else (if s106 == 0b00 then (rw_main_v8 s4 s5 s106 s107 x1) else (if s106 == 0b01 then (rw_main_v8 s4 s5 s106 s108 x1) else (if s106 == 0b10 then (rw_main_v8 s4 s5 s106 s109 x1) else (rw_main_v8 s4 s5 s106 s110 x1)))))))
+rw_main__fail : [10] -> [81] -> [105]
+rw_main__fail x0 x1 = if ~ (s8 @ 0) then (if ~ (s1 @ 0) then (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (s14 # (0b01 # (s4 # (s5 # (s9 # s13))))) else (if s15 == 0b00 then (rw_main_a2 s4 s5 s16 x1) else (if s15 == 0b01 then (rw_main_a2 s4 s5 s17 x1) else (if s15 == 0b10 then (rw_main_a2 s4 s5 s18 x1) else (rw_main_a2 s4 s5 s19 x1))))) else (if ~ (s3 @ 0) then (if s20 == 0b00 then (rw_main_a3 s4 s5 s21 x1) else (if s20 == 0b01 then (rw_main_a3 s4 s5 s22 x1) else (if s20 == 0b10 then (rw_main_a3 s4 s5 s23 x1) else (rw_main_a3 s4 s5 s24 x1)))) else (if s25 == 0b00 then (rw_main_vD s25 s26 s27 x1) else (if s25 == 0b01 then (rw_main_vD s25 s26 s28 x1) else (if s25 == 0b10 then (rw_main_vD s25 s26 s29 x1) else (rw_main_vD s25 s26 s30 x1)))))) else (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (if s31 == 0b00 then (rw_main_vD2 s31 s32 s33 x1) else (if s31 == 0b01 then (rw_main_vD2 s31 s32 s34 x1) else (if s31 == 0b10 then (rw_main_vD2 s31 s32 s35 x1) else (rw_main_vD2 s31 s32 s36 x1)))) else (if s37 == 0b00 then (rw_main_vD3 s37 s38 s39 x1) else (if s37 == 0b01 then (rw_main_vD3 s37 s38 s40 x1) else (if s37 == 0b10 then (rw_main_vD3 s37 s38 s41 x1) else (rw_main_vD3 s37 s38 s42 x1))))) else (if ~ (s3 @ 0) then (if s43 == 0b00 then (rw_main_vD4 s43 s44 s45 x1) else (if s43 == 0b01 then (rw_main_vD4 s43 s44 s46 x1) else (if s43 == 0b10 then (rw_main_vD4 s43 s44 s47 x1) else (rw_main_vD4 s43 s44 s48 x1)))) else (if s49 == 0b00 then (rw_main_x2 s4 s5 s50 x1) else (if s49 == 0b01 then (rw_main_x2 s4 s5 s51 x1) else (if s49 == 0b10 then (rw_main_x2 s4 s5 s52 x1) else (rw_main_x2 s4 s5 s53 x1))))))) else (if ~ (s1 @ 0) then (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (if s54 == 0b00 then (rw_main_vD5 s54 s55 s56 x1) else (if s54 == 0b01 then (rw_main_vD5 s54 s55 s57 x1) else (if s54 == 0b10 then (rw_main_vD5 s54 s55 s58 x1) else (rw_main_vD5 s54 s55 s59 x1)))) else (if s60 == 0b00 then (rw_main_vD6 s60 s61 s62 x1) else (if s60 == 0b01 then (rw_main_vD6 s60 s61 s63 x1) else (if s60 == 0b10 then (rw_main_vD6 s60 s61 s64 x1) else (rw_main_vD6 s60 s61 s65 x1))))) else (if ~ (s3 @ 0) then (if s66 == 0b00 then (rw_main_vD7 s66 s67 s68 x1) else (if s66 == 0b01 then (rw_main_vD7 s66 s67 s69 x1) else (if s66 == 0b10 then (rw_main_vD7 s66 s67 s70 x1) else (rw_main_vD7 s66 s67 s71 x1)))) else (if s72 == 0b00 then (rw_main_vD8 s6 s7 s73 x1) else (if s72 == 0b01 then (rw_main_vD8 s6 s7 s74 x1) else (if s72 == 0b10 then (rw_main_vD8 s6 s7 s75 x1) else (rw_main_vD8 s6 s7 s76 x1)))))) else (if ~ (s2 @ 0) then (if ~ (s3 @ 0) then (if ~ (s4 @ 0) then (if ~ (s5 @ 0) then (if ~ (s77 @ 0) then (rw_main_zzz x1) else (rw_main_arm142 s6 s7 x1)) else (if ~ (s79 @ 0) then (rw_main_zzz x1) else (rw_main_arm142 s6 s7 x1))) else (if ~ (s5 @ 0) then (if ~ (s80 @ 0) then (rw_main_zzz x1) else (rw_main_arm142 s6 s7 x1)) else (if ~ (s82 @ 0) then (rw_main_zzz x1) else (rw_main_arm142 s6 s7 x1)))) else (if ~ (s4 @ 0) then (if ~ (s5 @ 0) then (if s83 == 0b00 then (rw_main_x3 s84 x1) else (if s83 == 0b01 then (rw_main_x3 s85 x1) else (if s83 == 0b10 then (rw_main_x3 s86 x1) else (rw_main_x3 s87 x1)))) else (if ~ (s6 @ 0) then (rw_main_zzz s88) else (if ~ (s7 @ 0) then (rw_main_zzz s94) else (rw_main_zzz s104)))) else (if ~ (s5 @ 0) then (if s105 == 0b00 then (rw_main_v3 s105 s106 x1) else (if s105 == 0b01 then (rw_main_v3 s105 s107 x1) else (if s105 == 0b10 then (rw_main_v3 s105 s108 x1) else (rw_main_v3 s105 s109 x1)))) else (if s110 == 0b00 then (rw_main_zzz s111) else (if s110 == 0b01 then (rw_main_zzz s112) else (if s110 == 0b10 then (rw_main_zzz s113) else (rw_main_zzz s114))))))) else (if ~ (s3 @ 0) then (if ~ (s4 @ 0) then (if ~ (s5 @ 0) then (if s115 == 0b00 then (rw_main_v4 s115 s116 x1) else (if s115 == 0b01 then (rw_main_v4 s115 s117 x1) else (if s115 == 0b10 then (rw_main_v4 s115 s118 x1) else (rw_main_v4 s115 s119 x1)))) else (if s120 == 0b00 then (rw_main_v5 s120 s121 x1) else (if s120 == 0b01 then (rw_main_v5 s120 s122 x1) else (if s120 == 0b10 then (rw_main_v5 s120 s123 x1) else (rw_main_v5 s120 s124 x1))))) else (if ~ (s5 @ 0) then (if s125 == 0b00 then (rw_main_v6 s125 s126 x1) else (if s125 == 0b01 then (rw_main_v6 s125 s127 x1) else (if s125 == 0b10 then (rw_main_v6 s125 s128 x1) else (rw_main_v6 s125 s129 x1)))) else (if s125 == 0b00 then (rw_main_v7 s125 s130 x1) else (if s125 == 0b01 then (rw_main_v7 s125 s131 x1) else (if s125 == 0b10 then (rw_main_v7 s125 s132 x1) else (rw_main_v7 s125 s133 x1)))))) else (if s134 == 0b00 then (rw_main_v8 s4 s5 s134 s135 x1) else (if s134 == 0b01 then (rw_main_v8 s4 s5 s134 s136 x1) else (if s134 == 0b10 then (rw_main_v8 s4 s5 s134 s137 x1) else (rw_main_v8 s4 s5 s134 s138 x1)))))))
   where
     s0 : [8]
     s0 = rw_Main_dataIn x0
@@ -537,42 +587,42 @@ rw_main__fail x0 x1 = if ~ (s8 @ 0) then (if ~ (s1 @ 0) then (if ~ (s2 @ 0) then
     s25 = rw_Main_mkReg s4 s5
     s26 : [2]
     s26 = rw_Main_mkReg s6 s7
-    s27 : [2]
-    s27 = rw_Main_mkReg s4 s5
-    s28 : [2]
-    s28 = rw_Main_mkReg s6 s7
-    s29 : [2]
-    s29 = rw_Main_mkReg s4 s5
-    s30 : [2]
-    s30 = rw_Main_mkReg s6 s7
+    s27 : [8]
+    s27 = rw_Main_r0 x1
+    s28 : [8]
+    s28 = rw_Main_r1 x1
+    s29 : [8]
+    s29 = rw_Main_r2 x1
+    s30 : [8]
+    s30 = rw_Main_r3 x1
     s31 : [2]
     s31 = rw_Main_mkReg s4 s5
     s32 : [2]
     s32 = rw_Main_mkReg s6 s7
-    s33 : [2]
-    s33 = rw_Main_mkReg s6 s7
+    s33 : [8]
+    s33 = rw_Main_r0 x1
     s34 : [8]
-    s34 = rw_Main_r0 x1
+    s34 = rw_Main_r1 x1
     s35 : [8]
-    s35 = rw_Main_r1 x1
+    s35 = rw_Main_r2 x1
     s36 : [8]
-    s36 = rw_Main_r2 x1
-    s37 : [8]
-    s37 = rw_Main_r3 x1
+    s36 = rw_Main_r3 x1
+    s37 : [2]
+    s37 = rw_Main_mkReg s4 s5
     s38 : [2]
-    s38 = rw_Main_mkReg s4 s5
-    s39 : [2]
-    s39 = rw_Main_mkReg s6 s7
-    s40 : [2]
-    s40 = rw_Main_mkReg s4 s5
-    s41 : [2]
-    s41 = rw_Main_mkReg s6 s7
-    s42 : [2]
-    s42 = rw_Main_mkReg s4 s5
+    s38 = rw_Main_mkReg s6 s7
+    s39 : [8]
+    s39 = rw_Main_r0 x1
+    s40 : [8]
+    s40 = rw_Main_r1 x1
+    s41 : [8]
+    s41 = rw_Main_r2 x1
+    s42 : [8]
+    s42 = rw_Main_r3 x1
     s43 : [2]
-    s43 = rw_Main_mkReg s6 s7
+    s43 = rw_Main_mkReg s4 s5
     s44 : [2]
-    s44 = rw_Main_mkReg s4 s5
+    s44 = rw_Main_mkReg s6 s7
     s45 : [8]
     s45 = rw_Main_r0 x1
     s46 : [8]
@@ -581,18 +631,18 @@ rw_main__fail x0 x1 = if ~ (s8 @ 0) then (if ~ (s1 @ 0) then (if ~ (s2 @ 0) then
     s47 = rw_Main_r2 x1
     s48 : [8]
     s48 = rw_Main_r3 x1
-    s49 : [1]
-    s49 = rw_Main_zFlag x1
-    s50 : [1]
-    s50 = rw_Main_zFlag x1
-    s51 : [1]
-    s51 = rw_Main_notb s50
-    s52 : [1]
-    s52 = rw_Main_cFlag x1
-    s53 : [1]
-    s53 = rw_Main_cFlag x1
-    s54 : [1]
-    s54 = rw_Main_notb s53
+    s49 : [2]
+    s49 = rw_Main_mkReg s6 s7
+    s50 : [8]
+    s50 = rw_Main_r0 x1
+    s51 : [8]
+    s51 = rw_Main_r1 x1
+    s52 : [8]
+    s52 = rw_Main_r2 x1
+    s53 : [8]
+    s53 = rw_Main_r3 x1
+    s54 : [2]
+    s54 = rw_Main_mkReg s4 s5
     s55 : [2]
     s55 = rw_Main_mkReg s6 s7
     s56 : [8]
@@ -603,111 +653,167 @@ rw_main__fail x0 x1 = if ~ (s8 @ 0) then (if ~ (s1 @ 0) then (if ~ (s2 @ 0) then
     s58 = rw_Main_r2 x1
     s59 : [8]
     s59 = rw_Main_r3 x1
-    s60 : [81]
-    s60 = rw_Main_setIEFlag x1 s7
-    s61 : [18]
-    s61 = rw_Main_outputs x1
+    s60 : [2]
+    s60 = rw_Main_mkReg s4 s5
+    s61 : [2]
+    s61 = rw_Main_mkReg s6 s7
     s62 : [8]
-    s62 = take`{8} s61
+    s62 = rw_Main_r0 x1
     s63 : [8]
-    s63 = take`{8} (drop`{8} s61)
-    s64 : [1]
-    s64 = take`{1} (drop`{16} s61)
-    s65 : [18]
-    s65 = s62 # (s63 # (s64 # 0b1))
-    s66 : [81]
-    s66 = rw_Main_setOutputs x1 s65
-    s67 : [81]
-    s67 = rw_Main_setIEFlag x1 0b1
+    s63 = rw_Main_r1 x1
+    s64 : [8]
+    s64 = rw_Main_r2 x1
+    s65 : [8]
+    s65 = rw_Main_r3 x1
+    s66 : [2]
+    s66 = rw_Main_mkReg s4 s5
+    s67 : [2]
+    s67 = rw_Main_mkReg s6 s7
     s68 : [8]
-    s68 = take`{8} (drop`{41} s67)
+    s68 = rw_Main_r0 x1
     s69 : [8]
-    s69 = s68
-    s70 : [81]
-    s70 = rw_Main_setPC s67 s69
-    s71 : [1]
-    s71 = take`{1} (drop`{39} s70)
-    s72 : [1]
-    s72 = s71
-    s73 : [81]
-    s73 = rw_Main_setZFlag s70 s72
-    s74 : [1]
-    s74 = take`{1} (drop`{40} s73)
-    s75 : [1]
-    s75 = s74
-    s76 : [81]
-    s76 = rw_Main_setCFlag s73 s75
-    s77 : [2]
-    s77 = rw_Main_mkReg s6 s7
-    s78 : [8]
-    s78 = rw_Main_r0 x1
-    s79 : [8]
-    s79 = rw_Main_r1 x1
-    s80 : [8]
-    s80 = rw_Main_r2 x1
-    s81 : [8]
-    s81 = rw_Main_r3 x1
-    s82 : [2]
-    s82 = rw_Main_mkReg s6 s7
-    s83 : [81]
-    s83 = rw_Main_setR0 x1 0x00
-    s84 : [81]
-    s84 = rw_Main_setR1 x1 0x00
-    s85 : [81]
-    s85 = rw_Main_setR2 x1 0x00
-    s86 : [81]
-    s86 = rw_Main_setR3 x1 0x00
-    s87 : [2]
-    s87 = rw_Main_mkReg s6 s7
-    s88 : [8]
-    s88 = rw_Main_r0 x1
-    s89 : [8]
-    s89 = rw_Main_r1 x1
+    s69 = rw_Main_r1 x1
+    s70 : [8]
+    s70 = rw_Main_r2 x1
+    s71 : [8]
+    s71 = rw_Main_r3 x1
+    s72 : [2]
+    s72 = rw_Main_mkReg s4 s5
+    s73 : [8]
+    s73 = rw_Main_r0 x1
+    s74 : [8]
+    s74 = rw_Main_r1 x1
+    s75 : [8]
+    s75 = rw_Main_r2 x1
+    s76 : [8]
+    s76 = rw_Main_r3 x1
+    s77 : [1]
+    s77 = rw_Main_zFlag x1
+    s78 : [1]
+    s78 = rw_Main_zFlag x1
+    s79 : [1]
+    s79 = rw_Main_notb s78
+    s80 : [1]
+    s80 = rw_Main_cFlag x1
+    s81 : [1]
+    s81 = rw_Main_cFlag x1
+    s82 : [1]
+    s82 = rw_Main_notb s81
+    s83 : [2]
+    s83 = rw_Main_mkReg s6 s7
+    s84 : [8]
+    s84 = rw_Main_r0 x1
+    s85 : [8]
+    s85 = rw_Main_r1 x1
+    s86 : [8]
+    s86 = rw_Main_r2 x1
+    s87 : [8]
+    s87 = rw_Main_r3 x1
+    s88 : [81]
+    s88 = rw_Main_setIEFlag x1 s7
+    s89 : [18]
+    s89 = rw_Main_outputs x1
     s90 : [8]
-    s90 = rw_Main_r2 x1
+    s90 = take`{8} s89
     s91 : [8]
-    s91 = rw_Main_r3 x1
-    s92 : [2]
-    s92 = rw_Main_mkReg s6 s7
-    s93 : [8]
-    s93 = rw_Main_r0 x1
-    s94 : [8]
-    s94 = rw_Main_r1 x1
-    s95 : [8]
-    s95 = rw_Main_r2 x1
+    s91 = take`{8} (drop`{8} s89)
+    s92 : [1]
+    s92 = take`{1} (drop`{16} s89)
+    s93 : [18]
+    s93 = s90 # (s91 # (s92 # 0b1))
+    s94 : [81]
+    s94 = rw_Main_setOutputs x1 s93
+    s95 : [81]
+    s95 = rw_Main_setIEFlag x1 0b1
     s96 : [8]
-    s96 = rw_Main_r3 x1
-    s97 : [2]
-    s97 = rw_Main_mkReg s6 s7
-    s98 : [8]
-    s98 = rw_Main_r0 x1
-    s99 : [8]
-    s99 = rw_Main_r1 x1
-    s100 : [8]
-    s100 = rw_Main_r2 x1
-    s101 : [8]
-    s101 = rw_Main_r3 x1
-    s102 : [8]
-    s102 = rw_Main_r0 x1
-    s103 : [8]
-    s103 = rw_Main_r1 x1
-    s104 : [8]
-    s104 = rw_Main_r2 x1
-    s105 : [8]
-    s105 = rw_Main_r3 x1
-    s106 : [2]
-    s106 = rw_Main_mkReg s6 s7
+    s96 = take`{8} (drop`{41} s95)
+    s97 : [8]
+    s97 = s96
+    s98 : [81]
+    s98 = rw_Main_setPC s95 s97
+    s99 : [1]
+    s99 = take`{1} (drop`{39} s98)
+    s100 : [1]
+    s100 = s99
+    s101 : [81]
+    s101 = rw_Main_setZFlag s98 s100
+    s102 : [1]
+    s102 = take`{1} (drop`{40} s101)
+    s103 : [1]
+    s103 = s102
+    s104 : [81]
+    s104 = rw_Main_setCFlag s101 s103
+    s105 : [2]
+    s105 = rw_Main_mkReg s6 s7
+    s106 : [8]
+    s106 = rw_Main_r0 x1
     s107 : [8]
-    s107 = rw_Main_r0 x1
+    s107 = rw_Main_r1 x1
     s108 : [8]
-    s108 = rw_Main_r1 x1
+    s108 = rw_Main_r2 x1
     s109 : [8]
-    s109 = rw_Main_r2 x1
-    s110 : [8]
-    s110 = rw_Main_r3 x1
+    s109 = rw_Main_r3 x1
+    s110 : [2]
+    s110 = rw_Main_mkReg s6 s7
+    s111 : [81]
+    s111 = rw_Main_setR0 x1 0x00
+    s112 : [81]
+    s112 = rw_Main_setR1 x1 0x00
+    s113 : [81]
+    s113 = rw_Main_setR2 x1 0x00
+    s114 : [81]
+    s114 = rw_Main_setR3 x1 0x00
+    s115 : [2]
+    s115 = rw_Main_mkReg s6 s7
+    s116 : [8]
+    s116 = rw_Main_r0 x1
+    s117 : [8]
+    s117 = rw_Main_r1 x1
+    s118 : [8]
+    s118 = rw_Main_r2 x1
+    s119 : [8]
+    s119 = rw_Main_r3 x1
+    s120 : [2]
+    s120 = rw_Main_mkReg s6 s7
+    s121 : [8]
+    s121 = rw_Main_r0 x1
+    s122 : [8]
+    s122 = rw_Main_r1 x1
+    s123 : [8]
+    s123 = rw_Main_r2 x1
+    s124 : [8]
+    s124 = rw_Main_r3 x1
+    s125 : [2]
+    s125 = rw_Main_mkReg s6 s7
+    s126 : [8]
+    s126 = rw_Main_r0 x1
+    s127 : [8]
+    s127 = rw_Main_r1 x1
+    s128 : [8]
+    s128 = rw_Main_r2 x1
+    s129 : [8]
+    s129 = rw_Main_r3 x1
+    s130 : [8]
+    s130 = rw_Main_r0 x1
+    s131 : [8]
+    s131 = rw_Main_r1 x1
+    s132 : [8]
+    s132 = rw_Main_r2 x1
+    s133 : [8]
+    s133 = rw_Main_r3 x1
+    s134 : [2]
+    s134 = rw_Main_mkReg s6 s7
+    s135 : [8]
+    s135 = rw_Main_r0 x1
+    s136 : [8]
+    s136 = rw_Main_r1 x1
+    s137 : [8]
+    s137 = rw_Main_r2 x1
+    s138 : [8]
+    s138 = rw_Main_r3 x1
 
 // main.loop
-rw_main_loop : [81] -> [106]
+rw_main_loop : [81] -> [105]
 rw_main_loop x0 = if ~ (s2 @ 0) then (if s4 @ 0 then (if s6 @ 0 then (rw_main_zzz s49) else (rw_main__fail s0 x0)) else (rw_main__fail s0 x0)) else (rw_main_zzz s52)
   where
     s0 : [10]
@@ -1241,13 +1347,13 @@ rw_Main_minusCW8_sFalse_Bool x0 x1 = (take`{1} s0) # (rw'resize`{8} s0)
     s0 = ((rw'resize`{9} x0) - (rw'resize`{9} x1)) - 0b000000000
 
 // Per-cycle step: outputs # next register values.
-rw_step : [88] -> [10] -> [106]
-rw_step st i = (take`{8} s43) # ((take`{8} (drop`{8} s43)) # ((take`{1} (drop`{16} s43)) # ((take`{1} (drop`{17} s43)) # ((take`{7} (drop`{18} s43)) # (drop`{25} s43)))))
+rw_step : [87] -> [10] -> [105]
+rw_step st i = (take`{8} s42) # ((take`{8} (drop`{8} s42)) # ((take`{1} (drop`{16} s42)) # ((take`{1} (drop`{17} s42)) # ((take`{6} (drop`{18} s42)) # (drop`{24} s42)))))
   where
-    s0 : [7]
-    s0 = take`{7} st
+    s0 : [6]
+    s0 = take`{6} st
     s1 : [81]
-    s1 = drop`{7} st
+    s1 = drop`{6} st
     s2 : [8]
     s2 = take`{8} i
     s3 : [1]
@@ -1257,9 +1363,9 @@ rw_step st i = (take`{8} s43) # ((take`{8} (drop`{8} s43)) # ((take`{1} (drop`{1
     s5 : [10]
     s5 = s2 # (s3 # s4)
     s6 : [1]
-    s6 = take`{1} (drop`{4} s0)
+    s6 = take`{1} (drop`{3} s0)
     s7 : [2]
-    s7 = drop`{5} s0
+    s7 = drop`{4} s0
     s8 : [81]
     s8 = rw_Main_setInputs s1 s5
     s9 : [10]
@@ -1275,11 +1381,11 @@ rw_step st i = (take`{8} s43) # ((take`{8} (drop`{8} s43)) # ((take`{1} (drop`{1
     s14 : [81]
     s14 = rw_Main_setR3 s8 s10
     s15 : [1]
-    s15 = take`{1} (drop`{3} s0)
+    s15 = take`{1} (drop`{2} s0)
     s16 : [1]
-    s16 = take`{1} (drop`{4} s0)
+    s16 = take`{1} (drop`{3} s0)
     s17 : [2]
-    s17 = drop`{5} s0
+    s17 = drop`{4} s0
     s18 : [81]
     s18 = rw_Main_setInputs s1 s5
     s19 : [10]
@@ -1307,9 +1413,9 @@ rw_step st i = (take`{8} s43) # ((take`{8} (drop`{8} s43)) # ((take`{1} (drop`{1
     s30 : [8]
     s30 = rw_Main_r3 s26
     s31 : [1]
-    s31 = take`{1} (drop`{5} s0)
+    s31 = take`{1} (drop`{4} s0)
     s32 : [1]
-    s32 = drop`{6} s0
+    s32 = drop`{5} s0
     s33 : [81]
     s33 = rw_Main_setInputs s1 s5
     s34 : [10]
@@ -1328,10 +1434,8 @@ rw_step st i = (take`{8} s43) # ((take`{8} (drop`{8} s43)) # ((take`{1} (drop`{1
     s40 = rw_Main_setR3 s33 s35
     s41 : [81]
     s41 = rw_Main_setInputs s1 s5
-    s42 : [81]
-    s42 = rw_Main_setInputs s1 s5
-    s43 : [106]
-    s43 = if (take`{3} s0) == 0b000 then (if ~ (s6 @ 0) then (rw_main_loop s8) else (if s7 == 0b00 then (rw_main_loop s11) else (if s7 == 0b01 then (rw_main_loop s12) else (if s7 == 0b10 then (rw_main_loop s13) else (rw_main_loop s14))))) else (if (take`{3} s0) == 0b001 then (if ~ (s16 @ 0) then (rw_main__unused7 s15 s17 s26) else (if s17 == 0b00 then (rw_main_d s15 s17 s27 s26) else (if s17 == 0b01 then (rw_main_d s15 s17 s28 s26) else (if s17 == 0b10 then (rw_main_d s15 s17 s29 s26) else (rw_main_d s15 s17 s30 s26))))) else (if (take`{3} s0) == 0b010 then (if s36 == 0b00 then (rw_main_loop s37) else (if s36 == 0b01 then (rw_main_loop s38) else (if s36 == 0b10 then (rw_main_loop s39) else (rw_main_loop s40)))) else (if (take`{3} s0) == 0b011 then (rw_main_loop s41) else (rw_main_loop s42))))
+    s42 : [105]
+    s42 = if (take`{2} s0) == 0b00 then (if ~ (s6 @ 0) then (rw_main_loop s8) else (if s7 == 0b00 then (rw_main_loop s11) else (if s7 == 0b01 then (rw_main_loop s12) else (if s7 == 0b10 then (rw_main_loop s13) else (rw_main_loop s14))))) else (if (take`{2} s0) == 0b01 then (if ~ (s16 @ 0) then (rw_main__unused7 s15 s17 s26) else (if s17 == 0b00 then (rw_main_d s15 s17 s27 s26) else (if s17 == 0b01 then (rw_main_d s15 s17 s28 s26) else (if s17 == 0b10 then (rw_main_d s15 s17 s29 s26) else (rw_main_d s15 s17 s30 s26))))) else (if (take`{2} s0) == 0b10 then (if s36 == 0b00 then (rw_main_loop s37) else (if s36 == 0b01 then (rw_main_loop s38) else (if s36 == 0b10 then (rw_main_loop s39) else (rw_main_loop s40)))) else (rw_main_loop s41)))
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [8], __in1 : [1], __in2 : [1]
@@ -1339,9 +1443,9 @@ rw_step st i = (take`{8} s43) # ((take`{8} (drop`{8} s43)) # ((take`{1} (drop`{1
 rw_device : {n} (fin n) => [n][10] -> [n][18]
 rw_device ins = outs
   where
-    rs : [n][106]
+    rs : [n][105]
     rs = [rw_step st i | st <- sts | i <- ins]
-    sts : [1 + n][88]
-    sts = [0x6000000000000000000000] # [drop`{18} r | r <- rs]
+    sts : [1 + n][87]
+    sts = [0b110000000000000000000000000000000000000000000000000000000000000000000000000000000000000] # [drop`{18} r | r <- rs]
     outs : [n][18]
     outs = [take`{18} r | r <- rs]
