@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- A Nix flake (`flake.nix`) with a development shell that pins the
+  toolchain around Stack: the resolver's GHC (Stack is wrapped to use
+  it), z3, the simulators the test suite lints and cosimulates with
+  (iverilog/vvp, verilator, ghdl on Linux), and the Lean
+  toolchain `verify/lean-toolchain` pins. A GitHub Actions workflow
+  (`.github/workflows/ci.yml`) builds everything and runs the compiler
+  and user-library test suites inside it on every push and pull
+  request. `rwc-test --require-tools` makes a missing optional tool (a
+  simulator, cryptol, z3, or the certify validator) a test failure
+  rather than a silently skipped leg; CI passes it.
 - The Synolon lint enforces the machine rules that were left to later
   passes: representability at a fixed bit width (every binder, block
   parameter, cell, port, and halt answer sizes; the sizing is

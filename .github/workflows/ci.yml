@@ -1,0 +1,103 @@
+name: CI
+
+# Builds rwc, rwcry, and rwe and runs the compiler and user-library test
+# suites inside the Nix development shell (flake.nix), which pins GHC, the
+# simulators the golden tests lint and cosimulate with (iverilog, verilator,
+# ghdl), z3, and the Lean toolchain for the --certify validator. Stack
+# builds the Haskell packages (and, from the pinned Cryptol tree, the
+# cryptol executable the Cryptol cosimulation leg uses); Nix supplies
+# everything else. Optional tools are required (--require-tools and
+# RWC_TEST_REQUIRE_RWV), so a missing simulator fails the run rather than
+# silently skipping its legs. The embedder tests (rwe-test) need Isabelle
+# and the AFP and do not run here.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    # Every step runs inside the flake's development shell.
+    shell: nix develop --command bash -euo pipefail {0}
+
+env:
+  LANG: C.UTF-8
+  RWC_TEST_REQUIRE_RWV: 1
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: cachix/install-nix-action@v31
+
+      # Stack's state for the shell's GHC (the shell hook sets STACK_ROOT and
+      # STACK_WORK to keep it apart from a Stack-managed GHC's). Keyed on
+      # what determines it: flake.lock (the GHC comes from nixpkgs), the
+      # resolver and its lock file, and every package.yaml; a partial match
+      # only ever restores a build made with the same GHC.
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.stack-nix
+            .stack-work-nix
+            */.stack-work-nix
+          key: stack-${{ runner.os }}-${{ hashFiles('flake.lock') }}-${{ hashFiles('stack.yaml', 'stack.yaml.lock', '**/package.yaml') }}
+          restore-keys: |
+            stack-${{ runner.os }}-${{ hashFiles('flake.lock') }}-
+
+      - uses: actions/cache@v6
+        with:
+          path: verify/.lake
+          key: lake-${{ runner.os }}-${{ hashFiles('flake.lock') }}-${{ hashFiles('verify/**/*.lean', 'verify/lakefile.toml', 'verify/lake-manifest.json', 'verify/lean-toolchain') }}
+          restore-keys: |
+            lake-${{ runner.os }}-${{ hashFiles('flake.lock') }}-
+
+      - name: Show the toolchain
+        run: |
+          ghc --numeric-version
+          stack --version
+          iverilog -V
+          verilator --version
+          ghdl --version
+          z3 --version
+          lean --version
+
+      # rwc-test finds the validator in verify/.lake/build/bin.
+      - name: Build the certificate validator
+        run: cd verify && lake build rwv-cstep-validate
+
+      - name: Build
+        run: |
+          stack build --test --bench --no-run-tests --no-run-benchmarks
+          # The cryptol executable, from the pinned Cryptol tree (in the
+          # snapshot bin directory, on the PATH under stack test).
+          stack build cryptol
+          stack exec -- cryptol --version
+
+      - name: Test the compiler
+        run: stack test rewire:rwc-test --test-arguments="--require-tools --integration"
+
+      - name: Test the user library
+        run: stack test rewire-user
+
+      # The generated outputs the golden tests diffed (foo.out.* beside the
+      # goldens in the data directory), for inspecting a failure.
+      - name: Upload test outputs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-outputs
+          path: |
+            **/tests/golden/*.out.*
+            **/tests/integration/*.out.*
+          if-no-files-found: ignore

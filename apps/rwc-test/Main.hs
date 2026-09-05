@@ -36,7 +36,7 @@ import Control.Exception (try, finally)
 import Control.Monad (unless, when, msum)
 import Control.Monad.State.Strict (evalState)
 import Data.List (isSuffixOf, isInfixOf, stripPrefix, intercalate, sort)
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (fromMaybe, mapMaybe, isJust)
 import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
 import System.Directory (listDirectory, setCurrentDirectory, getCurrentDirectory, doesFileExist, findExecutable, makeAbsolute)
 import System.Environment (getArgs, withArgs, lookupEnv, setEnv)
@@ -62,6 +62,7 @@ data Flag = FlagH
           | FlagIVerilog String
           | FlagVerilator String
           | FlagIntegration
+          | FlagRequireTools
           -- Tasty options.
           | FlagP String
           | FlagQ
@@ -83,6 +84,7 @@ options =
        , Option []    ["no-check"]     (NoArg FlagNoCheck)                    "Disable verification of output HDL with checker."
        , Option []    ["no-ghc"]       (NoArg FlagNoGhc)                      "Disable running tests through ghc."
        , Option []    ["integration"]  (NoArg FlagIntegration)                "Also run the golden tests in tests/integration (heavyweight examples; off by default)."
+       , Option []    ["require-tools"] (NoArg FlagRequireTools)               "Fail, rather than skip, the legs whose tool is not installed: cosimulation (iverilog/vvp, ghdl, cryptol; also verilator and z3) and certification (rwv-cstep-validate). For CI."
        , Option []    ["iverilog"]     (ReqArg FlagIVerilog "command")      $ "Set the command to use for checking generated Verilog with iverilog (default: " <> defaultIVerilog <> ")."
        , Option []    ["verilator"]    (ReqArg FlagVerilator "command")     $ "Set the command to use for checking generated Verilog with verilator (default: " <> defaultVerilator <> ")."
 
@@ -563,6 +565,39 @@ getSmokeTests = do
                   Left err -> assertFailure $ f <> ": " <> T.unpack (prettyPrint err)
                   Right _  -> pure ()
 
+-- | The certify validator: RWC_RWV, then the PATH, then the Lake build
+--   directory relative to the initial working directory (the package root,
+--   when run via stack test). The certify group's gate and, under
+--   --require-tools, a required tool.
+findValidator :: IO (Maybe FilePath)
+findValidator = lookupEnv "RWC_RWV" >>= \ case
+      Just r  -> pure $ Just r
+      Nothing -> findExecutable "rwv-cstep-validate" >>= \ case
+            Just r  -> pure $ Just r
+            Nothing -> do
+                  let local = "verify" </> ".lake" </> "build" </> "bin" </> "rwv-cstep-validate"
+                  ex <- doesFileExist local
+                  if ex then Just <$> makeAbsolute local else pure Nothing
+
+-- | Under --require-tools, one test per optional tool asserting that it is
+--   installed. The cosimulation legs are gated per tool (a missing simulator
+--   silently drops its leg) and the certify group records a placeholder skip
+--   without the validator, so a runner missing a tool would otherwise pass
+--   while exercising less of the suite; this group makes that a failure (the
+--   CI lane's guard). Verilator, iverilog, and z3 are not gated (their legs
+--   fail loudly), but a missing one is diagnosed here first.
+getToolsTests :: [Flag] -> IO [TestTree]
+getToolsTests flags
+      | FlagRequireTools `elem` flags = do
+            validator <- findValidator
+            pure [ testGroup "tools" $ map exeTest ["iverilog", "vvp", "verilator", "ghdl", "cryptol", "z3"]
+                  <> [ testCase "rwv-cstep-validate installed" $ assertBool
+                        "rwv-cstep-validate not found (RWC_RWV, the PATH, or verify/.lake/build/bin); build it with 'cd verify && lake build rwv-cstep-validate'"
+                        (isJust validator) ] ]
+      | otherwise = pure []
+      where exeTest :: String -> TestTree
+            exeTest t = testCase (t <> " installed") $ findExecutable t >>= assertBool (t <> " not found on the PATH") . isJust
+
 -- | The --certify test group: recompile a representative subset of the golden
 --   tests from Haskell source with --certify (required mode, the default),
 --   requiring the validator's VALIDATED confirmation line on stdout; the
@@ -573,18 +608,18 @@ getSmokeTests = do
 --   the HDL checks, the group is gated on its tool being available: when the
 --   validator binary is missing (RWC_RWV, then the PATH, then
 --   verify/.lake/build/bin in a checkout), a single placeholder test records
---   the skip — unless RWC_TEST_REQUIRE_RWV is set (the CI certification
---   lane), in which case the missing validator is a test failure. The
+--   the skip — unless --require-tools is given or RWC_TEST_REQUIRE_RWV is set
+--   (the CI lane), in which case the missing validator is a test failure. The
 --   discovered binary is handed to the in-process rwc via RWC_RWV, since the
 --   tests cd into the data directory.
-getCertifyTests :: IO TestTree
-getCertifyTests = findValidator >>= \ case
-      Nothing  -> lookupEnv "RWC_TEST_REQUIRE_RWV" >>= \ case
-            Just _  -> pure $ testGroup "certify"
-                  [ testCase "certify (validator required)" $ assertFailure
-                        "RWC_TEST_REQUIRE_RWV is set but rwv-cstep-validate was not found; build it with 'cd verify && lake build rwv-cstep-validate'" ]
-            Nothing -> pure $ testGroup "certify"
-                  [ testCase "certify (skipped: rwv-cstep-validate not found; build it with 'cd verify && lake build rwv-cstep-validate')" $ pure () ]
+getCertifyTests :: Bool -> IO TestTree
+getCertifyTests require = findValidator >>= \ case
+      Nothing  -> do
+            env <- lookupEnv "RWC_TEST_REQUIRE_RWV"
+            pure $ testGroup "certify" $ if require || isJust env
+                  then [ testCase "certify (validator required)" $ assertFailure
+                              "rwv-cstep-validate is required (--require-tools or RWC_TEST_REQUIRE_RWV) but was not found; build it with 'cd verify && lake build rwv-cstep-validate'" ]
+                  else [ testCase "certify (skipped: rwv-cstep-validate not found; build it with 'cd verify && lake build rwv-cstep-validate')" $ pure () ]
       Just exe -> do
             setEnv "RWC_RWV" exe
             dir <- getDataFileName ("tests" </> "golden")
@@ -670,19 +705,6 @@ getCertifyTests = findValidator >>= \ case
                               assertBool ("expected no VALIDATED verdict; stdout:\n" <> outTxt)
                                     $ not ("VALIDATED" `isInfixOf` outTxt)
 
-            -- The validator, as the group gate: RWC_RWV, then the PATH, then
-            -- the Lake build directory relative to the initial working
-            -- directory (the package root, when run via stack test).
-            findValidator :: IO (Maybe FilePath)
-            findValidator = lookupEnv "RWC_RWV" >>= \ case
-                  Just r  -> pure $ Just r
-                  Nothing -> findExecutable "rwv-cstep-validate" >>= \ case
-                        Just r  -> pure $ Just r
-                        Nothing -> do
-                              let local = "verify" </> ".lake" </> "build" </> "bin" </> "rwv-cstep-validate"
-                              ex <- doesFileExist local
-                              if ex then Just <$> makeAbsolute local else pure Nothing
-
 -- | Build a test group from every .hs file in tests/<dirName>, using the given
 --   per-file test builder.
 testsFrom :: FilePath -> (FilePath -> IO [TestTree]) -> IO TestTree
@@ -733,7 +755,8 @@ main = do
                                       <> map testSyn files <> map testSynRefresh files <> map testSynOpt files
                                       <> map testSynBad negFiles
       smokeTests   <- getSmokeTests
-      certifyTests <- getCertifyTests
+      certifyTests <- getCertifyTests (FlagRequireTools `elem` flags)
+      toolsTests   <- getToolsTests flags
       -- The integration directory holds full-program golden tests (same legs as
       -- tests/golden), but they are heavyweight, so they only run under --integration.
       intgTests  <- if FlagIntegration `elem` flags
@@ -750,7 +773,7 @@ main = do
       cwd0 <- getCurrentDirectory
       withArgs (concatMap toTastyArg flags)
             (defaultMain $ localOption (NumThreads 1)
-                  $ testGroup "Tests" ([goldTests, smokeTests, certifyTests, negTests, warnTests, eirTests, synTests] <> intgTests))
+                  $ testGroup "Tests" (toolsTests <> [goldTests, smokeTests, certifyTests, negTests, warnTests, eirTests, synTests] <> intgTests))
             `finally` setCurrentDirectory cwd0
 
       where toTastyArg :: Flag -> [String]

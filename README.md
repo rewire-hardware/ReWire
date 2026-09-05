@@ -86,6 +86,29 @@ then fails with an error explaining how to build the validator;
 | `RWC_RWV` | path to the `rwv-cstep-validate` executable (otherwise: next to `rwc`, then `PATH`) |
 | `RWC_PACKAGE_PATH` | override the GHC package databases rwc consults (rarely needed; an installed rwc uses the path baked in at build time) |
 
+### Development shell (Nix)
+
+The repository is also a Nix flake whose development shell provides
+everything above that Stack does not manage, at pinned versions: the GHC
+the resolver expects, Stack itself (wrapped to use that GHC), z3, the
+simulators the test suite lints and cosimulates with (`iverilog`/`vvp`,
+`verilator`, `ghdl` on Linux), and the Lean toolchain
+`verify/lean-toolchain` pins. Stack still builds the Haskell packages
+(including the `cryptol` executable the Cryptol cosimulation leg uses,
+from the pinned Cryptol tree; it is on the PATH under `stack test`):
+
+```
+$ nix develop
+$ stack build
+$ (cd verify && lake build rwv-cstep-validate)
+$ stack test rewire:rwc-test --test-arguments=--require-tools
+```
+
+Inside the shell Stack keeps its state in `~/.stack-nix` and
+`.stack-work-nix` (the shell's GHC and a Stack-managed one are the same
+version but not interchangeable), so the first build there rebuilds the
+dependencies. This is the environment CI runs in (`.github/workflows/ci.yml`).
+
 ### Running the test suites
 
 The compiler test suite exercises golden files, cosimulation agreement
@@ -104,7 +127,9 @@ lint checks are *not* gated on availability — they need `iverilog` and
 [Verilator](https://www.veripool.org/verilator/), so pass
 `--test-arguments=--no-check` (which also disables cosimulation) if those
 are not installed. The Cryptol FFI tests additionally need `z3` and
-`rwcry`. `stack test rewire-user` checks GHC compatibility of the
+`rwcry`. Conversely, `--test-arguments=--require-tools` makes a
+missing optional tool (or validator) a test failure instead of a skipped
+leg; CI runs with it. `stack test rewire-user` checks GHC compatibility of the
 user-facing library, and `stack test rewire:rwe-test` runs the embedder
 tests (requires Isabelle and the AFP).
 
