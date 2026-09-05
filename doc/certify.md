@@ -80,10 +80,9 @@ VALIDATED confirmation:
   hashes rwc computed independently from the same bytes.
 
 Spawn failures, timeouts, nonzero exits, malformed or ambiguous output,
-and mismatched identities all classify as errors. (This binds an honest
-validator's response to the invocation; a maliciously substituted
-validator executable can still lie — the selected executable is part of
-the trust base below.)
+and mismatched identities all classify as errors. Of course, a maliciously
+substituted validator executable can still lie. The Validator executable is
+part of the trust base (see below).
 
 ## What VALIDATED means
 

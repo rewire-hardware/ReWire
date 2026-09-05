@@ -8,37 +8,34 @@ Eidos is the IR of the compiler's front-end passes; the pipeline is
 
     GHC Core  →  Eidos  →  (specialization, partial evaluation, ANF)  →  Synolon  →  Hyle
 
-*Eidos* (εἶδος, form) opens the pair with *Hyle* (ὕλη, matter): Eidos is
-the functional program the machine will compute, *Synolon* (σύνολον, the
-composite whole) the particular machine — states, transitions, data path
-— that program becomes, and Hyle that machine realized in bits. The
-producer (`ReWire.GHC.ToEidos`) and the consumer (purification,
-`ReWire.Eidos.ToSynolon`, which consumes the mono+ANF restriction of §6
-and produces Synolon) are outside the scope of this document: everything
-below treats Eidos programs as given, whether produced by the compiler or
-written by hand (`.eir` files, §9).
+*Eidos* is the functional program the machine will compute, *Synolon* the
+particular machine — states, transitions, data path — that program becomes, and
+*Hyle* is that machine realized in bits. The producer (`ReWire.GHC.ToEidos`)
+and the consumer (purification, `ReWire.Eidos.ToSynolon`, which consumes the
+mono+ANF restriction of §6 and produces Synolon) are outside the scope of this
+document: everything below treats Eidos programs as given, whether produced by
+the compiler or written by hand (`.eir` files, §9).
 
 Eidos is a System-F-lite mirror of GHC Core — polymorphic definitions,
-recursive lets, join points, n-ary case. The bridge targets it;
-specialization, dictionary elimination, and normalization happen here.
-Class dictionaries arrive from the bridge as ordinary data: a class's
-dictionary is a datatype whose constructor fields are its superclass
-dictionaries and methods (single-method classes have *newtype*
-dictionaries in GHC, and the bridge unwraps their types to the method
-type, so no datatype exists for them here), instance definitions are
-inline-annotated definitions of those values, and method calls are
-single-alternative case projections. A dictionary-typed binding is
-never shared: no dictionary is representable, so the simplifier
+recursive lets, join points, n-ary case. The bridge targets it; specialization,
+dictionary elimination, and normalization happen here.  Class dictionaries
+arrive from the bridge as ordinary data: a class's dictionary is a datatype
+whose constructor fields are its superclass dictionaries and methods
+(single-method classes have *newtype* dictionaries in GHC, and the bridge
+unwraps their types to the method type, so no datatype exists for them here),
+instance definitions are inline-annotated definitions of those values, and
+method calls are single-alternative case projections. A dictionary-typed
+binding is never shared: no dictionary is representable, so the simplifier
 substitutes it at every occurrence regardless of use count (where a
-representable multi-use binding keeps its let). The partial-evaluation
-fixpoint *requires* dictionary-freedom — a program whose dictionaries
-cannot be resolved statically fails compilation — so no class construct
-ever reaches Synolon or Hyle.
+representable multi-use binding keeps its let). The partial-evaluation fixpoint
+*requires* dictionary-freedom — a program whose dictionaries cannot be resolved
+statically fails compilation — so no class construct ever reaches Synolon or
+Hyle.
 
-The machine level — the process calculus of state cells, labeled blocks,
-and `pause`/`goto`/`halt` terminators that purification produces from
-the mono+ANF fragment — is Synolon's, specified in doc/synolon.md; it
-embeds Eidos's expression, definition, and datatype syntax.
+The machine level — the process calculus of state cells, labeled blocks, and
+`pause`/`goto`/`halt` terminators that purification produces from the mono+ANF
+fragment — is Synolon's, specified in doc/synolon.md; it embeds Eidos's
+expression, definition, and datatype syntax.
 
 ## 1. Design goals
 

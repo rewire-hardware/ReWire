@@ -3,7 +3,7 @@
 This document specifies the syntax and semantics of *Hyle*, the bit-level IR
 implemented in `ReWire.Hyle.*`.
 
-Hyle is the IR that the back ends consume; the compiler pipeline is
+Hyle is the IR that the backends consume; the compiler pipeline is
 
     GHC Core  →  Eidos  →  Synolon  →  Hyle  →  { Verilog, VHDL, Cryptol, interpreter }
 
@@ -26,7 +26,7 @@ The design goals:
 
 - **G1 — Explicit widths.** Every expression has a unique width derivable
   from its immediate subterms; all primitives are width-homogeneous; all
-  resizing is via explicit `zext`/`sext`/`trunc` coercions. No back end
+  resizing is via explicit `zext`/`sext`/`trunc` coercions. No backend
   reconstructs context-determined widths.
 - **G2 — Explicit state.** Registers are declared IR objects with widths and
   initial values. The layout of the machine state is the *producer's*
@@ -211,7 +211,7 @@ combinational well-foundedness holds by construction); output names are
 *never* readable (assign-only — VHDL `out` ports aren't readable, and a
 `let` covers the use case). Every output, every register, and every input
 port of every instance must be assigned exactly once. Device-level `let`
-names are named wires, emitted by the RTL back ends under their given names.
+names are named wires, emitted by the RTL backends under their given names.
 
 A device is a Mealy machine: outputs at cycle t are a function of register
 state at t and inputs at t; registers take their `next` values at t+1; at
@@ -332,7 +332,7 @@ value irrelevant (the result of a live `error` call, or the unreachable arm
 of a total case analysis): optimization passes may exploit it (replacing it
 with any value of the right width is sound *for the program the producer
 meant*, though it changes the bit-for-bit denotation and therefore golden
-outputs), and back ends may surface it as a comment or synthesis attribute.
+outputs), and backends may surface it as a comment or synthesis attribute.
 The cosimulation requirement — all targets bit-identical — is what forces a
 single defined value. The concrete syntax prints it distinctly as `undef n`
 (§10), preserving the provenance in compiler output and golden files.
@@ -370,7 +370,7 @@ For x, y in BV of the indicated widths (result truncations are implied by the
 
 The division-by-zero conventions follow SMT-LIB, deliberately: equivalence
 checking against SMT-backed tools (SAW, the intended consumer of the Cryptol
-back end) then needs no shimming. Every back end must *implement* these
+backend) then needs no shimming. Every backend must *implement* these
 conventions (a guard mux around `/` and `%` in Verilog and Cryptol; guarded
 division functions in the VHDL `rw_helpers` package) — division is rare and
 expensive in hardware anyway, so the guard is noise-level (§8).
@@ -392,7 +392,7 @@ subject to: if E declares `model f`, then η(E)(c̄, x̄) = 𝔉⟦f⟧(x̄) for
 (model semantics fixed, generic-independent; §6.2 defines 𝔉). The denotation
 of a program is a function of η; programs whose externs all carry models (or
 that have none) have an absolute denotation. This is the formal content of
-"unclocked externs are uninterpreted functions" in the Cryptol back end, and
+"unclocked externs are uninterpreted functions" in the Cryptol backend, and
 of the interpreter's refusal to evaluate model-less externs.
 
 ### 6.2 Expressions and definitions
@@ -422,7 +422,7 @@ recursion on the call order, simultaneously:
 ```
 
 Note the mux is *eager* in the mathematical sense (both arms denote); since
-the language is total, eager and non-strict readings coincide, and back ends
+the language is total, eager and non-strict readings coincide, and backends
 are free to realize the mux as hardware (both arms always computed) or as a
 short-circuiting conditional (the Cryptol `if`).
 
@@ -431,10 +431,11 @@ short-circuiting conditional (the Cryptol `if`).
 Fix a device with inputs ī, outputs ō, registers r̄ (widths c̄, initials w̄),
 instances ῑ, and body B. Write
 
-    S ≔ Π_j BV(cⱼ)        (states)         I ≔ Π_j BV(aⱼ)      (input bundles)
-    O ≔ Π_j BV(bⱼ)        (output bundles)
-    Q_ι ≔ Π_{q ∈ outs(ι)} BV(·)            (per-instance output bundles)   Q ≔ Π_ι Q_ι
-    P_ι ≔ Π_{p ∈ ins(ι)} BV(·)             (per-instance input bundles)    Π ≔ Π_ι P_ι
+    S ≔ Π_j BV(cⱼ)               (states)
+    I ≔ Π_j BV(aⱼ)               (input bundles)
+    O ≔ Π_j BV(bⱼ)               (output bundles)
+    Q_ι ≔ Π_{q ∈ outs(ι)} BV(·)  (per-instance output bundles)   Q ≔ Π_ι Q_ι
+    P_ι ≔ Π_{p ∈ ins(ι)} BV(·)   (per-instance input bundles)    Π ≔ Π_ι P_ι
 
 The body defines the **step function**
 
@@ -460,8 +461,7 @@ clocked extern's outputs this cycle depend only on past inputs, i.e. it is
 register-like. A physical extern with a combinational input-to-output path
 is outside this model, and the obligation to avoid creating combinational
 loops through such an extern rests with the user, as it does with any RTL
-instantiation. An explicit per-port `comb` annotation with a device-wide
-acyclicity check is the principled extension, should one ever be needed.)
+instantiation.)
 
 Given η and a family F = (F_ι), the device denotes the stream function
 
@@ -479,7 +479,7 @@ the familiar Mealy unfolding
     s(0) = w̄,    (s(t+1), o(t)) = step(s(t), i(t))
 
 which is precisely what the interpreter (`ReWire.Hyle.Interp`) and the
-Cryptol back end's `rw_device` stream comprehension implement; how the
+Cryptol backend's `rw_device` stream comprehension implement; how the
 machine state is decomposed into registers, outputs, and equations is the
 producer's concern, settled before the program reaches Hyle.
 
@@ -493,7 +493,7 @@ cycles).
 ## 7. Metatheory
 
 The following properties are immediate from the definitions but worth
-recording, since the back ends and optimizer rely on them.
+recording, since the backends and optimizer rely on them.
 
 **Totality / type soundness.** If Σ; Γ ⊢ e : [n] and ρ ⊨ Γ then
 ℰ⟦e⟧ρ ∈ BV(n) — defined, in range, no partiality anywhere (acyclicity gives
@@ -520,7 +520,7 @@ these congruences (constant folding is literally evaluating ℰ on closed
 terms).
 
 **Width erasure at 0.** Any e : [0] satisfies ℰ⟦e⟧ρ = ⟨⟩; any context is
-unchanged by replacing e with `lit 0 0`. (Soundness of the back ends' total
+unchanged by replacing e with `lit 0 0`. (Soundness of the backends' total
 erasure of zero-width wires.)
 
 **Cryptol embedding.** There is a compositional, width-preserving
@@ -531,21 +531,21 @@ end is the embedding plus name legalization.
 
 ## 8. Realization on the targets
 
-This section fixes, per construct, what each back end emits. With G1–G4 in
+This section fixes, per construct, what each backend emits. With G1–G4 in
 force, every row is a local template — no analysis beyond a topological walk.
 
 ### 8.1 Common structure
 
 - Each defn ↦ one Verilog module / VHDL entity+architecture / Cryptol
   function. A prior Hyle→Hyle inline pass decides which defns still exist;
-  back ends do not inline.
+  backends do not inline.
 - `let` ↦ wire + continuous assign / signal + concurrent assignment /
   `where`-binding. Since every let has an explicit width, hoisting a
   non-atomic expression into a named temporary (as VHDL requires for port
   actuals) is just "introduce a let", performed mechanically by the printer.
 - Multi-target lvalues never arise: device equations assign one named
   target each.
-- The VHDL back end realizes the operators as function calls into an
+- The VHDL backend realizes the operators as function calls into an
   `rw_helpers` package emitted alongside every design (source in
   `rewire-backend/vhdl/rw_helpers.vhdl`), which implements the §5.2 semantics
   over `std_logic_vector`: VHDL's strict typing makes inline
@@ -575,7 +575,7 @@ the parent expression's signedness context (function arguments are
 self-determined); without it, an enclosing unsigned operation would turn
 `>>>` logical. Because operand and result widths of every operator are equal
 by construction, Verilog's context-determined sizing always agrees with the
-IR, and no back end ever inserts an implicit resize: width changes happen
+IR, and no backend ever inserts an implicit resize: width changes happen
 exactly at the explicit coercions.
 
 ### 8.3 Devices
@@ -598,7 +598,7 @@ exactly at the explicit coercions.
   to a `parameter` block.
 - **Interpreter**: transcribe §6.3/§6.4 literally over `BV`.
 
-For readability, the RTL back ends recover `case` statements (Verilog) and
+For readability, the RTL backends recover `case` statements (Verilog) and
 selected signal assignments (VHDL) from if-chains that test one scrutinee
 against distinct literals — the shape of the state dispatch and of
 constructor-tag decodes. The equivalence with the mux/`rw_cond` chain they
@@ -662,7 +662,7 @@ functional expression language rather than a cell graph, because:
   would have to *reconstruct*;
 - the producer (the Synolon-to-Hyle fold) already emits a functional
   program; lowering to a netlist and re-deriving expression structure in two
-  back ends is two transformations where zero are needed;
+  backends is two transformations where zero are needed;
 - the RTL emission benefits of a netlist come from the width/port
   explicitness, not from graph structure — with G1–G4, expression emission
   is the same per-template exercise (§8.2);

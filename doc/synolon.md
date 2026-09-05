@@ -6,12 +6,9 @@ implemented in `ReWire.Synolon.*`. The pipeline is
 
     GHC Core  →  Eidos  →  Synolon  →  Hyle
 
-*Synolon* (σύνολον, the composite whole) completes the pair of *Eidos*
-(εἶδος, form) and *Hyle* (ὕλη, matter): it is Aristotle's name for the
-concrete individual in which form has been taken up by matter. The name
-marks the point at which the program stops being a description and becomes
-a particular machine — its states, transitions, and data path fixed — that
-Hyle then realizes in bits.
+Synolon marks the point at which the program stops being a description and
+becomes a particular machine — its states, transitions, and data path fixed —
+that Hyle then realizes in bits.
 
 A Synolon program is produced by *purification* (`ReWire.Eidos.ToSynolon`)
 from the mono+ANF restriction of an Eidos program (doc/eidos.md §6), and
