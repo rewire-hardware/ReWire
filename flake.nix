@@ -63,15 +63,27 @@
           '';
 
           # lean and lake at the version verify/lean-toolchain pins (lean4-nix
-          # unpacks the official release binaries). Those binaries do not
-          # survive two of nixpkgs' darwin fixups: the dylibs leave no header
-          # padding for install_name_tool to rewrite their install names (their
-          # own @rpath names work as shipped), and strip corrupts them. Both
-          # are skipped.
-          lean = pkgs.lean.lean-all.overrideAttrs (o: {
-            nativeBuildInputs = lib.filter (d: d != pkgs.fixDarwinDylibNames) (o.nativeBuildInputs or [ ]);
+          # unpacks the official release binaries). Two adjustments to its
+          # derivation. The release binaries do not survive two of nixpkgs'
+          # darwin fixups -- the dylibs leave no header padding for
+          # install_name_tool to rewrite their install names (their own @rpath
+          # names work as shipped), and strip corrupts them -- so the dylib-name
+          # hook is left out and stripping is off. And the build inputs are
+          # restated rather than filtered: lean4-nix builds its list with the
+          # deprecated stdenv.isDarwin/isLinux, which warn on every evaluation,
+          # and the darwin hook cannot even be named on Linux (unsupported
+          # platform), so the original list must never be forced.
+          lean = pkgs.lean.lean-all.overrideAttrs {
+            nativeBuildInputs = [
+              pkgs.zstd
+              pkgs.makeWrapper
+            ]
+            ++ lib.optionals stdenv.hostPlatform.isLinux [
+              pkgs.autoPatchelfHook
+              stdenv.cc.cc.lib
+            ];
             dontStrip = true;
-          });
+          };
         in
         {
           default = pkgs.mkShell {
