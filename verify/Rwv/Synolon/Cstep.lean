@@ -3287,7 +3287,7 @@ private theorem encTag_top {lo : Layout} {tag : Nat} {argWs : List Nat} {reps : 
 /-- The saved-argument fields: slicing the encoding at the
 `offsetsOf argWs` positions recovers each argument's representation. -/
 private theorem encTag_arg {lo : Layout} {tag : Nat} {argWs : List Nat} {reps : List BV}
-    (hw : reps.map (·.width) = argWs) (hb : argWs.sum ≤ lo.rPayW) :
+    (hw : reps.map (·.width) = argWs) :
     ∀ i (hi : i < argWs.length),
       sliceBV (encTag lo tag argWs reps)
           ((offsetsOf argWs)[i]'(by rw [offsetsOf_length]; exact hi))
@@ -4011,7 +4011,7 @@ private theorem envC_foldl_zip {Δ : DEnv} {σ : String → BV} :
       {Γ₀ : HashMap Int (NF × Ty)} {env₀ : Eval.Env},
       EnvC (E := E) Δ σ Γ₀ env₀ →
       pas.length = params.length → vs.length = params.length →
-      (∀ i (h1 : i < params.length) (h2 : i < pas.length) (h3 : i < vs.length),
+      (∀ i (_h1 : i < params.length) (h2 : i < pas.length) (h3 : i < vs.length),
         VTy Δ (vs[i]'h3) ((pas[i]'h2).2) ∧
         ∃ k, Val.rep Δ k (vs[i]'h3) = .ok ((pas[i]'h2).1.eval σ E)) →
       EnvC (E := E) Δ σ
@@ -4152,7 +4152,7 @@ private theorem zip_fst_sublist {α β : Type} : ∀ (l₁ : List α) (l₂ : Li
       | nil => simp
       | cons b l₂ =>
           rw [List.zip_cons_cons, List.map_cons]
-          exact (ih l₂).cons₂ a
+          exact (ih l₂).cons_cons a
 
 /-- The valuation at an input-port name is the stimulus value (the
 store holds only register names). -/
@@ -4323,7 +4323,7 @@ says about a machine-step outcome. A halt is unconstrained (the
 schema's `SimP` never inspects the right machine on a left halt); a
 pause pins the output field, the resumption-tag field, and the cell
 fields of the record to the next state's encoding. -/
-def StepValC (C : Ctx) (plan : Plan) (σ : String → BV) (rv : BV) : StepOut → Prop
+def StepValC (C : Ctx) (plan : Plan) (_σ : String → BV) (rv : BV) : StepOut → Prop
   | .halt _ => True
   | .step o s' =>
       VTy C.Δ o C.outTy ∧
@@ -4562,7 +4562,7 @@ private theorem pcmds_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
                     by_cases hna : (a.name == cname) = true
                     · simp only [Function.comp, hna, if_pos]
                     · simp only [Function.comp, hna]
-                      rw [if_neg (by simp [hna])]]
+                      rw [if_neg (by simp)]]
                 exact hC.1
               · rw [show (cells.map fun d' =>
                       if d'.name == cname then { d' with nf := nf₁ } else d').map (·.name)
@@ -4573,7 +4573,7 @@ private theorem pcmds_step {C : Ctx} {plan : Plan} {σ : String → BV} {N : Nat
                     by_cases hna : (a.name == cname) = true
                     · simp only [Function.comp, hna, if_pos]
                     · simp only [Function.comp, hna]
-                      rw [if_neg (by simp [hna])]]
+                      rw [if_neg (by simp)]]
                 exact hC.2.1
               · intro d' hd'
                 obtain ⟨d₀, hd₀, hupd⟩ := List.mem_map.mp hd'
@@ -6793,7 +6793,7 @@ theorem checkLabel_sound {Δ : DEnv} {edm : HashMap Int Defn} {p : Proc}
         show sliceBV ((NF.var w r).eval (Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) E) _ _ = _
         show sliceBV ((Rwv.Hyle.Bridge.sigmaOf dev.inputs t ins) r) _ _ = _
         rw [hσtag r w htr]
-        exact encTag_arg hwreps (li.paybound tgt htgtMem) j hj
+        exact encTag_arg hwreps j hj
     | none =>
         have h0 : lo.rPayW = 0 := by
           have h1 := pinv.tagnone htr
@@ -7594,7 +7594,7 @@ private theorem mkVarsD_spec :
       obtain ⟨W₂, E₂, L₂, R₂⟩ := ih d₁ W₁
       rcases hr : mkVarsD d₁ rest with ⟨d₂, is⟩
       rw [hr] at W₂ E₂ L₂ R₂
-      simp only [hv, hr]
+      simp only [hr]
       refine ⟨W₂, E₁.trans E₂, ?_, ?_⟩
       · intro q hq
         rcases List.mem_cons.mp hq with rfl | hq
@@ -7654,7 +7654,7 @@ private theorem pauseRecD_spec (C : Ctx) {d : Dag} (hwf : d.WF) {onf : Nat}
   obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (mkLit_spec W₂ _) h3
   rcases h4 : d₃.mkLit ⟨C.lo.rPayW - tgt.argWs.sum, 0⟩ with ⟨d₄, l₄⟩
   obtain ⟨W₄, E₄, L₄, R₄⟩ := mk_out (mkLit_spec W₃ _) h4
-  simp only [h1, h2, h3, h4]
+  simp only
   have hE₁₄ : d.Ext d₄ := ((E₁.trans E₂).trans E₃).trans E₄
   refine (mk_trans hE₁₄ (catNFD_spec W₄ ?_)).cast ?_
   · intro q hq
@@ -7698,7 +7698,7 @@ private theorem haltRecD_spec (C : Ctx) {d : Dag} (hwf : d.WF) {anf : Nat}
   obtain ⟨W₃, E₃, L₃, R₃⟩ := mk_out (mkLit_spec W₂ _) h3
   rcases h4 : d₃.mkLit ⟨C.lo.aPayW - aw, 0⟩ with ⟨d₄, l₄⟩
   obtain ⟨W₄, E₄, L₄, R₄⟩ := mk_out (mkLit_spec W₃ _) h4
-  simp only [h1, h2, h3, h4]
+  simp only
   have hE₁₄ : d.Ext d₄ := ((E₁.trans E₂).trans E₃).trans E₄
   refine (mk_trans hE₁₄ (catNFD_spec W₄ ?_)).cast ?_
   · intro q hq

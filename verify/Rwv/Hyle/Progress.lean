@@ -740,7 +740,7 @@ private theorem checkDefn_ok {env : Check.Env} {d : Defn}
     cases u
     obtain ⟨sz, hsz, h⟩ := bind_ok h
     split at h
-    case isTrue => exact absurd h (by simp [throw, throwThe, MonadExceptOf.throw, Bind.bind, Except.bind])
+    case isTrue => exact absurd h (by simp [throw, throwThe, MonadExceptOf.throw])
     case isFalse hne =>
       rw [Decidable.not_not] at hne
       exact ⟨hlen, checkDistinct_nodup hdist, by rw [hsz, hne]⟩
@@ -842,7 +842,7 @@ private theorem checkExtern_model {env : Check.Env} {ex : Extern} {g : String}
               split at h
               case isTrue =>
                 exact absurd h
-                  (by simp [throw, throwThe, MonadExceptOf.throw, Bind.bind, Except.bind])
+                  (by simp [throw, throwThe, MonadExceptOf.throw])
               case isFalse hr =>
                 rw [Decidable.not_not] at hr
                 exact ⟨d, rfl, hp, hr⟩

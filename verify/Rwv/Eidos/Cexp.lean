@@ -646,7 +646,7 @@ def cAlt (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) (Γ' : HashMap Int (
             .ok (.ite (.prim2 .eq dn (.lit ⟨szT, BitVec.ofInt szT i⟩)) bnf acc)
         | none => .ok bnf
       else .error "cexp: case alternative result-type mismatch"
-termination_by alt _ => (fuel, 1, 0)
+termination_by _ _ => (fuel, 1, 0)
 
 /-- The if-chain (ToHyle.caseChain's `go`): right fold with the
 default (when present) as the initial else; without one the last
@@ -1712,7 +1712,7 @@ private theorem envC_bind {Δ : DEnv} {σ : String → BV} :
       {Γ₀ : HashMap Int (NF × Ty)} {env₀ : Eval.Env},
       EnvC (E := E) Δ σ Γ₀ env₀ →
       pas.length = params.length → vs.length = params.length →
-      (∀ i (h1 : i < params.length) (h2 : i < pas.length) (h3 : i < vs.length),
+      (∀ i (_h1 : i < params.length) (h2 : i < pas.length) (h3 : i < vs.length),
         VTy Δ vs[i] (pas[i].2) ∧ ∃ k, Val.rep Δ k vs[i] = .ok (pas[i].1.eval σ E)) →
       EnvC (E := E) Δ σ (bindFieldsΓ params pas Γ₀) (((params.map (·.uniq)).zip vs) ++ env₀) := by
   intro params
@@ -2039,7 +2039,7 @@ private theorem arithRow_sound {Δ : DEnv} (hΔ : denvOk Δ = true) {σ : String
     have hxw : (a.eval σ E).width = wa :=
       vty_vecBool_rep_width hΔ hfa hna hba hva hka
     constructor
-    · exact vty_bitsToVec hΔ hfr hnr hbr (by simp only [BV.width]; omega)
+    · exact vty_bitsToVec hΔ hfr hnr hbr (by simp only; omega)
     · refine ⟨3, ?_⟩
       have hnf : (NF.prim2 op a b).eval σ E = ⟨(a.eval σ E).width, bits⟩ := by
         simp only [NF.eval, hr']
@@ -2273,7 +2273,7 @@ private theorem cprim_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk 
       have hxw : (a.eval σ E).width = wa :=
         vty_vecBool_rep_width hΔ hfda hna hba h0.1 hka
       constructor
-      · exact vty_bitsToVec hΔ hfr hnr hbr (by simp only [BV.width]; omega)
+      · exact vty_bitsToVec hΔ hfr hnr hbr (by simp only; omega)
       · refine ⟨3, ?_⟩
         have hnf : (NF.prim1 .not (NF.prim2 .xor a b')).eval σ E
             = (⟨(a.eval σ E).width,
@@ -2312,7 +2312,7 @@ private theorem cprim_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk 
       have hxw : (a.eval σ E).width = wa :=
         vty_vecBool_rep_width hΔ hfda hna hba h0.1 hka
       constructor
-      · exact vty_bitsToVec hΔ hfr hnr hbr (by simp only [BV.width]; omega)
+      · exact vty_bitsToVec hΔ hfr hnr hbr (by simp only; omega)
       · refine ⟨3, ?_⟩
         have hnf : (NF.prim1 .not a).eval σ E
             = (⟨(a.eval σ E).width, ~~~(a.eval σ E).bits⟩ : BV) := by
@@ -4067,7 +4067,7 @@ def rowVecRSlice (Δ : DEnv) (szf : Nat) (doms : List Ty) (res : Ty) :
       let (len, tea) ← vecLenElem "rwPrimVecRSlice" ta
       if Ty.eq tea ter then do
         let se ← Δ.sizeOf szf [] ter
-        let szA ← Δ.sizeOf szf [] ta
+        let _ ← Δ.sizeOf szf [] ta -- sizeable; the size itself is not needed
         if i + m ≤ len then
           .ok (sliceNF (i * se) (m * se) a, res)
         else .error "rwPrimVecRSlice: slice out of range"
@@ -4450,7 +4450,7 @@ def cAltJ (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) (Γ' : HashMap Int 
             .ok (.ite (.prim2 .eq dn (.lit ⟨szT, BitVec.ofInt szT i⟩)) bnf acc)
         | none => .ok bnf
       else .error "cexp: case alternative result-type mismatch"
-termination_by alt _ => (fuel, 1, 0)
+termination_by _ _ => (fuel, 1, 0)
 
 /-- The if-chain under the full compiler. -/
 def cchainJ (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) (Γ' : HashMap Int (NF × Ty))
@@ -5347,7 +5347,7 @@ private theorem resizeNF_eval {σ : String → BV} {m wa : Nat} {a : NF}
 
 /-- `⟨w, setWidth⟩` of a canonical `ofNat` at a large enough width is
 the `ofNat` at the target width. -/
-private theorem setWidth_ofNat {w m v : Nat} (hv : v < 2 ^ w) (hvm : v < 2 ^ m) :
+private theorem setWidth_ofNat {w m v : Nat} (hv : v < 2 ^ w) :
     (BitVec.ofNat w v).setWidth m = BitVec.ofNat m v := by
   apply BitVec.eq_of_toNat_eq
   rw [BitVec.toNat_setWidth, BitVec.toNat_ofNat, BitVec.toNat_ofNat,
@@ -6754,7 +6754,7 @@ private theorem cprimF_sound {Δ : DEnv} {dmap : HashMap Int Defn} (hΔ : denvOk
           rw [resizeNF_eval (by rw [hiev])]
           rw [hiev]
           show (⟨128, (BitVec.ofNat (nbits bound) iv).setWidth 128⟩ : BV) = _
-          rw [setWidth_ofNat hivnb (by omega)]
+          rw [setWidth_ofNat hivnb]
         -- the shift amount
         have hsub1 : (NF.prim2 .sub (.lit ⟨128, BitVec.ofNat 128 len⟩)
               (resizeNF 128 (nbits bound) iN)).eval σ E
@@ -11017,7 +11017,7 @@ def cAltJD (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) (Γ' : DGamma)
             else .error "cexpD: alternative arm width mismatch"
         | none => .ok (d₁, bnf)
       else .error "cexp: case alternative result-type mismatch"
-termination_by alt _ _ => (fuel, 1, 0)
+termination_by _ _ _ => (fuel, 1, 0)
 
 /-- `Cexp.cchainJ`, mirrored on the store. -/
 def cchainJD (Δ : DEnv) (dmap : HashMap Int Defn) (fuel : Nat) (Γ' : DGamma)
@@ -11601,7 +11601,7 @@ theorem slicesWD_spec {a : Nat} :
       obtain ⟨W₂, E₂, L₂, R₂⟩ := ih d₁ W₁ (Nat.lt_of_lt_of_le ha E₁.size_le)
       rcases hr : slicesWD d₁ a rest with ⟨d₂, rs⟩
       rw [hr] at W₂ E₂ L₂ R₂
-      simp only [hs, hr]
+      simp only [hr]
       refine ⟨W₂, E₁.trans E₂, ?_, ?_⟩
       · intro p hp
         rcases List.mem_cons.mp hp with hp | hp
@@ -11632,7 +11632,7 @@ theorem cpendVecD_spec {szV seI a : Nat} :
       obtain ⟨W₂, E₂, L₂, R₂⟩ := ih d₁ W₁ (Nat.lt_of_lt_of_le ha E₁.size_le)
       rcases hr : cpendVecD d₁ szV seI a rest with ⟨d₂, rs⟩
       rw [hr] at W₂ E₂ L₂ R₂
-      simp only [hs, hr]
+      simp only [hr]
       refine ⟨W₂, E₁.trans E₂, ?_, ?_⟩
       · intro q hq
         rcases List.mem_cons.mp hq with hq | hq
@@ -11663,7 +11663,7 @@ theorem cpendGenD_spec {nElems : Nat} :
       obtain ⟨W₂, E₂, L₂, R₂⟩ := ih d₁ W₁
       rcases hr : cpendGenD d₁ nElems rest with ⟨d₂, rs⟩
       rw [hr] at W₂ E₂ L₂ R₂
-      simp only [hs, hr]
+      simp only [hr]
       refine ⟨W₂, E₁.trans E₂, ?_, ?_⟩
       · intro q hq
         rcases List.mem_cons.mp hq with hq | hq
@@ -14252,7 +14252,7 @@ private theorem pushVars_spec :
       obtain ⟨W₂, E₂, L₂, R₂⟩ := ih d₁ W₁
       rcases hr : pushVars d₁ rest with ⟨d₂, is⟩
       rw [hr] at W₂ E₂ L₂ R₂
-      simp only [hv, hr]
+      simp only [hr]
       refine ⟨W₂, E₁.trans E₂, ?_, ?_⟩
       · intro q hq
         rcases List.mem_cons.mp hq with hq | hq

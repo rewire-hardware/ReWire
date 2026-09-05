@@ -244,7 +244,7 @@ where go (i : Nat) : List Exp → Option (List (String × Nat))
   | e :: rest =>
       match flattenApp e with
       | (.con _ "(,)", [.litStr p, .litInt _ v]) =>
-          if h : 0 ≤ v then
+          if _h : 0 ≤ v then
             match go (i + 1) rest with
             | some ps => some ((if p = "" then s!"g{i}" else p, v.toNat) :: ps)
             | none => none
