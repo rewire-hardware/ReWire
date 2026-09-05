@@ -11,7 +11,9 @@
   and user-library test suites inside it on every push and pull
   request. `rwc-test --require-tools` makes a missing optional tool (a
   simulator, cryptol, z3, or the certify validator) a test failure
-  rather than a silently skipped leg; CI passes it.
+  rather than a silently skipped leg; CI passes it. The driver's ghdl
+  cosimulation now elaborates and runs in one `ghdl --elab-run`, so it
+  works with the mcode backend (nixpkgs' default) as well as llvm/gcc.
 - The Synolon lint enforces the machine rules that were left to later
   passes: representability at a fixed bit width (every binder, block
   parameter, cell, port, and halt answer sizes; the sizing is

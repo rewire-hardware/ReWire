@@ -29,7 +29,7 @@ import Data.Word (Word32)
 import Numeric (readHex)
 import System.Directory (createDirectoryIfMissing, doesFileExist, findExecutable, setCurrentDirectory)
 import System.Environment (withArgs)
-import System.FilePath ((-<.>), (</>), takeBaseName, takeDirectory)
+import System.FilePath ((-<.>), takeBaseName, takeDirectory)
 import System.Process (callCommand)
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (testCase, assertBool)
@@ -142,8 +142,15 @@ cosimTests fn = do
                   createDirectoryIfMissing False wk
                   externs <- externArgs "vhdl" ".vhdl"
                   callCommand $ unwords ["ghdl -a --std=08 --workdir=" <> wk, ofl "cosim.vhdl", externs, ofl "cosim_tb.vhdl"]
-                  callCommand $ unwords ["ghdl -e --std=08 --workdir=" <> wk, "-o", wk </> "tbexe", "tb"]
-                  callCommand $ unwords [wk </> "tbexe", "--ieee-asserts=disable", ">", ofl "cosim.htrace"]
+                  -- Elaborate and run in one ghdl command, from inside the workdir.
+                  -- With the mcode backend (nixpkgs' default on x86_64) -e produces
+                  -- no executable -- the design is elaborated in memory at run time
+                  -- -- so running an executable of our own only works with the
+                  -- gcc/llvm backends; --elab-run works with all of them. mcode
+                  -- rejects -o, so the gcc/llvm executable (and object file) land
+                  -- in the current directory: the workdir, not the test directory.
+                  callCommand $ unwords [ "cd", wk, "&&", "ghdl --elab-run --std=08 --workdir=.", "tb"
+                                        , "--ieee-asserts=disable", ">", ofl "cosim.htrace" ]
                   outTrace <$> readFile (ofl "cosim.htrace")
                   where wk = ofl "ghdlwork"
 
