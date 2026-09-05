@@ -33,12 +33,16 @@ env:
 jobs:
   test:
     name: Build and test
-    runs-on: ubuntu-latest
+    # GitHub-hosted by default; set the repository variable CI_RUNS_ON to a
+    # self-hosted runner label (e.g. nixos) to run there instead.
+    runs-on: ${{ vars.CI_RUNS_ON || 'ubuntu-latest' }}
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v7
 
+      # A self-hosted runner (a NixOS machine) already has Nix.
       - uses: cachix/install-nix-action@v31
+        if: runner.environment == 'github-hosted'
 
       # Stack's state for the shell's GHC (the shell hook sets STACK_ROOT and
       # STACK_WORK to keep it apart from a Stack-managed GHC's). Keyed on
