@@ -6,7 +6,9 @@ implementation on FPGAs (plus a [Cryptol](https://cryptol.net/) backend
 producing a pure model of the generated hardware, for verification and
 simulation). ReWire enables a semantics-directed style of synchronous hardware
 development, based on reactive resumption monads. See the
-[online documentation](http://rewire-hardware.github.io/ReWire/) for more information.
+[online documentation](http://rewire-hardware.github.io/ReWire/) for more information
+(the [Haddock documentation](https://rewire-hardware.github.io/ReWire/haddock/)
+of the compiler's own packages, rebuilt from `master` by CI, is there too).
 
 ## Installing
 
@@ -132,6 +134,16 @@ missing optional tool (or validator) a test failure instead of a skipped
 leg; CI runs with it. `stack test rewire-user` checks GHC compatibility of the
 user-facing library, and `stack test rewire:rwe-test` runs the embedder
 tests (requires Isabelle and the AFP).
+
+### Building the documentation
+
+`scripts/haddock-site.sh DIR` builds the Haddock documentation of every
+package (`stack haddock`) and replaces `DIR` (new, empty, or a previous
+run's output) with it, assembled as a self-contained site
+(`DIR/index.html`): the project packages only, with types from the
+libraries GHC ships with linking to Hackage and other dependencies left
+unlinked. CI does this on every run (pull requests included) and publishes
+`master`'s at <https://rewire-hardware.github.io/ReWire/haddock/>.
 
 ## Usage
 

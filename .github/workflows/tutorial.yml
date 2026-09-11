@@ -3,8 +3,9 @@ name: Tutorial
 # Builds the mdbook tutorial (source lives here on master under
 # tutorial/rewire-by-example) and publishes the rendered HTML into the
 # gh-pages branch at /tutorial/, alongside the hand-maintained Jekyll site.
-# keep_files: true means only the tutorial/ subdir is replaced; the rest of
-# the gh-pages site is left untouched.
+# destination_dir confines the action to the tutorial/ subdir, and
+# keep_files: true additionally leaves the files already there in place, so
+# the rest of the gh-pages site is left untouched.
 
 on:
   push:
@@ -17,8 +18,9 @@ on:
 permissions:
   contents: write
 
+# One push to gh-pages at a time, shared with the CI workflow's docs job.
 concurrency:
-  group: tutorial-gh-pages
+  group: gh-pages
   cancel-in-progress: false
 
 jobs:

@@ -10,6 +10,12 @@ name: CI
 # RWC_TEST_REQUIRE_RWV), so a missing simulator fails the run rather than
 # silently skipping its legs. The embedder tests (rwe-test) need Isabelle
 # and the AFP and do not run here.
+#
+# The test job also builds the Haddock documentation of every package
+# (scripts/haddock-site.sh), kept as a run artifact. For master, the docs
+# job then publishes it to the gh-pages branch under haddock/, beside the
+# mdbook the Tutorial workflow deploys there, so that it is served at
+# https://rewire-hardware.github.io/ReWire/haddock/.
 
 on:
   push:
@@ -94,6 +100,20 @@ jobs:
       - name: Test the user library
         run: stack test rewire-user
 
+      # After the tests, so that a documentation failure never hides a test
+      # failure. A minute or two: Stack reconfigures every package for its
+      # first --haddock build (relinking the executables; only the two
+      # packages with test suites recompile, for their smaller component
+      # set) and Haddock re-typechecks every module.
+      - name: Build the documentation
+        run: scripts/haddock-site.sh haddock-site
+
+      - name: Upload the documentation
+        uses: actions/upload-artifact@v7
+        with:
+          name: haddock
+          path: haddock-site
+
       # The generated outputs the golden tests diffed (foo.out.* beside the
       # goldens in the data directory), for inspecting a failure.
       - name: Upload test outputs
@@ -105,3 +125,45 @@ jobs:
             **/tests/golden/*.out.*
             **/tests/integration/*.out.*
           if-no-files-found: ignore
+
+  docs:
+    name: Publish the documentation
+    needs: test
+    # The master branch only: its pushes and manual runs, never a PR.
+    if: github.ref == 'refs/heads/master'
+    # A GitHub-hosted runner whatever CI_RUNS_ON says: the job needs neither
+    # Nix nor the self-hosted machine, and it relies on a fresh workspace and
+    # home directory -- a self-hosted runner's persist from job to job, and
+    # download-artifact adds to whatever is already in its path.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # One push to gh-pages at a time, shared with the Tutorial workflow.
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+    defaults:
+      run:
+        # Not the workflow's Nix shell: this job needs none.
+        shell: bash
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: haddock
+          path: haddock-site
+
+      # Replaces haddock/ in the gh-pages branch (keep_files is off, so the
+      # pages of renamed or removed modules do not linger) and leaves the
+      # rest of the branch -- the hand-maintained Jekyll site and the
+      # tutorial -- as it is.
+      - name: Publish to gh-pages/haddock
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: haddock-site
+          destination_dir: haddock
+          # The rest of gh-pages is a Jekyll site; without this the action
+          # adds a .nojekyll file that disables Jekyll for the whole site.
+          enable_jekyll: true
+          full_commit_message: 'Deploy haddock from ${{ github.sha }}'
