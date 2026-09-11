@@ -1,0 +1,23 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>ReWire.GHC.ToEidos</title><link href="linuwial.css" rel="stylesheet" type="text/css" title="Linuwial" /><link rel="stylesheet" type="text/css" href="quick-jump.css" /><link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400i,700" /><script src="haddock-bundle.min.js" async="async" type="text/javascript"></script><script type="text/x-mathjax-config">MathJax.Hub.Config({ tex2jax: { processClass: "mathjax", ignoreClass: ".*" } });</script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></head><body><div id="package-header"><span class="caption">rewire-frontend-2.8: A Haskell-to-Verilog/VHDL compiler, front end (GHC driver, Eidos, Synolon)</span><ul class="links" id="page-menu"><li><a href="src/ReWire.GHC.ToEidos.html">Source</a></li><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul></div><div id="content"><div id="module-header"><table class="info"><tr><th>Safe Haskell</th><td>Trustworthy</td></tr><tr><th>Language</th><td>Haskell2010</td></tr></table><p class="caption">ReWire.GHC.ToEidos</p></div><div id="description"><p class="caption">Description</p><div class="doc"><p>The Core -&gt; Eidos bridge: translates the -O0 desugared Core of the
+   whole home module graph into an Eidos <code>Program</code> (doc/eidos.md &#167;3) by
+   near-transliteration. Where the retired Crust bridge lowered lets to
+   beta-redexes (with demand-order rescheduling), crushed cases to
+   single-arm cascades, and discarded type instantiations for the
+   typechecker to re-infer, this bridge PRESERVES them: Core lets become
+   <code><a href="ReWire-Eidos-Syntax.html#v:Let" title="ReWire.Eidos.Syntax">Let</a></code>s (recursive groups included), join-tagged
+   binders become <code>Join</code> binds with <code>Jump</code>s at their call sites, cases
+   stay n-ary with their case binder, and type arguments ride along as
+   <code>TArg</code>s (driving the substitution-based specializer). Types are
+   bridged fail-fast: an untranslatable type is a located error at the
+   occurrence, never a silent Nothing.</p><p>Also handled here: the reachability walk
+   from the start symbol + rwPrim* roots, evidence erasure (dictionary
+   arguments/binders/binds erased; user-class dictionaries kept as data,
+   with single-method classes' newtype-dictionary types unwrapped to the
+   method type, matching the term level's cast erasure),
+   rwPrim* recognition, the reactive-monad class-op recognition (Bind and
+   Return at ReacT/StateT/Identity or at an unresolved monad type),
+   Integer/String/list literal folding, INLINE-pragma ride-along, and the
+   base vocabulary. Name and type classification lives in
+   <a href="ReWire-GHC-Recognize.html">ReWire.GHC.Recognize</a>.</p><p>Uniques: every Eidos binder gets a fresh unique from a supply threaded
+   through the translation (GHC Core does not guarantee globally unique
+   binders); occurrences resolve through the context maps.</p></div></div><div id="interface"><h1>Documentation</h1><div class="top"><p class="src"><a id="v:toEidos" class="def">toEidos</a> :: <a href="https://hackage.haskell.org/package/mtl-2.3.1/docs/Control-Monad-Error-Class.html#t:MonadError" title="Control.Monad.Error.Class">MonadError</a> <a href="../rewire-base-2.8/ReWire-Error.html#t:AstError" title="ReWire.Error">AstError</a> m =&gt; <a href="../rewire-base-2.8/ReWire-Config.html#t:Config" title="ReWire.Config">Config</a> -&gt; [<a href="https://hackage.haskell.org/package/ghc-9.10.3/docs/GHC-Unit-Module-ModGuts.html#t:ModGuts" title="GHC.Unit.Module.ModGuts">ModGuts</a>] -&gt; m <a href="ReWire-Eidos-Syntax.html#t:Program" title="ReWire.Eidos.Syntax">Program</a> <a href="src/ReWire.GHC.ToEidos.html#toEidos" class="link">Source</a> <a href="#v:toEidos" class="selflink">#</a></p></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.31.1</p></div></body></html>

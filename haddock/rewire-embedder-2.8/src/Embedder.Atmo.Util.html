@@ -1,0 +1,474 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span>
+</span><span id="line-3"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html"><span class="hs-identifier">Embedder.Atmo.Util</span></a></span><span>
+</span><span id="line-4"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#FieldId"><span class="hs-identifier">FieldId</span></a></span><span>
+</span><span id="line-5"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Types.html#paramTys"><span class="hs-identifier">paramTys</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#isPrim"><span class="hs-identifier">isPrim</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#inlineable"><span class="hs-identifier">inlineable</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#mustInline"><span class="hs-identifier">mustInline</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#nil"><span class="hs-identifier">nil</span></a></span><span>
+</span><span id="line-6"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#flattenTuple"><span class="hs-identifier">flattenTuple</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#mkTuple"><span class="hs-identifier">mkTuple</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#mkTuplePat"><span class="hs-identifier">mkTuplePat</span></a></span><span>
+</span><span id="line-7"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#mkPair"><span class="hs-identifier">mkPair</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#mkPairPat"><span class="hs-identifier">mkPairPat</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#flattenLam"><span class="hs-identifier">flattenLam</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#mkLam"><span class="hs-identifier">mkLam</span></a></span><span>
+</span><span id="line-8"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#mkApp"><span class="hs-identifier">mkApp</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#mkError"><span class="hs-identifier">mkError</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#builtin"><span class="hs-identifier">builtin</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#proxy"><span class="hs-identifier">proxy</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#tybuiltin"><span class="hs-identifier">tybuiltin</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#userBuiltin"><span class="hs-identifier">userBuiltin</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#mkTupleCtor"><span class="hs-identifier">mkTupleCtor</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#isTupleCtor"><span class="hs-identifier">isTupleCtor</span></a></span><span>
+</span><span id="line-9"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#mkRecVal"><span class="hs-identifier">mkRecVal</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#mkRecUpd"><span class="hs-identifier">mkRecUpd</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#mkRecSel"><span class="hs-identifier">mkRecSel</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Util.html#mkPatRec"><span class="hs-identifier">mkPatRec</span></a></span><span>
+</span><span id="line-10"></span><span>      </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-11"></span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Annotation</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Annote</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MsgAnnote</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html"><span class="hs-identifier">Embedder.Atmo.Syntax</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier">Exp</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Ty"><span class="hs-identifier">Ty</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Pat"><span class="hs-identifier">Pat</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Defn"><span class="hs-identifier">Defn</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#DefnAttr"><span class="hs-identifier">DefnAttr</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Poly"><span class="hs-identifier">Poly</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#FieldId"><span class="hs-identifier">FieldId</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Builtins.html#TyBuiltin"><span class="hs-identifier">TyBuiltin</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Embedder.Atmo.Types.html"><span class="hs-identifier">Embedder.Atmo.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Embedder.Atmo.Types.html#proxyTy"><span class="hs-identifier">proxyTy</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Types.html#nilTy"><span class="hs-identifier">nilTy</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Types.html#strTy"><span class="hs-identifier">strTy</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Types.html#arr"><span class="hs-identifier">arr</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Types.html#typeOf"><span class="hs-identifier">typeOf</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Types.html#arrowRight"><span class="hs-identifier">arrowRight</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Types.html#pairTy"><span class="hs-identifier">pairTy</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Types.html#fundamental"><span class="hs-identifier">fundamental</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Types.html#mkArrowTy"><span class="hs-identifier">mkArrowTy</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Types.html#paramTys"><span class="hs-identifier">paramTys</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Embedder.Builtins.html"><span class="hs-identifier">Embedder.Builtins</span></a></span><span> </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">builtins</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Builtin</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Builtins.html#tybuiltins"><span class="hs-identifier">tybuiltins</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Builtins.html#builtinUserQName"><span class="hs-identifier">builtinUserQName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Builtins.html#RWUserOp"><span class="hs-identifier">RWUserOp</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span> </span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">unpack</span></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">fromMaybe</span></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Numeric.Natural</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Natural</span></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Tuple</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">swap</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-comment">-- Name Handling:</span><span>
+</span><span id="line-25"></span><span>      </span><span class="hs-comment">-- Remove Embed</span><span>
+</span><span id="line-26"></span><span>      </span><span class="hs-comment">-- Remove bindings (e.g. Poly)</span><span>
+</span><span id="line-27"></span><span>      </span><span class="hs-comment">-- Remove Name from Lam helpers</span><span>
+</span><span id="line-28"></span><span>      </span><span class="hs-comment">-- Remove s2n and n2s</span><span>
+</span><span id="line-29"></span><span>      </span><span class="hs-comment">-- Remove Unbound exports</span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span class="annot"><a href="Embedder.Atmo.Util.html#builtin"><span class="hs-identifier hs-type">builtin</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Builtin</span></span><span>
+</span><span id="line-32"></span><span id="builtin"><span class="annot"><span class="annottext">builtin :: Text -&gt; Maybe Builtin
+</span><a href="Embedder.Atmo.Util.html#builtin"><span class="hs-identifier hs-var hs-var">builtin</span></a></span></span><span> </span><span id="local-6989586621679308767"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679308767"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; [(Text, Builtin)] -&gt; Maybe Builtin
+forall a b. Eq a =&gt; a -&gt; [(a, b)] -&gt; Maybe b
+</span><span class="hs-identifier hs-var">lookup</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679308767"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">[(Text, Builtin)]
+</span><span class="hs-identifier hs-var">builtins</span></span><span>
+</span><span id="line-33"></span><span>
+</span><span id="line-34"></span><span class="annot"><a href="Embedder.Atmo.Util.html#tybuiltin"><span class="hs-identifier hs-type">tybuiltin</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Embedder.Builtins.html#TyBuiltin"><span class="hs-identifier hs-type">TyBuiltin</span></a></span><span>
+</span><span id="line-35"></span><span id="tybuiltin"><span class="annot"><span class="annottext">tybuiltin :: Text -&gt; Maybe TyBuiltin
+</span><a href="Embedder.Atmo.Util.html#tybuiltin"><span class="hs-identifier hs-var hs-var">tybuiltin</span></a></span></span><span> </span><span id="local-6989586621679308769"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679308769"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; [(Text, TyBuiltin)] -&gt; Maybe TyBuiltin
+forall a b. Eq a =&gt; a -&gt; [(a, b)] -&gt; Maybe b
+</span><span class="hs-identifier hs-var">lookup</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679308769"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">[(Text, TyBuiltin)]
+</span><a href="Embedder.Builtins.html#tybuiltins"><span class="hs-identifier hs-var">tybuiltins</span></a></span><span>
+</span><span id="line-36"></span><span>
+</span><span id="line-37"></span><span class="annot"><a href="Embedder.Atmo.Util.html#userBuiltin"><span class="hs-identifier hs-type">userBuiltin</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Builtin</span></span><span>
+</span><span id="line-38"></span><span id="userBuiltin"><span class="annot"><span class="annottext">userBuiltin :: Text -&gt; Maybe Builtin
+</span><a href="Embedder.Atmo.Util.html#userBuiltin"><span class="hs-identifier hs-var hs-var">userBuiltin</span></a></span></span><span> </span><span id="local-6989586621679308770"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679308770"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; [(Text, Builtin)] -&gt; Maybe Builtin
+forall a b. Eq a =&gt; a -&gt; [(a, b)] -&gt; Maybe b
+</span><span class="hs-identifier hs-var">lookup</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679308770"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">((Builtin, Text) -&gt; (Text, Builtin))
+-&gt; [(Builtin, Text)] -&gt; [(Text, Builtin)]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">(Builtin, Text) -&gt; (Text, Builtin)
+forall a b. (a, b) -&gt; (b, a)
+</span><span class="hs-identifier hs-var">swap</span></span><span> </span><span class="annot"><span class="annottext">[(Builtin, Text)]
+</span><a href="Embedder.Builtins.html#builtinUserQName"><span class="hs-identifier hs-var">builtinUserQName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span id="local-6989586621679308626"><span class="annot"><a href="Embedder.Atmo.Util.html#isPrim"><span class="hs-identifier hs-type">isPrim</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="#local-6989586621679308626"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679308626"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span></span><span>
+</span><span id="line-41"></span><span id="isPrim"><span class="annot"><span class="annottext">isPrim :: forall a. Show a =&gt; a -&gt; Bool
+</span><a href="Embedder.Atmo.Util.html#isPrim"><span class="hs-identifier hs-var hs-var">isPrim</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Char -&gt; [Char] -&gt; Bool
+forall (t :: * -&gt; *) a. (Foldable t, Eq a) =&gt; a -&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">notElem</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'.'</span></span><span> </span><span class="annot"><span class="annottext">([Char] -&gt; Bool) -&gt; (a -&gt; [Char]) -&gt; a -&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; [Char]
+forall a. Show a =&gt; a -&gt; [Char]
+</span><span class="hs-identifier hs-var">show</span></span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span class="annot"><a href="Embedder.Atmo.Util.html#inlineable"><span class="hs-identifier hs-type">inlineable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-44"></span><span id="inlineable"><span class="annot"><span class="annottext">inlineable :: Defn -&gt; Bool
+</span><a href="Embedder.Atmo.Util.html#inlineable"><span class="hs-identifier hs-var hs-var">inlineable</span></a></span></span><span> </span><span id="local-6989586621679308779"><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679308779"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Defn -&gt; Maybe DefnAttr
+</span><a href="Embedder.Atmo.Syntax.html#defnAttr"><span class="hs-identifier hs-var">defnAttr</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679308779"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-45"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">DefnAttr
+</span><a href="Embedder.Atmo.Syntax.html#Inline"><span class="hs-identifier hs-var">Inline</span></a></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-46"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">DefnAttr
+</span><a href="Embedder.Atmo.Syntax.html#NoInline"><span class="hs-identifier hs-var">NoInline</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-47"></span><span>      </span><span class="annot"><span class="annottext">Maybe DefnAttr
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; Bool -&gt; Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Bool
+forall a. Show a =&gt; a -&gt; Bool
+</span><a href="Embedder.Atmo.Util.html#isPrim"><span class="hs-identifier hs-var">isPrim</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Bool) -&gt; Text -&gt; Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Defn -&gt; Text
+</span><a href="Embedder.Atmo.Syntax.html#defnName"><span class="hs-identifier hs-var">defnName</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679308779"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span class="annot"><a href="Embedder.Atmo.Util.html#mustInline"><span class="hs-identifier hs-type">mustInline</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-50"></span><span id="mustInline"><span class="annot"><span class="annottext">mustInline :: Defn -&gt; Bool
+</span><a href="Embedder.Atmo.Util.html#mustInline"><span class="hs-identifier hs-var hs-var">mustInline</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-51"></span><span>      </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">defnAttr :: Defn -&gt; Maybe DefnAttr
+</span><a href="Embedder.Atmo.Syntax.html#defnAttr"><span class="hs-identifier hs-var">defnAttr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">DefnAttr
+</span><a href="Embedder.Atmo.Syntax.html#Inline"><span class="hs-identifier hs-var">Inline</span></a></span><span> </span><span class="hs-special">}</span><span>                    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-52"></span><span>      </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">defnPolyTy :: Defn -&gt; Poly
+</span><a href="Embedder.Atmo.Syntax.html#defnPolyTy"><span class="hs-identifier hs-var">defnPolyTy</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Poly"><span class="hs-identifier hs-type">Poly</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679308788"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679308788"><span class="hs-identifier hs-var">t</span></a></span></span><span>
+</span><span id="line-53"></span><span>           </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">defnName :: Defn -&gt; Text
+</span><a href="Embedder.Atmo.Syntax.html#defnName"><span class="hs-identifier hs-var">defnName</span></a></span><span>   </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621679308789"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679308789"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-special">}</span><span>                            </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Bool
+forall a. Show a =&gt; a -&gt; Bool
+</span><a href="Embedder.Atmo.Util.html#isPrim"><span class="hs-identifier hs-var">isPrim</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679308789"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Bool
+</span><a href="Embedder.Atmo.Types.html#fundamental"><span class="hs-identifier hs-var">fundamental</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679308788"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span class="annot"><a href="Embedder.Atmo.Util.html#nil"><span class="hs-identifier hs-type">nil</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-56"></span><span id="nil"><span class="annot"><span class="annottext">nil :: Exp
+</span><a href="Embedder.Atmo.Util.html#nil"><span class="hs-identifier hs-var hs-var">nil</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Maybe Poly -&gt; Maybe Ty -&gt; Text -&gt; Exp
+</span><a href="Embedder.Atmo.Syntax.html#Con"><span class="hs-identifier hs-var">Con</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Annote
+</span><span class="hs-identifier hs-var">MsgAnnote</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;nil&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Ty -&gt; Maybe Ty
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="Embedder.Atmo.Types.html#nilTy"><span class="hs-identifier hs-var">nilTy</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;()&quot;</span></span><span>
+</span><span id="line-57"></span><span>
+</span><span id="line-58"></span><span class="annot"><a href="Embedder.Atmo.Util.html#proxy"><span class="hs-identifier hs-type">proxy</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Natural</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-59"></span><span id="proxy"><span class="annot"><span class="annottext">proxy :: Natural -&gt; Exp
+</span><a href="Embedder.Atmo.Util.html#proxy"><span class="hs-identifier hs-var hs-var">proxy</span></a></span></span><span> </span><span id="local-6989586621679308792"><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679308792"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Maybe Poly -&gt; Maybe Ty -&gt; Text -&gt; Exp
+</span><a href="Embedder.Atmo.Syntax.html#Con"><span class="hs-identifier hs-var">Con</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308793"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Ty -&gt; Maybe Ty
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Ty -&gt; Maybe Ty) -&gt; Ty -&gt; Maybe Ty
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Natural -&gt; Ty
+</span><a href="Embedder.Atmo.Types.html#proxyTy"><span class="hs-identifier hs-var">proxyTy</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308793"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679308792"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Proxy&quot;</span></span><span>
+</span><span id="line-60"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679308793"><span class="hs-identifier hs-type">an</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span>
+</span><span id="line-61"></span><span>            </span><span id="local-6989586621679308793"><span class="annot"><span class="annottext">an :: Annote
+</span><a href="#local-6989586621679308793"><span class="hs-identifier hs-var hs-var">an</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Annote
+</span><span class="hs-identifier hs-var">MsgAnnote</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Proxy&quot;</span></span><span>
+</span><span id="line-62"></span><span>
+</span><span id="line-63"></span><span class="annot"><a href="Embedder.Atmo.Util.html#nilPat"><span class="hs-identifier hs-type">nilPat</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Pat"><span class="hs-identifier hs-type">Pat</span></a></span><span>
+</span><span id="line-64"></span><span id="nilPat"><span class="annot"><span class="annottext">nilPat :: Pat
+</span><a href="Embedder.Atmo.Util.html#nilPat"><span class="hs-identifier hs-var hs-var">nilPat</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Maybe Poly -&gt; Maybe Ty -&gt; Text -&gt; [Pat] -&gt; Pat
+</span><a href="Embedder.Atmo.Syntax.html#PatCon"><span class="hs-identifier hs-var">PatCon</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Annote
+</span><span class="hs-identifier hs-var">MsgAnnote</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;nilPat&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Ty -&gt; Maybe Ty
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="Embedder.Atmo.Types.html#nilTy"><span class="hs-identifier hs-var">nilTy</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;()&quot;</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-65"></span><span>
+</span><span id="line-66"></span><span class="annot"><a href="Embedder.Atmo.Util.html#mkPair"><span class="hs-identifier hs-type">mkPair</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-67"></span><span id="mkPair"><span class="annot"><span class="annottext">mkPair :: Annote -&gt; Exp -&gt; Exp -&gt; Exp
+</span><a href="Embedder.Atmo.Util.html#mkPair"><span class="hs-identifier hs-var hs-var">mkPair</span></a></span></span><span> </span><span id="local-6989586621679308796"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308796"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span id="local-6989586621679308797"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308797"><span class="hs-identifier hs-var">e1</span></a></span></span><span> </span><span id="local-6989586621679308798"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308798"><span class="hs-identifier hs-var">e2</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Exp -&gt; [Exp] -&gt; Exp
+</span><a href="Embedder.Atmo.Util.html#mkApp"><span class="hs-identifier hs-var">mkApp</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308796"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Annote -&gt; Maybe Poly -&gt; Maybe Ty -&gt; Text -&gt; Exp
+</span><a href="Embedder.Atmo.Syntax.html#Con"><span class="hs-identifier hs-var">Con</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308796"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="annot"><span class="annottext">Maybe Ty
+</span><a href="#local-6989586621679308799"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;(,)&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308797"><span class="hs-identifier hs-var">e1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308798"><span class="hs-identifier hs-var">e2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-68"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679308799"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span>
+</span><span id="line-69"></span><span>            </span><span id="local-6989586621679308799"><span class="annot"><span class="annottext">t :: Maybe Ty
+</span><a href="#local-6989586621679308799"><span class="hs-identifier hs-var hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-70"></span><span>                  </span><span id="local-6989586621679308800"><span class="annot"><a href="#local-6989586621679308800"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Maybe Ty
+forall a. TypeAnnotated a =&gt; a -&gt; Maybe Ty
+</span><a href="Embedder.Atmo.Types.html#typeOf"><span class="hs-identifier hs-var">typeOf</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308797"><span class="hs-identifier hs-var">e1</span></a></span><span>
+</span><span id="line-71"></span><span>                  </span><span id="local-6989586621679308801"><span class="annot"><a href="#local-6989586621679308801"><span class="hs-identifier hs-var">t2</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><a href="Embedder.Atmo.Types.html#typeOf"><span class="hs-identifier hs-type">typeOf</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679308798"><span class="hs-identifier hs-type">e2</span></a></span><span>
+</span><span id="line-72"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="Embedder.Atmo.Types.html#mkArrowTy"><span class="hs-identifier hs-type">mkArrowTy</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679308800"><span class="hs-identifier hs-type">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679308801"><span class="hs-identifier hs-type">t2</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="Embedder.Atmo.Types.html#pairTy"><span class="hs-identifier hs-type">pairTy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679308796"><span class="hs-identifier hs-type">an</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679308800"><span class="hs-identifier hs-type">t1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679308801"><span class="hs-identifier hs-type">t2</span></a></span><span>
+</span><span id="line-73"></span><span>
+</span><span id="line-74"></span><span class="annot"><a href="Embedder.Atmo.Util.html#flattenPair"><span class="hs-identifier hs-type">flattenPair</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">,</span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-75"></span><span id="flattenPair"><span class="annot"><span class="annottext">flattenPair :: Exp -&gt; Maybe (Exp, Exp)
+</span><a href="Embedder.Atmo.Util.html#flattenPair"><span class="hs-identifier hs-var hs-var">flattenPair</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-76"></span><span>      </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Tuple"><span class="hs-identifier hs-type">Tuple</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe Ty
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">[</span><span id="local-6989586621679308804"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308804"><span class="hs-identifier hs-var">e1</span></a></span></span><span class="hs-special">,</span><span id="local-6989586621679308805"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308805"><span class="hs-identifier hs-var">e2</span></a></span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Exp, Exp) -&gt; Maybe (Exp, Exp)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308804"><span class="hs-identifier hs-var">e1</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308805"><span class="hs-identifier hs-var">e2</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-77"></span><span>      </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Exp, Exp)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span class="annot"><a href="Embedder.Atmo.Util.html#mkPairPat"><span class="hs-identifier hs-type">mkPairPat</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Pat"><span class="hs-identifier hs-type">Pat</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Pat"><span class="hs-identifier hs-type">Pat</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Pat"><span class="hs-identifier hs-type">Pat</span></a></span><span>
+</span><span id="line-80"></span><span id="mkPairPat"><span class="annot"><span class="annottext">mkPairPat :: Annote -&gt; Pat -&gt; Pat -&gt; Pat
+</span><a href="Embedder.Atmo.Util.html#mkPairPat"><span class="hs-identifier hs-var hs-var">mkPairPat</span></a></span></span><span> </span><span id="local-6989586621679308806"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308806"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span id="local-6989586621679308807"><span class="annot"><span class="annottext">Pat
+</span><a href="#local-6989586621679308807"><span class="hs-identifier hs-var">p1</span></a></span></span><span> </span><span id="local-6989586621679308808"><span class="annot"><span class="annottext">Pat
+</span><a href="#local-6989586621679308808"><span class="hs-identifier hs-var">p2</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Maybe Poly -&gt; Maybe Ty -&gt; Text -&gt; [Pat] -&gt; Pat
+</span><a href="Embedder.Atmo.Syntax.html#PatCon"><span class="hs-identifier hs-var">PatCon</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308806"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Annote -&gt; Ty -&gt; Ty -&gt; Ty
+</span><a href="Embedder.Atmo.Types.html#pairTy"><span class="hs-identifier hs-var">pairTy</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308806"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">(Ty -&gt; Ty -&gt; Ty) -&gt; Maybe Ty -&gt; Maybe (Ty -&gt; Ty)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Pat -&gt; Maybe Ty
+forall a. TypeAnnotated a =&gt; a -&gt; Maybe Ty
+</span><a href="Embedder.Atmo.Types.html#typeOf"><span class="hs-identifier hs-var">typeOf</span></a></span><span> </span><span class="annot"><span class="annottext">Pat
+</span><a href="#local-6989586621679308807"><span class="hs-identifier hs-var">p1</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe (Ty -&gt; Ty) -&gt; Maybe Ty -&gt; Maybe Ty
+forall a b. Maybe (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Pat -&gt; Maybe Ty
+forall a. TypeAnnotated a =&gt; a -&gt; Maybe Ty
+</span><a href="Embedder.Atmo.Types.html#typeOf"><span class="hs-identifier hs-var">typeOf</span></a></span><span> </span><span class="annot"><span class="annottext">Pat
+</span><a href="#local-6989586621679308808"><span class="hs-identifier hs-var">p2</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;(,)&quot;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Pat
+</span><a href="#local-6989586621679308807"><span class="hs-identifier hs-var">p1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Pat
+</span><a href="#local-6989586621679308808"><span class="hs-identifier hs-var">p2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="annot"><a href="Embedder.Atmo.Util.html#mkTupleCtor"><span class="hs-identifier hs-type">mkTupleCtor</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-83"></span><span id="mkTupleCtor"><span class="annot"><span class="annottext">mkTupleCtor :: Int -&gt; Text
+</span><a href="Embedder.Atmo.Util.html#mkTupleCtor"><span class="hs-identifier hs-var hs-var">mkTupleCtor</span></a></span></span><span> </span><span id="local-6989586621679308810"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679308810"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;(&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.replicate</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679308810"><span class="hs-identifier hs-var">n</span></a></span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;,&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;)&quot;</span></span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span class="annot"><span class="hs-comment">-- | Function to match the specified pattern and return Maybe Int</span></span><span>
+</span><span id="line-86"></span><span class="annot"><a href="Embedder.Atmo.Util.html#isTupleCtor"><span class="hs-identifier hs-type">isTupleCtor</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-87"></span><span id="isTupleCtor"><span class="annot"><span class="annottext">isTupleCtor :: Text -&gt; Bool
+</span><a href="Embedder.Atmo.Util.html#isTupleCtor"><span class="hs-identifier hs-var hs-var">isTupleCtor</span></a></span></span><span> </span><span id="local-6989586621679308812"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679308812"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679308812"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;(&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.replicate</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Char] -&gt; Int
+forall a. [a] -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; [Char]
+</span><span class="hs-identifier hs-var">unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679308812"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;,&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;)&quot;</span></span><span>
+</span><span id="line-88"></span><span>
+</span><span id="line-89"></span><span class="annot"><a href="Embedder.Atmo.Util.html#mkTuple"><span class="hs-identifier hs-type">mkTuple</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-90"></span><span id="mkTuple"><span class="annot"><span class="annottext">mkTuple :: Annote -&gt; [Exp] -&gt; Exp
+</span><a href="Embedder.Atmo.Util.html#mkTuple"><span class="hs-identifier hs-var hs-var">mkTuple</span></a></span></span><span> </span><span id="local-6989586621679308814"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308814"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Exp -&gt; Exp) -&gt; Exp -&gt; [Exp] -&gt; Exp
+forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) a b.
+Foldable t =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldr</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Annote -&gt; Exp -&gt; Exp -&gt; Exp
+</span><a href="Embedder.Atmo.Util.html#mkPair"><span class="hs-identifier hs-var">mkPair</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308814"><span class="hs-identifier hs-var">an</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="Embedder.Atmo.Util.html#nil"><span class="hs-identifier hs-var">nil</span></a></span><span>
+</span><span id="line-91"></span><span>
+</span><span id="line-92"></span><span class="annot"><a href="Embedder.Atmo.Util.html#flattenTuple"><span class="hs-identifier hs-type">flattenTuple</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-93"></span><span id="flattenTuple"><span class="annot"><span class="annottext">flattenTuple :: Exp -&gt; Maybe [Exp]
+</span><a href="Embedder.Atmo.Util.html#flattenTuple"><span class="hs-identifier hs-var hs-var">flattenTuple</span></a></span></span><span> </span><span id="local-6989586621679308816"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308816"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Maybe (Exp, Exp)
+</span><a href="Embedder.Atmo.Util.html#flattenPair"><span class="hs-identifier hs-var">flattenPair</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308816"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-94"></span><span>      </span><span class="annot"><span class="annottext">Maybe (Exp, Exp)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe [Exp]
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-95"></span><span>      </span><span class="hs-comment">-- Can't remove unit without changing type. Just (e1,Con _ _ _ (n2s -&gt; &quot;()&quot;)) -&gt; Just [e1]</span><span>
+</span><span id="line-96"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679308817"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308817"><span class="hs-identifier hs-var">e1</span></a></span></span><span class="hs-special">,</span><span id="local-6989586621679308818"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308818"><span class="hs-identifier hs-var">e2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Exp] -&gt; Maybe [Exp]
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">([Exp] -&gt; Maybe [Exp]) -&gt; [Exp] -&gt; Maybe [Exp]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308817"><span class="hs-identifier hs-var">e1</span></a></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [Exp] -&gt; [Exp]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[Exp] -&gt; Maybe [Exp] -&gt; [Exp]
+forall a. a -&gt; Maybe a -&gt; a
+</span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308818"><span class="hs-identifier hs-var">e2</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Maybe [Exp]
+</span><a href="Embedder.Atmo.Util.html#flattenTuple"><span class="hs-identifier hs-var">flattenTuple</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308818"><span class="hs-identifier hs-var">e2</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-97"></span><span>
+</span><span id="line-98"></span><span class="annot"><a href="Embedder.Atmo.Util.html#mkTuplePat"><span class="hs-identifier hs-type">mkTuplePat</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Pat"><span class="hs-identifier hs-type">Pat</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Pat"><span class="hs-identifier hs-type">Pat</span></a></span><span>
+</span><span id="line-99"></span><span id="mkTuplePat"><span class="annot"><span class="annottext">mkTuplePat :: Annote -&gt; [Pat] -&gt; Pat
+</span><a href="Embedder.Atmo.Util.html#mkTuplePat"><span class="hs-identifier hs-var hs-var">mkTuplePat</span></a></span></span><span> </span><span id="local-6989586621679308819"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308819"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Pat -&gt; Pat -&gt; Pat) -&gt; Pat -&gt; [Pat] -&gt; Pat
+forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) a b.
+Foldable t =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldr</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Annote -&gt; Pat -&gt; Pat -&gt; Pat
+</span><a href="Embedder.Atmo.Util.html#mkPairPat"><span class="hs-identifier hs-var">mkPairPat</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308819"><span class="hs-identifier hs-var">an</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Pat
+</span><a href="Embedder.Atmo.Util.html#nilPat"><span class="hs-identifier hs-var">nilPat</span></a></span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="annot"><a href="Embedder.Atmo.Util.html#mkApp"><span class="hs-identifier hs-type">mkApp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-102"></span><span id="mkApp"><span class="annot"><span class="annottext">mkApp :: Annote -&gt; Exp -&gt; [Exp] -&gt; Exp
+</span><a href="Embedder.Atmo.Util.html#mkApp"><span class="hs-identifier hs-var hs-var">mkApp</span></a></span></span><span> </span><span id="local-6989586621679308820"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308820"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span id="local-6989586621679308821"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308821"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span id="local-6989586621679308822"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679308822"><span class="hs-identifier hs-var">es</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Maybe Poly -&gt; Maybe Ty -&gt; Exp -&gt; [Exp] -&gt; Exp
+</span><a href="Embedder.Atmo.Syntax.html#App"><span class="hs-identifier hs-var">App</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308820"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Maybe Ty -&gt; Exp -&gt; Maybe Ty) -&gt; Maybe Ty -&gt; [Exp] -&gt; Maybe Ty
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) b a.
+Foldable t =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldl'</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679308825"><span class="annot"><span class="annottext">Maybe Ty
+</span><a href="#local-6989586621679308825"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Ty -&gt; Ty) -&gt; Maybe Ty -&gt; Maybe Ty
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Ty
+</span><a href="Embedder.Atmo.Types.html#arrowRight"><span class="hs-identifier hs-var">arrowRight</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Ty
+</span><a href="#local-6989586621679308825"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Maybe Ty
+forall a. TypeAnnotated a =&gt; a -&gt; Maybe Ty
+</span><a href="Embedder.Atmo.Types.html#typeOf"><span class="hs-identifier hs-var">typeOf</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308821"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679308822"><span class="hs-identifier hs-var">es</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308821"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679308822"><span class="hs-identifier hs-var">es</span></a></span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span class="annot"><a href="Embedder.Atmo.Util.html#mkError"><span class="hs-identifier hs-type">mkError</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-105"></span><span id="mkError"><span class="annot"><span class="annottext">mkError :: Annote -&gt; Maybe Ty -&gt; Text -&gt; Exp
+</span><a href="Embedder.Atmo.Util.html#mkError"><span class="hs-identifier hs-var hs-var">mkError</span></a></span></span><span> </span><span id="local-6989586621679308826"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308826"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span id="local-6989586621679308827"><span class="annot"><span class="annottext">Maybe Ty
+</span><a href="#local-6989586621679308827"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621679308828"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679308828"><span class="hs-identifier hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Maybe Poly -&gt; Maybe Ty -&gt; Exp -&gt; [Exp] -&gt; Exp
+</span><a href="Embedder.Atmo.Syntax.html#App"><span class="hs-identifier hs-var">App</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308826"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="annot"><span class="annottext">Maybe Ty
+</span><a href="#local-6989586621679308827"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Annote -&gt; Maybe Poly -&gt; Maybe Ty -&gt; RWUserOp -&gt; Exp
+</span><a href="Embedder.Atmo.Syntax.html#RWUser"><span class="hs-identifier hs-var">RWUser</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308826"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Ty -&gt; Ty -&gt; Ty
+</span><a href="Embedder.Atmo.Types.html#arr"><span class="hs-identifier hs-var">arr</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Annote -&gt; Ty
+</span><a href="Embedder.Atmo.Types.html#strTy"><span class="hs-identifier hs-var">strTy</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308826"><span class="hs-identifier hs-var">an</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Ty -&gt; Ty) -&gt; Maybe Ty -&gt; Maybe Ty
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe Ty
+</span><a href="#local-6989586621679308827"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Builtin -&gt; RWUserOp
+</span><a href="Embedder.Builtins.html#RWBuiltin"><span class="hs-identifier hs-var">RWBuiltin</span></a></span><span> </span><span class="annot"><span class="annottext">Builtin
+</span><span class="hs-identifier hs-var">Error</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Annote -&gt; Maybe Poly -&gt; Text -&gt; Exp
+</span><a href="Embedder.Atmo.Syntax.html#LitStr"><span class="hs-identifier hs-var">LitStr</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308826"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679308828"><span class="hs-identifier hs-var">err</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span id="local-6989586621679308667"><span class="annot"><a href="Embedder.Atmo.Util.html#flattenLam"><span class="hs-identifier hs-type">flattenLam</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="#local-6989586621679308667"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679308667"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-108"></span><span id="flattenLam"><span class="annot"><span class="annottext">flattenLam :: forall (m :: * -&gt; *). Monad m =&gt; Exp -&gt; m ([Text], Exp)
+</span><a href="Embedder.Atmo.Util.html#flattenLam"><span class="hs-identifier hs-var hs-var">flattenLam</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-109"></span><span>      </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Lam"><span class="hs-identifier hs-type">Lam</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe Ty
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679308841"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679308841"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span id="local-6989586621679308842"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308842"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-110"></span><span>            </span><span class="hs-special">(</span><span id="local-6989586621679308843"><span class="annot"><a href="#local-6989586621679308843"><span class="hs-identifier hs-var">xs'</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679308844"><span class="annot"><a href="#local-6989586621679308844"><span class="hs-identifier hs-var">e'</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; m ([Text], Exp)
+forall (m :: * -&gt; *). Monad m =&gt; Exp -&gt; m ([Text], Exp)
+</span><a href="Embedder.Atmo.Util.html#flattenLam"><span class="hs-identifier hs-var">flattenLam</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308842"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-111"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679308841"><span class="hs-identifier hs-type">xs</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">++</span></span><span> </span><span class="annot"><a href="#local-6989586621679308843"><span class="hs-identifier hs-type">xs'</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679308844"><span class="hs-identifier hs-type">e'</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-112"></span><span>      </span><span id="local-6989586621679308845"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308845"><span class="hs-identifier hs-var">e</span></a></span></span><span>              </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">([Text], Exp) -&gt; m ([Text], Exp)
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679308845"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-113"></span><span>
+</span><span id="line-114"></span><span class="annot"><a href="Embedder.Atmo.Util.html#mkLam"><span class="hs-identifier hs-type">mkLam</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-115"></span><span id="mkLam"><span class="annot"><span class="annottext">mkLam :: Annote -&gt; Ty -&gt; [Text] -&gt; Exp -&gt; Exp
+</span><a href="Embedder.Atmo.Util.html#mkLam"><span class="hs-identifier hs-var hs-var">mkLam</span></a></span></span><span> </span><span id="local-6989586621679308846"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308846"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span id="local-6989586621679308847"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679308847"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Maybe Poly -&gt; Maybe Ty -&gt; [Text] -&gt; Exp -&gt; Exp
+</span><a href="Embedder.Atmo.Syntax.html#Lam"><span class="hs-identifier hs-var">Lam</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308846"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Ty -&gt; Maybe Ty
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679308847"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-116"></span><span>
+</span><span id="line-117"></span><span>
+</span><span id="line-118"></span><span>
+</span><span id="line-119"></span><span class="hs-comment">-- Record helpers for construction</span><span>
+</span><span id="line-120"></span><span class="annot"><a href="Embedder.Atmo.Util.html#mkRecVal"><span class="hs-identifier hs-type">mkRecVal</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-121"></span><span id="mkRecVal"><span class="annot"><span class="annottext">mkRecVal :: Annote -&gt; [(Text, Exp)] -&gt; Exp
+</span><a href="Embedder.Atmo.Util.html#mkRecVal"><span class="hs-identifier hs-var hs-var">mkRecVal</span></a></span></span><span> </span><span id="local-6989586621679308848"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308848"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Maybe Poly -&gt; Maybe Ty -&gt; [(Text, Exp)] -&gt; Exp
+</span><a href="Embedder.Atmo.Syntax.html#RecVal"><span class="hs-identifier hs-var">RecVal</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308848"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="annot"><span class="annottext">Maybe Ty
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-122"></span><span>
+</span><span id="line-123"></span><span class="annot"><a href="Embedder.Atmo.Util.html#mkRecUpd"><span class="hs-identifier hs-type">mkRecUpd</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-124"></span><span id="mkRecUpd"><span class="annot"><span class="annottext">mkRecUpd :: Annote -&gt; Exp -&gt; [(Text, Exp)] -&gt; Exp
+</span><a href="Embedder.Atmo.Util.html#mkRecUpd"><span class="hs-identifier hs-var hs-var">mkRecUpd</span></a></span></span><span> </span><span id="local-6989586621679308850"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308850"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Maybe Poly -&gt; Maybe Ty -&gt; Exp -&gt; [(Text, Exp)] -&gt; Exp
+</span><a href="Embedder.Atmo.Syntax.html#RecUpd"><span class="hs-identifier hs-var">RecUpd</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308850"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="annot"><span class="annottext">Maybe Ty
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-125"></span><span>
+</span><span id="line-126"></span><span class="annot"><a href="Embedder.Atmo.Util.html#mkRecSel"><span class="hs-identifier hs-type">mkRecSel</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-127"></span><span id="mkRecSel"><span class="annot"><span class="annottext">mkRecSel :: Annote -&gt; Text -&gt; Exp -&gt; Exp
+</span><a href="Embedder.Atmo.Util.html#mkRecSel"><span class="hs-identifier hs-var hs-var">mkRecSel</span></a></span></span><span> </span><span id="local-6989586621679308852"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308852"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Maybe Poly -&gt; Maybe Ty -&gt; Text -&gt; Exp -&gt; Exp
+</span><a href="Embedder.Atmo.Syntax.html#RecSel"><span class="hs-identifier hs-var">RecSel</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308852"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="annot"><span class="annottext">Maybe Ty
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-128"></span><span>
+</span><span id="line-129"></span><span class="hs-comment">-- Record pattern helper</span><span>
+</span><span id="line-130"></span><span class="annot"><a href="Embedder.Atmo.Util.html#mkPatRec"><span class="hs-identifier hs-type">mkPatRec</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Pat"><span class="hs-identifier hs-type">Pat</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Embedder.Atmo.Syntax.html#Pat"><span class="hs-identifier hs-type">Pat</span></a></span><span>
+</span><span id="line-131"></span><span id="mkPatRec"><span class="annot"><span class="annottext">mkPatRec :: Annote -&gt; [(Text, Pat)] -&gt; Pat
+</span><a href="Embedder.Atmo.Util.html#mkPatRec"><span class="hs-identifier hs-var hs-var">mkPatRec</span></a></span></span><span> </span><span id="local-6989586621679308854"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308854"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Maybe Poly -&gt; Maybe Ty -&gt; [(Text, Pat)] -&gt; Pat
+</span><a href="Embedder.Atmo.Syntax.html#PatRec"><span class="hs-identifier hs-var">PatRec</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679308854"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Poly
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="annot"><span class="annottext">Maybe Ty
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-132"></span><span>
+</span><span id="line-133"></span></pre></body></html>

@@ -1,0 +1,790 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- | The two module-loader helpers the HSE front end's recursive import</span><span>
+</span><span id="line-5"></span><span class="hs-comment">--   loader (ReWire.HSE.Cache) needs: computing a module's global-name</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--   renamer extension and its effective import list.</span><span>
+</span><span id="line-7"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.HSE.Globs.html"><span class="hs-identifier">ReWire.HSE.Globs</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.HSE.Globs.html#extendWithGlobs"><span class="hs-identifier">extendWithGlobs</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.HSE.Globs.html#getImps"><span class="hs-identifier">getImps</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-8"></span><span>
+</span><span id="line-9"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Annotation</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Annotation</span></span><span class="hs-special">)</span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.HSE.Exports.html"><span class="hs-identifier">ReWire.HSE.Exports</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.HSE.Exports.html#sDeclHead"><span class="hs-identifier">sDeclHead</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html"><span class="hs-identifier">ReWire.HSE.Rename</span></a></span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Arrow</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(&amp;&amp;&amp;)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">second</span></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">void</span></span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">mapMaybe</span></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Set</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Set</span></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">pack</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">unpack</span></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Set</span></span><span>                     </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Set</span></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span>              </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.Exts.Syntax</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">S</span></span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.Exts.Syntax</span></span><span> </span><span class="hs-keyword">hiding</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Annotation</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Name</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Kind</span></span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="annot"><a href="ReWire.HSE.Globs.html#isPrimMod"><span class="hs-identifier hs-type">isPrimMod</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-26"></span><span id="isPrimMod"><span class="annot"><span class="annottext">isPrimMod :: String -&gt; Bool
+</span><a href="ReWire.HSE.Globs.html#isPrimMod"><span class="hs-identifier hs-var hs-var">isPrimMod</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; String -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;RWC.Primitives&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="hs-comment">-- Note: runs before desugaring.</span><span>
+</span><span id="line-29"></span><span class="hs-comment">-- TODO(chathhorn): GADT style decls?</span><span>
+</span><span id="line-30"></span><span id="local-6989586621679326622"><span class="annot"><a href="ReWire.HSE.Globs.html#extendWithGlobs"><span class="hs-identifier hs-type">extendWithGlobs</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotation</span></span><span> </span><span class="annot"><a href="#local-6989586621679326622"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Module</span></span><span> </span><span class="annot"><a href="#local-6989586621679326622"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Renamer"><span class="hs-identifier hs-type">Renamer</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Renamer"><span class="hs-identifier hs-type">Renamer</span></a></span></span><span>
+</span><span id="line-31"></span><span id="extendWithGlobs"><span class="annot"><span class="annottext">extendWithGlobs :: forall a. Annotation a =&gt; Module a -&gt; Renamer -&gt; Renamer
+</span><a href="ReWire.HSE.Globs.html#extendWithGlobs"><span class="hs-identifier hs-var hs-var">extendWithGlobs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-32"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Module</span></span><span> </span><span id="local-6989586621679326782"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679326782"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ModuleHead</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ModuleName</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326785"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679326785"><span class="hs-identifier hs-var">m</span></a></span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Maybe (WarningText a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (ExportSpecList a)
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ModulePragma a]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[ImportDecl a]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326786"><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326786"><span class="hs-identifier hs-var">ds</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">String -&gt; Bool
+</span><a href="ReWire.HSE.Globs.html#isPrimMod"><span class="hs-identifier hs-var">isPrimMod</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679326785"><span class="hs-identifier hs-var">m</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Decl a] -&gt; ModuleName a -&gt; Renamer -&gt; Renamer
+forall a.
+Annotation a =&gt;
+[Decl a] -&gt; ModuleName a -&gt; Renamer -&gt; Renamer
+</span><a href="#local-6989586621679326787"><span class="hs-identifier hs-var">extendWith</span></a></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326786"><span class="hs-identifier hs-var">ds</span></a></span><span> </span><span class="annot"><span class="annottext">(ModuleName a -&gt; Renamer -&gt; Renamer)
+-&gt; ModuleName a -&gt; Renamer -&gt; Renamer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; String -&gt; ModuleName a
+forall l. l -&gt; String -&gt; ModuleName l
+</span><span class="hs-identifier hs-var">ModuleName</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679326782"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&quot;</span></span><span>
+</span><span id="line-33"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Module</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ModuleHead</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326788"><span class="annot"><span class="annottext">ModuleName a
+</span><a href="#local-6989586621679326788"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="annot"><span class="annottext">Maybe (WarningText a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (ExportSpecList a)
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ModulePragma a]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[ImportDecl a]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326789"><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326789"><span class="hs-identifier hs-var">ds</span></a></span></span><span>                              </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Decl a] -&gt; ModuleName a -&gt; Renamer -&gt; Renamer
+forall a.
+Annotation a =&gt;
+[Decl a] -&gt; ModuleName a -&gt; Renamer -&gt; Renamer
+</span><a href="#local-6989586621679326787"><span class="hs-identifier hs-var">extendWith</span></a></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326789"><span class="hs-identifier hs-var">ds</span></a></span><span> </span><span class="annot"><span class="annottext">ModuleName a
+</span><a href="#local-6989586621679326788"><span class="hs-identifier hs-var">m</span></a></span><span>
+</span><span id="line-34"></span><span>      </span><span class="annot"><span class="annottext">Module a
+</span><span class="hs-identifier">_</span></span><span>                                                                        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Renamer -&gt; Renamer
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-35"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679326637"><span class="annot"><a href="#local-6989586621679326787"><span class="hs-identifier hs-type">extendWith</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotation</span></span><span> </span><span class="annot"><a href="#local-6989586621679326637"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Decl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326637"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ModuleName</span></span><span> </span><span class="annot"><a href="#local-6989586621679326637"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Renamer"><span class="hs-identifier hs-type">Renamer</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Renamer"><span class="hs-identifier hs-type">Renamer</span></a></span></span><span>
+</span><span id="line-36"></span><span>            </span><span id="local-6989586621679326787"><span class="annot"><span class="annottext">extendWith :: forall a.
+Annotation a =&gt;
+[Decl a] -&gt; ModuleName a -&gt; Renamer -&gt; Renamer
+</span><a href="#local-6989586621679326787"><span class="hs-identifier hs-var hs-var">extendWith</span></a></span></span><span> </span><span id="local-6989586621679326797"><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326797"><span class="hs-identifier hs-var">ds</span></a></span></span><span> </span><span id="local-6989586621679326798"><span class="annot"><span class="annottext">ModuleName a
+</span><a href="#local-6989586621679326798"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Ctors -&gt; CtorSigs -&gt; Renamer -&gt; Renamer
+</span><a href="ReWire.HSE.Rename.html#setCtors"><span class="hs-identifier hs-var">setCtors</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Decl a] -&gt; Ctors
+forall a. Annotation a =&gt; [Decl a] -&gt; Ctors
+</span><a href="#local-6989586621679326800"><span class="hs-identifier hs-var">getModCtors</span></a></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326797"><span class="hs-identifier hs-var">ds</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Decl a] -&gt; CtorSigs
+forall a. Annotation a =&gt; [Decl a] -&gt; CtorSigs
+</span><a href="#local-6989586621679326801"><span class="hs-identifier hs-var">getModCtorSigs</span></a></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326797"><span class="hs-identifier hs-var">ds</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Renamer -&gt; Renamer) -&gt; (Renamer -&gt; Renamer) -&gt; Renamer -&gt; Renamer
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[Decl a] -&gt; ModuleName () -&gt; Renamer -&gt; Renamer
+forall a.
+Annotation a =&gt;
+[Decl a] -&gt; ModuleName () -&gt; Renamer -&gt; Renamer
+</span><a href="#local-6989586621679326803"><span class="hs-identifier hs-var">extendWith'</span></a></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326797"><span class="hs-identifier hs-var">ds</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ModuleName a -&gt; ModuleName ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">ModuleName a
+</span><a href="#local-6989586621679326798"><span class="hs-identifier hs-var">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span>
+</span><span id="line-38"></span><span>            </span><span id="local-6989586621679326652"><span class="annot"><a href="#local-6989586621679326803"><span class="hs-identifier hs-type">extendWith'</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotation</span></span><span> </span><span class="annot"><a href="#local-6989586621679326652"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Decl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326652"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ModuleName</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Renamer"><span class="hs-identifier hs-type">Renamer</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Renamer"><span class="hs-identifier hs-type">Renamer</span></a></span></span><span>
+</span><span id="line-39"></span><span>            </span><span id="local-6989586621679326803"><span class="annot"><span class="annottext">extendWith' :: forall a.
+Annotation a =&gt;
+[Decl a] -&gt; ModuleName () -&gt; Renamer -&gt; Renamer
+</span><a href="#local-6989586621679326803"><span class="hs-identifier hs-var hs-var">extendWith'</span></a></span></span><span> </span><span id="local-6989586621679326816"><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326816"><span class="hs-identifier hs-var">ds</span></a></span></span><span> </span><span id="local-6989586621679326817"><span class="annot"><span class="annottext">ModuleName ()
+</span><a href="#local-6989586621679326817"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Namespace -&gt; [(Name (), FQName)] -&gt; Renamer -&gt; Renamer
+forall a.
+QNamish a =&gt;
+Namespace -&gt; [(a, FQName)] -&gt; Renamer -&gt; Renamer
+</span><a href="ReWire.HSE.Rename.html#extend"><span class="hs-identifier hs-var">extend</span></a></span><span> </span><span class="annot"><span class="annottext">Namespace
+</span><a href="ReWire.HSE.Rename.html#Value"><span class="hs-identifier hs-var">Value</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Name ()] -&gt; [FQName] -&gt; [(Name (), FQName)]
+forall a b. [a] -&gt; [b] -&gt; [(a, b)]
+</span><span class="hs-identifier hs-var">zip</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Decl a] -&gt; [Name ()]
+forall a. Annotation a =&gt; [Decl a] -&gt; [Name ()]
+</span><a href="#local-6989586621679326820"><span class="hs-identifier hs-var">getGlobValDefs</span></a></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326816"><span class="hs-identifier hs-var">ds</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([FQName] -&gt; [(Name (), FQName)])
+-&gt; [FQName] -&gt; [(Name (), FQName)]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Name () -&gt; FQName) -&gt; [Name ()] -&gt; [FQName]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">QName () -&gt; FQName
+forall a b. (QNamish a, QNamish b) =&gt; a -&gt; b
+</span><a href="ReWire.HSE.Rename.html#qnamish"><span class="hs-identifier hs-var">qnamish</span></a></span><span> </span><span class="annot"><span class="annottext">(QName () -&gt; FQName) -&gt; (Name () -&gt; QName ()) -&gt; Name () -&gt; FQName
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">() -&gt; ModuleName () -&gt; Name () -&gt; QName ()
+forall l. l -&gt; ModuleName l -&gt; Name l -&gt; QName l
+</span><span class="hs-identifier hs-var">S.Qual</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">ModuleName ()
+</span><a href="#local-6989586621679326817"><span class="hs-identifier hs-var">m</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([Name ()] -&gt; [FQName]) -&gt; [Name ()] -&gt; [FQName]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Decl a] -&gt; [Name ()]
+forall a. Annotation a =&gt; [Decl a] -&gt; [Name ()]
+</span><a href="#local-6989586621679326820"><span class="hs-identifier hs-var">getGlobValDefs</span></a></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326816"><span class="hs-identifier hs-var">ds</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span>                             </span><span class="annot"><span class="annottext">(Renamer -&gt; Renamer) -&gt; (Renamer -&gt; Renamer) -&gt; Renamer -&gt; Renamer
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Namespace -&gt; [(Name (), FQName)] -&gt; Renamer -&gt; Renamer
+forall a.
+QNamish a =&gt;
+Namespace -&gt; [(a, FQName)] -&gt; Renamer -&gt; Renamer
+</span><a href="ReWire.HSE.Rename.html#extend"><span class="hs-identifier hs-var">extend</span></a></span><span> </span><span class="annot"><span class="annottext">Namespace
+</span><a href="ReWire.HSE.Rename.html#Type"><span class="hs-identifier hs-var">Type</span></a></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Name ()] -&gt; [FQName] -&gt; [(Name (), FQName)]
+forall a b. [a] -&gt; [b] -&gt; [(a, b)]
+</span><span class="hs-identifier hs-var">zip</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Decl a] -&gt; [Name ()]
+forall a. Annotation a =&gt; [Decl a] -&gt; [Name ()]
+</span><a href="#local-6989586621679326824"><span class="hs-identifier hs-var">getGlobTyDefs</span></a></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326816"><span class="hs-identifier hs-var">ds</span></a></span><span class="hs-special">)</span><span>  </span><span class="annot"><span class="annottext">([FQName] -&gt; [(Name (), FQName)])
+-&gt; [FQName] -&gt; [(Name (), FQName)]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Name () -&gt; FQName) -&gt; [Name ()] -&gt; [FQName]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">QName () -&gt; FQName
+forall a b. (QNamish a, QNamish b) =&gt; a -&gt; b
+</span><a href="ReWire.HSE.Rename.html#qnamish"><span class="hs-identifier hs-var">qnamish</span></a></span><span> </span><span class="annot"><span class="annottext">(QName () -&gt; FQName) -&gt; (Name () -&gt; QName ()) -&gt; Name () -&gt; FQName
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">() -&gt; ModuleName () -&gt; Name () -&gt; QName ()
+forall l. l -&gt; ModuleName l -&gt; Name l -&gt; QName l
+</span><span class="hs-identifier hs-var">S.Qual</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">ModuleName ()
+</span><a href="#local-6989586621679326817"><span class="hs-identifier hs-var">m</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([Name ()] -&gt; [FQName]) -&gt; [Name ()] -&gt; [FQName]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Decl a] -&gt; [Name ()]
+forall a. Annotation a =&gt; [Decl a] -&gt; [Name ()]
+</span><a href="#local-6989586621679326824"><span class="hs-identifier hs-var">getGlobTyDefs</span></a></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326816"><span class="hs-identifier hs-var">ds</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span>            </span><span id="local-6989586621679326661"><span class="annot"><a href="#local-6989586621679326820"><span class="hs-identifier hs-type">getGlobValDefs</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotation</span></span><span> </span><span class="annot"><a href="#local-6989586621679326661"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Decl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326661"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">S.Name</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">]</span></span><span>
+</span><span id="line-43"></span><span>            </span><span id="local-6989586621679326820"><span class="annot"><span class="annottext">getGlobValDefs :: forall a. Annotation a =&gt; [Decl a] -&gt; [Name ()]
+</span><a href="#local-6989586621679326820"><span class="hs-identifier hs-var hs-var">getGlobValDefs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Decl a -&gt; [Name ()]) -&gt; [Decl a] -&gt; [Name ()]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">((Decl a -&gt; [Name ()]) -&gt; [Decl a] -&gt; [Name ()])
+-&gt; (Decl a -&gt; [Name ()]) -&gt; [Decl a] -&gt; [Name ()]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-44"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">DataDecl</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">DataOrNew a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Context a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">DeclHead a
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326838"><span class="annot"><span class="annottext">[QualConDecl a]
+</span><a href="#local-6989586621679326838"><span class="hs-identifier hs-var">cons</span></a></span></span><span> </span><span class="annot"><span class="annottext">[Deriving a]
+</span><span class="hs-identifier">_</span></span><span>               </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Set (Name ()) -&gt; [Name ()]
+forall a. Set a -&gt; [a]
+</span><span class="hs-identifier hs-var">Set.toList</span></span><span> </span><span class="annot"><span class="annottext">(Set (Name ()) -&gt; [Name ()]) -&gt; Set (Name ()) -&gt; [Name ()]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Set (Name ())] -&gt; Set (Name ())
+forall (f :: * -&gt; *) a. (Foldable f, Ord a) =&gt; f (Set a) -&gt; Set a
+</span><span class="hs-identifier hs-var">Set.unions</span></span><span> </span><span class="annot"><span class="annottext">([Set (Name ())] -&gt; Set (Name ()))
+-&gt; [Set (Name ())] -&gt; Set (Name ())
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(QualConDecl a -&gt; Set (Name ()))
+-&gt; [QualConDecl a] -&gt; [Set (Name ())]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">QualConDecl a -&gt; Set (Name ())
+forall l. QualConDecl l -&gt; Set (Name ())
+</span><a href="#local-6989586621679326841"><span class="hs-identifier hs-var">getCtor</span></a></span><span> </span><span class="annot"><span class="annottext">[QualConDecl a]
+</span><a href="#local-6989586621679326838"><span class="hs-identifier hs-var">cons</span></a></span><span>
+</span><span id="line-45"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">PatBind</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">PVar</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326844"><span class="annot"><span class="annottext">Name a
+</span><a href="#local-6989586621679326844"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Rhs a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Binds a)
+</span><span class="hs-identifier">_</span></span><span>              </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Name a -&gt; Name ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">Name a
+</span><a href="#local-6989586621679326844"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-46"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">FunBind</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Match</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326847"><span class="annot"><span class="annottext">Name a
+</span><a href="#local-6989586621679326847"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="annot"><span class="annottext">[Pat a]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Rhs a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Binds a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><span class="annottext">[Match a]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Name a -&gt; Name ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">Name a
+</span><a href="#local-6989586621679326847"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-47"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">FunBind</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">InfixMatch</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Pat a
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326849"><span class="annot"><span class="annottext">Name a
+</span><a href="#local-6989586621679326849"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="annot"><span class="annottext">[Pat a]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Rhs a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Binds a)
+</span><span class="hs-identifier">_</span></span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><span class="annottext">[Match a]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Name a -&gt; Name ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">Name a
+</span><a href="#local-6989586621679326849"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-48"></span><span>                  </span><span class="annot"><span class="annottext">Decl a
+</span><span class="hs-identifier">_</span></span><span>                                     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span>            </span><span id="local-6989586621679326850"><span class="annot"><a href="#local-6989586621679326824"><span class="hs-identifier hs-type">getGlobTyDefs</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotation</span></span><span> </span><span class="annot"><a href="#local-6989586621679326850"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Decl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326850"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">S.Name</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">]</span></span><span>
+</span><span id="line-51"></span><span>            </span><span id="local-6989586621679326824"><span class="annot"><span class="annottext">getGlobTyDefs :: forall a. Annotation a =&gt; [Decl a] -&gt; [Name ()]
+</span><a href="#local-6989586621679326824"><span class="hs-identifier hs-var hs-var">getGlobTyDefs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Decl a -&gt; [Name ()]) -&gt; [Decl a] -&gt; [Name ()]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">((Decl a -&gt; [Name ()]) -&gt; [Decl a] -&gt; [Name ()])
+-&gt; (Decl a -&gt; [Name ()]) -&gt; [Decl a] -&gt; [Name ()]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-52"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">DataDecl</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">DataOrNew a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Context a)
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326853"><span class="annot"><span class="annottext">DeclHead a
+</span><a href="#local-6989586621679326853"><span class="hs-identifier hs-var">hd</span></a></span></span><span> </span><span class="annot"><span class="annottext">[QualConDecl a]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[Deriving a]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">(Name (), [TyVarBind ()]) -&gt; Name ()
+forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span> </span><span class="annot"><span class="annottext">((Name (), [TyVarBind ()]) -&gt; Name ())
+-&gt; (Name (), [TyVarBind ()]) -&gt; Name ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">DeclHead a -&gt; (Name (), [TyVarBind ()])
+forall a. DeclHead a -&gt; (Name (), [TyVarBind ()])
+</span><a href="ReWire.HSE.Exports.html#sDeclHead"><span class="hs-identifier hs-var">sDeclHead</span></a></span><span> </span><span class="annot"><span class="annottext">DeclHead a
+</span><a href="#local-6989586621679326853"><span class="hs-identifier hs-var">hd</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-53"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">TypeDecl</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326856"><span class="annot"><span class="annottext">DeclHead a
+</span><a href="#local-6989586621679326856"><span class="hs-identifier hs-var">hd</span></a></span></span><span> </span><span class="annot"><span class="annottext">Type a
+</span><span class="hs-identifier">_</span></span><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">(Name (), [TyVarBind ()]) -&gt; Name ()
+forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span> </span><span class="annot"><span class="annottext">((Name (), [TyVarBind ()]) -&gt; Name ())
+-&gt; (Name (), [TyVarBind ()]) -&gt; Name ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">DeclHead a -&gt; (Name (), [TyVarBind ()])
+forall a. DeclHead a -&gt; (Name (), [TyVarBind ()])
+</span><a href="ReWire.HSE.Exports.html#sDeclHead"><span class="hs-identifier hs-var">sDeclHead</span></a></span><span> </span><span class="annot"><span class="annottext">DeclHead a
+</span><a href="#local-6989586621679326856"><span class="hs-identifier hs-var">hd</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-54"></span><span>                  </span><span class="annot"><span class="annottext">Decl a
+</span><span class="hs-identifier">_</span></span><span>                     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-55"></span><span>
+</span><span id="line-56"></span><span>            </span><span id="local-6989586621679326647"><span class="annot"><a href="#local-6989586621679326800"><span class="hs-identifier hs-type">getModCtors</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotation</span></span><span> </span><span class="annot"><a href="#local-6989586621679326647"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">S.Decl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326647"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Ctors"><span class="hs-identifier hs-type">Ctors</span></a></span></span><span>
+</span><span id="line-57"></span><span>            </span><span id="local-6989586621679326800"><span class="annot"><span class="annottext">getModCtors :: forall a. Annotation a =&gt; [Decl a] -&gt; Ctors
+</span><a href="#local-6989586621679326800"><span class="hs-identifier hs-var hs-var">getModCtors</span></a></span></span><span> </span><span id="local-6989586621679326861"><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326861"><span class="hs-identifier hs-var">ds</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>  </span><span class="annot"><span class="annottext">[Ctors] -&gt; Ctors
+forall (f :: * -&gt; *) k a.
+(Foldable f, Ord k) =&gt;
+f (Map k a) -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.unions</span></span><span> </span><span class="annot"><span class="annottext">([Ctors] -&gt; Ctors) -&gt; [Ctors] -&gt; Ctors
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Decl a -&gt; Ctors) -&gt; [Decl a] -&gt; [Ctors]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Decl a -&gt; Ctors
+forall l. Decl l -&gt; Ctors
+</span><a href="#local-6989586621679326863"><span class="hs-identifier hs-var">getCtors'</span></a></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326861"><span class="hs-identifier hs-var">ds</span></a></span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span>            </span><span id="local-6989586621679326697"><span class="annot"><a href="#local-6989586621679326863"><span class="hs-identifier hs-type">getCtors'</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Decl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326697"><span class="hs-identifier hs-type">l</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Ctors"><span class="hs-identifier hs-type">Ctors</span></a></span></span><span>
+</span><span id="line-60"></span><span>            </span><span id="local-6989586621679326863"><span class="annot"><span class="annottext">getCtors' :: forall l. Decl l -&gt; Ctors
+</span><a href="#local-6989586621679326863"><span class="hs-identifier hs-var hs-var">getCtors'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-61"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">DataDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">DataOrNew l
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Context l)
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326869"><span class="annot"><span class="annottext">DeclHead l
+</span><a href="#local-6989586621679326869"><span class="hs-identifier hs-var">dh</span></a></span></span><span> </span><span id="local-6989586621679326870"><span class="annot"><span class="annottext">[QualConDecl l]
+</span><a href="#local-6989586621679326870"><span class="hs-identifier hs-var">cons</span></a></span></span><span> </span><span class="annot"><span class="annottext">[Deriving l]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Name () -&gt; Set (Name ()) -&gt; Ctors
+forall k a. k -&gt; a -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.singleton</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Name (), [TyVarBind ()]) -&gt; Name ()
+forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span> </span><span class="annot"><span class="annottext">((Name (), [TyVarBind ()]) -&gt; Name ())
+-&gt; (Name (), [TyVarBind ()]) -&gt; Name ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">DeclHead l -&gt; (Name (), [TyVarBind ()])
+forall a. DeclHead a -&gt; (Name (), [TyVarBind ()])
+</span><a href="ReWire.HSE.Exports.html#sDeclHead"><span class="hs-identifier hs-var">sDeclHead</span></a></span><span> </span><span class="annot"><span class="annottext">DeclHead l
+</span><a href="#local-6989586621679326869"><span class="hs-identifier hs-var">dh</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Set (Name ()) -&gt; Ctors) -&gt; Set (Name ()) -&gt; Ctors
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Set (Name ())] -&gt; Set (Name ())
+forall (f :: * -&gt; *) a. (Foldable f, Ord a) =&gt; f (Set a) -&gt; Set a
+</span><span class="hs-identifier hs-var">Set.unions</span></span><span> </span><span class="annot"><span class="annottext">([Set (Name ())] -&gt; Set (Name ()))
+-&gt; [Set (Name ())] -&gt; Set (Name ())
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(QualConDecl l -&gt; Set (Name ()))
+-&gt; [QualConDecl l] -&gt; [Set (Name ())]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">QualConDecl l -&gt; Set (Name ())
+forall l. QualConDecl l -&gt; Set (Name ())
+</span><a href="#local-6989586621679326841"><span class="hs-identifier hs-var">getCtor</span></a></span><span> </span><span class="annot"><span class="annottext">[QualConDecl l]
+</span><a href="#local-6989586621679326870"><span class="hs-identifier hs-var">cons</span></a></span><span>
+</span><span id="line-62"></span><span>                  </span><span class="annot"><span class="annottext">Decl l
+</span><span class="hs-identifier">_</span></span><span>                        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Ctors
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-63"></span><span>
+</span><span id="line-64"></span><span>            </span><span id="local-6989586621679326648"><span class="annot"><a href="#local-6989586621679326801"><span class="hs-identifier hs-type">getModCtorSigs</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotation</span></span><span> </span><span class="annot"><a href="#local-6989586621679326648"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">S.Decl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326648"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#CtorSigs"><span class="hs-identifier hs-type">CtorSigs</span></a></span></span><span>
+</span><span id="line-65"></span><span>            </span><span id="local-6989586621679326801"><span class="annot"><span class="annottext">getModCtorSigs :: forall a. Annotation a =&gt; [Decl a] -&gt; CtorSigs
+</span><a href="#local-6989586621679326801"><span class="hs-identifier hs-var hs-var">getModCtorSigs</span></a></span></span><span> </span><span id="local-6989586621679326876"><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326876"><span class="hs-identifier hs-var">ds</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[CtorSigs] -&gt; CtorSigs
+forall (f :: * -&gt; *) k a.
+(Foldable f, Ord k) =&gt;
+f (Map k a) -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.unions</span></span><span> </span><span class="annot"><span class="annottext">([CtorSigs] -&gt; CtorSigs) -&gt; [CtorSigs] -&gt; CtorSigs
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Decl a -&gt; CtorSigs) -&gt; [Decl a] -&gt; [CtorSigs]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Decl a -&gt; CtorSigs
+forall l. Decl l -&gt; CtorSigs
+</span><a href="#local-6989586621679326877"><span class="hs-identifier hs-var">getCtorSigs'</span></a></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><a href="#local-6989586621679326876"><span class="hs-identifier hs-var">ds</span></a></span><span>
+</span><span id="line-66"></span><span>
+</span><span id="line-67"></span><span>            </span><span id="local-6989586621679326705"><span class="annot"><a href="#local-6989586621679326877"><span class="hs-identifier hs-type">getCtorSigs'</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Decl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326705"><span class="hs-identifier hs-type">l</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#CtorSigs"><span class="hs-identifier hs-type">CtorSigs</span></a></span></span><span>
+</span><span id="line-68"></span><span>            </span><span id="local-6989586621679326877"><span class="annot"><span class="annottext">getCtorSigs' :: forall l. Decl l -&gt; CtorSigs
+</span><a href="#local-6989586621679326877"><span class="hs-identifier hs-var hs-var">getCtorSigs'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-69"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">DataDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">DataOrNew l
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Context l)
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326881"><span class="annot"><span class="annottext">DeclHead l
+</span><a href="#local-6989586621679326881"><span class="hs-identifier hs-var">dh</span></a></span></span><span> </span><span id="local-6989586621679326882"><span class="annot"><span class="annottext">[QualConDecl l]
+</span><a href="#local-6989586621679326882"><span class="hs-identifier hs-var">cons</span></a></span></span><span> </span><span class="annot"><span class="annottext">[Deriving l]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Name (), [TyVarBind ()]) -&gt; [QualConDecl l] -&gt; CtorSigs
+forall l. (Name (), [TyVarBind ()]) -&gt; [QualConDecl l] -&gt; CtorSigs
+</span><a href="#local-6989586621679326883"><span class="hs-identifier hs-var">getCtorSigs</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DeclHead l -&gt; (Name (), [TyVarBind ()])
+forall a. DeclHead a -&gt; (Name (), [TyVarBind ()])
+</span><a href="ReWire.HSE.Exports.html#sDeclHead"><span class="hs-identifier hs-var">sDeclHead</span></a></span><span> </span><span class="annot"><span class="annottext">DeclHead l
+</span><a href="#local-6989586621679326881"><span class="hs-identifier hs-var">dh</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[QualConDecl l]
+</span><a href="#local-6989586621679326882"><span class="hs-identifier hs-var">cons</span></a></span><span>
+</span><span id="line-70"></span><span>                  </span><span class="annot"><span class="annottext">Decl l
+</span><span class="hs-identifier">_</span></span><span>                        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">CtorSigs
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span>            </span><span id="local-6989586621679326707"><span class="annot"><a href="#local-6989586621679326883"><span class="hs-identifier hs-type">getCtorSigs</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">S.Name</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">S.TyVarBind</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">QualConDecl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326707"><span class="hs-identifier hs-type">l</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#CtorSigs"><span class="hs-identifier hs-type">CtorSigs</span></a></span></span><span>
+</span><span id="line-73"></span><span>            </span><span id="local-6989586621679326883"><span class="annot"><span class="annottext">getCtorSigs :: forall l. (Name (), [TyVarBind ()]) -&gt; [QualConDecl l] -&gt; CtorSigs
+</span><a href="#local-6989586621679326883"><span class="hs-identifier hs-var hs-var">getCtorSigs</span></a></span></span><span> </span><span id="local-6989586621679326888"><span class="annot"><span class="annottext">(Name (), [TyVarBind ()])
+</span><a href="#local-6989586621679326888"><span class="hs-identifier hs-var">dsig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(Name (), [(Maybe (Name ()), Type ())])] -&gt; CtorSigs
+forall k a. Ord k =&gt; [(k, a)] -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.fromList</span></span><span> </span><span class="annot"><span class="annottext">([(Name (), [(Maybe (Name ()), Type ())])] -&gt; CtorSigs)
+-&gt; ([QualConDecl l] -&gt; [(Name (), [(Maybe (Name ()), Type ())])])
+-&gt; [QualConDecl l]
+-&gt; CtorSigs
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(QualConDecl l -&gt; (Name (), [(Maybe (Name ()), Type ())]))
+-&gt; [QualConDecl l] -&gt; [(Name (), [(Maybe (Name ()), Type ())])]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">QualConDecl l -&gt; Name ()
+forall l. QualConDecl l -&gt; Name ()
+</span><a href="#local-6989586621679326890"><span class="hs-identifier hs-var">getCtorName</span></a></span><span> </span><span class="annot"><span class="annottext">(QualConDecl l -&gt; Name ())
+-&gt; (QualConDecl l -&gt; [(Maybe (Name ()), Type ())])
+-&gt; QualConDecl l
+-&gt; (Name (), [(Maybe (Name ()), Type ())])
+forall b c c'. (b -&gt; c) -&gt; (b -&gt; c') -&gt; b -&gt; (c, c')
+forall (a :: * -&gt; * -&gt; *) b c c'.
+Arrow a =&gt;
+a b c -&gt; a b c' -&gt; a b (c, c')
+</span><span class="hs-operator hs-var">&amp;&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">((Maybe (Name ()), Type ()) -&gt; (Maybe (Name ()), Type ()))
+-&gt; [(Maybe (Name ()), Type ())] -&gt; [(Maybe (Name ()), Type ())]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Type () -&gt; (Maybe (Name ()), Type ()) -&gt; (Maybe (Name ()), Type ())
+forall n. Type () -&gt; (n, Type ()) -&gt; (n, Type ())
+</span><a href="#local-6989586621679326891"><span class="hs-identifier hs-var">extendCtorSig</span></a></span><span> </span><span class="annot"><span class="annottext">(Type ()
+ -&gt; (Maybe (Name ()), Type ()) -&gt; (Maybe (Name ()), Type ()))
+-&gt; Type ()
+-&gt; (Maybe (Name ()), Type ())
+-&gt; (Maybe (Name ()), Type ())
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Name (), [TyVarBind ()]) -&gt; Type ()
+</span><a href="#local-6989586621679326892"><span class="hs-identifier hs-var">dsigToTyApp</span></a></span><span> </span><span class="annot"><span class="annottext">(Name (), [TyVarBind ()])
+</span><a href="#local-6989586621679326888"><span class="hs-identifier hs-var">dsig</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([(Maybe (Name ()), Type ())] -&gt; [(Maybe (Name ()), Type ())])
+-&gt; (QualConDecl l -&gt; [(Maybe (Name ()), Type ())])
+-&gt; QualConDecl l
+-&gt; [(Maybe (Name ()), Type ())]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">QualConDecl l -&gt; [(Maybe (Name ()), Type ())]
+forall l. QualConDecl l -&gt; [(Maybe (Name ()), Type ())]
+</span><a href="#local-6989586621679326893"><span class="hs-identifier hs-var">getFields</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span>            </span><span class="annot"><a href="#local-6989586621679326892"><span class="hs-identifier hs-type">dsigToTyApp</span></a></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">S.Name</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">S.TyVarBind</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Type</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>            </span><span id="local-6989586621679326892"><span class="annot"><span class="annottext">dsigToTyApp :: (Name (), [TyVarBind ()]) -&gt; Type ()
+</span><a href="#local-6989586621679326892"><span class="hs-identifier hs-var hs-var">dsigToTyApp</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679326894"><span class="annot"><span class="annottext">Name ()
+</span><a href="#local-6989586621679326894"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679326895"><span class="annot"><span class="annottext">[TyVarBind ()]
+</span><a href="#local-6989586621679326895"><span class="hs-identifier hs-var">vs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Type () -&gt; Type () -&gt; Type ()) -&gt; Type () -&gt; [Type ()] -&gt; Type ()
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) b a.
+Foldable t =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldl'</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">() -&gt; Type () -&gt; Type () -&gt; Type ()
+forall l. l -&gt; Type l -&gt; Type l -&gt; Type l
+</span><span class="hs-identifier hs-var">S.TyApp</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">() -&gt; QName () -&gt; Type ()
+forall l. l -&gt; QName l -&gt; Type l
+</span><span class="hs-identifier hs-var">S.TyCon</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(QName () -&gt; Type ()) -&gt; QName () -&gt; Type ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name () -&gt; QName ()
+forall a b. (QNamish a, QNamish b) =&gt; a -&gt; b
+</span><a href="ReWire.HSE.Rename.html#qnamish"><span class="hs-identifier hs-var">qnamish</span></a></span><span> </span><span class="annot"><span class="annottext">Name ()
+</span><a href="#local-6989586621679326894"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([Type ()] -&gt; Type ()) -&gt; [Type ()] -&gt; Type ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(TyVarBind () -&gt; Type ()) -&gt; [TyVarBind ()] -&gt; [Type ()]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">TyVarBind () -&gt; Type ()
+</span><a href="#local-6989586621679326899"><span class="hs-identifier hs-var">toTyVar</span></a></span><span> </span><span class="annot"><span class="annottext">[TyVarBind ()]
+</span><a href="#local-6989586621679326895"><span class="hs-identifier hs-var">vs</span></a></span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span>            </span><span class="annot"><a href="#local-6989586621679326899"><span class="hs-identifier hs-type">toTyVar</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.TyVarBind</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Type</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-79"></span><span>            </span><span id="local-6989586621679326899"><span class="annot"><span class="annottext">toTyVar :: TyVarBind () -&gt; Type ()
+</span><a href="#local-6989586621679326899"><span class="hs-identifier hs-var hs-var">toTyVar</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-80"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">KindedVar</span></span><span>   </span><span class="annot"><span class="annottext">()
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326901"><span class="annot"><span class="annottext">Name ()
+</span><a href="#local-6989586621679326901"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="annot"><span class="annottext">Type ()
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">() -&gt; Name () -&gt; Type ()
+forall l. l -&gt; Name l -&gt; Type l
+</span><span class="hs-identifier hs-var">TyVar</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Name ()
+</span><a href="#local-6989586621679326901"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-81"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">UnkindedVar</span></span><span> </span><span class="annot"><span class="annottext">()
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326904"><span class="annot"><span class="annottext">Name ()
+</span><a href="#local-6989586621679326904"><span class="hs-identifier hs-var">n</span></a></span></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">() -&gt; Name () -&gt; Type ()
+forall l. l -&gt; Name l -&gt; Type l
+</span><span class="hs-identifier hs-var">TyVar</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Name ()
+</span><a href="#local-6989586621679326904"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-82"></span><span>
+</span><span id="line-83"></span><span>            </span><span id="local-6989586621679326717"><span class="annot"><a href="#local-6989586621679326891"><span class="hs-identifier hs-type">extendCtorSig</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Type</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679326717"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Type</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679326717"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Type</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
+</span><span id="line-84"></span><span>            </span><span id="local-6989586621679326891"><span class="annot"><span class="annottext">extendCtorSig :: forall n. Type () -&gt; (n, Type ()) -&gt; (n, Type ())
+</span><a href="#local-6989586621679326891"><span class="hs-identifier hs-var hs-var">extendCtorSig</span></a></span></span><span> </span><span id="local-6989586621679326906"><span class="annot"><span class="annottext">Type ()
+</span><a href="#local-6989586621679326906"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Type () -&gt; Type ()) -&gt; (n, Type ()) -&gt; (n, Type ())
+forall b c d. (b -&gt; c) -&gt; (d, b) -&gt; (d, c)
+forall (a :: * -&gt; * -&gt; *) b c d.
+Arrow a =&gt;
+a b c -&gt; a (d, b) (d, c)
+</span><span class="hs-identifier hs-var">second</span></span><span> </span><span class="annot"><span class="annottext">((Type () -&gt; Type ()) -&gt; (n, Type ()) -&gt; (n, Type ()))
+-&gt; (Type () -&gt; Type ()) -&gt; (n, Type ()) -&gt; (n, Type ())
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">() -&gt; Type () -&gt; Type () -&gt; Type ()
+forall l. l -&gt; Type l -&gt; Type l -&gt; Type l
+</span><span class="hs-identifier hs-var">S.TyFun</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Type ()
+</span><a href="#local-6989586621679326906"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span>            </span><span id="local-6989586621679326681"><span class="annot"><a href="#local-6989586621679326841"><span class="hs-identifier hs-type">getCtor</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">QualConDecl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326681"><span class="hs-identifier hs-type">l</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Set</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">S.Name</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
+</span><span id="line-87"></span><span>            </span><span id="local-6989586621679326841"><span class="annot"><span class="annottext">getCtor :: forall l. QualConDecl l -&gt; Set (Name ())
+</span><a href="#local-6989586621679326841"><span class="hs-identifier hs-var hs-var">getCtor</span></a></span></span><span> </span><span id="local-6989586621679326910"><span class="annot"><span class="annottext">QualConDecl l
+</span><a href="#local-6989586621679326910"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Name ()] -&gt; Set (Name ())
+forall a. Ord a =&gt; [a] -&gt; Set a
+</span><span class="hs-identifier hs-var">Set.fromList</span></span><span> </span><span class="annot"><span class="annottext">([Name ()] -&gt; Set (Name ())) -&gt; [Name ()] -&gt; Set (Name ())
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">QualConDecl l -&gt; Name ()
+forall l. QualConDecl l -&gt; Name ()
+</span><a href="#local-6989586621679326890"><span class="hs-identifier hs-var">getCtorName</span></a></span><span> </span><span class="annot"><span class="annottext">QualConDecl l
+</span><a href="#local-6989586621679326910"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">Name () -&gt; [Name ()] -&gt; [Name ()]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[(Maybe (Name ()), Type ())] -&gt; [Name ()]
+</span><a href="#local-6989586621679326912"><span class="hs-identifier hs-var">getFieldNames</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">QualConDecl l -&gt; [(Maybe (Name ()), Type ())]
+forall l. QualConDecl l -&gt; [(Maybe (Name ()), Type ())]
+</span><a href="#local-6989586621679326893"><span class="hs-identifier hs-var">getFields</span></a></span><span> </span><span class="annot"><span class="annottext">QualConDecl l
+</span><a href="#local-6989586621679326910"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-88"></span><span>
+</span><span id="line-89"></span><span>            </span><span id="local-6989586621679326712"><span class="annot"><a href="#local-6989586621679326890"><span class="hs-identifier hs-type">getCtorName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">QualConDecl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326712"><span class="hs-identifier hs-type">l</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Name</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-90"></span><span>            </span><span id="local-6989586621679326890"><span class="annot"><span class="annottext">getCtorName :: forall l. QualConDecl l -&gt; Name ()
+</span><a href="#local-6989586621679326890"><span class="hs-identifier hs-var hs-var">getCtorName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-91"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">QualConDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe [TyVarBind l]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Context l)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ConDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326918"><span class="annot"><span class="annottext">Name l
+</span><a href="#local-6989586621679326918"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="annot"><span class="annottext">[Type l]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Name l -&gt; Name ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">Name l
+</span><a href="#local-6989586621679326918"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-92"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">QualConDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe [TyVarBind l]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Context l)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">InfixConDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Type l
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326920"><span class="annot"><span class="annottext">Name l
+</span><a href="#local-6989586621679326920"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="annot"><span class="annottext">Type l
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Name l -&gt; Name ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">Name l
+</span><a href="#local-6989586621679326920"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-93"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">QualConDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe [TyVarBind l]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Context l)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">RecDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326922"><span class="annot"><span class="annottext">Name l
+</span><a href="#local-6989586621679326922"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="annot"><span class="annottext">[FieldDecl l]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Name l -&gt; Name ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">Name l
+</span><a href="#local-6989586621679326922"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-94"></span><span>
+</span><span id="line-95"></span><span>            </span><span id="local-6989586621679326718"><span class="annot"><a href="#local-6989586621679326893"><span class="hs-identifier hs-type">getFields</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">QualConDecl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326718"><span class="hs-identifier hs-type">l</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">S.Name</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Type</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">]</span></span><span>
+</span><span id="line-96"></span><span>            </span><span id="local-6989586621679326893"><span class="annot"><span class="annottext">getFields :: forall l. QualConDecl l -&gt; [(Maybe (Name ()), Type ())]
+</span><a href="#local-6989586621679326893"><span class="hs-identifier hs-var hs-var">getFields</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-97"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">QualConDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe [TyVarBind l]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Context l)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ConDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Name l
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326928"><span class="annot"><span class="annottext">[Type l]
+</span><a href="#local-6989586621679326928"><span class="hs-identifier hs-var">ts</span></a></span></span><span class="hs-special">)</span><span>         </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Type l -&gt; (Maybe (Name ()), Type ()))
+-&gt; [Type l] -&gt; [(Maybe (Name ()), Type ())]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe (Name ())
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">,</span><span> </span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Type () -&gt; (Maybe (Name ()), Type ()))
+-&gt; (Type l -&gt; Type ()) -&gt; Type l -&gt; (Maybe (Name ()), Type ())
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Type l -&gt; Type ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Type l]
+</span><a href="#local-6989586621679326928"><span class="hs-identifier hs-var">ts</span></a></span><span>
+</span><span id="line-98"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">QualConDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe [TyVarBind l]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Context l)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">InfixConDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326929"><span class="annot"><span class="annottext">Type l
+</span><a href="#local-6989586621679326929"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span class="annot"><span class="annottext">Name l
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326930"><span class="annot"><span class="annottext">Type l
+</span><a href="#local-6989586621679326930"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe (Name ())
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Type l -&gt; Type ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">Type l
+</span><a href="#local-6989586621679326929"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe (Name ())
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Type l -&gt; Type ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">Type l
+</span><a href="#local-6989586621679326930"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-99"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">QualConDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe [TyVarBind l]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Context l)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">RecDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Name l
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326931"><span class="annot"><span class="annottext">[FieldDecl l]
+</span><a href="#local-6989586621679326931"><span class="hs-identifier hs-var">fs</span></a></span></span><span class="hs-special">)</span><span>         </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(FieldDecl l -&gt; [(Maybe (Name ()), Type ())])
+-&gt; [FieldDecl l] -&gt; [(Maybe (Name ()), Type ())]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">FieldDecl l -&gt; [(Maybe (Name ()), Type ())]
+forall l. FieldDecl l -&gt; [(Maybe (Name ()), Type ())]
+</span><a href="#local-6989586621679326932"><span class="hs-identifier hs-var">getFields'</span></a></span><span> </span><span class="annot"><span class="annottext">[FieldDecl l]
+</span><a href="#local-6989586621679326931"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span>            </span><span id="local-6989586621679326733"><span class="annot"><a href="#local-6989586621679326932"><span class="hs-identifier hs-type">getFields'</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FieldDecl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326733"><span class="hs-identifier hs-type">l</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">S.Name</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Type</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">]</span></span><span>
+</span><span id="line-102"></span><span>            </span><span id="local-6989586621679326932"><span class="annot"><span class="annottext">getFields' :: forall l. FieldDecl l -&gt; [(Maybe (Name ()), Type ())]
+</span><a href="#local-6989586621679326932"><span class="hs-identifier hs-var hs-var">getFields'</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">FieldDecl</span></span><span> </span><span class="annot"><span class="annottext">l
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326936"><span class="annot"><span class="annottext">[Name l]
+</span><a href="#local-6989586621679326936"><span class="hs-identifier hs-var">ns</span></a></span></span><span> </span><span id="local-6989586621679326937"><span class="annot"><span class="annottext">Type l
+</span><a href="#local-6989586621679326937"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Name l -&gt; (Maybe (Name ()), Type ()))
+-&gt; [Name l] -&gt; [(Maybe (Name ()), Type ())]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Type l -&gt; Type ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">Type l
+</span><a href="#local-6989586621679326937"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Maybe (Name ()) -&gt; (Maybe (Name ()), Type ()))
+-&gt; (Name l -&gt; Maybe (Name ()))
+-&gt; Name l
+-&gt; (Maybe (Name ()), Type ())
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Name () -&gt; Maybe (Name ())
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Name () -&gt; Maybe (Name ()))
+-&gt; (Name l -&gt; Name ()) -&gt; Name l -&gt; Maybe (Name ())
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Name l -&gt; Name ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Name l]
+</span><a href="#local-6989586621679326936"><span class="hs-identifier hs-var">ns</span></a></span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span>            </span><span class="annot"><a href="#local-6989586621679326912"><span class="hs-identifier hs-type">getFieldNames</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">S.Name</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Type</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">S.Name</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-105"></span><span>            </span><span id="local-6989586621679326912"><span class="annot"><span class="annottext">getFieldNames :: [(Maybe (Name ()), Type ())] -&gt; [Name ()]
+</span><a href="#local-6989586621679326912"><span class="hs-identifier hs-var hs-var">getFieldNames</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((Maybe (Name ()), Type ()) -&gt; Maybe (Name ()))
+-&gt; [(Maybe (Name ()), Type ())] -&gt; [Name ()]
+forall a b. (a -&gt; Maybe b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">mapMaybe</span></span><span> </span><span class="annot"><span class="annottext">(Maybe (Name ()), Type ()) -&gt; Maybe (Name ())
+forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span>
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span id="local-6989586621679326737"><span class="annot"><a href="ReWire.HSE.Globs.html#getImps"><span class="hs-identifier hs-type">getImps</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotation</span></span><span> </span><span class="annot"><a href="#local-6989586621679326737"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Module</span></span><span> </span><span class="annot"><a href="#local-6989586621679326737"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">ImportDecl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326737"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span></span><span>
+</span><span id="line-108"></span><span id="getImps"><span class="annot"><span class="annottext">getImps :: forall a. Annotation a =&gt; Module a -&gt; [ImportDecl a]
+</span><a href="ReWire.HSE.Globs.html#getImps"><span class="hs-identifier hs-var hs-var">getImps</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-109"></span><span>      </span><span class="hs-comment">-- TODO(chathhorn): hacky. The prim/ReWire module really shouldn't depend on Prelude.</span><span>
+</span><span id="line-110"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">S.Module</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ModuleHead</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ModuleName</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326958"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679326958"><span class="hs-identifier hs-var">m</span></a></span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Maybe (WarningText a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (ExportSpecList a)
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ModulePragma a]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[ImportDecl a]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">String -&gt; Bool
+</span><a href="ReWire.HSE.Globs.html#isPrimMod"><span class="hs-identifier hs-var">isPrimMod</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679326958"><span class="hs-identifier hs-var">m</span></a></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-comment">-- all imports ignored in the Prim module.</span><span>
+</span><span id="line-111"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">S.Module</span></span><span> </span><span id="local-6989586621679326959"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679326959"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ModuleHead</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ModuleName</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;ReWire.Prelude&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Maybe (WarningText a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (ExportSpecList a)
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ModulePragma a]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326960"><span class="annot"><span class="annottext">[ImportDecl a]
+</span><a href="#local-6989586621679326960"><span class="hs-identifier hs-var">imps</span></a></span></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">a -&gt; Text -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+forall a.
+Annotation a =&gt;
+a -&gt; Text -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+</span><a href="#local-6989586621679326961"><span class="hs-identifier hs-var">addMod</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679326959"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;ReWire&quot;</span></span><span> </span><span class="annot"><span class="annottext">([ImportDecl a] -&gt; [ImportDecl a])
+-&gt; [ImportDecl a] -&gt; [ImportDecl a]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(ImportDecl a -&gt; Bool) -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; (ImportDecl a -&gt; Bool) -&gt; ImportDecl a -&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; ImportDecl a -&gt; Bool
+forall a. Annotation a =&gt; Text -&gt; ImportDecl a -&gt; Bool
+</span><a href="#local-6989586621679326963"><span class="hs-identifier hs-var">isMod</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Prelude&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ImportDecl a]
+</span><a href="#local-6989586621679326960"><span class="hs-identifier hs-var">imps</span></a></span><span> </span><span class="hs-comment">-- TODO(chathhorn) gah!</span><span>
+</span><span id="line-112"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">S.Module</span></span><span> </span><span id="local-6989586621679326964"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679326964"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="annot"><span class="annottext">Maybe (ModuleHead a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[ModulePragma a]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326965"><span class="annot"><span class="annottext">[ImportDecl a]
+</span><a href="#local-6989586621679326965"><span class="hs-identifier hs-var">imps</span></a></span></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><span class="hs-identifier">_</span></span><span>                                                         </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">a -&gt; Text -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+forall a.
+Annotation a =&gt;
+a -&gt; Text -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+</span><a href="#local-6989586621679326961"><span class="hs-identifier hs-var">addMod</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679326964"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;ReWire.Prelude&quot;</span></span><span> </span><span class="annot"><span class="annottext">([ImportDecl a] -&gt; [ImportDecl a])
+-&gt; [ImportDecl a] -&gt; [ImportDecl a]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Text -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+forall a.
+Annotation a =&gt;
+a -&gt; Text -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+</span><a href="#local-6989586621679326961"><span class="hs-identifier hs-var">addMod</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679326964"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;ReWire&quot;</span></span><span> </span><span class="annot"><span class="annottext">([ImportDecl a] -&gt; [ImportDecl a])
+-&gt; [ImportDecl a] -&gt; [ImportDecl a]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(ImportDecl a -&gt; Bool) -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; (ImportDecl a -&gt; Bool) -&gt; ImportDecl a -&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; ImportDecl a -&gt; Bool
+forall a. Annotation a =&gt; Text -&gt; ImportDecl a -&gt; Bool
+</span><a href="#local-6989586621679326963"><span class="hs-identifier hs-var">isMod</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Prelude&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ImportDecl a]
+</span><a href="#local-6989586621679326965"><span class="hs-identifier hs-var">imps</span></a></span><span>
+</span><span id="line-113"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">S.XmlPage</span></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>                                                                  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-114"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">S.XmlHybrid</span></span><span> </span><span id="local-6989586621679326968"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679326968"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="annot"><span class="annottext">Maybe (ModuleHead a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[ModulePragma a]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326969"><span class="annot"><span class="annottext">[ImportDecl a]
+</span><a href="#local-6989586621679326969"><span class="hs-identifier hs-var">imps</span></a></span></span><span> </span><span class="annot"><span class="annottext">[Decl a]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">XName a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[XAttr a]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (Exp a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[Exp a]
+</span><span class="hs-identifier">_</span></span><span>                                              </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">a -&gt; Text -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+forall a.
+Annotation a =&gt;
+a -&gt; Text -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+</span><a href="#local-6989586621679326961"><span class="hs-identifier hs-var">addMod</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679326968"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;ReWire.Prelude&quot;</span></span><span> </span><span class="annot"><span class="annottext">([ImportDecl a] -&gt; [ImportDecl a])
+-&gt; [ImportDecl a] -&gt; [ImportDecl a]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Text -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+forall a.
+Annotation a =&gt;
+a -&gt; Text -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+</span><a href="#local-6989586621679326961"><span class="hs-identifier hs-var">addMod</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679326968"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;ReWire&quot;</span></span><span> </span><span class="annot"><span class="annottext">([ImportDecl a] -&gt; [ImportDecl a])
+-&gt; [ImportDecl a] -&gt; [ImportDecl a]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(ImportDecl a -&gt; Bool) -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; (ImportDecl a -&gt; Bool) -&gt; ImportDecl a -&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; ImportDecl a -&gt; Bool
+forall a. Annotation a =&gt; Text -&gt; ImportDecl a -&gt; Bool
+</span><a href="#local-6989586621679326963"><span class="hs-identifier hs-var">isMod</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Prelude&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ImportDecl a]
+</span><a href="#local-6989586621679326969"><span class="hs-identifier hs-var">imps</span></a></span><span>
+</span><span id="line-115"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679326740"><span class="annot"><a href="#local-6989586621679326961"><span class="hs-identifier hs-type">addMod</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotation</span></span><span> </span><span class="annot"><a href="#local-6989586621679326740"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679326740"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">ImportDecl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326740"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">ImportDecl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326740"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span></span><span>
+</span><span id="line-116"></span><span>            </span><span id="local-6989586621679326961"><span class="annot"><span class="annottext">addMod :: forall a.
+Annotation a =&gt;
+a -&gt; Text -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+</span><a href="#local-6989586621679326961"><span class="hs-identifier hs-var hs-var">addMod</span></a></span></span><span> </span><span id="local-6989586621679326973"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679326973"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621679326974"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679326974"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span id="local-6989586621679326975"><span class="annot"><span class="annottext">[ImportDecl a]
+</span><a href="#local-6989586621679326975"><span class="hs-identifier hs-var">imps</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">(ImportDecl a -&gt; Bool) -&gt; [ImportDecl a] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">any</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; ImportDecl a -&gt; Bool
+forall a. Annotation a =&gt; Text -&gt; ImportDecl a -&gt; Bool
+</span><a href="#local-6989586621679326963"><span class="hs-identifier hs-var">isMod</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679326974"><span class="hs-identifier hs-var">m</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ImportDecl a]
+</span><a href="#local-6989586621679326975"><span class="hs-identifier hs-var">imps</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">[ImportDecl a]
+</span><a href="#local-6989586621679326975"><span class="hs-identifier hs-var">imps</span></a></span><span>
+</span><span id="line-117"></span><span>                  </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">a
+-&gt; ModuleName a
+-&gt; Bool
+-&gt; Bool
+-&gt; Bool
+-&gt; Maybe String
+-&gt; Maybe (ModuleName a)
+-&gt; Maybe (ImportSpecList a)
+-&gt; ImportDecl a
+forall l.
+l
+-&gt; ModuleName l
+-&gt; Bool
+-&gt; Bool
+-&gt; Bool
+-&gt; Maybe String
+-&gt; Maybe (ModuleName l)
+-&gt; Maybe (ImportSpecList l)
+-&gt; ImportDecl l
+</span><span class="hs-identifier hs-var">ImportDecl</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679326973"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; String -&gt; ModuleName a
+forall l. l -&gt; String -&gt; ModuleName l
+</span><span class="hs-identifier hs-var">ModuleName</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679326973"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679326974"><span class="hs-identifier hs-var">m</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="annot"><span class="annottext">Maybe String
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="annot"><span class="annottext">Maybe (ModuleName a)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="annot"><span class="annottext">Maybe (ImportSpecList a)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="annot"><span class="annottext">ImportDecl a -&gt; [ImportDecl a] -&gt; [ImportDecl a]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[ImportDecl a]
+</span><a href="#local-6989586621679326975"><span class="hs-identifier hs-var">imps</span></a></span><span>
+</span><span id="line-118"></span><span>
+</span><span id="line-119"></span><span>            </span><span id="local-6989586621679326742"><span class="annot"><a href="#local-6989586621679326963"><span class="hs-identifier hs-type">isMod</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotation</span></span><span> </span><span class="annot"><a href="#local-6989586621679326742"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ImportDecl</span></span><span> </span><span class="annot"><a href="#local-6989586621679326742"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span></span><span>
+</span><span id="line-120"></span><span>            </span><span id="local-6989586621679326963"><span class="annot"><span class="annottext">isMod :: forall a. Annotation a =&gt; Text -&gt; ImportDecl a -&gt; Bool
+</span><a href="#local-6989586621679326963"><span class="hs-identifier hs-var hs-var">isMod</span></a></span></span><span> </span><span id="local-6989586621679326981"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679326981"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ImportDecl</span></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">importModule :: forall l. ImportDecl l -&gt; ModuleName l
+</span><span class="hs-identifier hs-var">importModule</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ModuleName</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679326983"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679326983"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679326983"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679326981"><span class="hs-identifier hs-var">m</span></a></span><span>
+</span><span id="line-121"></span></pre></body></html>

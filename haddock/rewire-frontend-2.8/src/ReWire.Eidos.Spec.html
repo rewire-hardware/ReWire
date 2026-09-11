@@ -1,0 +1,840 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- | Monomorphization by specialization (doc/eidos.md &#167;4.1, &#167;5, &#167;8): a worklist</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--   specializer driven by the type arguments the bridge keeps on</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--   application spines. There is no inference and no unification: a</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--   monomorphic definition's body mentions a polymorphic definition only</span><span>
+</span><span id="line-9"></span><span class="hs-comment">--   as a spine head saturated with closed type arguments (the linter's</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--   poly-mode guarantee), so each such spine is a specialization request;</span><span>
+</span><span id="line-11"></span><span class="hs-comment">--   the clone is pure type substitution through the audited clone</span><span>
+</span><span id="line-12"></span><span class="hs-comment">--   primitive ('ReWire.Eidos.Subst.instantiateDefn'), memoized on the</span><span>
+</span><span id="line-13"></span><span class="hs-comment">--   normalized argument list. Clones carry their provenance ('SpecOrigin')</span><span>
+</span><span id="line-14"></span><span class="hs-comment">--   and are named @origin$tag@, where the tag renders the type arguments</span><span>
+</span><span id="line-15"></span><span class="hs-comment">--   ('ReWire.Eidos.Naming.originTag') &#8212; so an unrelated instantiation</span><span>
+</span><span id="line-16"></span><span class="hs-comment">--   elsewhere never renames a clone.</span><span>
+</span><span id="line-17"></span><span class="hs-comment">--</span><span>
+</span><span id="line-18"></span><span class="hs-comment">--   Polymorphic definitions are templates: they are dropped from the</span><span>
+</span><span id="line-19"></span><span class="hs-comment">--   output (their instantiations replace them), so the result is</span><span>
+</span><span id="line-20"></span><span class="hs-comment">--   monomorphic (&quot;ReWire.Eidos.Lint&quot; mono mode) &#8212; except the</span><span>
+</span><span id="line-21"></span><span class="hs-comment">--   builtin-named definitions (rwPrim*), whose polymorphic signatures</span><span>
+</span><span id="line-22"></span><span class="hs-comment">--   carry the builtins' type assumptions to the Eidos-to-Hyle fold (their</span><span>
+</span><span id="line-23"></span><span class="hs-comment">--   bodies are error stubs, and they are never referenced as variables &#8212;</span><span>
+</span><span id="line-24"></span><span class="hs-comment">--   references become 'Prim' occurrences at the bridge); they ride</span><span>
+</span><span id="line-25"></span><span class="hs-comment">--   through unchanged. The worklist runs in generations; an instantiation</span><span>
+</span><span id="line-26"></span><span class="hs-comment">--   chain deeper than the budget (the historical typechecker bound,</span><span>
+</span><span id="line-27"></span><span class="hs-comment">--   raised by @--depth@) is rejected with the retired specializer's</span><span>
+</span><span id="line-28"></span><span class="hs-comment">--   diagnostic.</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.Eidos.Spec.html"><span class="hs-identifier">ReWire.Eidos.Spec</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Spec.html#specialize"><span class="hs-identifier">specialize</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Annotation</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">noAnn</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">unAnn</span></span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.Builtins.html"><span class="hs-identifier">ReWire.Builtins</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Builtins.html#builtins"><span class="hs-identifier">builtins</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Error</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">AstError</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">MonadError</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">failAt</span></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.Eidos.Naming.html"><span class="hs-identifier">ReWire.Eidos.Naming</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Naming.html#originTag"><span class="hs-identifier">originTag</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.Eidos.Pretty.html"><span class="hs-identifier">ReWire.Eidos.Pretty</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.Eidos.Subst.html"><span class="hs-identifier">ReWire.Eidos.Subst</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Subst.html#instantiateDefn"><span class="hs-identifier">instantiateDefn</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Eidos.Subst.html#nextUniq"><span class="hs-identifier">nextUniq</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html"><span class="hs-identifier">ReWire.Eidos.Syntax</span></a></span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.Eidos.Types.html"><span class="hs-identifier">ReWire.Eidos.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Types.html#natNorm"><span class="hs-identifier">natNorm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Eidos.Types.html#flattenApp"><span class="hs-identifier">flattenApp</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Eidos.Types.html#flattenArrow"><span class="hs-identifier">flattenArrow</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Eidos.Types.html#flattenTyApp"><span class="hs-identifier">flattenTyApp</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Eidos.Types.html#evalNat"><span class="hs-identifier">evalNat</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Pretty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">prettyPrint</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">showt</span></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">foldM</span></span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.State.Strict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">StateT</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">evalStateT</span></span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashMap.Strict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">HashMap</span></span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashSet</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">HashSet</span></span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">partition</span></span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Numeric.Natural</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Natural</span></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashMap.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashSet</span></span><span>        </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Set</span></span><span>
+</span><span id="line-52"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.IntMap.Strict</span></span><span>  </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">IM</span></span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span class="hs-comment">-- | A specialization request: a polymorphic definition (by unique) at a</span><span>
+</span><span id="line-55"></span><span class="hs-comment">--   closed, normalized type-argument list.</span><span>
+</span><span id="line-56"></span><span class="hs-keyword">type</span><span> </span><span id="Key"><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-var">Key</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Uniq"><span class="hs-identifier hs-type">Uniq</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span>
+</span><span id="line-58"></span><span class="annot"><a href="ReWire.Eidos.Spec.html#specialize"><span class="hs-identifier hs-type">specialize</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679453415"><span class="annot"><a href="#local-6989586621679453415"><span class="hs-identifier hs-type">m</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">AstError</span></span><span> </span><span class="annot"><a href="#local-6989586621679453415"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Natural</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Program"><span class="hs-identifier hs-type">Program</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679453415"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Program"><span class="hs-identifier hs-type">Program</span></a></span><span>
+</span><span id="line-59"></span><span id="specialize"><span class="annot"><span class="annottext">specialize :: forall (m :: * -&gt; *).
+MonadError AstError m =&gt;
+Natural -&gt; Program -&gt; m Program
+</span><a href="ReWire.Eidos.Spec.html#specialize"><span class="hs-identifier hs-var hs-var">specialize</span></a></span></span><span> </span><span id="local-6989586621679453660"><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679453660"><span class="hs-identifier hs-var">bound</span></a></span></span><span> </span><span id="local-6989586621679453661"><span class="annot"><span class="annottext">p :: Program
+</span><a href="#local-6989586621679453661"><span class="hs-identifier hs-var">p</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Program"><span class="hs-identifier hs-type">Program</span></a></span><span> </span><span id="local-6989586621679453663"><span class="annot"><span class="annottext">[DataDefn]
+</span><a href="#local-6989586621679453663"><span class="hs-identifier hs-var">datas</span></a></span></span><span> </span><span id="local-6989586621679453664"><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679453664"><span class="hs-identifier hs-var">defns</span></a></span></span><span> </span><span id="local-6989586621679453665"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453665"><span class="hs-identifier hs-var">top</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">StateT Uniq m Program -&gt; Uniq -&gt; m Program
+forall (m :: * -&gt; *) s a. Monad m =&gt; StateT s m a -&gt; s -&gt; m a
+</span><span class="hs-identifier hs-var">evalStateT</span></span><span> </span><span class="annot"><span class="annottext">StateT Uniq m Program
+</span><a href="#local-6989586621679453666"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">(Uniq -&gt; m Program) -&gt; Uniq -&gt; m Program
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Program -&gt; Uniq
+forall a. Data a =&gt; a -&gt; Uniq
+</span><a href="ReWire.Eidos.Subst.html#nextUniq"><span class="hs-identifier hs-var">nextUniq</span></a></span><span> </span><span class="annot"><span class="annottext">Program
+</span><a href="#local-6989586621679453661"><span class="hs-identifier hs-var">p</span></a></span><span>
+</span><span id="line-60"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679453667"><span class="hs-identifier hs-type">templates</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-61"></span><span>            </span><span class="annot"><a href="#local-6989586621679453668"><span class="hs-identifier hs-type">kept</span></a></span><span>      </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-62"></span><span>            </span><span class="hs-special">(</span><span id="local-6989586621679453667"><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679453667"><span class="hs-identifier hs-var">templates</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679453668"><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679453668"><span class="hs-identifier hs-var">kept</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Defn -&gt; Bool) -&gt; [Defn] -&gt; ([Defn], [Defn])
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; ([a], [a])
+</span><span class="hs-identifier hs-var">partition</span></span><span> </span><span class="annot"><span class="annottext">Defn -&gt; Bool
+</span><a href="#local-6989586621679453669"><span class="hs-identifier hs-var">isTemplate</span></a></span><span> </span><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679453664"><span class="hs-identifier hs-var">defns</span></a></span><span>
+</span><span id="line-63"></span><span>
+</span><span id="line-64"></span><span>            </span><span class="hs-comment">-- Templates are the polymorphic definitions except the builtin</span><span>
+</span><span id="line-65"></span><span>            </span><span class="hs-comment">-- signature carriers.</span><span>
+</span><span id="line-66"></span><span>            </span><span class="annot"><a href="#local-6989586621679453669"><span class="hs-identifier hs-type">isTemplate</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-67"></span><span>            </span><span id="local-6989586621679453669"><span class="annot"><span class="annottext">isTemplate :: Defn -&gt; Bool
+</span><a href="#local-6989586621679453669"><span class="hs-identifier hs-var hs-var">isTemplate</span></a></span></span><span> </span><span id="local-6989586621679453670"><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453670"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Id -&gt; Bool
+</span><a href="#local-6989586621679453671"><span class="hs-identifier hs-var">isPoly</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Defn -&gt; Id
+</span><a href="ReWire.Eidos.Syntax.html#defnId"><span class="hs-identifier hs-var">defnId</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453670"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Bool
+</span><a href="#local-6989586621679453675"><span class="hs-identifier hs-var">isPrimName</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Bool) -&gt; Text -&gt; Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Id -&gt; Text
+</span><a href="ReWire.Eidos.Syntax.html#idOcc"><span class="hs-identifier hs-var">idOcc</span></a></span><span> </span><span class="annot"><span class="annottext">(Id -&gt; Text) -&gt; Id -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Defn -&gt; Id
+</span><a href="ReWire.Eidos.Syntax.html#defnId"><span class="hs-identifier hs-var">defnId</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453670"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span>            </span><span class="annot"><a href="#local-6989586621679453677"><span class="hs-identifier hs-type">polys</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IM.IntMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span>
+</span><span id="line-70"></span><span>            </span><span id="local-6989586621679453677"><span class="annot"><span class="annottext">polys :: IntMap Defn
+</span><a href="#local-6989586621679453677"><span class="hs-identifier hs-var hs-var">polys</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(Uniq, Defn)] -&gt; IntMap Defn
+forall a. [(Uniq, a)] -&gt; IntMap a
+</span><span class="hs-identifier hs-var">IM.fromList</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Id -&gt; Uniq
+</span><a href="ReWire.Eidos.Syntax.html#idUniq"><span class="hs-identifier hs-var">idUniq</span></a></span><span> </span><span class="annot"><span class="annottext">(Id -&gt; Uniq) -&gt; Id -&gt; Uniq
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Defn -&gt; Id
+</span><a href="ReWire.Eidos.Syntax.html#defnId"><span class="hs-identifier hs-var">defnId</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453680"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453680"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679453680"><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453680"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679453667"><span class="hs-identifier hs-var">templates</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span>            </span><span class="annot"><a href="#local-6989586621679453671"><span class="hs-identifier hs-type">isPoly</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-73"></span><span>            </span><span id="local-6989586621679453671"><span class="annot"><span class="annottext">isPoly :: Id -&gt; Bool
+</span><a href="#local-6989586621679453671"><span class="hs-identifier hs-var hs-var">isPoly</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; (Id -&gt; Bool) -&gt; Id -&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[TyVar] -&gt; Bool
+forall a. [a] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">([TyVar] -&gt; Bool) -&gt; (Id -&gt; [TyVar]) -&gt; Id -&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Sig -&gt; [TyVar]
+</span><a href="ReWire.Eidos.Syntax.html#sigTVs"><span class="hs-identifier hs-var">sigTVs</span></a></span><span> </span><span class="annot"><span class="annottext">(Sig -&gt; [TyVar]) -&gt; (Id -&gt; Sig) -&gt; Id -&gt; [TyVar]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Id -&gt; Sig
+</span><a href="ReWire.Eidos.Syntax.html#idSig"><span class="hs-identifier hs-var">idSig</span></a></span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span>            </span><span class="annot"><a href="#local-6989586621679453675"><span class="hs-identifier hs-type">isPrimName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-76"></span><span>            </span><span id="local-6989586621679453675"><span class="annot"><span class="annottext">isPrimName :: Text -&gt; Bool
+</span><a href="#local-6989586621679453675"><span class="hs-identifier hs-var hs-var">isPrimName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; HashSet Text -&gt; Bool) -&gt; HashSet Text -&gt; Text -&gt; Bool
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; HashSet Text -&gt; Bool
+forall a. (Eq a, Hashable a) =&gt; a -&gt; HashSet a -&gt; Bool
+</span><span class="hs-identifier hs-var">Set.member</span></span><span> </span><span class="annot"><span class="annottext">HashSet Text
+</span><a href="#local-6989586621679453687"><span class="hs-identifier hs-var">primNames</span></a></span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span>            </span><span class="annot"><a href="#local-6989586621679453687"><span class="hs-identifier hs-type">primNames</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashSet</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-79"></span><span>            </span><span id="local-6989586621679453687"><span class="annot"><span class="annottext">primNames :: HashSet Text
+</span><a href="#local-6989586621679453687"><span class="hs-identifier hs-var hs-var">primNames</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; HashSet Text
+forall a. (Eq a, Hashable a) =&gt; [a] -&gt; HashSet a
+</span><span class="hs-identifier hs-var">Set.fromList</span></span><span> </span><span class="annot"><span class="annottext">([Text] -&gt; HashSet Text) -&gt; [Text] -&gt; HashSet Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">((Text, Builtin) -&gt; Text) -&gt; [(Text, Builtin)] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">(Text, Builtin) -&gt; Text
+forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span> </span><span class="annot"><span class="annottext">[(Text, Builtin)]
+</span><a href="ReWire.Builtins.html#builtins"><span class="hs-identifier hs-var">builtins</span></a></span><span>
+</span><span id="line-80"></span><span>
+</span><span id="line-81"></span><span>            </span><span class="annot"><a href="#local-6989586621679453666"><span class="hs-identifier hs-type">go</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StateT</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Uniq"><span class="hs-identifier hs-type">Uniq</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453415"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Program"><span class="hs-identifier hs-type">Program</span></a></span><span>
+</span><span id="line-82"></span><span>            </span><span id="local-6989586621679453666"><span class="annot"><span class="annottext">go :: StateT Uniq m Program
+</span><a href="#local-6989586621679453666"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-83"></span><span>                  </span><span class="hs-special">(</span><span id="local-6989586621679453690"><span class="annot"><a href="#local-6989586621679453690"><span class="hs-identifier hs-var">table</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679453691"><span class="annot"><a href="#local-6989586621679453691"><span class="hs-identifier hs-var">clones</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Natural
+-&gt; HashMap (Uniq, [Ty]) Id
+-&gt; [Defn]
+-&gt; [(Uniq, [Ty])]
+-&gt; StateT Uniq m (HashMap (Uniq, [Ty]) Id, [Defn])
+</span><a href="#local-6989586621679453692"><span class="hs-identifier hs-var">rounds</span></a></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) Id
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">([(Uniq, [Ty])] -&gt; StateT Uniq m (HashMap (Uniq, [Ty]) Id, [Defn]))
+-&gt; [(Uniq, [Ty])]
+-&gt; StateT Uniq m (HashMap (Uniq, [Ty]) Id, [Defn])
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Defn -&gt; [(Uniq, [Ty])]) -&gt; [Defn] -&gt; [(Uniq, [Ty])]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453694"><span class="hs-identifier hs-var">requests</span></a></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; [(Uniq, [Ty])]) -&gt; (Defn -&gt; Exp) -&gt; Defn -&gt; [(Uniq, [Ty])]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Defn -&gt; Exp
+</span><a href="ReWire.Eidos.Syntax.html#defnBody"><span class="hs-identifier hs-var">defnBody</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679453668"><span class="hs-identifier hs-var">kept</span></a></span><span>
+</span><span id="line-84"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Program"><span class="hs-identifier hs-type">Program</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453663"><span class="hs-identifier hs-type">datas</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679453696"><span class="hs-identifier hs-type">rewrite</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453690"><span class="hs-identifier hs-type">table</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="#local-6989586621679453668"><span class="hs-identifier hs-type">kept</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679453691"><span class="hs-identifier hs-type">clones</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679453665"><span class="hs-identifier hs-type">top</span></a></span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span>            </span><span class="hs-comment">-- One worklist generation per round.</span><span>
+</span><span id="line-87"></span><span>            </span><span class="annot"><a href="#local-6989586621679453692"><span class="hs-identifier hs-type">rounds</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Natural</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StateT</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Uniq"><span class="hs-identifier hs-type">Uniq</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453415"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-88"></span><span>            </span><span id="local-6989586621679453692"><span class="annot"><span class="annottext">rounds :: Natural
+-&gt; HashMap (Uniq, [Ty]) Id
+-&gt; [Defn]
+-&gt; [(Uniq, [Ty])]
+-&gt; StateT Uniq m (HashMap (Uniq, [Ty]) Id, [Defn])
+</span><a href="#local-6989586621679453692"><span class="hs-identifier hs-var hs-var">rounds</span></a></span></span><span> </span><span id="local-6989586621679453697"><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679453697"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679453698"><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) Id
+</span><a href="#local-6989586621679453698"><span class="hs-identifier hs-var">table</span></a></span></span><span> </span><span id="local-6989586621679453699"><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679453699"><span class="hs-identifier hs-var">clones</span></a></span></span><span> </span><span id="local-6989586621679453700"><span class="annot"><span class="annottext">[(Uniq, [Ty])]
+</span><a href="#local-6989586621679453700"><span class="hs-identifier hs-var">reqs</span></a></span></span><span>
+</span><span id="line-89"></span><span>                  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">[(Uniq, [Ty])] -&gt; Bool
+forall a. [a] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[(Uniq, [Ty])]
+</span><a href="#local-6989586621679453701"><span class="hs-identifier hs-var">new</span></a></span><span>   </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(HashMap (Uniq, [Ty]) Id, [Defn])
+-&gt; StateT Uniq m (HashMap (Uniq, [Ty]) Id, [Defn])
+forall a. a -&gt; StateT Uniq m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) Id
+</span><a href="#local-6989586621679453698"><span class="hs-identifier hs-var">table</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679453699"><span class="hs-identifier hs-var">clones</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-90"></span><span>                  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679453697"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Natural -&gt; Natural -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679453660"><span class="hs-identifier hs-var">bound</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Text -&gt; StateT Uniq m (HashMap (Uniq, [Ty]) Id, [Defn])
+forall (m :: * -&gt; *) an a.
+(MonadError AstError m, Annotation an) =&gt;
+an -&gt; Text -&gt; m a
+</span><span class="hs-identifier hs-var">failAt</span></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier hs-var">noAnn</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;polymorphic function instantiation not terminating (mutually recursive definitions?).&quot;</span></span><span>
+</span><span id="line-91"></span><span>                  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-92"></span><span>                        </span><span class="hs-special">(</span><span id="local-6989586621679453702"><span class="annot"><a href="#local-6989586621679453702"><span class="hs-identifier hs-var">table'</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679453703"><span class="annot"><a href="#local-6989586621679453703"><span class="hs-identifier hs-var">batch</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">((HashMap (Uniq, [Ty]) Id, [Defn])
+ -&gt; (Uniq, [Ty]) -&gt; StateT Uniq m (HashMap (Uniq, [Ty]) Id, [Defn]))
+-&gt; (HashMap (Uniq, [Ty]) Id, [Defn])
+-&gt; [(Uniq, [Ty])]
+-&gt; StateT Uniq m (HashMap (Uniq, [Ty]) Id, [Defn])
+forall (t :: * -&gt; *) (m :: * -&gt; *) b a.
+(Foldable t, Monad m) =&gt;
+(b -&gt; a -&gt; m b) -&gt; b -&gt; t a -&gt; m b
+</span><span class="hs-identifier hs-var">foldM</span></span><span> </span><span class="annot"><span class="annottext">(HashMap (Uniq, [Ty]) Id, [Defn])
+-&gt; (Uniq, [Ty]) -&gt; StateT Uniq m (HashMap (Uniq, [Ty]) Id, [Defn])
+</span><a href="#local-6989586621679453704"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) Id
+</span><a href="#local-6989586621679453698"><span class="hs-identifier hs-var">table</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(Uniq, [Ty])]
+</span><a href="#local-6989586621679453701"><span class="hs-identifier hs-var">new</span></a></span><span>
+</span><span id="line-93"></span><span>                        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679453705"><span class="annot"><a href="#local-6989586621679453705"><span class="hs-identifier hs-var hs-var">batch'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Defn] -&gt; [Defn]
+forall a. [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">reverse</span></span><span> </span><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679453703"><span class="hs-identifier hs-var">batch</span></a></span><span>
+</span><span id="line-94"></span><span>                        </span><span class="annot"><a href="#local-6989586621679453692"><span class="hs-identifier hs-type">rounds</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679453697"><span class="hs-identifier hs-type">n</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">+</span></span><span> </span><span class="annot"><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679453702"><span class="hs-identifier hs-type">table'</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679453699"><span class="hs-identifier hs-type">clones</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679453705"><span class="hs-identifier hs-type">batch'</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">concatMap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679453694"><span class="hs-identifier hs-type">requests</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">.</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#defnBody"><span class="hs-identifier hs-var">defnBody</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679453705"><span class="hs-identifier hs-type">batch'</span></a></span><span>
+</span><span id="line-95"></span><span>                  </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679453701"><span class="annot"><span class="annottext">new :: [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453701"><span class="hs-identifier hs-var hs-var">new</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) Id -&gt; [(Uniq, [Ty])] -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453708"><span class="hs-identifier hs-var">dedupe</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) Id
+</span><a href="#local-6989586621679453698"><span class="hs-identifier hs-var">table</span></a></span><span> </span><span class="annot"><span class="annottext">[(Uniq, [Ty])]
+</span><a href="#local-6989586621679453700"><span class="hs-identifier hs-var">reqs</span></a></span><span>
+</span><span id="line-96"></span><span>
+</span><span id="line-97"></span><span>            </span><span class="annot"><a href="#local-6989586621679453704"><span class="hs-identifier hs-type">step</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StateT</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Uniq"><span class="hs-identifier hs-type">Uniq</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453415"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-98"></span><span>            </span><span id="local-6989586621679453704"><span class="annot"><span class="annottext">step :: (HashMap (Uniq, [Ty]) Id, [Defn])
+-&gt; (Uniq, [Ty]) -&gt; StateT Uniq m (HashMap (Uniq, [Ty]) Id, [Defn])
+</span><a href="#local-6989586621679453704"><span class="hs-identifier hs-var hs-var">step</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679453709"><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) Id
+</span><a href="#local-6989586621679453709"><span class="hs-identifier hs-var">table</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679453710"><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679453710"><span class="hs-identifier hs-var">acc</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679453711"><span class="annot"><span class="annottext">k :: (Uniq, [Ty])
+</span><a href="#local-6989586621679453711"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span id="local-6989586621679453712"><span class="annot"><span class="annottext">Uniq
+</span><a href="#local-6989586621679453712"><span class="hs-identifier hs-var">u</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679453713"><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679453713"><span class="hs-identifier hs-var">ts</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Uniq -&gt; IntMap Defn -&gt; Maybe Defn
+forall a. Uniq -&gt; IntMap a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">IM.lookup</span></span><span> </span><span class="annot"><span class="annottext">Uniq
+</span><a href="#local-6989586621679453712"><span class="hs-identifier hs-var">u</span></a></span><span> </span><span class="annot"><span class="annottext">IntMap Defn
+</span><a href="#local-6989586621679453677"><span class="hs-identifier hs-var">polys</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-99"></span><span>                  </span><span class="annot"><span class="annottext">Maybe Defn
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(HashMap (Uniq, [Ty]) Id, [Defn])
+-&gt; StateT Uniq m (HashMap (Uniq, [Ty]) Id, [Defn])
+forall a. a -&gt; StateT Uniq m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) Id
+</span><a href="#local-6989586621679453709"><span class="hs-identifier hs-var">table</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679453710"><span class="hs-identifier hs-var">acc</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- unreachable on lint-clean input</span><span>
+</span><span id="line-100"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679453715"><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453715"><span class="hs-identifier hs-var">d</span></a></span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-101"></span><span>                        </span><span class="hs-comment">-- The clone's display name carries its</span><span>
+</span><span id="line-102"></span><span>                        </span><span class="hs-comment">-- instantiation ('grev$Vec_8_Bool'), not a</span><span>
+</span><span id="line-103"></span><span>                        </span><span class="hs-comment">-- discovery counter: adding an unrelated</span><span>
+</span><span id="line-104"></span><span>                        </span><span class="hs-comment">-- instantiation elsewhere must not rename this</span><span>
+</span><span id="line-105"></span><span>                        </span><span class="hs-comment">-- one. Renderings that collide after sanitizing</span><span>
+</span><span id="line-106"></span><span>                        </span><span class="hs-comment">-- are disambiguated at the machine fold.</span><span>
+</span><span id="line-107"></span><span>                        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679453719"><span class="annot"><span class="annottext">occ :: Text
+</span><a href="#local-6989586621679453719"><span class="hs-identifier hs-var hs-var hs-var">occ</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Id -&gt; Text
+</span><a href="ReWire.Eidos.Syntax.html#idOcc"><span class="hs-identifier hs-var">idOcc</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Defn -&gt; Id
+</span><a href="ReWire.Eidos.Syntax.html#defnId"><span class="hs-identifier hs-var">defnId</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453715"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;$&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; Text
+</span><a href="ReWire.Eidos.Naming.html#originTag"><span class="hs-identifier hs-var">originTag</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Ty -&gt; Text) -&gt; [Ty] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Text
+</span><a href="ReWire.Eidos.Spec.html#renderTy"><span class="hs-identifier hs-var">renderTy</span></a></span><span> </span><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679453713"><span class="hs-identifier hs-var">ts</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-108"></span><span>                        </span><span id="local-6989586621679453721"><span class="annot"><a href="#local-6989586621679453721"><span class="hs-identifier hs-var">d'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Ty] -&gt; Defn -&gt; StateT Uniq m Defn
+forall (m :: * -&gt; *).
+MonadState Uniq m =&gt;
+Text -&gt; [Ty] -&gt; Defn -&gt; m Defn
+</span><a href="ReWire.Eidos.Subst.html#instantiateDefn"><span class="hs-identifier hs-var">instantiateDefn</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679453719"><span class="hs-identifier hs-var">occ</span></a></span><span> </span><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679453713"><span class="hs-identifier hs-var">ts</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453715"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-109"></span><span>                        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679453722"><span class="annot"><a href="#local-6989586621679453722"><span class="hs-identifier hs-var hs-var">d''</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453721"><span class="hs-identifier hs-var">d'</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#defnOrigin"><span class="hs-identifier hs-var">defnOrigin</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#SpecOrigin"><span class="hs-identifier hs-type">SpecOrigin</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#idOcc"><span class="hs-identifier hs-var">idOcc</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#defnId"><span class="hs-identifier hs-var">defnId</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453715"><span class="hs-identifier hs-type">d</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679453713"><span class="hs-identifier hs-type">ts</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-110"></span><span>                        </span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Map.insert</span></span><span> </span><span class="annot"><a href="#local-6989586621679453711"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#defnId"><span class="hs-identifier hs-var">defnId</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453722"><span class="hs-identifier hs-type">d''</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679453709"><span class="hs-identifier hs-type">table</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679453722"><span class="hs-identifier hs-type">d''</span></a></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><a href="#local-6989586621679453710"><span class="hs-identifier hs-type">acc</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-111"></span><span>
+</span><span id="line-112"></span><span>            </span><span class="hs-comment">-- New keys, in discovery order.</span><span>
+</span><span id="line-113"></span><span>            </span><span class="annot"><a href="#local-6989586621679453708"><span class="hs-identifier hs-type">dedupe</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-114"></span><span>            </span><span id="local-6989586621679453708"><span class="annot"><span class="annottext">dedupe :: HashMap (Uniq, [Ty]) Id -&gt; [(Uniq, [Ty])] -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453708"><span class="hs-identifier hs-var hs-var">dedupe</span></a></span></span><span> </span><span id="local-6989586621679453725"><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) Id
+</span><a href="#local-6989586621679453725"><span class="hs-identifier hs-var">table</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) () -&gt; [(Uniq, [Ty])] -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453726"><span class="hs-identifier hs-var">go'</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) ()
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-115"></span><span>                  </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679453726"><span class="hs-identifier hs-type">go'</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-116"></span><span>                        </span><span id="local-6989586621679453726"><span class="annot"><span class="annottext">go' :: HashMap (Uniq, [Ty]) () -&gt; [(Uniq, [Ty])] -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453726"><span class="hs-identifier hs-var hs-var">go'</span></a></span></span><span> </span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) ()
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-117"></span><span>                        </span><span class="annot"><a href="#local-6989586621679453726"><span class="hs-identifier hs-var">go'</span></a></span><span> </span><span id="local-6989586621679453727"><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) ()
+</span><a href="#local-6989586621679453727"><span class="hs-identifier hs-var">seen</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679453728"><span class="annot"><span class="annottext">(Uniq, [Ty])
+</span><a href="#local-6989586621679453728"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621679453729"><span class="annot"><span class="annottext">[(Uniq, [Ty])]
+</span><a href="#local-6989586621679453729"><span class="hs-identifier hs-var">ks</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-118"></span><span>                              </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">(Uniq, [Ty]) -&gt; HashMap (Uniq, [Ty]) Id -&gt; Bool
+forall k a. (Eq k, Hashable k) =&gt; k -&gt; HashMap k a -&gt; Bool
+</span><span class="hs-identifier hs-var">Map.member</span></span><span> </span><span class="annot"><span class="annottext">(Uniq, [Ty])
+</span><a href="#local-6989586621679453728"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) Id
+</span><a href="#local-6989586621679453725"><span class="hs-identifier hs-var">table</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">(Uniq, [Ty]) -&gt; HashMap (Uniq, [Ty]) () -&gt; Bool
+forall k a. (Eq k, Hashable k) =&gt; k -&gt; HashMap k a -&gt; Bool
+</span><span class="hs-identifier hs-var">Map.member</span></span><span> </span><span class="annot"><span class="annottext">(Uniq, [Ty])
+</span><a href="#local-6989586621679453728"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) ()
+</span><a href="#local-6989586621679453727"><span class="hs-identifier hs-var">seen</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) () -&gt; [(Uniq, [Ty])] -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453726"><span class="hs-identifier hs-var">go'</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) ()
+</span><a href="#local-6989586621679453727"><span class="hs-identifier hs-var">seen</span></a></span><span> </span><span class="annot"><span class="annottext">[(Uniq, [Ty])]
+</span><a href="#local-6989586621679453729"><span class="hs-identifier hs-var">ks</span></a></span><span>
+</span><span id="line-119"></span><span>                              </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>                               </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Uniq, [Ty])
+</span><a href="#local-6989586621679453728"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">(Uniq, [Ty]) -&gt; [(Uniq, [Ty])] -&gt; [(Uniq, [Ty])]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) () -&gt; [(Uniq, [Ty])] -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453726"><span class="hs-identifier hs-var">go'</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Uniq, [Ty])
+-&gt; () -&gt; HashMap (Uniq, [Ty]) () -&gt; HashMap (Uniq, [Ty]) ()
+forall k v.
+(Eq k, Hashable k) =&gt;
+k -&gt; v -&gt; HashMap k v -&gt; HashMap k v
+</span><span class="hs-identifier hs-var">Map.insert</span></span><span> </span><span class="annot"><span class="annottext">(Uniq, [Ty])
+</span><a href="#local-6989586621679453728"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) ()
+</span><a href="#local-6989586621679453727"><span class="hs-identifier hs-var">seen</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(Uniq, [Ty])]
+</span><a href="#local-6989586621679453729"><span class="hs-identifier hs-var">ks</span></a></span><span>
+</span><span id="line-120"></span><span>
+</span><span id="line-121"></span><span>            </span><span class="hs-comment">-- Specialization requests in an expression, in traversal order:</span><span>
+</span><span id="line-122"></span><span>            </span><span class="hs-comment">-- every spine headed by a saturated polymorphic top-level</span><span>
+</span><span id="line-123"></span><span>            </span><span class="hs-comment">-- reference.</span><span>
+</span><span id="line-124"></span><span>            </span><span class="annot"><a href="#local-6989586621679453694"><span class="hs-identifier hs-type">requests</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-125"></span><span>            </span><span id="local-6989586621679453694"><span class="annot"><span class="annottext">requests :: Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453694"><span class="hs-identifier hs-var hs-var">requests</span></a></span></span><span> </span><span id="local-6989586621679453732"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453732"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453732"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-126"></span><span>                  </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453734"><span class="hs-identifier hs-var">spine</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453732"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-127"></span><span>                  </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-128"></span><span>                  </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Con"><span class="hs-identifier hs-type">Con</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-129"></span><span>                  </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Prim"><span class="hs-identifier hs-type">Prim</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>         </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-130"></span><span>                  </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#LitInt"><span class="hs-identifier hs-type">LitInt</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-131"></span><span>                  </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#LitStr"><span class="hs-identifier hs-type">LitStr</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-132"></span><span>                  </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#LitList"><span class="hs-identifier hs-type">LitList</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679453740"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679453740"><span class="hs-identifier hs-var">es</span></a></span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; [(Uniq, [Ty])]) -&gt; [Exp] -&gt; [(Uniq, [Ty])]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453694"><span class="hs-identifier hs-var">requests</span></a></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679453740"><span class="hs-identifier hs-var">es</span></a></span><span>
+</span><span id="line-133"></span><span>                  </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#LitVec"><span class="hs-identifier hs-type">LitVec</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679453742"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679453742"><span class="hs-identifier hs-var">es</span></a></span></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; [(Uniq, [Ty])]) -&gt; [Exp] -&gt; [(Uniq, [Ty])]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453694"><span class="hs-identifier hs-var">requests</span></a></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679453742"><span class="hs-identifier hs-var">es</span></a></span><span>
+</span><span id="line-134"></span><span>                  </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Lam"><span class="hs-identifier hs-type">Lam</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Id
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679453744"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453744"><span class="hs-identifier hs-var">b</span></a></span></span><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453694"><span class="hs-identifier hs-var">requests</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453744"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-135"></span><span>                  </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Let"><span class="hs-identifier hs-type">Let</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679453746"><span class="annot"><span class="annottext">Bind
+</span><a href="#local-6989586621679453746"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span id="local-6989586621679453747"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453747"><span class="hs-identifier hs-var">body</span></a></span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bind -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453748"><span class="hs-identifier hs-var">bindReqs</span></a></span><span> </span><span class="annot"><span class="annottext">Bind
+</span><a href="#local-6989586621679453746"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">[(Uniq, [Ty])] -&gt; [(Uniq, [Ty])] -&gt; [(Uniq, [Ty])]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453694"><span class="hs-identifier hs-var">requests</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453747"><span class="hs-identifier hs-var">body</span></a></span><span>
+</span><span id="line-136"></span><span>                  </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Jump"><span class="hs-identifier hs-type">Jump</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">JoinId
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679453750"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679453750"><span class="hs-identifier hs-var">es</span></a></span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; [(Uniq, [Ty])]) -&gt; [Exp] -&gt; [(Uniq, [Ty])]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453694"><span class="hs-identifier hs-var">requests</span></a></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679453750"><span class="hs-identifier hs-var">es</span></a></span><span>
+</span><span id="line-137"></span><span>                  </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Case"><span class="hs-identifier hs-type">Case</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679453752"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453752"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="annot"><span class="annottext">Id
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679453753"><span class="annot"><span class="annottext">[Alt]
+</span><a href="#local-6989586621679453753"><span class="hs-keyword hs-var">as</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453694"><span class="hs-identifier hs-var">requests</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453752"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">[(Uniq, [Ty])] -&gt; [(Uniq, [Ty])] -&gt; [(Uniq, [Ty])]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[[(Uniq, [Ty])]] -&gt; [(Uniq, [Ty])]
+forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">concat</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453694"><span class="hs-identifier hs-var">requests</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453755"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Alt"><span class="hs-identifier hs-type">Alt</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">AltCon
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[Id]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679453755"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453755"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Alt]
+</span><a href="#local-6989586621679453753"><span class="hs-keyword hs-var">as</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-138"></span><span>                  </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679453734"><span class="hs-identifier hs-type">spine</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-139"></span><span>                        </span><span id="local-6989586621679453734"><span class="annot"><span class="annottext">spine :: Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453734"><span class="hs-identifier hs-var hs-var">spine</span></a></span></span><span> </span><span id="local-6989586621679453757"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453757"><span class="hs-identifier hs-var">se</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(Uniq, [Ty])]
+</span><a href="#local-6989586621679453758"><span class="hs-identifier hs-var">hk</span></a></span><span> </span><span class="annot"><span class="annottext">[(Uniq, [Ty])] -&gt; [(Uniq, [Ty])] -&gt; [(Uniq, [Ty])]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; [(Uniq, [Ty])]) -&gt; [Exp] -&gt; [(Uniq, [Ty])]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453694"><span class="hs-identifier hs-var">requests</span></a></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679453759"><span class="hs-identifier hs-var">eas</span></a></span><span>
+</span><span id="line-140"></span><span>                              </span><span class="hs-keyword">where</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679453760"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453760"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679453761"><span class="annot"><span class="annottext">[Arg]
+</span><a href="#local-6989586621679453761"><span class="hs-identifier hs-var">args</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; (Exp, [Arg])
+</span><a href="ReWire.Eidos.Types.html#flattenApp"><span class="hs-identifier hs-var">flattenApp</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453757"><span class="hs-identifier hs-var">se</span></a></span><span>
+</span><span id="line-141"></span><span>                                    </span><span id="local-6989586621679453762"><span class="annot"><span class="annottext">tys :: [Ty]
+</span><a href="#local-6989586621679453762"><span class="hs-identifier hs-var hs-var">tys</span></a></span></span><span>       </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Ty -&gt; Ty) -&gt; [Ty] -&gt; [Ty]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Ty
+</span><a href="ReWire.Eidos.Types.html#natNorm"><span class="hs-identifier hs-var">natNorm</span></a></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453763"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TArg"><span class="hs-identifier hs-type">TArg</span></a></span><span> </span><span id="local-6989586621679453763"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453763"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(Arg -&gt; Bool) -&gt; [Arg] -&gt; [Arg]
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">takeWhile</span></span><span> </span><span class="annot"><span class="annottext">Arg -&gt; Bool
+</span><a href="#local-6989586621679453766"><span class="hs-identifier hs-var">isTArg</span></a></span><span> </span><span class="annot"><span class="annottext">[Arg]
+</span><a href="#local-6989586621679453761"><span class="hs-identifier hs-var">args</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-142"></span><span>                                    </span><span id="local-6989586621679453759"><span class="annot"><span class="annottext">eas :: [Exp]
+</span><a href="#local-6989586621679453759"><span class="hs-identifier hs-var hs-var">eas</span></a></span></span><span>       </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453767"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#EArg"><span class="hs-identifier hs-type">EArg</span></a></span><span> </span><span id="local-6989586621679453767"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453767"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Arg]
+</span><a href="#local-6989586621679453761"><span class="hs-identifier hs-var">args</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-143"></span><span>                                    </span><span id="local-6989586621679453758"><span class="annot"><span class="annottext">hk :: [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453758"><span class="hs-identifier hs-var hs-var">hk</span></a></span></span><span>        </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453760"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-144"></span><span>                                          </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679453770"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453770"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Ty] -&gt; Bool
+forall a. [a] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679453762"><span class="hs-identifier hs-var">tys</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Uniq -&gt; IntMap Defn -&gt; Bool
+forall a. Uniq -&gt; IntMap a -&gt; Bool
+</span><span class="hs-identifier hs-var">IM.member</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Id -&gt; Uniq
+</span><a href="ReWire.Eidos.Syntax.html#idUniq"><span class="hs-identifier hs-var">idUniq</span></a></span><span> </span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453770"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">IntMap Defn
+</span><a href="#local-6989586621679453677"><span class="hs-identifier hs-var">polys</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Id -&gt; Uniq
+</span><a href="ReWire.Eidos.Syntax.html#idUniq"><span class="hs-identifier hs-var">idUniq</span></a></span><span> </span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453770"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679453762"><span class="hs-identifier hs-var">tys</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-145"></span><span>                                          </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>                                               </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-146"></span><span>                                          </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span>                                                    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453694"><span class="hs-identifier hs-var">requests</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453760"><span class="hs-identifier hs-var">h</span></a></span><span>
+</span><span id="line-147"></span><span>
+</span><span id="line-148"></span><span>                        </span><span class="annot"><a href="#local-6989586621679453748"><span class="hs-identifier hs-type">bindReqs</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Bind"><span class="hs-identifier hs-type">Bind</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-149"></span><span>                        </span><span id="local-6989586621679453748"><span class="annot"><span class="annottext">bindReqs :: Bind -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453748"><span class="hs-identifier hs-var hs-var">bindReqs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-150"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#NonRec"><span class="hs-identifier hs-type">NonRec</span></a></span><span> </span><span class="annot"><span class="annottext">Id
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679453773"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453773"><span class="hs-identifier hs-var">rhs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453694"><span class="hs-identifier hs-var">requests</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453773"><span class="hs-identifier hs-var">rhs</span></a></span><span>
+</span><span id="line-151"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Rec"><span class="hs-identifier hs-type">Rec</span></a></span><span> </span><span id="local-6989586621679453775"><span class="annot"><span class="annottext">[(Id, Exp)]
+</span><a href="#local-6989586621679453775"><span class="hs-identifier hs-var">bs</span></a></span></span><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">((Id, Exp) -&gt; [(Uniq, [Ty])]) -&gt; [(Id, Exp)] -&gt; [(Uniq, [Ty])]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453694"><span class="hs-identifier hs-var">requests</span></a></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; [(Uniq, [Ty])])
+-&gt; ((Id, Exp) -&gt; Exp) -&gt; (Id, Exp) -&gt; [(Uniq, [Ty])]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Id, Exp) -&gt; Exp
+forall a b. (a, b) -&gt; b
+</span><span class="hs-identifier hs-var">snd</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(Id, Exp)]
+</span><a href="#local-6989586621679453775"><span class="hs-identifier hs-var">bs</span></a></span><span>
+</span><span id="line-152"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Join"><span class="hs-identifier hs-type">Join</span></a></span><span> </span><span class="annot"><span class="annottext">JoinId
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[Id]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679453778"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453778"><span class="hs-identifier hs-var">b</span></a></span></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [(Uniq, [Ty])]
+</span><a href="#local-6989586621679453694"><span class="hs-identifier hs-var">requests</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453778"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-153"></span><span>
+</span><span id="line-154"></span><span>            </span><span class="hs-comment">-- Rewrite every specialized spine: the head becomes the clone</span><span>
+</span><span id="line-155"></span><span>            </span><span class="hs-comment">-- and the type arguments are erased.</span><span>
+</span><span id="line-156"></span><span>            </span><span class="annot"><a href="#local-6989586621679453696"><span class="hs-identifier hs-type">rewrite</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Spec.html#Key"><span class="hs-identifier hs-type">Key</span></a></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span>
+</span><span id="line-157"></span><span>            </span><span id="local-6989586621679453696"><span class="annot"><span class="annottext">rewrite :: HashMap (Uniq, [Ty]) Id -&gt; Defn -&gt; Defn
+</span><a href="#local-6989586621679453696"><span class="hs-identifier hs-var hs-var">rewrite</span></a></span></span><span> </span><span id="local-6989586621679453779"><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) Id
+</span><a href="#local-6989586621679453779"><span class="hs-identifier hs-var">table</span></a></span></span><span> </span><span id="local-6989586621679453780"><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453780"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453780"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#defnBody"><span class="hs-identifier hs-var">defnBody</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="#local-6989586621679453781"><span class="hs-identifier hs-type">rw</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#defnBody"><span class="hs-identifier hs-var">defnBody</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453780"><span class="hs-identifier hs-type">d</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-158"></span><span>                  </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679453781"><span class="hs-identifier hs-type">rw</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-159"></span><span>                        </span><span id="local-6989586621679453781"><span class="annot"><span class="annottext">rw :: Exp -&gt; Exp
+</span><a href="#local-6989586621679453781"><span class="hs-identifier hs-var hs-var">rw</span></a></span></span><span> </span><span id="local-6989586621679453782"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453782"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453782"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-160"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span id="local-6989586621679453783"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453783"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Arg
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-161"></span><span>                                    </span><span class="hs-keyword">let</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679453784"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453784"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679453785"><span class="annot"><span class="annottext">[Arg]
+</span><a href="#local-6989586621679453785"><span class="hs-identifier hs-var">args</span></a></span></span><span class="hs-special">)</span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; (Exp, [Arg])
+</span><a href="ReWire.Eidos.Types.html#flattenApp"><span class="hs-identifier hs-var">flattenApp</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453782"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-162"></span><span>                                        </span><span class="hs-special">(</span><span id="local-6989586621679453786"><span class="annot"><span class="annottext">[Arg]
+</span><a href="#local-6989586621679453786"><span class="hs-identifier hs-var">tas</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679453787"><span class="annot"><span class="annottext">[Arg]
+</span><a href="#local-6989586621679453787"><span class="hs-identifier hs-var">eas</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Arg -&gt; Bool) -&gt; [Arg] -&gt; ([Arg], [Arg])
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; ([a], [a])
+</span><span class="hs-identifier hs-var">span</span></span><span> </span><span class="annot"><span class="annottext">Arg -&gt; Bool
+</span><a href="#local-6989586621679453766"><span class="hs-identifier hs-var">isTArg</span></a></span><span> </span><span class="annot"><span class="annottext">[Arg]
+</span><a href="#local-6989586621679453785"><span class="hs-identifier hs-var">args</span></a></span><span>
+</span><span id="line-163"></span><span>                                        </span><span id="local-6989586621679453789"><span class="annot"><span class="annottext">tys :: [Ty]
+</span><a href="#local-6989586621679453789"><span class="hs-identifier hs-var hs-var">tys</span></a></span></span><span>        </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Ty -&gt; Ty) -&gt; [Ty] -&gt; [Ty]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Ty
+</span><a href="ReWire.Eidos.Types.html#natNorm"><span class="hs-identifier hs-var">natNorm</span></a></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453790"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TArg"><span class="hs-identifier hs-type">TArg</span></a></span><span> </span><span id="local-6989586621679453790"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453790"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Arg]
+</span><a href="#local-6989586621679453786"><span class="hs-identifier hs-var">tas</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-164"></span><span>                                    </span><span class="hs-keyword">in</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453784"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-165"></span><span>                                          </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span id="local-6989586621679453791"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453791"><span class="hs-identifier hs-var">van</span></a></span></span><span> </span><span id="local-6989586621679453792"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453792"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Ty] -&gt; Bool
+forall a. [a] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679453789"><span class="hs-identifier hs-var">tys</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679453793"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453793"><span class="hs-identifier hs-var">x'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(Uniq, [Ty]) -&gt; HashMap (Uniq, [Ty]) Id -&gt; Maybe Id
+forall k v. (Eq k, Hashable k) =&gt; k -&gt; HashMap k v -&gt; Maybe v
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Id -&gt; Uniq
+</span><a href="ReWire.Eidos.Syntax.html#idUniq"><span class="hs-identifier hs-var">idUniq</span></a></span><span> </span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453792"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679453789"><span class="hs-identifier hs-var">tys</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">HashMap (Uniq, [Ty]) Id
+</span><a href="#local-6989586621679453779"><span class="hs-identifier hs-var">table</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-166"></span><span>                                                </span><span class="annot"><span class="annottext">(Exp -&gt; Arg -&gt; Exp) -&gt; Exp -&gt; [Arg] -&gt; Exp
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) b a.
+Foldable t =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldl</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Annote -&gt; Exp -&gt; Arg -&gt; Exp
+</span><a href="ReWire.Eidos.Syntax.html#App"><span class="hs-identifier hs-var">App</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453783"><span class="hs-identifier hs-var">an</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Annote -&gt; Id -&gt; Exp
+</span><a href="ReWire.Eidos.Syntax.html#Var"><span class="hs-identifier hs-var">Var</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453791"><span class="hs-identifier hs-var">van</span></a></span><span> </span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453793"><span class="hs-identifier hs-var">x'</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Arg
+</span><a href="ReWire.Eidos.Syntax.html#EArg"><span class="hs-identifier hs-var">EArg</span></a></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Arg) -&gt; Exp -&gt; Arg
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679453781"><span class="hs-identifier hs-var">rw</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453796"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#EArg"><span class="hs-identifier hs-type">EArg</span></a></span><span> </span><span id="local-6989586621679453796"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453796"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Arg]
+</span><a href="#local-6989586621679453787"><span class="hs-identifier hs-var">eas</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-167"></span><span>                                          </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Arg -&gt; Exp) -&gt; Exp -&gt; [Arg] -&gt; Exp
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) b a.
+Foldable t =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldl</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Annote -&gt; Exp -&gt; Arg -&gt; Exp
+</span><a href="ReWire.Eidos.Syntax.html#App"><span class="hs-identifier hs-var">App</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453783"><span class="hs-identifier hs-var">an</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679453781"><span class="hs-identifier hs-var">rw</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453784"><span class="hs-identifier hs-var">h</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([Arg] -&gt; Exp) -&gt; [Arg] -&gt; Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Arg -&gt; Arg) -&gt; [Arg] -&gt; [Arg]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Arg -&gt; Arg
+</span><a href="#local-6989586621679453797"><span class="hs-identifier hs-var">rwArg</span></a></span><span> </span><span class="annot"><span class="annottext">[Arg]
+</span><a href="#local-6989586621679453785"><span class="hs-identifier hs-var">args</span></a></span><span>
+</span><span id="line-168"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453782"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-169"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Con"><span class="hs-identifier hs-type">Con</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453782"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-170"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Prim"><span class="hs-identifier hs-type">Prim</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>         </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453782"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-171"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#LitInt"><span class="hs-identifier hs-type">LitInt</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453782"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-172"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#LitStr"><span class="hs-identifier hs-type">LitStr</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453782"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-173"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#LitList"><span class="hs-identifier hs-type">LitList</span></a></span><span> </span><span id="local-6989586621679453798"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453798"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span id="local-6989586621679453799"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453799"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621679453800"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679453800"><span class="hs-identifier hs-var">es</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Ty -&gt; [Exp] -&gt; Exp
+</span><a href="ReWire.Eidos.Syntax.html#LitList"><span class="hs-identifier hs-var">LitList</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453798"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453799"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">([Exp] -&gt; Exp) -&gt; [Exp] -&gt; Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Exp) -&gt; [Exp] -&gt; [Exp]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679453781"><span class="hs-identifier hs-var">rw</span></a></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679453800"><span class="hs-identifier hs-var">es</span></a></span><span>
+</span><span id="line-174"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#LitVec"><span class="hs-identifier hs-type">LitVec</span></a></span><span> </span><span id="local-6989586621679453801"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453801"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span id="local-6989586621679453802"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453802"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621679453803"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679453803"><span class="hs-identifier hs-var">es</span></a></span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Ty -&gt; [Exp] -&gt; Exp
+</span><a href="ReWire.Eidos.Syntax.html#LitVec"><span class="hs-identifier hs-var">LitVec</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453801"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453802"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">([Exp] -&gt; Exp) -&gt; [Exp] -&gt; Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Exp) -&gt; [Exp] -&gt; [Exp]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679453781"><span class="hs-identifier hs-var">rw</span></a></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679453803"><span class="hs-identifier hs-var">es</span></a></span><span>
+</span><span id="line-175"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Lam"><span class="hs-identifier hs-type">Lam</span></a></span><span> </span><span id="local-6989586621679453804"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453804"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span id="local-6989586621679453805"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453805"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679453806"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453806"><span class="hs-identifier hs-var">b</span></a></span></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Id -&gt; Exp -&gt; Exp
+</span><a href="ReWire.Eidos.Syntax.html#Lam"><span class="hs-identifier hs-var">Lam</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453804"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453805"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Exp) -&gt; Exp -&gt; Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679453781"><span class="hs-identifier hs-var">rw</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453806"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-176"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Let"><span class="hs-identifier hs-type">Let</span></a></span><span> </span><span id="local-6989586621679453807"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453807"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span id="local-6989586621679453808"><span class="annot"><span class="annottext">Bind
+</span><a href="#local-6989586621679453808"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span id="local-6989586621679453809"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453809"><span class="hs-identifier hs-var">body</span></a></span></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Bind -&gt; Exp -&gt; Exp
+</span><a href="ReWire.Eidos.Syntax.html#Let"><span class="hs-identifier hs-var">Let</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453807"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bind -&gt; Bind
+</span><a href="#local-6989586621679453810"><span class="hs-identifier hs-var">rwBind</span></a></span><span> </span><span class="annot"><span class="annottext">Bind
+</span><a href="#local-6989586621679453808"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Exp) -&gt; Exp -&gt; Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679453781"><span class="hs-identifier hs-var">rw</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453809"><span class="hs-identifier hs-var">body</span></a></span><span>
+</span><span id="line-177"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Jump"><span class="hs-identifier hs-type">Jump</span></a></span><span> </span><span id="local-6989586621679453811"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453811"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span id="local-6989586621679453812"><span class="annot"><span class="annottext">JoinId
+</span><a href="#local-6989586621679453812"><span class="hs-identifier hs-var">j</span></a></span></span><span> </span><span id="local-6989586621679453813"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679453813"><span class="hs-identifier hs-var">es</span></a></span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; JoinId -&gt; [Exp] -&gt; Exp
+</span><a href="ReWire.Eidos.Syntax.html#Jump"><span class="hs-identifier hs-var">Jump</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453811"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">JoinId
+</span><a href="#local-6989586621679453812"><span class="hs-identifier hs-var">j</span></a></span><span> </span><span class="annot"><span class="annottext">([Exp] -&gt; Exp) -&gt; [Exp] -&gt; Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Exp) -&gt; [Exp] -&gt; [Exp]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679453781"><span class="hs-identifier hs-var">rw</span></a></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679453813"><span class="hs-identifier hs-var">es</span></a></span><span>
+</span><span id="line-178"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Case"><span class="hs-identifier hs-type">Case</span></a></span><span> </span><span id="local-6989586621679453814"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453814"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span id="local-6989586621679453815"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453815"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621679453816"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453816"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621679453817"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453817"><span class="hs-identifier hs-var">cb</span></a></span></span><span> </span><span id="local-6989586621679453818"><span class="annot"><span class="annottext">[Alt]
+</span><a href="#local-6989586621679453818"><span class="hs-identifier hs-var">alts</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Ty -&gt; Exp -&gt; Id -&gt; [Alt] -&gt; Exp
+</span><a href="ReWire.Eidos.Syntax.html#Case"><span class="hs-identifier hs-var">Case</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453814"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453815"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679453781"><span class="hs-identifier hs-var">rw</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453816"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453817"><span class="hs-identifier hs-var">cb</span></a></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; AltCon -&gt; [Id] -&gt; Exp -&gt; Alt
+</span><a href="ReWire.Eidos.Syntax.html#Alt"><span class="hs-identifier hs-var">Alt</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453819"><span class="hs-identifier hs-var">aan</span></a></span><span> </span><span class="annot"><span class="annottext">AltCon
+</span><a href="#local-6989586621679453820"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">[Id]
+</span><a href="#local-6989586621679453821"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679453781"><span class="hs-identifier hs-var">rw</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453822"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Alt"><span class="hs-identifier hs-type">Alt</span></a></span><span> </span><span id="local-6989586621679453819"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679453819"><span class="hs-identifier hs-var">aan</span></a></span></span><span> </span><span id="local-6989586621679453820"><span class="annot"><span class="annottext">AltCon
+</span><a href="#local-6989586621679453820"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621679453821"><span class="annot"><span class="annottext">[Id]
+</span><a href="#local-6989586621679453821"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span id="local-6989586621679453822"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453822"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Alt]
+</span><a href="#local-6989586621679453818"><span class="hs-identifier hs-var">alts</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-179"></span><span>
+</span><span id="line-180"></span><span>                        </span><span class="annot"><a href="#local-6989586621679453797"><span class="hs-identifier hs-type">rwArg</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Arg"><span class="hs-identifier hs-type">Arg</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Arg"><span class="hs-identifier hs-type">Arg</span></a></span><span>
+</span><span id="line-181"></span><span>                        </span><span id="local-6989586621679453797"><span class="annot"><span class="annottext">rwArg :: Arg -&gt; Arg
+</span><a href="#local-6989586621679453797"><span class="hs-identifier hs-var hs-var">rwArg</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-182"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#EArg"><span class="hs-identifier hs-type">EArg</span></a></span><span> </span><span id="local-6989586621679453823"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453823"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Arg
+</span><a href="ReWire.Eidos.Syntax.html#EArg"><span class="hs-identifier hs-var">EArg</span></a></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Arg) -&gt; Exp -&gt; Arg
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679453781"><span class="hs-identifier hs-var">rw</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453823"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-183"></span><span>                              </span><span id="local-6989586621679453824"><span class="annot"><span class="annottext">Arg
+</span><a href="#local-6989586621679453824"><span class="hs-identifier hs-var">t</span></a></span></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Arg
+</span><a href="#local-6989586621679453824"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-184"></span><span>
+</span><span id="line-185"></span><span>                        </span><span class="annot"><a href="#local-6989586621679453810"><span class="hs-identifier hs-type">rwBind</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Bind"><span class="hs-identifier hs-type">Bind</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Bind"><span class="hs-identifier hs-type">Bind</span></a></span><span>
+</span><span id="line-186"></span><span>                        </span><span id="local-6989586621679453810"><span class="annot"><span class="annottext">rwBind :: Bind -&gt; Bind
+</span><a href="#local-6989586621679453810"><span class="hs-identifier hs-var hs-var">rwBind</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-187"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#NonRec"><span class="hs-identifier hs-type">NonRec</span></a></span><span> </span><span id="local-6989586621679453825"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453825"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679453826"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453826"><span class="hs-identifier hs-var">rhs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Id -&gt; Exp -&gt; Bind
+</span><a href="ReWire.Eidos.Syntax.html#NonRec"><span class="hs-identifier hs-var">NonRec</span></a></span><span> </span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453825"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Bind) -&gt; Exp -&gt; Bind
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679453781"><span class="hs-identifier hs-var">rw</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453826"><span class="hs-identifier hs-var">rhs</span></a></span><span>
+</span><span id="line-188"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Rec"><span class="hs-identifier hs-type">Rec</span></a></span><span> </span><span id="local-6989586621679453827"><span class="annot"><span class="annottext">[(Id, Exp)]
+</span><a href="#local-6989586621679453827"><span class="hs-identifier hs-var">bs</span></a></span></span><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[(Id, Exp)] -&gt; Bind
+</span><a href="ReWire.Eidos.Syntax.html#Rec"><span class="hs-identifier hs-var">Rec</span></a></span><span> </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453828"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679453781"><span class="hs-identifier hs-var">rw</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453829"><span class="hs-identifier hs-var">rhs</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679453828"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453828"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679453829"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453829"><span class="hs-identifier hs-var">rhs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[(Id, Exp)]
+</span><a href="#local-6989586621679453827"><span class="hs-identifier hs-var">bs</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-189"></span><span>                              </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Join"><span class="hs-identifier hs-type">Join</span></a></span><span> </span><span id="local-6989586621679453830"><span class="annot"><span class="annottext">JoinId
+</span><a href="#local-6989586621679453830"><span class="hs-identifier hs-var">j</span></a></span></span><span> </span><span id="local-6989586621679453831"><span class="annot"><span class="annottext">[Id]
+</span><a href="#local-6989586621679453831"><span class="hs-identifier hs-var">ps</span></a></span></span><span> </span><span id="local-6989586621679453832"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453832"><span class="hs-identifier hs-var">b</span></a></span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">JoinId -&gt; [Id] -&gt; Exp -&gt; Bind
+</span><a href="ReWire.Eidos.Syntax.html#Join"><span class="hs-identifier hs-var">Join</span></a></span><span> </span><span class="annot"><span class="annottext">JoinId
+</span><a href="#local-6989586621679453830"><span class="hs-identifier hs-var">j</span></a></span><span> </span><span class="annot"><span class="annottext">[Id]
+</span><a href="#local-6989586621679453831"><span class="hs-identifier hs-var">ps</span></a></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Bind) -&gt; Exp -&gt; Bind
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679453781"><span class="hs-identifier hs-var">rw</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453832"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-190"></span><span>
+</span><span id="line-191"></span><span>            </span><span class="annot"><a href="#local-6989586621679453766"><span class="hs-identifier hs-type">isTArg</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Arg"><span class="hs-identifier hs-type">Arg</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-192"></span><span>            </span><span id="local-6989586621679453766"><span class="annot"><span class="annottext">isTArg :: Arg -&gt; Bool
+</span><a href="#local-6989586621679453766"><span class="hs-identifier hs-var hs-var">isTArg</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-193"></span><span>                  </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TArg"><span class="hs-identifier hs-type">TArg</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-194"></span><span>                  </span><span class="annot"><span class="annottext">Arg
+</span><span class="hs-identifier">_</span></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-195"></span><span>
+</span><span id="line-196"></span><span class="hs-comment">-- | A type argument's display text for instance names: compact forms for</span><span>
+</span><span id="line-197"></span><span class="hs-comment">--   the common cases (@Vec 8 Bool@ -&gt; @W8@, @Vec 4 (Vec 8 Bool)@ -&gt;</span><span>
+</span><span id="line-198"></span><span class="hs-comment">--   @V4W8@, arrows @_@-joined), the pretty-printed type otherwise</span><span>
+</span><span id="line-199"></span><span class="hs-comment">--   (annotations scrubbed so positions can't leak into names; 'originTag'</span><span>
+</span><span id="line-200"></span><span class="hs-comment">--   sanitizes and caps the result).</span><span>
+</span><span id="line-201"></span><span class="annot"><a href="ReWire.Eidos.Spec.html#renderTy"><span class="hs-identifier hs-type">renderTy</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-202"></span><span id="renderTy"><span class="annot"><span class="annottext">renderTy :: Ty -&gt; Text
+</span><a href="ReWire.Eidos.Spec.html#renderTy"><span class="hs-identifier hs-var hs-var">renderTy</span></a></span></span><span> </span><span id="local-6989586621679453833"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453833"><span class="hs-identifier hs-var">t</span></a></span></span><span>
+</span><span id="line-203"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679453834"><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679453834"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Maybe Natural
+</span><a href="ReWire.Eidos.Types.html#evalNat"><span class="hs-identifier hs-var">evalNat</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453833"><span class="hs-identifier hs-var">t</span></a></span><span>                </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Natural -&gt; Text
+forall a. TextShow a =&gt; a -&gt; Text
+</span><span class="hs-identifier hs-var">showt</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679453834"><span class="hs-identifier hs-var">k</span></a></span><span>
+</span><span id="line-204"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679453835"><span class="annot"><span class="annottext">ds :: [Ty]
+</span><a href="#local-6989586621679453835"><span class="hs-identifier hs-var">ds</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Ty
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><span class="annottext">[Ty]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span id="local-6989586621679453836"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453836"><span class="hs-identifier hs-var">cd</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Ty -&gt; ([Ty], Ty)
+</span><a href="ReWire.Eidos.Types.html#flattenArrow"><span class="hs-identifier hs-var">flattenArrow</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453833"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Text
+</span><span class="hs-identifier hs-var">T.intercalate</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;_&quot;</span></span><span> </span><span class="annot"><span class="annottext">([Text] -&gt; Text) -&gt; [Text] -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Ty -&gt; Text) -&gt; [Ty] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Text
+</span><a href="ReWire.Eidos.Spec.html#renderTy"><span class="hs-identifier hs-var">renderTy</span></a></span><span> </span><span class="annot"><span class="annottext">([Ty] -&gt; [Text]) -&gt; [Ty] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679453835"><span class="hs-identifier hs-var">ds</span></a></span><span> </span><span class="annot"><span class="annottext">[Ty] -&gt; [Ty] -&gt; [Ty]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453836"><span class="hs-identifier hs-var">cd</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-205"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Ty -&gt; (Ty, [Ty])
+</span><a href="ReWire.Eidos.Types.html#flattenTyApp"><span class="hs-identifier hs-var">flattenTyApp</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453833"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-206"></span><span>            </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyCon"><span class="hs-identifier hs-type">TyCon</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Vec&quot;</span></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span id="local-6989586621679453839"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453839"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyCon"><span class="hs-identifier hs-type">TyCon</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Bool&quot;</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679453840"><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679453840"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Maybe Natural
+</span><a href="ReWire.Eidos.Types.html#evalNat"><span class="hs-identifier hs-var">evalNat</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453839"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;W&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Natural -&gt; Text
+forall a. TextShow a =&gt; a -&gt; Text
+</span><span class="hs-identifier hs-var">showt</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679453840"><span class="hs-identifier hs-var">k</span></a></span><span>
+</span><span id="line-207"></span><span>            </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyCon"><span class="hs-identifier hs-type">TyCon</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Vec&quot;</span></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span id="local-6989586621679453841"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453841"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679453842"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453842"><span class="hs-identifier hs-var">el</span></a></span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>             </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679453843"><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679453843"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Maybe Natural
+</span><a href="ReWire.Eidos.Types.html#evalNat"><span class="hs-identifier hs-var">evalNat</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453841"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;V&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Natural -&gt; Text
+forall a. TextShow a =&gt; a -&gt; Text
+</span><span class="hs-identifier hs-var">showt</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679453843"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Text
+</span><a href="ReWire.Eidos.Spec.html#renderTy"><span class="hs-identifier hs-var">renderTy</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453842"><span class="hs-identifier hs-var">el</span></a></span><span>
+</span><span id="line-208"></span><span>            </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyCon"><span class="hs-identifier hs-type">TyCon</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679453844"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679453844"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679453845"><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679453845"><span class="hs-identifier hs-var">args</span></a></span></span><span class="hs-special">)</span><span>                                          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.takeWhileEnd</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'.'</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679453844"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; Text
+forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Ty -&gt; Text) -&gt; [Ty] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Text
+</span><a href="ReWire.Eidos.Spec.html#renderTy"><span class="hs-identifier hs-var">renderTy</span></a></span><span> </span><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679453845"><span class="hs-identifier hs-var">args</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-209"></span><span>            </span><span class="annot"><span class="annottext">(Ty, [Ty])
+</span><span class="hs-identifier">_</span></span><span>                                                          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Text
+forall a. Pretty a =&gt; a -&gt; Text
+</span><span class="hs-identifier hs-var">prettyPrint</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Ty -&gt; Ty
+forall d. Data d =&gt; d -&gt; d
+</span><span class="hs-identifier hs-var">unAnn</span></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679453833"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-210"></span></pre></body></html>

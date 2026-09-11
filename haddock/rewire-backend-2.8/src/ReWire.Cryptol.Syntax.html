@@ -1,0 +1,1167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- | Abstract syntax for the fragment of Cryptol emitted by the Cryptol</span><span>
+</span><span id="line-4"></span><span class="hs-comment">--   backend (ReWire.Hyle.ToCryptol). The generated file is a</span><span>
+</span><span id="line-5"></span><span class="hs-comment">--   self-contained named module (Cryptol allows loading it under any file</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--   name): a few helper definitions implementing Hyle primitives, an</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--   optional @parameter@ block declaring externs as uninterpreted functions,</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--   and one function per Hyle defn. Helper names contain a tick</span><span>
+</span><span id="line-9"></span><span class="hs-comment">--   (@rw'resize@) so they can never collide with generated names (see</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--   'cryptolName').</span><span>
+</span><span id="line-11"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html"><span class="hs-identifier">ReWire.Cryptol.Syntax</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.BitVector</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">BV</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">width</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">nat</span></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.BitVector</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BV</span></span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Pretty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">empty</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Pretty</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">parens</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(&lt;+&gt;)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">vsep</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">hsep</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">punctuate</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">comma</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">nest</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Doc</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">brackets</span></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Char</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">isAlphaNum</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">intToDigit</span></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">intersperse</span></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Numeric</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">showHex</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">showIntAtBase</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Numeric.Natural</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Natural</span></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">type</span><span> </span><span id="Name"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Name"><span class="hs-identifier hs-var">Name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">type</span><span> </span><span id="Size"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Size"><span class="hs-identifier hs-var">Size</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word</span></span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="hs-comment">-- | Maps a Hyle name to a valid Cryptol identifier body: any character</span><span>
+</span><span id="line-29"></span><span class="hs-comment">--   outside @[A-Za-z0-9_]@ becomes an underscore. Callers are expected to</span><span>
+</span><span id="line-30"></span><span class="hs-comment">--   prepend a prefix (@rw_@), so the first character doesn't matter and the</span><span>
+</span><span id="line-31"></span><span class="hs-comment">--   result can never collide with a Cryptol keyword, a Prelude name, or the</span><span>
+</span><span id="line-32"></span><span class="hs-comment">--   tick-containing helper names. The one unprefixed use is the module name</span><span>
+</span><span id="line-33"></span><span class="hs-comment">--   (&quot;ReWire.Hyle.ToCryptol&quot; via 'modName'), where a keyword-named @--top@</span><span>
+</span><span id="line-34"></span><span class="hs-comment">--   would emit an invalid module header.</span><span>
+</span><span id="line-35"></span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#cryptolName"><span class="hs-identifier hs-type">cryptolName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span>
+</span><span id="line-36"></span><span id="cryptolName"><span class="annot"><span class="annottext">cryptolName :: Name -&gt; Name
+</span><a href="ReWire.Cryptol.Syntax.html#cryptolName"><span class="hs-identifier hs-var hs-var">cryptolName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Char) -&gt; Name -&gt; Name
+</span><span class="hs-identifier hs-var">T.map</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char
+</span><a href="#local-6989586621679232128"><span class="hs-identifier hs-var">sub</span></a></span><span>
+</span><span id="line-37"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679232128"><span class="hs-identifier hs-type">sub</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span>
+</span><span id="line-38"></span><span>            </span><span id="local-6989586621679232128"><span class="annot"><span class="annottext">sub :: Char -&gt; Char
+</span><a href="#local-6989586621679232128"><span class="hs-identifier hs-var hs-var">sub</span></a></span></span><span> </span><span id="local-6989586621679232129"><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679232129"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Char -&gt; Bool
+</span><span class="hs-identifier hs-var">isAlphaNum</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679232129"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679232129"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'_'</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679232129"><span class="hs-identifier hs-var">c</span></a></span><span>
+</span><span id="line-39"></span><span>                  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>                </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'_'</span></span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">data</span><span> </span><span id="Module"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Module"><span class="hs-identifier hs-var">Module</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Module"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Module"><span class="hs-identifier hs-var">Module</span></a></span></span><span>
+</span><span id="line-42"></span><span>      </span><span class="hs-special">{</span><span> </span><span id="modName"><span class="annot"><span class="annottext">Module -&gt; Name
+</span><a href="ReWire.Cryptol.Syntax.html#modName"><span class="hs-identifier hs-var hs-var">modName</span></a></span></span><span>     </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Cryptol allows loading a file whose name doesn't match.</span></span><span>
+</span><span id="line-43"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="modComments"><span class="annot"><span class="annottext">Module -&gt; [Name]
+</span><a href="ReWire.Cryptol.Syntax.html#modComments"><span class="hs-identifier hs-var hs-var">modComments</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>  </span><span class="annot"><span class="hs-comment">-- ^ Header comment lines.</span></span><span>
+</span><span id="line-44"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="modParams"><span class="annot"><span class="annottext">Module -&gt; [Param]
+</span><a href="ReWire.Cryptol.Syntax.html#modParams"><span class="hs-identifier hs-var hs-var">modParams</span></a></span></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Param"><span class="hs-identifier hs-type">Param</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="hs-comment">-- ^ Externs, as uninterpreted functions.</span></span><span>
+</span><span id="line-45"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="modDefns"><span class="annot"><span class="annottext">Module -&gt; [Defn]
+</span><a href="ReWire.Cryptol.Syntax.html#modDefns"><span class="hs-identifier hs-var hs-var">modDefns</span></a></span></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-46"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-47"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679232136"><span id="local-6989586621679232145"><span class="annot"><span class="annottext">Module -&gt; Module -&gt; Bool
+(Module -&gt; Module -&gt; Bool)
+-&gt; (Module -&gt; Module -&gt; Bool) -&gt; Eq Module
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Module -&gt; Module -&gt; Bool
+== :: Module -&gt; Module -&gt; Bool
+$c/= :: Module -&gt; Module -&gt; Bool
+/= :: Module -&gt; Module -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679232152"><span id="local-6989586621679232163"><span id="local-6989586621679232167"><span class="annot"><span class="annottext">Int -&gt; Module -&gt; ShowS
+[Module] -&gt; ShowS
+Module -&gt; String
+(Int -&gt; Module -&gt; ShowS)
+-&gt; (Module -&gt; String) -&gt; ([Module] -&gt; ShowS) -&gt; Show Module
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Module -&gt; ShowS
+showsPrec :: Int -&gt; Module -&gt; ShowS
+$cshow :: Module -&gt; String
+show :: Module -&gt; String
+$cshowList :: [Module] -&gt; ShowS
+showList :: [Module] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679232175"><span class="annot"><span class="hs-identifier hs-type">Pretty</span></span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Module"><span class="hs-identifier hs-type">Module</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-50"></span><span>      </span><span id="local-6989586621679232191"><span class="annot"><span class="annottext">pretty :: forall ann. Module -&gt; Doc ann
+</span><a href="#local-6989586621679232191"><span class="hs-identifier hs-var hs-var hs-var">pretty</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Module"><span class="hs-identifier hs-type">Module</span></a></span><span> </span><span id="local-6989586621679232193"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232193"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679232194"><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621679232194"><span class="hs-identifier hs-var">comments</span></a></span></span><span> </span><span id="local-6989586621679232195"><span class="annot"><span class="annottext">[Param]
+</span><a href="#local-6989586621679232195"><span class="hs-identifier hs-var">params</span></a></span></span><span> </span><span id="local-6989586621679232196"><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679232196"><span class="hs-identifier hs-var">defns</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Doc ann] -&gt; Doc ann
+forall ann. [Doc ann] -&gt; Doc ann
+</span><span class="hs-identifier hs-var">vsep</span></span><span> </span><span class="annot"><span class="annottext">([Doc ann] -&gt; Doc ann) -&gt; [Doc ann] -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; [Doc ann] -&gt; [Doc ann]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">intersperse</span></span><span> </span><span class="annot"><span class="annottext">Doc ann
+forall ann. Doc ann
+</span><span class="hs-identifier hs-var">empty</span></span><span>
+</span><span id="line-51"></span><span>            </span><span class="annot"><span class="annottext">([Doc ann] -&gt; [Doc ann]) -&gt; [Doc ann] -&gt; [Doc ann]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>  </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Doc ann] -&gt; Doc ann
+forall ann. [Doc ann] -&gt; Doc ann
+</span><span class="hs-identifier hs-var">vsep</span></span><span> </span><span class="annot"><span class="annottext">([Doc ann] -&gt; Doc ann) -&gt; [Doc ann] -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; Doc ann) -&gt; [Name] -&gt; [Doc ann]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679232197"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232197"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;//&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232197"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621679232194"><span class="hs-identifier hs-var">comments</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; Bool -&gt; Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Name] -&gt; Bool
+forall a. [a] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621679232194"><span class="hs-identifier hs-var">comments</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-52"></span><span>            </span><span class="annot"><span class="annottext">[Doc ann] -&gt; [Doc ann] -&gt; [Doc ann]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;module&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232193"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;where&quot;</span></span><span class="hs-special">]</span><span>
+</span><span id="line-53"></span><span>            </span><span class="annot"><span class="annottext">[Doc ann] -&gt; [Doc ann] -&gt; [Doc ann]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Doc ann
+forall ann. Doc ann
+</span><a href="ReWire.Cryptol.Syntax.html#helpers"><span class="hs-identifier hs-var">helpers</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-54"></span><span>            </span><span class="annot"><span class="annottext">[Doc ann] -&gt; [Doc ann] -&gt; [Doc ann]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Param] -&gt; Doc ann
+forall an. [Param] -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#ppParams"><span class="hs-identifier hs-var">ppParams</span></a></span><span> </span><span class="annot"><span class="annottext">[Param]
+</span><a href="#local-6989586621679232195"><span class="hs-identifier hs-var">params</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; Bool -&gt; Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Param] -&gt; Bool
+forall a. [a] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[Param]
+</span><a href="#local-6989586621679232195"><span class="hs-identifier hs-var">params</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-55"></span><span>            </span><span class="annot"><span class="annottext">[Doc ann] -&gt; [Doc ann] -&gt; [Doc ann]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Defn -&gt; Doc ann) -&gt; [Defn] -&gt; [Doc ann]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Defn -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+forall ann. Defn -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679232196"><span class="hs-identifier hs-var">defns</span></a></span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span class="hs-comment">-- | Helper definitions emitted with every module, implementing Hyle</span><span>
+</span><span id="line-58"></span><span class="hs-comment">--   primitives that don't map directly to a Cryptol operator. @rw'resize@</span><span>
+</span><span id="line-59"></span><span class="hs-comment">--   truncates or zero-extends to the new width.</span><span>
+</span><span id="line-60"></span><span id="local-6989586621679232202"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#helpers"><span class="hs-identifier hs-type">helpers</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Doc</span></span><span> </span><span class="annot"><a href="#local-6989586621679232202"><span class="hs-identifier hs-type">an</span></a></span></span><span>
+</span><span id="line-61"></span><span id="helpers"><span class="annot"><span class="annottext">helpers :: forall ann. Doc ann
+</span><a href="ReWire.Cryptol.Syntax.html#helpers"><span class="hs-identifier hs-var hs-var">helpers</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Doc an] -&gt; Doc an
+forall ann. [Doc ann] -&gt; Doc ann
+</span><span class="hs-identifier hs-var">vsep</span></span><span> </span><span class="annot"><span class="annottext">([Doc an] -&gt; Doc an) -&gt; [Doc an] -&gt; Doc an
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; Doc an) -&gt; [Name] -&gt; [Doc an]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc an
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span>
+</span><span id="line-62"></span><span>      </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;// Helpers implementing ReWire Hyle primitive semantics.&quot;</span></span><span>
+</span><span id="line-63"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;rw'resize : {m, n} (fin m, fin n) =&gt; [n] -&gt; [m]&quot;</span></span><span>
+</span><span id="line-64"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;rw'resize x = drop`{n} ((zero : [m]) # x)&quot;</span></span><span>
+</span><span id="line-65"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;&quot;</span></span><span>
+</span><span id="line-66"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;rw'repl : {n, w} (fin n, fin w) =&gt; [w] -&gt; [n * w]&quot;</span></span><span>
+</span><span id="line-67"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;rw'repl x = join (repeat`{n} x)&quot;</span></span><span>
+</span><span id="line-68"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;&quot;</span></span><span>
+</span><span id="line-69"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;rw'parity : {n} (fin n) =&gt; [n] -&gt; Bit&quot;</span></span><span>
+</span><span id="line-70"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;rw'parity x = foldr (^) False x&quot;</span></span><span>
+</span><span id="line-71"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;&quot;</span></span><span>
+</span><span id="line-72"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;rw'sext : {m, n} (fin m, fin n, n &gt;= 1) =&gt; [n] -&gt; [m]&quot;</span></span><span>
+</span><span id="line-73"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x&quot;</span></span><span>
+</span><span id="line-74"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-75"></span><span>
+</span><span id="line-76"></span><span class="hs-comment">-- | An uninterpreted function declared in a @parameter@ block: name, argument</span><span>
+</span><span id="line-77"></span><span class="hs-comment">--   widths, result width.</span><span>
+</span><span id="line-78"></span><span class="hs-keyword">data</span><span> </span><span id="Param"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Param"><span class="hs-identifier hs-var">Param</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Param"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Param"><span class="hs-identifier hs-var">Param</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Size"><span class="hs-identifier hs-type">Size</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Size"><span class="hs-identifier hs-type">Size</span></a></span><span>
+</span><span id="line-79"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679232217"><span id="local-6989586621679232222"><span class="annot"><span class="annottext">Param -&gt; Param -&gt; Bool
+(Param -&gt; Param -&gt; Bool) -&gt; (Param -&gt; Param -&gt; Bool) -&gt; Eq Param
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Param -&gt; Param -&gt; Bool
+== :: Param -&gt; Param -&gt; Bool
+$c/= :: Param -&gt; Param -&gt; Bool
+/= :: Param -&gt; Param -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679232225"><span id="local-6989586621679232232"><span id="local-6989586621679232235"><span class="annot"><span class="annottext">Int -&gt; Param -&gt; ShowS
+[Param] -&gt; ShowS
+Param -&gt; String
+(Int -&gt; Param -&gt; ShowS)
+-&gt; (Param -&gt; String) -&gt; ([Param] -&gt; ShowS) -&gt; Show Param
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Param -&gt; ShowS
+showsPrec :: Int -&gt; Param -&gt; ShowS
+$cshow :: Param -&gt; String
+show :: Param -&gt; String
+$cshowList :: [Param] -&gt; ShowS
+showList :: [Param] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-80"></span><span>
+</span><span id="line-81"></span><span id="local-6989586621679232015"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#ppParams"><span class="hs-identifier hs-type">ppParams</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Param"><span class="hs-identifier hs-type">Param</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Doc</span></span><span> </span><span class="annot"><a href="#local-6989586621679232015"><span class="hs-identifier hs-type">an</span></a></span></span><span>
+</span><span id="line-82"></span><span id="ppParams"><span class="annot"><span class="annottext">ppParams :: forall an. [Param] -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#ppParams"><span class="hs-identifier hs-var hs-var">ppParams</span></a></span></span><span> </span><span id="local-6989586621679232239"><span class="annot"><span class="annottext">[Param]
+</span><a href="#local-6989586621679232239"><span class="hs-identifier hs-var">ps</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Doc an -&gt; Doc an
+forall ann. Int -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-identifier hs-var">nest</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span> </span><span class="annot"><span class="annottext">(Doc an -&gt; Doc an) -&gt; Doc an -&gt; Doc an
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Doc an] -&gt; Doc an
+forall ann. [Doc ann] -&gt; Doc ann
+</span><span class="hs-identifier hs-var">vsep</span></span><span> </span><span class="annot"><span class="annottext">([Doc an] -&gt; Doc an) -&gt; [Doc an] -&gt; Doc an
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc an
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;parameter&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc an -&gt; [Doc an] -&gt; [Doc an]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">(Param -&gt; Doc an) -&gt; [Param] -&gt; [Doc an]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Param -&gt; Doc an
+forall an. Param -&gt; Doc an
+</span><a href="#local-6989586621679232240"><span class="hs-identifier hs-var">ppParam</span></a></span><span> </span><span class="annot"><span class="annottext">[Param]
+</span><a href="#local-6989586621679232239"><span class="hs-identifier hs-var">ps</span></a></span><span>
+</span><span id="line-83"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679232019"><span class="annot"><a href="#local-6989586621679232240"><span class="hs-identifier hs-type">ppParam</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Param"><span class="hs-identifier hs-type">Param</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Doc</span></span><span> </span><span class="annot"><a href="#local-6989586621679232019"><span class="hs-identifier hs-type">an</span></a></span></span><span>
+</span><span id="line-84"></span><span>            </span><span id="local-6989586621679232240"><span class="annot"><span class="annottext">ppParam :: forall an. Param -&gt; Doc an
+</span><a href="#local-6989586621679232240"><span class="hs-identifier hs-var hs-var">ppParam</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Param"><span class="hs-identifier hs-type">Param</span></a></span><span> </span><span id="local-6989586621679232242"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232242"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679232243"><span class="annot"><span class="annottext">[Size]
+</span><a href="#local-6989586621679232243"><span class="hs-identifier hs-var">args</span></a></span></span><span> </span><span id="local-6989586621679232244"><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232244"><span class="hs-identifier hs-var">res</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc an
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232242"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Doc an -&gt; Doc an -&gt; Doc an
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc an
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;:&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc an -&gt; Doc an -&gt; Doc an
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Ty] -&gt; Ty -&gt; Doc an
+forall an. [Ty] -&gt; Ty -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#ppFun"><span class="hs-identifier hs-var">ppFun</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Size -&gt; Ty) -&gt; [Size] -&gt; [Ty]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Size -&gt; Ty
+</span><a href="ReWire.Cryptol.Syntax.html#TBits"><span class="hs-identifier hs-var">TBits</span></a></span><span> </span><span class="annot"><span class="annottext">[Size]
+</span><a href="#local-6989586621679232243"><span class="hs-identifier hs-var">args</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Size -&gt; Ty
+</span><a href="ReWire.Cryptol.Syntax.html#TBits"><span class="hs-identifier hs-var">TBits</span></a></span><span> </span><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232244"><span class="hs-identifier hs-var">res</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span class="hs-comment">-- | Sequence lengths in types: the device's quantified variable @n@, or</span><span>
+</span><span id="line-87"></span><span class="hs-comment">--   @1 + n@.</span><span>
+</span><span id="line-88"></span><span class="hs-keyword">data</span><span> </span><span id="Len"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Len"><span class="hs-identifier hs-var">Len</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="LenVar"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#LenVar"><span class="hs-identifier hs-var">LenVar</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="LenSucc"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#LenSucc"><span class="hs-identifier hs-var">LenSucc</span></a></span></span><span>
+</span><span id="line-89"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679232250"><span id="local-6989586621679232255"><span class="annot"><span class="annottext">Len -&gt; Len -&gt; Bool
+(Len -&gt; Len -&gt; Bool) -&gt; (Len -&gt; Len -&gt; Bool) -&gt; Eq Len
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Len -&gt; Len -&gt; Bool
+== :: Len -&gt; Len -&gt; Bool
+$c/= :: Len -&gt; Len -&gt; Bool
+/= :: Len -&gt; Len -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679232259"><span id="local-6989586621679232261"><span id="local-6989586621679232265"><span class="annot"><span class="annottext">Int -&gt; Len -&gt; ShowS
+[Len] -&gt; ShowS
+Len -&gt; String
+(Int -&gt; Len -&gt; ShowS)
+-&gt; (Len -&gt; String) -&gt; ([Len] -&gt; ShowS) -&gt; Show Len
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Len -&gt; ShowS
+showsPrec :: Int -&gt; Len -&gt; ShowS
+$cshow :: Len -&gt; String
+show :: Len -&gt; String
+$cshowList :: [Len] -&gt; ShowS
+showList :: [Len] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-90"></span><span>
+</span><span id="line-91"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679232269"><span class="annot"><span class="hs-identifier hs-type">Pretty</span></span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Len"><span class="hs-identifier hs-type">Len</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-92"></span><span>      </span><span id="local-6989586621679232274"><span class="annot"><span class="annottext">pretty :: forall ann. Len -&gt; Doc ann
+</span><span class="hs-identifier hs-var hs-var hs-var">pretty</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-93"></span><span>            </span><span class="annot"><span class="annottext">Len
+</span><a href="ReWire.Cryptol.Syntax.html#LenVar"><span class="hs-identifier hs-var">LenVar</span></a></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;n&quot;</span></span><span>
+</span><span id="line-94"></span><span>            </span><span class="annot"><span class="annottext">Len
+</span><a href="ReWire.Cryptol.Syntax.html#LenSucc"><span class="hs-identifier hs-var">LenSucc</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;1 + n&quot;</span></span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="hs-keyword">data</span><span> </span><span id="Ty"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Ty"><span class="hs-identifier hs-var">Ty</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TBits"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#TBits"><span class="hs-identifier hs-var">TBits</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Size"><span class="hs-identifier hs-type">Size</span></a></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ &gt; [w]</span></span><span>
+</span><span id="line-97"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span id="TSeq"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#TSeq"><span class="hs-identifier hs-var">TSeq</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Len"><span class="hs-identifier hs-type">Len</span></a></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ &gt; [n]t</span></span><span>
+</span><span id="line-98"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679232277"><span id="local-6989586621679232285"><span class="annot"><span class="annottext">Ty -&gt; Ty -&gt; Bool
+(Ty -&gt; Ty -&gt; Bool) -&gt; (Ty -&gt; Ty -&gt; Bool) -&gt; Eq Ty
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Ty -&gt; Ty -&gt; Bool
+== :: Ty -&gt; Ty -&gt; Bool
+$c/= :: Ty -&gt; Ty -&gt; Bool
+/= :: Ty -&gt; Ty -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679232288"><span id="local-6989586621679232296"><span id="local-6989586621679232299"><span class="annot"><span class="annottext">Int -&gt; Ty -&gt; ShowS
+[Ty] -&gt; ShowS
+Ty -&gt; String
+(Int -&gt; Ty -&gt; ShowS)
+-&gt; (Ty -&gt; String) -&gt; ([Ty] -&gt; ShowS) -&gt; Show Ty
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Ty -&gt; ShowS
+showsPrec :: Int -&gt; Ty -&gt; ShowS
+$cshow :: Ty -&gt; String
+show :: Ty -&gt; String
+$cshowList :: [Ty] -&gt; ShowS
+showList :: [Ty] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-99"></span><span>
+</span><span id="line-100"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679232303"><span class="annot"><span class="hs-identifier hs-type">Pretty</span></span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-101"></span><span>      </span><span id="local-6989586621679232313"><span class="annot"><span class="annottext">pretty :: forall ann. Ty -&gt; Doc ann
+</span><span class="hs-identifier hs-var hs-var hs-var">pretty</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-102"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#TBits"><span class="hs-identifier hs-type">TBits</span></a></span><span> </span><span id="local-6989586621679232314"><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232314"><span class="hs-identifier hs-var">w</span></a></span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann
+</span><span class="hs-identifier hs-var">brackets</span></span><span> </span><span class="annot"><span class="annottext">(Doc ann -&gt; Doc ann) -&gt; Doc ann -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Doc ann
+forall ann. Integer -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; Doc ann) -&gt; Integer -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Size -&gt; Integer
+forall a. Integral a =&gt; a -&gt; Integer
+</span><span class="hs-identifier hs-var">toInteger</span></span><span> </span><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232314"><span class="hs-identifier hs-var">w</span></a></span><span>
+</span><span id="line-103"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#TSeq"><span class="hs-identifier hs-type">TSeq</span></a></span><span> </span><span id="local-6989586621679232315"><span class="annot"><span class="annottext">Len
+</span><a href="#local-6989586621679232315"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621679232316"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679232316"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann
+</span><span class="hs-identifier hs-var">brackets</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Len -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+forall ann. Len -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">Len
+</span><a href="#local-6989586621679232315"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+forall ann. Ty -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679232316"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-104"></span><span>
+</span><span id="line-105"></span><span id="local-6989586621679232022"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#ppFun"><span class="hs-identifier hs-type">ppFun</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Doc</span></span><span> </span><span class="annot"><a href="#local-6989586621679232022"><span class="hs-identifier hs-type">an</span></a></span></span><span>
+</span><span id="line-106"></span><span id="ppFun"><span class="annot"><span class="annottext">ppFun :: forall an. [Ty] -&gt; Ty -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#ppFun"><span class="hs-identifier hs-var hs-var">ppFun</span></a></span></span><span> </span><span id="local-6989586621679232320"><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679232320"><span class="hs-identifier hs-var">args</span></a></span></span><span> </span><span id="local-6989586621679232321"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679232321"><span class="hs-identifier hs-var">res</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Doc an] -&gt; Doc an
+forall ann. [Doc ann] -&gt; Doc ann
+</span><span class="hs-identifier hs-var">hsep</span></span><span> </span><span class="annot"><span class="annottext">([Doc an] -&gt; Doc an) -&gt; [Doc an] -&gt; Doc an
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Doc an -&gt; [Doc an] -&gt; [Doc an]
+forall ann. Doc ann -&gt; [Doc ann] -&gt; [Doc ann]
+</span><span class="hs-identifier hs-var">punctuate</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Name -&gt; Doc an
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot; -&gt;&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([Doc an] -&gt; [Doc an]) -&gt; [Doc an] -&gt; [Doc an]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Ty -&gt; Doc an) -&gt; [Ty] -&gt; [Doc an]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Doc an
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+forall ann. Ty -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">([Ty] -&gt; [Doc an]) -&gt; [Ty] -&gt; [Doc an]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679232320"><span class="hs-identifier hs-var">args</span></a></span><span> </span><span class="annot"><span class="annottext">[Ty] -&gt; [Ty] -&gt; [Ty]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679232321"><span class="hs-identifier hs-var">res</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-107"></span><span>
+</span><span id="line-108"></span><span class="hs-keyword">data</span><span> </span><span id="Defn"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Defn"><span class="hs-identifier hs-var">Defn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Defn"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Defn"><span class="hs-identifier hs-var">Defn</span></a></span></span><span>
+</span><span id="line-109"></span><span>      </span><span class="hs-special">{</span><span> </span><span id="defnComments"><span class="annot"><span class="annottext">Defn -&gt; [Name]
+</span><a href="ReWire.Cryptol.Syntax.html#defnComments"><span class="hs-identifier hs-var hs-var">defnComments</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-110"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="defnName"><span class="annot"><span class="annottext">Defn -&gt; Name
+</span><a href="ReWire.Cryptol.Syntax.html#defnName"><span class="hs-identifier hs-var hs-var">defnName</span></a></span></span><span>     </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span>
+</span><span id="line-111"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="defnQuantN"><span class="annot"><span class="annottext">Defn -&gt; Bool
+</span><a href="ReWire.Cryptol.Syntax.html#defnQuantN"><span class="hs-identifier hs-var hs-var">defnQuantN</span></a></span></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="annot"><span class="hs-comment">-- ^ Prefix the signature with @{n} (fin n) =&gt;@.</span></span><span>
+</span><span id="line-112"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="defnArgs"><span class="annot"><span class="annottext">Defn -&gt; [(Name, Ty)]
+</span><a href="ReWire.Cryptol.Syntax.html#defnArgs"><span class="hs-identifier hs-var hs-var">defnArgs</span></a></span></span><span>     </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-113"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="defnResTy"><span class="annot"><span class="annottext">Defn -&gt; Ty
+</span><a href="ReWire.Cryptol.Syntax.html#defnResTy"><span class="hs-identifier hs-var hs-var">defnResTy</span></a></span></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span>
+</span><span id="line-114"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="defnBody"><span class="annot"><span class="annottext">Defn -&gt; Exp
+</span><a href="ReWire.Cryptol.Syntax.html#defnBody"><span class="hs-identifier hs-var hs-var">defnBody</span></a></span></span><span>     </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-115"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="defnWhere"><span class="annot"><span class="annottext">Defn -&gt; [Bind]
+</span><a href="ReWire.Cryptol.Syntax.html#defnWhere"><span class="hs-identifier hs-var hs-var">defnWhere</span></a></span></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Bind"><span class="hs-identifier hs-type">Bind</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-116"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-117"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679232331"><span id="local-6989586621679232345"><span class="annot"><span class="annottext">Defn -&gt; Defn -&gt; Bool
+(Defn -&gt; Defn -&gt; Bool) -&gt; (Defn -&gt; Defn -&gt; Bool) -&gt; Eq Defn
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Defn -&gt; Defn -&gt; Bool
+== :: Defn -&gt; Defn -&gt; Bool
+$c/= :: Defn -&gt; Defn -&gt; Bool
+/= :: Defn -&gt; Defn -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679232350"><span id="local-6989586621679232366"><span id="local-6989586621679232369"><span class="annot"><span class="annottext">Int -&gt; Defn -&gt; ShowS
+[Defn] -&gt; ShowS
+Defn -&gt; String
+(Int -&gt; Defn -&gt; ShowS)
+-&gt; (Defn -&gt; String) -&gt; ([Defn] -&gt; ShowS) -&gt; Show Defn
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Defn -&gt; ShowS
+showsPrec :: Int -&gt; Defn -&gt; ShowS
+$cshow :: Defn -&gt; String
+show :: Defn -&gt; String
+$cshowList :: [Defn] -&gt; ShowS
+showList :: [Defn] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-118"></span><span>
+</span><span id="line-119"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679232375"><span class="annot"><span class="hs-identifier hs-type">Pretty</span></span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-120"></span><span>      </span><span id="local-6989586621679232391"><span class="annot"><span class="annottext">pretty :: forall ann. Defn -&gt; Doc ann
+</span><span class="hs-identifier hs-var hs-var hs-var">pretty</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span> </span><span id="local-6989586621679232392"><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621679232392"><span class="hs-identifier hs-var">comments</span></a></span></span><span> </span><span id="local-6989586621679232393"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232393"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679232394"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679232394"><span class="hs-identifier hs-var">quantN</span></a></span></span><span> </span><span id="local-6989586621679232395"><span class="annot"><span class="annottext">[(Name, Ty)]
+</span><a href="#local-6989586621679232395"><span class="hs-identifier hs-var">args</span></a></span></span><span> </span><span id="local-6989586621679232396"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679232396"><span class="hs-identifier hs-var">res</span></a></span></span><span> </span><span id="local-6989586621679232397"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232397"><span class="hs-identifier hs-var">body</span></a></span></span><span> </span><span id="local-6989586621679232398"><span class="annot"><span class="annottext">[Bind]
+</span><a href="#local-6989586621679232398"><span class="hs-identifier hs-var">whr</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Doc ann] -&gt; Doc ann
+forall ann. [Doc ann] -&gt; Doc ann
+</span><span class="hs-identifier hs-var">vsep</span></span><span>
+</span><span id="line-121"></span><span>            </span><span class="annot"><span class="annottext">([Doc ann] -&gt; Doc ann) -&gt; [Doc ann] -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>  </span><span class="annot"><span class="annottext">(Name -&gt; Doc ann) -&gt; [Name] -&gt; [Doc ann]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679232399"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232399"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;//&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232399"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Name]
+</span><a href="#local-6989586621679232392"><span class="hs-identifier hs-var">comments</span></a></span><span>
+</span><span id="line-122"></span><span>            </span><span class="annot"><span class="annottext">[Doc ann] -&gt; [Doc ann] -&gt; [Doc ann]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232393"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;:&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann
+forall ann. Doc ann
+</span><a href="#local-6989586621679232400"><span class="hs-identifier hs-var">quant</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Ty] -&gt; Ty -&gt; Doc ann
+forall an. [Ty] -&gt; Ty -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#ppFun"><span class="hs-identifier hs-var">ppFun</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">((Name, Ty) -&gt; Ty) -&gt; [(Name, Ty)] -&gt; [Ty]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">(Name, Ty) -&gt; Ty
+forall a b. (a, b) -&gt; b
+</span><span class="hs-identifier hs-var">snd</span></span><span> </span><span class="annot"><span class="annottext">[(Name, Ty)]
+</span><a href="#local-6989586621679232395"><span class="hs-identifier hs-var">args</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679232396"><span class="hs-identifier hs-var">res</span></a></span><span>
+</span><span id="line-123"></span><span>               </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Doc ann -&gt; Doc ann
+forall ann. Int -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-identifier hs-var">nest</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span> </span><span class="annot"><span class="annottext">(Doc ann -&gt; Doc ann) -&gt; Doc ann -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Doc ann] -&gt; Doc ann
+forall ann. [Doc ann] -&gt; Doc ann
+</span><span class="hs-identifier hs-var">vsep</span></span><span>
+</span><span id="line-124"></span><span>                     </span><span class="annot"><span class="annottext">([Doc ann] -&gt; Doc ann) -&gt; [Doc ann] -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Doc ann] -&gt; Doc ann
+forall ann. [Doc ann] -&gt; Doc ann
+</span><span class="hs-identifier hs-var">hsep</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">[</span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232393"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[Doc ann] -&gt; [Doc ann] -&gt; [Doc ann]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">((Name, Ty) -&gt; Doc ann) -&gt; [(Name, Ty)] -&gt; [Doc ann]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; Doc ann) -&gt; ((Name, Ty) -&gt; Name) -&gt; (Name, Ty) -&gt; Doc ann
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Name, Ty) -&gt; Name
+forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(Name, Ty)]
+</span><a href="#local-6989586621679232395"><span class="hs-identifier hs-var">args</span></a></span><span> </span><span class="annot"><span class="annottext">[Doc ann] -&gt; [Doc ann] -&gt; [Doc ann]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;=&quot;</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+forall ann. Exp -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232397"><span class="hs-identifier hs-var">body</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-125"></span><span>                    </span><span class="annot"><span class="annottext">[Doc ann] -&gt; [Doc ann] -&gt; [Doc ann]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int -&gt; Doc ann -&gt; Doc ann
+forall ann. Int -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-identifier hs-var">nest</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span> </span><span class="annot"><span class="annottext">(Doc ann -&gt; Doc ann) -&gt; Doc ann -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Doc ann] -&gt; Doc ann
+forall ann. [Doc ann] -&gt; Doc ann
+</span><span class="hs-identifier hs-var">vsep</span></span><span> </span><span class="annot"><span class="annottext">([Doc ann] -&gt; Doc ann) -&gt; [Doc ann] -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;where&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; [Doc ann] -&gt; [Doc ann]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">(Bind -&gt; Doc ann) -&gt; [Bind] -&gt; [Doc ann]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Bind -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+forall ann. Bind -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">[Bind]
+</span><a href="#local-6989586621679232398"><span class="hs-identifier hs-var">whr</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; Bool -&gt; Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Bind] -&gt; Bool
+forall a. [a] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[Bind]
+</span><a href="#local-6989586621679232398"><span class="hs-identifier hs-var">whr</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-126"></span><span>               </span><span class="hs-special">]</span><span>
+</span><span id="line-127"></span><span>            </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679232404"><span class="annot"><a href="#local-6989586621679232400"><span class="hs-identifier hs-type">quant</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Doc</span></span><span> </span><span class="annot"><a href="#local-6989586621679232404"><span class="hs-identifier hs-type">an</span></a></span></span><span>
+</span><span id="line-128"></span><span>                  </span><span id="local-6989586621679232400"><span class="annot"><span class="annottext">quant :: forall ann. Doc ann
+</span><a href="#local-6989586621679232400"><span class="hs-identifier hs-var hs-var">quant</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679232394"><span class="hs-identifier hs-var">quantN</span></a></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc an
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;{n} (fin n) =&gt; &quot;</span></span><span>
+</span><span id="line-129"></span><span>                        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Doc an
+forall ann. Doc ann
+</span><span class="hs-identifier hs-var">empty</span></span><span>
+</span><span id="line-130"></span><span>
+</span><span id="line-131"></span><span class="annot"><span class="hs-comment">-- | A @where@-binding with an explicit type annotation.</span></span><span>
+</span><span id="line-132"></span><span class="hs-keyword">data</span><span> </span><span id="Bind"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Bind"><span class="hs-identifier hs-var">Bind</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Bind"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Bind"><span class="hs-identifier hs-var">Bind</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-133"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679232408"><span id="local-6989586621679232413"><span class="annot"><span class="annottext">Bind -&gt; Bind -&gt; Bool
+(Bind -&gt; Bind -&gt; Bool) -&gt; (Bind -&gt; Bind -&gt; Bool) -&gt; Eq Bind
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Bind -&gt; Bind -&gt; Bool
+== :: Bind -&gt; Bind -&gt; Bool
+$c/= :: Bind -&gt; Bind -&gt; Bool
+/= :: Bind -&gt; Bind -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679232416"><span id="local-6989586621679232422"><span id="local-6989586621679232425"><span class="annot"><span class="annottext">Int -&gt; Bind -&gt; ShowS
+[Bind] -&gt; ShowS
+Bind -&gt; String
+(Int -&gt; Bind -&gt; ShowS)
+-&gt; (Bind -&gt; String) -&gt; ([Bind] -&gt; ShowS) -&gt; Show Bind
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Bind -&gt; ShowS
+showsPrec :: Int -&gt; Bind -&gt; ShowS
+$cshow :: Bind -&gt; String
+show :: Bind -&gt; String
+$cshowList :: [Bind] -&gt; ShowS
+showList :: [Bind] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-134"></span><span>
+</span><span id="line-135"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679232429"><span class="annot"><span class="hs-identifier hs-type">Pretty</span></span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Bind"><span class="hs-identifier hs-type">Bind</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-136"></span><span>      </span><span id="local-6989586621679232435"><span class="annot"><span class="annottext">pretty :: forall ann. Bind -&gt; Doc ann
+</span><span class="hs-identifier hs-var hs-var hs-var">pretty</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Bind"><span class="hs-identifier hs-type">Bind</span></a></span><span> </span><span id="local-6989586621679232436"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232436"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679232437"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679232437"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621679232438"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232438"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Doc ann] -&gt; Doc ann
+forall ann. [Doc ann] -&gt; Doc ann
+</span><span class="hs-identifier hs-var">vsep</span></span><span>
+</span><span id="line-137"></span><span>            </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232436"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;:&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+forall ann. Ty -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679232437"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-138"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232436"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;=&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+forall ann. Exp -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232438"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-139"></span><span>            </span><span class="hs-special">]</span><span>
+</span><span id="line-140"></span><span>
+</span><span id="line-141"></span><span class="hs-keyword">data</span><span> </span><span id="Exp"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-var">Exp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Lit"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Lit"><span class="hs-identifier hs-var">Lit</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">BV</span></span><span>               </span><span class="annot"><span class="hs-comment">-- ^ Sized hex/binary literal (or @(zero : [0])@).</span></span><span>
+</span><span id="line-142"></span><span>         </span><span class="hs-glyph">|</span><span> </span><span id="Var"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Var"><span class="hs-identifier hs-var">Var</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span>
+</span><span id="line-143"></span><span>         </span><span class="hs-glyph">|</span><span> </span><span id="Call"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Call"><span class="hs-identifier hs-var">Call</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">]</span><span>     </span><span class="annot"><span class="hs-comment">-- ^ Prefix application: @f e1 e2@.</span></span><span>
+</span><span id="line-144"></span><span>         </span><span class="hs-glyph">|</span><span> </span><span id="TCall"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#TCall"><span class="hs-identifier hs-var">TCall</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Natural</span></span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="hs-comment">-- ^ Application with a type argument: @f`{k} e1 e2@.</span></span><span>
+</span><span id="line-145"></span><span>         </span><span class="hs-glyph">|</span><span> </span><span id="BinOp"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#BinOp"><span class="hs-identifier hs-var">BinOp</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-146"></span><span>         </span><span class="hs-glyph">|</span><span> </span><span id="UnOp"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#UnOp"><span class="hs-identifier hs-var">UnOp</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-147"></span><span>         </span><span class="hs-glyph">|</span><span> </span><span id="Index"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Index"><span class="hs-identifier hs-var">Index</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Natural</span></span><span>   </span><span class="annot"><span class="hs-comment">-- ^ &gt; e @ k</span></span><span>
+</span><span id="line-148"></span><span>         </span><span class="hs-glyph">|</span><span> </span><span id="If"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#If"><span class="hs-identifier hs-var">If</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-149"></span><span>         </span><span class="hs-glyph">|</span><span> </span><span id="Sing"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Sing"><span class="hs-identifier hs-var">Sing</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>             </span><span class="annot"><span class="hs-comment">-- ^ Bit to @[1]@: @[e]@.</span></span><span>
+</span><span id="line-150"></span><span>         </span><span class="hs-glyph">|</span><span> </span><span id="Comp"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Comp"><span class="hs-identifier hs-var">Comp</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="hs-comment">-- ^ &gt; [ e | x &lt;- e1 | y &lt;- e2 ]</span></span><span>
+</span><span id="line-151"></span><span>         </span><span class="hs-glyph">|</span><span> </span><span id="SeqLit"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#SeqLit"><span class="hs-identifier hs-var">SeqLit</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">]</span><span>         </span><span class="annot"><span class="hs-comment">-- ^ &gt; [e1, e2]</span></span><span>
+</span><span id="line-152"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679232451"><span id="local-6989586621679232480"><span class="annot"><span class="annottext">Exp -&gt; Exp -&gt; Bool
+(Exp -&gt; Exp -&gt; Bool) -&gt; (Exp -&gt; Exp -&gt; Bool) -&gt; Eq Exp
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Exp -&gt; Exp -&gt; Bool
+== :: Exp -&gt; Exp -&gt; Bool
+$c/= :: Exp -&gt; Exp -&gt; Bool
+/= :: Exp -&gt; Exp -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679232483"><span id="local-6989586621679232521"><span id="local-6989586621679232524"><span class="annot"><span class="annottext">Int -&gt; Exp -&gt; ShowS
+[Exp] -&gt; ShowS
+Exp -&gt; String
+(Int -&gt; Exp -&gt; ShowS)
+-&gt; (Exp -&gt; String) -&gt; ([Exp] -&gt; ShowS) -&gt; Show Exp
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Exp -&gt; ShowS
+showsPrec :: Int -&gt; Exp -&gt; ShowS
+$cshow :: Exp -&gt; String
+show :: Exp -&gt; String
+$cshowList :: [Exp] -&gt; ShowS
+showList :: [Exp] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-153"></span><span>
+</span><span id="line-154"></span><span class="hs-keyword">class</span><span> </span><span id="Parenless"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Parenless"><span class="hs-identifier hs-var">Parenless</span></a></span></span><span> </span><span id="local-6989586621679232051"><span class="annot"><a href="#local-6989586621679232051"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-155"></span><span>      </span><span id="parenless"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#parenless"><span class="hs-identifier hs-type">parenless</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679232051"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-156"></span><span>
+</span><span id="line-157"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Parenless"><span class="hs-identifier hs-type">Parenless</span></a></span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-158"></span><span>      </span><span id="local-6989586621679232530"><span class="annot"><span class="annottext">parenless :: Exp -&gt; Bool
+</span><a href="ReWire.Cryptol.Syntax.html#parenless"><span class="hs-identifier hs-var hs-var hs-var">parenless</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-159"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span>    </span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="hs-comment">-- zero-width literals print their own parens.</span><span>
+</span><span id="line-160"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span>    </span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-161"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Sing"><span class="hs-identifier hs-type">Sing</span></a></span><span>   </span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-162"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Comp"><span class="hs-identifier hs-type">Comp</span></a></span><span>   </span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-163"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#SeqLit"><span class="hs-identifier hs-type">SeqLit</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-164"></span><span>            </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span>         </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-165"></span><span>
+</span><span id="line-166"></span><span id="local-6989586621679232052"><span id="local-6989586621679232053"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#mparens"><span class="hs-identifier hs-type">mparens</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Pretty</span></span><span> </span><span class="annot"><a href="#local-6989586621679232052"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Parenless"><span class="hs-identifier hs-type">Parenless</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679232052"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679232052"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Doc</span></span><span> </span><span class="annot"><a href="#local-6989586621679232053"><span class="hs-identifier hs-type">an</span></a></span></span></span><span>
+</span><span id="line-167"></span><span id="mparens"><span class="annot"><span class="annottext">mparens :: forall a an. (Pretty a, Parenless a) =&gt; a -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#mparens"><span class="hs-identifier hs-var hs-var">mparens</span></a></span></span><span> </span><span id="local-6989586621679232537"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679232537"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">a -&gt; Bool
+forall a. Parenless a =&gt; a -&gt; Bool
+</span><a href="ReWire.Cryptol.Syntax.html#parenless"><span class="hs-identifier hs-var">parenless</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679232537"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Doc an
+forall ann. a -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679232537"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-168"></span><span>          </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>   </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Doc an -&gt; Doc an
+forall ann. Doc ann -&gt; Doc ann
+</span><span class="hs-identifier hs-var">parens</span></span><span> </span><span class="annot"><span class="annottext">(Doc an -&gt; Doc an) -&gt; Doc an -&gt; Doc an
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Doc an
+forall ann. a -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679232537"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-169"></span><span>
+</span><span id="line-170"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679232540"><span class="annot"><span class="hs-identifier hs-type">Pretty</span></span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-171"></span><span>      </span><span id="local-6989586621679232576"><span class="annot"><span class="annottext">pretty :: forall ann. Exp -&gt; Doc ann
+</span><span class="hs-identifier hs-var hs-var hs-var">pretty</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-172"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span id="local-6989586621679232577"><span class="annot"><span class="annottext">BV
+</span><a href="#local-6989586621679232577"><span class="hs-identifier hs-var">bv</span></a></span></span><span>         </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">BV -&gt; Doc ann
+forall an. BV -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#ppLit"><span class="hs-identifier hs-var">ppLit</span></a></span><span> </span><span class="annot"><span class="annottext">BV
+</span><a href="#local-6989586621679232577"><span class="hs-identifier hs-var">bv</span></a></span><span>
+</span><span id="line-173"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span id="local-6989586621679232579"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232579"><span class="hs-identifier hs-var">n</span></a></span></span><span>          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232579"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-174"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Call"><span class="hs-identifier hs-type">Call</span></a></span><span> </span><span id="local-6989586621679232580"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232580"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679232581"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679232581"><span class="hs-identifier hs-var">es</span></a></span></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Doc ann] -&gt; Doc ann
+forall ann. [Doc ann] -&gt; Doc ann
+</span><span class="hs-identifier hs-var">hsep</span></span><span> </span><span class="annot"><span class="annottext">([Doc ann] -&gt; Doc ann) -&gt; [Doc ann] -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232580"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; [Doc ann] -&gt; [Doc ann]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Doc ann) -&gt; [Exp] -&gt; [Doc ann]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc ann
+forall a an. (Pretty a, Parenless a) =&gt; a -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#mparens"><span class="hs-identifier hs-var">mparens</span></a></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679232581"><span class="hs-identifier hs-var">es</span></a></span><span>
+</span><span id="line-175"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#TCall"><span class="hs-identifier hs-type">TCall</span></a></span><span> </span><span id="local-6989586621679232582"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232582"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679232583"><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679232583"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span id="local-6989586621679232584"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679232584"><span class="hs-identifier hs-var">es</span></a></span></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Doc ann] -&gt; Doc ann
+forall ann. [Doc ann] -&gt; Doc ann
+</span><span class="hs-identifier hs-var">hsep</span></span><span> </span><span class="annot"><span class="annottext">([Doc ann] -&gt; Doc ann) -&gt; [Doc ann] -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232582"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;`{&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Doc ann
+forall ann. Integer -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Natural -&gt; Integer
+forall a. Integral a =&gt; a -&gt; Integer
+</span><span class="hs-identifier hs-var">toInteger</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679232583"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;}&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; [Doc ann] -&gt; [Doc ann]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Doc ann) -&gt; [Exp] -&gt; [Doc ann]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc ann
+forall a an. (Pretty a, Parenless a) =&gt; a -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#mparens"><span class="hs-identifier hs-var">mparens</span></a></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679232584"><span class="hs-identifier hs-var">es</span></a></span><span>
+</span><span id="line-176"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#BinOp"><span class="hs-identifier hs-type">BinOp</span></a></span><span> </span><span id="local-6989586621679232585"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232585"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span id="local-6989586621679232586"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232586"><span class="hs-identifier hs-var">e1</span></a></span></span><span> </span><span id="local-6989586621679232587"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232587"><span class="hs-identifier hs-var">e2</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc ann
+forall a an. (Pretty a, Parenless a) =&gt; a -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#mparens"><span class="hs-identifier hs-var">mparens</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232586"><span class="hs-identifier hs-var">e1</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232585"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc ann
+forall a an. (Pretty a, Parenless a) =&gt; a -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#mparens"><span class="hs-identifier hs-var">mparens</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232587"><span class="hs-identifier hs-var">e2</span></a></span><span>
+</span><span id="line-177"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#UnOp"><span class="hs-identifier hs-type">UnOp</span></a></span><span> </span><span id="local-6989586621679232588"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232588"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span id="local-6989586621679232589"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232589"><span class="hs-identifier hs-var">e</span></a></span></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232588"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc ann
+forall a an. (Pretty a, Parenless a) =&gt; a -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#mparens"><span class="hs-identifier hs-var">mparens</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232589"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-178"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Index"><span class="hs-identifier hs-type">Index</span></a></span><span> </span><span id="local-6989586621679232590"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232590"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span id="local-6989586621679232591"><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679232591"><span class="hs-identifier hs-var">k</span></a></span></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc ann
+forall a an. (Pretty a, Parenless a) =&gt; a -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#mparens"><span class="hs-identifier hs-var">mparens</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232590"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;@&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Doc ann
+forall ann. Integer -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Natural -&gt; Integer
+forall a. Integral a =&gt; a -&gt; Integer
+</span><span class="hs-identifier hs-var">toInteger</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679232591"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-179"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#If"><span class="hs-identifier hs-type">If</span></a></span><span> </span><span id="local-6989586621679232592"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232592"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621679232593"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232593"><span class="hs-identifier hs-var">e1</span></a></span></span><span> </span><span id="local-6989586621679232594"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232594"><span class="hs-identifier hs-var">e2</span></a></span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;if&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+forall ann. Exp -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232592"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;then&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc ann
+forall a an. (Pretty a, Parenless a) =&gt; a -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#mparens"><span class="hs-identifier hs-var">mparens</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232593"><span class="hs-identifier hs-var">e1</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc ann
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;else&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc ann
+forall a an. (Pretty a, Parenless a) =&gt; a -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#mparens"><span class="hs-identifier hs-var">mparens</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232594"><span class="hs-identifier hs-var">e2</span></a></span><span>
+</span><span id="line-180"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Sing"><span class="hs-identifier hs-type">Sing</span></a></span><span> </span><span id="local-6989586621679232595"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232595"><span class="hs-identifier hs-var">e</span></a></span></span><span>         </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann
+</span><span class="hs-identifier hs-var">brackets</span></span><span> </span><span class="annot"><span class="annottext">(Doc ann -&gt; Doc ann) -&gt; Doc ann -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+forall ann. Exp -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232595"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-181"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Comp"><span class="hs-identifier hs-type">Comp</span></a></span><span> </span><span id="local-6989586621679232596"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232596"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span id="local-6989586621679232597"><span class="annot"><span class="annottext">[(Name, Exp)]
+</span><a href="#local-6989586621679232597"><span class="hs-identifier hs-var">arms</span></a></span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann
+</span><span class="hs-identifier hs-var">brackets</span></span><span> </span><span class="annot"><span class="annottext">(Doc ann -&gt; Doc ann) -&gt; Doc ann -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+forall ann. Exp -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232596"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Doc ann] -&gt; Doc ann
+forall ann. [Doc ann] -&gt; Doc ann
+</span><span class="hs-identifier hs-var">hsep</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">((Name, Exp) -&gt; Doc ann) -&gt; [(Name, Exp)] -&gt; [Doc ann]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">(Name, Exp) -&gt; Doc ann
+forall an. (Name, Exp) -&gt; Doc an
+</span><a href="#local-6989586621679232598"><span class="hs-identifier hs-var">arm</span></a></span><span> </span><span class="annot"><span class="annottext">[(Name, Exp)]
+</span><a href="#local-6989586621679232597"><span class="hs-identifier hs-var">arms</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-182"></span><span>                  </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679232058"><span class="annot"><a href="#local-6989586621679232598"><span class="hs-identifier hs-type">arm</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Doc</span></span><span> </span><span class="annot"><a href="#local-6989586621679232058"><span class="hs-identifier hs-type">an</span></a></span></span><span>
+</span><span id="line-183"></span><span>                        </span><span id="local-6989586621679232598"><span class="annot"><span class="annottext">arm :: forall an. (Name, Exp) -&gt; Doc an
+</span><a href="#local-6989586621679232598"><span class="hs-identifier hs-var hs-var">arm</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679232602"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232602"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679232603"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232603"><span class="hs-identifier hs-var">e'</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc an
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;|&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc an -&gt; Doc an -&gt; Doc an
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc an
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232602"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Doc an -&gt; Doc an -&gt; Doc an
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc an
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;&lt;-&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc an -&gt; Doc an -&gt; Doc an
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc an
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+forall ann. Exp -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232603"><span class="hs-identifier hs-var">e'</span></a></span><span>
+</span><span id="line-184"></span><span>            </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#SeqLit"><span class="hs-identifier hs-type">SeqLit</span></a></span><span> </span><span id="local-6989586621679232604"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679232604"><span class="hs-identifier hs-var">es</span></a></span></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann
+</span><span class="hs-identifier hs-var">brackets</span></span><span> </span><span class="annot"><span class="annottext">(Doc ann -&gt; Doc ann) -&gt; Doc ann -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Doc ann] -&gt; Doc ann
+forall ann. [Doc ann] -&gt; Doc ann
+</span><span class="hs-identifier hs-var">hsep</span></span><span> </span><span class="annot"><span class="annottext">([Doc ann] -&gt; Doc ann) -&gt; [Doc ann] -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; [Doc ann] -&gt; [Doc ann]
+forall ann. Doc ann -&gt; [Doc ann] -&gt; [Doc ann]
+</span><span class="hs-identifier hs-var">punctuate</span></span><span> </span><span class="annot"><span class="annottext">Doc ann
+forall ann. Doc ann
+</span><span class="hs-identifier hs-var">comma</span></span><span> </span><span class="annot"><span class="annottext">([Doc ann] -&gt; [Doc ann]) -&gt; [Doc ann] -&gt; [Doc ann]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Doc ann) -&gt; [Exp] -&gt; [Doc ann]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+forall ann. Exp -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679232604"><span class="hs-identifier hs-var">es</span></a></span><span>
+</span><span id="line-185"></span><span>
+</span><span id="line-186"></span><span class="hs-comment">-- | Hex when the width is a multiple of four (Cryptol hex literals have a</span><span>
+</span><span id="line-187"></span><span class="hs-comment">--   width of exactly four bits per digit), binary otherwise.</span><span>
+</span><span id="line-188"></span><span id="local-6989586621679232057"><span class="annot"><a href="ReWire.Cryptol.Syntax.html#ppLit"><span class="hs-identifier hs-type">ppLit</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BV</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Doc</span></span><span> </span><span class="annot"><a href="#local-6989586621679232057"><span class="hs-identifier hs-type">an</span></a></span></span><span>
+</span><span id="line-189"></span><span id="ppLit"><span class="annot"><span class="annottext">ppLit :: forall an. BV -&gt; Doc an
+</span><a href="ReWire.Cryptol.Syntax.html#ppLit"><span class="hs-identifier hs-var hs-var">ppLit</span></a></span></span><span> </span><span id="local-6989586621679232628"><span class="annot"><span class="annottext">BV
+</span><a href="#local-6989586621679232628"><span class="hs-identifier hs-var">bv</span></a></span></span><span>
+</span><span id="line-190"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679232629"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>         </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Doc an -&gt; Doc an
+forall ann. Doc ann -&gt; Doc ann
+</span><span class="hs-identifier hs-var">parens</span></span><span> </span><span class="annot"><span class="annottext">(Doc an -&gt; Doc an) -&gt; Doc an -&gt; Doc an
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc an
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;zero : [0]&quot;</span></span><span>
+</span><span id="line-191"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679232629"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`mod`</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">4</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc an
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; Doc an) -&gt; Name -&gt; Doc an
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;0x&quot;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Name -&gt; Name
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Name -&gt; Name
+</span><a href="#local-6989586621679232632"><span class="hs-identifier hs-var">pad</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679232629"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`div`</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">4</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Name
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Name) -&gt; String -&gt; Name
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; ShowS
+forall a. Integral a =&gt; a -&gt; ShowS
+</span><span class="hs-identifier hs-var">showHex</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">BV -&gt; Integer
+</span><span class="hs-identifier hs-var">nat</span></span><span> </span><span class="annot"><span class="annottext">BV
+</span><a href="#local-6989586621679232628"><span class="hs-identifier hs-var">bv</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-192"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Doc an
+forall ann. Name -&gt; Doc ann
+</span><span class="hs-identifier hs-var">text</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; Doc an) -&gt; Name -&gt; Doc an
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;0b&quot;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Name -&gt; Name
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Name -&gt; Name
+</span><a href="#local-6989586621679232632"><span class="hs-identifier hs-var">pad</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679232629"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Name
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Name) -&gt; String -&gt; Name
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; (Int -&gt; Char) -&gt; Integer -&gt; ShowS
+forall a. Integral a =&gt; a -&gt; (Int -&gt; Char) -&gt; a -&gt; ShowS
+</span><span class="hs-identifier hs-var">showIntAtBase</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">2</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Char
+</span><span class="hs-identifier hs-var">intToDigit</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">BV -&gt; Integer
+</span><span class="hs-identifier hs-var">nat</span></span><span> </span><span class="annot"><span class="annottext">BV
+</span><a href="#local-6989586621679232628"><span class="hs-identifier hs-var">bv</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-193"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679232629"><span class="hs-identifier hs-type">w</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-194"></span><span>            </span><span id="local-6989586621679232629"><span class="annot"><span class="annottext">w :: Int
+</span><a href="#local-6989586621679232629"><span class="hs-identifier hs-var hs-var">w</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">BV -&gt; Int
+</span><span class="hs-identifier hs-var">width</span></span><span> </span><span class="annot"><span class="annottext">BV
+</span><a href="#local-6989586621679232628"><span class="hs-identifier hs-var">bv</span></a></span><span>
+</span><span id="line-195"></span><span>
+</span><span id="line-196"></span><span>            </span><span class="annot"><a href="#local-6989586621679232632"><span class="hs-identifier hs-type">pad</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-197"></span><span>            </span><span id="local-6989586621679232632"><span class="annot"><span class="annottext">pad :: Int -&gt; Name -&gt; Name
+</span><a href="#local-6989586621679232632"><span class="hs-identifier hs-var hs-var">pad</span></a></span></span><span> </span><span id="local-6989586621679232635"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679232635"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679232636"><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232636"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Name -&gt; Name
+</span><span class="hs-identifier hs-var">T.replicate</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679232635"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Int
+</span><span class="hs-identifier hs-var">T.length</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232636"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;0&quot;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Name -&gt; Name
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name
+</span><a href="#local-6989586621679232636"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-198"></span><span>
+</span><span id="line-199"></span><span class="hs-comment">-- | Slicing, MSB-first (Cryptol's bit order): @k@ bits starting at MSB offset</span><span>
+</span><span id="line-200"></span><span class="hs-comment">--   @off@ out of a @w@-bit expression. Skips @take@/@drop@ when they would be</span><span>
+</span><span id="line-201"></span><span class="hs-comment">--   the identity.</span><span>
+</span><span id="line-202"></span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#slice"><span class="hs-identifier hs-type">slice</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Size"><span class="hs-identifier hs-type">Size</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Size"><span class="hs-identifier hs-type">Size</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Size"><span class="hs-identifier hs-type">Size</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-203"></span><span id="slice"><span class="annot"><span class="annottext">slice :: Size -&gt; Size -&gt; Size -&gt; Exp -&gt; Exp
+</span><a href="ReWire.Cryptol.Syntax.html#slice"><span class="hs-identifier hs-var hs-var">slice</span></a></span></span><span> </span><span id="local-6989586621679232640"><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232640"><span class="hs-identifier hs-var">w</span></a></span></span><span> </span><span id="local-6989586621679232641"><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232641"><span class="hs-identifier hs-var">off</span></a></span></span><span> </span><span id="local-6989586621679232642"><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232642"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span id="local-6989586621679232643"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232643"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679232644"><span class="hs-identifier hs-var">takeE</span></a></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Exp) -&gt; Exp -&gt; Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp
+</span><a href="#local-6989586621679232645"><span class="hs-identifier hs-var">dropE</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232643"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-204"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679232644"><span class="hs-identifier hs-type">takeE</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-205"></span><span>            </span><span id="local-6989586621679232644"><span class="annot"><span class="annottext">takeE :: Exp -&gt; Exp
+</span><a href="#local-6989586621679232644"><span class="hs-identifier hs-var hs-var">takeE</span></a></span></span><span> </span><span id="local-6989586621679232646"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232646"><span class="hs-identifier hs-var">e'</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232641"><span class="hs-identifier hs-var">off</span></a></span><span> </span><span class="annot"><span class="annottext">Size -&gt; Size -&gt; Size
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232642"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">Size -&gt; Size -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232640"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232646"><span class="hs-identifier hs-var">e'</span></a></span><span>
+</span><span id="line-206"></span><span>                     </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Natural -&gt; [Exp] -&gt; Exp
+</span><a href="ReWire.Cryptol.Syntax.html#TCall"><span class="hs-identifier hs-var">TCall</span></a></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;take&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Size -&gt; Natural
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232642"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232646"><span class="hs-identifier hs-var">e'</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-207"></span><span>
+</span><span id="line-208"></span><span>            </span><span class="annot"><a href="#local-6989586621679232645"><span class="hs-identifier hs-type">dropE</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-209"></span><span>            </span><span id="local-6989586621679232645"><span class="annot"><span class="annottext">dropE :: Exp -&gt; Exp
+</span><a href="#local-6989586621679232645"><span class="hs-identifier hs-var hs-var">dropE</span></a></span></span><span> </span><span id="local-6989586621679232648"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232648"><span class="hs-identifier hs-var">e'</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232641"><span class="hs-identifier hs-var">off</span></a></span><span> </span><span class="annot"><span class="annottext">Size -&gt; Size -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Size
+</span><span class="hs-number">0</span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232648"><span class="hs-identifier hs-var">e'</span></a></span><span>
+</span><span id="line-210"></span><span>                     </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Natural -&gt; [Exp] -&gt; Exp
+</span><a href="ReWire.Cryptol.Syntax.html#TCall"><span class="hs-identifier hs-var">TCall</span></a></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;drop&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Size -&gt; Natural
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232641"><span class="hs-identifier hs-var">off</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232648"><span class="hs-identifier hs-var">e'</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-211"></span><span>
+</span><span id="line-212"></span><span class="hs-comment">-- | Truncate-or-zero-extend to the given width (the @trunc@ and @zext@</span><span>
+</span><span id="line-213"></span><span class="hs-comment">--   coercions), as implemented by the emitted @rw'resize@ helper.</span><span>
+</span><span id="line-214"></span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#resize"><span class="hs-identifier hs-type">resize</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Size"><span class="hs-identifier hs-type">Size</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-215"></span><span id="resize"><span class="annot"><span class="annottext">resize :: Size -&gt; Exp -&gt; Exp
+</span><a href="ReWire.Cryptol.Syntax.html#resize"><span class="hs-identifier hs-var hs-var">resize</span></a></span></span><span> </span><span id="local-6989586621679232650"><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232650"><span class="hs-identifier hs-var">sz</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-216"></span><span>      </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#TCall"><span class="hs-identifier hs-type">TCall</span></a></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;rw'resize&quot;</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">[</span><span id="local-6989586621679232651"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232651"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Natural -&gt; [Exp] -&gt; Exp
+</span><a href="ReWire.Cryptol.Syntax.html#TCall"><span class="hs-identifier hs-var">TCall</span></a></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;rw'resize&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Size -&gt; Natural
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232650"><span class="hs-identifier hs-var">sz</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232651"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-217"></span><span>      </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span id="local-6989586621679232652"><span class="annot"><span class="annottext">BV
+</span><a href="#local-6989586621679232652"><span class="hs-identifier hs-var">bv</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">BV -&gt; Int
+</span><span class="hs-identifier hs-var">width</span></span><span> </span><span class="annot"><span class="annottext">BV
+</span><a href="#local-6989586621679232652"><span class="hs-identifier hs-var">bv</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232650"><span class="hs-identifier hs-var">sz</span></a></span><span> </span><span class="annot"><span class="annottext">Size -&gt; Size -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Size
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">BV -&gt; Exp
+</span><a href="ReWire.Cryptol.Syntax.html#Lit"><span class="hs-identifier hs-var">Lit</span></a></span><span> </span><span class="annot"><span class="annottext">BV
+</span><a href="#local-6989586621679232652"><span class="hs-identifier hs-var">bv</span></a></span><span>
+</span><span id="line-218"></span><span>      </span><span id="local-6989586621679232653"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232653"><span class="hs-identifier hs-var">e</span></a></span></span><span>                       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Natural -&gt; [Exp] -&gt; Exp
+</span><a href="ReWire.Cryptol.Syntax.html#TCall"><span class="hs-identifier hs-var">TCall</span></a></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;rw'resize&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Size -&gt; Natural
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Size
+</span><a href="#local-6989586621679232650"><span class="hs-identifier hs-var">sz</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679232653"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-219"></span><span>
+</span><span id="line-220"></span><span class="annot"><span class="hs-comment">-- | Concatenation, filtering zero-width parts.</span></span><span>
+</span><span id="line-221"></span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#cat"><span class="hs-identifier hs-type">cat</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-222"></span><span id="cat"><span class="annot"><span class="annottext">cat :: [Exp] -&gt; Exp
+</span><a href="ReWire.Cryptol.Syntax.html#cat"><span class="hs-identifier hs-var hs-var">cat</span></a></span></span><span> </span><span id="local-6989586621679232655"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679232655"><span class="hs-identifier hs-var">es</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Bool) -&gt; [Exp] -&gt; [Exp]
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; (Exp -&gt; Bool) -&gt; Exp -&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Bool
+</span><a href="ReWire.Cryptol.Syntax.html#isNil"><span class="hs-identifier hs-var">isNil</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679232655"><span class="hs-identifier hs-var">es</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-223"></span><span>      </span><span class="hs-special">[</span><span class="hs-special">]</span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="ReWire.Cryptol.Syntax.html#nil"><span class="hs-identifier hs-var">nil</span></a></span><span>
+</span><span id="line-224"></span><span>      </span><span id="local-6989586621679232658"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679232658"><span class="hs-identifier hs-var">es'</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Exp -&gt; Exp) -&gt; [Exp] -&gt; Exp
+forall a. (a -&gt; a -&gt; a) -&gt; [a] -&gt; a
+forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; a -&gt; a) -&gt; t a -&gt; a
+</span><span class="hs-identifier hs-var">foldr1</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Name -&gt; Exp -&gt; Exp -&gt; Exp
+</span><a href="ReWire.Cryptol.Syntax.html#BinOp"><span class="hs-identifier hs-var">BinOp</span></a></span><span> </span><span class="annot"><span class="annottext">Name
+</span><span class="hs-string">&quot;#&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679232658"><span class="hs-identifier hs-var">es'</span></a></span><span>
+</span><span id="line-225"></span><span>
+</span><span id="line-226"></span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#nil"><span class="hs-identifier hs-type">nil</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-227"></span><span id="nil"><span class="annot"><span class="annottext">nil :: Exp
+</span><a href="ReWire.Cryptol.Syntax.html#nil"><span class="hs-identifier hs-var hs-var">nil</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">BV -&gt; Exp
+</span><a href="ReWire.Cryptol.Syntax.html#Lit"><span class="hs-identifier hs-var">Lit</span></a></span><span> </span><span class="annot"><span class="annottext">BV
+</span><span class="hs-identifier hs-var">BV.nil</span></span><span>
+</span><span id="line-228"></span><span>
+</span><span id="line-229"></span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#isNil"><span class="hs-identifier hs-type">isNil</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-230"></span><span id="isNil"><span class="annot"><span class="annottext">isNil :: Exp -&gt; Bool
+</span><a href="ReWire.Cryptol.Syntax.html#isNil"><span class="hs-identifier hs-var hs-var">isNil</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-231"></span><span>      </span><span class="annot"><a href="ReWire.Cryptol.Syntax.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span id="local-6989586621679232661"><span class="annot"><span class="annottext">BV
+</span><a href="#local-6989586621679232661"><span class="hs-identifier hs-var">bv</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">BV -&gt; Int
+</span><span class="hs-identifier hs-var">width</span></span><span> </span><span class="annot"><span class="annottext">BV
+</span><a href="#local-6989586621679232661"><span class="hs-identifier hs-var">bv</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-232"></span><span>      </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-233"></span></pre></body></html>

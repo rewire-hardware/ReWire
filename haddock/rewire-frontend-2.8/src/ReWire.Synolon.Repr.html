@@ -1,0 +1,495 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- | The representable closure (doc/synolon.md &#167;3.1): the fixed bit width</span><span>
+</span><span id="line-4"></span><span class="hs-comment">--   of a Synolon type. Computed once, here, for the two consumers that must</span><span>
+</span><span id="line-5"></span><span class="hs-comment">--   agree &#8212; the machine lint, which rejects a binder, cell, port, or halt</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--   answer whose type has no width, and the fold, which lays values out at</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--   that width &#8212; so the two agree on which types have a width (a type in a</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--   position only the fold sizes, such as a definition's codomain or a</span><span>
+</span><span id="line-9"></span><span class="hs-comment">--   primitive's instantiation, gets the same diagnostic there).</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--</span><span>
+</span><span id="line-11"></span><span class="hs-comment">--   Widths: @Vec n &#964;@ is @n &#183; |&#964;|@ (@n@ nat-closed); @Finite n@ is</span><span>
+</span><span id="line-12"></span><span class="hs-comment">--   @nbits n@; @Integer@ is 128; @Proxy@ is 0; a tuple is the sum of its</span><span>
+</span><span id="line-13"></span><span class="hs-comment">--   components; a declared datatype is @nbits (#constructors)@ plus the</span><span>
+</span><span id="line-14"></span><span class="hs-comment">--   widest constructor payload (the sum of its field widths at the</span><span>
+</span><span id="line-15"></span><span class="hs-comment">--   instantiation); a type variable is 0 (the fold only sees closed types);</span><span>
+</span><span id="line-16"></span><span class="hs-comment">--   a recursive datatype, an open width, and a function type have no width.</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.Synolon.Repr.html"><span class="hs-identifier">ReWire.Synolon.Repr</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Synolon.Repr.html#DataEnv"><span class="hs-identifier">DataEnv</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Repr.html#dataEnv"><span class="hs-identifier">dataEnv</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Repr.html#Sizes"><span class="hs-identifier">Sizes</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Repr.html#sizeOf"><span class="hs-identifier">sizeOf</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Repr.html#sizeOfM"><span class="hs-identifier">sizeOfM</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Repr.html#isTupleCon"><span class="hs-identifier">isTupleCon</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.BitVector</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">nbits</span></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.Eidos.Pretty.html"><span class="hs-identifier">ReWire.Eidos.Pretty</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html"><span class="hs-identifier">ReWire.Eidos.Syntax</span></a></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.Eidos.Types.html"><span class="hs-identifier">ReWire.Eidos.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Types.html#flattenArrow"><span class="hs-identifier">flattenArrow</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Eidos.Types.html#flattenTyApp"><span class="hs-identifier">flattenTyApp</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Eidos.Types.html#evalNat"><span class="hs-identifier">evalNat</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Eidos.Types.html#natNorm"><span class="hs-identifier">natNorm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Eidos.Types.html#substTv"><span class="hs-identifier">substTv</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Pretty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">prettyPrint</span></span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.State.Strict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">StateT</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">evalStateT</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">get</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">modify</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">lift</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashMap.Strict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">HashMap</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashSet</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">HashSet</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">genericLength</span></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Numeric.Natural</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Natural</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashMap.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashSet</span></span><span>        </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Set</span></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span>           </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Annotation</span></span><span>   </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Ann</span></span><span>
+</span><span id="line-36"></span><span>
+</span><span id="line-37"></span><span class="hs-comment">-- | The datatype table sizing consults: each datatype's constructors in</span><span>
+</span><span id="line-38"></span><span class="hs-comment">--   declaration order (a constructor's tag is its index) and each</span><span>
+</span><span id="line-39"></span><span class="hs-comment">--   constructor's declared signature.</span><span>
+</span><span id="line-40"></span><span class="hs-keyword">data</span><span> </span><span id="DataEnv"><span class="annot"><a href="ReWire.Synolon.Repr.html#DataEnv"><span class="hs-identifier hs-var">DataEnv</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="DataEnv"><span class="annot"><a href="ReWire.Synolon.Repr.html#DataEnv"><span class="hs-identifier hs-var">DataEnv</span></a></span></span><span>
+</span><span id="line-41"></span><span>      </span><span class="hs-special">{</span><span> </span><span id="deCtors"><span class="annot"><span class="annottext">DataEnv -&gt; HashMap Text [Text]
+</span><a href="ReWire.Synolon.Repr.html#deCtors"><span class="hs-identifier hs-var hs-var">deCtors</span></a></span></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyConId"><span class="hs-identifier hs-type">TyConId</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#DataConId"><span class="hs-identifier hs-type">DataConId</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-42"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="deCtorSig"><span class="annot"><span class="annottext">DataEnv -&gt; HashMap Text Sig
+</span><a href="ReWire.Synolon.Repr.html#deCtorSig"><span class="hs-identifier hs-var hs-var">deCtorSig</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#DataConId"><span class="hs-identifier hs-type">DataConId</span></a></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Sig"><span class="hs-identifier hs-type">Sig</span></a></span><span>
+</span><span id="line-43"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-44"></span><span>
+</span><span id="line-45"></span><span class="annot"><a href="ReWire.Synolon.Repr.html#dataEnv"><span class="hs-identifier hs-type">dataEnv</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#DataDefn"><span class="hs-identifier hs-type">DataDefn</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Synolon.Repr.html#DataEnv"><span class="hs-identifier hs-type">DataEnv</span></a></span><span>
+</span><span id="line-46"></span><span id="dataEnv"><span class="annot"><span class="annottext">dataEnv :: [DataDefn] -&gt; DataEnv
+</span><a href="ReWire.Synolon.Repr.html#dataEnv"><span class="hs-identifier hs-var hs-var">dataEnv</span></a></span></span><span> </span><span id="local-6989586621679462822"><span class="annot"><span class="annottext">[DataDefn]
+</span><a href="#local-6989586621679462822"><span class="hs-identifier hs-var">datas</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="ReWire.Synolon.Repr.html#DataEnv"><span class="hs-identifier hs-type">DataEnv</span></a></span><span>
+</span><span id="line-47"></span><span>      </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">deCtors :: HashMap Text [Text]
+</span><a href="ReWire.Synolon.Repr.html#deCtors"><span class="hs-identifier hs-var">deCtors</span></a></span><span>   </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(Text, [Text])] -&gt; HashMap Text [Text]
+forall k v. (Eq k, Hashable k) =&gt; [(k, v)] -&gt; HashMap k v
+</span><span class="hs-identifier hs-var">Map.fromList</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DataDefn -&gt; Text
+</span><a href="ReWire.Eidos.Syntax.html#dataName"><span class="hs-identifier hs-var">dataName</span></a></span><span> </span><span class="annot"><span class="annottext">DataDefn
+</span><a href="#local-6989586621679462825"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462826"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#DataCon"><span class="hs-identifier hs-type">DataCon</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679462826"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462826"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="annot"><span class="annottext">Sig
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">DataDefn -&gt; [DataCon]
+</span><a href="ReWire.Eidos.Syntax.html#dataCons"><span class="hs-identifier hs-var">dataCons</span></a></span><span> </span><span class="annot"><span class="annottext">DataDefn
+</span><a href="#local-6989586621679462825"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679462825"><span class="annot"><span class="annottext">DataDefn
+</span><a href="#local-6989586621679462825"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[DataDefn]
+</span><a href="#local-6989586621679462822"><span class="hs-identifier hs-var">datas</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-48"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">deCtorSig :: HashMap Text Sig
+</span><a href="ReWire.Synolon.Repr.html#deCtorSig"><span class="hs-identifier hs-var">deCtorSig</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(Text, Sig)] -&gt; HashMap Text Sig
+forall k v. (Eq k, Hashable k) =&gt; [(k, v)] -&gt; HashMap k v
+</span><span class="hs-identifier hs-var">Map.fromList</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462829"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Sig
+</span><a href="#local-6989586621679462830"><span class="hs-identifier hs-var">sig</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679462831"><span class="annot"><span class="annottext">DataDefn
+</span><a href="#local-6989586621679462831"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[DataDefn]
+</span><a href="#local-6989586621679462822"><span class="hs-identifier hs-var">datas</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#DataCon"><span class="hs-identifier hs-type">DataCon</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679462829"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462829"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621679462830"><span class="annot"><span class="annottext">Sig
+</span><a href="#local-6989586621679462830"><span class="hs-identifier hs-var">sig</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">DataDefn -&gt; [DataCon]
+</span><a href="ReWire.Eidos.Syntax.html#dataCons"><span class="hs-identifier hs-var">dataCons</span></a></span><span> </span><span class="annot"><span class="annottext">DataDefn
+</span><a href="#local-6989586621679462831"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-49"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-50"></span><span>
+</span><span id="line-51"></span><span class="annot"><span class="hs-comment">-- | The sizing memo (types compare structurally; annotations are ignored).</span></span><span>
+</span><span id="line-52"></span><span class="hs-keyword">type</span><span> </span><span id="Sizes"><span class="annot"><a href="ReWire.Synolon.Repr.html#Sizes"><span class="hs-identifier hs-var">Sizes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Natural</span></span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span class="annot"><span class="hs-comment">-- | The width of a type, or the reason it has none.</span></span><span>
+</span><span id="line-55"></span><span class="annot"><a href="ReWire.Synolon.Repr.html#sizeOf"><span class="hs-identifier hs-type">sizeOf</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Synolon.Repr.html#DataEnv"><span class="hs-identifier hs-type">DataEnv</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Natural</span></span><span>
+</span><span id="line-56"></span><span id="sizeOf"><span class="annot"><span class="annottext">sizeOf :: DataEnv -&gt; Ty -&gt; Either Text Natural
+</span><a href="ReWire.Synolon.Repr.html#sizeOf"><span class="hs-identifier hs-var hs-var">sizeOf</span></a></span></span><span> </span><span id="local-6989586621679462832"><span class="annot"><span class="annottext">DataEnv
+</span><a href="#local-6989586621679462832"><span class="hs-identifier hs-var">de</span></a></span></span><span> </span><span id="local-6989586621679462833"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462833"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">StateT Sizes (Either Text) Natural -&gt; Sizes -&gt; Either Text Natural
+forall (m :: * -&gt; *) s a. Monad m =&gt; StateT s m a -&gt; s -&gt; m a
+</span><span class="hs-identifier hs-var">evalStateT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DataEnv -&gt; Ty -&gt; StateT Sizes (Either Text) Natural
+</span><a href="ReWire.Synolon.Repr.html#sizeOfM"><span class="hs-identifier hs-var">sizeOfM</span></a></span><span> </span><span class="annot"><span class="annottext">DataEnv
+</span><a href="#local-6989586621679462832"><span class="hs-identifier hs-var">de</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462833"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Sizes
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-57"></span><span>
+</span><span id="line-58"></span><span class="annot"><span class="hs-comment">-- | 'sizeOf' over an explicit memo (the fold sizes many types per program).</span></span><span>
+</span><span id="line-59"></span><span class="annot"><a href="ReWire.Synolon.Repr.html#sizeOfM"><span class="hs-identifier hs-type">sizeOfM</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Synolon.Repr.html#DataEnv"><span class="hs-identifier hs-type">DataEnv</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StateT</span></span><span> </span><span class="annot"><a href="ReWire.Synolon.Repr.html#Sizes"><span class="hs-identifier hs-type">Sizes</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Natural</span></span><span>
+</span><span id="line-60"></span><span id="sizeOfM"><span class="annot"><span class="annottext">sizeOfM :: DataEnv -&gt; Ty -&gt; StateT Sizes (Either Text) Natural
+</span><a href="ReWire.Synolon.Repr.html#sizeOfM"><span class="hs-identifier hs-var hs-var">sizeOfM</span></a></span></span><span> </span><span id="local-6989586621679462834"><span class="annot"><span class="annottext">DataEnv
+</span><a href="#local-6989586621679462834"><span class="hs-identifier hs-var">de</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; HashSet Ty -&gt; Ty -&gt; StateT Sizes (Either Text) Natural
+</span><a href="#local-6989586621679462835"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679462836"><span class="hs-identifier hs-var">depth0</span></a></span><span> </span><span class="annot"><span class="annottext">HashSet Ty
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-61"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="hs-comment">-- The visited set holds the datatype instances on the current</span><span>
+</span><span id="line-62"></span><span>            </span><span class="hs-comment">-- descent: meeting one again is a recursive datatype. Types</span><span>
+</span><span id="line-63"></span><span>            </span><span class="hs-comment">-- are compared after 'natNorm' (as the validator compares</span><span>
+</span><span id="line-64"></span><span>            </span><span class="hs-comment">-- them), so an instance recursive through type arithmetic</span><span>
+</span><span id="line-65"></span><span>            </span><span class="hs-comment">-- (@T (n + 0)@ under @T n@) is met again; the depth bound</span><span>
+</span><span id="line-66"></span><span>            </span><span class="hs-comment">-- covers an unfolding that never revisits an instance.</span><span>
+</span><span id="line-67"></span><span>            </span><span class="annot"><a href="#local-6989586621679462835"><span class="hs-identifier hs-type">go</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashSet</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StateT</span></span><span> </span><span class="annot"><a href="ReWire.Synolon.Repr.html#Sizes"><span class="hs-identifier hs-type">Sizes</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Natural</span></span><span>
+</span><span id="line-68"></span><span>            </span><span id="local-6989586621679462835"><span class="annot"><span class="annottext">go :: Int -&gt; HashSet Ty -&gt; Ty -&gt; StateT Sizes (Either Text) Natural
+</span><a href="#local-6989586621679462835"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span id="local-6989586621679462837"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679462837"><span class="hs-identifier hs-var">depth</span></a></span></span><span> </span><span id="local-6989586621679462838"><span class="annot"><span class="annottext">HashSet Ty
+</span><a href="#local-6989586621679462838"><span class="hs-identifier hs-var">visited</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Ty -&gt; Ty
+</span><a href="ReWire.Eidos.Types.html#natNorm"><span class="hs-identifier hs-var">natNorm</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span id="local-6989586621679462839"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462839"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span>                  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679462837"><span class="hs-identifier hs-var">depth</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Either Text Natural -&gt; StateT Sizes (Either Text) Natural
+forall (m :: * -&gt; *) a. Monad m =&gt; m a -&gt; StateT Sizes m a
+forall (t :: (* -&gt; *) -&gt; * -&gt; *) (m :: * -&gt; *) a.
+(MonadTrans t, Monad m) =&gt;
+m a -&gt; t m a
+</span><span class="hs-identifier hs-var">lift</span></span><span> </span><span class="annot"><span class="annottext">(Either Text Natural -&gt; StateT Sizes (Either Text) Natural)
+-&gt; Either Text Natural -&gt; StateT Sizes (Either Text) Natural
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either Text Natural
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Either Text Natural) -&gt; Text -&gt; Either Text Natural
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;datatype unfolding too deep (is the datatype recursive through its type arguments?): &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Text
+</span><a href="#local-6989586621679462841"><span class="hs-identifier hs-var">pp</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462839"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-70"></span><span>                  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-71"></span><span>                  </span><span id="local-6989586621679462842"><span class="annot"><a href="#local-6989586621679462842"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">StateT Sizes (Either Text) Sizes
+forall s (m :: * -&gt; *). MonadState s m =&gt; m s
+</span><span class="hs-identifier hs-var">get</span></span><span>
+</span><span id="line-72"></span><span>                  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map.lookup</span></span><span> </span><span class="annot"><a href="#local-6989586621679462839"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679462842"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-73"></span><span>                        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679462844"><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679462844"><span class="hs-identifier hs-var">sz</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Natural -&gt; StateT Sizes (Either Text) Natural
+forall a. a -&gt; StateT Sizes (Either Text) a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679462844"><span class="hs-identifier hs-var">sz</span></a></span><span>
+</span><span id="line-74"></span><span>                        </span><span class="annot"><span class="annottext">Maybe Natural
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-75"></span><span>                              </span><span id="local-6989586621679462845"><span class="annot"><a href="#local-6989586621679462845"><span class="hs-identifier hs-var">sz</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Ty -&gt; (Ty, [Ty])
+</span><a href="ReWire.Eidos.Types.html#flattenTyApp"><span class="hs-identifier hs-var">flattenTyApp</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462839"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-76"></span><span>                                    </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyCon"><span class="hs-identifier hs-type">TyCon</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Vec&quot;</span></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span id="local-6989586621679462847"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462847"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679462848"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462848"><span class="hs-identifier hs-var">te</span></a></span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-77"></span><span>                                          </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679462849"><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679462849"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Maybe Natural
+</span><a href="ReWire.Eidos.Types.html#evalNat"><span class="hs-identifier hs-var">evalNat</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462847"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679462849"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">Natural -&gt; Natural -&gt; Natural
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Natural -&gt; Natural)
+-&gt; StateT Sizes (Either Text) Natural
+-&gt; StateT Sizes (Either Text) Natural
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; HashSet Ty -&gt; Ty -&gt; StateT Sizes (Either Text) Natural
+</span><a href="#local-6989586621679462835"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679462837"><span class="hs-identifier hs-var">depth</span></a></span><span> </span><span class="annot"><span class="annottext">HashSet Ty
+</span><a href="#local-6989586621679462838"><span class="hs-identifier hs-var">visited</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462848"><span class="hs-identifier hs-var">te</span></a></span><span>
+</span><span id="line-78"></span><span>                                          </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>           </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Either Text Natural -&gt; StateT Sizes (Either Text) Natural
+forall (m :: * -&gt; *) a. Monad m =&gt; m a -&gt; StateT Sizes m a
+forall (t :: (* -&gt; *) -&gt; * -&gt; *) (m :: * -&gt; *) a.
+(MonadTrans t, Monad m) =&gt;
+m a -&gt; t m a
+</span><span class="hs-identifier hs-var">lift</span></span><span> </span><span class="annot"><span class="annottext">(Either Text Natural -&gt; StateT Sizes (Either Text) Natural)
+-&gt; Either Text Natural -&gt; StateT Sizes (Either Text) Natural
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either Text Natural
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Either Text Natural) -&gt; Text -&gt; Either Text Natural
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;can't determine the size of a Vec. (&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Text
+</span><a href="#local-6989586621679462841"><span class="hs-identifier hs-var">pp</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462839"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;)&quot;</span></span><span>
+</span><span id="line-79"></span><span>                                    </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyCon"><span class="hs-identifier hs-type">TyCon</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Finite&quot;</span></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span id="local-6989586621679462852"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462852"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-80"></span><span>                                          </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679462853"><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679462853"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Maybe Natural
+</span><a href="ReWire.Eidos.Types.html#evalNat"><span class="hs-identifier hs-var">evalNat</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462852"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Natural -&gt; StateT Sizes (Either Text) Natural
+forall a. a -&gt; StateT Sizes (Either Text) a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(Natural -&gt; StateT Sizes (Either Text) Natural)
+-&gt; Natural -&gt; StateT Sizes (Either Text) Natural
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Natural -&gt; Natural
+</span><span class="hs-identifier hs-var">nbits</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679462853"><span class="hs-identifier hs-var">k</span></a></span><span>
+</span><span id="line-81"></span><span>                                          </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>           </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Either Text Natural -&gt; StateT Sizes (Either Text) Natural
+forall (m :: * -&gt; *) a. Monad m =&gt; m a -&gt; StateT Sizes m a
+forall (t :: (* -&gt; *) -&gt; * -&gt; *) (m :: * -&gt; *) a.
+(MonadTrans t, Monad m) =&gt;
+m a -&gt; t m a
+</span><span class="hs-identifier hs-var">lift</span></span><span> </span><span class="annot"><span class="annottext">(Either Text Natural -&gt; StateT Sizes (Either Text) Natural)
+-&gt; Either Text Natural -&gt; StateT Sizes (Either Text) Natural
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either Text Natural
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Either Text Natural) -&gt; Text -&gt; Either Text Natural
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;can't determine the size of a Finite. (&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Text
+</span><a href="#local-6989586621679462841"><span class="hs-identifier hs-var">pp</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462839"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;)&quot;</span></span><span>
+</span><span id="line-82"></span><span>                                    </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyCon"><span class="hs-identifier hs-type">TyCon</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Integer&quot;</span></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">)</span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Natural -&gt; StateT Sizes (Either Text) Natural
+forall a. a -&gt; StateT Sizes (Either Text) a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><span class="hs-number">128</span></span><span>
+</span><span id="line-83"></span><span>                                    </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyCon"><span class="hs-identifier hs-type">TyCon</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Proxy&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Ty]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Natural -&gt; StateT Sizes (Either Text) Natural
+forall a. a -&gt; StateT Sizes (Either Text) a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-84"></span><span>                                    </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyCon"><span class="hs-identifier hs-type">TyCon</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679462854"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462854"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679462855"><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679462855"><span class="hs-identifier hs-var">args</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-85"></span><span>                                          </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Bool
+</span><a href="ReWire.Synolon.Repr.html#isTupleCon"><span class="hs-identifier hs-var">isTupleCon</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462854"><span class="hs-identifier hs-var">c</span></a></span><span>           </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Natural] -&gt; Natural
+forall a. Num a =&gt; [a] -&gt; a
+forall (t :: * -&gt; *) a. (Foldable t, Num a) =&gt; t a -&gt; a
+</span><span class="hs-identifier hs-var">sum</span></span><span> </span><span class="annot"><span class="annottext">([Natural] -&gt; Natural)
+-&gt; StateT Sizes (Either Text) [Natural]
+-&gt; StateT Sizes (Either Text) Natural
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Ty -&gt; StateT Sizes (Either Text) Natural)
+-&gt; [Ty] -&gt; StateT Sizes (Either Text) [Natural]
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Traversable t, Monad m) =&gt;
+(a -&gt; m b) -&gt; t a -&gt; m (t b)
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]
+</span><span class="hs-identifier hs-var">mapM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; HashSet Ty -&gt; Ty -&gt; StateT Sizes (Either Text) Natural
+</span><a href="#local-6989586621679462835"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679462837"><span class="hs-identifier hs-var">depth</span></a></span><span> </span><span class="annot"><span class="annottext">HashSet Ty
+</span><a href="#local-6989586621679462838"><span class="hs-identifier hs-var">visited</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679462855"><span class="hs-identifier hs-var">args</span></a></span><span>
+</span><span id="line-86"></span><span>                                          </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462839"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; HashSet Ty -&gt; Bool
+forall a. (Eq a, Hashable a) =&gt; a -&gt; HashSet a -&gt; Bool
+</span><span class="hs-operator hs-var">`Set.member`</span></span><span> </span><span class="annot"><span class="annottext">HashSet Ty
+</span><a href="#local-6989586621679462838"><span class="hs-identifier hs-var">visited</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Either Text Natural -&gt; StateT Sizes (Either Text) Natural
+forall (m :: * -&gt; *) a. Monad m =&gt; m a -&gt; StateT Sizes m a
+forall (t :: (* -&gt; *) -&gt; * -&gt; *) (m :: * -&gt; *) a.
+(MonadTrans t, Monad m) =&gt;
+m a -&gt; t m a
+</span><span class="hs-identifier hs-var">lift</span></span><span> </span><span class="annot"><span class="annottext">(Either Text Natural -&gt; StateT Sizes (Either Text) Natural)
+-&gt; Either Text Natural -&gt; StateT Sizes (Either Text) Natural
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either Text Natural
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Either Text Natural) -&gt; Text -&gt; Either Text Natural
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;can't determine the size of a recursive datatype: &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462854"><span class="hs-identifier hs-var">c</span></a></span><span>
+</span><span id="line-87"></span><span>                                          </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679462859"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679462859"><span class="hs-identifier hs-var">ctors</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Text -&gt; HashMap Text [Text] -&gt; Maybe [Text]
+forall k v. (Eq k, Hashable k) =&gt; k -&gt; HashMap k v -&gt; Maybe v
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462854"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DataEnv -&gt; HashMap Text [Text]
+</span><a href="ReWire.Synolon.Repr.html#deCtors"><span class="hs-identifier hs-var">deCtors</span></a></span><span> </span><span class="annot"><span class="annottext">DataEnv
+</span><a href="#local-6989586621679462834"><span class="hs-identifier hs-var">de</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-88"></span><span>                                                </span><span id="local-6989586621679462860"><span class="annot"><a href="#local-6989586621679462860"><span class="hs-identifier hs-var">ws</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; StateT Sizes (Either Text) Natural)
+-&gt; [Text] -&gt; StateT Sizes (Either Text) [Natural]
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Traversable t, Monad m) =&gt;
+(a -&gt; m b) -&gt; t a -&gt; m (t b)
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]
+</span><span class="hs-identifier hs-var">mapM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+-&gt; HashSet Ty -&gt; Ty -&gt; Text -&gt; StateT Sizes (Either Text) Natural
+</span><a href="#local-6989586621679462861"><span class="hs-identifier hs-var">ctorWidth</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679462837"><span class="hs-identifier hs-var">depth</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Ty -&gt; HashSet Ty -&gt; HashSet Ty
+forall a. (Eq a, Hashable a) =&gt; a -&gt; HashSet a -&gt; HashSet a
+</span><span class="hs-identifier hs-var">Set.insert</span></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462839"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">HashSet Ty
+</span><a href="#local-6989586621679462838"><span class="hs-identifier hs-var">visited</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462839"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679462859"><span class="hs-identifier hs-var">ctors</span></a></span><span>
+</span><span id="line-89"></span><span>                                                </span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">nbits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">genericLength</span></span><span> </span><span class="annot"><a href="#local-6989586621679462859"><span class="hs-identifier hs-type">ctors</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">+</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">maximum</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><a href="#local-6989586621679462860"><span class="hs-identifier hs-type">ws</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-90"></span><span>                                    </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyVarT"><span class="hs-identifier hs-type">TyVarT</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Ty]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span>              </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Natural -&gt; StateT Sizes (Either Text) Natural
+forall a. a -&gt; StateT Sizes (Either Text) a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-91"></span><span>                                    </span><span class="annot"><span class="annottext">(Ty, [Ty])
+</span><span class="hs-identifier">_</span></span><span>                           </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Either Text Natural -&gt; StateT Sizes (Either Text) Natural
+forall (m :: * -&gt; *) a. Monad m =&gt; m a -&gt; StateT Sizes m a
+forall (t :: (* -&gt; *) -&gt; * -&gt; *) (m :: * -&gt; *) a.
+(MonadTrans t, Monad m) =&gt;
+m a -&gt; t m a
+</span><span class="hs-identifier hs-var">lift</span></span><span> </span><span class="annot"><span class="annottext">(Either Text Natural -&gt; StateT Sizes (Either Text) Natural)
+-&gt; Either Text Natural -&gt; StateT Sizes (Either Text) Natural
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either Text Natural
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Either Text Natural) -&gt; Text -&gt; Either Text Natural
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;couldn't calculate the size of a type: &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Text
+</span><a href="#local-6989586621679462841"><span class="hs-identifier hs-var">pp</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462839"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-92"></span><span>                              </span><span class="annot"><span class="hs-identifier hs-type">modify</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map.insert</span></span><span> </span><span class="annot"><a href="#local-6989586621679462839"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679462845"><span class="hs-identifier hs-type">sz</span></a></span><span>
+</span><span id="line-93"></span><span>                              </span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span> </span><span class="annot"><a href="#local-6989586621679462845"><span class="hs-identifier hs-type">sz</span></a></span><span>
+</span><span id="line-94"></span><span>
+</span><span id="line-95"></span><span>            </span><span class="hs-comment">-- A constructor's payload width at a concrete instance of its</span><span>
+</span><span id="line-96"></span><span>            </span><span class="hs-comment">-- datatype: the field types, with the datatype's parameters</span><span>
+</span><span id="line-97"></span><span>            </span><span class="hs-comment">-- matched against the instance.</span><span>
+</span><span id="line-98"></span><span>            </span><span class="annot"><a href="#local-6989586621679462861"><span class="hs-identifier hs-type">ctorWidth</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashSet</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#DataConId"><span class="hs-identifier hs-type">DataConId</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StateT</span></span><span> </span><span class="annot"><a href="ReWire.Synolon.Repr.html#Sizes"><span class="hs-identifier hs-type">Sizes</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Natural</span></span><span>
+</span><span id="line-99"></span><span>            </span><span id="local-6989586621679462861"><span class="annot"><span class="annottext">ctorWidth :: Int
+-&gt; HashSet Ty -&gt; Ty -&gt; Text -&gt; StateT Sizes (Either Text) Natural
+</span><a href="#local-6989586621679462861"><span class="hs-identifier hs-var hs-var">ctorWidth</span></a></span></span><span> </span><span id="local-6989586621679462867"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679462867"><span class="hs-identifier hs-var">depth</span></a></span></span><span> </span><span id="local-6989586621679462868"><span class="annot"><span class="annottext">HashSet Ty
+</span><a href="#local-6989586621679462868"><span class="hs-identifier hs-var">visited</span></a></span></span><span> </span><span id="local-6989586621679462869"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462869"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621679462870"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462870"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Text -&gt; HashMap Text Sig -&gt; Maybe Sig
+forall k v. (Eq k, Hashable k) =&gt; k -&gt; HashMap k v -&gt; Maybe v
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462870"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DataEnv -&gt; HashMap Text Sig
+</span><a href="ReWire.Synolon.Repr.html#deCtorSig"><span class="hs-identifier hs-var">deCtorSig</span></a></span><span> </span><span class="annot"><span class="annottext">DataEnv
+</span><a href="#local-6989586621679462834"><span class="hs-identifier hs-var">de</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-100"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Sig"><span class="hs-identifier hs-type">Sig</span></a></span><span> </span><span class="annot"><span class="annottext">[TyVar]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679462872"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462872"><span class="hs-identifier hs-var">ct</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-101"></span><span>                        </span><span class="hs-keyword">let</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679462873"><span class="annot"><span class="annottext">[Ty]
+</span><a href="#local-6989586621679462873"><span class="hs-identifier hs-var hs-var">targs</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679462874"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462874"><span class="hs-identifier hs-var hs-var">tres</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Ty -&gt; ([Ty], Ty)
+</span><a href="ReWire.Eidos.Types.html#flattenArrow"><span class="hs-identifier hs-var">flattenArrow</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462872"><span class="hs-identifier hs-var">ct</span></a></span><span>
+</span><span id="line-102"></span><span>                        </span><span id="local-6989586621679462875"><span class="annot"><a href="#local-6989586621679462875"><span class="hs-identifier hs-var">sub</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Either Text (HashMap TyVar Ty)
+-&gt; StateT Sizes (Either Text) (HashMap TyVar Ty)
+forall (m :: * -&gt; *) a. Monad m =&gt; m a -&gt; StateT Sizes m a
+forall (t :: (* -&gt; *) -&gt; * -&gt; *) (m :: * -&gt; *) a.
+(MonadTrans t, Monad m) =&gt;
+m a -&gt; t m a
+</span><span class="hs-identifier hs-var">lift</span></span><span> </span><span class="annot"><span class="annottext">(Either Text (HashMap TyVar Ty)
+ -&gt; StateT Sizes (Either Text) (HashMap TyVar Ty))
+-&gt; Either Text (HashMap TyVar Ty)
+-&gt; StateT Sizes (Either Text) (HashMap TyVar Ty)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Ty -&gt; Either Text (HashMap TyVar Ty)
+</span><a href="ReWire.Synolon.Repr.html#matchTy"><span class="hs-identifier hs-var">matchTy</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462874"><span class="hs-identifier hs-var">tres</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462869"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-103"></span><span>                        </span><span class="annot"><span class="hs-identifier hs-type">sum</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">mapM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679462835"><span class="hs-identifier hs-type">go</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679462867"><span class="hs-identifier hs-type">depth</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679462868"><span class="hs-identifier hs-type">visited</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">.</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Types.html#substTv"><span class="hs-identifier hs-type">substTv</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679462875"><span class="hs-identifier hs-type">sub</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679462873"><span class="hs-identifier hs-type">targs</span></a></span><span>
+</span><span id="line-104"></span><span>                  </span><span class="annot"><span class="annottext">Maybe Sig
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>         </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Natural -&gt; StateT Sizes (Either Text) Natural
+forall a. a -&gt; StateT Sizes (Either Text) a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-105"></span><span>
+</span><span id="line-106"></span><span>            </span><span class="hs-comment">-- Nesting depth of datatype unfoldings, far beyond any real</span><span>
+</span><span id="line-107"></span><span>            </span><span class="hs-comment">-- program's.</span><span>
+</span><span id="line-108"></span><span>            </span><span class="annot"><a href="#local-6989586621679462836"><span class="hs-identifier hs-type">depth0</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-109"></span><span>            </span><span id="local-6989586621679462836"><span class="annot"><span class="annottext">depth0 :: Int
+</span><a href="#local-6989586621679462836"><span class="hs-identifier hs-var hs-var">depth0</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">10000</span></span><span>
+</span><span id="line-110"></span><span>
+</span><span id="line-111"></span><span>            </span><span class="annot"><a href="#local-6989586621679462841"><span class="hs-identifier hs-type">pp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-112"></span><span>            </span><span id="local-6989586621679462841"><span class="annot"><span class="annottext">pp :: Ty -&gt; Text
+</span><a href="#local-6989586621679462841"><span class="hs-identifier hs-var hs-var">pp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Text
+forall a. Pretty a =&gt; a -&gt; Text
+</span><span class="hs-identifier hs-var">prettyPrint</span></span><span> </span><span class="annot"><span class="annottext">(Ty -&gt; Text) -&gt; (Ty -&gt; Ty) -&gt; Ty -&gt; Text
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Ty
+forall d. Data d =&gt; d -&gt; d
+</span><span class="hs-identifier hs-var">Ann.unAnn</span></span><span>
+</span><span id="line-113"></span><span>
+</span><span id="line-114"></span><span class="annot"><span class="hs-comment">-- | Match a constructor's declared result type against a concrete instance.</span></span><span>
+</span><span id="line-115"></span><span class="annot"><a href="ReWire.Synolon.Repr.html#matchTy"><span class="hs-identifier hs-type">matchTy</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyVar"><span class="hs-identifier hs-type">TyVar</span></a></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-116"></span><span id="matchTy"><span class="annot"><span class="annottext">matchTy :: Ty -&gt; Ty -&gt; Either Text (HashMap TyVar Ty)
+</span><a href="ReWire.Synolon.Repr.html#matchTy"><span class="hs-identifier hs-var hs-var">matchTy</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyApp"><span class="hs-identifier hs-type">TyApp</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679462880"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462880"><span class="hs-identifier hs-var">t1</span></a></span></span><span> </span><span id="local-6989586621679462881"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462881"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyApp"><span class="hs-identifier hs-type">TyApp</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679462882"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462882"><span class="hs-identifier hs-var">t1'</span></a></span></span><span> </span><span id="local-6989586621679462883"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462883"><span class="hs-identifier hs-var">t2'</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-117"></span><span>      </span><span id="local-6989586621679462884"><span class="annot"><a href="#local-6989586621679462884"><span class="hs-identifier hs-var">s1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Ty -&gt; Ty -&gt; Either Text (HashMap TyVar Ty)
+</span><a href="ReWire.Synolon.Repr.html#matchTy"><span class="hs-identifier hs-var">matchTy</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462880"><span class="hs-identifier hs-var">t1</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462882"><span class="hs-identifier hs-var">t1'</span></a></span><span>
+</span><span id="line-118"></span><span>      </span><span id="local-6989586621679462885"><span class="annot"><a href="#local-6989586621679462885"><span class="hs-identifier hs-var">s2</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><a href="ReWire.Synolon.Repr.html#matchTy"><span class="hs-identifier hs-type">matchTy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679462881"><span class="hs-identifier hs-type">t2</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679462883"><span class="hs-identifier hs-type">t2'</span></a></span><span>
+</span><span id="line-119"></span><span>      </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="hs-identifier hs-type">and</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Map.intersectionWith</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">(==)</span></span><span> </span><span class="annot"><a href="#local-6989586621679462884"><span class="hs-identifier hs-type">s1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679462885"><span class="hs-identifier hs-type">s2</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-120"></span><span>            </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map.union</span></span><span> </span><span class="annot"><a href="#local-6989586621679462884"><span class="hs-identifier hs-type">s1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679462885"><span class="hs-identifier hs-type">s2</span></a></span><span>
+</span><span id="line-121"></span><span>            </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span class="annot"><span class="hs-string">&quot;inconsistent assignment of a type variable in a constructor signature (rwc bug)&quot;</span></span><span>
+</span><span id="line-122"></span><span class="annot"><a href="ReWire.Synolon.Repr.html#matchTy"><span class="hs-identifier hs-var">matchTy</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#TyVarT"><span class="hs-identifier hs-type">TyVarT</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679462889"><span class="annot"><span class="annottext">TyVar
+</span><a href="#local-6989586621679462889"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679462890"><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462890"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HashMap TyVar Ty -&gt; Either Text (HashMap TyVar Ty)
+forall a. a -&gt; Either Text a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(HashMap TyVar Ty -&gt; Either Text (HashMap TyVar Ty))
+-&gt; HashMap TyVar Ty -&gt; Either Text (HashMap TyVar Ty)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TyVar -&gt; Ty -&gt; HashMap TyVar Ty
+forall k v. Hashable k =&gt; k -&gt; v -&gt; HashMap k v
+</span><span class="hs-identifier hs-var">Map.singleton</span></span><span> </span><span class="annot"><span class="annottext">TyVar
+</span><a href="#local-6989586621679462889"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><a href="#local-6989586621679462890"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-123"></span><span class="annot"><a href="ReWire.Synolon.Repr.html#matchTy"><span class="hs-identifier hs-var">matchTy</span></a></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Ty
+</span><span class="hs-identifier">_</span></span><span>            </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HashMap TyVar Ty -&gt; Either Text (HashMap TyVar Ty)
+forall a. a -&gt; Either Text a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">HashMap TyVar Ty
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-124"></span><span>
+</span><span id="line-125"></span><span class="annot"><span class="hs-comment">-- | The tuple type constructors, @()@ included (the zero-component tuple).</span></span><span>
+</span><span id="line-126"></span><span class="annot"><a href="ReWire.Synolon.Repr.html#isTupleCon"><span class="hs-identifier hs-type">isTupleCon</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-127"></span><span id="isTupleCon"><span class="annot"><span class="annottext">isTupleCon :: Text -&gt; Bool
+</span><a href="ReWire.Synolon.Repr.html#isTupleCon"><span class="hs-identifier hs-var hs-var">isTupleCon</span></a></span></span><span> </span><span id="local-6989586621679462892"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462892"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Int
+</span><span class="hs-identifier hs-var">T.length</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462892"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Char
+Text -&gt; Char
+</span><span class="hs-identifier hs-var">T.head</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462892"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'('</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Char
+Text -&gt; Char
+</span><span class="hs-identifier hs-var">T.last</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462892"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">')'</span></span><span>
+</span><span id="line-128"></span><span>            </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; Text -&gt; Bool
+</span><span class="hs-identifier hs-var">T.all</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">','</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text
+Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.init</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; Text -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text
+Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.tail</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679462892"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-129"></span></pre></body></html>

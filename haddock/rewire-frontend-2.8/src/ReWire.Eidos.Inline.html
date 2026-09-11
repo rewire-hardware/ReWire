@@ -1,0 +1,198 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- | The INLINE-attribute inliner (the retired Crust pass's successor):</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--   every occurrence of an INLINE-annotated definition is replaced by its</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--   body (as a lambda telescope over its parameters &#8212; application sites</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--   become beta redexes for the downstream partial evaluator), with every</span><span>
+</span><span id="line-9"></span><span class="hs-comment">--   inserted copy refreshed through the audited clone primitive. Runs on</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--   monomorphic programs (after 'ReWire.Eidos.Spec.specialize'): inlining</span><span>
+</span><span id="line-11"></span><span class="hs-comment">--   under a type-argument spine would strand the arguments on a</span><span>
+</span><span id="line-12"></span><span class="hs-comment">--   non-variable head.</span><span>
+</span><span id="line-13"></span><span class="hs-comment">--</span><span>
+</span><span id="line-14"></span><span class="hs-comment">--   INLINE definitions referencing other INLINE definitions are expanded</span><span>
+</span><span id="line-15"></span><span class="hs-comment">--   to closed form first (depth-first, memoized); a reference cycle among</span><span>
+</span><span id="line-16"></span><span class="hs-comment">--   them is rejected with the retired pass's diagnostic. The definitions</span><span>
+</span><span id="line-17"></span><span class="hs-comment">--   themselves are kept (dead ones fall to the downstream purge).</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.Eidos.Inline.html"><span class="hs-identifier">ReWire.Eidos.Inline</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Inline.html#inlineAnnotated"><span class="hs-identifier">inlineAnnotated</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Error</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">AstError</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">MonadError</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">failAt</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.Eidos.Subst.html"><span class="hs-identifier">ReWire.Eidos.Subst</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Subst.html#nextUniq"><span class="hs-identifier">nextUniq</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Eidos.Subst.html#occCounts"><span class="hs-identifier">occCounts</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Eidos.Subst.html#substVarsRefreshing"><span class="hs-identifier">substVarsRefreshing</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html"><span class="hs-identifier">ReWire.Eidos.Syntax</span></a></span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">foldM</span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.State.Strict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">StateT</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">evalStateT</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.IntMap.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">IM</span></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.IntSet</span></span><span>        </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">IS</span></span><span>
+</span><span id="line-29"></span><span>
+</span><span id="line-30"></span><span class="annot"><a href="ReWire.Eidos.Inline.html#inlineAnnotated"><span class="hs-identifier hs-type">inlineAnnotated</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679453234"><span class="annot"><a href="#local-6989586621679453234"><span class="hs-identifier hs-type">m</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">AstError</span></span><span> </span><span class="annot"><a href="#local-6989586621679453234"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Program"><span class="hs-identifier hs-type">Program</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679453234"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Program"><span class="hs-identifier hs-type">Program</span></a></span><span>
+</span><span id="line-31"></span><span id="inlineAnnotated"><span class="annot"><span class="annottext">inlineAnnotated :: forall (m :: * -&gt; *). MonadError AstError m =&gt; Program -&gt; m Program
+</span><a href="ReWire.Eidos.Inline.html#inlineAnnotated"><span class="hs-identifier hs-var hs-var">inlineAnnotated</span></a></span></span><span> </span><span id="local-6989586621679453360"><span class="annot"><span class="annottext">p :: Program
+</span><a href="#local-6989586621679453360"><span class="hs-identifier hs-var">p</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Program"><span class="hs-identifier hs-type">Program</span></a></span><span> </span><span id="local-6989586621679453362"><span class="annot"><span class="annottext">[DataDefn]
+</span><a href="#local-6989586621679453362"><span class="hs-identifier hs-var">datas</span></a></span></span><span> </span><span id="local-6989586621679453363"><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679453363"><span class="hs-identifier hs-var">defns</span></a></span></span><span> </span><span id="local-6989586621679453364"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679453364"><span class="hs-identifier hs-var">top</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">StateT Uniq m Program -&gt; Uniq -&gt; m Program
+forall (m :: * -&gt; *) s a. Monad m =&gt; StateT s m a -&gt; s -&gt; m a
+</span><span class="hs-identifier hs-var">evalStateT</span></span><span> </span><span class="annot"><span class="annottext">StateT Uniq m Program
+</span><a href="#local-6989586621679453365"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">(Uniq -&gt; m Program) -&gt; Uniq -&gt; m Program
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Program -&gt; Uniq
+forall a. Data a =&gt; a -&gt; Uniq
+</span><a href="ReWire.Eidos.Subst.html#nextUniq"><span class="hs-identifier hs-var">nextUniq</span></a></span><span> </span><span class="annot"><span class="annottext">Program
+</span><a href="#local-6989586621679453360"><span class="hs-identifier hs-var">p</span></a></span><span>
+</span><span id="line-32"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679453366"><span class="hs-identifier hs-type">inls</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IM.IntMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span>
+</span><span id="line-33"></span><span>            </span><span id="local-6989586621679453366"><span class="annot"><span class="annottext">inls :: IntMap Defn
+</span><a href="#local-6989586621679453366"><span class="hs-identifier hs-var hs-var">inls</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(Uniq, Defn)] -&gt; IntMap Defn
+forall a. [(Uniq, a)] -&gt; IntMap a
+</span><span class="hs-identifier hs-var">IM.fromList</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Id -&gt; Uniq
+</span><a href="ReWire.Eidos.Syntax.html#idUniq"><span class="hs-identifier hs-var">idUniq</span></a></span><span> </span><span class="annot"><span class="annottext">(Id -&gt; Uniq) -&gt; Id -&gt; Uniq
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Defn -&gt; Id
+</span><a href="ReWire.Eidos.Syntax.html#defnId"><span class="hs-identifier hs-var">defnId</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453370"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453370"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679453370"><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453370"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Defn]
+</span><a href="#local-6989586621679453363"><span class="hs-identifier hs-var">defns</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Defn -&gt; Maybe DefnAttr
+</span><a href="ReWire.Eidos.Syntax.html#defnAttr"><span class="hs-identifier hs-var">defnAttr</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453370"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe DefnAttr -&gt; Maybe DefnAttr -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">DefnAttr -&gt; Maybe DefnAttr
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">DefnAttr
+</span><a href="ReWire.Eidos.Syntax.html#Inline"><span class="hs-identifier hs-var">Inline</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span>            </span><span class="annot"><a href="#local-6989586621679453365"><span class="hs-identifier hs-type">go</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StateT</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Uniq"><span class="hs-identifier hs-type">Uniq</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453234"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Program"><span class="hs-identifier hs-type">Program</span></a></span><span>
+</span><span id="line-36"></span><span>            </span><span id="local-6989586621679453365"><span class="annot"><span class="annottext">go :: StateT Uniq m Program
+</span><a href="#local-6989586621679453365"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-37"></span><span>                  </span><span id="local-6989586621679453373"><span class="annot"><a href="#local-6989586621679453373"><span class="hs-identifier hs-var">table</span></a></span></span><span>  </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(IntMap Exp -&gt; Uniq -&gt; StateT Uniq m (IntMap Exp))
+-&gt; IntMap Exp -&gt; [Uniq] -&gt; StateT Uniq m (IntMap Exp)
+forall (t :: * -&gt; *) (m :: * -&gt; *) b a.
+(Foldable t, Monad m) =&gt;
+(b -&gt; a -&gt; m b) -&gt; b -&gt; t a -&gt; m b
+</span><span class="hs-identifier hs-var">foldM</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679453374"><span class="annot"><span class="annottext">IntMap Exp
+</span><a href="#local-6989586621679453374"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span id="local-6989586621679453375"><span class="annot"><span class="annottext">Uniq
+</span><a href="#local-6989586621679453375"><span class="hs-identifier hs-var">u</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">IntMap Exp -&gt; IntSet -&gt; Uniq -&gt; StateT Uniq m (IntMap Exp)
+</span><a href="#local-6989586621679453376"><span class="hs-identifier hs-var">expand</span></a></span><span> </span><span class="annot"><span class="annottext">IntMap Exp
+</span><a href="#local-6989586621679453374"><span class="hs-identifier hs-var">acc</span></a></span><span> </span><span class="annot"><span class="annottext">IntSet
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span> </span><span class="annot"><span class="annottext">Uniq
+</span><a href="#local-6989586621679453375"><span class="hs-identifier hs-var">u</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">IntMap Exp
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span> </span><span class="annot"><span class="annottext">([Uniq] -&gt; StateT Uniq m (IntMap Exp))
+-&gt; [Uniq] -&gt; StateT Uniq m (IntMap Exp)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">IntMap Defn -&gt; [Uniq]
+forall a. IntMap a -&gt; [Uniq]
+</span><span class="hs-identifier hs-var">IM.keys</span></span><span> </span><span class="annot"><span class="annottext">IntMap Defn
+</span><a href="#local-6989586621679453366"><span class="hs-identifier hs-var">inls</span></a></span><span>
+</span><span id="line-38"></span><span>                  </span><span id="local-6989586621679453378"><span class="annot"><a href="#local-6989586621679453378"><span class="hs-identifier hs-var">defns'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="hs-identifier hs-type">mapM</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679453380"><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453380"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679453381"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679453381"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453380"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="hs-special">{</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#defnBody"><span class="hs-identifier hs-var">defnBody</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="#local-6989586621679453381"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Defn) -&gt; StateT Uniq m Exp -&gt; StateT Uniq m Defn
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">IntMap Exp -&gt; Exp -&gt; StateT Uniq m Exp
+forall (m :: * -&gt; *).
+MonadState Uniq m =&gt;
+IntMap Exp -&gt; Exp -&gt; m Exp
+</span><a href="ReWire.Eidos.Subst.html#substVarsRefreshing"><span class="hs-identifier hs-var">substVarsRefreshing</span></a></span><span> </span><span class="annot"><span class="annottext">IntMap Exp
+</span><a href="#local-6989586621679453373"><span class="hs-identifier hs-var">table</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Defn -&gt; Exp
+</span><a href="ReWire.Eidos.Syntax.html#defnBody"><span class="hs-identifier hs-var">defnBody</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453380"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679453363"><span class="hs-identifier hs-type">defns</span></a></span><span>
+</span><span id="line-39"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Program"><span class="hs-identifier hs-type">Program</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453362"><span class="hs-identifier hs-type">datas</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453378"><span class="hs-identifier hs-type">defns'</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453364"><span class="hs-identifier hs-type">top</span></a></span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span>            </span><span class="hs-comment">-- The definition as a substitution payload: a lambda telescope</span><span>
+</span><span id="line-42"></span><span>            </span><span class="hs-comment">-- over its parameters.</span><span>
+</span><span id="line-43"></span><span>            </span><span class="annot"><a href="#local-6989586621679453384"><span class="hs-identifier hs-type">payload</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-44"></span><span>            </span><span id="local-6989586621679453384"><span class="annot"><span class="annottext">payload :: Defn -&gt; Exp
+</span><a href="#local-6989586621679453384"><span class="hs-identifier hs-var hs-var">payload</span></a></span></span><span> </span><span id="local-6989586621679453385"><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453385"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Id -&gt; Exp -&gt; Exp) -&gt; Exp -&gt; [Id] -&gt; Exp
+forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) a b.
+Foldable t =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldr</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Annote -&gt; Id -&gt; Exp -&gt; Exp
+</span><a href="ReWire.Eidos.Syntax.html#Lam"><span class="hs-identifier hs-var">Lam</span></a></span><span> </span><span class="annot"><span class="annottext">(Annote -&gt; Id -&gt; Exp -&gt; Exp) -&gt; Annote -&gt; Id -&gt; Exp -&gt; Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Defn -&gt; Annote
+</span><a href="ReWire.Eidos.Syntax.html#defnAnnote"><span class="hs-identifier hs-var">defnAnnote</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453385"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Defn -&gt; Exp
+</span><a href="ReWire.Eidos.Syntax.html#defnBody"><span class="hs-identifier hs-var">defnBody</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453385"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([Id] -&gt; Exp) -&gt; [Id] -&gt; Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Defn -&gt; [Id]
+</span><a href="ReWire.Eidos.Syntax.html#defnParams"><span class="hs-identifier hs-var">defnParams</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453385"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span>            </span><span class="hs-comment">-- Expand one INLINE definition to closed form (no INLINE</span><span>
+</span><span id="line-47"></span><span>            </span><span class="hs-comment">-- references remain), depth-first over its INLINE dependencies.</span><span>
+</span><span id="line-48"></span><span>            </span><span class="annot"><a href="#local-6989586621679453376"><span class="hs-identifier hs-type">expand</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IM.IntMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IS.IntSet</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Uniq"><span class="hs-identifier hs-type">Uniq</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StateT</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Uniq"><span class="hs-identifier hs-type">Uniq</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453234"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IM.IntMap</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span>            </span><span id="local-6989586621679453376"><span class="annot"><span class="annottext">expand :: IntMap Exp -&gt; IntSet -&gt; Uniq -&gt; StateT Uniq m (IntMap Exp)
+</span><a href="#local-6989586621679453376"><span class="hs-identifier hs-var hs-var">expand</span></a></span></span><span> </span><span id="local-6989586621679453390"><span class="annot"><span class="annottext">IntMap Exp
+</span><a href="#local-6989586621679453390"><span class="hs-identifier hs-var">table</span></a></span></span><span> </span><span id="local-6989586621679453391"><span class="annot"><span class="annottext">IntSet
+</span><a href="#local-6989586621679453391"><span class="hs-identifier hs-var">stack</span></a></span></span><span> </span><span id="local-6989586621679453392"><span class="annot"><span class="annottext">Uniq
+</span><a href="#local-6989586621679453392"><span class="hs-identifier hs-var">u</span></a></span></span><span>
+</span><span id="line-50"></span><span>                  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Uniq -&gt; IntMap Exp -&gt; Bool
+forall a. Uniq -&gt; IntMap a -&gt; Bool
+</span><span class="hs-identifier hs-var">IM.member</span></span><span> </span><span class="annot"><span class="annottext">Uniq
+</span><a href="#local-6989586621679453392"><span class="hs-identifier hs-var">u</span></a></span><span> </span><span class="annot"><span class="annottext">IntMap Exp
+</span><a href="#local-6989586621679453390"><span class="hs-identifier hs-var">table</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IntMap Exp -&gt; StateT Uniq m (IntMap Exp)
+forall a. a -&gt; StateT Uniq m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">IntMap Exp
+</span><a href="#local-6989586621679453390"><span class="hs-identifier hs-var">table</span></a></span><span>
+</span><span id="line-51"></span><span>                  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Uniq -&gt; IntSet -&gt; Bool
+</span><span class="hs-identifier hs-var">IS.member</span></span><span> </span><span class="annot"><span class="annottext">Uniq
+</span><a href="#local-6989586621679453392"><span class="hs-identifier hs-var">u</span></a></span><span> </span><span class="annot"><span class="annottext">IntSet
+</span><a href="#local-6989586621679453391"><span class="hs-identifier hs-var">stack</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Text -&gt; StateT Uniq m (IntMap Exp)
+forall (m :: * -&gt; *) an a.
+(MonadError AstError m, Annotation an) =&gt;
+an -&gt; Text -&gt; m a
+</span><span class="hs-identifier hs-var">failAt</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Defn -&gt; Annote
+</span><a href="ReWire.Eidos.Syntax.html#defnAnnote"><span class="hs-identifier hs-var">defnAnnote</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453395"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;INLINE definition expansion not terminating (mutually recursive definitions?).&quot;</span></span><span>
+</span><span id="line-52"></span><span>                  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>         </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-53"></span><span>                        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679453396"><span class="annot"><span class="annottext">deps :: [Uniq]
+</span><a href="#local-6989586621679453396"><span class="hs-identifier hs-var hs-var hs-var">deps</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IntSet -&gt; [Uniq]
+</span><span class="hs-identifier hs-var">IS.toList</span></span><span> </span><span class="annot"><span class="annottext">(IntSet -&gt; [Uniq]) -&gt; IntSet -&gt; [Uniq]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">IntMap Uniq -&gt; IntSet
+forall a. IntMap a -&gt; IntSet
+</span><span class="hs-identifier hs-var">IM.keysSet</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Exp -&gt; IntMap Uniq
+</span><a href="ReWire.Eidos.Subst.html#occCounts"><span class="hs-identifier hs-var">occCounts</span></a></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; IntMap Uniq) -&gt; Exp -&gt; IntMap Uniq
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Defn -&gt; Exp
+</span><a href="#local-6989586621679453384"><span class="hs-identifier hs-var">payload</span></a></span><span> </span><span class="annot"><span class="annottext">Defn
+</span><a href="#local-6989586621679453395"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">IntSet -&gt; IntSet -&gt; IntSet
+</span><span class="hs-operator hs-var">`IS.intersection`</span></span><span> </span><span class="annot"><span class="annottext">IntMap Defn -&gt; IntSet
+forall a. IntMap a -&gt; IntSet
+</span><span class="hs-identifier hs-var">IM.keysSet</span></span><span> </span><span class="annot"><span class="annottext">IntMap Defn
+</span><a href="#local-6989586621679453366"><span class="hs-identifier hs-var">inls</span></a></span><span>
+</span><span id="line-54"></span><span>                        </span><span id="local-6989586621679453400"><span class="annot"><a href="#local-6989586621679453400"><span class="hs-identifier hs-var">table'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(IntMap Exp -&gt; Uniq -&gt; StateT Uniq m (IntMap Exp))
+-&gt; IntMap Exp -&gt; [Uniq] -&gt; StateT Uniq m (IntMap Exp)
+forall (t :: * -&gt; *) (m :: * -&gt; *) b a.
+(Foldable t, Monad m) =&gt;
+(b -&gt; a -&gt; m b) -&gt; b -&gt; t a -&gt; m b
+</span><span class="hs-identifier hs-var">foldM</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span> </span><span id="local-6989586621679453401"><span class="annot"><span class="annottext">IntMap Exp
+</span><a href="#local-6989586621679453401"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span id="local-6989586621679453402"><span class="annot"><span class="annottext">Uniq
+</span><a href="#local-6989586621679453402"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">IntMap Exp -&gt; IntSet -&gt; Uniq -&gt; StateT Uniq m (IntMap Exp)
+</span><a href="#local-6989586621679453376"><span class="hs-identifier hs-var">expand</span></a></span><span> </span><span class="annot"><span class="annottext">IntMap Exp
+</span><a href="#local-6989586621679453401"><span class="hs-identifier hs-var">acc</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Uniq -&gt; IntSet -&gt; IntSet
+</span><span class="hs-identifier hs-var">IS.insert</span></span><span> </span><span class="annot"><span class="annottext">Uniq
+</span><a href="#local-6989586621679453392"><span class="hs-identifier hs-var">u</span></a></span><span> </span><span class="annot"><span class="annottext">IntSet
+</span><a href="#local-6989586621679453391"><span class="hs-identifier hs-var">stack</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Uniq
+</span><a href="#local-6989586621679453402"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">IntMap Exp
+</span><a href="#local-6989586621679453390"><span class="hs-identifier hs-var">table</span></a></span><span> </span><span class="annot"><span class="annottext">[Uniq]
+</span><a href="#local-6989586621679453396"><span class="hs-identifier hs-var">deps</span></a></span><span>
+</span><span id="line-55"></span><span>                        </span><span id="local-6989586621679453404"><span class="annot"><a href="#local-6989586621679453404"><span class="hs-identifier hs-var">e'</span></a></span></span><span>     </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><a href="ReWire.Eidos.Subst.html#substVarsRefreshing"><span class="hs-identifier hs-type">substVarsRefreshing</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IM.restrictKeys</span></span><span> </span><span class="annot"><a href="#local-6989586621679453400"><span class="hs-identifier hs-type">table'</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">IS.fromList</span></span><span> </span><span class="annot"><a href="#local-6989586621679453396"><span class="hs-identifier hs-type">deps</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><a href="#local-6989586621679453384"><span class="hs-identifier hs-type">payload</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453395"><span class="hs-identifier hs-type">d</span></a></span><span>
+</span><span id="line-56"></span><span>                        </span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">IM.insert</span></span><span> </span><span class="annot"><a href="#local-6989586621679453392"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453404"><span class="hs-identifier hs-type">e'</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679453400"><span class="hs-identifier hs-type">table'</span></a></span><span>
+</span><span id="line-57"></span><span>                  </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679453395"><span class="annot"><span class="annottext">d :: Defn
+</span><a href="#local-6989586621679453395"><span class="hs-identifier hs-var hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IntMap Defn
+</span><a href="#local-6989586621679453366"><span class="hs-identifier hs-var">inls</span></a></span><span> </span><span class="annot"><span class="annottext">IntMap Defn -&gt; Uniq -&gt; Defn
+forall a. IntMap a -&gt; Uniq -&gt; a
+</span><span class="hs-operator hs-var">IM.!</span></span><span> </span><span class="annot"><span class="annottext">Uniq
+</span><a href="#local-6989586621679453392"><span class="hs-identifier hs-var">u</span></a></span><span>
+</span><span id="line-58"></span></pre></body></html>

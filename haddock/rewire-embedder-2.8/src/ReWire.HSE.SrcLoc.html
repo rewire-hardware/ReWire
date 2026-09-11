@@ -1,0 +1,153 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-orphans -Wno-missing-methods #-}</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- | The boundary between haskell-src-exts source locations and ReWire's native</span><span>
+</span><span id="line-4"></span><span class="hs-comment">--   'Annote'/'Span'. It lives in the HSE layer so the base annotation module</span><span>
+</span><span id="line-5"></span><span class="hs-comment">--   (ReWire.Annotation) and the diagnostics renderer (ReWire.Error) carry no</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--   haskell-src-exts dependency: only modules that actually manipulate the</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--   haskell-src-exts AST import this conversion glue.</span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.HSE.SrcLoc.html"><span class="hs-identifier">ReWire.HSE.SrcLoc</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-9"></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Annotation</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Annote</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Annotation</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Span</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">srcAnnote</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">primSpan</span></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.Exts.SrcLoc</span></span><span>
+</span><span id="line-13"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">SrcLoc</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">SrcInfo</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">SrcSpanInfo</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">SrcSpan</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">noLoc</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">noInfoSpan</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">mkSrcSpan</span></span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="annot"><span class="hs-comment">-- | Build an annotation from a haskell-src-exts source span.</span></span><span>
+</span><span id="line-17"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotation</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SrcSpanInfo</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-18"></span><span>      </span><span id="local-6989586621679319982"><span class="annot"><span class="annottext">toAnnote :: SrcSpanInfo -&gt; Annote
+</span><a href="#local-6989586621679319982"><span class="hs-identifier hs-var hs-var hs-var">toAnnote</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo -&gt; Annote
+</span><a href="ReWire.HSE.SrcLoc.html#locAnnote"><span class="hs-identifier hs-var">locAnnote</span></a></span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotation</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SrcLoc</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-21"></span><span>      </span><span id="local-6989586621679319987"><span class="annot"><span class="annottext">toAnnote :: SrcLoc -&gt; Annote
+</span><span class="hs-identifier hs-var hs-var hs-var">toAnnote</span></span></span><span> </span><span id="local-6989586621679319988"><span class="annot"><span class="annottext">SrcLoc
+</span><a href="#local-6989586621679319988"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo -&gt; Annote
+</span><a href="ReWire.HSE.SrcLoc.html#locAnnote"><span class="hs-identifier hs-var">locAnnote</span></a></span><span> </span><span class="annot"><span class="annottext">(SrcSpanInfo -&gt; Annote) -&gt; SrcSpanInfo -&gt; Annote
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SrcSpan -&gt; SrcSpanInfo
+</span><span class="hs-identifier hs-var">noInfoSpan</span></span><span> </span><span class="annot"><span class="annottext">(SrcSpan -&gt; SrcSpanInfo) -&gt; SrcSpan -&gt; SrcSpanInfo
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SrcLoc -&gt; SrcLoc -&gt; SrcSpan
+</span><span class="hs-identifier hs-var">mkSrcSpan</span></span><span> </span><span class="annot"><span class="annottext">SrcLoc
+</span><a href="#local-6989586621679319988"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">SrcLoc
+</span><a href="#local-6989586621679319988"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="annot"><a href="ReWire.HSE.SrcLoc.html#locAnnote"><span class="hs-identifier hs-type">locAnnote</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SrcSpanInfo</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span>
+</span><span id="line-24"></span><span id="locAnnote"><span class="annot"><span class="annottext">locAnnote :: SrcSpanInfo -&gt; Annote
+</span><a href="ReWire.HSE.SrcLoc.html#locAnnote"><span class="hs-identifier hs-var hs-var">locAnnote</span></a></span></span><span> </span><span id="local-6989586621679319989"><span class="annot"><span class="annottext">SrcSpanInfo
+</span><a href="#local-6989586621679319989"><span class="hs-identifier hs-var">ssi</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">let</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Span</span></span><span> </span><span id="local-6989586621679319990"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679319990"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679319991"><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679319991"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621679319992"><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679319992"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo -&gt; Span
+</span><a href="ReWire.HSE.SrcLoc.html#fromSrcSpanInfo"><span class="hs-identifier hs-var">fromSrcSpanInfo</span></a></span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo
+</span><a href="#local-6989586621679319989"><span class="hs-identifier hs-var">ssi</span></a></span><span> </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; (Int, Int) -&gt; (Int, Int) -&gt; Annote
+</span><span class="hs-identifier hs-var">srcAnnote</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679319990"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679319991"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679319992"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="annot"><a href="ReWire.HSE.SrcLoc.html#fromSrcSpanInfo"><span class="hs-identifier hs-type">fromSrcSpanInfo</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SrcSpanInfo</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Span</span></span><span>
+</span><span id="line-27"></span><span id="fromSrcSpanInfo"><span class="annot"><span class="annottext">fromSrcSpanInfo :: SrcSpanInfo -&gt; Span
+</span><a href="ReWire.HSE.SrcLoc.html#fromSrcSpanInfo"><span class="hs-identifier hs-var hs-var">fromSrcSpanInfo</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SrcSpanInfo</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SrcSpan</span></span><span> </span><span id="local-6989586621679319996"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679319996"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679319997"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679319997"><span class="hs-identifier hs-var">sl</span></a></span></span><span> </span><span id="local-6989586621679319998"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679319998"><span class="hs-identifier hs-var">sc</span></a></span></span><span> </span><span id="local-6989586621679319999"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679319999"><span class="hs-identifier hs-var">el</span></a></span></span><span> </span><span id="local-6989586621679320000"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679320000"><span class="hs-identifier hs-var">ec</span></a></span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[SrcSpan]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; (Int, Int) -&gt; (Int, Int) -&gt; Span
+</span><span class="hs-identifier hs-var">Span</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679319996"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679319997"><span class="hs-identifier hs-var">sl</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679319998"><span class="hs-identifier hs-var">sc</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679319999"><span class="hs-identifier hs-var">el</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679320000"><span class="hs-identifier hs-var">ec</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="annot"><a href="ReWire.HSE.SrcLoc.html#spanSrcSpanInfo"><span class="hs-identifier hs-type">spanSrcSpanInfo</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Span</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SrcSpanInfo</span></span><span>
+</span><span id="line-30"></span><span id="spanSrcSpanInfo"><span class="annot"><span class="annottext">spanSrcSpanInfo :: Span -&gt; SrcSpanInfo
+</span><a href="ReWire.HSE.SrcLoc.html#spanSrcSpanInfo"><span class="hs-identifier hs-var hs-var">spanSrcSpanInfo</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Span</span></span><span> </span><span id="local-6989586621679320002"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679320002"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679320003"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679320003"><span class="hs-identifier hs-var">sl</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679320004"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679320004"><span class="hs-identifier hs-var">sc</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679320005"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679320005"><span class="hs-identifier hs-var">el</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679320006"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679320006"><span class="hs-identifier hs-var">ec</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SrcSpan -&gt; SrcSpanInfo
+</span><span class="hs-identifier hs-var">noInfoSpan</span></span><span> </span><span class="annot"><span class="annottext">(SrcSpan -&gt; SrcSpanInfo) -&gt; SrcSpan -&gt; SrcSpanInfo
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Int -&gt; Int -&gt; Int -&gt; Int -&gt; SrcSpan
+</span><span class="hs-identifier hs-var">SrcSpan</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679320002"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679320003"><span class="hs-identifier hs-var">sl</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679320004"><span class="hs-identifier hs-var">sc</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679320005"><span class="hs-identifier hs-var">el</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679320006"><span class="hs-identifier hs-var">ec</span></a></span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span class="annot"><a href="ReWire.HSE.SrcLoc.html#noSpanInfo"><span class="hs-identifier hs-type">noSpanInfo</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SrcSpanInfo</span></span><span>
+</span><span id="line-33"></span><span id="noSpanInfo"><span class="annot"><span class="annottext">noSpanInfo :: SrcSpanInfo
+</span><a href="ReWire.HSE.SrcLoc.html#noSpanInfo"><span class="hs-identifier hs-var hs-var">noSpanInfo</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SrcSpan -&gt; SrcSpanInfo
+</span><span class="hs-identifier hs-var">noInfoSpan</span></span><span> </span><span class="annot"><span class="annottext">(SrcSpan -&gt; SrcSpanInfo) -&gt; SrcSpan -&gt; SrcSpanInfo
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SrcLoc -&gt; SrcLoc -&gt; SrcSpan
+</span><span class="hs-identifier hs-var">mkSrcSpan</span></span><span> </span><span class="annot"><span class="annottext">SrcLoc
+</span><span class="hs-identifier hs-var">noLoc</span></span><span> </span><span class="annot"><span class="annottext">SrcLoc
+</span><span class="hs-identifier hs-var">noLoc</span></span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- | Recover a haskell-src-exts span for the haskell-src-exts machinery.</span><span>
+</span><span id="line-36"></span><span class="hs-comment">--   Locationless annotations map to 'noLoc'.</span><span>
+</span><span id="line-37"></span><span class="annot"><a href="ReWire.HSE.SrcLoc.html#toSrcSpanInfo"><span class="hs-identifier hs-type">toSrcSpanInfo</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SrcSpanInfo</span></span><span>
+</span><span id="line-38"></span><span id="toSrcSpanInfo"><span class="annot"><span class="annottext">toSrcSpanInfo :: Annote -&gt; SrcSpanInfo
+</span><a href="ReWire.HSE.SrcLoc.html#toSrcSpanInfo"><span class="hs-identifier hs-var hs-var">toSrcSpanInfo</span></a></span></span><span> </span><span id="local-6989586621679320009"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679320009"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo -&gt; (Span -&gt; SrcSpanInfo) -&gt; Maybe Span -&gt; SrcSpanInfo
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo
+</span><a href="ReWire.HSE.SrcLoc.html#noSpanInfo"><span class="hs-identifier hs-var">noSpanInfo</span></a></span><span> </span><span class="annot"><span class="annottext">Span -&gt; SrcSpanInfo
+</span><a href="ReWire.HSE.SrcLoc.html#spanSrcSpanInfo"><span class="hs-identifier hs-var">spanSrcSpanInfo</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe Span -&gt; SrcSpanInfo) -&gt; Maybe Span -&gt; SrcSpanInfo
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Maybe Span
+</span><span class="hs-identifier hs-var">primSpan</span></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679320009"><span class="hs-identifier hs-var">an</span></a></span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679320014"><span class="annot"><span class="hs-identifier hs-type">SrcInfo</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-41"></span><span>      </span><span id="local-6989586621679320023"><span class="annot"><span class="annottext">toSrcInfo :: SrcLoc -&gt; [SrcSpan] -&gt; SrcLoc -&gt; Annote
+</span><a href="#local-6989586621679320023"><span class="hs-identifier hs-var hs-var hs-var">toSrcInfo</span></a></span></span><span> </span><span id="local-6989586621679320025"><span class="annot"><span class="annottext">SrcLoc
+</span><a href="#local-6989586621679320025"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679320026"><span class="annot"><span class="annottext">[SrcSpan]
+</span><a href="#local-6989586621679320026"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span id="local-6989586621679320027"><span class="annot"><span class="annottext">SrcLoc
+</span><a href="#local-6989586621679320027"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo -&gt; Annote
+</span><a href="ReWire.HSE.SrcLoc.html#locAnnote"><span class="hs-identifier hs-var">locAnnote</span></a></span><span> </span><span class="annot"><span class="annottext">(SrcSpanInfo -&gt; Annote) -&gt; SrcSpanInfo -&gt; Annote
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SrcLoc -&gt; [SrcSpan] -&gt; SrcLoc -&gt; SrcSpanInfo
+forall si. SrcInfo si =&gt; SrcLoc -&gt; [SrcSpan] -&gt; SrcLoc -&gt; si
+</span><span class="hs-identifier hs-var">toSrcInfo</span></span><span> </span><span class="annot"><span class="annottext">SrcLoc
+</span><a href="#local-6989586621679320025"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">[SrcSpan]
+</span><a href="#local-6989586621679320026"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">SrcLoc
+</span><a href="#local-6989586621679320027"><span class="hs-identifier hs-var">c</span></a></span><span>
+</span><span id="line-42"></span><span>      </span><span id="local-6989586621679320029"><span class="annot"><span class="annottext">fromSrcInfo :: SrcSpanInfo -&gt; Annote
+</span><a href="#local-6989586621679320029"><span class="hs-identifier hs-var hs-var hs-var">fromSrcInfo</span></a></span></span><span>     </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo -&gt; Annote
+</span><a href="ReWire.HSE.SrcLoc.html#locAnnote"><span class="hs-identifier hs-var">locAnnote</span></a></span><span> </span><span class="annot"><span class="annottext">(SrcSpanInfo -&gt; Annote)
+-&gt; (SrcSpanInfo -&gt; SrcSpanInfo) -&gt; SrcSpanInfo -&gt; Annote
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo -&gt; SrcSpanInfo
+forall si. SrcInfo si =&gt; SrcSpanInfo -&gt; si
+</span><span class="hs-identifier hs-var">fromSrcInfo</span></span><span>
+</span><span id="line-43"></span><span>      </span><span id="local-6989586621679320033"><span class="annot"><span class="annottext">fileName :: Annote -&gt; FilePath
+</span><a href="#local-6989586621679320033"><span class="hs-identifier hs-var hs-var hs-var">fileName</span></a></span></span><span>        </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo -&gt; FilePath
+forall si. SrcInfo si =&gt; si -&gt; FilePath
+</span><span class="hs-identifier hs-var">fileName</span></span><span> </span><span class="annot"><span class="annottext">(SrcSpanInfo -&gt; FilePath)
+-&gt; (Annote -&gt; SrcSpanInfo) -&gt; Annote -&gt; FilePath
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Annote -&gt; SrcSpanInfo
+</span><a href="ReWire.HSE.SrcLoc.html#toSrcSpanInfo"><span class="hs-identifier hs-var">toSrcSpanInfo</span></a></span><span>
+</span><span id="line-44"></span><span>      </span><span id="local-6989586621679320036"><span class="annot"><span class="annottext">startLine :: Annote -&gt; Int
+</span><a href="#local-6989586621679320036"><span class="hs-identifier hs-var hs-var hs-var">startLine</span></a></span></span><span>       </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo -&gt; Int
+forall si. SrcInfo si =&gt; si -&gt; Int
+</span><span class="hs-identifier hs-var">startLine</span></span><span> </span><span class="annot"><span class="annottext">(SrcSpanInfo -&gt; Int) -&gt; (Annote -&gt; SrcSpanInfo) -&gt; Annote -&gt; Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Annote -&gt; SrcSpanInfo
+</span><a href="ReWire.HSE.SrcLoc.html#toSrcSpanInfo"><span class="hs-identifier hs-var">toSrcSpanInfo</span></a></span><span>
+</span><span id="line-45"></span><span>      </span><span id="local-6989586621679320039"><span class="annot"><span class="annottext">startColumn :: Annote -&gt; Int
+</span><a href="#local-6989586621679320039"><span class="hs-identifier hs-var hs-var hs-var">startColumn</span></a></span></span><span>     </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo -&gt; Int
+forall si. SrcInfo si =&gt; si -&gt; Int
+</span><span class="hs-identifier hs-var">startColumn</span></span><span> </span><span class="annot"><span class="annottext">(SrcSpanInfo -&gt; Int) -&gt; (Annote -&gt; SrcSpanInfo) -&gt; Annote -&gt; Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Annote -&gt; SrcSpanInfo
+</span><a href="ReWire.HSE.SrcLoc.html#toSrcSpanInfo"><span class="hs-identifier hs-var">toSrcSpanInfo</span></a></span><span>
+</span><span id="line-46"></span></pre></body></html>

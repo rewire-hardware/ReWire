@@ -1,0 +1,1714 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="local-6989586621679463264"><span id="local-6989586621679463265"><span id="local-6989586621679463266"><span id="local-6989586621679463267"><span id="local-6989586621679463268"><span id="local-6989586621679463269"><span id="local-6989586621679463270"><span id="local-6989586621679463271"><span id="local-6989586621679463272"><span id="local-6989586621679463273"><span id="local-6989586621679463274"><span id="local-6989586621679463275"><span id="local-6989586621679463276"><span id="local-6989586621679463277"><span id="local-6989586621679463278"><span id="local-6989586621679463279"><span id="local-6989586621679463280"><span id="local-6989586621679463281"><span id="local-6989586621679463282"></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-pragma">{-# LANGUAGE DeriveAnyClass #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DeriveDataTypeable #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE DeriveGeneric #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- | The abstract syntax of Synolon, the machine-level IR between Eidos and</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--   Hyle (doc/synolon.md): the</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--   process calculus &#8212; state cells, labeled blocks with commands, and</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--   @pause@/@goto@/@halt@ terminators &#8212; over the Eidos expression language,</span><span>
+</span><span id="line-9"></span><span class="hs-comment">--   which this module re-exports: command right-hand sides, cell initials,</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--   and terminator operands are Eidos expressions, and the pure</span><span>
+</span><span id="line-11"></span><span class="hs-comment">--   definitions a machine calls are Eidos definitions. Only the process</span><span>
+</span><span id="line-12"></span><span class="hs-comment">--   constructs and the program are new; the conventions of</span><span>
+</span><span id="line-13"></span><span class="hs-comment">--   &quot;ReWire.Eidos.Syntax&quot; (unique-keyed names, inert annotations, no term</span><span>
+</span><span id="line-14"></span><span class="hs-comment">--   equality) carry over unchanged.</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html"><span class="hs-identifier">ReWire.Synolon.Syntax</span></a></span><span>
+</span><span id="line-16"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html"><span class="hs-identifier">ReWire.Eidos.Syntax</span></a></span><span>
+</span><span id="line-17"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Proc"><span class="hs-identifier">Proc</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Cell"><span class="hs-identifier">Cell</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Block"><span class="hs-identifier">Block</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Cmd"><span class="hs-identifier">Cmd</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Term"><span class="hs-identifier">Term</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TAlt"><span class="hs-identifier">TAlt</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Program"><span class="hs-identifier">Program</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span>        </span><span class="annot"><span class="hs-comment">-- * Traversals</span></span><span>
+</span><span id="line-20"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#allBlocks"><span class="hs-identifier">allBlocks</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#blockExps"><span class="hs-identifier">blockExps</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#cmdExps"><span class="hs-identifier">cmdExps</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#termExps"><span class="hs-identifier">termExps</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#cmdBinders"><span class="hs-identifier">cmdBinders</span></a></span><span>
+</span><span id="line-21"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#termTargets"><span class="hs-identifier">termTargets</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#pauseTargets"><span class="hs-identifier">pauseTargets</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#haltSites"><span class="hs-identifier">haltSites</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#mapTermTargets"><span class="hs-identifier">mapTermTargets</span></a></span><span>
+</span><span id="line-22"></span><span>      </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Annotation</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Annote</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Annotated</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html"><span class="hs-identifier">ReWire.Eidos.Syntax</span></a></span><span> </span><span class="hs-keyword">hiding</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Program"><span class="hs-identifier">Program</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.DeepSeq</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NFData</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Data</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Typeable</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Data</span></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Generic</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span>
+</span><span id="line-33"></span><span class="hs-comment">-- | A process (doc/synolon.md &#167;3.4): input/output types, an optional clock</span><span>
+</span><span id="line-34"></span><span class="hs-comment">--   name, named state cells (one per retired state layer), the reset</span><span>
+</span><span id="line-35"></span><span class="hs-comment">--   block (@entry@: parameterless, implicitly labeled), and labeled</span><span>
+</span><span id="line-36"></span><span class="hs-comment">--   blocks. Cell and process names are their own (Text) namespaces;</span><span>
+</span><span id="line-37"></span><span class="hs-comment">--   labels are 'Id's in the binder-unique discipline.</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">data</span><span> </span><span id="Proc"><span class="annot"><a href="ReWire.Synolon.Syntax.html#Proc"><span class="hs-identifier hs-var">Proc</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Proc"><span class="annot"><a href="ReWire.Synolon.Syntax.html#Proc"><span class="hs-identifier hs-var">Proc</span></a></span></span><span>
+</span><span id="line-39"></span><span>      </span><span class="hs-special">{</span><span> </span><span id="procAnnote"><span class="annot"><span class="annottext">Proc -&gt; Annote
+</span><a href="ReWire.Synolon.Syntax.html#procAnnote"><span class="hs-identifier hs-var hs-var">procAnnote</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span>
+</span><span id="line-40"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="procName"><span class="annot"><span class="annottext">Proc -&gt; Text
+</span><a href="ReWire.Synolon.Syntax.html#procName"><span class="hs-identifier hs-var hs-var">procName</span></a></span></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-41"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="procInTy"><span class="annot"><span class="annottext">Proc -&gt; Ty
+</span><a href="ReWire.Synolon.Syntax.html#procInTy"><span class="hs-identifier hs-var hs-var">procInTy</span></a></span></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span>
+</span><span id="line-42"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="procOutTy"><span class="annot"><span class="annottext">Proc -&gt; Ty
+</span><a href="ReWire.Synolon.Syntax.html#procOutTy"><span class="hs-identifier hs-var hs-var">procOutTy</span></a></span></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span>
+</span><span id="line-43"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="procClock"><span class="annot"><span class="annottext">Proc -&gt; Maybe Text
+</span><a href="ReWire.Synolon.Syntax.html#procClock"><span class="hs-identifier hs-var hs-var">procClock</span></a></span></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="procCells"><span class="annot"><span class="annottext">Proc -&gt; [Cell]
+</span><a href="ReWire.Synolon.Syntax.html#procCells"><span class="hs-identifier hs-var hs-var">procCells</span></a></span></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Cell"><span class="hs-identifier hs-type">Cell</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-45"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="procEntry"><span class="annot"><span class="annottext">Proc -&gt; Block
+</span><a href="ReWire.Synolon.Syntax.html#procEntry"><span class="hs-identifier hs-var hs-var">procEntry</span></a></span></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Block"><span class="hs-identifier hs-type">Block</span></a></span><span>
+</span><span id="line-46"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="procBlocks"><span class="annot"><span class="annottext">Proc -&gt; [(Id, Block)]
+</span><a href="ReWire.Synolon.Syntax.html#procBlocks"><span class="hs-identifier hs-var hs-var">procBlocks</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Block"><span class="hs-identifier hs-type">Block</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-47"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-48"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679463313"><span id="local-6989586621679463333"><span id="local-6989586621679463337"><span class="annot"><span class="annottext">Int -&gt; Proc -&gt; ShowS
+[Proc] -&gt; ShowS
+Proc -&gt; String
+(Int -&gt; Proc -&gt; ShowS)
+-&gt; (Proc -&gt; String) -&gt; ([Proc] -&gt; ShowS) -&gt; Show Proc
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Proc -&gt; ShowS
+showsPrec :: Int -&gt; Proc -&gt; ShowS
+$cshow :: Proc -&gt; String
+show :: Proc -&gt; String
+$cshowList :: [Proc] -&gt; ShowS
+showList :: [Proc] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463346"><span id="local-6989586621679463348"><span class="annot"><span class="annottext">(forall x. Proc -&gt; Rep Proc x)
+-&gt; (forall x. Rep Proc x -&gt; Proc) -&gt; Generic Proc
+forall x. Rep Proc x -&gt; Proc
+forall x. Proc -&gt; Rep Proc x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cfrom :: forall x. Proc -&gt; Rep Proc x
+from :: forall x. Proc -&gt; Rep Proc x
+$cto :: forall x. Rep Proc x -&gt; Proc
+to :: forall x. Rep Proc x -&gt; Proc
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463356"><span id="local-6989586621679463374"><span id="local-6989586621679463388"><span id="local-6989586621679463390"><span id="local-6989586621679463392"><span id="local-6989586621679463398"><span id="local-6989586621679463403"><span id="local-6989586621679463406"><span id="local-6989586621679463409"><span id="local-6989586621679463412"><span id="local-6989586621679463415"><span id="local-6989586621679463418"><span id="local-6989586621679463423"><span id="local-6989586621679463428"><span class="annot"><span class="annottext">Typeable Proc
+Typeable Proc =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; Proc -&gt; c Proc)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Proc)
+-&gt; (Proc -&gt; Constr)
+-&gt; (Proc -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Proc))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Proc))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; Proc -&gt; Proc)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Proc -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Proc -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Proc -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Proc -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Proc -&gt; m Proc)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Proc -&gt; m Proc)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Proc -&gt; m Proc)
+-&gt; Data Proc
+Proc -&gt; Constr
+Proc -&gt; DataType
+(forall b. Data b =&gt; b -&gt; b) -&gt; Proc -&gt; Proc
+forall a.
+Typeable a =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c a)
+-&gt; (a -&gt; Constr)
+-&gt; (a -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c a))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c a))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; a -&gt; a)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; Data a
+forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Proc -&gt; u
+forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Proc -&gt; [u]
+forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Proc -&gt; r
+forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Proc -&gt; r
+forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Proc -&gt; m Proc
+forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Proc -&gt; m Proc
+forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Proc
+forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Proc -&gt; c Proc
+forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Proc)
+forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Proc)
+$cgfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Proc -&gt; c Proc
+gfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Proc -&gt; c Proc
+$cgunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Proc
+gunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Proc
+$ctoConstr :: Proc -&gt; Constr
+toConstr :: Proc -&gt; Constr
+$cdataTypeOf :: Proc -&gt; DataType
+dataTypeOf :: Proc -&gt; DataType
+$cdataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Proc)
+dataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Proc)
+$cdataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Proc)
+dataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Proc)
+$cgmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; Proc -&gt; Proc
+gmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; Proc -&gt; Proc
+$cgmapQl :: forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Proc -&gt; r
+gmapQl :: forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Proc -&gt; r
+$cgmapQr :: forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Proc -&gt; r
+gmapQr :: forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Proc -&gt; r
+$cgmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Proc -&gt; [u]
+gmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Proc -&gt; [u]
+$cgmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Proc -&gt; u
+gmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Proc -&gt; u
+$cgmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Proc -&gt; m Proc
+gmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Proc -&gt; m Proc
+$cgmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Proc -&gt; m Proc
+gmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Proc -&gt; m Proc
+$cgmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Proc -&gt; m Proc
+gmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Proc -&gt; m Proc
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463445"><span class="annot"><span class="annottext">Proc -&gt; ()
+(Proc -&gt; ()) -&gt; NFData Proc
+forall a. (a -&gt; ()) -&gt; NFData a
+$crnf :: Proc -&gt; ()
+rnf :: Proc -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span class="hs-comment">-- | A state cell: name, type, and initial value &#8212; a closed pure</span><span>
+</span><span id="line-51"></span><span class="hs-comment">--   expression evaluated at compile time, or 'Nothing' (@undef@) for a</span><span>
+</span><span id="line-52"></span><span class="hs-comment">--   cell first written before any read on every path from entry.</span><span>
+</span><span id="line-53"></span><span class="hs-keyword">data</span><span> </span><span id="Cell"><span class="annot"><a href="ReWire.Synolon.Syntax.html#Cell"><span class="hs-identifier hs-var">Cell</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Cell"><span class="annot"><a href="ReWire.Synolon.Syntax.html#Cell"><span class="hs-identifier hs-var">Cell</span></a></span></span><span>
+</span><span id="line-54"></span><span>      </span><span class="hs-special">{</span><span> </span><span id="cellAnnote"><span class="annot"><span class="annottext">Cell -&gt; Annote
+</span><a href="ReWire.Synolon.Syntax.html#cellAnnote"><span class="hs-identifier hs-var hs-var">cellAnnote</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span>
+</span><span id="line-55"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="cellName"><span class="annot"><span class="annottext">Cell -&gt; Text
+</span><a href="ReWire.Synolon.Syntax.html#cellName"><span class="hs-identifier hs-var hs-var">cellName</span></a></span></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-56"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="cellTy"><span class="annot"><span class="annottext">Cell -&gt; Ty
+</span><a href="ReWire.Synolon.Syntax.html#cellTy"><span class="hs-identifier hs-var hs-var">cellTy</span></a></span></span><span>     </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Ty"><span class="hs-identifier hs-type">Ty</span></a></span><span>
+</span><span id="line-57"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="cellInit"><span class="annot"><span class="annottext">Cell -&gt; Maybe Exp
+</span><a href="ReWire.Synolon.Syntax.html#cellInit"><span class="hs-identifier hs-var hs-var">cellInit</span></a></span></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-58"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-59"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679463503"><span id="local-6989586621679463511"><span id="local-6989586621679463514"><span class="annot"><span class="annottext">Int -&gt; Cell -&gt; ShowS
+[Cell] -&gt; ShowS
+Cell -&gt; String
+(Int -&gt; Cell -&gt; ShowS)
+-&gt; (Cell -&gt; String) -&gt; ([Cell] -&gt; ShowS) -&gt; Show Cell
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Cell -&gt; ShowS
+showsPrec :: Int -&gt; Cell -&gt; ShowS
+$cshow :: Cell -&gt; String
+show :: Cell -&gt; String
+$cshowList :: [Cell] -&gt; ShowS
+showList :: [Cell] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463518"><span id="local-6989586621679463520"><span class="annot"><span class="annottext">(forall x. Cell -&gt; Rep Cell x)
+-&gt; (forall x. Rep Cell x -&gt; Cell) -&gt; Generic Cell
+forall x. Rep Cell x -&gt; Cell
+forall x. Cell -&gt; Rep Cell x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cfrom :: forall x. Cell -&gt; Rep Cell x
+from :: forall x. Cell -&gt; Rep Cell x
+$cto :: forall x. Rep Cell x -&gt; Cell
+to :: forall x. Rep Cell x -&gt; Cell
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463525"><span id="local-6989586621679463532"><span id="local-6989586621679463539"><span id="local-6989586621679463541"><span id="local-6989586621679463543"><span id="local-6989586621679463548"><span id="local-6989586621679463553"><span id="local-6989586621679463556"><span id="local-6989586621679463559"><span id="local-6989586621679463562"><span id="local-6989586621679463565"><span id="local-6989586621679463568"><span id="local-6989586621679463573"><span id="local-6989586621679463578"><span class="annot"><span class="annottext">Typeable Cell
+Typeable Cell =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; Cell -&gt; c Cell)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Cell)
+-&gt; (Cell -&gt; Constr)
+-&gt; (Cell -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Cell))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Cell))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; Cell -&gt; Cell)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cell -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cell -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Cell -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Cell -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Cell -&gt; m Cell)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Cell -&gt; m Cell)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Cell -&gt; m Cell)
+-&gt; Data Cell
+Cell -&gt; Constr
+Cell -&gt; DataType
+(forall b. Data b =&gt; b -&gt; b) -&gt; Cell -&gt; Cell
+forall a.
+Typeable a =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c a)
+-&gt; (a -&gt; Constr)
+-&gt; (a -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c a))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c a))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; a -&gt; a)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; Data a
+forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Cell -&gt; u
+forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Cell -&gt; [u]
+forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cell -&gt; r
+forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cell -&gt; r
+forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cell -&gt; m Cell
+forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cell -&gt; m Cell
+forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Cell
+forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Cell -&gt; c Cell
+forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Cell)
+forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Cell)
+$cgfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Cell -&gt; c Cell
+gfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Cell -&gt; c Cell
+$cgunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Cell
+gunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Cell
+$ctoConstr :: Cell -&gt; Constr
+toConstr :: Cell -&gt; Constr
+$cdataTypeOf :: Cell -&gt; DataType
+dataTypeOf :: Cell -&gt; DataType
+$cdataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Cell)
+dataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Cell)
+$cdataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Cell)
+dataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Cell)
+$cgmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; Cell -&gt; Cell
+gmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; Cell -&gt; Cell
+$cgmapQl :: forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cell -&gt; r
+gmapQl :: forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cell -&gt; r
+$cgmapQr :: forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cell -&gt; r
+gmapQr :: forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cell -&gt; r
+$cgmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Cell -&gt; [u]
+gmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Cell -&gt; [u]
+$cgmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Cell -&gt; u
+gmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Cell -&gt; u
+$cgmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cell -&gt; m Cell
+gmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cell -&gt; m Cell
+$cgmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cell -&gt; m Cell
+gmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cell -&gt; m Cell
+$cgmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cell -&gt; m Cell
+gmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cell -&gt; m Cell
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463584"><span class="annot"><span class="annottext">Cell -&gt; ()
+(Cell -&gt; ()) -&gt; NFData Cell
+forall a. (a -&gt; ()) -&gt; NFData a
+$crnf :: Cell -&gt; ()
+rnf :: Cell -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-60"></span><span>
+</span><span id="line-61"></span><span class="hs-comment">-- | A block: parameters (a pause target's /last/ parameter is the</span><span>
+</span><span id="line-62"></span><span class="hs-comment">--   resumed input, typed by the process input type), commands, and a</span><span>
+</span><span id="line-63"></span><span class="hs-comment">--   terminator.</span><span>
+</span><span id="line-64"></span><span class="hs-keyword">data</span><span> </span><span id="Block"><span class="annot"><a href="ReWire.Synolon.Syntax.html#Block"><span class="hs-identifier hs-var">Block</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Block"><span class="annot"><a href="ReWire.Synolon.Syntax.html#Block"><span class="hs-identifier hs-var">Block</span></a></span></span><span>
+</span><span id="line-65"></span><span>      </span><span class="hs-special">{</span><span> </span><span id="blkAnnote"><span class="annot"><span class="annottext">Block -&gt; Annote
+</span><a href="ReWire.Synolon.Syntax.html#blkAnnote"><span class="hs-identifier hs-var hs-var">blkAnnote</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span>
+</span><span id="line-66"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="blkParams"><span class="annot"><span class="annottext">Block -&gt; [Id]
+</span><a href="ReWire.Synolon.Syntax.html#blkParams"><span class="hs-identifier hs-var hs-var">blkParams</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-67"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="blkCmds"><span class="annot"><span class="annottext">Block -&gt; [Cmd]
+</span><a href="ReWire.Synolon.Syntax.html#blkCmds"><span class="hs-identifier hs-var hs-var">blkCmds</span></a></span></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Cmd"><span class="hs-identifier hs-type">Cmd</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-68"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="blkTerm"><span class="annot"><span class="annottext">Block -&gt; Term
+</span><a href="ReWire.Synolon.Syntax.html#blkTerm"><span class="hs-identifier hs-var hs-var">blkTerm</span></a></span></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span>
+</span><span id="line-69"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-70"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679463613"><span id="local-6989586621679463623"><span id="local-6989586621679463626"><span class="annot"><span class="annottext">Int -&gt; Block -&gt; ShowS
+[Block] -&gt; ShowS
+Block -&gt; String
+(Int -&gt; Block -&gt; ShowS)
+-&gt; (Block -&gt; String) -&gt; ([Block] -&gt; ShowS) -&gt; Show Block
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Block -&gt; ShowS
+showsPrec :: Int -&gt; Block -&gt; ShowS
+$cshow :: Block -&gt; String
+show :: Block -&gt; String
+$cshowList :: [Block] -&gt; ShowS
+showList :: [Block] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463630"><span id="local-6989586621679463632"><span class="annot"><span class="annottext">(forall x. Block -&gt; Rep Block x)
+-&gt; (forall x. Rep Block x -&gt; Block) -&gt; Generic Block
+forall x. Rep Block x -&gt; Block
+forall x. Block -&gt; Rep Block x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cfrom :: forall x. Block -&gt; Rep Block x
+from :: forall x. Block -&gt; Rep Block x
+$cto :: forall x. Rep Block x -&gt; Block
+to :: forall x. Rep Block x -&gt; Block
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463637"><span id="local-6989586621679463646"><span id="local-6989586621679463654"><span id="local-6989586621679463656"><span id="local-6989586621679463658"><span id="local-6989586621679463663"><span id="local-6989586621679463668"><span id="local-6989586621679463671"><span id="local-6989586621679463674"><span id="local-6989586621679463677"><span id="local-6989586621679463680"><span id="local-6989586621679463683"><span id="local-6989586621679463688"><span id="local-6989586621679463693"><span class="annot"><span class="annottext">Typeable Block
+Typeable Block =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; Block -&gt; c Block)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Block)
+-&gt; (Block -&gt; Constr)
+-&gt; (Block -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Block))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Block))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; Block -&gt; Block)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Block -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Block -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Block -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Block -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Block -&gt; m Block)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Block -&gt; m Block)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Block -&gt; m Block)
+-&gt; Data Block
+Block -&gt; Constr
+Block -&gt; DataType
+(forall b. Data b =&gt; b -&gt; b) -&gt; Block -&gt; Block
+forall a.
+Typeable a =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c a)
+-&gt; (a -&gt; Constr)
+-&gt; (a -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c a))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c a))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; a -&gt; a)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; Data a
+forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Block -&gt; u
+forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Block -&gt; [u]
+forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Block -&gt; r
+forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Block -&gt; r
+forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Block -&gt; m Block
+forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Block -&gt; m Block
+forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Block
+forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Block -&gt; c Block
+forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Block)
+forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Block)
+$cgfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Block -&gt; c Block
+gfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Block -&gt; c Block
+$cgunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Block
+gunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Block
+$ctoConstr :: Block -&gt; Constr
+toConstr :: Block -&gt; Constr
+$cdataTypeOf :: Block -&gt; DataType
+dataTypeOf :: Block -&gt; DataType
+$cdataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Block)
+dataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Block)
+$cdataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Block)
+dataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Block)
+$cgmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; Block -&gt; Block
+gmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; Block -&gt; Block
+$cgmapQl :: forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Block -&gt; r
+gmapQl :: forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Block -&gt; r
+$cgmapQr :: forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Block -&gt; r
+gmapQr :: forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Block -&gt; r
+$cgmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Block -&gt; [u]
+gmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Block -&gt; [u]
+$cgmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Block -&gt; u
+gmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Block -&gt; u
+$cgmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Block -&gt; m Block
+gmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Block -&gt; m Block
+$cgmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Block -&gt; m Block
+gmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Block -&gt; m Block
+$cgmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Block -&gt; m Block
+gmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Block -&gt; m Block
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463699"><span class="annot"><span class="annottext">Block -&gt; ()
+(Block -&gt; ()) -&gt; NFData Block
+forall a. (a -&gt; ()) -&gt; NFData a
+$crnf :: Block -&gt; ()
+rnf :: Block -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span class="annot"><span class="hs-comment">-- | A command: a pure computation, a cell read, or a cell write.</span></span><span>
+</span><span id="line-73"></span><span class="hs-keyword">data</span><span> </span><span id="Cmd"><span class="annot"><a href="ReWire.Synolon.Syntax.html#Cmd"><span class="hs-identifier hs-var">Cmd</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="CmdBind"><span class="annot"><a href="ReWire.Synolon.Syntax.html#CmdBind"><span class="hs-identifier hs-var">CmdBind</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-74"></span><span>         </span><span class="hs-glyph">|</span><span> </span><span id="CmdGet"><span class="annot"><a href="ReWire.Synolon.Syntax.html#CmdGet"><span class="hs-identifier hs-var">CmdGet</span></a></span></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-75"></span><span>         </span><span class="hs-glyph">|</span><span> </span><span id="CmdPut"><span class="annot"><a href="ReWire.Synolon.Syntax.html#CmdPut"><span class="hs-identifier hs-var">CmdPut</span></a></span></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-76"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679463728"><span id="local-6989586621679463742"><span id="local-6989586621679463745"><span class="annot"><span class="annottext">Int -&gt; Cmd -&gt; ShowS
+[Cmd] -&gt; ShowS
+Cmd -&gt; String
+(Int -&gt; Cmd -&gt; ShowS)
+-&gt; (Cmd -&gt; String) -&gt; ([Cmd] -&gt; ShowS) -&gt; Show Cmd
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Cmd -&gt; ShowS
+showsPrec :: Int -&gt; Cmd -&gt; ShowS
+$cshow :: Cmd -&gt; String
+show :: Cmd -&gt; String
+$cshowList :: [Cmd] -&gt; ShowS
+showList :: [Cmd] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463748"><span id="local-6989586621679463750"><span class="annot"><span class="annottext">(forall x. Cmd -&gt; Rep Cmd x)
+-&gt; (forall x. Rep Cmd x -&gt; Cmd) -&gt; Generic Cmd
+forall x. Rep Cmd x -&gt; Cmd
+forall x. Cmd -&gt; Rep Cmd x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cfrom :: forall x. Cmd -&gt; Rep Cmd x
+from :: forall x. Cmd -&gt; Rep Cmd x
+$cto :: forall x. Rep Cmd x -&gt; Cmd
+to :: forall x. Rep Cmd x -&gt; Cmd
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463755"><span id="local-6989586621679463766"><span id="local-6989586621679463777"><span id="local-6989586621679463779"><span id="local-6989586621679463781"><span id="local-6989586621679463786"><span id="local-6989586621679463791"><span id="local-6989586621679463794"><span id="local-6989586621679463797"><span id="local-6989586621679463800"><span id="local-6989586621679463803"><span id="local-6989586621679463806"><span id="local-6989586621679463811"><span id="local-6989586621679463816"><span class="annot"><span class="annottext">Typeable Cmd
+Typeable Cmd =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; Cmd -&gt; c Cmd)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Cmd)
+-&gt; (Cmd -&gt; Constr)
+-&gt; (Cmd -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Cmd))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Cmd))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; Cmd -&gt; Cmd)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cmd -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cmd -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Cmd -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Cmd -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Cmd -&gt; m Cmd)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Cmd -&gt; m Cmd)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Cmd -&gt; m Cmd)
+-&gt; Data Cmd
+Cmd -&gt; Constr
+Cmd -&gt; DataType
+(forall b. Data b =&gt; b -&gt; b) -&gt; Cmd -&gt; Cmd
+forall a.
+Typeable a =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c a)
+-&gt; (a -&gt; Constr)
+-&gt; (a -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c a))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c a))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; a -&gt; a)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; Data a
+forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Cmd -&gt; u
+forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Cmd -&gt; [u]
+forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cmd -&gt; r
+forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cmd -&gt; r
+forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cmd -&gt; m Cmd
+forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cmd -&gt; m Cmd
+forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Cmd
+forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Cmd -&gt; c Cmd
+forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Cmd)
+forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Cmd)
+$cgfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Cmd -&gt; c Cmd
+gfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Cmd -&gt; c Cmd
+$cgunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Cmd
+gunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Cmd
+$ctoConstr :: Cmd -&gt; Constr
+toConstr :: Cmd -&gt; Constr
+$cdataTypeOf :: Cmd -&gt; DataType
+dataTypeOf :: Cmd -&gt; DataType
+$cdataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Cmd)
+dataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Cmd)
+$cdataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Cmd)
+dataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Cmd)
+$cgmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; Cmd -&gt; Cmd
+gmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; Cmd -&gt; Cmd
+$cgmapQl :: forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cmd -&gt; r
+gmapQl :: forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cmd -&gt; r
+$cgmapQr :: forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cmd -&gt; r
+gmapQr :: forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Cmd -&gt; r
+$cgmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Cmd -&gt; [u]
+gmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Cmd -&gt; [u]
+$cgmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Cmd -&gt; u
+gmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Cmd -&gt; u
+$cgmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cmd -&gt; m Cmd
+gmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cmd -&gt; m Cmd
+$cgmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cmd -&gt; m Cmd
+gmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cmd -&gt; m Cmd
+$cgmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cmd -&gt; m Cmd
+gmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Cmd -&gt; m Cmd
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463821"><span class="annot"><span class="annottext">Cmd -&gt; ()
+(Cmd -&gt; ()) -&gt; NFData Cmd
+forall a. (a -&gt; ()) -&gt; NFData a
+$crnf :: Cmd -&gt; ()
+rnf :: Cmd -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span class="hs-comment">-- | A block terminator (doc/synolon.md &#167;3.4). A @pause@ supplies all of</span><span>
+</span><span id="line-79"></span><span class="hs-comment">--   its target's parameters except the last (the resumed input, supplied</span><span>
+</span><span id="line-80"></span><span class="hs-comment">--   by the machine); a @goto@ supplies all of them.</span><span>
+</span><span id="line-81"></span><span class="hs-keyword">data</span><span> </span><span id="Term"><span class="annot"><a href="ReWire.Synolon.Syntax.html#Term"><span class="hs-identifier hs-var">Term</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Pause"><span class="annot"><a href="ReWire.Synolon.Syntax.html#Pause"><span class="hs-identifier hs-var">Pause</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-82"></span><span>          </span><span class="hs-glyph">|</span><span> </span><span id="Goto"><span class="annot"><a href="ReWire.Synolon.Syntax.html#Goto"><span class="hs-identifier hs-var">Goto</span></a></span></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-83"></span><span>          </span><span class="hs-glyph">|</span><span> </span><span id="Halt"><span class="annot"><a href="ReWire.Synolon.Syntax.html#Halt"><span class="hs-identifier hs-var">Halt</span></a></span></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span>
+</span><span id="line-84"></span><span>          </span><span class="hs-glyph">|</span><span> </span><span id="TCase"><span class="annot"><a href="ReWire.Synolon.Syntax.html#TCase"><span class="hs-identifier hs-var">TCase</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TAlt"><span class="hs-identifier hs-type">TAlt</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-85"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679463855"><span id="local-6989586621679463874"><span id="local-6989586621679463877"><span class="annot"><span class="annottext">Int -&gt; Term -&gt; ShowS
+[Term] -&gt; ShowS
+Term -&gt; String
+(Int -&gt; Term -&gt; ShowS)
+-&gt; (Term -&gt; String) -&gt; ([Term] -&gt; ShowS) -&gt; Show Term
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Term -&gt; ShowS
+showsPrec :: Int -&gt; Term -&gt; ShowS
+$cshow :: Term -&gt; String
+show :: Term -&gt; String
+$cshowList :: [Term] -&gt; ShowS
+showList :: [Term] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463881"><span id="local-6989586621679463883"><span class="annot"><span class="annottext">(forall x. Term -&gt; Rep Term x)
+-&gt; (forall x. Rep Term x -&gt; Term) -&gt; Generic Term
+forall x. Rep Term x -&gt; Term
+forall x. Term -&gt; Rep Term x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cfrom :: forall x. Term -&gt; Rep Term x
+from :: forall x. Term -&gt; Rep Term x
+$cto :: forall x. Rep Term x -&gt; Term
+to :: forall x. Rep Term x -&gt; Term
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463888"><span id="local-6989586621679463904"><span id="local-6989586621679463920"><span id="local-6989586621679463922"><span id="local-6989586621679463924"><span id="local-6989586621679463929"><span id="local-6989586621679463934"><span id="local-6989586621679463937"><span id="local-6989586621679463940"><span id="local-6989586621679463943"><span id="local-6989586621679463946"><span id="local-6989586621679463949"><span id="local-6989586621679463954"><span id="local-6989586621679463959"><span class="annot"><span class="annottext">Typeable Term
+Typeable Term =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; Term -&gt; c Term)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Term)
+-&gt; (Term -&gt; Constr)
+-&gt; (Term -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Term))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Term))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; Term -&gt; Term)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Term -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Term -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Term -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Term -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Term -&gt; m Term)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Term -&gt; m Term)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Term -&gt; m Term)
+-&gt; Data Term
+Term -&gt; Constr
+Term -&gt; DataType
+(forall b. Data b =&gt; b -&gt; b) -&gt; Term -&gt; Term
+forall a.
+Typeable a =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c a)
+-&gt; (a -&gt; Constr)
+-&gt; (a -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c a))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c a))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; a -&gt; a)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; Data a
+forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Term -&gt; u
+forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Term -&gt; [u]
+forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Term -&gt; r
+forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Term -&gt; r
+forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Term -&gt; m Term
+forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Term -&gt; m Term
+forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Term
+forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Term -&gt; c Term
+forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Term)
+forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Term)
+$cgfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Term -&gt; c Term
+gfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Term -&gt; c Term
+$cgunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Term
+gunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Term
+$ctoConstr :: Term -&gt; Constr
+toConstr :: Term -&gt; Constr
+$cdataTypeOf :: Term -&gt; DataType
+dataTypeOf :: Term -&gt; DataType
+$cdataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Term)
+dataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Term)
+$cdataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Term)
+dataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Term)
+$cgmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; Term -&gt; Term
+gmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; Term -&gt; Term
+$cgmapQl :: forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Term -&gt; r
+gmapQl :: forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Term -&gt; r
+$cgmapQr :: forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Term -&gt; r
+gmapQr :: forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Term -&gt; r
+$cgmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Term -&gt; [u]
+gmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Term -&gt; [u]
+$cgmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Term -&gt; u
+gmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Term -&gt; u
+$cgmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Term -&gt; m Term
+gmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Term -&gt; m Term
+$cgmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Term -&gt; m Term
+gmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Term -&gt; m Term
+$cgmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Term -&gt; m Term
+gmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Term -&gt; m Term
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679463965"><span class="annot"><span class="annottext">Term -&gt; ()
+(Term -&gt; ()) -&gt; NFData Term
+forall a. (a -&gt; ()) -&gt; NFData a
+$crnf :: Term -&gt; ()
+rnf :: Term -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-86"></span><span>
+</span><span id="line-87"></span><span class="annot"><span class="hs-comment">-- | A terminator-case alternative (default first, as in an expression case).</span></span><span>
+</span><span id="line-88"></span><span class="hs-keyword">data</span><span> </span><span id="TAlt"><span class="annot"><a href="ReWire.Synolon.Syntax.html#TAlt"><span class="hs-identifier hs-var">TAlt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TAlt"><span class="annot"><a href="ReWire.Synolon.Syntax.html#TAlt"><span class="hs-identifier hs-var">TAlt</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#AltCon"><span class="hs-identifier hs-type">AltCon</span></a></span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span>
+</span><span id="line-89"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679464002"><span id="local-6989586621679464011"><span id="local-6989586621679464014"><span class="annot"><span class="annottext">Int -&gt; TAlt -&gt; ShowS
+[TAlt] -&gt; ShowS
+TAlt -&gt; String
+(Int -&gt; TAlt -&gt; ShowS)
+-&gt; (TAlt -&gt; String) -&gt; ([TAlt] -&gt; ShowS) -&gt; Show TAlt
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; TAlt -&gt; ShowS
+showsPrec :: Int -&gt; TAlt -&gt; ShowS
+$cshow :: TAlt -&gt; String
+show :: TAlt -&gt; String
+$cshowList :: [TAlt] -&gt; ShowS
+showList :: [TAlt] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679464017"><span id="local-6989586621679464019"><span class="annot"><span class="annottext">(forall x. TAlt -&gt; Rep TAlt x)
+-&gt; (forall x. Rep TAlt x -&gt; TAlt) -&gt; Generic TAlt
+forall x. Rep TAlt x -&gt; TAlt
+forall x. TAlt -&gt; Rep TAlt x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cfrom :: forall x. TAlt -&gt; Rep TAlt x
+from :: forall x. TAlt -&gt; Rep TAlt x
+$cto :: forall x. Rep TAlt x -&gt; TAlt
+to :: forall x. Rep TAlt x -&gt; TAlt
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679464024"><span id="local-6989586621679464032"><span id="local-6989586621679464039"><span id="local-6989586621679464041"><span id="local-6989586621679464043"><span id="local-6989586621679464048"><span id="local-6989586621679464053"><span id="local-6989586621679464056"><span id="local-6989586621679464059"><span id="local-6989586621679464062"><span id="local-6989586621679464065"><span id="local-6989586621679464068"><span id="local-6989586621679464073"><span id="local-6989586621679464078"><span class="annot"><span class="annottext">Typeable TAlt
+Typeable TAlt =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; TAlt -&gt; c TAlt)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c TAlt)
+-&gt; (TAlt -&gt; Constr)
+-&gt; (TAlt -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c TAlt))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c TAlt))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; TAlt -&gt; TAlt)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; TAlt -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; TAlt -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; TAlt -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; TAlt -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; TAlt -&gt; m TAlt)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; TAlt -&gt; m TAlt)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; TAlt -&gt; m TAlt)
+-&gt; Data TAlt
+TAlt -&gt; Constr
+TAlt -&gt; DataType
+(forall b. Data b =&gt; b -&gt; b) -&gt; TAlt -&gt; TAlt
+forall a.
+Typeable a =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c a)
+-&gt; (a -&gt; Constr)
+-&gt; (a -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c a))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c a))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; a -&gt; a)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; Data a
+forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; TAlt -&gt; u
+forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; TAlt -&gt; [u]
+forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; TAlt -&gt; r
+forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; TAlt -&gt; r
+forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; TAlt -&gt; m TAlt
+forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; TAlt -&gt; m TAlt
+forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c TAlt
+forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; TAlt -&gt; c TAlt
+forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c TAlt)
+forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c TAlt)
+$cgfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; TAlt -&gt; c TAlt
+gfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; TAlt -&gt; c TAlt
+$cgunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c TAlt
+gunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c TAlt
+$ctoConstr :: TAlt -&gt; Constr
+toConstr :: TAlt -&gt; Constr
+$cdataTypeOf :: TAlt -&gt; DataType
+dataTypeOf :: TAlt -&gt; DataType
+$cdataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c TAlt)
+dataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c TAlt)
+$cdataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c TAlt)
+dataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c TAlt)
+$cgmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; TAlt -&gt; TAlt
+gmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; TAlt -&gt; TAlt
+$cgmapQl :: forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; TAlt -&gt; r
+gmapQl :: forall r r'.
+(r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; TAlt -&gt; r
+$cgmapQr :: forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; TAlt -&gt; r
+gmapQr :: forall r r'.
+(r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; TAlt -&gt; r
+$cgmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; TAlt -&gt; [u]
+gmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; TAlt -&gt; [u]
+$cgmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; TAlt -&gt; u
+gmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; TAlt -&gt; u
+$cgmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; TAlt -&gt; m TAlt
+gmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; TAlt -&gt; m TAlt
+$cgmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; TAlt -&gt; m TAlt
+gmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; TAlt -&gt; m TAlt
+$cgmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; TAlt -&gt; m TAlt
+gmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; TAlt -&gt; m TAlt
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679464083"><span class="annot"><span class="annottext">TAlt -&gt; ()
+(TAlt -&gt; ()) -&gt; NFData TAlt
+forall a. (a -&gt; ()) -&gt; NFData a
+$crnf :: TAlt -&gt; ()
+rnf :: TAlt -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-90"></span><span>
+</span><span id="line-91"></span><span>
+</span><span id="line-92"></span><span class="hs-comment">-- | A whole program: datatypes, the definitions the machine calls (pure,</span><span>
+</span><span id="line-93"></span><span class="hs-comment">--   monomorphic, first-order &#8212; 'ReWire.Eidos.Types.machineDefn'), and the</span><span>
+</span><span id="line-94"></span><span class="hs-comment">--   processes, which are its roots. There is no @top@: purification</span><span>
+</span><span id="line-95"></span><span class="hs-comment">--   consumed the device root into the process.</span><span>
+</span><span id="line-96"></span><span class="hs-keyword">data</span><span> </span><span id="Program"><span class="annot"><a href="ReWire.Synolon.Syntax.html#Program"><span class="hs-identifier hs-var">Program</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Program"><span class="annot"><a href="ReWire.Synolon.Syntax.html#Program"><span class="hs-identifier hs-var">Program</span></a></span></span><span>
+</span><span id="line-97"></span><span>      </span><span class="hs-special">{</span><span> </span><span id="progDatas"><span class="annot"><span class="annottext">Program -&gt; [DataDefn]
+</span><a href="ReWire.Synolon.Syntax.html#progDatas"><span class="hs-identifier hs-var hs-var">progDatas</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#DataDefn"><span class="hs-identifier hs-type">DataDefn</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-98"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="progDefns"><span class="annot"><span class="annottext">Program -&gt; [Defn]
+</span><a href="ReWire.Synolon.Syntax.html#progDefns"><span class="hs-identifier hs-var hs-var">progDefns</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Defn"><span class="hs-identifier hs-type">Defn</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-99"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="progProcs"><span class="annot"><span class="annottext">Program -&gt; [Proc]
+</span><a href="ReWire.Synolon.Syntax.html#progProcs"><span class="hs-identifier hs-var hs-var">progProcs</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Proc"><span class="hs-identifier hs-type">Proc</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-100"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-101"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679464111"><span id="local-6989586621679464120"><span id="local-6989586621679464124"><span class="annot"><span class="annottext">Int -&gt; Program -&gt; ShowS
+[Program] -&gt; ShowS
+Program -&gt; String
+(Int -&gt; Program -&gt; ShowS)
+-&gt; (Program -&gt; String) -&gt; ([Program] -&gt; ShowS) -&gt; Show Program
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Program -&gt; ShowS
+showsPrec :: Int -&gt; Program -&gt; ShowS
+$cshow :: Program -&gt; String
+show :: Program -&gt; String
+$cshowList :: [Program] -&gt; ShowS
+showList :: [Program] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679464129"><span id="local-6989586621679464131"><span class="annot"><span class="annottext">(forall x. Program -&gt; Rep Program x)
+-&gt; (forall x. Rep Program x -&gt; Program) -&gt; Generic Program
+forall x. Rep Program x -&gt; Program
+forall x. Program -&gt; Rep Program x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cfrom :: forall x. Program -&gt; Rep Program x
+from :: forall x. Program -&gt; Rep Program x
+$cto :: forall x. Rep Program x -&gt; Program
+to :: forall x. Rep Program x -&gt; Program
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679464136"><span id="local-6989586621679464144"><span id="local-6989586621679464152"><span id="local-6989586621679464154"><span id="local-6989586621679464156"><span id="local-6989586621679464162"><span id="local-6989586621679464167"><span id="local-6989586621679464170"><span id="local-6989586621679464173"><span id="local-6989586621679464176"><span id="local-6989586621679464179"><span id="local-6989586621679464182"><span id="local-6989586621679464187"><span id="local-6989586621679464192"><span class="annot"><span class="annottext">Typeable Program
+Typeable Program =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; Program -&gt; c Program)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Program)
+-&gt; (Program -&gt; Constr)
+-&gt; (Program -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Program))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Program))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; Program -&gt; Program)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r)
+    -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Program -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r)
+    -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Program -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Program -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Program -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Program -&gt; m Program)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Program -&gt; m Program)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Program -&gt; m Program)
+-&gt; Data Program
+Program -&gt; Constr
+Program -&gt; DataType
+(forall b. Data b =&gt; b -&gt; b) -&gt; Program -&gt; Program
+forall a.
+Typeable a =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c a)
+-&gt; (a -&gt; Constr)
+-&gt; (a -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c a))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c a))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; a -&gt; a)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; Data a
+forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Program -&gt; u
+forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Program -&gt; [u]
+forall r r'.
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Program -&gt; r
+forall r r'.
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Program -&gt; r
+forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Program -&gt; m Program
+forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Program -&gt; m Program
+forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Program
+forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Program -&gt; c Program
+forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Program)
+forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Program)
+$cgfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Program -&gt; c Program
+gfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Program -&gt; c Program
+$cgunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Program
+gunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Program
+$ctoConstr :: Program -&gt; Constr
+toConstr :: Program -&gt; Constr
+$cdataTypeOf :: Program -&gt; DataType
+dataTypeOf :: Program -&gt; DataType
+$cdataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Program)
+dataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Program)
+$cdataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Program)
+dataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Program)
+$cgmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; Program -&gt; Program
+gmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; Program -&gt; Program
+$cgmapQl :: forall r r'.
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Program -&gt; r
+gmapQl :: forall r r'.
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Program -&gt; r
+$cgmapQr :: forall r r'.
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Program -&gt; r
+gmapQr :: forall r r'.
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Program -&gt; r
+$cgmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Program -&gt; [u]
+gmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Program -&gt; [u]
+$cgmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Program -&gt; u
+gmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Program -&gt; u
+$cgmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Program -&gt; m Program
+gmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Program -&gt; m Program
+$cgmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Program -&gt; m Program
+gmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Program -&gt; m Program
+$cgmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Program -&gt; m Program
+gmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Program -&gt; m Program
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679464199"><span class="annot"><span class="annottext">Program -&gt; ()
+(Program -&gt; ()) -&gt; NFData Program
+forall a. (a -&gt; ()) -&gt; NFData a
+$crnf :: Program -&gt; ()
+rnf :: Program -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">NFData</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-102"></span><span>
+</span><span id="line-103"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotated</span></span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Proc"><span class="hs-identifier hs-type">Proc</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-104"></span><span>      </span><span id="local-6989586621679464225"><span class="annot"><span class="annottext">ann :: Proc -&gt; Annote
+</span><a href="#local-6989586621679464225"><span class="hs-identifier hs-var hs-var hs-var">ann</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Proc -&gt; Annote
+</span><a href="ReWire.Synolon.Syntax.html#procAnnote"><span class="hs-identifier hs-var">procAnnote</span></a></span><span>
+</span><span id="line-105"></span><span>
+</span><span id="line-106"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotated</span></span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Cell"><span class="hs-identifier hs-type">Cell</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-107"></span><span>      </span><span id="local-6989586621679464229"><span class="annot"><span class="annottext">ann :: Cell -&gt; Annote
+</span><span class="hs-identifier hs-var hs-var hs-var">ann</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Cell -&gt; Annote
+</span><a href="ReWire.Synolon.Syntax.html#cellAnnote"><span class="hs-identifier hs-var">cellAnnote</span></a></span><span>
+</span><span id="line-108"></span><span>
+</span><span id="line-109"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotated</span></span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Block"><span class="hs-identifier hs-type">Block</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-110"></span><span>      </span><span id="local-6989586621679464232"><span class="annot"><span class="annottext">ann :: Block -&gt; Annote
+</span><span class="hs-identifier hs-var hs-var hs-var">ann</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Block -&gt; Annote
+</span><a href="ReWire.Synolon.Syntax.html#blkAnnote"><span class="hs-identifier hs-var">blkAnnote</span></a></span><span>
+</span><span id="line-111"></span><span>
+</span><span id="line-112"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotated</span></span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Cmd"><span class="hs-identifier hs-type">Cmd</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-113"></span><span>      </span><span id="local-6989586621679464235"><span class="annot"><span class="annottext">ann :: Cmd -&gt; Annote
+</span><span class="hs-identifier hs-var hs-var hs-var">ann</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-114"></span><span>            </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#CmdBind"><span class="hs-identifier hs-type">CmdBind</span></a></span><span> </span><span id="local-6989586621679464236"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464236"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="annot"><span class="annottext">Id
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464236"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-115"></span><span>            </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#CmdGet"><span class="hs-identifier hs-type">CmdGet</span></a></span><span>  </span><span id="local-6989586621679464237"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464237"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="annot"><span class="annottext">Id
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464237"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-116"></span><span>            </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#CmdPut"><span class="hs-identifier hs-type">CmdPut</span></a></span><span>  </span><span id="local-6989586621679464238"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464238"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464238"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-117"></span><span>
+</span><span id="line-118"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotated</span></span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-119"></span><span>      </span><span id="local-6989586621679464241"><span class="annot"><span class="annottext">ann :: Term -&gt; Annote
+</span><span class="hs-identifier hs-var hs-var hs-var">ann</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-120"></span><span>            </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Pause"><span class="hs-identifier hs-type">Pause</span></a></span><span> </span><span id="local-6989586621679464242"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464242"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Id
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464242"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-121"></span><span>            </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Goto"><span class="hs-identifier hs-type">Goto</span></a></span><span>  </span><span id="local-6989586621679464243"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464243"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="annot"><span class="annottext">Id
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><span class="hs-identifier">_</span></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464243"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-122"></span><span>            </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Halt"><span class="hs-identifier hs-type">Halt</span></a></span><span>  </span><span id="local-6989586621679464244"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464244"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464244"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-123"></span><span>            </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TCase"><span class="hs-identifier hs-type">TCase</span></a></span><span> </span><span id="local-6989586621679464245"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464245"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[TAlt]
+</span><span class="hs-identifier">_</span></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464245"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-124"></span><span>
+</span><span id="line-125"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotated</span></span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TAlt"><span class="hs-identifier hs-type">TAlt</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-126"></span><span>      </span><span id="local-6989586621679464248"><span class="annot"><span class="annottext">ann :: TAlt -&gt; Annote
+</span><span class="hs-identifier hs-var hs-var hs-var">ann</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TAlt"><span class="hs-identifier hs-type">TAlt</span></a></span><span> </span><span id="local-6989586621679464249"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464249"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="annot"><span class="annottext">AltCon
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[Id]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464249"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-127"></span><span>
+</span><span id="line-128"></span><span class="hs-comment">---</span><span>
+</span><span id="line-129"></span><span class="hs-comment">--- Traversals: the projections every consumer of a process needs, defined</span><span>
+</span><span id="line-130"></span><span class="hs-comment">--- once.</span><span>
+</span><span id="line-131"></span><span class="hs-comment">---</span><span>
+</span><span id="line-132"></span><span>
+</span><span id="line-133"></span><span class="annot"><span class="hs-comment">-- | Every block of a process, the entry block first (paired with no label).</span></span><span>
+</span><span id="line-134"></span><span class="annot"><a href="ReWire.Synolon.Syntax.html#allBlocks"><span class="hs-identifier hs-type">allBlocks</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Proc"><span class="hs-identifier hs-type">Proc</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Block"><span class="hs-identifier hs-type">Block</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-135"></span><span id="allBlocks"><span class="annot"><span class="annottext">allBlocks :: Proc -&gt; [Block]
+</span><a href="ReWire.Synolon.Syntax.html#allBlocks"><span class="hs-identifier hs-var hs-var">allBlocks</span></a></span></span><span> </span><span id="local-6989586621679464250"><span class="annot"><span class="annottext">Proc
+</span><a href="#local-6989586621679464250"><span class="hs-identifier hs-var">pr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Proc -&gt; Block
+</span><a href="ReWire.Synolon.Syntax.html#procEntry"><span class="hs-identifier hs-var">procEntry</span></a></span><span> </span><span class="annot"><span class="annottext">Proc
+</span><a href="#local-6989586621679464250"><span class="hs-identifier hs-var">pr</span></a></span><span> </span><span class="annot"><span class="annottext">Block -&gt; [Block] -&gt; [Block]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">((Id, Block) -&gt; Block) -&gt; [(Id, Block)] -&gt; [Block]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">(Id, Block) -&gt; Block
+forall a b. (a, b) -&gt; b
+</span><span class="hs-identifier hs-var">snd</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Proc -&gt; [(Id, Block)]
+</span><a href="ReWire.Synolon.Syntax.html#procBlocks"><span class="hs-identifier hs-var">procBlocks</span></a></span><span> </span><span class="annot"><span class="annottext">Proc
+</span><a href="#local-6989586621679464250"><span class="hs-identifier hs-var">pr</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-136"></span><span>
+</span><span id="line-137"></span><span class="hs-comment">-- | The expressions a block holds: command right-hand sides and put</span><span>
+</span><span id="line-138"></span><span class="hs-comment">--   payloads, then the terminator's operands.</span><span>
+</span><span id="line-139"></span><span class="annot"><a href="ReWire.Synolon.Syntax.html#blockExps"><span class="hs-identifier hs-type">blockExps</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Block"><span class="hs-identifier hs-type">Block</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-140"></span><span id="blockExps"><span class="annot"><span class="annottext">blockExps :: Block -&gt; [Exp]
+</span><a href="ReWire.Synolon.Syntax.html#blockExps"><span class="hs-identifier hs-var hs-var">blockExps</span></a></span></span><span> </span><span id="local-6989586621679464252"><span class="annot"><span class="annottext">Block
+</span><a href="#local-6989586621679464252"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Cmd -&gt; [Exp]) -&gt; [Cmd] -&gt; [Exp]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">Cmd -&gt; [Exp]
+</span><a href="ReWire.Synolon.Syntax.html#cmdExps"><span class="hs-identifier hs-var">cmdExps</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Block -&gt; [Cmd]
+</span><a href="ReWire.Synolon.Syntax.html#blkCmds"><span class="hs-identifier hs-var">blkCmds</span></a></span><span> </span><span class="annot"><span class="annottext">Block
+</span><a href="#local-6989586621679464252"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Exp] -&gt; [Exp] -&gt; [Exp]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; [Exp]
+</span><a href="ReWire.Synolon.Syntax.html#termExps"><span class="hs-identifier hs-var">termExps</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Block -&gt; Term
+</span><a href="ReWire.Synolon.Syntax.html#blkTerm"><span class="hs-identifier hs-var">blkTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Block
+</span><a href="#local-6989586621679464252"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-141"></span><span>
+</span><span id="line-142"></span><span class="annot"><a href="ReWire.Synolon.Syntax.html#cmdExps"><span class="hs-identifier hs-type">cmdExps</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Cmd"><span class="hs-identifier hs-type">Cmd</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-143"></span><span id="cmdExps"><span class="annot"><span class="annottext">cmdExps :: Cmd -&gt; [Exp]
+</span><a href="ReWire.Synolon.Syntax.html#cmdExps"><span class="hs-identifier hs-var hs-var">cmdExps</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-144"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#CmdBind"><span class="hs-identifier hs-type">CmdBind</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Id
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464254"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679464254"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679464254"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-145"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#CmdGet"><span class="hs-identifier hs-type">CmdGet</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-146"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#CmdPut"><span class="hs-identifier hs-type">CmdPut</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464255"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679464255"><span class="hs-identifier hs-var">e</span></a></span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679464255"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-147"></span><span>
+</span><span id="line-148"></span><span class="hs-comment">-- | A terminator's operands: the pause output and arguments, goto</span><span>
+</span><span id="line-149"></span><span class="hs-comment">--   arguments, the halt answer, and (recursively) a terminator case's</span><span>
+</span><span id="line-150"></span><span class="hs-comment">--   scrutinee and alternatives.</span><span>
+</span><span id="line-151"></span><span class="annot"><a href="ReWire.Synolon.Syntax.html#termExps"><span class="hs-identifier hs-type">termExps</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-152"></span><span id="termExps"><span class="annot"><span class="annottext">termExps :: Term -&gt; [Exp]
+</span><a href="ReWire.Synolon.Syntax.html#termExps"><span class="hs-identifier hs-var hs-var">termExps</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-153"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Pause"><span class="hs-identifier hs-type">Pause</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464256"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679464256"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="annot"><span class="annottext">Id
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464257"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679464257"><span class="hs-keyword hs-var">as</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679464256"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [Exp] -&gt; [Exp]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679464257"><span class="hs-keyword hs-var">as</span></a></span><span>
+</span><span id="line-154"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Goto"><span class="hs-identifier hs-type">Goto</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Id
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464258"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679464258"><span class="hs-keyword hs-var">as</span></a></span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679464258"><span class="hs-keyword hs-var">as</span></a></span><span>
+</span><span id="line-155"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Halt"><span class="hs-identifier hs-type">Halt</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464259"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679464259"><span class="hs-identifier hs-var">a</span></a></span></span><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679464259"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-156"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TCase"><span class="hs-identifier hs-type">TCase</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464260"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679464260"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679464261"><span class="annot"><span class="annottext">[TAlt]
+</span><a href="#local-6989586621679464261"><span class="hs-identifier hs-var">alts</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679464260"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Exp -&gt; [Exp] -&gt; [Exp]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[[Exp]] -&gt; [Exp]
+forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">concat</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Term -&gt; [Exp]
+</span><a href="ReWire.Synolon.Syntax.html#termExps"><span class="hs-identifier hs-var">termExps</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679464263"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TAlt"><span class="hs-identifier hs-type">TAlt</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">AltCon
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[Id]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464263"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679464263"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[TAlt]
+</span><a href="#local-6989586621679464261"><span class="hs-identifier hs-var">alts</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-157"></span><span>
+</span><span id="line-158"></span><span class="annot"><span class="hs-comment">-- | The binders a block's commands introduce (in order).</span></span><span>
+</span><span id="line-159"></span><span class="annot"><a href="ReWire.Synolon.Syntax.html#cmdBinders"><span class="hs-identifier hs-type">cmdBinders</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Block"><span class="hs-identifier hs-type">Block</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-160"></span><span id="cmdBinders"><span class="annot"><span class="annottext">cmdBinders :: Block -&gt; [Id]
+</span><a href="ReWire.Synolon.Syntax.html#cmdBinders"><span class="hs-identifier hs-var hs-var">cmdBinders</span></a></span></span><span> </span><span id="local-6989586621679464264"><span class="annot"><span class="annottext">Block
+</span><a href="#local-6989586621679464264"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464265"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#CmdBind"><span class="hs-identifier hs-type">CmdBind</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464265"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464265"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Block -&gt; [Cmd]
+</span><a href="ReWire.Synolon.Syntax.html#blkCmds"><span class="hs-identifier hs-var">blkCmds</span></a></span><span> </span><span class="annot"><span class="annottext">Block
+</span><a href="#local-6989586621679464264"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[Id] -&gt; [Id] -&gt; [Id]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464266"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#CmdGet"><span class="hs-identifier hs-type">CmdGet</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464266"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464266"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Block -&gt; [Cmd]
+</span><a href="ReWire.Synolon.Syntax.html#blkCmds"><span class="hs-identifier hs-var">blkCmds</span></a></span><span> </span><span class="annot"><span class="annottext">Block
+</span><a href="#local-6989586621679464264"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-161"></span><span>
+</span><span id="line-162"></span><span class="annot"><span class="hs-comment">-- | The labels a terminator transfers to (by pause or goto).</span></span><span>
+</span><span id="line-163"></span><span class="annot"><a href="ReWire.Synolon.Syntax.html#termTargets"><span class="hs-identifier hs-type">termTargets</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-164"></span><span id="termTargets"><span class="annot"><span class="annottext">termTargets :: Term -&gt; [Id]
+</span><a href="ReWire.Synolon.Syntax.html#termTargets"><span class="hs-identifier hs-var hs-var">termTargets</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-165"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Pause"><span class="hs-identifier hs-type">Pause</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464267"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464267"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><span class="hs-identifier">_</span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464267"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-166"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Goto"><span class="hs-identifier hs-type">Goto</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464268"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464268"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><span class="hs-identifier">_</span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464268"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-167"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TCase"><span class="hs-identifier hs-type">TCase</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464269"><span class="annot"><span class="annottext">[TAlt]
+</span><a href="#local-6989586621679464269"><span class="hs-identifier hs-var">alts</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[[Id]] -&gt; [Id]
+forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">concat</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Term -&gt; [Id]
+</span><a href="ReWire.Synolon.Syntax.html#termTargets"><span class="hs-identifier hs-var">termTargets</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679464270"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TAlt"><span class="hs-identifier hs-type">TAlt</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">AltCon
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[Id]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464270"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679464270"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[TAlt]
+</span><a href="#local-6989586621679464269"><span class="hs-identifier hs-var">alts</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-168"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Halt"><span class="hs-identifier hs-type">Halt</span></a></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-169"></span><span>
+</span><span id="line-170"></span><span class="annot"><span class="hs-comment">-- | The labels a terminator pauses to: the machine states.</span></span><span>
+</span><span id="line-171"></span><span class="annot"><a href="ReWire.Synolon.Syntax.html#pauseTargets"><span class="hs-identifier hs-type">pauseTargets</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-172"></span><span id="pauseTargets"><span class="annot"><span class="annottext">pauseTargets :: Term -&gt; [Id]
+</span><a href="ReWire.Synolon.Syntax.html#pauseTargets"><span class="hs-identifier hs-var hs-var">pauseTargets</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-173"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Pause"><span class="hs-identifier hs-type">Pause</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464271"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464271"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><span class="hs-identifier">_</span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464271"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-174"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TCase"><span class="hs-identifier hs-type">TCase</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464272"><span class="annot"><span class="annottext">[TAlt]
+</span><a href="#local-6989586621679464272"><span class="hs-identifier hs-var">alts</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[[Id]] -&gt; [Id]
+forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">concat</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Term -&gt; [Id]
+</span><a href="ReWire.Synolon.Syntax.html#pauseTargets"><span class="hs-identifier hs-var">pauseTargets</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679464273"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TAlt"><span class="hs-identifier hs-type">TAlt</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">AltCon
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[Id]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464273"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679464273"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[TAlt]
+</span><a href="#local-6989586621679464272"><span class="hs-identifier hs-var">alts</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-175"></span><span>      </span><span class="annot"><span class="annottext">Term
+</span><span class="hs-identifier">_</span></span><span>              </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-176"></span><span>
+</span><span id="line-177"></span><span class="annot"><span class="hs-comment">-- | The locations of a terminator's halts.</span></span><span>
+</span><span id="line-178"></span><span class="annot"><a href="ReWire.Synolon.Syntax.html#haltSites"><span class="hs-identifier hs-type">haltSites</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span class="hs-special">]</span><span>
+</span><span id="line-179"></span><span id="haltSites"><span class="annot"><span class="annottext">haltSites :: Term -&gt; [Annote]
+</span><a href="ReWire.Synolon.Syntax.html#haltSites"><span class="hs-identifier hs-var hs-var">haltSites</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-180"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Halt"><span class="hs-identifier hs-type">Halt</span></a></span><span> </span><span id="local-6989586621679464274"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464274"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464274"><span class="hs-identifier hs-var">an</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-181"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TCase"><span class="hs-identifier hs-type">TCase</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464275"><span class="annot"><span class="annottext">[TAlt]
+</span><a href="#local-6989586621679464275"><span class="hs-identifier hs-var">alts</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[[Annote]] -&gt; [Annote]
+forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">concat</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Term -&gt; [Annote]
+</span><a href="ReWire.Synolon.Syntax.html#haltSites"><span class="hs-identifier hs-var">haltSites</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679464276"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TAlt"><span class="hs-identifier hs-type">TAlt</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">AltCon
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[Id]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679464276"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679464276"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[TAlt]
+</span><a href="#local-6989586621679464275"><span class="hs-identifier hs-var">alts</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-182"></span><span>      </span><span class="annot"><span class="annottext">Term
+</span><span class="hs-identifier">_</span></span><span>              </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-183"></span><span>
+</span><span id="line-184"></span><span class="hs-comment">-- | Rewrite the transfer targets (and their argument lists) of a</span><span>
+</span><span id="line-185"></span><span class="hs-comment">--   terminator, leaving halts alone.</span><span>
+</span><span id="line-186"></span><span class="annot"><a href="ReWire.Synolon.Syntax.html#mapTermTargets"><span class="hs-identifier hs-type">mapTermTargets</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Id"><span class="hs-identifier hs-type">Id</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Eidos.Syntax.html#Exp"><span class="hs-identifier hs-type">Exp</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span>
+</span><span id="line-187"></span><span id="mapTermTargets"><span class="annot"><span class="annottext">mapTermTargets :: (Id -&gt; [Exp] -&gt; (Id, [Exp])) -&gt; Term -&gt; Term
+</span><a href="ReWire.Synolon.Syntax.html#mapTermTargets"><span class="hs-identifier hs-var hs-var">mapTermTargets</span></a></span></span><span> </span><span id="local-6989586621679464277"><span class="annot"><span class="annottext">Id -&gt; [Exp] -&gt; (Id, [Exp])
+</span><a href="#local-6989586621679464277"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-188"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Pause"><span class="hs-identifier hs-type">Pause</span></a></span><span> </span><span id="local-6989586621679464278"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464278"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span id="local-6989586621679464279"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679464279"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679464280"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464280"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621679464281"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679464281"><span class="hs-keyword hs-var">as</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">let</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679464282"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464282"><span class="hs-identifier hs-var">l'</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679464283"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679464283"><span class="hs-identifier hs-var">as'</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Id -&gt; [Exp] -&gt; (Id, [Exp])
+</span><a href="#local-6989586621679464277"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464280"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679464281"><span class="hs-keyword hs-var">as</span></a></span><span> </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Exp -&gt; Id -&gt; [Exp] -&gt; Term
+</span><a href="ReWire.Synolon.Syntax.html#Pause"><span class="hs-identifier hs-var">Pause</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464278"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679464279"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464282"><span class="hs-identifier hs-var">l'</span></a></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679464283"><span class="hs-identifier hs-var">as'</span></a></span><span>
+</span><span id="line-189"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#Goto"><span class="hs-identifier hs-type">Goto</span></a></span><span> </span><span id="local-6989586621679464284"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464284"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span id="local-6989586621679464285"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464285"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621679464286"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679464286"><span class="hs-keyword hs-var">as</span></a></span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">let</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679464287"><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464287"><span class="hs-identifier hs-var">l'</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679464288"><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679464288"><span class="hs-identifier hs-var">as'</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Id -&gt; [Exp] -&gt; (Id, [Exp])
+</span><a href="#local-6989586621679464277"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464285"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679464286"><span class="hs-keyword hs-var">as</span></a></span><span> </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Id -&gt; [Exp] -&gt; Term
+</span><a href="ReWire.Synolon.Syntax.html#Goto"><span class="hs-identifier hs-var">Goto</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464284"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Id
+</span><a href="#local-6989586621679464287"><span class="hs-identifier hs-var">l'</span></a></span><span> </span><span class="annot"><span class="annottext">[Exp]
+</span><a href="#local-6989586621679464288"><span class="hs-identifier hs-var">as'</span></a></span><span>
+</span><span id="line-190"></span><span>      </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TCase"><span class="hs-identifier hs-type">TCase</span></a></span><span> </span><span id="local-6989586621679464289"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464289"><span class="hs-identifier hs-var">an</span></a></span></span><span> </span><span id="local-6989586621679464290"><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679464290"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679464291"><span class="annot"><span class="annottext">[TAlt]
+</span><a href="#local-6989586621679464291"><span class="hs-identifier hs-var">alts</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Exp -&gt; [TAlt] -&gt; Term
+</span><a href="ReWire.Synolon.Syntax.html#TCase"><span class="hs-identifier hs-var">TCase</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464289"><span class="hs-identifier hs-var">an</span></a></span><span> </span><span class="annot"><span class="annottext">Exp
+</span><a href="#local-6989586621679464290"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; AltCon -&gt; [Id] -&gt; Term -&gt; TAlt
+</span><a href="ReWire.Synolon.Syntax.html#TAlt"><span class="hs-identifier hs-var">TAlt</span></a></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464292"><span class="hs-identifier hs-var">aan</span></a></span><span> </span><span class="annot"><span class="annottext">AltCon
+</span><a href="#local-6989586621679464293"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">[Id]
+</span><a href="#local-6989586621679464294"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Id -&gt; [Exp] -&gt; (Id, [Exp])) -&gt; Term -&gt; Term
+</span><a href="ReWire.Synolon.Syntax.html#mapTermTargets"><span class="hs-identifier hs-var">mapTermTargets</span></a></span><span> </span><span class="annot"><span class="annottext">Id -&gt; [Exp] -&gt; (Id, [Exp])
+</span><a href="#local-6989586621679464277"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679464295"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="ReWire.Synolon.Syntax.html#TAlt"><span class="hs-identifier hs-type">TAlt</span></a></span><span> </span><span id="local-6989586621679464292"><span class="annot"><span class="annottext">Annote
+</span><a href="#local-6989586621679464292"><span class="hs-identifier hs-var">aan</span></a></span></span><span> </span><span id="local-6989586621679464293"><span class="annot"><span class="annottext">AltCon
+</span><a href="#local-6989586621679464293"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621679464294"><span class="annot"><span class="annottext">[Id]
+</span><a href="#local-6989586621679464294"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span id="local-6989586621679464295"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679464295"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[TAlt]
+</span><a href="#local-6989586621679464291"><span class="hs-identifier hs-var">alts</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-191"></span><span>      </span><span id="local-6989586621679464296"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679464296"><span class="hs-identifier hs-var">t</span></a></span></span><span>               </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679464296"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-192"></span></pre></body></html>

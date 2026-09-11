@@ -1,0 +1,410 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- | The IR-agnostic part of the HSE front end: locating, parsing, and</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--   caching modules and (recursively) their imports. The per-module</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--   pipeline (desugaring and translation out of the HSE AST) is supplied</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--   by the caller; the embedder instantiates it for Atmo (see</span><span>
+</span><span id="line-9"></span><span class="hs-comment">--   &quot;Embedder.ModCache&quot;).</span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.HSE.Cache.html"><span class="hs-identifier">ReWire.HSE.Cache</span></a></span><span>
+</span><span id="line-11"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="ReWire.HSE.Cache.html#Cache"><span class="hs-identifier">Cache</span></a></span><span>
+</span><span id="line-12"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.HSE.Cache.html#LoadPath"><span class="hs-identifier">LoadPath</span></a></span><span>
+</span><span id="line-13"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.HSE.Cache.html#runCache"><span class="hs-identifier">runCache</span></a></span><span>
+</span><span id="line-14"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.HSE.Cache.html#getModuleWith"><span class="hs-identifier">getModuleWith</span></a></span><span>
+</span><span id="line-15"></span><span>      </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-16"></span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Annotation</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Annotation</span></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.Exts.SrcLoc</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">SrcSpanInfo</span></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Config</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Config</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">loadPath</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">pDebug</span></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Error</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">failAt</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">AstError</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">MonadError</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">filePath</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">relocatingTo</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.HSE.Desugar.html"><span class="hs-identifier">ReWire.HSE.Desugar</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.HSE.Desugar.html#addMainModuleHead"><span class="hs-identifier">addMainModuleHead</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.HSE.Parse.html"><span class="hs-identifier">ReWire.HSE.Parse</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.HSE.Parse.html#tryParseInDir"><span class="hs-identifier">tryParseInDir</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html"><span class="hs-identifier">ReWire.HSE.Rename</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.HSE.Rename.html#Exports"><span class="hs-identifier">Exports</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Renamer"><span class="hs-identifier">Renamer</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#fromImps"><span class="hs-identifier">fromImps</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#toFilePath"><span class="hs-identifier">toFilePath</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.HSE.Globs.html"><span class="hs-identifier">ReWire.HSE.Globs</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.HSE.Globs.html#extendWithGlobs"><span class="hs-identifier">extendWithGlobs</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.HSE.Globs.html#getImps"><span class="hs-identifier">getImps</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Pretty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">showt</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Arrow</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(***)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Lens</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(^.)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">msum</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">void</span></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.State.Strict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">runStateT</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">StateT</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">MonadState</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">modify</span></span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashMap.Strict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">HashMap</span></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">pack</span></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.Exts.Syntax</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ImportDecl</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.FilePath</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(&lt;/&gt;)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">takeDirectory</span></span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashMap.Strict</span></span><span>          </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.Exts.Syntax</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">S</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Module</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">type</span><span> </span><span id="LoadPath"><span class="annot"><a href="ReWire.HSE.Cache.html#LoadPath"><span class="hs-identifier hs-var">LoadPath</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">]</span><span>
+</span><span id="line-41"></span><span class="hs-keyword">type</span><span> </span><span id="Cache"><span class="annot"><a href="ReWire.HSE.Cache.html#Cache"><span class="hs-identifier hs-var">Cache</span></a></span></span><span> </span><span id="local-6989586621679327143"><span class="annot"><a href="#local-6989586621679327143"><span class="hs-identifier hs-type">mod</span></a></span></span><span> </span><span id="local-6989586621679327144"><span class="annot"><a href="#local-6989586621679327144"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StateT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679327143"><span class="hs-identifier hs-type">mod</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Exports"><span class="hs-identifier hs-type">Exports</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679327144"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span id="local-6989586621679326984"><span id="local-6989586621679326985"><span id="local-6989586621679326986"><span class="annot"><a href="ReWire.HSE.Cache.html#runCache"><span class="hs-identifier hs-type">runCache</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="#local-6989586621679326984"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Cache.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679326985"><span class="hs-identifier hs-type">mod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679326984"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679326986"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679326984"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679326986"><span class="hs-identifier hs-type">a</span></a></span></span></span></span><span>
+</span><span id="line-44"></span><span id="runCache"><span class="annot"><span class="annottext">runCache :: forall (m :: * -&gt; *) mod a. Monad m =&gt; Cache mod m a -&gt; m a
+</span><a href="ReWire.HSE.Cache.html#runCache"><span class="hs-identifier hs-var hs-var">runCache</span></a></span></span><span> </span><span id="local-6989586621679327161"><span class="annot"><span class="annottext">Cache mod m a
+</span><a href="#local-6989586621679327161"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(a, HashMap FilePath (mod, Exports)) -&gt; a
+forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span> </span><span class="annot"><span class="annottext">((a, HashMap FilePath (mod, Exports)) -&gt; a)
+-&gt; m (a, HashMap FilePath (mod, Exports)) -&gt; m a
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Cache mod m a
+-&gt; HashMap FilePath (mod, Exports)
+-&gt; m (a, HashMap FilePath (mod, Exports))
+forall s (m :: * -&gt; *) a. StateT s m a -&gt; s -&gt; m (a, s)
+</span><span class="hs-identifier hs-var">runStateT</span></span><span> </span><span class="annot"><span class="annottext">Cache mod m a
+</span><a href="#local-6989586621679327161"><span class="hs-identifier hs-var">m</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap FilePath (mod, Exports)
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span class="hs-comment">-- | Locates a module in the load path, parses it, loads its imports</span><span>
+</span><span id="line-47"></span><span class="hs-comment">--   (recursively, with caching), and runs the supplied translation, which</span><span>
+</span><span id="line-48"></span><span class="hs-comment">--   takes the module's file path, renamer, loaded imports, and HSE AST to</span><span>
+</span><span id="line-49"></span><span class="hs-comment">--   the target IR. The translation's result is cached per file path.</span><span>
+</span><span id="line-50"></span><span class="annot"><a href="ReWire.HSE.Cache.html#getModuleWith"><span class="hs-identifier hs-type">getModuleWith</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679327015"><span class="annot"><a href="#local-6989586621679327015"><span class="hs-identifier hs-type">mod</span></a></span></span><span> </span><span id="local-6989586621679327011"><span class="annot"><a href="#local-6989586621679327011"><span class="hs-identifier hs-type">m</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679327011"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadError</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">AstError</span></span><span> </span><span class="annot"><a href="#local-6989586621679327011"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="#local-6989586621679327015"><span class="hs-identifier hs-type">mod</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span>      </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Renamer"><span class="hs-identifier hs-type">Renamer</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679327015"><span class="hs-identifier hs-type">mod</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Module</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SrcSpanInfo</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Cache.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327015"><span class="hs-identifier hs-type">mod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327011"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679327015"><span class="hs-identifier hs-type">mod</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Exports"><span class="hs-identifier hs-type">Exports</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Config</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Cache.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327015"><span class="hs-identifier hs-type">mod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327011"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679327015"><span class="hs-identifier hs-type">mod</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Exports"><span class="hs-identifier hs-type">Exports</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span id="getModuleWith"><span class="annot"><span class="annottext">getModuleWith :: forall mod (m :: * -&gt; *).
+(MonadIO m, MonadError AstError m, Monoid mod) =&gt;
+(FilePath
+ -&gt; Renamer
+ -&gt; mod
+ -&gt; Module SrcSpanInfo
+ -&gt; Cache mod m (mod, Exports))
+-&gt; Config -&gt; FilePath -&gt; FilePath -&gt; Cache mod m (mod, Exports)
+</span><a href="ReWire.HSE.Cache.html#getModuleWith"><span class="hs-identifier hs-var hs-var">getModuleWith</span></a></span></span><span> </span><span id="local-6989586621679327264"><span class="annot"><span class="annottext">FilePath
+-&gt; Renamer
+-&gt; mod
+-&gt; Module SrcSpanInfo
+-&gt; Cache mod m (mod, Exports)
+</span><a href="#local-6989586621679327264"><span class="hs-identifier hs-var">translate</span></a></span></span><span> </span><span id="local-6989586621679327265"><span class="annot"><span class="annottext">Config
+</span><a href="#local-6989586621679327265"><span class="hs-identifier hs-var">conf</span></a></span></span><span> </span><span id="local-6989586621679327266"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327266"><span class="hs-identifier hs-var">pwd</span></a></span></span><span> </span><span id="local-6989586621679327267"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327267"><span class="hs-identifier hs-var">fp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Config -&gt; Text -&gt; StateT (HashMap FilePath (mod, Exports)) m ()
+forall (m :: * -&gt; *). MonadIO m =&gt; Config -&gt; Text -&gt; m ()
+</span><span class="hs-identifier hs-var">pDebug</span></span><span> </span><span class="annot"><span class="annottext">Config
+</span><a href="#local-6989586621679327265"><span class="hs-identifier hs-var">conf</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Fetching module: &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327267"><span class="hs-identifier hs-var">fp</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; (pwd: &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327266"><span class="hs-identifier hs-var">pwd</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;)&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">StateT (HashMap FilePath (mod, Exports)) m ()
+-&gt; StateT
+     (HashMap FilePath (mod, Exports)) m (Maybe (mod, Exports))
+-&gt; StateT
+     (HashMap FilePath (mod, Exports)) m (Maybe (mod, Exports))
+forall a b.
+StateT (HashMap FilePath (mod, Exports)) m a
+-&gt; StateT (HashMap FilePath (mod, Exports)) m b
+-&gt; StateT (HashMap FilePath (mod, Exports)) m b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; m b -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; HashMap FilePath (mod, Exports) -&gt; Maybe (mod, Exports)
+forall k v. (Eq k, Hashable k) =&gt; k -&gt; HashMap k v -&gt; Maybe v
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327267"><span class="hs-identifier hs-var">fp</span></a></span><span> </span><span class="annot"><span class="annottext">(HashMap FilePath (mod, Exports) -&gt; Maybe (mod, Exports))
+-&gt; StateT
+     (HashMap FilePath (mod, Exports))
+     m
+     (HashMap FilePath (mod, Exports))
+-&gt; StateT
+     (HashMap FilePath (mod, Exports)) m (Maybe (mod, Exports))
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">StateT
+  (HashMap FilePath (mod, Exports))
+  m
+  (HashMap FilePath (mod, Exports))
+forall s (m :: * -&gt; *). MonadState s m =&gt; m s
+</span><span class="hs-identifier hs-var">get</span></span><span> </span><span class="annot"><span class="annottext">StateT (HashMap FilePath (mod, Exports)) m (Maybe (mod, Exports))
+-&gt; (Maybe (mod, Exports) -&gt; Cache mod m (mod, Exports))
+-&gt; Cache mod m (mod, Exports)
+forall a b.
+StateT (HashMap FilePath (mod, Exports)) m a
+-&gt; (a -&gt; StateT (HashMap FilePath (mod, Exports)) m b)
+-&gt; StateT (HashMap FilePath (mod, Exports)) m b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-54"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679327270"><span class="annot"><span class="annottext">(mod, Exports)
+</span><a href="#local-6989586621679327270"><span class="hs-identifier hs-var">p</span></a></span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(mod, Exports) -&gt; Cache mod m (mod, Exports)
+forall a. a -&gt; StateT (HashMap FilePath (mod, Exports)) m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(mod, Exports)
+</span><a href="#local-6989586621679327270"><span class="hs-identifier hs-var">p</span></a></span><span>
+</span><span id="line-55"></span><span>      </span><span class="annot"><span class="annottext">Maybe (mod, Exports)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-56"></span><span>            </span><span class="annot"><span class="annottext">(HashMap FilePath (mod, Exports)
+ -&gt; HashMap FilePath (mod, Exports))
+-&gt; StateT (HashMap FilePath (mod, Exports)) m ()
+forall s (m :: * -&gt; *). MonadState s m =&gt; (s -&gt; s) -&gt; m ()
+</span><span class="hs-identifier hs-var">modify</span></span><span> </span><span class="annot"><span class="annottext">((HashMap FilePath (mod, Exports)
+  -&gt; HashMap FilePath (mod, Exports))
+ -&gt; StateT (HashMap FilePath (mod, Exports)) m ())
+-&gt; (HashMap FilePath (mod, Exports)
+    -&gt; HashMap FilePath (mod, Exports))
+-&gt; StateT (HashMap FilePath (mod, Exports)) m ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+-&gt; (mod, Exports)
+-&gt; HashMap FilePath (mod, Exports)
+-&gt; HashMap FilePath (mod, Exports)
+forall k v.
+(Eq k, Hashable k) =&gt;
+k -&gt; v -&gt; HashMap k v -&gt; HashMap k v
+</span><span class="hs-identifier hs-var">Map.insert</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327267"><span class="hs-identifier hs-var">fp</span></a></span><span> </span><span class="annot"><span class="annottext">(mod, Exports)
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-57"></span><span>
+</span><span id="line-58"></span><span>            </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679327274"><span class="annot"><span class="annottext">lp :: [FilePath]
+</span><a href="#local-6989586621679327274"><span class="hs-identifier hs-var hs-var hs-var">lp</span></a></span></span><span>     </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327266"><span class="hs-identifier hs-var">pwd</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; [FilePath] -&gt; [FilePath]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">Config
+</span><a href="#local-6989586621679327265"><span class="hs-identifier hs-var">conf</span></a></span><span class="annot"><span class="annottext">Config -&gt; Getting [FilePath] Config [FilePath] -&gt; [FilePath]
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting [FilePath] Config [FilePath]
+Lens' Config [FilePath]
+</span><span class="hs-identifier hs-var">loadPath</span></span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span>            </span><span id="local-6989586621679327275"><span class="annot"><a href="#local-6989586621679327275"><span class="hs-identifier hs-var">mmods</span></a></span></span><span>      </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(FilePath
+ -&gt; StateT
+      (HashMap FilePath (mod, Exports))
+      m
+      (Maybe (FilePath, Module SrcSpanInfo)))
+-&gt; [FilePath]
+-&gt; StateT
+     (HashMap FilePath (mod, Exports))
+     m
+     [Maybe (FilePath, Module SrcSpanInfo)]
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Traversable t, Monad m) =&gt;
+(a -&gt; m b) -&gt; t a -&gt; m (t b)
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]
+</span><span class="hs-identifier hs-var">mapM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath
+-&gt; FilePath
+-&gt; StateT
+     (HashMap FilePath (mod, Exports))
+     m
+     (Maybe (FilePath, Module SrcSpanInfo))
+forall (m :: * -&gt; *).
+(MonadIO m, MonadError AstError m) =&gt;
+FilePath -&gt; FilePath -&gt; m (Maybe (FilePath, Module SrcSpanInfo))
+</span><a href="ReWire.HSE.Parse.html#tryParseInDir"><span class="hs-identifier hs-var">tryParseInDir</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327267"><span class="hs-identifier hs-var">fp</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[FilePath]
+</span><a href="#local-6989586621679327274"><span class="hs-identifier hs-var">lp</span></a></span><span>
+</span><span id="line-61"></span><span>            </span><span class="hs-special">(</span><span id="local-6989586621679327277"><span class="annot"><a href="#local-6989586621679327277"><span class="hs-identifier hs-var">pwd'</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679327278"><span class="annot"><a href="#local-6989586621679327278"><span class="hs-identifier hs-var">m</span></a></span></span><span class="hs-special">)</span><span>  </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="hs-identifier hs-type">maybe</span></span><span>
+</span><span id="line-62"></span><span>                              </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">failAt</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">filePath</span></span><span> </span><span class="annot"><a href="#local-6989586621679327267"><span class="hs-identifier hs-type">fp</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-string">&quot;File not found in load-path: &quot;</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">&lt;&gt;</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">showt</span></span><span> </span><span class="annot"><a href="#local-6989586621679327274"><span class="hs-identifier hs-type">lp</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span>                              </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">.</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679327281"><span class="hs-identifier hs-type">elideDot</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">***</span></span><span> </span><span class="annot"><a href="ReWire.HSE.Desugar.html#addMainModuleHead"><span class="hs-identifier hs-type">addMainModuleHead</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-64"></span><span>                        </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">msum</span></span><span> </span><span class="annot"><a href="#local-6989586621679327275"><span class="hs-identifier hs-type">mmods</span></a></span><span>
+</span><span id="line-65"></span><span>
+</span><span id="line-66"></span><span>            </span><span id="local-6989586621679327282"><span class="annot"><a href="#local-6989586621679327282"><span class="hs-identifier hs-var">rn</span></a></span></span><span>         </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><a href="#local-6989586621679327283"><span class="hs-identifier hs-type">mkRenamer</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327277"><span class="hs-identifier hs-type">pwd'</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327278"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-67"></span><span>            </span><span id="local-6989586621679327284"><span class="annot"><a href="#local-6989586621679327284"><span class="hs-identifier hs-var">imps</span></a></span></span><span>       </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><a href="#local-6989586621679327285"><span class="hs-identifier hs-type">loadImports</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327277"><span class="hs-identifier hs-type">pwd'</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327278"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span>            </span><span id="local-6989586621679327286"><span class="annot"><a href="#local-6989586621679327286"><span class="hs-identifier hs-var">p</span></a></span></span><span>          </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><a href="#local-6989586621679327264"><span class="hs-identifier hs-type">translate</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327267"><span class="hs-identifier hs-type">fp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327282"><span class="hs-identifier hs-type">rn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327284"><span class="hs-identifier hs-type">imps</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327278"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-70"></span><span>
+</span><span id="line-71"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">modify</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map.insert</span></span><span> </span><span class="annot"><a href="#local-6989586621679327267"><span class="hs-identifier hs-type">fp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327286"><span class="hs-identifier hs-type">p</span></a></span><span>
+</span><span id="line-72"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span> </span><span class="annot"><a href="#local-6989586621679327286"><span class="hs-identifier hs-type">p</span></a></span><span>
+</span><span id="line-73"></span><span>
+</span><span id="line-74"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679327283"><span class="hs-identifier hs-type">mkRenamer</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Module</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SrcSpanInfo</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Cache.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327015"><span class="hs-identifier hs-type">mod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327011"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Renamer"><span class="hs-identifier hs-type">Renamer</span></a></span><span>
+</span><span id="line-75"></span><span>            </span><span id="local-6989586621679327283"><span class="annot"><span class="annottext">mkRenamer :: FilePath -&gt; Module SrcSpanInfo -&gt; Cache mod m Renamer
+</span><a href="#local-6989586621679327283"><span class="hs-identifier hs-var hs-var">mkRenamer</span></a></span></span><span> </span><span id="local-6989586621679327287"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327287"><span class="hs-identifier hs-var">pwd'</span></a></span></span><span> </span><span id="local-6989586621679327288"><span class="annot"><span class="annottext">Module SrcSpanInfo
+</span><a href="#local-6989586621679327288"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Module SrcSpanInfo -&gt; Renamer -&gt; Renamer
+forall a. Annotation a =&gt; Module a -&gt; Renamer -&gt; Renamer
+</span><a href="ReWire.HSE.Globs.html#extendWithGlobs"><span class="hs-identifier hs-var">extendWithGlobs</span></a></span><span> </span><span class="annot"><span class="annottext">Module SrcSpanInfo
+</span><a href="#local-6989586621679327288"><span class="hs-identifier hs-var">m</span></a></span><span> </span><span class="annot"><span class="annottext">(Renamer -&gt; Renamer)
+-&gt; ([Renamer] -&gt; Renamer) -&gt; [Renamer] -&gt; Renamer
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[Renamer] -&gt; Renamer
+forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="annot"><span class="annottext">([Renamer] -&gt; Renamer)
+-&gt; StateT (HashMap FilePath (mod, Exports)) m [Renamer]
+-&gt; Cache mod m Renamer
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(ImportDecl SrcSpanInfo -&gt; Cache mod m Renamer)
+-&gt; [ImportDecl SrcSpanInfo]
+-&gt; StateT (HashMap FilePath (mod, Exports)) m [Renamer]
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Traversable t, Monad m) =&gt;
+(a -&gt; m b) -&gt; t a -&gt; m (t b)
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]
+</span><span class="hs-identifier hs-var">mapM</span></span><span> </span><span class="annot"><span class="annottext">ImportDecl SrcSpanInfo -&gt; Cache mod m Renamer
+</span><a href="#local-6989586621679327289"><span class="hs-identifier hs-var">mkRenamer'</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Module SrcSpanInfo -&gt; [ImportDecl SrcSpanInfo]
+forall a. Annotation a =&gt; Module a -&gt; [ImportDecl a]
+</span><a href="ReWire.HSE.Globs.html#getImps"><span class="hs-identifier hs-var">getImps</span></a></span><span> </span><span class="annot"><span class="annottext">Module SrcSpanInfo
+</span><a href="#local-6989586621679327288"><span class="hs-identifier hs-var">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>                  </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679327289"><span class="hs-identifier hs-type">mkRenamer'</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ImportDecl</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SrcSpanInfo</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Cache.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327015"><span class="hs-identifier hs-type">mod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327011"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="ReWire.HSE.Rename.html#Renamer"><span class="hs-identifier hs-type">Renamer</span></a></span><span>
+</span><span id="line-77"></span><span>                        </span><span id="local-6989586621679327289"><span class="annot"><span class="annottext">mkRenamer' :: ImportDecl SrcSpanInfo -&gt; Cache mod m Renamer
+</span><a href="#local-6989586621679327289"><span class="hs-identifier hs-var hs-var">mkRenamer'</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ImportDecl</span></span><span> </span><span id="local-6989586621679327291"><span class="annot"><span class="annottext">SrcSpanInfo
+</span><a href="#local-6989586621679327291"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ModuleName SrcSpanInfo -&gt; ModuleName ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span id="local-6989586621679327292"><span class="annot"><span class="annottext">ModuleName ()
+</span><a href="#local-6989586621679327292"><span class="hs-identifier hs-var">m</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679327293"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679327293"><span class="hs-identifier hs-var">quald</span></a></span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe FilePath
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(ModuleName SrcSpanInfo -&gt; ModuleName ())
+-&gt; Maybe (ModuleName SrcSpanInfo) -&gt; Maybe (ModuleName ())
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">ModuleName SrcSpanInfo -&gt; ModuleName ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span id="local-6989586621679327294"><span class="annot"><span class="annottext">Maybe (ModuleName ())
+</span><a href="#local-6989586621679327294"><span class="hs-keyword hs-var">as</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679327295"><span class="annot"><span class="annottext">Maybe (ImportSpecList SrcSpanInfo)
+</span><a href="#local-6989586621679327295"><span class="hs-identifier hs-var">specs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-78"></span><span>                              </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679327296"><span class="annot"><a href="#local-6989586621679327296"><span class="hs-identifier hs-var">exps</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo
+-&gt; Cache mod m (mod, Exports) -&gt; Cache mod m (mod, Exports)
+forall (m :: * -&gt; *) an a.
+(MonadError AstError m, Annotation an) =&gt;
+an -&gt; m a -&gt; m a
+</span><span class="hs-identifier hs-var">relocatingTo</span></span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo
+</span><a href="#local-6989586621679327291"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">(Cache mod m (mod, Exports) -&gt; Cache mod m (mod, Exports))
+-&gt; Cache mod m (mod, Exports) -&gt; Cache mod m (mod, Exports)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(FilePath
+ -&gt; Renamer
+ -&gt; mod
+ -&gt; Module SrcSpanInfo
+ -&gt; Cache mod m (mod, Exports))
+-&gt; Config -&gt; FilePath -&gt; FilePath -&gt; Cache mod m (mod, Exports)
+forall mod (m :: * -&gt; *).
+(MonadIO m, MonadError AstError m, Monoid mod) =&gt;
+(FilePath
+ -&gt; Renamer
+ -&gt; mod
+ -&gt; Module SrcSpanInfo
+ -&gt; Cache mod m (mod, Exports))
+-&gt; Config -&gt; FilePath -&gt; FilePath -&gt; Cache mod m (mod, Exports)
+</span><a href="ReWire.HSE.Cache.html#getModuleWith"><span class="hs-identifier hs-var">getModuleWith</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+-&gt; Renamer
+-&gt; mod
+-&gt; Module SrcSpanInfo
+-&gt; Cache mod m (mod, Exports)
+</span><a href="#local-6989586621679327264"><span class="hs-identifier hs-var">translate</span></a></span><span> </span><span class="annot"><span class="annottext">Config
+</span><a href="#local-6989586621679327265"><span class="hs-identifier hs-var">conf</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327287"><span class="hs-identifier hs-var">pwd'</span></a></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; Cache mod m (mod, Exports))
+-&gt; FilePath -&gt; Cache mod m (mod, Exports)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ModuleName () -&gt; FilePath
+forall a. ModuleName a -&gt; FilePath
+</span><a href="ReWire.HSE.Rename.html#toFilePath"><span class="hs-identifier hs-var">toFilePath</span></a></span><span> </span><span class="annot"><span class="annottext">ModuleName ()
+</span><a href="#local-6989586621679327292"><span class="hs-identifier hs-var">m</span></a></span><span>
+</span><span id="line-79"></span><span>                              </span><span class="annot"><a href="ReWire.HSE.Rename.html#fromImps"><span class="hs-identifier hs-type">fromImps</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327292"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327293"><span class="hs-identifier hs-type">quald</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327296"><span class="hs-identifier hs-type">exps</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327294"><span class="hs-keyword hs-type">as</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327295"><span class="hs-identifier hs-type">specs</span></a></span><span>
+</span><span id="line-80"></span><span>
+</span><span id="line-81"></span><span>            </span><span id="local-6989586621679327100"><span class="annot"><a href="#local-6989586621679327285"><span class="hs-identifier hs-type">loadImports</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annotation</span></span><span> </span><span class="annot"><a href="#local-6989586621679327100"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Module</span></span><span> </span><span class="annot"><a href="#local-6989586621679327100"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.HSE.Cache.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327015"><span class="hs-identifier hs-type">mod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327011"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679327015"><span class="hs-identifier hs-type">mod</span></a></span></span><span>
+</span><span id="line-82"></span><span>            </span><span id="local-6989586621679327285"><span class="annot"><span class="annottext">loadImports :: forall a. Annotation a =&gt; FilePath -&gt; Module a -&gt; Cache mod m mod
+</span><a href="#local-6989586621679327285"><span class="hs-identifier hs-var hs-var">loadImports</span></a></span></span><span> </span><span id="local-6989586621679327304"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327304"><span class="hs-identifier hs-var">pwd'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">([mod] -&gt; mod)
+-&gt; StateT (HashMap FilePath (mod, Exports)) m [mod]
+-&gt; Cache mod m mod
+forall a b.
+(a -&gt; b)
+-&gt; StateT (HashMap FilePath (mod, Exports)) m a
+-&gt; StateT (HashMap FilePath (mod, Exports)) m b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">[mod] -&gt; mod
+forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="annot"><span class="annottext">(StateT (HashMap FilePath (mod, Exports)) m [mod]
+ -&gt; Cache mod m mod)
+-&gt; (Module a -&gt; StateT (HashMap FilePath (mod, Exports)) m [mod])
+-&gt; Module a
+-&gt; Cache mod m mod
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(ImportDecl a -&gt; Cache mod m mod)
+-&gt; [ImportDecl a]
+-&gt; StateT (HashMap FilePath (mod, Exports)) m [mod]
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Traversable t, Monad m) =&gt;
+(a -&gt; m b) -&gt; t a -&gt; m (t b)
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]
+</span><span class="hs-identifier hs-var">mapM</span></span><span> </span><span class="annot"><span class="annottext">ImportDecl a -&gt; Cache mod m mod
+forall {a}. Annotation a =&gt; ImportDecl a -&gt; Cache mod m mod
+</span><a href="#local-6989586621679327305"><span class="hs-identifier hs-var">loadImp</span></a></span><span> </span><span class="annot"><span class="annottext">([ImportDecl a]
+ -&gt; StateT (HashMap FilePath (mod, Exports)) m [mod])
+-&gt; (Module a -&gt; [ImportDecl a])
+-&gt; Module a
+-&gt; StateT (HashMap FilePath (mod, Exports)) m [mod]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Module a -&gt; [ImportDecl a]
+forall a. Annotation a =&gt; Module a -&gt; [ImportDecl a]
+</span><a href="ReWire.HSE.Globs.html#getImps"><span class="hs-identifier hs-var">getImps</span></a></span><span>
+</span><span id="line-83"></span><span>                  </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679327305"><span class="annot"><span class="annottext">loadImp :: ImportDecl a -&gt; Cache mod m mod
+</span><a href="#local-6989586621679327305"><span class="hs-identifier hs-var hs-var">loadImp</span></a></span></span><span> </span><span id="local-6989586621679327323"><span class="annot"><span class="annottext">imp :: ImportDecl a
+</span><a href="#local-6989586621679327323"><span class="hs-identifier hs-var">imp</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ImportDecl</span></span><span> </span><span id="local-6989586621679327324"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679327324"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="annot"><span class="annottext">ModuleName a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe FilePath
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (ModuleName a)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (ImportSpecList a)
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(mod, Exports) -&gt; mod
+forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span> </span><span class="annot"><span class="annottext">((mod, Exports) -&gt; mod)
+-&gt; Cache mod m (mod, Exports) -&gt; Cache mod m mod
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Cache mod m (mod, Exports) -&gt; Cache mod m (mod, Exports)
+forall (m :: * -&gt; *) an a.
+(MonadError AstError m, Annotation an) =&gt;
+an -&gt; m a -&gt; m a
+</span><span class="hs-identifier hs-var">relocatingTo</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679327324"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(FilePath
+ -&gt; Renamer
+ -&gt; mod
+ -&gt; Module SrcSpanInfo
+ -&gt; Cache mod m (mod, Exports))
+-&gt; Config -&gt; FilePath -&gt; FilePath -&gt; Cache mod m (mod, Exports)
+forall mod (m :: * -&gt; *).
+(MonadIO m, MonadError AstError m, Monoid mod) =&gt;
+(FilePath
+ -&gt; Renamer
+ -&gt; mod
+ -&gt; Module SrcSpanInfo
+ -&gt; Cache mod m (mod, Exports))
+-&gt; Config -&gt; FilePath -&gt; FilePath -&gt; Cache mod m (mod, Exports)
+</span><a href="ReWire.HSE.Cache.html#getModuleWith"><span class="hs-identifier hs-var">getModuleWith</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+-&gt; Renamer
+-&gt; mod
+-&gt; Module SrcSpanInfo
+-&gt; Cache mod m (mod, Exports)
+</span><a href="#local-6989586621679327264"><span class="hs-identifier hs-var">translate</span></a></span><span> </span><span class="annot"><span class="annottext">Config
+</span><a href="#local-6989586621679327265"><span class="hs-identifier hs-var">conf</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327304"><span class="hs-identifier hs-var">pwd'</span></a></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; Cache mod m (mod, Exports))
+-&gt; FilePath -&gt; Cache mod m (mod, Exports)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ModuleName () -&gt; FilePath
+forall a. ModuleName a -&gt; FilePath
+</span><a href="ReWire.HSE.Rename.html#toFilePath"><span class="hs-identifier hs-var">toFilePath</span></a></span><span> </span><span class="annot"><span class="annottext">(ModuleName () -&gt; FilePath) -&gt; ModuleName () -&gt; FilePath
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ModuleName a -&gt; ModuleName ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">(ModuleName a -&gt; ModuleName ()) -&gt; ModuleName a -&gt; ModuleName ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ImportDecl a -&gt; ModuleName a
+forall l. ImportDecl l -&gt; ModuleName l
+</span><span class="hs-identifier hs-var">importModule</span></span><span> </span><span class="annot"><span class="annottext">ImportDecl a
+</span><a href="#local-6989586621679327323"><span class="hs-identifier hs-var">imp</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span>            </span><span class="annot"><a href="#local-6989586621679327281"><span class="hs-identifier hs-type">elideDot</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
+</span><span id="line-86"></span><span>            </span><span id="local-6989586621679327281"><span class="annot"><span class="annottext">elideDot :: FilePath -&gt; FilePath
+</span><a href="#local-6989586621679327281"><span class="hs-identifier hs-var hs-var">elideDot</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-87"></span><span>                  </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot;.&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath
+</span><span class="hs-identifier hs-var">takeDirectory</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327267"><span class="hs-identifier hs-var">fp</span></a></span><span>
+</span><span id="line-88"></span><span>                  </span><span id="local-6989586621679327326"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327326"><span class="hs-identifier hs-var">d</span></a></span></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327326"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; FilePath
+</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath
+</span><span class="hs-identifier hs-var">takeDirectory</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679327267"><span class="hs-identifier hs-var">fp</span></a></span><span>
+</span><span id="line-89"></span></pre></body></html>

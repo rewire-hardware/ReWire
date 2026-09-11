@@ -1,0 +1,645 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span>
+</span><span id="line-2"></span><span class="hs-comment">-- | Pure SHA-256 (FIPS 180-4), used to bind validator responses to the</span><span>
+</span><span id="line-3"></span><span class="hs-comment">--   exact artifact bytes they were computed from. Self-contained so rwc</span><span>
+</span><span id="line-4"></span><span class="hs-comment">--   carries no cryptography dependency for the sake of one digest.</span><span>
+</span><span id="line-5"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.Sha256.html"><span class="hs-identifier">ReWire.Sha256</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Sha256.html#hashHex"><span class="hs-identifier">hashHex</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-6"></span><span>
+</span><span id="line-7"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bits</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">complement</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">rotateR</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">shiftL</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">shiftR</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">xor</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(.&amp;.)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-8"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-9"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word64</span></span><span class="hs-special">)</span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Numeric</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">showHex</span></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BS</span></span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Sequence</span></span><span>   </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Seq</span></span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span>       </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="annot"><span class="hs-comment">-- | The lowercase hex SHA-256 digest of a byte string.</span></span><span>
+</span><span id="line-17"></span><span class="annot"><a href="ReWire.Sha256.html#hashHex"><span class="hs-identifier hs-type">hashHex</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-18"></span><span id="hashHex"><span class="annot"><span class="annottext">hashHex :: ByteString -&gt; Text
+</span><a href="ReWire.Sha256.html#hashHex"><span class="hs-identifier hs-var hs-var">hashHex</span></a></span></span><span> </span><span id="local-6989586621679178364"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679178364"><span class="hs-identifier hs-var">bs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; Text
+</span><span class="hs-identifier hs-var">T.concat</span></span><span> </span><span class="annot"><span class="annottext">([Text] -&gt; Text) -&gt; [Text] -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Word32 -&gt; Text) -&gt; [Word32] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Text
+</span><a href="#local-6989586621679178366"><span class="hs-identifier hs-var">wordHex</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178367"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178368"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178369"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178370"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178371"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178372"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178373"><span class="hs-identifier hs-var">g</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178374"><span class="hs-identifier hs-var">h</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-19"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679178367"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178367"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178368"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178368"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178369"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178369"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178370"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178370"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178371"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178371"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178372"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178372"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178373"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178373"><span class="hs-identifier hs-var">g</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178374"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178374"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+ -&gt; ByteString
+ -&gt; (Word32, Word32, Word32, Word32, Word32, Word32, Word32,
+     Word32))
+-&gt; (Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+-&gt; [ByteString]
+-&gt; (Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) b a.
+Foldable t =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldl'</span></span><span> </span><span class="annot"><span class="annottext">(Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+-&gt; ByteString
+-&gt; (Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+</span><a href="ReWire.Sha256.html#block"><span class="hs-identifier hs-var">block</span></a></span><span> </span><span class="annot"><span class="annottext">(Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+</span><a href="ReWire.Sha256.html#h0"><span class="hs-identifier hs-var">h0</span></a></span><span> </span><span class="annot"><span class="annottext">([ByteString]
+ -&gt; (Word32, Word32, Word32, Word32, Word32, Word32, Word32,
+     Word32))
+-&gt; [ByteString]
+-&gt; (Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; [ByteString]
+</span><a href="ReWire.Sha256.html#chunks"><span class="hs-identifier hs-var">chunks</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; [ByteString]) -&gt; ByteString -&gt; [ByteString]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; ByteString
+</span><a href="ReWire.Sha256.html#padded"><span class="hs-identifier hs-var">padded</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679178364"><span class="hs-identifier hs-var">bs</span></a></span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span>            </span><span class="annot"><a href="#local-6989586621679178366"><span class="hs-identifier hs-type">wordHex</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-22"></span><span>            </span><span id="local-6989586621679178366"><span class="annot"><span class="annottext">wordHex :: Word32 -&gt; Text
+</span><a href="#local-6989586621679178366"><span class="hs-identifier hs-var hs-var">wordHex</span></a></span></span><span> </span><span id="local-6989586621679178381"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178381"><span class="hs-identifier hs-var">w</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Char -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.justifyRight</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">8</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'0'</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; Text -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Text) -&gt; String -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; ShowS
+forall a. Integral a =&gt; a -&gt; ShowS
+</span><span class="hs-identifier hs-var">showHex</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178381"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&quot;</span></span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">type</span><span> </span><span id="St"><span class="annot"><a href="ReWire.Sha256.html#St"><span class="hs-identifier hs-var">St</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="annot"><a href="ReWire.Sha256.html#h0"><span class="hs-identifier hs-type">h0</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Sha256.html#St"><span class="hs-identifier hs-type">St</span></a></span><span>
+</span><span id="line-27"></span><span id="h0"><span class="annot"><span class="annottext">h0 :: (Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+</span><a href="ReWire.Sha256.html#h0"><span class="hs-identifier hs-var hs-var">h0</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x6a09e667</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xbb67ae85</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x3c6ef372</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xa54ff53a</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x510e527f</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x9b05688c</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x1f83d9ab</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x5be0cd19</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="annot"><a href="ReWire.Sha256.html#ks"><span class="hs-identifier hs-type">ks</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Seq.Seq</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span>
+</span><span id="line-30"></span><span id="ks"><span class="annot"><span class="annottext">ks :: Seq Word32
+</span><a href="ReWire.Sha256.html#ks"><span class="hs-identifier hs-var hs-var">ks</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Word32] -&gt; Seq Word32
+forall a. [a] -&gt; Seq a
+</span><span class="hs-identifier hs-var">Seq.fromList</span></span><span>
+</span><span id="line-31"></span><span>      </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x428a2f98</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x71374491</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xb5c0fbcf</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xe9b5dba5</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x3956c25b</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x59f111f1</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x923f82a4</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xab1c5ed5</span></span><span>
+</span><span id="line-32"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xd807aa98</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x12835b01</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x243185be</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x550c7dc3</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x72be5d74</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x80deb1fe</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x9bdc06a7</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xc19bf174</span></span><span>
+</span><span id="line-33"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xe49b69c1</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xefbe4786</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x0fc19dc6</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x240ca1cc</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x2de92c6f</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x4a7484aa</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x5cb0a9dc</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x76f988da</span></span><span>
+</span><span id="line-34"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x983e5152</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xa831c66d</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xb00327c8</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xbf597fc7</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xc6e00bf3</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xd5a79147</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x06ca6351</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x14292967</span></span><span>
+</span><span id="line-35"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x27b70a85</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x2e1b2138</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x4d2c6dfc</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x53380d13</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x650a7354</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x766a0abb</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x81c2c92e</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x92722c85</span></span><span>
+</span><span id="line-36"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xa2bfe8a1</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xa81a664b</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xc24b8b70</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xc76c51a3</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xd192e819</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xd6990624</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xf40e3585</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x106aa070</span></span><span>
+</span><span id="line-37"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x19a4c116</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x1e376c08</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x2748774c</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x34b0bcb5</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x391c0cb3</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x4ed8aa4a</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x5b9cca4f</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x682e6ff3</span></span><span>
+</span><span id="line-38"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x748f82ee</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x78a5636f</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x84c87814</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x8cc70208</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0x90befffa</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xa4506ceb</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xbef9a3f7</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><span class="hs-number">0xc67178f2</span></span><span>
+</span><span id="line-39"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="annot"><a href="ReWire.Sha256.html#padded"><span class="hs-identifier hs-type">padded</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span>
+</span><span id="line-42"></span><span id="padded"><span class="annot"><span class="annottext">padded :: ByteString -&gt; ByteString
+</span><a href="ReWire.Sha256.html#padded"><span class="hs-identifier hs-var hs-var">padded</span></a></span></span><span> </span><span id="local-6989586621679178387"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679178387"><span class="hs-identifier hs-var">bs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679178387"><span class="hs-identifier hs-var">bs</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; ByteString -&gt; ByteString
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; ByteString
+</span><span class="hs-identifier hs-var">BS.singleton</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">0x80</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; ByteString -&gt; ByteString
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Word8 -&gt; ByteString
+</span><span class="hs-identifier hs-var">BS.replicate</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178390"><span class="hs-identifier hs-var">nzero</span></a></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; ByteString -&gt; ByteString
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679178391"><span class="hs-identifier hs-var">lenBytes</span></a></span><span>
+</span><span id="line-43"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679178390"><span class="annot"><span class="annottext">nzero :: Int
+</span><a href="#local-6989586621679178390"><span class="hs-identifier hs-var hs-var">nzero</span></a></span></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">55</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Int
+</span><span class="hs-identifier hs-var">BS.length</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679178387"><span class="hs-identifier hs-var">bs</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`mod`</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">64</span></span><span>
+</span><span id="line-44"></span><span>            </span><span id="local-6989586621679178404"><span class="annot"><span class="annottext">bitLen :: Word64
+</span><a href="#local-6989586621679178404"><span class="hs-identifier hs-var hs-var">bitLen</span></a></span></span><span>   </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word64
+</span><span class="hs-number">8</span></span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Word64 -&gt; Word64
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Word64
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; Int
+</span><span class="hs-identifier hs-var">BS.length</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679178387"><span class="hs-identifier hs-var">bs</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word64</span></span><span>
+</span><span id="line-45"></span><span>            </span><span id="local-6989586621679178391"><span class="annot"><span class="annottext">lenBytes :: ByteString
+</span><a href="#local-6989586621679178391"><span class="hs-identifier hs-var hs-var">lenBytes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Word8] -&gt; ByteString
+</span><span class="hs-identifier hs-var">BS.pack</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Word64 -&gt; Word8
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Word64 -&gt; Word8) -&gt; Word64 -&gt; Word8
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Word64
+</span><a href="#local-6989586621679178404"><span class="hs-identifier hs-var">bitLen</span></a></span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Int -&gt; Word64
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-operator hs-var">`shiftR`</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178416"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679178416"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178416"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">56</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">48</span></span><span> </span><span class="hs-glyph">..</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span class="hs-special">]</span><span class="hs-special">]</span><span>
+</span><span id="line-46"></span><span>
+</span><span id="line-47"></span><span class="annot"><a href="ReWire.Sha256.html#chunks"><span class="hs-identifier hs-type">chunks</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span class="hs-special">]</span><span>
+</span><span id="line-48"></span><span id="chunks"><span class="annot"><span class="annottext">chunks :: ByteString -&gt; [ByteString]
+</span><a href="ReWire.Sha256.html#chunks"><span class="hs-identifier hs-var hs-var">chunks</span></a></span></span><span> </span><span id="local-6989586621679178417"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679178417"><span class="hs-identifier hs-var">bs</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Bool
+</span><span class="hs-identifier hs-var">BS.null</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679178417"><span class="hs-identifier hs-var">bs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-49"></span><span>          </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; ByteString -&gt; ByteString
+</span><span class="hs-identifier hs-var">BS.take</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">64</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679178417"><span class="hs-identifier hs-var">bs</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; [ByteString] -&gt; [ByteString]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; [ByteString]
+</span><a href="ReWire.Sha256.html#chunks"><span class="hs-identifier hs-var">chunks</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; ByteString -&gt; ByteString
+</span><span class="hs-identifier hs-var">BS.drop</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">64</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679178417"><span class="hs-identifier hs-var">bs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span>
+</span><span id="line-51"></span><span class="annot"><a href="ReWire.Sha256.html#block"><span class="hs-identifier hs-type">block</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Sha256.html#St"><span class="hs-identifier hs-type">St</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Sha256.html#St"><span class="hs-identifier hs-type">St</span></a></span><span>
+</span><span id="line-52"></span><span id="block"><span class="annot"><span class="annottext">block :: (Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+-&gt; ByteString
+-&gt; (Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+</span><a href="ReWire.Sha256.html#block"><span class="hs-identifier hs-var hs-var">block</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679178421"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178421"><span class="hs-identifier hs-var">a0</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178422"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178422"><span class="hs-identifier hs-var">b0</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178423"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178423"><span class="hs-identifier hs-var">c0</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178424"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178424"><span class="hs-identifier hs-var">d0</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178425"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178425"><span class="hs-identifier hs-var">e0</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178426"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178426"><span class="hs-identifier hs-var">f0</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178427"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178427"><span class="hs-identifier hs-var">g0</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178428"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178428"><span class="hs-identifier hs-var">h'</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679178429"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679178429"><span class="hs-identifier hs-var">blk</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-53"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">((Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+ -&gt; Int
+ -&gt; (Word32, Word32, Word32, Word32, Word32, Word32, Word32,
+     Word32))
+-&gt; (Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+-&gt; [Int]
+-&gt; (Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) b a.
+Foldable t =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldl'</span></span><span> </span><span class="annot"><span class="annottext">(Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+-&gt; Int
+-&gt; (Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+</span><a href="#local-6989586621679178430"><span class="hs-identifier hs-var">round'</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178421"><span class="hs-identifier hs-var">a0</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178422"><span class="hs-identifier hs-var">b0</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178423"><span class="hs-identifier hs-var">c0</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178424"><span class="hs-identifier hs-var">d0</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178425"><span class="hs-identifier hs-var">e0</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178426"><span class="hs-identifier hs-var">f0</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178427"><span class="hs-identifier hs-var">g0</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178428"><span class="hs-identifier hs-var">h'</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">63</span></span><span class="hs-special">]</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-54"></span><span>            </span><span class="hs-special">(</span><span id="local-6989586621679178431"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178431"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178432"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178432"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178433"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178433"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178434"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178434"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178435"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178435"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178436"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178436"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178437"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178437"><span class="hs-identifier hs-var">g</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178438"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178438"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-55"></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178421"><span class="hs-identifier hs-var">a0</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178431"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178422"><span class="hs-identifier hs-var">b0</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178432"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178423"><span class="hs-identifier hs-var">c0</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178433"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178424"><span class="hs-identifier hs-var">d0</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178434"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178425"><span class="hs-identifier hs-var">e0</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178435"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178426"><span class="hs-identifier hs-var">f0</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178436"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178427"><span class="hs-identifier hs-var">g0</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178437"><span class="hs-identifier hs-var">g</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178428"><span class="hs-identifier hs-var">h'</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178438"><span class="hs-identifier hs-var">h</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679178440"><span class="hs-identifier hs-type">ws</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Seq.Seq</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span>
+</span><span id="line-57"></span><span>            </span><span id="local-6989586621679178440"><span class="annot"><span class="annottext">ws :: Seq Word32
+</span><a href="#local-6989586621679178440"><span class="hs-identifier hs-var hs-var">ws</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Seq Word32 -&gt; Seq Word32
+</span><a href="#local-6989586621679178441"><span class="hs-identifier hs-var">extend</span></a></span><span> </span><span class="annot"><span class="annottext">(Seq Word32 -&gt; Seq Word32) -&gt; Seq Word32 -&gt; Seq Word32
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Word32] -&gt; Seq Word32
+forall a. [a] -&gt; Seq a
+</span><span class="hs-identifier hs-var">Seq.fromList</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Word32
+</span><a href="#local-6989586621679178442"><span class="hs-identifier hs-var">word32At</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">4</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178443"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679178443"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178443"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">15</span></span><span class="hs-special">]</span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span>            </span><span class="annot"><a href="#local-6989586621679178441"><span class="hs-identifier hs-type">extend</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Seq.Seq</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Seq.Seq</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span>
+</span><span id="line-60"></span><span>            </span><span id="local-6989586621679178441"><span class="annot"><span class="annottext">extend :: Seq Word32 -&gt; Seq Word32
+</span><a href="#local-6989586621679178441"><span class="hs-identifier hs-var hs-var">extend</span></a></span></span><span> </span><span id="local-6989586621679178444"><span class="annot"><span class="annottext">Seq Word32
+</span><a href="#local-6989586621679178444"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Seq Word32 -&gt; Int
+forall a. Seq a -&gt; Int
+</span><span class="hs-identifier hs-var">Seq.length</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32
+</span><a href="#local-6989586621679178444"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">64</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Seq Word32
+</span><a href="#local-6989586621679178444"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-61"></span><span>                     </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>          </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Seq Word32 -&gt; Seq Word32
+</span><a href="#local-6989586621679178441"><span class="hs-identifier hs-var">extend</span></a></span><span> </span><span class="annot"><span class="annottext">(Seq Word32 -&gt; Seq Word32) -&gt; Seq Word32 -&gt; Seq Word32
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32
+</span><a href="#local-6989586621679178444"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Seq Word32 -&gt; Word32 -&gt; Seq Word32
+forall a. Seq a -&gt; a -&gt; Seq a
+</span><span class="hs-operator hs-var">Seq.|&gt;</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178447"><span class="hs-identifier hs-var">w</span></a></span><span>
+</span><span id="line-62"></span><span>                  </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679178448"><span class="annot"><span class="annottext">i :: Int
+</span><a href="#local-6989586621679178448"><span class="hs-identifier hs-var hs-var">i</span></a></span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Seq Word32 -&gt; Int
+forall a. Seq a -&gt; Int
+</span><span class="hs-identifier hs-var">Seq.length</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32
+</span><a href="#local-6989586621679178444"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-63"></span><span>                        </span><span id="local-6989586621679178447"><span class="annot"><span class="annottext">w :: Word32
+</span><a href="#local-6989586621679178447"><span class="hs-identifier hs-var hs-var">w</span></a></span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Seq Word32 -&gt; Int -&gt; Word32
+forall a. Seq a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">Seq.index</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32
+</span><a href="#local-6989586621679178444"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178448"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">16</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178457"><span class="hs-identifier hs-var">s0</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32 -&gt; Int -&gt; Word32
+forall a. Seq a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">Seq.index</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32
+</span><a href="#local-6989586621679178444"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178448"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">7</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178458"><span class="hs-identifier hs-var">s1</span></a></span><span>
+</span><span id="line-64"></span><span>                        </span><span id="local-6989586621679178457"><span class="annot"><span class="annottext">s0 :: Word32
+</span><a href="#local-6989586621679178457"><span class="hs-identifier hs-var hs-var">s0</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">rotateR</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Seq Word32 -&gt; Int -&gt; Word32
+forall a. Seq a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">Seq.index</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32
+</span><a href="#local-6989586621679178444"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178448"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">15</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">7</span></span><span>  </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`xor`</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">rotateR</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Seq Word32 -&gt; Int -&gt; Word32
+forall a. Seq a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">Seq.index</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32
+</span><a href="#local-6989586621679178444"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178448"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">15</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">18</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`xor`</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">shiftR</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Seq Word32 -&gt; Int -&gt; Word32
+forall a. Seq a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">Seq.index</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32
+</span><a href="#local-6989586621679178444"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178448"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">15</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">3</span></span><span>
+</span><span id="line-65"></span><span>                        </span><span id="local-6989586621679178458"><span class="annot"><span class="annottext">s1 :: Word32
+</span><a href="#local-6989586621679178458"><span class="hs-identifier hs-var hs-var">s1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">rotateR</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Seq Word32 -&gt; Int -&gt; Word32
+forall a. Seq a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">Seq.index</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32
+</span><a href="#local-6989586621679178444"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178448"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">17</span></span><span>  </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`xor`</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">rotateR</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Seq Word32 -&gt; Int -&gt; Word32
+forall a. Seq a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">Seq.index</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32
+</span><a href="#local-6989586621679178444"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178448"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">19</span></span><span>  </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`xor`</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">shiftR</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Seq Word32 -&gt; Int -&gt; Word32
+forall a. Seq a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">Seq.index</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32
+</span><a href="#local-6989586621679178444"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178448"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">10</span></span><span>
+</span><span id="line-66"></span><span>
+</span><span id="line-67"></span><span>            </span><span class="annot"><a href="#local-6989586621679178442"><span class="hs-identifier hs-type">word32At</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span>
+</span><span id="line-68"></span><span>            </span><span id="local-6989586621679178442"><span class="annot"><span class="annottext">word32At :: Int -&gt; Word32
+</span><a href="#local-6989586621679178442"><span class="hs-identifier hs-var hs-var">word32At</span></a></span></span><span> </span><span id="local-6989586621679178481"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178481"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">shiftL</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Word32
+</span><a href="#local-6989586621679178482"><span class="hs-identifier hs-var">byte</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178481"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">24</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">shiftL</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Word32
+</span><a href="#local-6989586621679178482"><span class="hs-identifier hs-var">byte</span></a></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Word32) -&gt; Int -&gt; Word32
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178481"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">16</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">shiftL</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Word32
+</span><a href="#local-6989586621679178482"><span class="hs-identifier hs-var">byte</span></a></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Word32) -&gt; Int -&gt; Word32
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178481"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">8</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Word32
+</span><a href="#local-6989586621679178482"><span class="hs-identifier hs-var">byte</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178481"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">3</span></span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span>                  </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679178482"><span class="hs-identifier hs-type">byte</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word32</span></span><span>
+</span><span id="line-70"></span><span>                        </span><span id="local-6989586621679178482"><span class="annot"><span class="annottext">byte :: Int -&gt; Word32
+</span><a href="#local-6989586621679178482"><span class="hs-identifier hs-var hs-var">byte</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word32
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Word8 -&gt; Word32) -&gt; (Int -&gt; Word8) -&gt; Int -&gt; Word32
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; ByteString -&gt; Int -&gt; Word8
+ByteString -&gt; Int -&gt; Word8
+</span><span class="hs-identifier hs-var">BS.index</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679178429"><span class="hs-identifier hs-var">blk</span></a></span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span>            </span><span class="annot"><a href="#local-6989586621679178430"><span class="hs-identifier hs-type">round'</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Sha256.html#St"><span class="hs-identifier hs-type">St</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Sha256.html#St"><span class="hs-identifier hs-type">St</span></a></span><span>
+</span><span id="line-73"></span><span>            </span><span id="local-6989586621679178430"><span class="annot"><span class="annottext">round' :: (Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+-&gt; Int
+-&gt; (Word32, Word32, Word32, Word32, Word32, Word32, Word32, Word32)
+</span><a href="#local-6989586621679178430"><span class="hs-identifier hs-var hs-var">round'</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679178485"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178485"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178486"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178486"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178487"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178487"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178488"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178488"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178489"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178489"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178490"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178490"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178491"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178491"><span class="hs-identifier hs-var">g</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679178492"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178492"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679178493"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178493"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178494"><span class="hs-identifier hs-var">t1</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178495"><span class="hs-identifier hs-var">t2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178485"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178486"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178487"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178488"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178494"><span class="hs-identifier hs-var">t1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178489"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178490"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178491"><span class="hs-identifier hs-var">g</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-74"></span><span>                  </span><span class="hs-keyword">where</span><span> </span><span id="local-6989586621679178501"><span class="annot"><span class="annottext">s1 :: Word32
+</span><a href="#local-6989586621679178501"><span class="hs-identifier hs-var hs-var">s1</span></a></span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">rotateR</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178489"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">6</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`xor`</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">rotateR</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178489"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">11</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`xor`</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">rotateR</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178489"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">25</span></span><span>
+</span><span id="line-75"></span><span>                        </span><span id="local-6989586621679178506"><span class="annot"><span class="annottext">ch :: Word32
+</span><a href="#local-6989586621679178506"><span class="hs-identifier hs-var hs-var">ch</span></a></span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178489"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">.&amp;.</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178490"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`xor`</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">complement</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178489"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">.&amp;.</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178491"><span class="hs-identifier hs-var">g</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>                        </span><span id="local-6989586621679178494"><span class="annot"><span class="annottext">t1 :: Word32
+</span><a href="#local-6989586621679178494"><span class="hs-identifier hs-var hs-var">t1</span></a></span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178492"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178501"><span class="hs-identifier hs-var">s1</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178506"><span class="hs-identifier hs-var">ch</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32 -&gt; Int -&gt; Word32
+forall a. Seq a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">Seq.index</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32
+</span><a href="ReWire.Sha256.html#ks"><span class="hs-identifier hs-var">ks</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178493"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32 -&gt; Int -&gt; Word32
+forall a. Seq a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">Seq.index</span></span><span> </span><span class="annot"><span class="annottext">Seq Word32
+</span><a href="#local-6989586621679178440"><span class="hs-identifier hs-var">ws</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679178493"><span class="hs-identifier hs-var">i</span></a></span><span>
+</span><span id="line-77"></span><span>                        </span><span id="local-6989586621679178516"><span class="annot"><span class="annottext">s0 :: Word32
+</span><a href="#local-6989586621679178516"><span class="hs-identifier hs-var hs-var">s0</span></a></span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">rotateR</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178485"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`xor`</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">rotateR</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178485"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">13</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`xor`</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Int -&gt; Word32
+forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">rotateR</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178485"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">22</span></span><span>
+</span><span id="line-78"></span><span>                        </span><span id="local-6989586621679178522"><span class="annot"><span class="annottext">mj :: Word32
+</span><a href="#local-6989586621679178522"><span class="hs-identifier hs-var hs-var">mj</span></a></span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178485"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">.&amp;.</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178486"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`xor`</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178485"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">.&amp;.</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178487"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`xor`</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178486"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Bits a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">.&amp;.</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178487"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-79"></span><span>                        </span><span id="local-6989586621679178495"><span class="annot"><span class="annottext">t2 :: Word32
+</span><a href="#local-6989586621679178495"><span class="hs-identifier hs-var hs-var">t2</span></a></span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178516"><span class="hs-identifier hs-var">s0</span></a></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; Word32 -&gt; Word32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679178522"><span class="hs-identifier hs-var">mj</span></a></span><span>
+</span><span id="line-80"></span></pre></body></html>

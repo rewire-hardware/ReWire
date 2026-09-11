@@ -1,0 +1,23 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span>
+</span><span id="line-2"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.HSE.Annotate.html"><span class="hs-identifier">ReWire.HSE.Annotate</span></a></span><span>
+</span><span id="line-3"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="ReWire.HSE.Annotate.html#annotate"><span class="hs-identifier">annotate</span></a></span><span>
+</span><span id="line-4"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Annote</span></span><span>
+</span><span id="line-5"></span><span>      </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-6"></span><span>
+</span><span id="line-7"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Annotation</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Annote</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Annotation</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">toAnnote</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-8"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.HSE.SrcLoc.html"><span class="hs-identifier">ReWire.HSE.SrcLoc</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- the `Annotation SrcSpanInfo` instance.</span><span>
+</span><span id="line-9"></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.Exts.SrcLoc</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">SrcSpanInfo</span></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Language.Haskell.Exts.Syntax</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Module</span></span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- | Replace every haskell-src-exts source span in a parsed module with the</span><span>
+</span><span id="line-14"></span><span class="hs-comment">--   compiler's own annotation, recording each node's origin span.</span><span>
+</span><span id="line-15"></span><span class="annot"><a href="ReWire.HSE.Annotate.html#annotate"><span class="hs-identifier hs-type">annotate</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Module</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SrcSpanInfo</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Module</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span>
+</span><span id="line-16"></span><span id="annotate"><span class="annot"><span class="annottext">annotate :: Module SrcSpanInfo -&gt; Module Annote
+</span><a href="ReWire.HSE.Annotate.html#annotate"><span class="hs-identifier hs-var hs-var">annotate</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(SrcSpanInfo -&gt; Annote) -&gt; Module SrcSpanInfo -&gt; Module Annote
+forall a b. (a -&gt; b) -&gt; Module a -&gt; Module b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">SrcSpanInfo -&gt; Annote
+forall a. Annotation a =&gt; a -&gt; Annote
+</span><span class="hs-identifier hs-var">toAnnote</span></span><span>
+</span><span id="line-17"></span></pre></body></html>

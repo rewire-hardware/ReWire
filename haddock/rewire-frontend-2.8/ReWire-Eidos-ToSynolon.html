@@ -1,0 +1,32 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>ReWire.Eidos.ToSynolon</title><link href="linuwial.css" rel="stylesheet" type="text/css" title="Linuwial" /><link rel="stylesheet" type="text/css" href="quick-jump.css" /><link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400i,700" /><script src="haddock-bundle.min.js" async="async" type="text/javascript"></script><script type="text/x-mathjax-config">MathJax.Hub.Config({ tex2jax: { processClass: "mathjax", ignoreClass: ".*" } });</script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></head><body><div id="package-header"><span class="caption">rewire-frontend-2.8: A Haskell-to-Verilog/VHDL compiler, front end (GHC driver, Eidos, Synolon)</span><ul class="links" id="page-menu"><li><a href="src/ReWire.Eidos.ToSynolon.html">Source</a></li><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul></div><div id="content"><div id="module-header"><table class="info"><tr><th>Safe Haskell</th><td>Safe</td></tr><tr><th>Language</th><td>Haskell2010</td></tr></table><p class="caption">ReWire.Eidos.ToSynolon</p></div><div id="description"><p class="caption">Description</p><div class="doc"><p>purify (doc/synolon.md &#167;8): convert the reactive fragment of a
+   monomorphic ANF program into one process. The traversal is
+   CPS-shaped &#8212; <code>compile e k</code> compiles a reactive computation under a
+   continuation &#8212; which right-associates binds by construction:</p><ul><li><code>rwPrimSignal o &gt;&gt;= k</code> becomes <code>pause o -&gt; L_k</code> (the continuation
+     block's last parameter is the resumed input);</li><li><code>rwPrimReturn v</code> becomes <code>goto L_k (v)</code> (or <code>halt v</code> at the root);</li><li>lifted <code>rwPrimGet</code>/<code>rwPrimPut</code> become cell commands, the cell
+     resolved from the operation's own residual state stack;</li><li><code>rwPrimExtrude m s</code> is a cell write (<code>put</code>) followed by <code>m</code> &#8212; cells
+     written in entry before the first pause become register initials
+     (doc/synolon.md &#167;3.4), so no separate initials extraction exists;</li><li>a reactive case becomes a terminator case (arms with commands get
+     their own blocks &#8212; continuations are shared blocks, so the retired
+     lift-once rule is the default by construction);</li><li>join points become blocks; jumps become gotos;</li><li>a reactive call is compiled once per continuation &#8212; block-graph
+     splicing memoized on <code>(definition, continuation)</code>, the retired
+     unfoldHead's successor; recursion closes through the memo table
+     (a tail self-call recurs under the same continuation, so it hits
+     the memo and becomes a goto). Two shapes are rejected with located
+     errors: a NOINLINE reactive callee on the left-hand side of a bind
+     (the user's opt-out from per-continuation splicing), and recursion
+     THROUGH a bind's left-hand side (re-entering a definition whose
+     splice is still open mints a fresh continuation per iteration &#8212;
+     each pending continuation is a resumption-stack frame, and the
+     machine has no stack).</li></ul><p>Blocks are closure-converted afterward: a fixpoint over the block
+   graph computes each block's live-in locals, which become leading
+   parameters, with every pause/goto site supplying them (this is the
+   machine record's <code>args</code> field).</p><p>This stage constructs the process &#8212; the Eidos-to-Synolon boundary; the
+   block graph is then cleaned by <a href="ReWire-Synolon-Transform.html">ReWire.Synolon.Transform</a>, checked by
+   the machine lint (<a href="ReWire-Synolon-Lint.html">ReWire.Synolon.Lint</a>), and lowered by the
+   Synolon-to-Hyle fold (<a href="ReWire-Synolon-ToHyle.html">ReWire.Synolon.ToHyle</a>).</p></div></div><div id="synopsis"><details id="syn"><summary>Synopsis</summary><ul class="details-toggle" data-details-id="syn"><li class="src short"><a href="#v:purify">purify</a> :: <a href="https://hackage.haskell.org/package/mtl-2.3.1/docs/Control-Monad-Error-Class.html#t:MonadError" title="Control.Monad.Error.Class">MonadError</a> <a href="../rewire-base-2.8/ReWire-Error.html#t:AstError" title="ReWire.Error">AstError</a> m =&gt; <a href="ReWire-Eidos-Syntax.html#t:Program" title="ReWire.Eidos.Syntax">Program</a> -&gt; m <a href="ReWire-Synolon-Syntax.html#t:Program" title="ReWire.Synolon.Syntax">Program</a></li></ul></details></div><div id="interface"><h1>Documentation</h1><div class="top"><p class="src"><a id="v:purify" class="def">purify</a> :: <a href="https://hackage.haskell.org/package/mtl-2.3.1/docs/Control-Monad-Error-Class.html#t:MonadError" title="Control.Monad.Error.Class">MonadError</a> <a href="../rewire-base-2.8/ReWire-Error.html#t:AstError" title="ReWire.Error">AstError</a> m =&gt; <a href="ReWire-Eidos-Syntax.html#t:Program" title="ReWire.Eidos.Syntax">Program</a> -&gt; m <a href="ReWire-Synolon-Syntax.html#t:Program" title="ReWire.Synolon.Syntax">Program</a> <a href="src/ReWire.Eidos.ToSynolon.html#purify" class="link">Source</a> <a href="#v:purify" class="selflink">#</a></p><div class="doc"><p>The Synolon program of an Eidos program: the process compiled from
+   the reactive root, over the definitions the machine calls
+   (<code><a href="ReWire-Eidos-Types.html#v:machineDefn" title="ReWire.Eidos.Types">machineDefn</a></code>, in their order &#8212; Hyle names are assigned by position;
+   the consumed reactive definitions and the builtin signature carriers
+   do not ride along) and the datatypes those mention (<code>usedDatas</code>). The
+   root must be a nullary <code>ReacT</code> computation (the mono lint's device
+   rule).</p></div></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.31.1</p></div></body></html>

@@ -1,0 +1,628 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE Trustworthy #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- | Recognition for the Core-to-Eidos bridge: classifying GHC names and</span><span>
+</span><span id="line-4"></span><span class="hs-comment">--   types (primitives, the RWC.Primitives mirror module, user classes,</span><span>
+</span><span id="line-5"></span><span class="hs-comment">--   erasable evidence), the external tycon and base-vocabulary tables,</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--   naming conventions for Vars and constructors, and source</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--   locations. Everything here answers &quot;what is this Core thing to</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--   ReWire?&quot;; the translation itself lives in &quot;ReWire.GHC.ToEidos&quot;.</span><span>
+</span><span id="line-9"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html"><span class="hs-identifier">ReWire.GHC.Recognize</span></a></span><span>
+</span><span id="line-10"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#uKey"><span class="hs-identifier">uKey</span></a></span><span>
+</span><span id="line-11"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#spanAnnote"><span class="hs-identifier">spanAnnote</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#varAnnote"><span class="hs-identifier">varAnnote</span></a></span><span>
+</span><span id="line-12"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#isPrimModule"><span class="hs-identifier">isPrimModule</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#isPrimVar"><span class="hs-identifier">isPrimVar</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#homeishMod"><span class="hs-identifier">homeishMod</span></a></span><span>
+</span><span id="line-13"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#qualName"><span class="hs-identifier">qualName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#conName"><span class="hs-identifier">conName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#tupleName"><span class="hs-identifier">tupleName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#splitStart"><span class="hs-identifier">splitStart</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#localOcc"><span class="hs-identifier">localOcc</span></a></span><span>
+</span><span id="line-14"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#erasedArg"><span class="hs-identifier">erasedArg</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#erasedEv"><span class="hs-identifier">erasedEv</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#userPred"><span class="hs-identifier">userPred</span></a></span><span>
+</span><span id="line-15"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#tyConModule"><span class="hs-identifier">tyConModule</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#tyConKey"><span class="hs-identifier">tyConKey</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#tyConTable"><span class="hs-identifier">tyConTable</span></a></span><span>
+</span><span id="line-16"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#vocabTable"><span class="hs-identifier">vocabTable</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#maybeTyName"><span class="hs-identifier">maybeTyName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#eitherTyName"><span class="hs-identifier">eitherTyName</span></a></span><span>
+</span><span id="line-17"></span><span>      </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Annotation</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Annote</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MsgAnnote</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">srcAnnote</span></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Char</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">isDigit</span></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">pack</span></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ModuleName</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">moduleName</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">moduleNameString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Builtin.Types</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">trueDataCon</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">falseDataCon</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">unitDataCon</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Core</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">CoreExpr</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">isTyCoArg</span></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Core.DataCon</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">DataCon</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">dataConName</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">isTupleDataCon</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">dataConSourceArity</span></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Core.Predicate</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">isEvVarType</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Core.TyCo.Rep</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Type</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Core.TyCon</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">TyCon</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">tyConName</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">isClassTyCon</span></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Core.Type</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">expandTypeSynonyms</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">tyConAppTyCon_maybe</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">splitForAllTyCoVars</span></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Core.Utils</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">exprType</span></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Data.FastString</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">unpackFS</span></span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Types.Name</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">getOccString</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">nameModule_maybe</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">nameSrcSpan</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">isSystemName</span></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Types.SrcLoc</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">SrcSpan</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">srcSpanFile</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">srcSpanStartLine</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">srcSpanStartCol</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">srcSpanEndLine</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">srcSpanEndCol</span></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Types.Unique</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">getKey</span></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Types.Var</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Var</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">varName</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">varUnique</span></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="hs-comment">-- | IntMap key for a binder (uniques are 64-bit as of GHC 9.10; low bits</span><span>
+</span><span id="line-42"></span><span class="hs-comment">--   suffice as map keys within one compilation).</span><span>
+</span><span id="line-43"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#uKey"><span class="hs-identifier hs-type">uKey</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Var</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-44"></span><span id="uKey"><span class="annot"><span class="annottext">uKey :: Var -&gt; Int
+</span><a href="ReWire.GHC.Recognize.html#uKey"><span class="hs-identifier hs-var hs-var">uKey</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word64 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Word64 -&gt; Int) -&gt; (Var -&gt; Word64) -&gt; Var -&gt; Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Unique -&gt; Word64
+</span><span class="hs-identifier hs-var">getKey</span></span><span> </span><span class="annot"><span class="annottext">(Unique -&gt; Word64) -&gt; (Var -&gt; Unique) -&gt; Var -&gt; Word64
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Var -&gt; Unique
+</span><span class="hs-identifier hs-var">varUnique</span></span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#spanAnnote"><span class="hs-identifier hs-type">spanAnnote</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">SrcSpan</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span>
+</span><span id="line-47"></span><span id="spanAnnote"><span class="annot"><span class="annottext">spanAnnote :: SrcSpan -&gt; Annote
+</span><a href="ReWire.GHC.Recognize.html#spanAnnote"><span class="hs-identifier hs-var hs-var">spanAnnote</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-48"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">RealSrcSpan</span></span><span> </span><span id="local-6989586621679459594"><span class="annot"><span class="annottext">RealSrcSpan
+</span><a href="#local-6989586621679459594"><span class="hs-identifier hs-var">rs</span></a></span></span><span> </span><span class="annot"><span class="annottext">Maybe BufSpan
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; (Int, Int) -&gt; (Int, Int) -&gt; Annote
+</span><span class="hs-identifier hs-var">srcAnnote</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FastString -&gt; String
+</span><span class="hs-identifier hs-var">unpackFS</span></span><span> </span><span class="annot"><span class="annottext">(FastString -&gt; String) -&gt; FastString -&gt; String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">RealSrcSpan -&gt; FastString
+</span><span class="hs-identifier hs-var">srcSpanFile</span></span><span> </span><span class="annot"><span class="annottext">RealSrcSpan
+</span><a href="#local-6989586621679459594"><span class="hs-identifier hs-var">rs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span>                                    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">RealSrcSpan -&gt; Int
+</span><span class="hs-identifier hs-var">srcSpanStartLine</span></span><span> </span><span class="annot"><span class="annottext">RealSrcSpan
+</span><a href="#local-6989586621679459594"><span class="hs-identifier hs-var">rs</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">RealSrcSpan -&gt; Int
+</span><span class="hs-identifier hs-var">srcSpanStartCol</span></span><span> </span><span class="annot"><span class="annottext">RealSrcSpan
+</span><a href="#local-6989586621679459594"><span class="hs-identifier hs-var">rs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span>                                    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">RealSrcSpan -&gt; Int
+</span><span class="hs-identifier hs-var">srcSpanEndLine</span></span><span> </span><span class="annot"><span class="annottext">RealSrcSpan
+</span><a href="#local-6989586621679459594"><span class="hs-identifier hs-var">rs</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">RealSrcSpan -&gt; Int
+</span><span class="hs-identifier hs-var">srcSpanEndCol</span></span><span> </span><span class="annot"><span class="annottext">RealSrcSpan
+</span><a href="#local-6989586621679459594"><span class="hs-identifier hs-var">rs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">UnhelpfulSpan</span></span><span> </span><span class="annot"><span class="annottext">UnhelpfulSpanReason
+</span><span class="hs-identifier">_</span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Annote
+</span><span class="hs-identifier hs-var">MsgAnnote</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;ghc-frontend&quot;</span></span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#varAnnote"><span class="hs-identifier hs-type">varAnnote</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Var</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Annote</span></span><span>
+</span><span id="line-54"></span><span id="varAnnote"><span class="annot"><span class="annottext">varAnnote :: Var -&gt; Annote
+</span><a href="ReWire.GHC.Recognize.html#varAnnote"><span class="hs-identifier hs-var hs-var">varAnnote</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SrcSpan -&gt; Annote
+</span><a href="ReWire.GHC.Recognize.html#spanAnnote"><span class="hs-identifier hs-var">spanAnnote</span></a></span><span> </span><span class="annot"><span class="annottext">(SrcSpan -&gt; Annote) -&gt; (Var -&gt; SrcSpan) -&gt; Var -&gt; Annote
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; SrcSpan
+</span><span class="hs-identifier hs-var">nameSrcSpan</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; SrcSpan) -&gt; (Var -&gt; Name) -&gt; Var -&gt; SrcSpan
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Var -&gt; Name
+</span><span class="hs-identifier hs-var">varName</span></span><span>
+</span><span id="line-55"></span><span>
+</span><span id="line-56"></span><span class="hs-comment">-- | Arguments the translation erases: types, coercions, and evidence --</span><span>
+</span><span id="line-57"></span><span class="hs-comment">--   except evidence for /user/ classes, which is kept as ordinary data</span><span>
+</span><span id="line-58"></span><span class="hs-comment">--   (dictionaries as values; specialization plus the partial evaluator's</span><span>
+</span><span id="line-59"></span><span class="hs-comment">--   dictionary-let substitution and case-of-known-constructor eliminate</span><span>
+</span><span id="line-60"></span><span class="hs-comment">--   them).</span><span>
+</span><span id="line-61"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#erasedArg"><span class="hs-identifier hs-type">erasedArg</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">CoreExpr</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-62"></span><span id="erasedArg"><span class="annot"><span class="annottext">erasedArg :: CoreExpr -&gt; Bool
+</span><a href="ReWire.GHC.Recognize.html#erasedArg"><span class="hs-identifier hs-var hs-var">erasedArg</span></a></span></span><span> </span><span id="local-6989586621679459596"><span class="annot"><span class="annottext">CoreExpr
+</span><a href="#local-6989586621679459596"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CoreExpr -&gt; Bool
+forall b. Expr b -&gt; Bool
+</span><span class="hs-identifier hs-var">isTyCoArg</span></span><span> </span><span class="annot"><span class="annottext">CoreExpr
+</span><a href="#local-6989586621679459596"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Bool
+</span><a href="ReWire.GHC.Recognize.html#erasedEv"><span class="hs-identifier hs-var">erasedEv</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HasDebugCallStack =&gt; CoreExpr -&gt; Type
+CoreExpr -&gt; Type
+</span><span class="hs-identifier hs-var">exprType</span></span><span> </span><span class="annot"><span class="annottext">CoreExpr
+</span><a href="#local-6989586621679459596"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span>
+</span><span id="line-64"></span><span class="annot"><span class="hs-comment">-- | Evidence to erase: everything but user-class dictionaries.</span></span><span>
+</span><span id="line-65"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#erasedEv"><span class="hs-identifier hs-type">erasedEv</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-66"></span><span id="erasedEv"><span class="annot"><span class="annottext">erasedEv :: Type -&gt; Bool
+</span><a href="ReWire.GHC.Recognize.html#erasedEv"><span class="hs-identifier hs-var hs-var">erasedEv</span></a></span></span><span> </span><span id="local-6989586621679459598"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679459598"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Type -&gt; Bool
+</span><span class="hs-identifier hs-var">isEvVarType</span></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679459598"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Type -&gt; Bool
+</span><a href="ReWire.GHC.Recognize.html#userPred"><span class="hs-identifier hs-var">userPred</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679459598"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-67"></span><span>
+</span><span id="line-68"></span><span class="hs-comment">-- | Is this a user-class predicate type -- or evidence for one under</span><span>
+</span><span id="line-69"></span><span class="hs-comment">--   quantifiers and a context (an instance's dfun type)? A class defined</span><span>
+</span><span id="line-70"></span><span class="hs-comment">--   in a home module (approximated by defining-module namespace, like the</span><span>
+</span><span id="line-71"></span><span class="hs-comment">--   tycon table's fallback): built-in evidence (KnownNat, Monad,</span><span>
+</span><span id="line-72"></span><span class="hs-comment">--   HasCallStack, ...) is external and erased; classes in the user's own</span><span>
+</span><span id="line-73"></span><span class="hs-comment">--   modules are data, and their dfuns -- contexted instances included --</span><span>
+</span><span id="line-74"></span><span class="hs-comment">--   are ordinary definitions.</span><span>
+</span><span id="line-75"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#userPred"><span class="hs-identifier hs-type">userPred</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-76"></span><span id="userPred"><span class="annot"><span class="annottext">userPred :: Type -&gt; Bool
+</span><a href="ReWire.GHC.Recognize.html#userPred"><span class="hs-identifier hs-var hs-var">userPred</span></a></span></span><span> </span><span id="local-6989586621679459601"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679459601"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Type -&gt; Maybe TyCon
+</span><span class="hs-identifier hs-var">tyConAppTyCon_maybe</span></span><span> </span><span class="annot"><span class="annottext">(Type -&gt; Maybe TyCon) -&gt; Type -&gt; Maybe TyCon
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Type
+</span><a href="ReWire.GHC.Recognize.html#predHead"><span class="hs-identifier hs-var">predHead</span></a></span><span> </span><span class="annot"><span class="annottext">(Type -&gt; Type) -&gt; Type -&gt; Type
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Type
+</span><span class="hs-identifier hs-var">expandTypeSynonyms</span></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679459601"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-77"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679459603"><span class="annot"><span class="annottext">TyCon
+</span><a href="#local-6989586621679459603"><span class="hs-identifier hs-var">tc</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">TyCon -&gt; Bool
+</span><span class="hs-identifier hs-var">isClassTyCon</span></span><span> </span><span class="annot"><span class="annottext">TyCon
+</span><a href="#local-6989586621679459603"><span class="hs-identifier hs-var">tc</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Maybe ModuleName -&gt; Bool
+</span><a href="ReWire.GHC.Recognize.html#homeishMod"><span class="hs-identifier hs-var">homeishMod</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TyCon -&gt; Maybe ModuleName
+</span><a href="ReWire.GHC.Recognize.html#tyConModule"><span class="hs-identifier hs-var">tyConModule</span></a></span><span> </span><span class="annot"><span class="annottext">TyCon
+</span><a href="#local-6989586621679459603"><span class="hs-identifier hs-var">tc</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span>      </span><span class="annot"><span class="annottext">Maybe TyCon
+</span><span class="hs-identifier">_</span></span><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-79"></span><span>
+</span><span id="line-80"></span><span class="hs-comment">-- | The head predicate under quantifiers and constraint arrows (the</span><span>
+</span><span id="line-81"></span><span class="hs-comment">--   identity on ordinary types).</span><span>
+</span><span id="line-82"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#predHead"><span class="hs-identifier hs-type">predHead</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span>
+</span><span id="line-83"></span><span id="predHead"><span class="annot"><span class="annottext">predHead :: Type -&gt; Type
+</span><a href="ReWire.GHC.Recognize.html#predHead"><span class="hs-identifier hs-var hs-var">predHead</span></a></span></span><span> </span><span id="local-6989586621679459604"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679459604"><span class="hs-identifier hs-var">ty</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">([Var], Type) -&gt; Type
+forall a b. (a, b) -&gt; b
+</span><span class="hs-identifier hs-var">snd</span></span><span> </span><span class="annot"><span class="annottext">(([Var], Type) -&gt; Type) -&gt; ([Var], Type) -&gt; Type
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; ([Var], Type)
+</span><span class="hs-identifier hs-var">splitForAllTyCoVars</span></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679459604"><span class="hs-identifier hs-var">ty</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-84"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">FunTy</span></span><span> </span><span class="annot"><span class="annottext">FunTyFlag
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Type
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679459607"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679459607"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span id="local-6989586621679459608"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679459608"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Type -&gt; Bool
+</span><span class="hs-identifier hs-var">isEvVarType</span></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679459607"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Type -&gt; Type
+</span><a href="ReWire.GHC.Recognize.html#predHead"><span class="hs-identifier hs-var">predHead</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679459608"><span class="hs-identifier hs-var">r</span></a></span><span>
+</span><span id="line-85"></span><span>      </span><span id="local-6989586621679459609"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679459609"><span class="hs-identifier hs-var">ty'</span></a></span></span><span>                           </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679459609"><span class="hs-identifier hs-var">ty'</span></a></span><span>
+</span><span id="line-86"></span><span>
+</span><span id="line-87"></span><span class="hs-comment">-- | Home modules (loaded from source) get qualified names; known external</span><span>
+</span><span id="line-88"></span><span class="hs-comment">--   entities are in the tables; anything else external is out of</span><span>
+</span><span id="line-89"></span><span class="hs-comment">--   vocabulary. There is no unit map here, so approximate: well-known</span><span>
+</span><span id="line-90"></span><span class="hs-comment">--   external namespace prefixes are rejected, everything else is assumed</span><span>
+</span><span id="line-91"></span><span class="hs-comment">--   to be a home module.</span><span>
+</span><span id="line-92"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#homeishMod"><span class="hs-identifier hs-type">homeishMod</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ModuleName</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-93"></span><span id="homeishMod"><span class="annot"><span class="annottext">homeishMod :: Maybe ModuleName -&gt; Bool
+</span><a href="ReWire.GHC.Recognize.html#homeishMod"><span class="hs-identifier hs-var hs-var">homeishMod</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-94"></span><span>      </span><span class="annot"><span class="annottext">Maybe ModuleName
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-95"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679459610"><span class="annot"><span class="annottext">ModuleName
+</span><a href="#local-6989586621679459610"><span class="hs-identifier hs-var">mn</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ModuleName -&gt; Bool
+</span><a href="ReWire.GHC.Recognize.html#isPrimModule"><span class="hs-identifier hs-var">isPrimModule</span></a></span><span> </span><span class="annot"><span class="annottext">ModuleName
+</span><a href="#local-6989586621679459610"><span class="hs-identifier hs-var">mn</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Text -&gt; Bool) -&gt; [Text] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">any</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span class="hs-operator hs-var">`T.isPrefixOf`</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ModuleName -&gt; String
+</span><span class="hs-identifier hs-var">moduleNameString</span></span><span> </span><span class="annot"><span class="annottext">ModuleName
+</span><a href="#local-6989586621679459610"><span class="hs-identifier hs-var">mn</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-96"></span><span>            </span><span class="hs-special">(</span><span class="hs-special">[</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;GHC.&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Data.&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Control.&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;System.&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Foreign.&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Text.&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Unsafe.&quot;</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-97"></span><span>
+</span><span id="line-98"></span><span class="hs-comment">-- | The display occurrence for a local binder: real source names pass</span><span>
+</span><span id="line-99"></span><span class="hs-comment">--   through; GHC-machine names (system names, plus the desugarer's</span><span>
+</span><span id="line-100"></span><span class="hs-comment">--   ds\/wild\/eta family by occurrence shape -- 'isSystemName' alone</span><span>
+</span><span id="line-101"></span><span class="hs-comment">--   misses some) get the compiler-owned @$@ prefix, so downstream naming</span><span>
+</span><span id="line-102"></span><span class="hs-comment">--   policy knows they are free to rename, merge, or discard rather than</span><span>
+</span><span id="line-103"></span><span class="hs-comment">--   worth preserving as signal names. The shape check defers to a real</span><span>
+</span><span id="line-104"></span><span class="hs-comment">--   source span: a user's own binder named @eta@ or @ds@ keeps its name.</span><span>
+</span><span id="line-105"></span><span class="hs-comment">--   Advisory only: uniqueness never depends on the marker.</span><span>
+</span><span id="line-106"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#localOcc"><span class="hs-identifier hs-type">localOcc</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Var</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-107"></span><span id="localOcc"><span class="annot"><span class="annottext">localOcc :: Var -&gt; Text
+</span><a href="ReWire.GHC.Recognize.html#localOcc"><span class="hs-identifier hs-var hs-var">localOcc</span></a></span></span><span> </span><span id="local-6989586621679459613"><span class="annot"><span class="annottext">Var
+</span><a href="#local-6989586621679459613"><span class="hs-identifier hs-var">v</span></a></span></span><span>
+</span><span id="line-108"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;$&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span class="hs-operator hs-var">`T.isPrefixOf`</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679459614"><span class="hs-identifier hs-var">occ</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679459614"><span class="hs-identifier hs-var">occ</span></a></span><span>
+</span><span id="line-109"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679459615"><span class="hs-identifier hs-var">machine</span></a></span><span>                </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;$&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679459614"><span class="hs-identifier hs-var">occ</span></a></span><span>
+</span><span id="line-110"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>              </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679459614"><span class="hs-identifier hs-var">occ</span></a></span><span>
+</span><span id="line-111"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679459614"><span class="hs-identifier hs-type">occ</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-112"></span><span>            </span><span id="local-6989586621679459614"><span class="annot"><span class="annottext">occ :: Text
+</span><a href="#local-6989586621679459614"><span class="hs-identifier hs-var hs-var">occ</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Text) -&gt; String -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Var -&gt; String
+forall a. NamedThing a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">getOccString</span></span><span> </span><span class="annot"><span class="annottext">Var
+</span><a href="#local-6989586621679459613"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-113"></span><span>
+</span><span id="line-114"></span><span>            </span><span class="annot"><a href="#local-6989586621679459615"><span class="hs-identifier hs-type">machine</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-115"></span><span>            </span><span id="local-6989586621679459615"><span class="annot"><span class="annottext">machine :: Bool
+</span><a href="#local-6989586621679459615"><span class="hs-identifier hs-var hs-var">machine</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Name -&gt; Bool
+</span><span class="hs-identifier hs-var">isSystemName</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Var -&gt; Name
+</span><span class="hs-identifier hs-var">varName</span></span><span> </span><span class="annot"><span class="annottext">Var
+</span><a href="#local-6989586621679459613"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-116"></span><span>                   </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.dropWhileEnd</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Bool
+</span><span class="hs-identifier hs-var">isDigit</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679459614"><span class="hs-identifier hs-var">occ</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Bool
+forall a. Eq a =&gt; a -&gt; [a] -&gt; Bool
+forall (t :: * -&gt; *) a. (Foldable t, Eq a) =&gt; a -&gt; t a -&gt; Bool
+</span><span class="hs-operator hs-var">`elem`</span></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679459618"><span class="hs-identifier hs-var">machineOccs</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679459619"><span class="hs-identifier hs-var">fromSource</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-117"></span><span>
+</span><span id="line-118"></span><span>            </span><span class="annot"><a href="#local-6989586621679459619"><span class="hs-identifier hs-type">fromSource</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-119"></span><span>            </span><span id="local-6989586621679459619"><span class="annot"><span class="annottext">fromSource :: Bool
+</span><a href="#local-6989586621679459619"><span class="hs-identifier hs-var hs-var">fromSource</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Name -&gt; SrcSpan
+</span><span class="hs-identifier hs-var">nameSrcSpan</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; SrcSpan) -&gt; Name -&gt; SrcSpan
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Var -&gt; Name
+</span><span class="hs-identifier hs-var">varName</span></span><span> </span><span class="annot"><span class="annottext">Var
+</span><a href="#local-6989586621679459613"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-120"></span><span>                  </span><span class="annot"><span class="hs-identifier hs-type">RealSrcSpan</span></span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-121"></span><span>                  </span><span class="annot"><span class="annottext">SrcSpan
+</span><span class="hs-identifier">_</span></span><span>              </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-122"></span><span>
+</span><span id="line-123"></span><span>            </span><span class="annot"><a href="#local-6989586621679459618"><span class="hs-identifier hs-type">machineOccs</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-124"></span><span>            </span><span id="local-6989586621679459618"><span class="annot"><span class="annottext">machineOccs :: [Text]
+</span><a href="#local-6989586621679459618"><span class="hs-identifier hs-var hs-var">machineOccs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;ds&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;wild&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;eta&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;ipv&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;lvl&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;fail&quot;</span></span><span class="hs-special">]</span><span>
+</span><span id="line-125"></span><span>
+</span><span id="line-126"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#isPrimVar"><span class="hs-identifier hs-type">isPrimVar</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Var</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-127"></span><span id="isPrimVar"><span class="annot"><span class="annottext">isPrimVar :: Var -&gt; Bool
+</span><a href="ReWire.GHC.Recognize.html#isPrimVar"><span class="hs-identifier hs-var hs-var">isPrimVar</span></a></span></span><span> </span><span id="local-6989586621679459620"><span class="annot"><span class="annottext">Var
+</span><a href="#local-6989586621679459620"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;rwPrim&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span class="hs-operator hs-var">`T.isPrefixOf`</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Var -&gt; String
+forall a. NamedThing a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">getOccString</span></span><span> </span><span class="annot"><span class="annottext">Var
+</span><a href="#local-6989586621679459620"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-128"></span><span>      </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; (GenModule Unit -&gt; Bool) -&gt; Maybe (GenModule Unit) -&gt; Bool
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ModuleName -&gt; Bool
+</span><a href="ReWire.GHC.Recognize.html#isPrimModule"><span class="hs-identifier hs-var">isPrimModule</span></a></span><span> </span><span class="annot"><span class="annottext">(ModuleName -&gt; Bool)
+-&gt; (GenModule Unit -&gt; ModuleName) -&gt; GenModule Unit -&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">GenModule Unit -&gt; ModuleName
+forall unit. GenModule unit -&gt; ModuleName
+</span><span class="hs-identifier hs-var">moduleName</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Name -&gt; Maybe (GenModule Unit)
+</span><span class="hs-identifier hs-var">nameModule_maybe</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; Maybe (GenModule Unit)) -&gt; Name -&gt; Maybe (GenModule Unit)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Var -&gt; Name
+</span><span class="hs-identifier hs-var">varName</span></span><span> </span><span class="annot"><span class="annottext">Var
+</span><a href="#local-6989586621679459620"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-129"></span><span>
+</span><span id="line-130"></span><span class="hs-comment">-- | In the RWC.Primitives module (the GHC-visible mirror of PrimBasis),</span><span>
+</span><span id="line-131"></span><span class="hs-comment">--   type and constructor names map to their bare occurrence names.</span><span>
+</span><span id="line-132"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#isPrimModule"><span class="hs-identifier hs-type">isPrimModule</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ModuleName</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-133"></span><span id="isPrimModule"><span class="annot"><span class="annottext">isPrimModule :: ModuleName -&gt; Bool
+</span><a href="ReWire.GHC.Recognize.html#isPrimModule"><span class="hs-identifier hs-var hs-var">isPrimModule</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; String -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;RWC.Primitives&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(String -&gt; Bool) -&gt; (ModuleName -&gt; String) -&gt; ModuleName -&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ModuleName -&gt; String
+</span><span class="hs-identifier hs-var">moduleNameString</span></span><span>
+</span><span id="line-134"></span><span>
+</span><span id="line-135"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#qualName"><span class="hs-identifier hs-type">qualName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ModuleName</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Var</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-136"></span><span id="qualName"><span class="annot"><span class="annottext">qualName :: ModuleName -&gt; Var -&gt; Text
+</span><a href="ReWire.GHC.Recognize.html#qualName"><span class="hs-identifier hs-var hs-var">qualName</span></a></span></span><span> </span><span id="local-6989586621679459622"><span class="annot"><span class="annottext">ModuleName
+</span><a href="#local-6989586621679459622"><span class="hs-identifier hs-var">mn</span></a></span></span><span> </span><span id="local-6989586621679459623"><span class="annot"><span class="annottext">Var
+</span><a href="#local-6989586621679459623"><span class="hs-identifier hs-var">b</span></a></span></span><span>
+</span><span id="line-137"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">ModuleName -&gt; Bool
+</span><a href="ReWire.GHC.Recognize.html#isPrimModule"><span class="hs-identifier hs-var">isPrimModule</span></a></span><span> </span><span class="annot"><span class="annottext">ModuleName
+</span><a href="#local-6989586621679459622"><span class="hs-identifier hs-var">mn</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Text) -&gt; String -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Var -&gt; String
+forall a. NamedThing a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">getOccString</span></span><span> </span><span class="annot"><span class="annottext">Var
+</span><a href="#local-6989586621679459623"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-138"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>       </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ModuleName -&gt; String
+</span><span class="hs-identifier hs-var">moduleNameString</span></span><span> </span><span class="annot"><span class="annottext">ModuleName
+</span><a href="#local-6989586621679459622"><span class="hs-identifier hs-var">mn</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;.&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Var -&gt; String
+forall a. NamedThing a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">getOccString</span></span><span> </span><span class="annot"><span class="annottext">Var
+</span><a href="#local-6989586621679459623"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-139"></span><span>
+</span><span id="line-140"></span><span class="hs-comment">-- | Split a qualified start symbol (&quot;Main.start&quot;) into module and</span><span>
+</span><span id="line-141"></span><span class="hs-comment">--   occurrence parts.</span><span>
+</span><span id="line-142"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#splitStart"><span class="hs-identifier hs-type">splitStart</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">)</span><span>
+</span><span id="line-143"></span><span id="splitStart"><span class="annot"><span class="annottext">splitStart :: Text -&gt; (String, String)
+</span><a href="ReWire.GHC.Recognize.html#splitStart"><span class="hs-identifier hs-var hs-var">splitStart</span></a></span></span><span> </span><span id="local-6989586621679459624"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679459624"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text -&gt; (Text, Text)
+Text -&gt; Text -&gt; (Text, Text)
+</span><span class="hs-identifier hs-var">T.breakOnEnd</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;.&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679459624"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-144"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;&quot;</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679459626"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679459626"><span class="hs-identifier hs-var">occ</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Main&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679459626"><span class="hs-identifier hs-var">occ</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-145"></span><span>      </span><span class="hs-special">(</span><span id="local-6989586621679459628"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679459628"><span class="hs-identifier hs-var">m</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679459629"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679459629"><span class="hs-identifier hs-var">occ</span></a></span></span><span class="hs-special">)</span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; String) -&gt; Text -&gt; String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.dropEnd</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679459628"><span class="hs-identifier hs-var">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679459629"><span class="hs-identifier hs-var">occ</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-146"></span><span>
+</span><span id="line-147"></span><span class="annot"><span class="hs-comment">-- | Eidos names for constructors.</span></span><span>
+</span><span id="line-148"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#conName"><span class="hs-identifier hs-type">conName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">DataCon</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-149"></span><span id="conName"><span class="annot"><span class="annottext">conName :: DataCon -&gt; Text
+</span><a href="ReWire.GHC.Recognize.html#conName"><span class="hs-identifier hs-var hs-var">conName</span></a></span></span><span> </span><span id="local-6989586621679459631"><span class="annot"><span class="annottext">DataCon
+</span><a href="#local-6989586621679459631"><span class="hs-identifier hs-var">dc</span></a></span></span><span>
+</span><span id="line-150"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">DataCon
+</span><a href="#local-6989586621679459631"><span class="hs-identifier hs-var">dc</span></a></span><span> </span><span class="annot"><span class="annottext">DataCon -&gt; DataCon -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">DataCon
+</span><span class="hs-identifier hs-var">trueDataCon</span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;True&quot;</span></span><span>
+</span><span id="line-151"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">DataCon
+</span><a href="#local-6989586621679459631"><span class="hs-identifier hs-var">dc</span></a></span><span> </span><span class="annot"><span class="annottext">DataCon -&gt; DataCon -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">DataCon
+</span><span class="hs-identifier hs-var">falseDataCon</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;False&quot;</span></span><span>
+</span><span id="line-152"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">DataCon
+</span><a href="#local-6989586621679459631"><span class="hs-identifier hs-var">dc</span></a></span><span> </span><span class="annot"><span class="annottext">DataCon -&gt; DataCon -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">DataCon
+</span><span class="hs-identifier hs-var">unitDataCon</span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;()&quot;</span></span><span>
+</span><span id="line-153"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">DataCon -&gt; Bool
+</span><span class="hs-identifier hs-var">isTupleDataCon</span></span><span> </span><span class="annot"><span class="annottext">DataCon
+</span><a href="#local-6989586621679459631"><span class="hs-identifier hs-var">dc</span></a></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Text
+</span><a href="ReWire.GHC.Recognize.html#tupleName"><span class="hs-identifier hs-var">tupleName</span></a></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Text) -&gt; Int -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">DataCon -&gt; Int
+</span><span class="hs-identifier hs-var">dataConSourceArity</span></span><span> </span><span class="annot"><span class="annottext">DataCon
+</span><a href="#local-6989586621679459631"><span class="hs-identifier hs-var">dc</span></a></span><span>
+</span><span id="line-154"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679459632"><span class="annot"><span class="annottext">ModuleName
+</span><a href="#local-6989586621679459632"><span class="hs-identifier hs-var">mn</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">GenModule Unit -&gt; ModuleName
+forall unit. GenModule unit -&gt; ModuleName
+</span><span class="hs-identifier hs-var">moduleName</span></span><span> </span><span class="annot"><span class="annottext">(GenModule Unit -&gt; ModuleName)
+-&gt; Maybe (GenModule Unit) -&gt; Maybe ModuleName
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Maybe (GenModule Unit)
+</span><span class="hs-identifier hs-var">nameModule_maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DataCon -&gt; Name
+</span><span class="hs-identifier hs-var">dataConName</span></span><span> </span><span class="annot"><span class="annottext">DataCon
+</span><a href="#local-6989586621679459631"><span class="hs-identifier hs-var">dc</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-155"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ModuleName -&gt; Bool
+</span><a href="ReWire.GHC.Recognize.html#isPrimModule"><span class="hs-identifier hs-var">isPrimModule</span></a></span><span> </span><span class="annot"><span class="annottext">ModuleName
+</span><a href="#local-6989586621679459632"><span class="hs-identifier hs-var">mn</span></a></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Text) -&gt; String -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; String
+forall a. NamedThing a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">getOccString</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; String) -&gt; Name -&gt; String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">DataCon -&gt; Name
+</span><span class="hs-identifier hs-var">dataConName</span></span><span> </span><span class="annot"><span class="annottext">DataCon
+</span><a href="#local-6989586621679459631"><span class="hs-identifier hs-var">dc</span></a></span><span>
+</span><span id="line-156"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679459634"><span class="annot"><span class="annottext">ModuleName
+</span><a href="#local-6989586621679459634"><span class="hs-identifier hs-var">mn</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">GenModule Unit -&gt; ModuleName
+forall unit. GenModule unit -&gt; ModuleName
+</span><span class="hs-identifier hs-var">moduleName</span></span><span> </span><span class="annot"><span class="annottext">(GenModule Unit -&gt; ModuleName)
+-&gt; Maybe (GenModule Unit) -&gt; Maybe ModuleName
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Maybe (GenModule Unit)
+</span><span class="hs-identifier hs-var">nameModule_maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DataCon -&gt; Name
+</span><span class="hs-identifier hs-var">dataConName</span></span><span> </span><span class="annot"><span class="annottext">DataCon
+</span><a href="#local-6989586621679459631"><span class="hs-identifier hs-var">dc</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-157"></span><span>                           </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ModuleName -&gt; String
+</span><span class="hs-identifier hs-var">moduleNameString</span></span><span> </span><span class="annot"><span class="annottext">ModuleName
+</span><a href="#local-6989586621679459634"><span class="hs-identifier hs-var">mn</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;.&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Name -&gt; String
+forall a. NamedThing a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">getOccString</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; String) -&gt; Name -&gt; String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">DataCon -&gt; Name
+</span><span class="hs-identifier hs-var">dataConName</span></span><span> </span><span class="annot"><span class="annottext">DataCon
+</span><a href="#local-6989586621679459631"><span class="hs-identifier hs-var">dc</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-158"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>          </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Text) -&gt; String -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; String
+forall a. NamedThing a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">getOccString</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; String) -&gt; Name -&gt; String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">DataCon -&gt; Name
+</span><span class="hs-identifier hs-var">dataConName</span></span><span> </span><span class="annot"><span class="annottext">DataCon
+</span><a href="#local-6989586621679459631"><span class="hs-identifier hs-var">dc</span></a></span><span>
+</span><span id="line-159"></span><span>
+</span><span id="line-160"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#tupleName"><span class="hs-identifier hs-type">tupleName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-161"></span><span id="tupleName"><span class="annot"><span class="annottext">tupleName :: Int -&gt; Text
+</span><a href="ReWire.GHC.Recognize.html#tupleName"><span class="hs-identifier hs-var hs-var">tupleName</span></a></span></span><span> </span><span id="local-6989586621679459635"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679459635"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;(&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.replicate</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679459635"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;,&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;)&quot;</span></span><span>
+</span><span id="line-162"></span><span>
+</span><span id="line-163"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#tyConModule"><span class="hs-identifier hs-type">tyConModule</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TyCon</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ModuleName</span></span><span>
+</span><span id="line-164"></span><span id="tyConModule"><span class="annot"><span class="annottext">tyConModule :: TyCon -&gt; Maybe ModuleName
+</span><a href="ReWire.GHC.Recognize.html#tyConModule"><span class="hs-identifier hs-var hs-var">tyConModule</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(GenModule Unit -&gt; ModuleName)
+-&gt; Maybe (GenModule Unit) -&gt; Maybe ModuleName
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">GenModule Unit -&gt; ModuleName
+forall unit. GenModule unit -&gt; ModuleName
+</span><span class="hs-identifier hs-var">moduleName</span></span><span> </span><span class="annot"><span class="annottext">(Maybe (GenModule Unit) -&gt; Maybe ModuleName)
+-&gt; (TyCon -&gt; Maybe (GenModule Unit)) -&gt; TyCon -&gt; Maybe ModuleName
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Maybe (GenModule Unit)
+</span><span class="hs-identifier hs-var">nameModule_maybe</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; Maybe (GenModule Unit))
+-&gt; (TyCon -&gt; Name) -&gt; TyCon -&gt; Maybe (GenModule Unit)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TyCon -&gt; Name
+</span><span class="hs-identifier hs-var">tyConName</span></span><span>
+</span><span id="line-165"></span><span>
+</span><span id="line-166"></span><span class="annot"><span class="hs-comment">-- | Key for the external tycon table: defining module and occurrence.</span></span><span>
+</span><span id="line-167"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#tyConKey"><span class="hs-identifier hs-type">tyConKey</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TyCon</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">)</span><span>
+</span><span id="line-168"></span><span id="tyConKey"><span class="annot"><span class="annottext">tyConKey :: TyCon -&gt; (String, String)
+</span><a href="ReWire.GHC.Recognize.html#tyConKey"><span class="hs-identifier hs-var hs-var">tyConKey</span></a></span></span><span> </span><span id="local-6989586621679459637"><span class="annot"><span class="annottext">TyCon
+</span><a href="#local-6989586621679459637"><span class="hs-identifier hs-var">tc</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">String
+-&gt; (GenModule Unit -&gt; String) -&gt; Maybe (GenModule Unit) -&gt; String
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;?&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ModuleName -&gt; String
+</span><span class="hs-identifier hs-var">moduleNameString</span></span><span> </span><span class="annot"><span class="annottext">(ModuleName -&gt; String)
+-&gt; (GenModule Unit -&gt; ModuleName) -&gt; GenModule Unit -&gt; String
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">GenModule Unit -&gt; ModuleName
+forall unit. GenModule unit -&gt; ModuleName
+</span><span class="hs-identifier hs-var">moduleName</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Maybe (GenModule Unit) -&gt; String)
+-&gt; Maybe (GenModule Unit) -&gt; String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Maybe (GenModule Unit)
+</span><span class="hs-identifier hs-var">nameModule_maybe</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; Maybe (GenModule Unit)) -&gt; Name -&gt; Maybe (GenModule Unit)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TyCon -&gt; Name
+</span><span class="hs-identifier hs-var">tyConName</span></span><span> </span><span class="annot"><span class="annottext">TyCon
+</span><a href="#local-6989586621679459637"><span class="hs-identifier hs-var">tc</span></a></span><span>
+</span><span id="line-169"></span><span>              </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Name -&gt; String
+forall a. NamedThing a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">getOccString</span></span><span> </span><span class="annot"><span class="annottext">(Name -&gt; String) -&gt; Name -&gt; String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TyCon -&gt; Name
+</span><span class="hs-identifier hs-var">tyConName</span></span><span> </span><span class="annot"><span class="annottext">TyCon
+</span><a href="#local-6989586621679459637"><span class="hs-identifier hs-var">tc</span></a></span><span> </span><span class="hs-special">)</span><span>
+</span><span id="line-170"></span><span>
+</span><span id="line-171"></span><span class="hs-comment">-- | External tycons mapped by (defining module, occurrence) to</span><span>
+</span><span id="line-172"></span><span class="hs-comment">--   (Eidos name, number of leading type args to drop).</span><span>
+</span><span id="line-173"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#tyConTable"><span class="hs-identifier hs-type">tyConTable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-174"></span><span id="tyConTable"><span class="annot"><span class="annottext">tyConTable :: [((String, String), (Text, Int))]
+</span><a href="ReWire.GHC.Recognize.html#tyConTable"><span class="hs-identifier hs-var hs-var">tyConTable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-175"></span><span>      </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Data.Vector.Generic.Sized.Internal&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Vector&quot;</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>   </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Vec&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>    </span><span class="hs-comment">-- drop the unsized-vector arg</span><span>
+</span><span id="line-176"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Data.Finite.Internal.Integral&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Finite&quot;</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Finite&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- drop the rep (Integer) arg</span><span>
+</span><span id="line-177"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Data.Finite.Internal&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Finite&quot;</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>                 </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Finite&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- older finite-typelits</span><span>
+</span><span id="line-178"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Control.Monad.Resumption.Reactive&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;ReacT&quot;</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>     </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;ReacT&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-179"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Control.Monad.Trans.State.Lazy&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;StateT&quot;</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>       </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;StateT&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-180"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;GHC.Internal.Data.Functor.Identity&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Identity&quot;</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Identity&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-181"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;GHC.Internal.Maybe&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Maybe&quot;</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><a href="ReWire.GHC.Recognize.html#maybeTyName"><span class="hs-identifier hs-var">maybeTyName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-182"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;GHC.Internal.Data.Either&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Either&quot;</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><a href="ReWire.GHC.Recognize.html#eitherTyName"><span class="hs-identifier hs-var">eitherTyName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-183"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-184"></span><span>
+</span><span id="line-185"></span><span class="hs-comment">-- | Base combinators supported via synthesized (INLINE) Eidos definitions</span><span>
+</span><span id="line-186"></span><span class="hs-comment">--   (see 'bridgeBaseVocab' in &quot;ReWire.GHC.ToEidos&quot;); outer key: defining</span><span>
+</span><span id="line-187"></span><span class="hs-comment">--   module; inner: occurrence -&gt; Eidos name.</span><span>
+</span><span id="line-188"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#vocabTable"><span class="hs-identifier hs-type">vocabTable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-189"></span><span id="vocabTable"><span class="annot"><span class="annottext">vocabTable :: [(Text, [(Text, Text)])]
+</span><a href="ReWire.GHC.Recognize.html#vocabTable"><span class="hs-identifier hs-var hs-var">vocabTable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-190"></span><span>      </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;GHC.Internal.Base&quot;</span></span><span class="hs-special">,</span><span>       </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;$&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;GHC.Internal.Base.$&quot;</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;.&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;GHC.Internal.Base..&quot;</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;id&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;GHC.Internal.Base.id&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-191"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;GHC.Classes&quot;</span></span><span class="hs-special">,</span><span>             </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;not&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;GHC.Classes.not&quot;</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;&amp;&amp;&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;GHC.Classes.&amp;&amp;&quot;</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;||&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;GHC.Classes.||&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-192"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;GHC.Internal.Data.Tuple&quot;</span></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;fst&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;GHC.Internal.Data.Tuple.fst&quot;</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;snd&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;GHC.Internal.Data.Tuple.snd&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-193"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-194"></span><span>
+</span><span id="line-195"></span><span class="annot"><a href="ReWire.GHC.Recognize.html#maybeTyName"><span class="hs-identifier hs-type">maybeTyName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.GHC.Recognize.html#eitherTyName"><span class="hs-identifier hs-type">eitherTyName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-196"></span><span id="maybeTyName"><span class="annot"><span class="annottext">maybeTyName :: Text
+</span><a href="ReWire.GHC.Recognize.html#maybeTyName"><span class="hs-identifier hs-var hs-var">maybeTyName</span></a></span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;GHC.Internal.Maybe.Maybe&quot;</span></span><span>
+</span><span id="line-197"></span><span id="eitherTyName"><span class="annot"><span class="annottext">eitherTyName :: Text
+</span><a href="ReWire.GHC.Recognize.html#eitherTyName"><span class="hs-identifier hs-var hs-var">eitherTyName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;GHC.Internal.Data.Either.Either&quot;</span></span><span>
+</span><span id="line-198"></span></pre></body></html>

@@ -1,0 +1,621 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE TupleSections #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE Trustworthy #-}</span><span>
+</span><span id="line-4"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.Hyle.Mangle.html"><span class="hs-identifier">ReWire.Hyle.Mangle</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Hyle.Mangle.html#mangle"><span class="hs-identifier">mangle</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Hyle.Mangle.html#mangleFresh"><span class="hs-identifier">mangleFresh</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Hyle.Mangle.html#mangleMod"><span class="hs-identifier">mangleMod</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Hyle.Mangle.html#pickFresh"><span class="hs-identifier">pickFresh</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Hyle.Mangle.html#seedNames"><span class="hs-identifier">seedNames</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Hyle.Mangle.html#stripFreshTag"><span class="hs-identifier">stripFreshTag</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Hyle.Mangle.html#svReserved"><span class="hs-identifier">svReserved</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-5"></span><span>
+</span><span id="line-6"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Pretty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">showt</span></span><span class="hs-special">)</span><span>
+</span><span id="line-7"></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Utils.Encoding</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">zEncodeString</span></span><span class="hs-special">)</span><span>   </span><span class="hs-comment">-- this is from the ghc package</span><span>
+</span><span id="line-9"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Char</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">isAlphaNum</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">isDigit</span></span><span class="hs-special">)</span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashMap.Strict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">HashMap</span></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashSet</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">HashSet</span></span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">fromMaybe</span></span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">pack</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">unpack</span></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashMap.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashSet</span></span><span>        </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Set</span></span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span>           </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="hs-comment">-- TODO: text version of this?</span><span>
+</span><span id="line-20"></span><span class="annot"><a href="ReWire.Hyle.Mangle.html#mangle"><span class="hs-identifier hs-type">mangle</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-21"></span><span id="mangle"><span class="annot"><span class="annottext">mangle :: Text -&gt; Text
+</span><a href="ReWire.Hyle.Mangle.html#mangle"><span class="hs-identifier hs-var hs-var">mangle</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Text) -&gt; (Text -&gt; String) -&gt; Text -&gt; Text
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String
+</span><span class="hs-identifier hs-var">zEncodeString</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; String) -&gt; (Text -&gt; String) -&gt; Text -&gt; String
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">unpack</span></span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="hs-comment">-- | Mangle a Hyle name into an identifier acceptable to the RTL backends</span><span>
+</span><span id="line-24"></span><span class="hs-comment">--   (when it isn't one already): alphanumerics plus underscores and dollar</span><span>
+</span><span id="line-25"></span><span class="hs-comment">--   signs (the VHDL pretty-printer further escapes names as needed).</span><span>
+</span><span id="line-26"></span><span class="annot"><a href="ReWire.Hyle.Mangle.html#mangleFresh"><span class="hs-identifier hs-type">mangleFresh</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-27"></span><span id="mangleFresh"><span class="annot"><span class="annottext">mangleFresh :: Text -&gt; Text
+</span><a href="ReWire.Hyle.Mangle.html#mangleFresh"><span class="hs-identifier hs-var hs-var">mangleFresh</span></a></span></span><span> </span><span id="local-6989586621679233016"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233016"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Bool
+</span><a href="#local-6989586621679233017"><span class="hs-identifier hs-var">isRtlId</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233018"><span class="hs-identifier hs-var">x'</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233018"><span class="hs-identifier hs-var">x'</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="ReWire.Hyle.Mangle.html#mangle"><span class="hs-identifier hs-var">mangle</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233018"><span class="hs-identifier hs-var">x'</span></a></span><span>
+</span><span id="line-28"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679233019"><span class="hs-identifier hs-type">subDots</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-29"></span><span>            </span><span id="local-6989586621679233019"><span class="annot"><span class="annottext">subDots :: Text -&gt; Text
+</span><a href="#local-6989586621679233019"><span class="hs-identifier hs-var hs-var">subDots</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text -&gt; Text -&gt; Text
+Text -&gt; Text -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.replace</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;.&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;_&quot;</span></span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span>            </span><span class="annot"><a href="#local-6989586621679233021"><span class="hs-identifier hs-type">subDollar</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-32"></span><span>            </span><span id="local-6989586621679233021"><span class="annot"><span class="annottext">subDollar :: Text -&gt; Text
+</span><a href="#local-6989586621679233021"><span class="hs-identifier hs-var hs-var">subDollar</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-33"></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Maybe Text
+</span><span class="hs-identifier hs-var">T.stripPrefix</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;$&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679233023"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233023"><span class="hs-identifier hs-var">x''</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Z&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233023"><span class="hs-identifier hs-var">x''</span></a></span><span>
+</span><span id="line-34"></span><span>                  </span><span id="local-6989586621679233024"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233024"><span class="hs-identifier hs-var">x''</span></a></span></span><span>                             </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233024"><span class="hs-identifier hs-var">x''</span></a></span><span>
+</span><span id="line-35"></span><span>
+</span><span id="line-36"></span><span>            </span><span class="annot"><a href="#local-6989586621679233025"><span class="hs-identifier hs-type">subTick</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-37"></span><span>            </span><span id="local-6989586621679233025"><span class="annot"><span class="annottext">subTick :: Text -&gt; Text
+</span><a href="#local-6989586621679233025"><span class="hs-identifier hs-var hs-var">subTick</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text -&gt; Text -&gt; Text
+Text -&gt; Text -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.replace</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;'&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;$&quot;</span></span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span>            </span><span class="annot"><a href="#local-6989586621679233017"><span class="hs-identifier hs-type">isRtlId</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-40"></span><span>            </span><span id="local-6989586621679233017"><span class="annot"><span class="annottext">isRtlId :: Text -&gt; Bool
+</span><a href="#local-6989586621679233017"><span class="hs-identifier hs-var hs-var">isRtlId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; Text -&gt; Bool
+</span><span class="hs-identifier hs-var">T.all</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Bool
+</span><a href="#local-6989586621679233027"><span class="hs-identifier hs-var">isRtlId'</span></a></span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span>            </span><span class="annot"><a href="#local-6989586621679233027"><span class="hs-identifier hs-type">isRtlId'</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-43"></span><span>            </span><span id="local-6989586621679233027"><span class="annot"><span class="annottext">isRtlId' :: Char -&gt; Bool
+</span><a href="#local-6989586621679233027"><span class="hs-identifier hs-var hs-var">isRtlId'</span></a></span></span><span> </span><span id="local-6989586621679233028"><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679233028"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Char -&gt; Bool
+</span><span class="hs-identifier hs-var">isAlphaNum</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679233028"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679233028"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'_'</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679233028"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'$'</span></span><span>
+</span><span id="line-44"></span><span>
+</span><span id="line-45"></span><span>            </span><span class="annot"><a href="#local-6989586621679233018"><span class="hs-identifier hs-type">x'</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-46"></span><span>            </span><span id="local-6989586621679233018"><span class="annot"><span class="annottext">x' :: Text
+</span><a href="#local-6989586621679233018"><span class="hs-identifier hs-var hs-var">x'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="#local-6989586621679233025"><span class="hs-identifier hs-var">subTick</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; Text -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="#local-6989586621679233021"><span class="hs-identifier hs-var">subDollar</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; Text -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="#local-6989586621679233019"><span class="hs-identifier hs-var">subDots</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233016"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="hs-comment">-- | Strip the freshening suffixes stacked onto a name by the Hyle inliner</span><span>
+</span><span id="line-49"></span><span class="hs-comment">--   (@$i\&lt;digits\&gt;@) and the fold-time instance hoist (@$h\&lt;digits\&gt;@),</span><span>
+</span><span id="line-50"></span><span class="hs-comment">--   recovering the original base for display. Suffix groups stack (deep</span><span>
+</span><span id="line-51"></span><span class="hs-comment">--   inline chains re-freshen already-freshened names, and hoisting re-lets</span><span>
+</span><span id="line-52"></span><span class="hs-comment">--   inliner names), so stripping repeats; a name that is nothing but suffix</span><span>
+</span><span id="line-53"></span><span class="hs-comment">--   (e.g. a bare legacy @$i0@) is kept unstripped rather than emptied.</span><span>
+</span><span id="line-54"></span><span class="annot"><a href="ReWire.Hyle.Mangle.html#stripFreshTag"><span class="hs-identifier hs-type">stripFreshTag</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-55"></span><span id="stripFreshTag"><span class="annot"><span class="annottext">stripFreshTag :: Text -&gt; Text
+</span><a href="ReWire.Hyle.Mangle.html#stripFreshTag"><span class="hs-identifier hs-var hs-var">stripFreshTag</span></a></span></span><span> </span><span id="local-6989586621679233030"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233030"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; (Text -&gt; Text) -&gt; Maybe Text -&gt; Text
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233030"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="ReWire.Hyle.Mangle.html#stripFreshTag"><span class="hs-identifier hs-var">stripFreshTag</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe Text -&gt; Text) -&gt; Maybe Text -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
+</span><a href="#local-6989586621679233032"><span class="hs-identifier hs-var">stripOne</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233030"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-56"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679233032"><span class="hs-identifier hs-type">stripOne</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-57"></span><span>            </span><span id="local-6989586621679233032"><span class="annot"><span class="annottext">stripOne :: Text -&gt; Maybe Text
+</span><a href="#local-6989586621679233032"><span class="hs-identifier hs-var hs-var">stripOne</span></a></span></span><span> </span><span id="local-6989586621679233033"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233033"><span class="hs-identifier hs-var">t</span></a></span></span><span>
+</span><span id="line-58"></span><span>                  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Bool
+</span><span class="hs-identifier hs-var">T.null</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233035"><span class="hs-identifier hs-var">digits</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Text
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-59"></span><span>                  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>     </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Maybe Text
+</span><span class="hs-identifier hs-var">T.stripSuffix</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;$i&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233037"><span class="hs-identifier hs-var">pre</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Maybe Text
+</span><span class="hs-identifier hs-var">T.stripSuffix</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;$h&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233037"><span class="hs-identifier hs-var">pre</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-60"></span><span>                        </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679233038"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233038"><span class="hs-identifier hs-var">base</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe Text
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Bool
+</span><span class="hs-identifier hs-var">T.null</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233038"><span class="hs-identifier hs-var">base</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233038"><span class="hs-identifier hs-var">base</span></a></span><span>
+</span><span id="line-61"></span><span>                        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe Text
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679233040"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233040"><span class="hs-identifier hs-var">base</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Bool
+</span><span class="hs-identifier hs-var">T.null</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233040"><span class="hs-identifier hs-var">base</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233040"><span class="hs-identifier hs-var">base</span></a></span><span>
+</span><span id="line-62"></span><span>                        </span><span class="annot"><span class="annottext">(Maybe Text, Maybe Text)
+</span><span class="hs-identifier">_</span></span><span>                                  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe Text
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-63"></span><span>                  </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679233037"><span class="hs-identifier hs-type">pre</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679233035"><span class="hs-identifier hs-type">digits</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-64"></span><span>                        </span><span id="local-6989586621679233037"><span class="annot"><span class="annottext">pre :: Text
+</span><a href="#local-6989586621679233037"><span class="hs-identifier hs-var hs-var">pre</span></a></span></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.dropWhileEnd</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Bool
+</span><span class="hs-identifier hs-var">isDigit</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233033"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-65"></span><span>                        </span><span id="local-6989586621679233035"><span class="annot"><span class="annottext">digits :: Text
+</span><a href="#local-6989586621679233035"><span class="hs-identifier hs-var hs-var">digits</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.takeWhileEnd</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Bool
+</span><span class="hs-identifier hs-var">isDigit</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233033"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-66"></span><span>
+</span><span id="line-67"></span><span class="hs-comment">-- | Module names need to be de-conflicted because they aren't immediately</span><span>
+</span><span id="line-68"></span><span class="hs-comment">--   freshened.</span><span>
+</span><span id="line-69"></span><span class="annot"><a href="ReWire.Hyle.Mangle.html#mangleMod"><span class="hs-identifier hs-type">mangleMod</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-70"></span><span id="mangleMod"><span class="annot"><span class="annottext">mangleMod :: Text -&gt; Text
+</span><a href="ReWire.Hyle.Mangle.html#mangleMod"><span class="hs-identifier hs-var hs-var">mangleMod</span></a></span></span><span> </span><span id="local-6989586621679233043"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233043"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="ReWire.Hyle.Mangle.html#mangleFresh"><span class="hs-identifier hs-var">mangleFresh</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233044"><span class="hs-identifier hs-var">x'</span></a></span><span>
+</span><span id="line-71"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679233045"><span class="hs-identifier hs-type">subDots</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-72"></span><span>            </span><span id="local-6989586621679233045"><span class="annot"><span class="annottext">subDots :: Text -&gt; Text
+</span><a href="#local-6989586621679233045"><span class="hs-identifier hs-var hs-var">subDots</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text -&gt; Text -&gt; Text
+Text -&gt; Text -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.replace</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;_&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;__&quot;</span></span><span>
+</span><span id="line-73"></span><span>
+</span><span id="line-74"></span><span>            </span><span class="annot"><a href="#local-6989586621679233046"><span class="hs-identifier hs-type">subDollar</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-75"></span><span>            </span><span id="local-6989586621679233046"><span class="annot"><span class="annottext">subDollar :: Text -&gt; Text
+</span><a href="#local-6989586621679233046"><span class="hs-identifier hs-var hs-var">subDollar</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-76"></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Maybe Text
+</span><span class="hs-identifier hs-var">T.stripPrefix</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Z&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679233047"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233047"><span class="hs-identifier hs-var">x''</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;ZZ&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233047"><span class="hs-identifier hs-var">x''</span></a></span><span>
+</span><span id="line-77"></span><span>                  </span><span id="local-6989586621679233048"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233048"><span class="hs-identifier hs-var">x''</span></a></span></span><span>                             </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233048"><span class="hs-identifier hs-var">x''</span></a></span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span>            </span><span class="annot"><a href="#local-6989586621679233044"><span class="hs-identifier hs-type">x'</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-80"></span><span>            </span><span id="local-6989586621679233044"><span class="annot"><span class="annottext">x' :: Text
+</span><a href="#local-6989586621679233044"><span class="hs-identifier hs-var hs-var">x'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="#local-6989586621679233046"><span class="hs-identifier hs-var">subDollar</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; Text -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="#local-6989586621679233045"><span class="hs-identifier hs-var">subDots</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233043"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="hs-comment">-- | Pick an unused RTL identifier from an already-mangled seed, updating the</span><span>
+</span><span id="line-83"></span><span class="hs-comment">--   used map: the seed itself when free, otherwise the first free</span><span>
+</span><span id="line-84"></span><span class="hs-comment">--   suffix-numbered variant. Every picked (or 'seedNames'-seeded) name is a</span><span>
+</span><span id="line-85"></span><span class="hs-comment">--   key of the map, so a suffixed pick can never collide with a name issued</span><span>
+</span><span id="line-86"></span><span class="hs-comment">--   later under its own seed; the value is the seed's next suffix number,</span><span>
+</span><span id="line-87"></span><span class="hs-comment">--   keeping repeated requests O(1).</span><span>
+</span><span id="line-88"></span><span class="annot"><a href="ReWire.Hyle.Mangle.html#pickFresh"><span class="hs-identifier hs-type">pickFresh</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span>
+</span><span id="line-89"></span><span id="pickFresh"><span class="annot"><span class="annottext">pickFresh :: Text -&gt; HashMap Text Int -&gt; Text -&gt; (Text, HashMap Text Int)
+</span><a href="ReWire.Hyle.Mangle.html#pickFresh"><span class="hs-identifier hs-var hs-var">pickFresh</span></a></span></span><span> </span><span id="local-6989586621679233049"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233049"><span class="hs-identifier hs-var">sep</span></a></span></span><span> </span><span id="local-6989586621679233050"><span class="annot"><span class="annottext">HashMap Text Int
+</span><a href="#local-6989586621679233050"><span class="hs-identifier hs-var">used</span></a></span></span><span> </span><span id="local-6989586621679233051"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233051"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; (Text, HashMap Text Int)
+</span><a href="#local-6989586621679233052"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; (Text, HashMap Text Int))
+-&gt; Int -&gt; (Text, HashMap Text Int)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Maybe Int -&gt; Int
+forall a. a -&gt; Maybe a -&gt; a
+</span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">(Maybe Int -&gt; Int) -&gt; Maybe Int -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; HashMap Text Int -&gt; Maybe Int
+forall k v. (Eq k, Hashable k) =&gt; k -&gt; HashMap k v -&gt; Maybe v
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233051"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap Text Int
+</span><a href="#local-6989586621679233050"><span class="hs-identifier hs-var">used</span></a></span><span>
+</span><span id="line-90"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679233052"><span class="hs-identifier hs-type">go</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span>
+</span><span id="line-91"></span><span>            </span><span id="local-6989586621679233052"><span class="annot"><span class="annottext">go :: Int -&gt; (Text, HashMap Text Int)
+</span><a href="#local-6989586621679233052"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span id="local-6989586621679233054"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679233054"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Text -&gt; HashMap Text Int -&gt; Bool
+forall k a. (Eq k, Hashable k) =&gt; k -&gt; HashMap k a -&gt; Bool
+</span><span class="hs-identifier hs-var">Map.member</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233056"><span class="hs-identifier hs-var">cand</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap Text Int
+</span><a href="#local-6989586621679233050"><span class="hs-identifier hs-var">used</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; (Text, HashMap Text Int)
+</span><a href="#local-6989586621679233052"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; (Text, HashMap Text Int))
+-&gt; Int -&gt; (Text, HashMap Text Int)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679233054"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-92"></span><span>                 </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>            </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233056"><span class="hs-identifier hs-var">cand</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Int -&gt; HashMap Text Int -&gt; HashMap Text Int
+forall k v.
+(Eq k, Hashable k) =&gt;
+k -&gt; v -&gt; HashMap k v -&gt; HashMap k v
+</span><span class="hs-identifier hs-var">Map.insert</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233051"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679233054"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(HashMap Text Int -&gt; HashMap Text Int)
+-&gt; HashMap Text Int -&gt; HashMap Text Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233056"><span class="hs-identifier hs-var">cand</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233051"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">HashMap Text Int
+</span><a href="#local-6989586621679233050"><span class="hs-identifier hs-var">used</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Int -&gt; HashMap Text Int -&gt; HashMap Text Int
+forall k v.
+(Eq k, Hashable k) =&gt;
+k -&gt; v -&gt; HashMap k v -&gt; HashMap k v
+</span><span class="hs-identifier hs-var">Map.insert</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233056"><span class="hs-identifier hs-var">cand</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">HashMap Text Int
+</span><a href="#local-6989586621679233050"><span class="hs-identifier hs-var">used</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-93"></span><span>                  </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="#local-6989586621679233056"><span class="hs-identifier hs-type">cand</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-94"></span><span>                        </span><span id="local-6989586621679233056"><span class="annot"><span class="annottext">cand :: Text
+</span><a href="#local-6989586621679233056"><span class="hs-identifier hs-var hs-var">cand</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679233054"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233051"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-95"></span><span>                             </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233051"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679233049"><span class="hs-identifier hs-var">sep</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Text
+forall a. TextShow a =&gt; a -&gt; Text
+</span><span class="hs-identifier hs-var">showt</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679233054"><span class="hs-identifier hs-var">k</span></a></span><span>
+</span><span id="line-96"></span><span>
+</span><span id="line-97"></span><span class="hs-comment">-- | Seed a 'pickFresh' used map with ambient names (ports, registers) that</span><span>
+</span><span id="line-98"></span><span class="hs-comment">--   are emitted verbatim, without passing through the backend's fresh-name</span><span>
+</span><span id="line-99"></span><span class="hs-comment">--   supply: generated names must not collide with them.</span><span>
+</span><span id="line-100"></span><span class="annot"><a href="ReWire.Hyle.Mangle.html#seedNames"><span class="hs-identifier hs-type">seedNames</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashMap</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-101"></span><span id="seedNames"><span class="annot"><span class="annottext">seedNames :: [Text] -&gt; HashMap Text Int
+</span><a href="ReWire.Hyle.Mangle.html#seedNames"><span class="hs-identifier hs-var hs-var">seedNames</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(Text, Int)] -&gt; HashMap Text Int
+forall k v. (Eq k, Hashable k) =&gt; [(k, v)] -&gt; HashMap k v
+</span><span class="hs-identifier hs-var">Map.fromList</span></span><span> </span><span class="annot"><span class="annottext">([(Text, Int)] -&gt; HashMap Text Int)
+-&gt; ([Text] -&gt; [(Text, Int)]) -&gt; [Text] -&gt; HashMap Text Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; (Text, Int)) -&gt; [Text] -&gt; [(Text, Int)]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-102"></span><span>
+</span><span id="line-103"></span><span class="hs-comment">-- | SystemVerilog reserved words (IEEE 1800-2012, Annex B): generated</span><span>
+</span><span id="line-104"></span><span class="hs-comment">--   Verilog identifiers must dodge them. (The VHDL backend needs no</span><span>
+</span><span id="line-105"></span><span class="hs-comment">--   analogue: its pretty-printer escapes reserved words as extended</span><span>
+</span><span id="line-106"></span><span class="hs-comment">--   identifiers.)</span><span>
+</span><span id="line-107"></span><span class="annot"><a href="ReWire.Hyle.Mangle.html#svReserved"><span class="hs-identifier hs-type">svReserved</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-108"></span><span id="svReserved"><span class="annot"><span class="annottext">svReserved :: Text -&gt; Bool
+</span><a href="ReWire.Hyle.Mangle.html#svReserved"><span class="hs-identifier hs-var hs-var">svReserved</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; HashSet Text -&gt; Bool
+forall a. (Eq a, Hashable a) =&gt; a -&gt; HashSet a -&gt; Bool
+</span><span class="hs-operator hs-var">`Set.member`</span></span><span> </span><span class="annot"><span class="annottext">HashSet Text
+</span><a href="ReWire.Hyle.Mangle.html#svKeywords"><span class="hs-identifier hs-var">svKeywords</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="annot"><a href="ReWire.Hyle.Mangle.html#svKeywords"><span class="hs-identifier hs-type">svKeywords</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">HashSet</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-111"></span><span id="svKeywords"><span class="annot"><span class="annottext">svKeywords :: HashSet Text
+</span><a href="ReWire.Hyle.Mangle.html#svKeywords"><span class="hs-identifier hs-var hs-var">svKeywords</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; HashSet Text
+forall a. (Eq a, Hashable a) =&gt; [a] -&gt; HashSet a
+</span><span class="hs-identifier hs-var">Set.fromList</span></span><span>
+</span><span id="line-112"></span><span>      </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;accept_on&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;alias&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;always&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;always_comb&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;always_ff&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;always_latch&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;and&quot;</span></span><span>
+</span><span id="line-113"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;assert&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;assign&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;assume&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;automatic&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;before&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;begin&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;bind&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;bins&quot;</span></span><span>
+</span><span id="line-114"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;binsof&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;bit&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;break&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;buf&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;bufif0&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;bufif1&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;byte&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;case&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;casex&quot;</span></span><span>
+</span><span id="line-115"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;casez&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;cell&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;chandle&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;checker&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;class&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;clocking&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;cmos&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;config&quot;</span></span><span>
+</span><span id="line-116"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;const&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;constraint&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;context&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;continue&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;cover&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;covergroup&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;coverpoint&quot;</span></span><span>
+</span><span id="line-117"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;cross&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;deassign&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;default&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;defparam&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;design&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;disable&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;dist&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;do&quot;</span></span><span>
+</span><span id="line-118"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;edge&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;else&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;end&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endcase&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endchecker&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endclass&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endclocking&quot;</span></span><span>
+</span><span id="line-119"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endconfig&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endfunction&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endgenerate&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endgroup&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endinterface&quot;</span></span><span>
+</span><span id="line-120"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endmodule&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endpackage&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endprimitive&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endprogram&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endproperty&quot;</span></span><span>
+</span><span id="line-121"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endspecify&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endsequence&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endtable&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;endtask&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;enum&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;event&quot;</span></span><span>
+</span><span id="line-122"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;eventually&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;expect&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;export&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;extends&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;extern&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;final&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;first_match&quot;</span></span><span>
+</span><span id="line-123"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;for&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;force&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;foreach&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;forever&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;fork&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;forkjoin&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;function&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;generate&quot;</span></span><span>
+</span><span id="line-124"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;genvar&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;global&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;highz0&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;highz1&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;if&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;iff&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;ifnone&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;ignore_bins&quot;</span></span><span>
+</span><span id="line-125"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;illegal_bins&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;implements&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;implies&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;import&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;incdir&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;include&quot;</span></span><span>
+</span><span id="line-126"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;initial&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;inout&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;input&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;inside&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;instance&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;int&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;integer&quot;</span></span><span>
+</span><span id="line-127"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;interconnect&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;interface&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;intersect&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;join&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;join_any&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;join_none&quot;</span></span><span>
+</span><span id="line-128"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;large&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;let&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;liblist&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;library&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;local&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;localparam&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;logic&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;longint&quot;</span></span><span>
+</span><span id="line-129"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;macromodule&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;matches&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;medium&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;modport&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;module&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;nand&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;negedge&quot;</span></span><span>
+</span><span id="line-130"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;nettype&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;new&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;nexttime&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;nmos&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;nor&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;noshowcancelled&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;not&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;notif0&quot;</span></span><span>
+</span><span id="line-131"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;notif1&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;null&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;or&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;output&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;package&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;packed&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;parameter&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;pmos&quot;</span></span><span>
+</span><span id="line-132"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;posedge&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;primitive&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;priority&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;program&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;property&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;protected&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;pull0&quot;</span></span><span>
+</span><span id="line-133"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;pull1&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;pulldown&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;pullup&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;pulsestyle_ondetect&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;pulsestyle_onevent&quot;</span></span><span>
+</span><span id="line-134"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;pure&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;rand&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;randc&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;randcase&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;randsequence&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;rcmos&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;real&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;realtime&quot;</span></span><span>
+</span><span id="line-135"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;ref&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;reg&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;reject_on&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;release&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;repeat&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;restrict&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;return&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;rnmos&quot;</span></span><span>
+</span><span id="line-136"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;rpmos&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;rtran&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;rtranif0&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;rtranif1&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;s_always&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;s_eventually&quot;</span></span><span>
+</span><span id="line-137"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;s_nexttime&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;s_until&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;s_until_with&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;scalared&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;sequence&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;shortint&quot;</span></span><span>
+</span><span id="line-138"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;shortreal&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;showcancelled&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;signed&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;small&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;soft&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;solve&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;specify&quot;</span></span><span>
+</span><span id="line-139"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;specparam&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;static&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;string&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;strong&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;strong0&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;strong1&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;struct&quot;</span></span><span>
+</span><span id="line-140"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;super&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;supply0&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;supply1&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;sync_accept_on&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;sync_reject_on&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;table&quot;</span></span><span>
+</span><span id="line-141"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;tagged&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;task&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;this&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;throughout&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;time&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;timeprecision&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;timeunit&quot;</span></span><span>
+</span><span id="line-142"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;tran&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;tranif0&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;tranif1&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;tri&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;tri0&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;tri1&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;triand&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;trior&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;trireg&quot;</span></span><span>
+</span><span id="line-143"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;type&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;typedef&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;union&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;unique&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;unique0&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;unsigned&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;until&quot;</span></span><span>
+</span><span id="line-144"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;until_with&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;untyped&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;use&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;uwire&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;var&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;vectored&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;virtual&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;void&quot;</span></span><span>
+</span><span id="line-145"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;wait&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;wait_order&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;wand&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;weak&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;weak0&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;weak1&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;while&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;wildcard&quot;</span></span><span>
+</span><span id="line-146"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;wire&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;with&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;within&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;wor&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;xnor&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;xor&quot;</span></span><span>
+</span><span id="line-147"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-148"></span></pre></body></html>

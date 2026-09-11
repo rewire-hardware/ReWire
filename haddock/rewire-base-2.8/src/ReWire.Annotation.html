@@ -1,0 +1,676 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="local-6989586621679176448"><span id="local-6989586621679176449"></span></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DeriveDataTypeable #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE DeriveGeneric #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE PatternSynonyms #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE LambdaCase #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-missing-methods #-}</span><span> </span><span class="hs-comment">-- the intentionally-empty `Data Annote` (SYB leaf).</span><span>
+</span><span id="line-9"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.Annotation.html"><span class="hs-identifier">ReWire.Annotation</span></a></span><span>
+</span><span id="line-10"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier">Annote</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier">Annote</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#NoAnnote"><span class="hs-identifier">NoAnnote</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#MsgAnnote"><span class="hs-identifier">MsgAnnote</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Provenance"><span class="hs-identifier">Provenance</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Span"><span class="hs-identifier">Span</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annotation"><span class="hs-identifier">Annotation</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annotated"><span class="hs-identifier">Annotated</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Blind"><span class="hs-identifier">Blind</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#srcAnnote"><span class="hs-identifier">srcAnnote</span></a></span><span>
+</span><span id="line-17"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#primSpan"><span class="hs-identifier">primSpan</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#annProv"><span class="hs-identifier">annProv</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#annContext"><span class="hs-identifier">annContext</span></a></span><span>
+</span><span id="line-18"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#noAnn"><span class="hs-identifier">noAnn</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#unAnn"><span class="hs-identifier">unAnn</span></a></span><span>
+</span><span id="line-19"></span><span>      </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.SYB.html"><span class="hs-identifier">ReWire.SYB</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.SYB.html#transform"><span class="hs-identifier">transform</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="ReWire.Pretty.html"><span class="hs-identifier">ReWire.Pretty</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">TextShow</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">showb</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">fromString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.DeepSeq</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NFData</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Data</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Typeable</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Data</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Hashable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Hashable</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Generic</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span class="hs-comment">-- | A source region: a file together with 1-based (line, column) start and end</span><span>
+</span><span id="line-32"></span><span class="hs-comment">--   positions. Carries the full extent of a node (unlike a single point), which</span><span>
+</span><span id="line-33"></span><span class="hs-comment">--   is what lets a diagnostic underline the offending text.</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">data</span><span> </span><span id="Span"><span class="annot"><a href="ReWire.Annotation.html#Span"><span class="hs-identifier hs-var">Span</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Span"><span class="annot"><a href="ReWire.Annotation.html#Span"><span class="hs-identifier hs-var">Span</span></a></span></span><span>
+</span><span id="line-35"></span><span>      </span><span class="hs-special">{</span><span> </span><span id="spanFile"><span class="annot"><span class="annottext">Span -&gt; FilePath
+</span><a href="ReWire.Annotation.html#spanFile"><span class="hs-identifier hs-var hs-var">spanFile</span></a></span></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
+</span><span id="line-36"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="spanStart"><span class="annot"><span class="annottext">Span -&gt; (Int, Int)
+</span><a href="ReWire.Annotation.html#spanStart"><span class="hs-identifier hs-var hs-var">spanStart</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span>      </span><span class="hs-special">,</span><span> </span><span id="spanEnd"><span class="annot"><span class="annottext">Span -&gt; (Int, Int)
+</span><a href="ReWire.Annotation.html#spanEnd"><span class="hs-identifier hs-var hs-var">spanEnd</span></a></span></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span>      </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679176468"><span id="local-6989586621679176478"><span class="annot"><span class="annottext">Span -&gt; Span -&gt; Bool
+(Span -&gt; Span -&gt; Bool) -&gt; (Span -&gt; Span -&gt; Bool) -&gt; Eq Span
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Span -&gt; Span -&gt; Bool
+== :: Span -&gt; Span -&gt; Bool
+$c/= :: Span -&gt; Span -&gt; Bool
+/= :: Span -&gt; Span -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679176487"><span id="local-6989586621679176497"><span id="local-6989586621679176505"><span id="local-6989586621679176509"><span id="local-6989586621679176512"><span id="local-6989586621679176515"><span id="local-6989586621679176518"><span class="annot"><span class="annottext">Eq Span
+Eq Span =&gt;
+(Span -&gt; Span -&gt; Ordering)
+-&gt; (Span -&gt; Span -&gt; Bool)
+-&gt; (Span -&gt; Span -&gt; Bool)
+-&gt; (Span -&gt; Span -&gt; Bool)
+-&gt; (Span -&gt; Span -&gt; Bool)
+-&gt; (Span -&gt; Span -&gt; Span)
+-&gt; (Span -&gt; Span -&gt; Span)
+-&gt; Ord Span
+Span -&gt; Span -&gt; Bool
+Span -&gt; Span -&gt; Ordering
+Span -&gt; Span -&gt; Span
+forall a.
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: Span -&gt; Span -&gt; Ordering
+compare :: Span -&gt; Span -&gt; Ordering
+$c&lt; :: Span -&gt; Span -&gt; Bool
+&lt; :: Span -&gt; Span -&gt; Bool
+$c&lt;= :: Span -&gt; Span -&gt; Bool
+&lt;= :: Span -&gt; Span -&gt; Bool
+$c&gt; :: Span -&gt; Span -&gt; Bool
+&gt; :: Span -&gt; Span -&gt; Bool
+$c&gt;= :: Span -&gt; Span -&gt; Bool
+&gt;= :: Span -&gt; Span -&gt; Bool
+$cmax :: Span -&gt; Span -&gt; Span
+max :: Span -&gt; Span -&gt; Span
+$cmin :: Span -&gt; Span -&gt; Span
+min :: Span -&gt; Span -&gt; Span
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679176528"><span id="local-6989586621679176539"><span id="local-6989586621679176543"><span class="annot"><span class="annottext">Int -&gt; Span -&gt; ShowS
+[Span] -&gt; ShowS
+Span -&gt; FilePath
+(Int -&gt; Span -&gt; ShowS)
+-&gt; (Span -&gt; FilePath) -&gt; ([Span] -&gt; ShowS) -&gt; Show Span
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; FilePath) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Span -&gt; ShowS
+showsPrec :: Int -&gt; Span -&gt; ShowS
+$cshow :: Span -&gt; FilePath
+show :: Span -&gt; FilePath
+$cshowList :: [Span] -&gt; ShowS
+showList :: [Span] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679176550"><span id="local-6989586621679176552"><span class="annot"><span class="annottext">(forall x. Span -&gt; Rep Span x)
+-&gt; (forall x. Rep Span x -&gt; Span) -&gt; Generic Span
+forall x. Rep Span x -&gt; Span
+forall x. Span -&gt; Rep Span x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cfrom :: forall x. Span -&gt; Rep Span x
+from :: forall x. Span -&gt; Rep Span x
+$cto :: forall x. Rep Span x -&gt; Span
+to :: forall x. Rep Span x -&gt; Span
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="hs-comment">-- | Where an annotated node came from. Nodes parsed from user source are</span><span>
+</span><span id="line-41"></span><span class="hs-comment">--   'FromSource'; nodes a pass invents are 'Synthesized', recording the pass</span><span>
+</span><span id="line-42"></span><span class="hs-comment">--   name and the source spans of the inputs it was built from (so errors on</span><span>
+</span><span id="line-43"></span><span class="hs-comment">--   generated code can still point back at the user's source).</span><span>
+</span><span id="line-44"></span><span class="hs-keyword">data</span><span> </span><span id="Provenance"><span class="annot"><a href="ReWire.Annotation.html#Provenance"><span class="hs-identifier hs-var">Provenance</span></a></span></span><span>
+</span><span id="line-45"></span><span>      </span><span class="hs-glyph">=</span><span> </span><span id="FromSource"><span class="annot"><a href="ReWire.Annotation.html#FromSource"><span class="hs-identifier hs-var">FromSource</span></a></span></span><span>  </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Annotation.html#Span"><span class="hs-identifier hs-type">Span</span></a></span><span>
+</span><span id="line-46"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span id="Synthesized"><span class="annot"><a href="ReWire.Annotation.html#Synthesized"><span class="hs-identifier hs-var">Synthesized</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="ReWire.Annotation.html#Span"><span class="hs-identifier hs-type">Span</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-47"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span id="NoProvenance"><span class="annot"><a href="ReWire.Annotation.html#NoProvenance"><span class="hs-identifier hs-var">NoProvenance</span></a></span></span><span>
+</span><span id="line-48"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679176561"><span id="local-6989586621679176570"><span class="annot"><span class="annottext">Provenance -&gt; Provenance -&gt; Bool
+(Provenance -&gt; Provenance -&gt; Bool)
+-&gt; (Provenance -&gt; Provenance -&gt; Bool) -&gt; Eq Provenance
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Provenance -&gt; Provenance -&gt; Bool
+== :: Provenance -&gt; Provenance -&gt; Bool
+$c/= :: Provenance -&gt; Provenance -&gt; Bool
+/= :: Provenance -&gt; Provenance -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679176576"><span id="local-6989586621679176582"><span id="local-6989586621679176587"><span id="local-6989586621679176591"><span id="local-6989586621679176594"><span id="local-6989586621679176597"><span id="local-6989586621679176600"><span class="annot"><span class="annottext">Eq Provenance
+Eq Provenance =&gt;
+(Provenance -&gt; Provenance -&gt; Ordering)
+-&gt; (Provenance -&gt; Provenance -&gt; Bool)
+-&gt; (Provenance -&gt; Provenance -&gt; Bool)
+-&gt; (Provenance -&gt; Provenance -&gt; Bool)
+-&gt; (Provenance -&gt; Provenance -&gt; Bool)
+-&gt; (Provenance -&gt; Provenance -&gt; Provenance)
+-&gt; (Provenance -&gt; Provenance -&gt; Provenance)
+-&gt; Ord Provenance
+Provenance -&gt; Provenance -&gt; Bool
+Provenance -&gt; Provenance -&gt; Ordering
+Provenance -&gt; Provenance -&gt; Provenance
+forall a.
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: Provenance -&gt; Provenance -&gt; Ordering
+compare :: Provenance -&gt; Provenance -&gt; Ordering
+$c&lt; :: Provenance -&gt; Provenance -&gt; Bool
+&lt; :: Provenance -&gt; Provenance -&gt; Bool
+$c&lt;= :: Provenance -&gt; Provenance -&gt; Bool
+&lt;= :: Provenance -&gt; Provenance -&gt; Bool
+$c&gt; :: Provenance -&gt; Provenance -&gt; Bool
+&gt; :: Provenance -&gt; Provenance -&gt; Bool
+$c&gt;= :: Provenance -&gt; Provenance -&gt; Bool
+&gt;= :: Provenance -&gt; Provenance -&gt; Bool
+$cmax :: Provenance -&gt; Provenance -&gt; Provenance
+max :: Provenance -&gt; Provenance -&gt; Provenance
+$cmin :: Provenance -&gt; Provenance -&gt; Provenance
+min :: Provenance -&gt; Provenance -&gt; Provenance
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679176603"><span id="local-6989586621679176611"><span id="local-6989586621679176615"><span class="annot"><span class="annottext">Int -&gt; Provenance -&gt; ShowS
+[Provenance] -&gt; ShowS
+Provenance -&gt; FilePath
+(Int -&gt; Provenance -&gt; ShowS)
+-&gt; (Provenance -&gt; FilePath)
+-&gt; ([Provenance] -&gt; ShowS)
+-&gt; Show Provenance
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; FilePath) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Provenance -&gt; ShowS
+showsPrec :: Int -&gt; Provenance -&gt; ShowS
+$cshow :: Provenance -&gt; FilePath
+show :: Provenance -&gt; FilePath
+$cshowList :: [Provenance] -&gt; ShowS
+showList :: [Provenance] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679176618"><span id="local-6989586621679176620"><span class="annot"><span class="annottext">(forall x. Provenance -&gt; Rep Provenance x)
+-&gt; (forall x. Rep Provenance x -&gt; Provenance) -&gt; Generic Provenance
+forall x. Rep Provenance x -&gt; Provenance
+forall x. Provenance -&gt; Rep Provenance x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cfrom :: forall x. Provenance -&gt; Rep Provenance x
+from :: forall x. Provenance -&gt; Rep Provenance x
+$cto :: forall x. Rep Provenance x -&gt; Provenance
+to :: forall x. Rep Provenance x -&gt; Provenance
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span class="hs-comment">-- | The annotation carried by every IR node: its provenance plus any</span><span>
+</span><span id="line-51"></span><span class="hs-comment">--   human-readable context breadcrumbs accumulated as it travels through the</span><span>
+</span><span id="line-52"></span><span class="hs-comment">--   passes.</span><span>
+</span><span id="line-53"></span><span class="hs-keyword">data</span><span> </span><span id="Annote"><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-var">Annote</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Annote"><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-var">Annote</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="annProv"><span class="annot"><span class="annottext">Annote -&gt; Provenance
+</span><a href="ReWire.Annotation.html#annProv"><span class="hs-identifier hs-var hs-var">annProv</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="ReWire.Annotation.html#Provenance"><span class="hs-identifier hs-type">Provenance</span></a></span><span class="hs-special">,</span><span> </span><span id="annContext"><span class="annot"><span class="annottext">Annote -&gt; [Text]
+</span><a href="ReWire.Annotation.html#annContext"><span class="hs-identifier hs-var hs-var">annContext</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-54"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679176623"><span id="local-6989586621679176629"><span id="local-6989586621679176633"><span class="annot"><span class="annottext">Int -&gt; Annote -&gt; ShowS
+[Annote] -&gt; ShowS
+Annote -&gt; FilePath
+(Int -&gt; Annote -&gt; ShowS)
+-&gt; (Annote -&gt; FilePath) -&gt; ([Annote] -&gt; ShowS) -&gt; Show Annote
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; FilePath) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Annote -&gt; ShowS
+showsPrec :: Int -&gt; Annote -&gt; ShowS
+$cshow :: Annote -&gt; FilePath
+show :: Annote -&gt; FilePath
+$cshowList :: [Annote] -&gt; ShowS
+showList :: [Annote] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span>
+</span><span id="line-56"></span><span class="annot"><span class="hs-comment">-- | The empty annotation: a node with no known origin.</span></span><span>
+</span><span id="line-57"></span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#NoAnnote"><span class="hs-identifier hs-type">NoAnnote</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span>
+</span><span id="line-58"></span><span class="hs-keyword">pattern</span><span> </span><span id="NoAnnote"><span id="%24mNoAnnote"><span id="%24bNoAnnote"><span class="annot"><span class="annottext">$mNoAnnote :: forall {r}. Annote -&gt; ((# #) -&gt; r) -&gt; ((# #) -&gt; r) -&gt; r
+$bNoAnnote :: Annote
+</span><a href="ReWire.Annotation.html#NoAnnote"><span class="hs-identifier hs-var hs-var hs-var">NoAnnote</span></a></span></span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span> </span><span class="annot"><a href="ReWire.Annotation.html#NoProvenance"><span class="hs-identifier hs-type">NoProvenance</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span class="hs-comment">-- | A locationless annotation carrying a single explanatory message. Matches</span><span>
+</span><span id="line-61"></span><span class="hs-comment">--   the first context message of any annotation.</span><span>
+</span><span id="line-62"></span><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#MsgAnnote"><span class="hs-identifier hs-type">MsgAnnote</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span>
+</span><span id="line-63"></span><span class="hs-keyword">pattern</span><span> </span><span id="MsgAnnote"><span id="%24mMsgAnnote"><span id="%24bMsgAnnote"><span class="annot"><span class="annottext">$mMsgAnnote :: forall {r}. Annote -&gt; (Text -&gt; r) -&gt; ((# #) -&gt; r) -&gt; r
+$bMsgAnnote :: Text -&gt; Annote
+</span><a href="ReWire.Annotation.html#MsgAnnote"><span class="hs-identifier hs-var hs-var hs-var">MsgAnnote</span></a></span></span></span></span><span> </span><span class="annot"><a href="#local-6989586621679176639"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span> </span><span class="annot"><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679176639"><span class="annot"><a href="#local-6989586621679176639"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span>
+</span><span id="line-64"></span><span>      </span><span class="hs-keyword">where</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#MsgAnnote"><span class="hs-identifier hs-var">MsgAnnote</span></a></span><span> </span><span id="local-6989586621679176640"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679176640"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Provenance -&gt; [Text] -&gt; Annote
+</span><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-var">Annote</span></a></span><span> </span><span class="annot"><span class="annottext">Provenance
+</span><a href="ReWire.Annotation.html#NoProvenance"><span class="hs-identifier hs-var">NoProvenance</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679176640"><span class="hs-identifier hs-var">m</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-65"></span><span>
+</span><span id="line-66"></span><span class="hs-keyword">class</span><span> </span><span id="Annotation"><span class="annot"><a href="ReWire.Annotation.html#Annotation"><span class="hs-identifier hs-var">Annotation</span></a></span></span><span> </span><span id="local-6989586621679176317"><span class="annot"><a href="#local-6989586621679176317"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-67"></span><span>      </span><span id="toAnnote"><span class="annot"><a href="ReWire.Annotation.html#toAnnote"><span class="hs-identifier hs-type">toAnnote</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679176317"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annotation"><span class="hs-identifier hs-type">Annotation</span></a></span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-70"></span><span>      </span><span id="local-6989586621679176645"><span class="annot"><span class="annottext">toAnnote :: Annote -&gt; Annote
+</span><a href="ReWire.Annotation.html#toAnnote"><span class="hs-identifier hs-var hs-var hs-var">toAnnote</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote -&gt; Annote
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span class="hs-keyword">class</span><span> </span><span id="Annotated"><span class="annot"><a href="ReWire.Annotation.html#Annotated"><span class="hs-identifier hs-var">Annotated</span></a></span></span><span> </span><span id="local-6989586621679176647"><span class="annot"><a href="#local-6989586621679176647"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-73"></span><span>      </span><span id="ann"><span class="annot"><a href="ReWire.Annotation.html#ann"><span class="hs-identifier hs-type">ann</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679176647"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span class="hs-comment">-- | Strip every annotation from a value, replacing each with 'noAnn'. Used to</span><span>
+</span><span id="line-76"></span><span class="hs-comment">--   make dumps readable and to compare terms structurally.</span><span>
+</span><span id="line-77"></span><span id="local-6989586621679176319"><span class="annot"><a href="ReWire.Annotation.html#unAnn"><span class="hs-identifier hs-type">unAnn</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Data</span></span><span> </span><span class="annot"><a href="#local-6989586621679176319"><span class="hs-identifier hs-type">d</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679176319"><span class="hs-identifier hs-type">d</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679176319"><span class="hs-identifier hs-type">d</span></a></span></span><span>
+</span><span id="line-78"></span><span id="unAnn"><span class="annot"><span class="annottext">unAnn :: forall d. Data d =&gt; d -&gt; d
+</span><a href="ReWire.Annotation.html#unAnn"><span class="hs-identifier hs-var hs-var">unAnn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Annote -&gt; Annote) -&gt; d -&gt; d
+forall a b. (Data a, Data b) =&gt; (a -&gt; a) -&gt; b -&gt; b
+</span><a href="ReWire.SYB.html#transform"><span class="hs-identifier hs-var">transform</span></a></span><span> </span><span class="annot"><span class="annottext">((Annote -&gt; Annote) -&gt; d -&gt; d) -&gt; (Annote -&gt; Annote) -&gt; d -&gt; d
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="ReWire.Annotation.html#noAnn"><span class="hs-identifier hs-var">noAnn</span></a></span><span>
+</span><span id="line-79"></span><span>
+</span><span id="line-80"></span><span class="hs-comment">-- | Build an annotation for an explicit source region: a file with 1-based</span><span>
+</span><span id="line-81"></span><span class="hs-comment">--   (line, column) start and end positions.</span><span>
+</span><span id="line-82"></span><span class="annot"><a href="ReWire.Annotation.html#srcAnnote"><span class="hs-identifier hs-type">srcAnnote</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span>
+</span><span id="line-83"></span><span id="srcAnnote"><span class="annot"><span class="annottext">srcAnnote :: FilePath -&gt; (Int, Int) -&gt; (Int, Int) -&gt; Annote
+</span><a href="ReWire.Annotation.html#srcAnnote"><span class="hs-identifier hs-var hs-var">srcAnnote</span></a></span></span><span> </span><span id="local-6989586621679176653"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679176653"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679176654"><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679176654"><span class="hs-identifier hs-var">start</span></a></span></span><span> </span><span id="local-6989586621679176655"><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679176655"><span class="hs-identifier hs-var">end</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Provenance -&gt; [Text] -&gt; Annote
+</span><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-var">Annote</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Span -&gt; Provenance
+</span><a href="ReWire.Annotation.html#FromSource"><span class="hs-identifier hs-var">FromSource</span></a></span><span> </span><span class="annot"><span class="annottext">(Span -&gt; Provenance) -&gt; Span -&gt; Provenance
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; (Int, Int) -&gt; (Int, Int) -&gt; Span
+</span><a href="ReWire.Annotation.html#Span"><span class="hs-identifier hs-var">Span</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679176653"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679176654"><span class="hs-identifier hs-var">start</span></a></span><span> </span><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679176655"><span class="hs-identifier hs-var">end</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span class="hs-comment">-- | The source span underlying an annotation, if it has one. Synthesized nodes</span><span>
+</span><span id="line-86"></span><span class="hs-comment">--   yield the span of their first input.</span><span>
+</span><span id="line-87"></span><span class="annot"><a href="ReWire.Annotation.html#primSpan"><span class="hs-identifier hs-type">primSpan</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Span"><span class="hs-identifier hs-type">Span</span></a></span><span>
+</span><span id="line-88"></span><span id="primSpan"><span class="annot"><span class="annottext">primSpan :: Annote -&gt; Maybe Span
+</span><a href="ReWire.Annotation.html#primSpan"><span class="hs-identifier hs-var hs-var">primSpan</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span> </span><span class="hs-glyph">case</span><span>
+</span><span id="line-89"></span><span>      </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Annotation.html#FromSource"><span class="hs-identifier hs-type">FromSource</span></a></span><span> </span><span id="local-6989586621679176656"><span class="annot"><span class="annottext">Span
+</span><a href="#local-6989586621679176656"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span>          </span><span class="annot"><span class="annottext">[Text]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Span -&gt; Maybe Span
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Span
+</span><a href="#local-6989586621679176656"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-90"></span><span>      </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Annotation.html#Synthesized"><span class="hs-identifier hs-type">Synthesized</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679176657"><span class="annot"><span class="annottext">Span
+</span><a href="#local-6989586621679176657"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><span class="annottext">[Span]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Span -&gt; Maybe Span
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Span
+</span><a href="#local-6989586621679176657"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-91"></span><span>      </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span>                                </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe Span
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-92"></span><span>
+</span><span id="line-93"></span><span class="hs-comment">-- | Opaque to SYB: 'gfoldl' uses its default (no children), so 'unAnn' and the</span><span>
+</span><span id="line-94"></span><span class="hs-comment">--   generic traversals treat an annotation as an indivisible leaf rather than</span><span>
+</span><span id="line-95"></span><span class="hs-comment">--   recursing into its provenance.</span><span>
+</span><span id="line-96"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679176662"><span id="local-6989586621679176668"><span id="local-6989586621679176673"><span id="local-6989586621679176678"><span id="local-6989586621679176681"><span id="local-6989586621679176684"><span id="local-6989586621679176687"><span id="local-6989586621679176690"><span id="local-6989586621679176693"><span id="local-6989586621679176698"><span id="local-6989586621679176703"><span class="annot"><span class="hs-identifier hs-type">Data</span></span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span></span></span></span></span></span></span></span></span></span></span></span><span>
+</span><span id="line-97"></span><span>
+</span><span id="line-98"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679176709"><span id="local-6989586621679176714"><span id="local-6989586621679176717"><span id="local-6989586621679176720"><span id="local-6989586621679176723"><span id="local-6989586621679176726"><span id="local-6989586621679176729"><span id="local-6989586621679176732"><span class="annot"><span class="hs-identifier hs-type">TextShow</span></span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span></span></span></span></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-99"></span><span>      </span><span id="local-6989586621679176736"><span class="annot"><span class="annottext">showb :: Annote -&gt; Builder
+</span><span class="hs-identifier hs-var hs-var hs-var">showb</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Builder
+</span><span class="hs-identifier hs-var">fromString</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; Builder) -&gt; (Annote -&gt; FilePath) -&gt; Annote -&gt; Builder
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Annote -&gt; FilePath
+forall a. Show a =&gt; a -&gt; FilePath
+</span><span class="hs-identifier hs-var">show</span></span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="hs-comment">-- | Annotations are metadata about a node, not part of its meaning. Equality,</span><span>
+</span><span id="line-102"></span><span class="hs-comment">--   ordering, and hashing are therefore intentionally blind to them: two terms</span><span>
+</span><span id="line-103"></span><span class="hs-comment">--   that differ only in source location must still compare equal, or type</span><span>
+</span><span id="line-104"></span><span class="hs-comment">--   comparison and term deduplication (which run over annotated IR) would wrongly</span><span>
+</span><span id="line-105"></span><span class="hs-comment">--   distinguish them.</span><span>
+</span><span id="line-106"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679176743"><span id="local-6989586621679176747"><span id="local-6989586621679176751"><span id="local-6989586621679176754"><span id="local-6989586621679176757"><span id="local-6989586621679176760"><span class="annot"><span class="hs-identifier hs-type">Ord</span></span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span></span></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-107"></span><span>      </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679176762"><span class="annot"><span class="annottext">&lt;= :: Annote -&gt; Annote -&gt; Bool
+</span><span class="hs-operator hs-var hs-var hs-var">&lt;=</span></span></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-108"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679176765"><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-109"></span><span>      </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679176767"><span class="annot"><span class="annottext">== :: Annote -&gt; Annote -&gt; Bool
+</span><span class="hs-operator hs-var hs-var hs-var">==</span></span></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-110"></span><span>
+</span><span id="line-111"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679176772"><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-112"></span><span>      </span><span id="local-6989586621679176776"><span class="annot"><span class="annottext">hashWithSalt :: Int -&gt; Annote -&gt; Int
+</span><a href="#local-6989586621679176776"><span class="hs-identifier hs-var hs-var hs-var">hashWithSalt</span></a></span></span><span> </span><span id="local-6989586621679176778"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679176778"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="annot"><span class="annottext">Annote
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679176778"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-113"></span><span>
+</span><span id="line-114"></span><span class="hs-comment">-- | Display metadata invisible to equality, ordering, and hashing: wrapping</span><span>
+</span><span id="line-115"></span><span class="hs-comment">--   a field in 'Blind' keeps doc lines and tag tables from perturbing dedupe</span><span>
+</span><span id="line-116"></span><span class="hs-comment">--   keys, memo keys, or the optimizer's fixpoint test (the same convention as</span><span>
+</span><span id="line-117"></span><span class="hs-comment">--   'Annote' itself, for metadata that isn't an annotation).</span><span>
+</span><span id="line-118"></span><span class="hs-keyword">newtype</span><span> </span><span id="Blind"><span class="annot"><a href="ReWire.Annotation.html#Blind"><span class="hs-identifier hs-var">Blind</span></a></span></span><span> </span><span id="local-6989586621679176373"><span class="annot"><a href="#local-6989586621679176373"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Blind"><span class="annot"><a href="ReWire.Annotation.html#Blind"><span class="hs-identifier hs-var">Blind</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="unBlind"><span class="annot"><span class="annottext">forall a. Blind a -&gt; a
+</span><a href="ReWire.Annotation.html#unBlind"><span class="hs-identifier hs-var hs-var">unBlind</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679176373"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-119"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679176783"><span id="local-6989586621679176787"><span id="local-6989586621679176791"><span class="annot"><span class="annottext">Int -&gt; Blind a -&gt; ShowS
+[Blind a] -&gt; ShowS
+Blind a -&gt; FilePath
+(Int -&gt; Blind a -&gt; ShowS)
+-&gt; (Blind a -&gt; FilePath) -&gt; ([Blind a] -&gt; ShowS) -&gt; Show (Blind a)
+forall a. Show a =&gt; Int -&gt; Blind a -&gt; ShowS
+forall a. Show a =&gt; [Blind a] -&gt; ShowS
+forall a. Show a =&gt; Blind a -&gt; FilePath
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; FilePath) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: forall a. Show a =&gt; Int -&gt; Blind a -&gt; ShowS
+showsPrec :: Int -&gt; Blind a -&gt; ShowS
+$cshow :: forall a. Show a =&gt; Blind a -&gt; FilePath
+show :: Blind a -&gt; FilePath
+$cshowList :: forall a. Show a =&gt; [Blind a] -&gt; ShowS
+showList :: [Blind a] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679176794"><span id="local-6989586621679176796"><span class="annot"><span class="annottext">(forall x. Blind a -&gt; Rep (Blind a) x)
+-&gt; (forall x. Rep (Blind a) x -&gt; Blind a) -&gt; Generic (Blind a)
+forall x. Rep (Blind a) x -&gt; Blind a
+forall x. Blind a -&gt; Rep (Blind a) x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+forall a x. Rep (Blind a) x -&gt; Blind a
+forall a x. Blind a -&gt; Rep (Blind a) x
+$cfrom :: forall a x. Blind a -&gt; Rep (Blind a) x
+from :: forall x. Blind a -&gt; Rep (Blind a) x
+$cto :: forall a x. Rep (Blind a) x -&gt; Blind a
+to :: forall x. Rep (Blind a) x -&gt; Blind a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679176804"><span id="local-6989586621679176807"><span id="local-6989586621679176810"><span id="local-6989586621679176812"><span id="local-6989586621679176814"><span id="local-6989586621679176820"><span id="local-6989586621679176826"><span id="local-6989586621679176829"><span id="local-6989586621679176832"><span id="local-6989586621679176835"><span id="local-6989586621679176838"><span id="local-6989586621679176841"><span id="local-6989586621679176846"><span id="local-6989586621679176851"><span class="annot"><span class="annottext">Typeable (Blind a)
+Typeable (Blind a) =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; Blind a -&gt; c (Blind a))
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (Blind a))
+-&gt; (Blind a -&gt; Constr)
+-&gt; (Blind a -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (Blind a)))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c (Blind a)))
+-&gt; ((forall d. Data d =&gt; d -&gt; d) -&gt; Blind a -&gt; Blind a)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r)
+    -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Blind a -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r)
+    -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Blind a -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Blind a -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Blind a -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Blind a -&gt; m (Blind a))
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Blind a -&gt; m (Blind a))
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Blind a -&gt; m (Blind a))
+-&gt; Data (Blind a)
+Blind a -&gt; Constr
+Blind a -&gt; DataType
+(forall d. Data d =&gt; d -&gt; d) -&gt; Blind a -&gt; Blind a
+forall a. Data a =&gt; Typeable (Blind a)
+forall a. Data a =&gt; Blind a -&gt; Constr
+forall a. Data a =&gt; Blind a -&gt; DataType
+forall a.
+Data a =&gt;
+(forall d. Data d =&gt; d -&gt; d) -&gt; Blind a -&gt; Blind a
+forall a u.
+Data a =&gt;
+Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Blind a -&gt; u
+forall a u.
+Data a =&gt;
+(forall d. Data d =&gt; d -&gt; u) -&gt; Blind a -&gt; [u]
+forall a r r'.
+Data a =&gt;
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Blind a -&gt; r
+forall a r r'.
+Data a =&gt;
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Blind a -&gt; r
+forall a (m :: * -&gt; *).
+(Data a, Monad m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Blind a -&gt; m (Blind a)
+forall a (m :: * -&gt; *).
+(Data a, MonadPlus m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Blind a -&gt; m (Blind a)
+forall a (c :: * -&gt; *).
+Data a =&gt;
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (Blind a)
+forall a (c :: * -&gt; *).
+Data a =&gt;
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Blind a -&gt; c (Blind a)
+forall a (t :: * -&gt; *) (c :: * -&gt; *).
+(Data a, Typeable t) =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (Blind a))
+forall a (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+(Data a, Typeable t) =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c (Blind a))
+forall a.
+Typeable a =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c a)
+-&gt; (a -&gt; Constr)
+-&gt; (a -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c a))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c a))
+-&gt; ((forall d. Data d =&gt; d -&gt; d) -&gt; a -&gt; a)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; Data a
+forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Blind a -&gt; u
+forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Blind a -&gt; [u]
+forall r r'.
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Blind a -&gt; r
+forall r r'.
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Blind a -&gt; r
+forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Blind a -&gt; m (Blind a)
+forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Blind a -&gt; m (Blind a)
+forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (Blind a)
+forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Blind a -&gt; c (Blind a)
+forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (Blind a))
+forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c (Blind a))
+$cgfoldl :: forall a (c :: * -&gt; *).
+Data a =&gt;
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Blind a -&gt; c (Blind a)
+gfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Blind a -&gt; c (Blind a)
+$cgunfold :: forall a (c :: * -&gt; *).
+Data a =&gt;
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (Blind a)
+gunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (Blind a)
+$ctoConstr :: forall a. Data a =&gt; Blind a -&gt; Constr
+toConstr :: Blind a -&gt; Constr
+$cdataTypeOf :: forall a. Data a =&gt; Blind a -&gt; DataType
+dataTypeOf :: Blind a -&gt; DataType
+$cdataCast1 :: forall a (t :: * -&gt; *) (c :: * -&gt; *).
+(Data a, Typeable t) =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (Blind a))
+dataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (Blind a))
+$cdataCast2 :: forall a (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+(Data a, Typeable t) =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c (Blind a))
+dataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c (Blind a))
+$cgmapT :: forall a.
+Data a =&gt;
+(forall d. Data d =&gt; d -&gt; d) -&gt; Blind a -&gt; Blind a
+gmapT :: (forall d. Data d =&gt; d -&gt; d) -&gt; Blind a -&gt; Blind a
+$cgmapQl :: forall a r r'.
+Data a =&gt;
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Blind a -&gt; r
+gmapQl :: forall r r'.
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Blind a -&gt; r
+$cgmapQr :: forall a r r'.
+Data a =&gt;
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Blind a -&gt; r
+gmapQr :: forall r r'.
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Blind a -&gt; r
+$cgmapQ :: forall a u.
+Data a =&gt;
+(forall d. Data d =&gt; d -&gt; u) -&gt; Blind a -&gt; [u]
+gmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Blind a -&gt; [u]
+$cgmapQi :: forall a u.
+Data a =&gt;
+Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Blind a -&gt; u
+gmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Blind a -&gt; u
+$cgmapM :: forall a (m :: * -&gt; *).
+(Data a, Monad m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Blind a -&gt; m (Blind a)
+gmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Blind a -&gt; m (Blind a)
+$cgmapMp :: forall a (m :: * -&gt; *).
+(Data a, MonadPlus m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Blind a -&gt; m (Blind a)
+gmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Blind a -&gt; m (Blind a)
+$cgmapMo :: forall a (m :: * -&gt; *).
+(Data a, MonadPlus m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Blind a -&gt; m (Blind a)
+gmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Blind a -&gt; m (Blind a)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-120"></span><span>
+</span><span id="line-121"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679176388"><span id="local-6989586621679176862"><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Annotation.html#Blind"><span class="hs-identifier hs-type">Blind</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679176388"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-122"></span><span>      </span><span class="annot"><span class="annottext">Blind a
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679176865"><span class="annot"><span class="annottext">== :: Blind a -&gt; Blind a -&gt; Bool
+</span><span class="hs-operator hs-var hs-var hs-var">==</span></span></span><span> </span><span class="annot"><span class="annottext">Blind a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-123"></span><span>
+</span><span id="line-124"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679176390"><span id="local-6989586621679176870"><span id="local-6989586621679176874"><span id="local-6989586621679176877"><span id="local-6989586621679176880"><span id="local-6989586621679176883"><span id="local-6989586621679176886"><span class="annot"><span class="hs-identifier hs-type">Ord</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Annotation.html#Blind"><span class="hs-identifier hs-type">Blind</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679176390"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-125"></span><span>      </span><span id="local-6989586621679176888"><span class="annot"><span class="annottext">compare :: Blind a -&gt; Blind a -&gt; Ordering
+</span><span class="hs-identifier hs-var hs-var hs-var">compare</span></span></span><span> </span><span class="annot"><span class="annottext">Blind a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Blind a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Ordering
+</span><span class="hs-identifier hs-var">EQ</span></span><span>
+</span><span id="line-126"></span><span>
+</span><span id="line-127"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679176392"><span id="local-6989586621679176893"><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Annotation.html#Blind"><span class="hs-identifier hs-type">Blind</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679176392"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-128"></span><span>      </span><span id="local-6989586621679176896"><span class="annot"><span class="annottext">hashWithSalt :: Int -&gt; Blind a -&gt; Int
+</span><span class="hs-identifier hs-var hs-var hs-var">hashWithSalt</span></span></span><span> </span><span id="local-6989586621679176897"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679176897"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="annot"><span class="annottext">Blind a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679176897"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-129"></span><span>
+</span><span id="line-130"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679176396"><span class="annot"><span class="hs-identifier hs-type">NFData</span></span><span> </span><span class="annot"><a href="#local-6989586621679176396"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NFData</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Annotation.html#Blind"><span class="hs-identifier hs-type">Blind</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679176396"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-131"></span><span>      </span><span id="local-6989586621679176903"><span class="annot"><span class="annottext">rnf :: Blind a -&gt; ()
+</span><a href="#local-6989586621679176903"><span class="hs-identifier hs-var hs-var hs-var">rnf</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Annotation.html#Blind"><span class="hs-identifier hs-type">Blind</span></a></span><span> </span><span id="local-6989586621679176905"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679176905"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; ()
+forall a. NFData a =&gt; a -&gt; ()
+</span><span class="hs-identifier hs-var">rnf</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679176905"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-132"></span><span>
+</span><span id="line-133"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679176398"><span id="local-6989586621679176908"><span id="local-6989586621679176913"><span id="local-6989586621679176916"><span id="local-6989586621679176919"><span id="local-6989586621679176922"><span id="local-6989586621679176925"><span id="local-6989586621679176928"><span id="local-6989586621679176931"><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="#local-6989586621679176398"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">TextShow</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Annotation.html#Blind"><span class="hs-identifier hs-type">Blind</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679176398"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span></span></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-134"></span><span>      </span><span id="local-6989586621679176934"><span class="annot"><span class="annottext">showb :: Blind a -&gt; Builder
+</span><span class="hs-identifier hs-var hs-var hs-var">showb</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Builder
+</span><span class="hs-identifier hs-var">fromString</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; Builder)
+-&gt; (Blind a -&gt; FilePath) -&gt; Blind a -&gt; Builder
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Blind a -&gt; FilePath
+forall a. Show a =&gt; a -&gt; FilePath
+</span><span class="hs-identifier hs-var">show</span></span><span>
+</span><span id="line-135"></span><span>
+</span><span id="line-136"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NFData</span></span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Span"><span class="hs-identifier hs-type">Span</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-137"></span><span>      </span><span id="local-6989586621679176947"><span class="annot"><span class="annottext">rnf :: Span -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var">rnf</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Annotation.html#Span"><span class="hs-identifier hs-type">Span</span></a></span><span> </span><span id="local-6989586621679176948"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679176948"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679176949"><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679176949"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679176950"><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679176950"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ()
+forall a. NFData a =&gt; a -&gt; ()
+</span><span class="hs-identifier hs-var">rnf</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679176948"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">() -&gt; () -&gt; ()
+forall a b. a -&gt; b -&gt; b
+</span><span class="hs-operator hs-var">`seq`</span></span><span> </span><span class="annot"><span class="annottext">(Int, Int) -&gt; ()
+forall a. NFData a =&gt; a -&gt; ()
+</span><span class="hs-identifier hs-var">rnf</span></span><span> </span><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679176949"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">() -&gt; () -&gt; ()
+forall a b. a -&gt; b -&gt; b
+</span><span class="hs-operator hs-var">`seq`</span></span><span> </span><span class="annot"><span class="annottext">(Int, Int) -&gt; ()
+forall a. NFData a =&gt; a -&gt; ()
+</span><span class="hs-identifier hs-var">rnf</span></span><span> </span><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679176950"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-138"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NFData</span></span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Provenance"><span class="hs-identifier hs-type">Provenance</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-139"></span><span>      </span><span id="local-6989586621679176957"><span class="annot"><span class="annottext">rnf :: Provenance -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var">rnf</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Annotation.html#FromSource"><span class="hs-identifier hs-type">FromSource</span></a></span><span> </span><span id="local-6989586621679176958"><span class="annot"><span class="annottext">Span
+</span><a href="#local-6989586621679176958"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Span -&gt; ()
+forall a. NFData a =&gt; a -&gt; ()
+</span><span class="hs-identifier hs-var">rnf</span></span><span> </span><span class="annot"><span class="annottext">Span
+</span><a href="#local-6989586621679176958"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-140"></span><span>      </span><span class="annot"><span class="hs-identifier hs-var">rnf</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Annotation.html#Synthesized"><span class="hs-identifier hs-type">Synthesized</span></a></span><span> </span><span id="local-6989586621679176959"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679176959"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621679176960"><span class="annot"><span class="annottext">[Span]
+</span><a href="#local-6989586621679176960"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; ()
+forall a. NFData a =&gt; a -&gt; ()
+</span><span class="hs-identifier hs-var">rnf</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679176959"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">() -&gt; () -&gt; ()
+forall a b. a -&gt; b -&gt; b
+</span><span class="hs-operator hs-var">`seq`</span></span><span> </span><span class="annot"><span class="annottext">[Span] -&gt; ()
+forall a. NFData a =&gt; a -&gt; ()
+</span><span class="hs-identifier hs-var">rnf</span></span><span> </span><span class="annot"><span class="annottext">[Span]
+</span><a href="#local-6989586621679176960"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-141"></span><span>      </span><span class="annot"><span class="hs-identifier hs-var">rnf</span></span><span> </span><span class="annot"><span class="annottext">Provenance
+</span><a href="ReWire.Annotation.html#NoProvenance"><span class="hs-identifier hs-var">NoProvenance</span></a></span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-142"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NFData</span></span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-143"></span><span>      </span><span id="local-6989586621679176966"><span class="annot"><span class="annottext">rnf :: Annote -&gt; ()
+</span><span class="hs-identifier hs-var hs-var hs-var">rnf</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span> </span><span id="local-6989586621679176967"><span class="annot"><span class="annottext">Provenance
+</span><a href="#local-6989586621679176967"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span id="local-6989586621679176968"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679176968"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Provenance -&gt; ()
+forall a. NFData a =&gt; a -&gt; ()
+</span><span class="hs-identifier hs-var">rnf</span></span><span> </span><span class="annot"><span class="annottext">Provenance
+</span><a href="#local-6989586621679176967"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">() -&gt; () -&gt; ()
+forall a b. a -&gt; b -&gt; b
+</span><span class="hs-operator hs-var">`seq`</span></span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; ()
+forall a. NFData a =&gt; a -&gt; ()
+</span><span class="hs-identifier hs-var">rnf</span></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679176968"><span class="hs-identifier hs-var">c</span></a></span><span>
+</span><span id="line-144"></span><span>
+</span><span id="line-145"></span><span class="annot"><a href="ReWire.Annotation.html#noAnn"><span class="hs-identifier hs-type">noAnn</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Annotation.html#Annote"><span class="hs-identifier hs-type">Annote</span></a></span><span>
+</span><span id="line-146"></span><span id="noAnn"><span class="annot"><span class="annottext">noAnn :: Annote
+</span><a href="ReWire.Annotation.html#noAnn"><span class="hs-identifier hs-var hs-var">noAnn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Annote
+</span><a href="ReWire.Annotation.html#NoAnnote"><span class="hs-identifier hs-var">NoAnnote</span></a></span><span>
+</span><span id="line-147"></span></pre></body></html>

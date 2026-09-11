@@ -1,0 +1,40 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>ReWire.Cryptol.Translate</title><link href="linuwial.css" rel="stylesheet" type="text/css" title="Linuwial" /><link rel="stylesheet" type="text/css" href="quick-jump.css" /><link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400i,700" /><script src="haddock-bundle.min.js" async="async" type="text/javascript"></script><script type="text/x-mathjax-config">MathJax.Hub.Config({ tex2jax: { processClass: "mathjax", ignoreClass: ".*" } });</script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></head><body><div id="package-header"><span class="caption">rewire-cryptol-2.7: A Haskell-to-Verilog/VHDL compiler, Cryptol foreign functions</span><ul class="links" id="page-menu"><li><a href="src/ReWire.Cryptol.Translate.html">Source</a></li><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul></div><div id="content"><div id="module-header"><table class="info"><tr><th>Safe Haskell</th><td>None</td></tr><tr><th>Language</th><td>Haskell2010</td></tr></table><p class="caption">ReWire.Cryptol.Translate</p></div><div id="description"><p class="caption">Description</p><div class="doc"><p>Cryptol-to-Hyle translation: the engine behind rwc's Cryptol
+   foreign-function interface. <code><a href="ReWire-Cryptol-Translate.html#v:translate" title="ReWire.Cryptol.Translate">translate</a></code> loads and typechecks a
+   Cryptol module (with the Cryptol implementation itself -- the
+   typechecker needs z3 on the PATH), elaborates the instantiation
+   <code>fn : ty</code> (so Cryptol's own typechecker decides whether the use-site
+   type is admissible), monomorphizes it with Cryptol's specializer,
+   and translates the resulting closure of monomorphic definitions to
+   Hyle.</p><p>The translation is the inverse of the width-preserving embedding the
+   Cryptol backend uses (doc/hyle.md, section 8.4): a Cryptol word
+   <code>[n]</code> is a Hyle bitvector of the same numeric value, sequence and
+   tuple element zero sits at the most-significant end, and <code>Bit</code> is
+   one bit. Cryptol's specializer erases the type arguments of
+   primitive instances (a literal's value, an index operator's
+   dimensions), so specialization runs through its lower-level
+   <code>S.withDeclGroups</code> interface, whose name map recovers each
+   primitive clone's instantiation types.</p><p>Supported fragment: combinational functions over Bit, words,
+   vectors, tuples, records, newtypes, enums (case expressions), and
+   <code>Z n</code> (modular arithmetic). if-then-else; local value and function
+   bindings; higher-order functions applied to statically known
+   functions; comprehensions, folds, and scans (unrolled); recursive
+   finite comprehensions (the message-schedule/key-schedule/CBC idiom,
+   unrolled element-wise); type-indexed recursion (unrolled per
+   instantiation); infinite streams under statically bounded demand
+   (a finite take or a constant index; see <code>infPrefix</code>); the scalar,
+   slicing, sequence, indexing, rotate, update, and polynomial
+   (pmult/pdiv/pmod, constant divisor)
+   primitives. Records, enums, and <code>Z n</code> are interior-only: the entry
+   point's type must be words/vectors/tuples (the rwc side has no
+   counterpart). Enum values are laid out tag#pad#args with the tag at
+   the most-significant end and the tag width nbits(#constructors) --
+   the same convention the Eidos fold uses for ReWire ADTs.
+   error/undefined become a zero poison constant and trace the
+   identity, both with warnings. Value recursion, unbounded-demand
+   infinite streams, floating point, and Integer/Rational at runtime
+   are rejected with (it is hoped) actionable messages.</p></div></div><div id="synopsis"><details id="syn"><summary>Synopsis</summary><ul class="details-toggle" data-details-id="syn"><li class="src short"><a href="#v:translate">translate</a> :: <a href="https://hackage.haskell.org/package/base-4.20.2.0/docs/Prelude.html#t:FilePath" title="Prelude">FilePath</a> -&gt; <a href="https://hackage.haskell.org/package/text-2.1.3/docs/Data-Text.html#t:Text" title="Data.Text">Text</a> -&gt; <a href="https://hackage.haskell.org/package/text-2.1.3/docs/Data-Text.html#t:Text" title="Data.Text">Text</a> -&gt; <a href="https://hackage.haskell.org/package/text-2.1.3/docs/Data-Text.html#t:Text" title="Data.Text">Text</a> -&gt; <a href="https://hackage.haskell.org/package/base-4.20.2.0/docs/Prelude.html#t:IO" title="Prelude">IO</a> (<a href="https://hackage.haskell.org/package/base-4.20.2.0/docs/Data-Either.html#t:Either" title="Data.Either">Either</a> <a href="https://hackage.haskell.org/package/text-2.1.3/docs/Data-Text.html#t:Text" title="Data.Text">Text</a> ([<a href="../rewire-backend-2.8/ReWire-Hyle-Syntax.html#t:Defn" title="ReWire.Hyle.Syntax">Defn</a>], [<a href="https://hackage.haskell.org/package/text-2.1.3/docs/Data-Text.html#t:Text" title="Data.Text">Text</a>]))</li></ul></details></div><div id="interface"><h1>Documentation</h1><div class="top"><p class="src"><a id="v:translate" class="def">translate</a> :: <a href="https://hackage.haskell.org/package/base-4.20.2.0/docs/Prelude.html#t:FilePath" title="Prelude">FilePath</a> -&gt; <a href="https://hackage.haskell.org/package/text-2.1.3/docs/Data-Text.html#t:Text" title="Data.Text">Text</a> -&gt; <a href="https://hackage.haskell.org/package/text-2.1.3/docs/Data-Text.html#t:Text" title="Data.Text">Text</a> -&gt; <a href="https://hackage.haskell.org/package/text-2.1.3/docs/Data-Text.html#t:Text" title="Data.Text">Text</a> -&gt; <a href="https://hackage.haskell.org/package/base-4.20.2.0/docs/Prelude.html#t:IO" title="Prelude">IO</a> (<a href="https://hackage.haskell.org/package/base-4.20.2.0/docs/Data-Either.html#t:Either" title="Data.Either">Either</a> <a href="https://hackage.haskell.org/package/text-2.1.3/docs/Data-Text.html#t:Text" title="Data.Text">Text</a> ([<a href="../rewire-backend-2.8/ReWire-Hyle-Syntax.html#t:Defn" title="ReWire.Hyle.Syntax">Defn</a>], [<a href="https://hackage.haskell.org/package/text-2.1.3/docs/Data-Text.html#t:Text" title="Data.Text">Text</a>])) <a href="src/ReWire.Cryptol.Translate.html#translate" class="link">Source</a> <a href="#v:translate" class="selflink">#</a></p><div class="doc"><p>Translate function <code>fn</code> from Cryptol module <code>file</code>, at the
+   monomorphic Cryptol type <code>ty</code>, to a self-contained set of Hyle
+   definitions whose entry point is named <code>entry</code> (helpers are prefixed
+   with it), plus any compile-time warnings (e.g. an <code>error</code> compiled to
+   a poison constant). Left is a (possibly multi-line, source-located)
+   diagnostic.</p></div></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.31.1</p></div></body></html>

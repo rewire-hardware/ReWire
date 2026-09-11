@@ -1,0 +1,429 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="local-6989586621679444479"><span id="local-6989586621679444480"><span id="local-6989586621679444481"><span id="local-6989586621679444482"><span id="local-6989586621679444483"><span id="local-6989586621679444484"><span id="local-6989586621679444485"><span id="local-6989586621679444486"><span id="local-6989586621679444487"><span id="local-6989586621679444488"><span id="local-6989586621679444489"><span id="local-6989586621679444490"><span id="local-6989586621679444491"><span id="local-6989586621679444492"><span id="local-6989586621679444493"><span id="local-6989586621679444494"><span id="local-6989586621679444495"><span id="local-6989586621679444496"><span id="local-6989586621679444497"><span id="local-6989586621679444498"><span id="local-6989586621679444499"><span id="local-6989586621679444500"><span id="local-6989586621679444501"><span id="local-6989586621679444502"><span id="local-6989586621679444503"><span id="local-6989586621679444504"><span id="local-6989586621679444505"><span id="local-6989586621679444506"><span id="local-6989586621679444507"><span id="local-6989586621679444508"><span id="local-6989586621679444509"><span id="local-6989586621679444510"><span id="local-6989586621679444511"><span id="local-6989586621679444512"><span id="local-6989586621679444513"><span id="local-6989586621679444514"><span id="local-6989586621679444515"><span id="local-6989586621679444516"><span id="local-6989586621679444517"><span id="local-6989586621679444518"><span id="local-6989586621679444519"><span id="local-6989586621679444520"><span id="local-6989586621679444521"><span id="local-6989586621679444522"><span id="local-6989586621679444523"><span id="local-6989586621679444524"><span id="local-6989586621679444525"><span id="local-6989586621679444526"><span id="local-6989586621679444527"><span id="local-6989586621679444528"><span id="local-6989586621679444529"><span id="local-6989586621679444530"><span id="local-6989586621679444531"><span id="local-6989586621679444532"><span id="local-6989586621679444533"><span id="local-6989586621679444534"><span id="local-6989586621679444535"><span id="local-6989586621679444536"><span id="local-6989586621679444537"><span id="local-6989586621679444538"><span id="local-6989586621679444539"><span id="local-6989586621679444540"><span id="local-6989586621679444541"></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-pragma">{-# LANGUAGE DeriveDataTypeable #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DeriveGeneric #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE DerivingVia #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE Trustworthy #-}</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- | The compiler's primitive operations, shared between the rwc</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--   pipeline (Eidos IR) and the rewire-embedder pipeline (Atmo IR).</span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.Builtins.html"><span class="hs-identifier">ReWire.Builtins</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="ReWire.Builtins.html#Builtin"><span class="hs-identifier">Builtin</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Builtins.html#builtins"><span class="hs-identifier">builtins</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Builtins.html#builtinName"><span class="hs-identifier">builtinName</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-9"></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Orphans</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Pretty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">TextShow</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">showt</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">FromGeneric</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Pretty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">pretty</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Arrow</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(&amp;&amp;&amp;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.DeepSeq</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NFData</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Data</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Typeable</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Data</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Hashable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Hashable</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">fromMaybe</span></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Tuple</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">swap</span></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Generic</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">data</span><span> </span><span id="Builtin"><span class="annot"><a href="ReWire.Builtins.html#Builtin"><span class="hs-identifier hs-var">Builtin</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Error"><span class="annot"><a href="ReWire.Builtins.html#Error"><span class="hs-identifier hs-var">Error</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Extern"><span class="annot"><a href="ReWire.Builtins.html#Extern"><span class="hs-identifier hs-var">Extern</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Cryptol"><span class="annot"><a href="ReWire.Builtins.html#Cryptol"><span class="hs-identifier hs-var">Cryptol</span></a></span></span><span>
+</span><span id="line-23"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="Bind"><span class="annot"><a href="ReWire.Builtins.html#Bind"><span class="hs-identifier hs-var">Bind</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Return"><span class="annot"><a href="ReWire.Builtins.html#Return"><span class="hs-identifier hs-var">Return</span></a></span></span><span>
+</span><span id="line-24"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="Put"><span class="annot"><a href="ReWire.Builtins.html#Put"><span class="hs-identifier hs-var">Put</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Get"><span class="annot"><a href="ReWire.Builtins.html#Get"><span class="hs-identifier hs-var">Get</span></a></span></span><span>
+</span><span id="line-25"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="Signal"><span class="annot"><a href="ReWire.Builtins.html#Signal"><span class="hs-identifier hs-var">Signal</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Lift"><span class="annot"><a href="ReWire.Builtins.html#Lift"><span class="hs-identifier hs-var">Lift</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Extrude"><span class="annot"><a href="ReWire.Builtins.html#Extrude"><span class="hs-identifier hs-var">Extrude</span></a></span></span><span>
+</span><span id="line-26"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="VecFromList"><span class="annot"><a href="ReWire.Builtins.html#VecFromList"><span class="hs-identifier hs-var">VecFromList</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="VecReplicate"><span class="annot"><a href="ReWire.Builtins.html#VecReplicate"><span class="hs-identifier hs-var">VecReplicate</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="VecReverse"><span class="annot"><a href="ReWire.Builtins.html#VecReverse"><span class="hs-identifier hs-var">VecReverse</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="VecSlice"><span class="annot"><a href="ReWire.Builtins.html#VecSlice"><span class="hs-identifier hs-var">VecSlice</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="VecRSlice"><span class="annot"><a href="ReWire.Builtins.html#VecRSlice"><span class="hs-identifier hs-var">VecRSlice</span></a></span></span><span>
+</span><span id="line-27"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="VecIndex"><span class="annot"><a href="ReWire.Builtins.html#VecIndex"><span class="hs-identifier hs-var">VecIndex</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="VecIndexProxy"><span class="annot"><a href="ReWire.Builtins.html#VecIndexProxy"><span class="hs-identifier hs-var">VecIndexProxy</span></a></span></span><span>
+</span><span id="line-28"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="VecConcat"><span class="annot"><a href="ReWire.Builtins.html#VecConcat"><span class="hs-identifier hs-var">VecConcat</span></a></span></span><span>
+</span><span id="line-29"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="VecMap"><span class="annot"><a href="ReWire.Builtins.html#VecMap"><span class="hs-identifier hs-var">VecMap</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="VecGenerate"><span class="annot"><a href="ReWire.Builtins.html#VecGenerate"><span class="hs-identifier hs-var">VecGenerate</span></a></span></span><span>
+</span><span id="line-30"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="Finite"><span class="annot"><a href="ReWire.Builtins.html#Finite"><span class="hs-identifier hs-var">Finite</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="FiniteMinBound"><span class="annot"><a href="ReWire.Builtins.html#FiniteMinBound"><span class="hs-identifier hs-var">FiniteMinBound</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="FiniteMaxBound"><span class="annot"><a href="ReWire.Builtins.html#FiniteMaxBound"><span class="hs-identifier hs-var">FiniteMaxBound</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="ToFinite"><span class="annot"><a href="ReWire.Builtins.html#ToFinite"><span class="hs-identifier hs-var">ToFinite</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="ToFiniteMod"><span class="annot"><a href="ReWire.Builtins.html#ToFiniteMod"><span class="hs-identifier hs-var">ToFiniteMod</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="FromFinite"><span class="annot"><a href="ReWire.Builtins.html#FromFinite"><span class="hs-identifier hs-var">FromFinite</span></a></span></span><span>
+</span><span id="line-31"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="NatVal"><span class="annot"><a href="ReWire.Builtins.html#NatVal"><span class="hs-identifier hs-var">NatVal</span></a></span></span><span>
+</span><span id="line-32"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="Bits"><span class="annot"><a href="ReWire.Builtins.html#Bits"><span class="hs-identifier hs-var">Bits</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Resize"><span class="annot"><a href="ReWire.Builtins.html#Resize"><span class="hs-identifier hs-var">Resize</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="BitSlice"><span class="annot"><a href="ReWire.Builtins.html#BitSlice"><span class="hs-identifier hs-var">BitSlice</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="BitIndex"><span class="annot"><a href="ReWire.Builtins.html#BitIndex"><span class="hs-identifier hs-var">BitIndex</span></a></span></span><span>
+</span><span id="line-33"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="Add"><span class="annot"><a href="ReWire.Builtins.html#Add"><span class="hs-identifier hs-var">Add</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Sub"><span class="annot"><a href="ReWire.Builtins.html#Sub"><span class="hs-identifier hs-var">Sub</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Mul"><span class="annot"><a href="ReWire.Builtins.html#Mul"><span class="hs-identifier hs-var">Mul</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Div"><span class="annot"><a href="ReWire.Builtins.html#Div"><span class="hs-identifier hs-var">Div</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Mod"><span class="annot"><a href="ReWire.Builtins.html#Mod"><span class="hs-identifier hs-var">Mod</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Pow"><span class="annot"><a href="ReWire.Builtins.html#Pow"><span class="hs-identifier hs-var">Pow</span></a></span></span><span>
+</span><span id="line-34"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="LAnd"><span class="annot"><a href="ReWire.Builtins.html#LAnd"><span class="hs-identifier hs-var">LAnd</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="LOr"><span class="annot"><a href="ReWire.Builtins.html#LOr"><span class="hs-identifier hs-var">LOr</span></a></span></span><span>
+</span><span id="line-35"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="And"><span class="annot"><a href="ReWire.Builtins.html#And"><span class="hs-identifier hs-var">And</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Or"><span class="annot"><a href="ReWire.Builtins.html#Or"><span class="hs-identifier hs-var">Or</span></a></span></span><span>
+</span><span id="line-36"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="XOr"><span class="annot"><a href="ReWire.Builtins.html#XOr"><span class="hs-identifier hs-var">XOr</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="XNor"><span class="annot"><a href="ReWire.Builtins.html#XNor"><span class="hs-identifier hs-var">XNor</span></a></span></span><span>
+</span><span id="line-37"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="LShift"><span class="annot"><a href="ReWire.Builtins.html#LShift"><span class="hs-identifier hs-var">LShift</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="RShift"><span class="annot"><a href="ReWire.Builtins.html#RShift"><span class="hs-identifier hs-var">RShift</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="RShiftArith"><span class="annot"><a href="ReWire.Builtins.html#RShiftArith"><span class="hs-identifier hs-var">RShiftArith</span></a></span></span><span>
+</span><span id="line-38"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="Eq"><span class="annot"><a href="ReWire.Builtins.html#Eq"><span class="hs-identifier hs-var">Eq</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Gt"><span class="annot"><a href="ReWire.Builtins.html#Gt"><span class="hs-identifier hs-var">Gt</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="GtEq"><span class="annot"><a href="ReWire.Builtins.html#GtEq"><span class="hs-identifier hs-var">GtEq</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Lt"><span class="annot"><a href="ReWire.Builtins.html#Lt"><span class="hs-identifier hs-var">Lt</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="LtEq"><span class="annot"><a href="ReWire.Builtins.html#LtEq"><span class="hs-identifier hs-var">LtEq</span></a></span></span><span>
+</span><span id="line-39"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="LNot"><span class="annot"><a href="ReWire.Builtins.html#LNot"><span class="hs-identifier hs-var">LNot</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Not"><span class="annot"><a href="ReWire.Builtins.html#Not"><span class="hs-identifier hs-var">Not</span></a></span></span><span>
+</span><span id="line-40"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="RAnd"><span class="annot"><a href="ReWire.Builtins.html#RAnd"><span class="hs-identifier hs-var">RAnd</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="RNAnd"><span class="annot"><a href="ReWire.Builtins.html#RNAnd"><span class="hs-identifier hs-var">RNAnd</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="ROr"><span class="annot"><a href="ReWire.Builtins.html#ROr"><span class="hs-identifier hs-var">ROr</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="RNor"><span class="annot"><a href="ReWire.Builtins.html#RNor"><span class="hs-identifier hs-var">RNor</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="RXOr"><span class="annot"><a href="ReWire.Builtins.html#RXOr"><span class="hs-identifier hs-var">RXOr</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="RXNor"><span class="annot"><a href="ReWire.Builtins.html#RXNor"><span class="hs-identifier hs-var">RXNor</span></a></span></span><span>
+</span><span id="line-41"></span><span>             </span><span class="hs-glyph">|</span><span> </span><span id="MSBit"><span class="annot"><a href="ReWire.Builtins.html#MSBit"><span class="hs-identifier hs-var">MSBit</span></a></span></span><span>
+</span><span id="line-42"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679444626"><span id="local-6989586621679444631"><span class="annot"><span class="annottext">Builtin -&gt; Builtin -&gt; Bool
+(Builtin -&gt; Builtin -&gt; Bool)
+-&gt; (Builtin -&gt; Builtin -&gt; Bool) -&gt; Eq Builtin
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Builtin -&gt; Builtin -&gt; Bool
+== :: Builtin -&gt; Builtin -&gt; Bool
+$c/= :: Builtin -&gt; Builtin -&gt; Bool
+/= :: Builtin -&gt; Builtin -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679444637"><span id="local-6989586621679444641"><span id="local-6989586621679444645"><span id="local-6989586621679444649"><span id="local-6989586621679444652"><span id="local-6989586621679444655"><span id="local-6989586621679444658"><span class="annot"><span class="annottext">Eq Builtin
+Eq Builtin =&gt;
+(Builtin -&gt; Builtin -&gt; Ordering)
+-&gt; (Builtin -&gt; Builtin -&gt; Bool)
+-&gt; (Builtin -&gt; Builtin -&gt; Bool)
+-&gt; (Builtin -&gt; Builtin -&gt; Bool)
+-&gt; (Builtin -&gt; Builtin -&gt; Bool)
+-&gt; (Builtin -&gt; Builtin -&gt; Builtin)
+-&gt; (Builtin -&gt; Builtin -&gt; Builtin)
+-&gt; Ord Builtin
+Builtin -&gt; Builtin -&gt; Bool
+Builtin -&gt; Builtin -&gt; Ordering
+Builtin -&gt; Builtin -&gt; Builtin
+forall a.
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: Builtin -&gt; Builtin -&gt; Ordering
+compare :: Builtin -&gt; Builtin -&gt; Ordering
+$c&lt; :: Builtin -&gt; Builtin -&gt; Bool
+&lt; :: Builtin -&gt; Builtin -&gt; Bool
+$c&lt;= :: Builtin -&gt; Builtin -&gt; Bool
+&lt;= :: Builtin -&gt; Builtin -&gt; Bool
+$c&gt; :: Builtin -&gt; Builtin -&gt; Bool
+&gt; :: Builtin -&gt; Builtin -&gt; Bool
+$c&gt;= :: Builtin -&gt; Builtin -&gt; Bool
+&gt;= :: Builtin -&gt; Builtin -&gt; Bool
+$cmax :: Builtin -&gt; Builtin -&gt; Builtin
+max :: Builtin -&gt; Builtin -&gt; Builtin
+$cmin :: Builtin -&gt; Builtin -&gt; Builtin
+min :: Builtin -&gt; Builtin -&gt; Builtin
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679444666"><span id="local-6989586621679444668"><span class="annot"><span class="annottext">(forall x. Builtin -&gt; Rep Builtin x)
+-&gt; (forall x. Rep Builtin x -&gt; Builtin) -&gt; Generic Builtin
+forall x. Rep Builtin x -&gt; Builtin
+forall x. Builtin -&gt; Rep Builtin x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+$cfrom :: forall x. Builtin -&gt; Rep Builtin x
+from :: forall x. Builtin -&gt; Rep Builtin x
+$cto :: forall x. Rep Builtin x -&gt; Builtin
+to :: forall x. Rep Builtin x -&gt; Builtin
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679444674"><span id="local-6989586621679444676"><span id="local-6989586621679444680"><span class="annot"><span class="annottext">Int -&gt; Builtin -&gt; ShowS
+[Builtin] -&gt; ShowS
+Builtin -&gt; String
+(Int -&gt; Builtin -&gt; ShowS)
+-&gt; (Builtin -&gt; String) -&gt; ([Builtin] -&gt; ShowS) -&gt; Show Builtin
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Builtin -&gt; ShowS
+showsPrec :: Int -&gt; Builtin -&gt; ShowS
+$cshow :: Builtin -&gt; String
+show :: Builtin -&gt; String
+$cshowList :: [Builtin] -&gt; ShowS
+showList :: [Builtin] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679444687"><span id="local-6989586621679444689"><span id="local-6989586621679444691"><span id="local-6989586621679444693"><span id="local-6989586621679444695"><span id="local-6989586621679444701"><span id="local-6989586621679444706"><span id="local-6989586621679444709"><span id="local-6989586621679444712"><span id="local-6989586621679444715"><span id="local-6989586621679444718"><span id="local-6989586621679444721"><span id="local-6989586621679444726"><span id="local-6989586621679444731"><span class="annot"><span class="annottext">Typeable Builtin
+Typeable Builtin =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; Builtin -&gt; c Builtin)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Builtin)
+-&gt; (Builtin -&gt; Constr)
+-&gt; (Builtin -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Builtin))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Builtin))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; Builtin -&gt; Builtin)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r)
+    -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Builtin -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r)
+    -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Builtin -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Builtin -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Builtin -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Builtin -&gt; m Builtin)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Builtin -&gt; m Builtin)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; Builtin -&gt; m Builtin)
+-&gt; Data Builtin
+Builtin -&gt; Constr
+Builtin -&gt; DataType
+(forall b. Data b =&gt; b -&gt; b) -&gt; Builtin -&gt; Builtin
+forall a.
+Typeable a =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c a)
+-&gt; (a -&gt; Constr)
+-&gt; (a -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c a))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c a))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; a -&gt; a)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; Data a
+forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Builtin -&gt; u
+forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Builtin -&gt; [u]
+forall r r'.
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Builtin -&gt; r
+forall r r'.
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Builtin -&gt; r
+forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Builtin -&gt; m Builtin
+forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Builtin -&gt; m Builtin
+forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Builtin
+forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Builtin -&gt; c Builtin
+forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Builtin)
+forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Builtin)
+$cgfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Builtin -&gt; c Builtin
+gfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; Builtin -&gt; c Builtin
+$cgunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Builtin
+gunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c Builtin
+$ctoConstr :: Builtin -&gt; Constr
+toConstr :: Builtin -&gt; Constr
+$cdataTypeOf :: Builtin -&gt; DataType
+dataTypeOf :: Builtin -&gt; DataType
+$cdataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Builtin)
+dataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c Builtin)
+$cdataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Builtin)
+dataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c Builtin)
+$cgmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; Builtin -&gt; Builtin
+gmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; Builtin -&gt; Builtin
+$cgmapQl :: forall r r'.
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Builtin -&gt; r
+gmapQl :: forall r r'.
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Builtin -&gt; r
+$cgmapQr :: forall r r'.
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Builtin -&gt; r
+gmapQr :: forall r r'.
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; Builtin -&gt; r
+$cgmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Builtin -&gt; [u]
+gmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; Builtin -&gt; [u]
+$cgmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Builtin -&gt; u
+gmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; Builtin -&gt; u
+$cgmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Builtin -&gt; m Builtin
+gmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Builtin -&gt; m Builtin
+$cgmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Builtin -&gt; m Builtin
+gmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Builtin -&gt; m Builtin
+$cgmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Builtin -&gt; m Builtin
+gmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; Builtin -&gt; m Builtin
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679444741"><span id="local-6989586621679444743"><span class="annot"><span class="annottext">Builtin
+Builtin -&gt; Builtin -&gt; Bounded Builtin
+forall a. a -&gt; a -&gt; Bounded a
+$cminBound :: Builtin
+minBound :: Builtin
+$cmaxBound :: Builtin
+maxBound :: Builtin
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Bounded</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679444748"><span id="local-6989586621679444757"><span id="local-6989586621679444764"><span id="local-6989586621679444778"><span id="local-6989586621679444781"><span id="local-6989586621679444786"><span id="local-6989586621679444792"><span id="local-6989586621679444795"><span class="annot"><span class="annottext">Int -&gt; Builtin
+Builtin -&gt; Int
+Builtin -&gt; [Builtin]
+Builtin -&gt; Builtin
+Builtin -&gt; Builtin -&gt; [Builtin]
+Builtin -&gt; Builtin -&gt; Builtin -&gt; [Builtin]
+(Builtin -&gt; Builtin)
+-&gt; (Builtin -&gt; Builtin)
+-&gt; (Int -&gt; Builtin)
+-&gt; (Builtin -&gt; Int)
+-&gt; (Builtin -&gt; [Builtin])
+-&gt; (Builtin -&gt; Builtin -&gt; [Builtin])
+-&gt; (Builtin -&gt; Builtin -&gt; [Builtin])
+-&gt; (Builtin -&gt; Builtin -&gt; Builtin -&gt; [Builtin])
+-&gt; Enum Builtin
+forall a.
+(a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (Int -&gt; a)
+-&gt; (a -&gt; Int)
+-&gt; (a -&gt; [a])
+-&gt; (a -&gt; a -&gt; [a])
+-&gt; (a -&gt; a -&gt; [a])
+-&gt; (a -&gt; a -&gt; a -&gt; [a])
+-&gt; Enum a
+$csucc :: Builtin -&gt; Builtin
+succ :: Builtin -&gt; Builtin
+$cpred :: Builtin -&gt; Builtin
+pred :: Builtin -&gt; Builtin
+$ctoEnum :: Int -&gt; Builtin
+toEnum :: Int -&gt; Builtin
+$cfromEnum :: Builtin -&gt; Int
+fromEnum :: Builtin -&gt; Int
+$cenumFrom :: Builtin -&gt; [Builtin]
+enumFrom :: Builtin -&gt; [Builtin]
+$cenumFromThen :: Builtin -&gt; Builtin -&gt; [Builtin]
+enumFromThen :: Builtin -&gt; Builtin -&gt; [Builtin]
+$cenumFromTo :: Builtin -&gt; Builtin -&gt; [Builtin]
+enumFromTo :: Builtin -&gt; Builtin -&gt; [Builtin]
+$cenumFromThenTo :: Builtin -&gt; Builtin -&gt; Builtin -&gt; [Builtin]
+enumFromThenTo :: Builtin -&gt; Builtin -&gt; Builtin -&gt; [Builtin]
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Enum</span></span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span><span>      </span><span class="hs-keyword">deriving</span><span> </span><span id="local-6989586621679444803"><span id="local-6989586621679444810"><span id="local-6989586621679444816"><span id="local-6989586621679444822"><span id="local-6989586621679444828"><span id="local-6989586621679444834"><span id="local-6989586621679444840"><span id="local-6989586621679444846"><span id="local-6989586621679444852"><span class="annot"><span class="annottext">Int -&gt; Builtin -&gt; Text
+Int -&gt; Builtin -&gt; Text
+Int -&gt; Builtin -&gt; Builder
+[Builtin] -&gt; Text
+[Builtin] -&gt; Text
+[Builtin] -&gt; Builder
+Builtin -&gt; Text
+Builtin -&gt; Text
+Builtin -&gt; Builder
+(Int -&gt; Builtin -&gt; Builder)
+-&gt; (Builtin -&gt; Builder)
+-&gt; ([Builtin] -&gt; Builder)
+-&gt; (Int -&gt; Builtin -&gt; Text)
+-&gt; (Builtin -&gt; Text)
+-&gt; ([Builtin] -&gt; Text)
+-&gt; (Int -&gt; Builtin -&gt; Text)
+-&gt; (Builtin -&gt; Text)
+-&gt; ([Builtin] -&gt; Text)
+-&gt; TextShow Builtin
+forall a.
+(Int -&gt; a -&gt; Builder)
+-&gt; (a -&gt; Builder)
+-&gt; ([a] -&gt; Builder)
+-&gt; (Int -&gt; a -&gt; Text)
+-&gt; (a -&gt; Text)
+-&gt; ([a] -&gt; Text)
+-&gt; (Int -&gt; a -&gt; Text)
+-&gt; (a -&gt; Text)
+-&gt; ([a] -&gt; Text)
+-&gt; TextShow a
+$cshowbPrec :: Int -&gt; Builtin -&gt; Builder
+showbPrec :: Int -&gt; Builtin -&gt; Builder
+$cshowb :: Builtin -&gt; Builder
+showb :: Builtin -&gt; Builder
+$cshowbList :: [Builtin] -&gt; Builder
+showbList :: [Builtin] -&gt; Builder
+$cshowtPrec :: Int -&gt; Builtin -&gt; Text
+showtPrec :: Int -&gt; Builtin -&gt; Text
+$cshowt :: Builtin -&gt; Text
+showt :: Builtin -&gt; Text
+$cshowtList :: [Builtin] -&gt; Text
+showtList :: [Builtin] -&gt; Text
+$cshowtlPrec :: Int -&gt; Builtin -&gt; Text
+showtlPrec :: Int -&gt; Builtin -&gt; Text
+$cshowtl :: Builtin -&gt; Text
+showtl :: Builtin -&gt; Text
+$cshowtlList :: [Builtin] -&gt; Text
+showtlList :: [Builtin] -&gt; Text
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">TextShow</span></span></span></span></span></span></span></span></span></span></span><span> </span><span class="hs-keyword">via</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FromGeneric</span></span><span> </span><span class="annot"><a href="ReWire.Builtins.html#Builtin"><span class="hs-identifier hs-type">Builtin</span></a></span><span>
+</span><span id="line-44"></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679447073"><span id="local-6989586621679447080"><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="annot"><a href="ReWire.Builtins.html#Builtin"><span class="hs-identifier hs-type">Builtin</span></a></span></span></span><span>
+</span><span id="line-46"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679447209"><span class="annot"><span class="hs-identifier hs-type">NFData</span></span><span> </span><span class="annot"><a href="ReWire.Builtins.html#Builtin"><span class="hs-identifier hs-type">Builtin</span></a></span></span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679447341"><span class="annot"><span class="hs-identifier hs-type">Pretty</span></span><span> </span><span class="annot"><a href="ReWire.Builtins.html#Builtin"><span class="hs-identifier hs-type">Builtin</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-49"></span><span>      </span><span id="local-6989586621679447347"><span class="annot"><span class="annottext">pretty :: forall ann. Builtin -&gt; Doc ann
+</span><span class="hs-identifier hs-var hs-var hs-var">pretty</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+forall ann. Text -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Doc ann) -&gt; (Builtin -&gt; Text) -&gt; Builtin -&gt; Doc ann
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Builtin -&gt; Text
+</span><a href="ReWire.Builtins.html#builtinName"><span class="hs-identifier hs-var">builtinName</span></a></span><span>
+</span><span id="line-50"></span><span>
+</span><span id="line-51"></span><span class="annot"><a href="ReWire.Builtins.html#builtinName"><span class="hs-identifier hs-type">builtinName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="ReWire.Builtins.html#Builtin"><span class="hs-identifier hs-type">Builtin</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-52"></span><span id="builtinName"><span class="annot"><span class="annottext">builtinName :: Builtin -&gt; Text
+</span><a href="ReWire.Builtins.html#builtinName"><span class="hs-identifier hs-var hs-var">builtinName</span></a></span></span><span> </span><span id="local-6989586621679447349"><span class="annot"><span class="annottext">Builtin
+</span><a href="#local-6989586621679447349"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text -&gt; Text
+forall a. a -&gt; Maybe a -&gt; a
+</span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;&quot;</span></span><span> </span><span class="annot"><span class="annottext">(Maybe Text -&gt; Text) -&gt; Maybe Text -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Builtin -&gt; [(Builtin, Text)] -&gt; Maybe Text
+forall a b. Eq a =&gt; a -&gt; [(a, b)] -&gt; Maybe b
+</span><span class="hs-identifier hs-var">lookup</span></span><span> </span><span class="annot"><span class="annottext">Builtin
+</span><a href="#local-6989586621679447349"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">([(Builtin, Text)] -&gt; Maybe Text)
+-&gt; [(Builtin, Text)] -&gt; Maybe Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">((Text, Builtin) -&gt; (Builtin, Text))
+-&gt; [(Text, Builtin)] -&gt; [(Builtin, Text)]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">(Text, Builtin) -&gt; (Builtin, Text)
+forall a b. (a, b) -&gt; (b, a)
+</span><span class="hs-identifier hs-var">swap</span></span><span> </span><span class="annot"><span class="annottext">[(Text, Builtin)]
+</span><a href="ReWire.Builtins.html#builtins"><span class="hs-identifier hs-var">builtins</span></a></span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span class="annot"><a href="ReWire.Builtins.html#builtins"><span class="hs-identifier hs-type">builtins</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.Builtins.html#Builtin"><span class="hs-identifier hs-type">Builtin</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-55"></span><span id="builtins"><span class="annot"><span class="annottext">builtins :: [(Text, Builtin)]
+</span><a href="ReWire.Builtins.html#builtins"><span class="hs-identifier hs-var hs-var">builtins</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Builtin -&gt; (Text, Builtin)) -&gt; [Builtin] -&gt; [(Text, Builtin)]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;rwPrim&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; (Builtin -&gt; Text) -&gt; Builtin -&gt; Text
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Builtin -&gt; Text
+forall a. TextShow a =&gt; a -&gt; Text
+</span><span class="hs-identifier hs-var">showt</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Builtin -&gt; Text)
+-&gt; (Builtin -&gt; Builtin) -&gt; Builtin -&gt; (Text, Builtin)
+forall b c c'. (b -&gt; c) -&gt; (b -&gt; c') -&gt; b -&gt; (c, c')
+forall (a :: * -&gt; * -&gt; *) b c c'.
+Arrow a =&gt;
+a b c -&gt; a b c' -&gt; a b (c, c')
+</span><span class="hs-operator hs-var">&amp;&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Builtin -&gt; Builtin
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Builtin
+forall a. Bounded a =&gt; a
+</span><span class="hs-identifier hs-var">minBound</span></span><span> </span><span class="hs-glyph">..</span><span> </span><span class="annot"><span class="annottext">Builtin
+forall a. Bounded a =&gt; a
+</span><span class="hs-identifier hs-var">maxBound</span></span><span class="hs-special">]</span><span>
+</span><span id="line-56"></span></pre></body></html>

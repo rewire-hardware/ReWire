@@ -1,0 +1,366 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span>
+</span><span id="line-2"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="RWC.html"><span class="hs-identifier">RWC</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="RWC.html#main"><span class="hs-identifier">main</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Driver.html"><span class="hs-identifier">Driver</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Driver.html#driverMain"><span class="hs-identifier">driverMain</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-5"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Flags</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Flag</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-6"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.FrontEnd</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">compileFile</span></span><span class="hs-special">)</span><span>
+</span><span id="line-7"></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Console.GetOpt</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">OptDescr</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">ArgDescr</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-9"></span><span>
+</span><span id="line-10"></span><span class="annot"><a href="RWC.html#options"><span class="hs-identifier hs-type">options</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">OptDescr</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Flag</span></span><span class="hs-special">]</span><span>
+</span><span id="line-11"></span><span id="options"><span class="annot"><span class="annottext">options :: [OptDescr Flag]
+</span><a href="RWC.html#options"><span class="hs-identifier hs-var hs-var">options</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-12"></span><span>       </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'h'</span></span><span class="hs-special">]</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;help&quot;</span></span><span class="hs-special">]</span><span>            </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagHelp</span></span><span class="hs-special">)</span><span>                          </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;This help message.&quot;</span></span><span>
+</span><span id="line-13"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'v'</span></span><span class="hs-special">]</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;verbose&quot;</span></span><span class="hs-special">]</span><span>         </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagVerbose</span></span><span class="hs-special">)</span><span>                       </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;More verbose output.&quot;</span></span><span>
+</span><span id="line-14"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'w'</span></span><span class="hs-special">]</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;no-warn&quot;</span></span><span class="hs-special">]</span><span>         </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagNoWarn</span></span><span class="hs-special">)</span><span>                        </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Suppress warnings.&quot;</span></span><span>
+</span><span id="line-15"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'W'</span></span><span class="hs-special">]</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagW</span></span><span>           </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;error&quot;</span></span><span class="hs-special">)</span><span>           </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;-Werror: treat warnings as errors.&quot;</span></span><span>
+</span><span id="line-16"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;verilog&quot;</span></span><span class="hs-special">]</span><span>         </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagVerilog</span></span><span class="hs-special">)</span><span>                       </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Produce Verilog output (default).&quot;</span></span><span>
+</span><span id="line-17"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;vhdl&quot;</span></span><span class="hs-special">]</span><span>            </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagVhdl</span></span><span class="hs-special">)</span><span>                          </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Produce VHDL output.&quot;</span></span><span>
+</span><span id="line-18"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;cryptol&quot;</span></span><span class="hs-special">]</span><span>         </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagCryptol</span></span><span class="hs-special">)</span><span>                       </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Produce Cryptol output (a pure model of the device for verification or simulation).&quot;</span></span><span>
+</span><span id="line-19"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;from-core&quot;</span></span><span class="hs-special">]</span><span>       </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagFromCore</span></span><span class="hs-special">)</span><span>                      </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Ingest ReWire core language files instead of Haskell.&quot;</span></span><span>
+</span><span id="line-20"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;core&quot;</span></span><span class="hs-special">]</span><span>            </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagCore</span></span><span class="hs-special">)</span><span>                          </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Produce ReWire core language (Hyle) output; see doc/hyle.md.&quot;</span></span><span>
+</span><span id="line-21"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;invert-reset&quot;</span></span><span class="hs-special">]</span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagInvertReset</span></span><span class="hs-special">)</span><span>                   </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Invert the implicitly generated reset signal.&quot;</span></span><span>
+</span><span id="line-22"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;no-reset&quot;</span></span><span class="hs-special">]</span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagNoReset</span></span><span class="hs-special">)</span><span>                       </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;No implicitly generated reset signal.&quot;</span></span><span>
+</span><span id="line-23"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;no-clock&quot;</span></span><span class="hs-special">]</span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagNoClock</span></span><span class="hs-special">)</span><span>                       </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;No implicitly generated clock signal (implies no-reset: generate a purely combinatorial circuit).&quot;</span></span><span>
+</span><span id="line-24"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;sync-reset&quot;</span></span><span class="hs-special">]</span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagSyncReset</span></span><span class="hs-special">)</span><span>                     </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Only reset on positive clock edge.&quot;</span></span><span>
+</span><span id="line-25"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'d'</span></span><span class="hs-special">]</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;dump&quot;</span></span><span class="hs-special">]</span><span>            </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagDump</span></span><span>        </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;1,2,...&quot;</span></span><span class="hs-special">)</span><span>         </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Dump the IR after the given passes (see -v for pass numbers) to files beside the output (e.g., foo.6.eir, foo.8.syn); -v adds the show output in a comment.&quot;</span></span><span>
+</span><span id="line-26"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;dump-all&quot;</span></span><span class="hs-special">]</span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagDumpAll</span></span><span class="hs-special">)</span><span>                       </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Dump the IR after every pass (see -d).&quot;</span></span><span>
+</span><span id="line-27"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;debug-lint&quot;</span></span><span class="hs-special">]</span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagDebugLint</span></span><span class="hs-special">)</span><span>                     </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Re-lint the IR after every Eidos and Synolon pass to possibly catch compiler bugs.&quot;</span></span><span>
+</span><span id="line-28"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;eidos&quot;</span></span><span class="hs-special">]</span><span>           </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagEidos</span></span><span class="hs-special">)</span><span>                         </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Dump the Eidos IR after its last pass (.eir) beside the output; see doc/eidos.md.&quot;</span></span><span>
+</span><span id="line-29"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;synolon&quot;</span></span><span class="hs-special">]</span><span>         </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagSynolon</span></span><span class="hs-special">)</span><span>                       </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Dump the Synolon IR after its last pass (.syn) beside the output; see doc/synolon.md.&quot;</span></span><span>
+</span><span id="line-30"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;certify&quot;</span></span><span class="hs-special">]</span><span>         </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Maybe [Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. (Maybe [Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">OptArg</span></span><span> </span><span class="annot"><span class="annottext">Maybe [Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagCertify</span></span><span>     </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;required|warn&quot;</span></span><span class="hs-special">)</span><span>   </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Validate the compiled device against the Synolon IR with the formally verified validator (rwv-cstep-validate); compilation fails unless the validator returns VALIDATED (--certify=warn reports the verdict without failing); see doc/certify.md.&quot;</span></span><span>
+</span><span id="line-31"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;no-halt&quot;</span></span><span class="hs-special">]</span><span>         </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagNoHalt</span></span><span class="hs-special">)</span><span>                        </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Reject a device that can halt (post-halt outputs are unspecified; a rejected device must pause forever instead).&quot;</span></span><span>
+</span><span id="line-32"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;flatten&quot;</span></span><span class="hs-special">]</span><span>         </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagFlatten</span></span><span class="hs-special">)</span><span>                       </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Flatten RTL output into a single module (currently slow, memory-intensive).&quot;</span></span><span>
+</span><span id="line-33"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'o'</span></span><span class="hs-special">]</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagO</span></span><span>           </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;filename&quot;</span></span><span class="hs-special">)</span><span>        </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Name for output file.&quot;</span></span><span>
+</span><span id="line-34"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'p'</span></span><span class="hs-special">]</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;vhdl-packages&quot;</span></span><span class="hs-special">]</span><span>   </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagVhdlPkgs</span></span><span>    </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;pkg1,pkg2,...&quot;</span></span><span class="hs-special">)</span><span>   </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Packages to use for external VHDL components (e.g., ieee.std_logic_1164.all).&quot;</span></span><span>
+</span><span id="line-35"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;reset&quot;</span></span><span class="hs-special">]</span><span>           </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagResetName</span></span><span>   </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;name&quot;</span></span><span class="hs-special">)</span><span>            </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Name to use for reset signal in generated RTL.&quot;</span></span><span>
+</span><span id="line-36"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;clock&quot;</span></span><span class="hs-special">]</span><span>           </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagClockName</span></span><span>   </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;name&quot;</span></span><span class="hs-special">)</span><span>            </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Name to use for clock signal in generated RTL.&quot;</span></span><span>
+</span><span id="line-37"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;inputs&quot;</span></span><span class="hs-special">]</span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagInputNames</span></span><span>  </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;name1,name2,...&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Names to use for input signals in generated RTL.&quot;</span></span><span>
+</span><span id="line-38"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;outputs&quot;</span></span><span class="hs-special">]</span><span>         </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagOutputNames</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;name1,name2,...&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Names to use for output signals in generated RTL.&quot;</span></span><span>
+</span><span id="line-39"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;states&quot;</span></span><span class="hs-special">]</span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagStateNames</span></span><span>  </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;name1,name2,...&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Names to use for internal state signals.&quot;</span></span><span>
+</span><span id="line-40"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;start&quot;</span></span><span class="hs-special">]</span><span>           </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagStart</span></span><span>       </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;name&quot;</span></span><span class="hs-special">)</span><span>            </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Symbol to use for the definition of the top-level module (default: Main.start).&quot;</span></span><span>
+</span><span id="line-41"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;top&quot;</span></span><span class="hs-special">]</span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagTop</span></span><span>         </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;name&quot;</span></span><span class="hs-special">)</span><span>            </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Name to use for the top-level module in generated RTL (default: top_level).&quot;</span></span><span>
+</span><span id="line-42"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;loadpath&quot;</span></span><span class="hs-special">]</span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagLoadPath</span></span><span>    </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;dir1,dir2,...&quot;</span></span><span class="hs-special">)</span><span>   </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Additional directories for loadpath.&quot;</span></span><span>
+</span><span id="line-43"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;interpret&quot;</span></span><span class="hs-special">]</span><span>       </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Maybe [Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. (Maybe [Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">OptArg</span></span><span> </span><span class="annot"><span class="annottext">Maybe [Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagInterpret</span></span><span>   </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;inputs.yaml&quot;</span></span><span class="hs-special">)</span><span>     </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Interpret instead of compile, using inputs from the optional argument file (default: inputs.yaml).&quot;</span></span><span>
+</span><span id="line-44"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;testbench&quot;</span></span><span class="hs-special">]</span><span>       </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Maybe [Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. (Maybe [Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">OptArg</span></span><span> </span><span class="annot"><span class="annottext">Maybe [Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagTestbench</span></span><span>   </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;inputs.yaml&quot;</span></span><span class="hs-special">)</span><span>     </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Also generate a testbench (foo_tb.sv/foo_tb.vhdl) driving inputs from the optional argument file (default: inputs.yaml) for --cycles cycles.&quot;</span></span><span>
+</span><span id="line-45"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;cycles&quot;</span></span><span class="hs-special">]</span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagCycles</span></span><span>      </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;ncycles&quot;</span></span><span class="hs-special">)</span><span>         </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Number of cycles to interpret or simulate (default: the larger of 10 and the number of inputs in the inputs file).&quot;</span></span><span>
+</span><span id="line-46"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;depth&quot;</span></span><span class="hs-special">]</span><span>           </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagEvalDepth</span></span><span>   </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;depth&quot;</span></span><span class="hs-special">)</span><span>           </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Partial evaluation depth. Higher values can cause non-termination. (default: 8).&quot;</span></span><span>
+</span><span id="line-47"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;rtl-opt&quot;</span></span><span class="hs-special">]</span><span>         </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Char] -&gt; Flag) -&gt; [Char] -&gt; ArgDescr Flag
+forall a. ([Char] -&gt; a) -&gt; [Char] -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">ReqArg</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Flag
+</span><span class="hs-identifier hs-var">FlagRtlOpt</span></span><span>      </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;level&quot;</span></span><span class="hs-special">)</span><span>           </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;RTL optimization level. Disable with 0. (default: 8).&quot;</span></span><span>
+</span><span id="line-48"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;pretty&quot;</span></span><span class="hs-special">]</span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagPretty</span></span><span class="hs-special">)</span><span>                        </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Attempt to output prettier RTL at the expense of performance.&quot;</span></span><span>
+</span><span id="line-49"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;stable-names&quot;</span></span><span class="hs-special">]</span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagStableNames</span></span><span class="hs-special">)</span><span>                   </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Suffix machine-block names with their unique keys (always collision-free, machine-greppable) instead of collision-only readable names.&quot;</span></span><span>
+</span><span id="line-50"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;locators&quot;</span></span><span class="hs-special">]</span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagLocators</span></span><span class="hs-special">)</span><span>                      </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Emit source-locator comments (--@ file:line:col-line:col) in ReWire core (.rwc) output; --no-locators takes precedence.&quot;</span></span><span>
+</span><span id="line-51"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [[Char]] -&gt; ArgDescr Flag -&gt; [Char] -&gt; OptDescr Flag
+forall a. [Char] -&gt; [[Char]] -&gt; ArgDescr a -&gt; [Char] -&gt; OptDescr a
+</span><span class="hs-identifier hs-var">Option</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;no-locators&quot;</span></span><span class="hs-special">]</span><span>     </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Flag -&gt; ArgDescr Flag
+forall a. a -&gt; ArgDescr a
+</span><span class="hs-identifier hs-var">NoArg</span></span><span>  </span><span class="annot"><span class="annottext">Flag
+</span><span class="hs-identifier hs-var">FlagNoLocators</span></span><span class="hs-special">)</span><span>                    </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;Suppress source-locator and provenance comments in generated output.&quot;</span></span><span>
+</span><span id="line-52"></span><span>       </span><span class="hs-special">]</span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span class="annot"><a href="RWC.html#main"><span class="hs-identifier hs-type">main</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span id="main"><span class="annot"><span class="annottext">main :: IO ()
+</span><a href="RWC.html#main"><span class="hs-identifier hs-var hs-var">main</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [OptDescr Flag] -&gt; (Config -&gt; [Char] -&gt; IO ()) -&gt; IO ()
+</span><a href="Driver.html#driverMain"><span class="hs-identifier hs-var">driverMain</span></a></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;rwc&quot;</span></span><span> </span><span class="annot"><span class="annottext">[OptDescr Flag]
+</span><a href="RWC.html#options"><span class="hs-identifier hs-var">options</span></a></span><span> </span><span class="annot"><span class="annottext">Config -&gt; [Char] -&gt; IO ()
+forall (m :: * -&gt; *). MonadIO m =&gt; Config -&gt; [Char] -&gt; m ()
+</span><span class="hs-identifier hs-var">compileFile</span></span><span>
+</span><span id="line-56"></span></pre></body></html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE Safe #-}</span><span>
+</span><span id="line-2"></span><span class="hs-comment">-- | A thin shim over rewire-base's &quot;ReWire.Config&quot; adding the embedder's</span><span>
+</span><span id="line-3"></span><span class="hs-comment">--   output-file helpers. The embedder ignores the hardware-oriented config</span><span>
+</span><span id="line-4"></span><span class="hs-comment">--   fields (clock, reset, signal names, etc.).</span><span>
+</span><span id="line-5"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Embedder.Config.html"><span class="hs-identifier">Embedder.Config</span></a></span><span>
+</span><span id="line-6"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Config</span></span><span>
+</span><span id="line-7"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Config.html#getEmbedFile"><span class="hs-identifier">getEmbedFile</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Embedder.Config.html#getAtmoFile"><span class="hs-identifier">getAtmoFile</span></a></span><span>
+</span><span id="line-8"></span><span>      </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-9"></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">ReWire.Config</span></span><span>
+</span><span id="line-11"></span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Lens</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(^.)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">fromMaybe</span></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.FilePath</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(-&lt;.&gt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="annot"><span class="hs-comment">-- | Output path for the generated Isabelle theory (.thy) file.</span></span><span>
+</span><span id="line-17"></span><span class="annot"><a href="Embedder.Config.html#getEmbedFile"><span class="hs-identifier hs-type">getEmbedFile</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Config</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
+</span><span id="line-18"></span><span id="getEmbedFile"><span class="annot"><span class="annottext">getEmbedFile :: Config -&gt; FilePath -&gt; FilePath
+</span><a href="Embedder.Config.html#getEmbedFile"><span class="hs-identifier hs-var hs-var">getEmbedFile</span></a></span></span><span> </span><span id="local-6989586621679309330"><span class="annot"><span class="annottext">Config
+</span><a href="#local-6989586621679309330"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621679309331"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679309331"><span class="hs-identifier hs-var">filename</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; Maybe FilePath -&gt; FilePath)
+-&gt; Maybe FilePath -&gt; FilePath -&gt; FilePath
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Maybe FilePath -&gt; FilePath
+forall a. a -&gt; Maybe a -&gt; a
+</span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Config
+</span><a href="#local-6989586621679309330"><span class="hs-identifier hs-var">c</span></a></span><span class="annot"><span class="annottext">Config
+-&gt; Getting (Maybe FilePath) Config (Maybe FilePath)
+-&gt; Maybe FilePath
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting (Maybe FilePath) Config (Maybe FilePath)
+Lens' Config (Maybe FilePath)
+</span><span class="hs-identifier hs-var">outFile</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; FilePath) -&gt; FilePath -&gt; FilePath
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679309331"><span class="hs-identifier hs-var">filename</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; FilePath
+</span><span class="hs-operator hs-var">-&lt;.&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot;thy&quot;</span></span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="annot"><span class="hs-comment">-- | Output path for the generated Atmo IR (.atmo) file.</span></span><span>
+</span><span id="line-21"></span><span class="annot"><a href="Embedder.Config.html#getAtmoFile"><span class="hs-identifier hs-type">getAtmoFile</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Config</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
+</span><span id="line-22"></span><span id="getAtmoFile"><span class="annot"><span class="annottext">getAtmoFile :: Config -&gt; FilePath -&gt; FilePath
+</span><a href="Embedder.Config.html#getAtmoFile"><span class="hs-identifier hs-var hs-var">getAtmoFile</span></a></span></span><span> </span><span id="local-6989586621679309334"><span class="annot"><span class="annottext">Config
+</span><a href="#local-6989586621679309334"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621679309335"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679309335"><span class="hs-identifier hs-var">filename</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; Maybe FilePath -&gt; FilePath)
+-&gt; Maybe FilePath -&gt; FilePath -&gt; FilePath
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Maybe FilePath -&gt; FilePath
+forall a. a -&gt; Maybe a -&gt; a
+</span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Config
+</span><a href="#local-6989586621679309334"><span class="hs-identifier hs-var">c</span></a></span><span class="annot"><span class="annottext">Config
+-&gt; Getting (Maybe FilePath) Config (Maybe FilePath)
+-&gt; Maybe FilePath
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting (Maybe FilePath) Config (Maybe FilePath)
+Lens' Config (Maybe FilePath)
+</span><span class="hs-identifier hs-var">outFile</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; FilePath) -&gt; FilePath -&gt; FilePath
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621679309335"><span class="hs-identifier hs-var">filename</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; FilePath
+</span><span class="hs-operator hs-var">-&lt;.&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot;atmo&quot;</span></span><span>
+</span><span id="line-23"></span></pre></body></html>

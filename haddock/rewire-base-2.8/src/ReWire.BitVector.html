@@ -1,0 +1,90 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE Trustworthy #-}</span><span>
+</span><span id="line-3"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="ReWire.BitVector.html"><span class="hs-identifier">ReWire.BitVector</span></a></span><span>
+</span><span id="line-4"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-identifier">BV.BV</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">BV.width</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">BV.ones</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">BV.zeros</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">BV.nil</span></span><span>
+</span><span id="line-5"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(BV.@@)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">BV.bitVec</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(BV.&gt;&gt;.)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(BV.&lt;&lt;.)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(BV.==.)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">BV.ashr</span></span><span>
+</span><span id="line-6"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">BV.replicate</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">BV.lsb1</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(BV.@.)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">BV.concat</span></span><span>
+</span><span id="line-7"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.BitVector.html#showHex"><span class="hs-identifier">showHex</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.BitVector.html#showHex%27"><span class="hs-identifier">showHex'</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.BitVector.html#nbits"><span class="hs-identifier">nbits</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="ReWire.BitVector.html#szBitRep"><span class="hs-identifier">szBitRep</span></a></span><span>
+</span><span id="line-8"></span><span>      </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-9"></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">pack</span></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Numeric.Natural</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Natural</span></span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.BitVector</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BV</span></span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Numeric</span></span><span>        </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Num</span></span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="annot"><span class="hs-comment">-- | Show the bitvec value in hex, with &quot;0x&quot; prefix, but no leading zeros.</span></span><span>
+</span><span id="line-17"></span><span class="annot"><a href="ReWire.BitVector.html#showHex"><span class="hs-identifier hs-type">showHex</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BV.BV</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-18"></span><span id="showHex"><span class="annot"><span class="annottext">showHex :: BV -&gt; Text
+</span><a href="ReWire.BitVector.html#showHex"><span class="hs-identifier hs-var hs-var">showHex</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; BV -&gt; Text
+</span><a href="ReWire.BitVector.html#toHex"><span class="hs-identifier hs-var">toHex</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;0x&quot;</span></span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="annot"><span class="hs-comment">-- | Like `showHex`, but prefix with `h` instead of `0x`.</span></span><span>
+</span><span id="line-21"></span><span class="annot"><a href="ReWire.BitVector.html#showHex%27"><span class="hs-identifier hs-type">showHex'</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BV.BV</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-22"></span><span id="showHex%27"><span class="annot"><span class="annottext">showHex' :: BV -&gt; Text
+</span><a href="ReWire.BitVector.html#showHex%27"><span class="hs-identifier hs-var hs-var">showHex'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; BV -&gt; Text
+</span><a href="ReWire.BitVector.html#toHex"><span class="hs-identifier hs-var">toHex</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;h&quot;</span></span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="annot"><a href="ReWire.BitVector.html#toHex"><span class="hs-identifier hs-type">toHex</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BV.BV</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-25"></span><span id="toHex"><span class="annot"><span class="annottext">toHex :: Text -&gt; BV -&gt; Text
+</span><a href="ReWire.BitVector.html#toHex"><span class="hs-identifier hs-var hs-var">toHex</span></a></span></span><span> </span><span id="local-6989586621679173368"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679173368"><span class="hs-identifier hs-var">pre</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679173368"><span class="hs-identifier hs-var">pre</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; (BV -&gt; Text) -&gt; BV -&gt; Text
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Text) -&gt; (BV -&gt; String) -&gt; BV -&gt; Text
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; String -&gt; String) -&gt; String -&gt; Integer -&gt; String
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; String -&gt; String
+forall a. Integral a =&gt; a -&gt; String -&gt; String
+</span><span class="hs-identifier hs-var">Num.showHex</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&quot;</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; String) -&gt; (BV -&gt; Integer) -&gt; BV -&gt; String
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">BV -&gt; Integer
+</span><span class="hs-identifier hs-var">BV.nat</span></span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="hs-comment">-- | Number of bits needed to encode `n` different values: exact integer</span><span>
+</span><span id="line-28"></span><span class="hs-comment">--   ceil-log2 via clog2(n) = 1 + clog2(ceil(n/2)) (floating-point logBase</span><span>
+</span><span id="line-29"></span><span class="hs-comment">--   mis-rounds near powers of two once n exceeds 2^29 or so).</span><span>
+</span><span id="line-30"></span><span class="annot"><a href="ReWire.BitVector.html#nbits"><span class="hs-identifier hs-type">nbits</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Natural</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Natural</span></span><span>
+</span><span id="line-31"></span><span id="nbits"><span class="annot"><span class="annottext">nbits :: Natural -&gt; Natural
+</span><a href="ReWire.BitVector.html#nbits"><span class="hs-identifier hs-var hs-var">nbits</span></a></span></span><span> </span><span id="local-6989586621679173373"><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679173373"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679173373"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Natural -&gt; Natural -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;=</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><span class="hs-number">1</span></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Natural
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-32"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Natural
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">Natural -&gt; Natural -&gt; Natural
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Natural -&gt; Natural
+</span><a href="ReWire.BitVector.html#nbits"><span class="hs-identifier hs-var">nbits</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679173373"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Natural -&gt; Natural -&gt; Natural
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Natural -&gt; Natural -&gt; Natural
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`div`</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><span class="hs-number">2</span></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span>
+</span><span id="line-34"></span><span class="hs-comment">-- | Number of bits in the binary representation of `n` (with no leading</span><span>
+</span><span id="line-35"></span><span class="hs-comment">--   zeros).</span><span>
+</span><span id="line-36"></span><span class="annot"><a href="ReWire.BitVector.html#szBitRep"><span class="hs-identifier hs-type">szBitRep</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Natural</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Natural</span></span><span>
+</span><span id="line-37"></span><span id="szBitRep"><span class="annot"><span class="annottext">szBitRep :: Natural -&gt; Natural
+</span><a href="ReWire.BitVector.html#szBitRep"><span class="hs-identifier hs-var hs-var">szBitRep</span></a></span></span><span> </span><span id="local-6989586621679173377"><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679173377"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Natural -&gt; Natural
+</span><a href="ReWire.BitVector.html#nbits"><span class="hs-identifier hs-var">nbits</span></a></span><span> </span><span class="annot"><span class="annottext">(Natural -&gt; Natural) -&gt; Natural -&gt; Natural
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><a href="#local-6989586621679173377"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Natural -&gt; Natural -&gt; Natural
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Natural
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-38"></span></pre></body></html>
