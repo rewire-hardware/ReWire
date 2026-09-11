@@ -136,12 +136,19 @@ type FieldInfo = (Name Annote, (Name Annote, Type Annote, Int, Int))
 
 -- | Desugar record type defs, field accessors, record patterns, record
 --   construction expressions, and record update syntax.
+--
 -- > R {f = a}
+--
 -- becomes
+--
 -- > R _ a _
+--
 -- and
+--
 -- > r { f = a }
+--
 -- becomes
+--
 -- > case r of R x0 _ x1 -> R x0 a x1
 desugarRecords :: (MonadState Fresh m, MonadError AstError m) => Renamer -> Desugar m
 desugarRecords rn = mempty
@@ -346,8 +353,11 @@ desugarInfix = mempty
       }
 
 -- | TODO Apparently this should actually desugar to guards:
+--
 -- > f (-k) = v
+--
 -- is actually sugar for
+--
 -- > f z | z == negate (fromInteger k) = v
 desugarNegLitPats :: Monad m => Desugar m
 desugarNegLitPats = mempty {dsPat = T $ \ case
@@ -366,8 +376,11 @@ neg = \ case
 
 -- AFTER: desugarFuns
 -- | Turns tuples into applications of a tuple constructor (also in types and pats):
+--
 -- > (x, y, z)
+--
 -- becomes
+--
 -- > ((,,) x y z)
 desugarTuples :: Monad m => Desugar m
 desugarTuples = mempty
@@ -386,9 +399,12 @@ desugarTuples = mempty
 -- AFTER: desugarInfix
 -- | Turns piece-wise function definitions into a single PatBind with a lambda
 --   and case expression on the RHS. E.g.:
+--
 -- > f p1 p2 = rhs1
 -- > f q1 q2 = rhs2
+--
 -- becomes
+--
 -- > f = \ $1 $2 -> case ($1, $2) of { (p1, p2) -> rhs1; (q1, q2) -> rhs2 }
 desugarFuns :: (MonadState Fresh m, MonadError AstError m) => Desugar m
 desugarFuns = mempty
@@ -428,8 +444,11 @@ desugarFuns = mempty
                   m                        -> failAt (ann m) "unsupported declaration syntax."
 
 -- | Turns
+--
 -- > case e of {...}
+--
 -- into
+--
 -- > (\ x -> case x of {...}) e
 liftDiscriminator :: MonadState Fresh m => Desugar m
 liftDiscriminator = mempty {dsExp = TM $ \ case
@@ -439,12 +458,15 @@ liftDiscriminator = mempty {dsExp = TM $ \ case
       e             -> pure e}
 
 -- | Turn cases with multiple alts into cases with two alts: an alt with a
--- pattern and another with a default, wildcard branch.
+--   pattern and another with a default, wildcard branch.
+--
 -- > case x of
 -- >   p1 -> e1
 -- >   p2 -> e2
 -- >   p3 -> e3
+--
 -- becomes
+--
 -- > case x of
 -- >   p1 -> e1
 -- >   _  -> case x of
@@ -464,12 +486,15 @@ flattenAlts = mempty {dsExp = T $ \ case
                   as                                   -> as
 
 -- | Should run after function desugarage. From the Haskell 98 report:
+--
 -- > case v of
 -- >   p | g1 -> e1
 -- >     | gn -> en where { decls }
 -- >   _    -> e'
 -- >
+--
 -- becomes
+--
 -- > case e' of
 -- >   y -> case v of
 -- >     p -> let { decls } in
@@ -503,8 +528,11 @@ err :: Annote -> String -> Exp Annote
 err l s = App l (Var l $ UnQual l $ Ident l "error") $ Lit l $ String l s ""
 
 -- | Turns where clauses into lets. Only valid after guard desugarage. E.g.:
+--
 -- > f x = a where a = b
+--
 -- becomes
+--
 -- > f x = let a = b in a
 wheresToLets :: MonadError AstError m => Desugar m
 wheresToLets = mempty
@@ -522,12 +550,15 @@ wheresToLets = mempty
             a                                        -> pure a
       }
 
--- | Turns do-notation into a series of >>= \ x ->. Turns LetStmts into Lets.
+-- | Turns do-notation into a series of >>= \\ x ->. Turns LetStmts into Lets.
 --   E.g.:
+--
 -- > do p1 <- m
 -- >    let p2 = e
 -- >    return e
+--
 -- becomes
+--
 -- > m >>= (\ p1 -> (let p2 = e in return e))
 desugarDos :: (MonadState Fresh m, MonadError AstError m) => Desugar m
 desugarDos = mempty { dsExp = TM $ \ case
@@ -558,10 +589,13 @@ desugarTyFuns = mempty { dsType = T $ \ case
 -- TODO(chathhorn): recursive bindings?
 -- | Turns Lets into Cases. Assumes functions in Lets are already desugared.
 --   E.g.:
+--
 -- > let p = e1
 -- >     q = e2
 -- > in e3
+--
 -- becomes
+--
 -- > case e1 of { p -> (case e2 of { q -> e3 } }
 desugarLets :: (MonadState Fresh m, MonadError AstError m) => Desugar m
 desugarLets = mempty { dsExp = TM $ \ case
@@ -577,8 +611,11 @@ desugarLets = mempty { dsExp = TM $ \ case
             isPatBind _          = False
 
 -- | Turns ifs into cases.
+--
 -- > if e1 then e2 else e3
+--
 -- becomes
+--
 -- > case e1 of { True -> e2; False -> e3 }
 desugarIfs :: Monad m => Desugar m
 desugarIfs = mempty { dsExp = T $ \ case
@@ -595,8 +632,11 @@ desugarNegs = mempty { dsExp = T $ \ case
 
 -- | Turns Lambdas with several bindings into several lambdas with single
 --   bindings. E.g.:
+--
 -- > \ p1 p2 -> e
+--
 -- becomes
+--
 -- > \ p1 -> \ p2 -> e
 flattenLambdas :: Monad m => Desugar m
 flattenLambdas = mempty { dsExp = T $ \ case
@@ -604,8 +644,11 @@ flattenLambdas = mempty { dsExp = T $ \ case
       e             -> e}
 
 -- | Replaces non-var patterns in lambdas with a fresh var and a case. E.g.:
+--
 -- > \ (a, b) -> e
+--
 -- becomes
+--
 -- > \ $x -> case $x of { (a, b) -> e }
 depatLambdas :: MonadState Fresh m => Desugar m
 depatLambdas = mempty { dsExp = TM $ \ case
@@ -617,9 +660,12 @@ depatLambdas = mempty { dsExp = TM $ \ case
 
 -- | Desugars as-patterns in (and only in) cases into more cases. Should run
 --   after depatLambdas. E.g.:
+--
 -- > case e1 of
 -- >   x@(C y@p) -> e2
+--
 -- becomes
+--
 -- > case e1 of { C p -> (\ x -> ((\ y -> e2) p)) (C p) }
 desugarAsPats :: (MonadState Fresh m, MonadError AstError m) => Desugar m
 desugarAsPats = mempty { dsAlt = TM $ \ case
@@ -661,8 +707,11 @@ desugarAsPats = mempty { dsAlt = TM $ \ case
                   p                       -> failAt (ann p) "unsupported pattern."
 
 -- | Turns beta-redexes into cases. E.g.:
+--
 -- > (\ x -> e2) e1
+--
 -- becomes
+--
 -- > case e1 of { x -> e2 }
 lambdasToCases :: Monad m => Desugar m
 lambdasToCases = mempty { dsExp = T $ \ case

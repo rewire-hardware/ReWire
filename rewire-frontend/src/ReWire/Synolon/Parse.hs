@@ -5,8 +5,8 @@
 -- | Parser for the Synolon concrete syntax (@.syn@; doc/synolon.md sections
 --   3.4 and 9): the process declarations, and the program that embeds Eidos
 --   datatypes and definitions (parsed and elaborated by
---   'ReWire.Eidos.Parse', as are the expressions inside blocks).
---   'ReWire.Synolon.Pretty' is the other half of the round-trip contract.
+--   "ReWire.Eidos.Parse", as are the expressions inside blocks).
+--   "ReWire.Synolon.Pretty" is the other half of the round-trip contract.
 --
 --   Terminator labels resolve after the whole process is parsed (a
 --   terminator may target a block declared later); a label's signature is

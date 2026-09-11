@@ -22,7 +22,8 @@ import ReWire.Builtins (Builtin (..), builtinName, builtins)
 import ReWire.Pretty (Pretty (..), TextShow, FromGeneric(..))
 
 -- | Note: this is not injective (e.g., VecConcat has two notations)
--- | Note: there are Builtins that don't have direct corresponding notations (e.g. Bits is used in lit, but not directly)
+--
+--   Note: there are Builtins that don't have direct corresponding notations (e.g. Bits is used in lit, but not directly)
 builtinUserQName :: [(Builtin,Text)]
 builtinUserQName = [
       -- | ReWire
@@ -89,14 +90,16 @@ builtinUserName = [
       ]
 
 
--- Cases where we need to include specific handling for rewire-user definitions:
--- 1. We need to print punctuation and infix notations carefully
--- 2. We may need to differentiate based on type information in some circumstances:
---    a. We can't define a single operator over different monads (or can we?)
---    b. We need to differentiate between vector and word operations
--- 3. We include Builtins because we handle them at the same junctures
--- We can handle other cases by writing a function or synonym in the Isabelle
--- ReWire session (rewire-embedder/targets/isabelle/thys)
+-- | Cases where we need to include specific handling for rewire-user definitions:
+--
+--   1. We need to print punctuation and infix notations carefully
+--   2. We may need to differentiate based on type information in some circumstances:
+--      a. We can't define a single operator over different monads (or can we?)
+--      b. We need to differentiate between vector and word operations
+--   3. We include Builtins because we handle them at the same junctures
+--
+--   We can handle other cases by writing a function or synonym in the Isabelle
+--   ReWire session (rewire-embedder\/targets\/isabelle\/thys)
 data RWUserOp = 
       -- No need to repeat most builtins
       RWBuiltin Builtin
@@ -199,13 +202,14 @@ qn2rwu = \ case
 
 
 -- | Type builtins
--- type (+), type GHC.Monad, type GHC.MonadTrans, KnownNat
--- Identity, ReacT, StateT, Vec, Finite, Ref (..), Proxy (..)
--- Maybe, Either, Bool
--- Products?
--- | Primitives
--- Defined Types/Data structs: Monad, MonadTrans, Ref a=Ref String, Proxy (n::Nat)=Proxy
--- Imported Types/Data structs: type(+),type(Nat),Identity, ReacT, StateT, Integer, String, Bool, Vec=Vector, KnownNat, Finite
+--   type (+), type GHC.Monad, type GHC.MonadTrans, KnownNat
+--   Identity, ReacT, StateT, Vec, Finite, Ref (..), Proxy (..)
+--   Maybe, Either, Bool
+--   Products?
+--
+--   Primitives
+--   Defined Types/Data structs: Monad, MonadTrans, Ref a=Ref String, Proxy (n::Nat)=Proxy
+--   Imported Types/Data structs: type(+),type(Nat),Identity, ReacT, StateT, Integer, String, Bool, Vec=Vector, KnownNat, Finite
       
 data TyBuiltin =
           TyInteger

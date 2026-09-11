@@ -61,9 +61,12 @@ desugar _rn = flip evalStateT 0 .
 --   function bindings are kept intact (Atmo represents them directly) and
 --   pattern variables are annotated with their declared types. A binding
 --   with a guarded clause still desugars to a single PatBind:
+--
 -- > f p1 p2 | g = rhs1
 -- > f q1 q2 = rhs2
--- becomes
+--
+--   becomes
+--
 -- > f = \ $1 $2 -> case ($1, $2) of { (p1, p2) | g -> rhs1; (q1, q2) -> rhs2 }
 desugarFuns :: (MonadState Fresh m, MonadError AstError m) => Desugar m
 desugarFuns = mempty
@@ -114,10 +117,13 @@ desugarFuns = mempty
 -- | Like ReWire.HSE.Desugar's desugarLets, but annotates pattern variables with
 --   their declared types. Turns Lets into Cases. Assumes functions in Lets
 --   are already desugared. E.g.:
+--
 -- > let p = e1
 -- >     q = e2
 -- > in e3
--- becomes
+--
+--   becomes
+--
 -- > case e1 of { p -> (case e2 of { q -> e3 } }
 desugarLets :: (MonadState Fresh m, MonadError AstError m) => Desugar m
 desugarLets = mempty { dsExp = TM $ \ case

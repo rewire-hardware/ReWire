@@ -3,14 +3,14 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | The Synolon concrete syntax (@.syn@) pretty-printer (doc/synolon.md §3.4,
 --   §9): the process declarations, and the program that embeds Eidos datatypes
---   and definitions (printed by 'ReWire.Eidos.Pretty', as are the
---   expressions inside blocks). 'ReWire.Synolon.Parse' is the other half of
+--   and definitions (printed by "ReWire.Eidos.Pretty", as are the
+--   expressions inside blocks). "ReWire.Synolon.Parse" is the other half of
 --   the round-trip contract: @parse . pretty@ is the identity modulo
 --   annotations, and @pretty . parse . pretty == pretty@ is a tested
 --   fixpoint.
 --
 --   The 'Block' instance is normative beyond printing: the alpha-equal
---   block merge of 'ReWire.Synolon.Transform' keys blocks on this rendering
+--   block merge of "ReWire.Synolon.Transform" keys blocks on this rendering
 --   of their canonically renumbered form, so what it prints (parameter
 --   binders, commands with their binders and right-hand sides, the
 --   terminator with its target labels) decides which blocks merge, and so

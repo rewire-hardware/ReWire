@@ -208,7 +208,8 @@ rwPrimFromFinite = bitsAt . F.getFinite
 -- *** Built-in Vec functions. ***
 
 -- | Turns a List literal into a Vec with fixed length. I.e.,
--- > [x, y, z] :: Vec 3 a
+--
+--   > [x, y, z] :: Vec 3 a
 {-# OPAQUE rwPrimVecFromList #-}
 rwPrimVecFromList :: KnownNat n => [a] -> Vec n a
 rwPrimVecFromList v = case V.fromList v of
@@ -278,7 +279,7 @@ rwPrimResize v = rwPrimVecFromList vs'
       vs = V.toList v
       vs' = BW.resize' (GHC.fromEnum (natVal (Proxy :: Proxy m))) vs
 
--- | Update multiple indices
+-- Update multiple indices
 -- rwPrimVecBulkUpdate :: KnownNat n => Vec n a -> Vec m (Finite n,a) -> Vec n a
 -- rwPrimVecBulkUpdate v a = V.update v (V.map (BF.first fromEnum) a)
 

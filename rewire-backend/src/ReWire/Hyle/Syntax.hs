@@ -416,7 +416,7 @@ ppSpan a = case annProv a of
                                         <> "-" <> showt l2 <> ":" <> showt c2 ]
       _ -> []
 
--- | Doc comments: one '--| <text>' line per doc entry (entries are split at
+-- | Doc comments: one '--| \<text\>' line per doc entry (entries are split at
 --   newlines so every printed line carries the marker and re-parses).
 ppDocs :: Blind [Text] -> [Doc an]
 ppDocs (Blind docs) = map (\ d -> text $ "--| " <> d) $ concatMap T.lines docs

@@ -71,9 +71,9 @@ type FQCtorSigs = Map FQName [(Maybe FQName, Type ())]
 -- different modules), but clearly you can import the same symbol (defined in
 -- the same or different modules) twice with different qualifiers.
 data Exports = Exports
-      { expValues      :: !(Set FQName)                  -- Values
-      , expTypes       :: !(Set FQName)                  -- Types
-      , expFixities    :: !(Set Fixity)                  -- Fixities
+      { expValues      :: !(Set FQName)                  -- ^ Values
+      , expTypes       :: !(Set FQName)                  -- ^ Types
+      , expFixities    :: !(Set Fixity)                  -- ^ Fixities
       , expCtors       :: !FQCtors
       , expCtorSigs    :: !FQCtorSigs
       }
@@ -155,7 +155,7 @@ instance QNamish FQName where
       toQNamish (FQName m n) = Qual () m n
       fromQNamish (Qual _ m n) = FQName (void m) (void n)
       fromQNamish (UnQual _ n) = FQName (ModuleName () "") $ void n
-      -- ^ This definition kinda defeats the purpose of FQName.
+      -- This definition kinda defeats the purpose of FQName.
       fromQNamish n            = FQName (ModuleName () "") $ Ident () $ prettyPrint n
 instance QNamish Text where
       toQNamish = UnQual () . Ident () . unpack
@@ -274,8 +274,8 @@ allCtorSigs rn = qualifyCtorSigs rn (rnCtorSigs rn) <> expCtorSigs (allExports r
 type Imports a = ([(Namespace, Name a)], [Fixity])
 
 -- | Build renamer from a single import line. Should work on either pre- or
--- post-desugared import lists. Params: module being imported, "qualified",
--- exports (of this import), "... as <qualifier>", imports.
+--   post-desugared import lists. Params: module being imported, "qualified",
+--   exports (of this import), "... as \<qualifier\>", imports.
 fromImps :: (Functor m, MonadError AstError m) => ModuleName () -> Bool -> Exports -> Maybe (ModuleName ()) -> Maybe (ImportSpecList SrcSpanInfo) -> m Renamer
 fromImps m quald exps Nothing   Nothing                          = addExports m exps <$> fromImps' m quald noExps exps
 fromImps m quald exps (Just m') Nothing                          = addExports m exps <$> fromImps' m' quald noExps exps

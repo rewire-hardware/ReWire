@@ -200,14 +200,6 @@ evalNat t = case t of
                   "-" | x >= y -> pure $ x - y
                   _   -> Nothing
 
--- | Normalize a type: every type-level-natural subterm is put into a
---   canonical linear form (a sorted sum of coefficient-scaled atoms plus a
---   constant), so equal-modulo-arithmetic types — including OPEN ones,
---   e.g. @0 + m + n@ vs @n + m@, whose equality GHC's type-lits plugins
---   already proved — compare structurally equal. Type equality throughout
---   the compiler is structural equality after 'natNorm' (annotations are
---   already ignored by 'Eq Ty'). Subtraction does not distribute (naturals
---   truncate): @a - b@ normalizes its operands and is otherwise an atom.
 -- | A definition the machine level keeps and the fold lowers: dotted-named
 --   (not a builtin signature carrier, which is undotted), monomorphic, and
 --   not reactive-typed (the reactive fragment is consumed by purification).
@@ -221,6 +213,14 @@ machineDefn d = T.any (== '.') (idOcc $ defnId d)
 tyEq :: Ty -> Ty -> Bool
 tyEq t t' = natNorm t == natNorm t'
 
+-- | Normalize a type: every type-level-natural subterm is put into a
+--   canonical linear form (a sorted sum of coefficient-scaled atoms plus a
+--   constant), so equal-modulo-arithmetic types — including OPEN ones,
+--   e.g. @0 + m + n@ vs @n + m@, whose equality GHC's type-lits plugins
+--   already proved — compare structurally equal. Type equality throughout
+--   the compiler is structural equality after 'natNorm' (annotations are
+--   already ignored by 'Eq Ty'). Subtraction does not distribute (naturals
+--   truncate): @a - b@ normalizes its operands and is otherwise an atom.
 natNorm :: Ty -> Ty
 natNorm t = case sumOf t of
       Just s  -> rebuild (ann t) s
@@ -229,8 +229,8 @@ natNorm t = case sumOf t of
             Arrow an a b -> Arrow an (natNorm a) (natNorm b)
             _            -> t
 
--- A linear sum: constant + coefficient-scaled atoms (atoms canonically
--- ordered). Nothing when the type is not a natural-typed expression.
+-- | A linear sum: constant + coefficient-scaled atoms (atoms canonically
+--   ordered). Nothing when the type is not a natural-typed expression.
 sumOf :: Ty -> Maybe (Natural, [(Ty, Natural)])
 sumOf t = case t of
       TyNat _ n -> pure (n, [])
@@ -274,8 +274,8 @@ mergeAtoms = foldr insert []
                   LT -> (a, k) : (b, j) : rest
                   GT -> (b, j) : insert (a, k) rest
 
--- Rebuild the canonical form: constant first (omitted when zero and atoms
--- exist), then coefficient-scaled atoms in canonical order, right-nested.
+-- | Rebuild the canonical form: constant first (omitted when zero and atoms
+--   exist), then coefficient-scaled atoms in canonical order, right-nested.
 rebuild :: Annote -> (Natural, [(Ty, Natural)]) -> Ty
 rebuild an (c, atoms) = case terms of
       []       -> TyNat an c
@@ -291,8 +291,8 @@ rebuild an (c, atoms) = case terms of
             scale a 1 = a
             scale a k = TyApp an (TyApp an (TyCon an "*") (TyNat an k)) a
 
--- A deterministic structural ordering on types (annotations ignored;
--- variables by unique), for canonicalizing sums.
+-- | A deterministic structural ordering on types (annotations ignored;
+--   variables by unique), for canonicalizing sums.
 cmpTy :: Ty -> Ty -> Ordering
 cmpTy a b = case (a, b) of
       (TyCon _ c, TyCon _ c')          -> compare c c'

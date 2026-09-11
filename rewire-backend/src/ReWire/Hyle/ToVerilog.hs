@@ -65,11 +65,11 @@ sigInfo0 tags ambient = SigInfo (seedNames ambient) [] mempty mempty tags Nothin
 
 -- | Identity key for compiled expressions (the CSE memos, the case-chain
 --   same-scrutinee test): the full Show rendering. The derived Eq on
---   'V.Exp' (and any derived Ord) inherits the bv package's width-blind BV
---   instances (bitVec 4 0 == bitVec 8 0), which would unify expressions
---   differing only in a literal's width -- a miscompilation, since widths
---   are load-bearing in RTL. BV's Show (@[4]0@) carries the width, so the
---   rendering is width-exact.
+--   'ReWire.Verilog.Syntax.Exp' (and any derived Ord) inherits the bv
+--   package's width-blind BV instances (bitVec 4 0 == bitVec 8 0), which
+--   would unify expressions differing only in a literal's width -- a
+--   miscompilation, since widths are load-bearing in RTL. BV's Show
+--   (@[4]0@) carries the width, so the rendering is width-exact.
 expKey :: V.Exp -> Text
 expKey = T.pack . show
 
@@ -254,7 +254,7 @@ compileDefn xenv d@(M.Defn _ g (M.Sig _ argSzs _) ps body _ (Blind docs)) = do
 --   must agree with the entity's port names (default binding matches
 --   formals to entity ports by name), so both the entity and every call
 --   site derive the same list from the defn alone. Each parameter name is
---   stripped of freshening tags and mangled; @arg<i>@ is the fallback for
+--   stripped of freshening tags and mangled; @arg\<i\>@ is the fallback for
 --   names that are SystemVerilog keywords, don't start with a letter or
 --   underscore, or duplicate an earlier port (positionally, compared
 --   case-folded: VHDL basic identifiers are case-insensitive). The result
@@ -277,7 +277,7 @@ defnPortNames (M.Defn _ _ (M.Sig _ argSzs _) ps _ _ _) = go ["res"] $ zip [0 ..]
                                 && not (svReserved c)
                                 && T.toLower c `notElem` taken
 
-                        -- | @arg<i>@, itself suffixed out of the way in the
+                        -- | @arg\<i\>@, itself suffixed out of the way in the
                         --   (unlikely) case a parameter is literally named
                         --   that.
                         fallback :: Int -> Text
@@ -286,7 +286,7 @@ defnPortNames (M.Defn _ _ (M.Sig _ argSzs _) ps _ _ _) = go ["res"] $ zip [0 ..]
                               where f | k <= 0    = "arg" <> showt i
                                       | otherwise = "arg" <> showt i <> "_" <> showt k
 
--- | The text after the last '.' of a qualified name (e.g. @main.getIns@ ->
+-- | The text after the last @.@ of a qualified name (e.g. @main.getIns@ ->
 --   @getIns@): the seed for instance labels.
 lastComponent :: Text -> Text
 lastComponent = T.takeWhileEnd (/= '.')
@@ -626,7 +626,7 @@ mkSignal (n, sz) = Logic [fromIntegral sz] n []
 toLit :: Natural -> V.Exp
 toLit v = LitBits $ bitVec (fromIntegral $ szBitRep v) v
 
--- | Break up giant literals (mirrored by the VHDL backend's 'litExp').
+-- | Break up giant literals (mirrored by the VHDL backend's @litExp@).
 bvToExp :: BV -> V.Exp
 bvToExp bv | width bv == 0         = V.nil
            | width bv < maxLit     = LitBits bv

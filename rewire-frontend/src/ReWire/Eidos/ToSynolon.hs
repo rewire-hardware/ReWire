@@ -38,9 +38,9 @@
 --   machine record's @args@ field).
 --
 --   This stage constructs the process — the Eidos-to-Synolon boundary; the
---   block graph is then cleaned by 'ReWire.Synolon.Transform', checked by
---   the machine lint ('ReWire.Synolon.Lint'), and lowered by the
---   Synolon-to-Hyle fold ('ReWire.Synolon.ToHyle').
+--   block graph is then cleaned by "ReWire.Synolon.Transform", checked by
+--   the machine lint ("ReWire.Synolon.Lint"), and lowered by the
+--   Synolon-to-Hyle fold ("ReWire.Synolon.ToHyle").
 module ReWire.Eidos.ToSynolon (purify) where
 
 import ReWire.Annotation (Annote, ann, noAnn)

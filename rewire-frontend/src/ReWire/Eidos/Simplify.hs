@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | The Eidos simplifier: occurrence-driven, let-preserving partial
---   evaluation (the retired reduce/specialize/purge loop's successor,
+--   evaluation (the retired reduce\/specialize\/purge loop's successor,
 --   doc/eidos.md §8). 'simplify' repeats specialize-on-values, purge, and
 --   reduce until every definition is synthable and dictionary-free,
 --   bounded by @--depth@ with the retired loop's diagnostic.

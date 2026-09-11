@@ -41,7 +41,7 @@ a @. i = bitIndex a i
 
 -- infixr 9 @., @@
 
--- *** Primitive bitwise operations based on Verilog operators. ***
+-- *** Primitive bitwise operations based on Verilog operators.
 
 infixr 9 **
 infixl 8  *, /, %

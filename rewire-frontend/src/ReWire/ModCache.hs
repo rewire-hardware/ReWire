@@ -42,15 +42,15 @@ import qualified ReWire.Config                as C
 
 type LoadPath = [FilePath]
 
--- The numbered pass pipeline: run rwc -v to see the bracketed pass numbers;
--- -d N (or --dump-all) dumps the IR after pass N to a file beside the
--- output (e.g., MiniISA.6.eir, MiniISA.8.syn). Pass 1 is the front end: GHC
--- (parse/typecheck/desugar over the whole home module graph) followed by
--- the Core-to-Eidos bridge. Passes 2-6 are the Eidos passes (doc/eidos.md),
--- pass 7 is purification (Eidos to Synolon), pass 8 the Synolon
--- block-graph cleanup, and pass 9 the Synolon-to-Hyle fold; the Hyle-level
--- passes (10-11) run in ReWire.FrontEnd, numbered after these so -d
--- numbering is uniform.
+-- | The numbered pass pipeline: run rwc -v to see the bracketed pass numbers;
+--   -d N (or --dump-all) dumps the IR after pass N to a file beside the
+--   output (e.g., MiniISA.6.eir, MiniISA.8.syn). Pass 1 is the front end: GHC
+--   (parse\/typecheck\/desugar over the whole home module graph) followed by
+--   the Core-to-Eidos bridge. Passes 2-6 are the Eidos passes (doc/eidos.md),
+--   pass 7 is purification (Eidos to Synolon), pass 8 the Synolon
+--   block-graph cleanup, and pass 9 the Synolon-to-Hyle fold; the Hyle-level
+--   passes (10-11) run in ReWire.FrontEnd, numbered after these so -d
+--   numbering is uniform.
 getDevice :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> m Hyle.Program
 getDevice conf fp = do
       eir <- passEidos 1 "GHC front end and Core-to-Eidos bridge."

@@ -19,7 +19,7 @@ import System.Environment (getArgs, withArgs, lookupEnv)
 import Data.List (isPrefixOf, intersect)
 import System.Directory (listDirectory)
 
--- Define a custom option for the --rebuild flag
+-- | Define a custom option for the --rebuild flag
 newtype RebuildFlag = RebuildFlag Bool
     deriving (Eq, Ord, Read, Show, Typeable, Generic)
 
@@ -29,7 +29,7 @@ instance IsOption RebuildFlag where
     optionName = pure "rebuild"
     optionHelp = pure "Run the prepareIsabelle function before testing"
 
--- Define a newtype for --cases flag
+-- | Define a newtype for --cases flag
 newtype CasesFlag = CasesFlag [FilePath]
     deriving (Eq, Ord, Show, Typeable, Generic)
 
@@ -45,14 +45,14 @@ parseCasesFlag arg = if "--cases=" `isPrefixOf` arg
     then Just $ CasesFlag $ map T.unpack $ T.splitOn "," $ T.pack $ drop (T.length "--cases=") arg
     else Nothing
 
--- Function to extract --cases flag argument
+-- | Function to extract --cases flag argument
 extractCasesFlag :: [String] -> Maybe CasesFlag
 extractCasesFlag [] = Nothing
 extractCasesFlag (arg:args) = case parseCasesFlag arg of
     Just x -> Just x
     Nothing -> extractCasesFlag args
 
--- Define a custom option for the --each flag
+-- | Define a custom option for the --each flag
 newtype EachFlag = EachFlag Bool
     deriving (Eq, Ord, Read, Show, Typeable, Generic)
 

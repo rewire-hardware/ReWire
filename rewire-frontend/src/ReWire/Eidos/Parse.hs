@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Safe #-}
 -- | Parser for the Eidos concrete syntax (.eir; doc/eidos.md, section 9).
---   'ReWire.Eidos.Pretty' is the other half of the round-trip contract:
+--   "ReWire.Eidos.Pretty" is the other half of the round-trip contract:
 --   @parse . pretty@ is the identity on programs modulo annotations, and
 --   @pretty . parse . pretty == pretty@ is a tested fixpoint.
 --
@@ -41,7 +41,7 @@
 --     unique — ill-formed per section 2 — may misparse.)
 --
 --   The machine level's process declarations parse in
---   'ReWire.Synolon.Parse', which reuses this grammar and elaboration for
+--   "ReWire.Synolon.Parse", which reuses this grammar and elaboration for
 --   the expressions, definitions, and datatypes a Synolon program embeds.
 module ReWire.Eidos.Parse
       ( parseEir, parseEirText

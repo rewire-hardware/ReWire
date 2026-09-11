@@ -164,7 +164,7 @@ untype :: Data d => d -> d
 untype = transform $ \ (_ :: Maybe Ty) -> Nothing
 
 ---
--- | Records: see the RecVal, RecSel, and RecUpd expressions, the PatRec
+-- Records: see the RecVal, RecSel, and RecUpd expressions, the PatRec
 -- pattern, and the RecDefn declaration below.
 
 
@@ -296,7 +296,7 @@ data Pat = PatCon      Annote !(Maybe Poly) !(Maybe Ty) !Text ![Pat]
          | PatVar      Annote !(Maybe Poly) !(Maybe Ty) !Text
          | PatWildCard Annote !(Maybe Poly) !(Maybe Ty)
          | PatTuple    Annote !(Maybe Poly) !(Maybe Ty) ![Pat]
-         | PatAs       Annote !(Maybe Poly) !(Maybe Ty) !Text !Pat -- should only appear in FunBindings
+         | PatAs       Annote !(Maybe Poly) !(Maybe Ty) !Text !Pat -- ^ should only appear in FunBindings
          | PatRec      Annote !(Maybe Poly) !(Maybe Ty) ![(Text,Pat)]
       deriving (Eq, Show, Generic, Typeable, Data)
 
@@ -384,7 +384,7 @@ instance Hashable DefnAttr
 
 ---
 
--- this is just a synonym for the dataName and dataVars of a DataDefn
+-- | this is just a synonym for the dataName and dataVars of a DataDefn
 type DataHeader = (Text,[Text])
 
 data DataDefn = DataDefn
@@ -408,7 +408,7 @@ instance Pretty DataDefn where
 
 -- RecDefn, a specialized version of DataDefn
 
--- this is just a synonym for the dataName and dataVars of a DataDefn
+-- | this is just a synonym for the dataName and dataVars of a DataDefn
 type RecHeader = (Text,[Text])
 
 data RecDefn = RecDefn

@@ -10,7 +10,7 @@
 --   and terminator operands are Eidos expressions, and the pure
 --   definitions a machine calls are Eidos definitions. Only the process
 --   constructs and the program are new; the conventions of
---   'ReWire.Eidos.Syntax' (unique-keyed names, inert annotations, no term
+--   "ReWire.Eidos.Syntax" (unique-keyed names, inert annotations, no term
 --   equality) carry over unchanged.
 module ReWire.Synolon.Syntax
       ( module ReWire.Eidos.Syntax
@@ -58,7 +58,7 @@ data Cell = Cell
       }
       deriving (Show, Generic, Typeable, Data, NFData)
 
--- | A block: parameters (a pause target's *last* parameter is the
+-- | A block: parameters (a pause target's /last/ parameter is the
 --   resumed input, typed by the process input type), commands, and a
 --   terminator.
 data Block = Block

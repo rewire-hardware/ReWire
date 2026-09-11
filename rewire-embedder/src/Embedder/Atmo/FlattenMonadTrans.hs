@@ -13,12 +13,12 @@ import ReWire.Annotation (Annote)
 
 import Embedder.Atmo.Types (nilTy, pairTy)
 
--- transMonadT
--- Convert `StateT s (StateT t (StateT u Identity)) a`
---     to  `State (s,(t,(u,()))) a`
--- Convert `ReacT i o m a`
---     to  `Re i o s a`
---     where s = mkState an (getStates m)
+-- | transMonadT
+--   Convert `StateT s (StateT t (StateT u Identity)) a`
+--       to  `State (s,(t,(u,()))) a`
+--   Convert `ReacT i o m a`
+--       to  `Re i o s a`
+--       where s = mkState an (getStates m)
 transMonadT :: Ty -> Ty
 transMonadT = \ case
       TyApp an (TyBuiltin _ TyReacT) [i,o,m@(TyVar {}),a] -> 

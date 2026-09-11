@@ -6,9 +6,9 @@ import ReWire.Finite
 import qualified ReWire.Bits as B
 
 
--- |
--- | Operations on Finites are actually operations on words
--- |
+--
+-- Operations on Finites are actually operations on words
+--
 
 {-# INLINE (+) #-}
 (+) :: KnownNat n => Finite n -> Finite n -> Finite n

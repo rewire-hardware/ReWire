@@ -5,7 +5,7 @@
 -- | The abstract syntax of Eidos, the typed functional IR between GHC Core
 --   and the machine level (a system-F-lite mirror of GHC Core, specified
 --   in doc/eidos.md). The machine level's process calculus lives in
---   'ReWire.Synolon.Syntax', which embeds these expression types.
+--   "ReWire.Synolon.Syntax", which embeds these expression types.
 --   Conventions the rest of the compiler relies on:
 --
 --   * Binders are globally unique ('Uniq'): every binding site in a program
@@ -75,7 +75,7 @@ instance Hashable TyVar where
 -- | Types: plain first-order data, no binders, no forall. Type-level
 --   naturals appear literally ('TyNat') or as applications of the built-in
 --   arithmetic type constructors (see ReWire.Eidos.Types.natNorm).
---   Annotations are inert; the Eq/Ord/Hashable instances ignore them.
+--   Annotations are inert; the Eq\/Ord\/Hashable instances ignore them.
 data Ty = TyCon  Annote !TyConId
         | TyApp  Annote !Ty !Ty
         | TyVarT Annote !TyVar

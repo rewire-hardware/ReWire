@@ -7,21 +7,21 @@
 --   beta-redexes (with demand-order rescheduling), crushed cases to
 --   single-arm cascades, and discarded type instantiations for the
 --   typechecker to re-infer, this bridge PRESERVES them: Core lets become
---   'Let's (recursive groups included), join-tagged binders become 'Join'
---   binds with 'Jump's at their call sites, cases stay n-ary with their
---   case binder, and type arguments ride along as 'TArg's (driving the
---   substitution-based specializer). Types are bridged fail-fast: an
---   untranslatable type is a located error at the occurrence, never a
---   silent Nothing.
+--   'ReWire.Eidos.Syntax.Let's (recursive groups included), join-tagged
+--   binders become 'Join' binds with 'Jump's at their call sites, cases
+--   stay n-ary with their case binder, and type arguments ride along as
+--   'TArg's (driving the substitution-based specializer). Types are
+--   bridged fail-fast: an untranslatable type is a located error at the
+--   occurrence, never a silent Nothing.
 --
 --   Also handled here: the reachability walk
 --   from the start symbol + rwPrim* roots, evidence erasure (dictionary
---   arguments/binders/binds erased; user-class dictionaries kept as data,
+--   arguments\/binders\/binds erased; user-class dictionaries kept as data,
 --   with single-method classes' newtype-dictionary types unwrapped to the
 --   method type, matching the term level's cast erasure),
 --   rwPrim* recognition, the reactive-monad class-op recognition (Bind and
---   Return at ReacT/StateT/Identity or at an unresolved monad type),
---   Integer/String/list literal folding, INLINE-pragma ride-along, and the
+--   Return at ReacT\/StateT\/Identity or at an unresolved monad type),
+--   Integer\/String\/list literal folding, INLINE-pragma ride-along, and the
 --   base vocabulary. Name and type classification lives in
 --   "ReWire.GHC.Recognize".
 --
@@ -568,7 +568,7 @@ bridgeConApp ctx an v dc args vargs
 -- | Class method dispatch: user-class methods project the field out of the
 --   dictionary (ordinary data, via a single-alternative case; a newtype
 --   dictionary IS its method, applied directly); >>=, >>,
---   return, pure at ReacT/StateT/Identity or at an unresolved monad type
+--   return, pure at ReacT\/StateT\/Identity or at an unresolved monad type
 --   become Bind/Return primitives (dictionary discarded; a concrete monad
 --   off the reactive stack is rejected).
 bridgeClassOp :: MonadError AstError m => Ctx -> Annote -> Var -> [CoreExpr] -> [CoreExpr] -> BM m E.Exp

@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Trustworthy #-}
 -- | The rw_helpers VHDL package, embedded at compile time from
---   rewire-backend/vhdl/rw_helpers.vhdl. It implements the Hyle primitive
+--   rewire-backend\/vhdl\/rw_helpers.vhdl. It implements the Hyle primitive
 --   denotations of doc/hyle.md, section 5.2 (unsigned operations over
 --   std_logic_vector, which has no arithmetic of its own; SMT-LIB
 --   division by zero in rw_div/rw_mod). The VHDL backend emits it with

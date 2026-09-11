@@ -82,7 +82,7 @@ mkPairPat an p1 p2 = PatCon an Nothing (pairTy an <$> typeOf p1 <*> typeOf p2) "
 mkTupleCtor :: Int -> Text
 mkTupleCtor n = "(" <> T.replicate (n-1) "," <> ")"
 
--- Function to match the specified pattern and return Maybe Int
+-- | Function to match the specified pattern and return Maybe Int
 isTupleCtor :: T.Text -> Bool
 isTupleCtor c = c == "(" <> T.replicate (length (unpack c) - 2) "," <> ")"
 

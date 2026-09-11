@@ -24,8 +24,8 @@ import Numeric (showHex)
 
 import qualified Data.Text as T
 
--- | The label for a purify-minted block: @$L.\<source>@ for a source
---   name's first block, @$L.\<source>\<ordinal>@ from the second on. The
+-- | The label for a purify-minted block: @$L.\<source\>@ for a source
+--   name's first block, @$L.\<source\>\<ordinal\>@ from the second on. The
 --   ordinal is per source name, so an upstream edit renumbers only that
 --   name's later blocks, never the whole process. (The machine fold
 --   derives the blocks' Hyle definition names from these via 'labelBase',
@@ -36,7 +36,7 @@ blockLabel src i | i <= 1    = "$L." <> src
                  | otherwise = "$L." <> src <> showt i
 
 -- | The top-level name for a join continuation lifted out of a
---   definition: @$LL.\<defn>.\<join>\<ordinal>@. The @$LL.@ prefix marks
+--   definition: @$LL.\<defn\>.\<join\>\<ordinal\>@. The @$LL.@ prefix marks
 --   the definition as compiler-lifted; it is display-only (the machine
 --   fold strips it via 'defnBase' when naming the Hyle definition).
 liftedJoinName :: Text -> Text -> Int -> Text

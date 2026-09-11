@@ -311,7 +311,7 @@ splitStart s = case T.breakOnEnd "." s of
       ("", occ) -> ("Main", T.unpack occ)
       (m, occ)  -> (T.unpack $ T.dropEnd 1 m, T.unpack occ)
 
--- | Render a SourceError (thrown by the per-module parse/typecheck/desugar
+-- | Render a SourceError (thrown by the per-module parse\/typecheck\/desugar
 --   phases) to an annotated message.
 renderSourceError :: SourceError -> (Annote, Text)
 renderSourceError e = (an, T.pack $ showSDocUnsafe $ vcat $ map pprLocMsgEnvelopeDefault envs)

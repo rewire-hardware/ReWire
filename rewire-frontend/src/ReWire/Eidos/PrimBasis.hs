@@ -60,8 +60,8 @@ mkData n = DataDefn (an n) n
 nullCtor :: DataConId -> TyConId -> DataCon
 nullCtor c t = DataCon (an c) c $ monoSig $ TyCon (an t) t
 
--- Basis type variables: negative uniques, disjoint per declaration (each
--- declaration gets a distinct hundred).
+-- | Basis type variables: negative uniques, disjoint per declaration (each
+--   declaration gets a distinct hundred).
 basisTv :: Int -> Int -> Text -> Kind -> TyVar
 basisTv decl i x = TyVar x (negate $ decl * 100 + i + 1)
 

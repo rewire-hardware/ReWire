@@ -448,7 +448,7 @@ globalName env an x = maybe (failAt an $ "unknown global: " <> idOcc x) pure
 intTy :: Ty
 intTy = TyCon noAnn "Integer"
 
--- | The width of a type ('ReWire.Synolon.Repr', memoized in 'sSizes'; the
+-- | The width of a type ("ReWire.Synolon.Repr", memoized in 'sSizes'; the
 --   Synolon lint has already rejected a binder, block parameter, cell,
 --   port, or halt answer whose type has none — a definition's codomain or
 --   an expression's instantiation is sized only here). The label names

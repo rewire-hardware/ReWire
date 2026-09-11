@@ -33,7 +33,7 @@ import qualified Data.Text.Lazy as TL
 --   output to a file beside the output file when -d n (or --dump-all) is on
 --   -- so "-d n" reads "dump the IR after pass n". The dump file is the
 --   output file (or the given source file) with its extension replaced by
---   "<n>.<ext>" (e.g., MiniISA.6.eir); ext names the IR's textual format,
+--   "\<n\>.\<ext\>" (e.g., MiniISA.6.eir); ext names the IR's textual format,
 --   which the render argument produces. Under -v, the dump also carries the
 --   IR's show output (indented by pretty-simple) in a comment, so it stays
 --   parseable. Numbers are assigned consecutively at the call sites

@@ -252,7 +252,7 @@ ppVecTy sz = text "std_logic_vector" <+> parens (pretty (toInteger sz - 1) <+> t
 
 -- | Print a name as a VHDL identifier: a basic identifier when valid (and
 --   unambiguous: all-lowercase, since basic identifiers are case-insensitive),
---   otherwise a VHDL-2008 extended identifier (\name\).
+--   otherwise a VHDL-2008 extended identifier (\\name\\).
 ppName :: Name -> Doc an
 ppName = text . vhdlName
 

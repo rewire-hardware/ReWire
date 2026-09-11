@@ -296,8 +296,11 @@ isStateT ty = case rangeTy ty of
       _                                       -> False
 
 -- | This takes a type of the form
+--
 -- >  StateT S1 (StateT S2 (... (StateT Sm I)))
+--
 -- and returns
+--
 -- >  [S1, ..., Sm]
 dstStateT :: Ty -> Maybe [Ty]
 dstStateT = \ case
@@ -306,8 +309,11 @@ dstStateT = \ case
       _                                      -> Nothing
 
 -- | This takes a type of the form
+--
 -- >  m a
+--
 -- and returns
+--
 -- >  Just (m, a)
 dstTyApp :: Ty -> Maybe (Ty, Ty)
 dstTyApp = \ case
@@ -324,8 +330,11 @@ dstTyBinOp = \ case
       _                                    -> Nothing
 
 -- | This takes a type of the form
+--
 -- >  ReacT In Out (StateT S1 (StateT S2 (... (StateT Sm I)))) T
+--
 -- and returns
+--
 -- >  (In, Out, [S1, ..., Sm], T)
 dstReacT :: Ty -> Maybe (Ty, Ty, [Ty], Ty)
 dstReacT = \ case
@@ -359,7 +368,7 @@ fundamental = \ case
 higherOrder :: Ty -> Bool
 higherOrder (flattenSig -> (ats, rt)) = any isArrow $ rt : ats
 
--- Degree-1 polynomial with rational coefficients.
+-- | Degree-1 polynomial with rational coefficients.
 data Poly1 = Poly1 Rational (HashMap Text Rational)
       deriving (Show)
 

@@ -16,7 +16,7 @@
 --   one bit. Cryptol's specializer erases the type arguments of
 --   primitive instances (a literal's value, an index operator's
 --   dimensions), so specialization runs through its lower-level
---   'S.withDeclGroups' interface, whose name map recovers each
+--   @S.withDeclGroups@ interface, whose name map recovers each
 --   primitive clone's instantiation types.
 --
 --   Supported fragment: combinational functions over Bit, words,
@@ -24,15 +24,15 @@
 --   @Z n@ (modular arithmetic). if-then-else; local value and function
 --   bindings; higher-order functions applied to statically known
 --   functions; comprehensions, folds, and scans (unrolled); recursive
---   finite comprehensions (the message-schedule/key-schedule/CBC idiom,
+--   finite comprehensions (the message-schedule\/key-schedule\/CBC idiom,
 --   unrolled element-wise); type-indexed recursion (unrolled per
 --   instantiation); infinite streams under statically bounded demand
 --   (a finite take or a constant index; see 'infPrefix'); the scalar,
 --   slicing, sequence, indexing, rotate, update, and polynomial
---   (pmult/pdiv/pmod, constant divisor)
+--   (pmult\/pdiv\/pmod, constant divisor)
 --   primitives. Records, enums, and @Z n@ are interior-only: the entry
---   point's type must be words/vectors/tuples (the rwc side has no
---   counterpart). Enum values are laid out tag#pad#args with the tag at
+--   point's type must be words\/vectors\/tuples (the rwc side has no
+--   counterpart). Enum values are laid out tag\#pad\#args with the tag at
 --   the most-significant end and the tag width nbits(#constructors) --
 --   the same convention the Eidos fold uses for ReWire ADTs.
 --   error/undefined become a zero poison constant and trace the
@@ -513,7 +513,7 @@ betaBind site env0 rhs0 args0 = go (env0 { teDepth = teDepth site }) rhs0 args0
 
 -- | A saturated constructor application (arguments already translated).
 --   A struct (newtype) constructor is transparent: the value is its
---   record argument's bits. An enum constructor builds tag#pad#args: the
+--   record argument's bits. An enum constructor builds tag\#pad\#args: the
 --   constructor's declaration index in nbits(#constructors) bits at the
 --   most-significant end, zero padding up to the enum's width, then the
 --   argument bits (matching the Eidos fold's ADT layout).
@@ -723,7 +723,7 @@ recSeqs env ds = do
                   CyclicSCC xs -> Left $ "cryptol: a recursive sequence definition has a cyclic element dependency: "
                         <> T.intercalate ", " (map fst xs)
 
--- | Partial evaluation of a translated expression: slice/concat/literal
+-- | Partial evaluation of a translated expression: slice\/concat\/literal
 --   algebra plus constant arithmetic. Extracting the elements of a
 --   recursive sequence definition relies on this: the element slice of
 --   the translated right-hand side must reduce to references to only
@@ -789,7 +789,7 @@ nodeCount = \ case
 
 -- | Compile-time warnings from a static scan of the specialized
 --   declarations: uses of primitives that translate with a semantic
---   caveat (error/assert/undefined as a zero poison; trace as identity).
+--   caveat (error\/assert\/undefined as a zero poison; trace as identity).
 warnUses :: HashMap Int (Text, [T.Type]) -> [T.Decl] -> [Text]
 warnUses prims decls = concat
       [ [ errW   | hasUse ["error"] ]
@@ -986,7 +986,7 @@ enumVals pn tys = case (pn, tys) of
 -- | Unrolled folds and scans; the function argument is taken
 --   untranslated (it may be a reference or a lambda -- there are no
 --   function values in Hyle). Each accumulator step is let-bound
---   (fold$<depth>$<k>) so a step function that uses its accumulator more
+--   (fold$\<depth\>$\<k\>) so a step function that uses its accumulator more
 --   than once doesn't blow up the term.
 transFold :: TEnv -> Text -> [T.Type] -> [T.Expr] -> Either Text A.Exp
 transFold env pn tys args = case (pn, tys, args) of

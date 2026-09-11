@@ -47,7 +47,7 @@ import Data.Text (Text)
   , decls :: [Decl] } -}
 
 -- | The rewire-user library modules, by theory name. Their Isabelle
---   semantics is the hand-written session (targets/isabelle/thys, imported
+--   semantics is the hand-written session (targets\/isabelle\/thys, imported
 --   as @ReWire.Atmo@), so embedding them would emit theories nothing
 --   imports. Matched against the theory name rather than the output path,
 --   which @-o@ overrides.

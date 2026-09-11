@@ -14,7 +14,7 @@
 --   Defn modules never take clock or reset ports (sequential externs are
 --   device-level instances). Extern ports connect by name; ports left
 --   anonymous in the source-level extern descriptor reach this backend with
---   the @p<i>@ names synthesized by the producer, which the hand-written
+--   the @p\<i\>@ names synthesized by the producer, which the hand-written
 --   VHDL implementations in the test suite already use.
 module ReWire.Hyle.ToVHDL (compileProgram, testbench) where
 
@@ -112,13 +112,13 @@ bindLet sz x = \ case
                   (H.Var w, ) <$> assignStmts (H.LVName w) e
 
 -- | Identity key for compiled expressions (the CSE memos): the full Show
---   rendering. The derived Eq on 'H.Exp' (and any derived Ord) inherits
---   the bv package's width-blind BV instances (bitVec 4 0 == bitVec 8 0),
---   which would unify expressions differing only in a literal's width -- a
---   miscompilation, since widths are load-bearing in RTL. BV's Show
---   (@[4]0@) carries the width, so the rendering is width-exact. (The
---   selected-assignment matcher needs no key: its scrutinees are
---   restricted to literal-free shapes.)
+--   rendering. The derived Eq on 'ReWire.VHDL.Syntax.Exp' (and any derived
+--   Ord) inherits the bv package's width-blind BV instances (bitVec 4 0 ==
+--   bitVec 8 0), which would unify expressions differing only in a
+--   literal's width -- a miscompilation, since widths are load-bearing in
+--   RTL. BV's Show (@[4]0@) carries the width, so the rendering is
+--   width-exact. (The selected-assignment matcher needs no key: its
+--   scrutinees are restricted to literal-free shapes.)
 expKey :: H.Exp -> Text
 expKey = T.pack . show
 

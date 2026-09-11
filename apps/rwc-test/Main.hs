@@ -1,6 +1,6 @@
--- | rwc-test: the compiler golden test suite. Each tests/golden/*.hs is a
+-- | rwc-test: the compiler golden test suite. Each tests\/golden\/*.hs is a
 --   ReWire program with golden files alongside it; this driver compiles it
---   (with GHC and with rwc), interprets it, lowers it to Verilog/VHDL/Cryptol,
+--   (with GHC and with rwc), interprets it, lowers it to Verilog\/VHDL\/Cryptol,
 --   lints the Verilog, and cosimulates the backends against each other (see
 --   "Cosim"). It also runs the expected-error (tests/negative) and
 --   expected-warning (tests/warning) suites and a flag-combination smoke group.
@@ -101,7 +101,7 @@ options =
 --   output against a committed golden file (.rwc, .yaml, .sv, .vhdl, .cry); and
 --   cosimulation tests (see "Cosim"), which simulate the device through the HDL
 --   backends and require them to agree with the rwc interpreter. The
---   .yaml/.vhdl/.cry golden legs run only when that golden exists; the HDL-lint
+--   .yaml\/.vhdl\/.cry golden legs run only when that golden exists; the HDL-lint
 --   and cosimulation legs are skipped under --no-check.
 testCompiler :: [Flag] -> FilePath -> IO [TestTree]
 testCompiler flags fn = do
@@ -492,7 +492,7 @@ testWarning fn = testCase (takeBaseName fn <> " (expected warning)") $ do
 --   variations, interpreter cycle bounds, VHDL target). These only assert that
 --   rwc succeeds; outputs are not compared against goldens. Stdout (the
 --   verbose trace) is redirected to a log file next to the other outputs; the
---   pass dumps land beside the output file (foo.out.smoke-dumps.<N>.eir, .syn,
+--   pass dumps land beside the output file (foo.out.smoke-dumps.\<N\>.eir, .syn,
 --   .rwc). The dumps and the --eidos/--synolon files are also parsed back and
 --   linted, so a wrong extension or a dump the parser does not read cannot
 --   pass silently.
@@ -607,7 +607,7 @@ getToolsTests flags
 --   checks that --certify=warn reports the same status without failing. Like
 --   the HDL checks, the group is gated on its tool being available: when the
 --   validator binary is missing (RWC_RWV, then the PATH, then
---   verify/.lake/build/bin in a checkout), a single placeholder test records
+--   verify\/.lake\/build\/bin in a checkout), a single placeholder test records
 --   the skip — unless --require-tools is given or RWC_TEST_REQUIRE_RWV is set
 --   (the CI lane), in which case the missing validator is a test failure. The
 --   discovered binary is handed to the in-process rwc via RWC_RWV, since the
@@ -705,7 +705,7 @@ getCertifyTests require = findValidator >>= \ case
                               assertBool ("expected no VALIDATED verdict; stdout:\n" <> outTxt)
                                     $ not ("VALIDATED" `isInfixOf` outTxt)
 
--- | Build a test group from every .hs file in tests/<dirName>, using the given
+-- | Build a test group from every .hs file in tests/\<dirName\>, using the given
 --   per-file test builder.
 testsFrom :: FilePath -> (FilePath -> IO [TestTree]) -> IO TestTree
 testsFrom dirName build = do

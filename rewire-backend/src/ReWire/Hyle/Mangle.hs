@@ -46,7 +46,7 @@ mangleFresh x = if isRtlId x' then x' else mangle x'
             x' = subTick $ subDollar $ subDots x
 
 -- | Strip the freshening suffixes stacked onto a name by the Hyle inliner
---   (@$i<digits>@) and the fold-time instance hoist (@$h<digits>@),
+--   (@$i\<digits\>@) and the fold-time instance hoist (@$h\<digits\>@),
 --   recovering the original base for display. Suffix groups stack (deep
 --   inline chains re-freshen already-freshened names, and hoisting re-lets
 --   inliner names), so stripping repeats; a name that is nothing but suffix

@@ -17,7 +17,7 @@
 --
 --   Polymorphic definitions are templates: they are dropped from the
 --   output (their instantiations replace them), so the result is
---   monomorphic ('ReWire.Eidos.Lint' mono mode) — except the
+--   monomorphic ("ReWire.Eidos.Lint" mono mode) — except the
 --   builtin-named definitions (rwPrim*), whose polymorphic signatures
 --   carry the builtins' type assumptions to the Eidos-to-Hyle fold (their
 --   bodies are error stubs, and they are never referenced as variables —

@@ -49,10 +49,10 @@ cosimCycles :: Int
 cosimCycles = 20
 
 -- | The cosimulation tests for one golden test program. There is one test per
---   backend, named "(cosim rwc/<tool>)", each independently gated on its tool
+--   backend, named "(cosim rwc/\<tool\>)", each independently gated on its tool
 --   being installed and (for ghdl/cryptol) its golden file existing -- so e.g.
 --   the cryptol comparison still runs when ghdl is not installed. Every backend
---   is driven by the same stimulus: the per-test <base>.input.yaml when
+--   is driven by the same stimulus: the per-test \<base\>.input.yaml when
 --   present, otherwise deterministic pseudorandom inputs.
 --
 --   A device whose interpreter (.yaml) golden is absent is an extern the
@@ -61,7 +61,7 @@ cosimCycles = 20
 --   parameterized module that cannot be evaluated standalone). Devices with no
 --   outputs are skipped.
 --
---   The committed <base>.sv golden (same ports as the generated <base>.out.sv)
+--   The committed \<base\>.sv golden (same ports as the generated \<base\>.out.sv)
 --   is read here only to decide which tests to create; the test actions run in
 --   the test directory and use the freshly generated outputs.
 cosimTests :: FilePath -> IO [TestTree]
@@ -213,7 +213,7 @@ portOrder outs m = [ Map.lookupDefault 0 (T.pack n) m | (n, _) <- outs ]
 
 -- | Parse a trace (the interpreter's .yaml, or a simulator's stdout) into
 --   per-cycle output maps. Simulators wrap the YAML in banner/$finish noise, so
---   only the list lines ("- name: 'hex'" and indented continuations) are kept
+--   only the list lines ("- name: \'hex\'" and indented continuations) are kept
 --   before decoding; the kept lines are a well-formed YAML list. Values are
 --   read as their hex strings (e.g. ghdl pads/upper-cases, the interpreter does
 --   not) and parsed to integers, so comparison is formatting-insensitive.

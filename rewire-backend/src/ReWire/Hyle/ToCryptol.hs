@@ -97,8 +97,8 @@ compileProgram _conf (Program exts ds dev) = do
                   , Just n <- [Map.lookup (extName e) extNames]
                   ]
 
--- | Assigns each defn a Cryptol name @rw_<sanitized>@ and each extern
---   @ext_<sanitized>@, deduplicating with numeric suffixes and avoiding the
+-- | Assigns each defn a Cryptol name @rw_\<sanitized\>@ and each extern
+--   @ext_\<sanitized\>@, deduplicating with numeric suffixes and avoiding the
 --   reserved @rw_step@/@rw_device@.
 buildNames :: [Defn] -> [Extern] -> (HashMap GId Cry.Name, HashMap Name Cry.Name)
 buildNames ds exts = (dnames, extnames)

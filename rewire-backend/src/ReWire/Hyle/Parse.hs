@@ -319,7 +319,7 @@ spanLine = lexeme $ do
             readInt :: Text -> Maybe Int
             readInt = readMaybe . T.unpack
 
--- | A '--| <text>' doc-comment line (the text after "--| ", raw, to the end
+-- | A '--| \<text\>' doc-comment line (the text after "--| ", raw, to the end
 --   of the line).
 docLine :: Parser Text
 docLine = lexeme $ do

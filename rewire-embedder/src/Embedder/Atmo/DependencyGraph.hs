@@ -205,14 +205,14 @@ getNodeRec d@(RecDefn _ n _ poly fs) =
       where
             deps = fvt (case poly of Poly _ t -> t) ++ concatMap (fvt . snd) fs
 
--- Function to convert a qualified name to an unqualified name
+-- | Function to convert a qualified name to an unqualified name
 unqualify :: Text -> Text
 unqualify qualifiedName =
   case splitOn (pack ".") qualifiedName of
     [] -> empty  -- handle unexpected empty case gracefully
     parts -> last parts  -- take the last part after splitting by '.'
 
--- Function to transform a node to use unqualified names in the second and third components
+-- | Function to transform a node to use unqualified names in the second and third components
 unqualifyNode :: (Def, Text, [Text]) -> (Def, Text, [Text])
 unqualifyNode (def, qualifiedName, qualifiedList) =
   let unqualifiedName = unqualify qualifiedName

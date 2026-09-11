@@ -9,7 +9,7 @@
 --
 --   The linter runs in one of three cumulative modes ('LintMode'),
 --   corresponding to the pipeline's invariant stages (§4.1); the machine
---   level's rules are 'ReWire.Synolon.Lint''s, built on the expression
+--   level's rules are "ReWire.Synolon.Lint"'s, built on the expression
 --   checker exported here:
 --
 --   * 'LintPoly' (post-bridge): the rules of §4.2–§4.4.
@@ -40,14 +40,14 @@
 --   representable-closure type grammar of §4.1 (a permit-list of type
 --   constructors — Vec, Finite, Bool, (), tuples, monomorphic ADTs,
 --   Integer, Proxy, String in literal positions — plus
---   ReacT/StateT/Identity until purification); it checks the ANF shape,
+--   ReacT\/StateT\/Identity until purification); it checks the ANF shape,
 --   first-order value binders, no-polymorphism, and nat-closure. The
 --   Synolon lint enforces representability at a fixed bit width through
 --   'envRepr'.
 --   TODO(eidos): type arguments and constructor fields are not kind-checked
 --   (there is no kind table for built-in type constructors); type-variable
 --   occurrences are checked against their binders' kinds.
---   TODO(eidos): the builtin signature check ('ReWire.Eidos.BuiltinSigs')
+--   TODO(eidos): the builtin signature check ("ReWire.Eidos.BuiltinSigs")
 --   is partial on type-level arithmetic: scheme subterms like
 --   @Vec ((i + n) + m) a@ become deferred equations, checked only when
 --   nat-closed on both sides after substitution. Shape and everything
@@ -109,13 +109,13 @@ data JoinDef = JoinDef !JoinId ![Ty] !Ty
 
 data Env = Env
       { envMode        :: LintMode
-      , envBanReactive :: Bool                       -- the reactive types are out of the type grammar (the machine level)
-      , envRepr        :: Maybe (Ty -> Either Text Natural) -- the representable closure: the width of a type, or why it has none (the machine level)
-      , envCons  :: HashMap DataConId (TyConId, Sig) -- data constructors, by name
-      , envScope :: HashMap Uniq Id                  -- term binders in scope
-      , envTVs   :: HashMap Uniq TyVar               -- signature type variables in scope
-      , envJoins :: HashMap Uniq JoinDef             -- join points lexically visible
-      , envTail  :: HashSet Uniq                     -- joins jumpable from here (tail position of their scopes)
+      , envBanReactive :: Bool                       -- ^ the reactive types are out of the type grammar (the machine level)
+      , envRepr        :: Maybe (Ty -> Either Text Natural) -- ^ the representable closure: the width of a type, or why it has none (the machine level)
+      , envCons  :: HashMap DataConId (TyConId, Sig) -- ^ data constructors, by name
+      , envScope :: HashMap Uniq Id                  -- ^ term binders in scope
+      , envTVs   :: HashMap Uniq TyVar               -- ^ signature type variables in scope
+      , envJoins :: HashMap Uniq JoinDef             -- ^ join points lexically visible
+      , envTail  :: HashSet Uniq                     -- ^ joins jumpable from here (tail position of their scopes)
       }
 
 mkEnv :: LintMode -> Program -> Env
@@ -433,7 +433,7 @@ checkLocalBinder env an what x = do
             $ what <> " " <> prettyPrint x <> " has a polymorphic signature (local binders are monomorphic)"
       checkTy env an t
 
--- | A local *value* binder (parameter, lambda/let/case/pattern binder):
+-- | A local *value* binder (parameter, lambda\/let\/case\/pattern binder):
 --   additionally first-order in mono+ANF mode (higher-order binders
 --   survive specialization; the partial evaluator eliminates them before
 --   the ANF stage). Join point labels are exempt — a label's signature is

@@ -3,8 +3,8 @@
 {-# LANGUAGE Safe #-}
 -- | The lexical layer of the Eidos concrete syntax (doc/eidos.md §9): the
 --   token parsers, the reserved-word table, and the identifier predicate —
---   each defined once, so that 'ReWire.Eidos.Parse' (which reads the
---   format) and 'ReWire.Eidos.Pretty' (which backtick-quotes exactly the
+--   each defined once, so that "ReWire.Eidos.Parse" (which reads the
+--   format) and "ReWire.Eidos.Pretty" (which backtick-quotes exactly the
 --   occurrence texts that would not lex as identifiers) cannot disagree.
 --   The grammar is newline-insensitive: 'space' skips @--@ line comments
 --   along with whitespace, and a @#@ separates an identifier from its

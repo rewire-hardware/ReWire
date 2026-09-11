@@ -34,7 +34,7 @@ import Language.Haskell.Exts.Syntax hiding (Annotation, Name, Kind)
 
 -- | An intermediate form for exports. TODO(chathhorn): get rid of it.
 data Export = Export FQName
-            -- ExportWith: Type name, ctors
+            -- | ExportWith: Type name, ctors
             | ExportWith FQName (Set FQName) FQCtorSigs
             | ExportAll FQName
             | ExportMod (S.ModuleName ())

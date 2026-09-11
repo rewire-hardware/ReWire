@@ -24,46 +24,46 @@ toInt False = 0
 notBit :: Bit -> Bit
 notBit = not
 
--- AND
+-- | AND
 (>&&<) :: Bit -> Bit -> Bit
 True >&&< True = True
 _ >&&< _ = False
 
--- OR
+-- | OR
 (>||<) :: Bit -> Bit -> Bit
 False >||< False = False
 _ >||< _ = True
 
--- XOR
+-- | XOR
 (>^<) :: Bit -> Bit -> Bit
 False >^< True = True
 True >^< False = True
 _ >^< _ = False
 
--- Eq
+-- | Eq
 (>==<) :: Bit -> Bit -> Bit
 False >==< False = True
 True >==< True = True
 _ >==< _ = False
 
--- NAND
+-- | NAND
 (>~&<) :: Bit -> Bit -> Bit
 True >~&< True = False
 _ >~&< _ = True
 
--- NOR
+-- | NOR
 (>~|<) :: Bit -> Bit -> Bit
 False >~|< False = True
 _ >~|< _ = False
 
--- XNOR
+-- | XNOR
 (>~^<) :: Bit -> Bit -> Bit
 False >~^< True = False
 True >~^< False = False
 _ >~^< _ = True
 
 
--- a b c ~> (a+b+c,carry_out)
+-- | a b c ~> (a+b+c,carry_out)
 rca :: Bit -> Bit -> Bit -> (Bit,Bit)
 rca False False False = (False,False)
 rca False False True = (True,False)
@@ -84,7 +84,7 @@ int2bin i | i==0      = []
                       1 -> True
                       _ -> Prelude.error "can't happen"
 
--- assumes inputs are same length
+-- | assumes inputs are same length
 carryadd' :: [Bool] -> [Bool] -> Bool -> ([Bool],Bool)
 carryadd' [] _ c = ([],c)
 carryadd' (_:_) [] c = ([],c)
@@ -134,7 +134,7 @@ rXor' = foldr (>^<) False
 rXnor' :: [Bool] -> Bool
 rXnor' = not . foldr (>^<) False
 
--- Produces bits in little endian form.
+-- | Produces bits in little endian form.
 int2bits' :: Integer -> [Bool]
 int2bits' i | i Prelude.== 0      = []
             | i < 0 = int2bits' (i `mod` ((2::Integer) Prelude.^ (128::Integer)))
@@ -152,7 +152,7 @@ pad' n v | n Prelude.== 0 = v
          | n Prelude.> 0 = False : pad' (n Prelude.- 1) v
          | otherwise = error "negative padding"
 
--- w is bigendian
+-- | w is bigendian
 padTrunc' :: Int -> [Bool] -> [Bool]
 padTrunc' d w
       | l == d    = w
@@ -161,7 +161,7 @@ padTrunc' d w
          where
            l = length w
 
--- takes little endian bits
+-- | takes little endian bits
 toIntLE' :: [Bool] -> Int
 toIntLE' [] = 0
 toIntLE' (b:bs) = toInt b Prelude.+ 2 Prelude.* toIntLE' bs
@@ -185,7 +185,7 @@ bitsToInteger' = foldl (\ s x -> fromBool x Prelude.+ 2 Prelude.* s) 0
 intToBits' :: Int -> Integer -> [Bool]
 intToBits' d x = padTrunc' d $ reverse $ int2bits' $ x `mod` (2 ^ d)
 
--- w is bigendian
+-- | w is bigendian
 resize' :: Int -> [Bool] -> [Bool]
 resize' d w | l Prelude.== d = w
             | l Prelude.< d  = pad' (d Prelude.- l) w
@@ -252,7 +252,7 @@ boothround (a,q,q_1,m) = let
           (a',q',q_1')  = rNudge' (a,q)
 
 
--- assume all are same length, for example W8
+-- | assume all are same length, for example W8
 booth' :: ([Bool], [Bool]) -> ([Bool], [Bool])
 booth' (w1,w2) = proj $ rounds (resize' (length w1) zero' , w1,False,w2)
       where proj (x,y,_,_) = (x,y)
@@ -302,10 +302,10 @@ arithShiftR' [] _ = []
 arithShiftR' w n  = replicate k (msBit' w) ++ take (length w Prelude.- k) w
       where k = shiftAmount' w n
 
--- For (Unsigned!) comparison:
--- we assume that the input words are the same length
--- so we can use (lexicographic) ordering as defined on lists
--- so we need a function pad the shorter word
+-- | For (Unsigned!) comparison:
+--   we assume that the input words are the same length
+--   so we can use (lexicographic) ordering as defined on lists
+--   so we need a function pad the shorter word
 padMax' :: [Bool] -> [Bool] -> ([Bool],[Bool])
 padMax' v w =
   case compare (length v) (length w) of
@@ -325,9 +325,9 @@ power' w n = intToBits' l (go 1 (bitsToInteger' w `mod` m) (reverse n))
             go acc sq (b : bs) = go (if b then acc Prelude.* sq `mod` m else acc) (sq Prelude.* sq `mod` m) bs
 
 
--- assumed positive inputs, n = dividend, d = divisor
--- b is s.t. d << b <= n , d << b+1 > n
--- returns (quotient,remainder)
+-- | assumed positive inputs, n = dividend, d = divisor
+--   b is s.t. d \<\< b \<= n , d \<\< b+1 > n
+--   returns (quotient,remainder)
 nonrestoringDivide' :: [Bool] -> [Bool] -> [Bool] -> ([Bool],[Bool])
 nonrestoringDivide' n d b =
    let rq = False : n
@@ -343,14 +343,14 @@ nonrestoringDivide' n d b =
           then shiftL' rq one'
           else bitwiseOr' (resize' (length rq) one') $ shiftL' (minus' rq shiftd) one'
 
--- assumes n and d are the same length and n >= d
+-- | assumes n and d are the same length and n >= d
 divCounter' :: [Bool] -> [Bool] -> Int
 divCounter' n d =
   if n Prelude.< d
     then -1
     else 1 Prelude.+ divCounter' n (shiftL' d one')
 
--- assumes the same length inputs
+-- | assumes the same length inputs
 divide' :: [Bool] -> [Bool] -> [Bool]
 divide' n d = resize' (length n) $ int2bits' $ toInteger $ toInt' n `div` toInt' d
 
@@ -360,7 +360,7 @@ divide' n d = resize' (length n) $ fst $ nonrestoringDivide' n d b
   b = lit' $ toInteger $ divCounter' (False:n) (False:d)  -- start positive unsigned
 -}
 
--- assumes the same length inputs
+-- | assumes the same length inputs
 mod' :: [Bool] -> [Bool] -> [Bool]
 mod' n d = resize' (length n) $ snd $ nonrestoringDivide' n d b
   where

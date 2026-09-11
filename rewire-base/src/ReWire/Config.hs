@@ -44,7 +44,7 @@ data OutFlag   = Flatten | Pretty | Verbose
       deriving (Eq, Ord, Show, Generic)
 instance Hashable OutFlag
 
--- | --certify: off, best-effort with an unsuppressible status report
+-- | @--certify@: off, best-effort with an unsuppressible status report
 --   (--certify=warn), or required (plain --certify: compilation fails
 --   unless the validator returns VALIDATED).
 data Certify   = CertifyOff | CertifyWarn | CertifyRequired
@@ -53,8 +53,8 @@ data Certify   = CertifyOff | CertifyWarn | CertifyRequired
 data Config = Config
       { _source       :: Language
       , _target       :: Language
-      , _clock        :: Text -- No clock if null.
-      , _reset        :: Text -- No reset if null.
+      , _clock        :: Text -- ^ No clock if null.
+      , _reset        :: Text -- ^ No reset if null.
       , _resetFlags   :: HashSet ResetFlag
       , _outFlags     :: HashSet OutFlag
       , _inputSigs    :: [Text]
@@ -66,21 +66,21 @@ data Config = Config
       , _start        :: Text
       , _top          :: Text
       , _loadPath     :: [FilePath]
-      , _cycles       :: Maybe Natural -- ^ --cycles: Nothing means derive a default from the inputs (see effectiveCycles).
+      , _cycles       :: Maybe Natural -- ^ @--cycles@: Nothing means derive a default from the inputs (see effectiveCycles).
       , _depth        :: Natural
       , _dump         :: Natural -> Bool
-      , _eidos        :: Bool -- ^ --eidos: dump the Eidos IR after its last pass (<out>.eir).
-      , _synolon      :: Bool -- ^ --synolon: dump the Synolon IR after its last pass (<out>.syn).
-      , _certify      :: Certify -- ^ --certify: validate the compiled device against the Synolon IR with the verified validator.
+      , _eidos        :: Bool -- ^ @--eidos@: dump the Eidos IR after its last pass (\<out\>.eir).
+      , _synolon      :: Bool -- ^ @--synolon@: dump the Synolon IR after its last pass (\<out\>.syn).
+      , _certify      :: Certify -- ^ @--certify@: validate the compiled device against the Synolon IR with the verified validator.
       , _noHalt       :: Bool
       , _debugLint    :: Bool
       , _rtlOpt       :: Natural
       , _testbench    :: Bool
-      , _noWarn       :: Bool -- ^ -w: suppress warnings.
-      , _wError       :: Bool -- ^ -Werror: warnings are fatal.
-      , _stableNames  :: Bool -- ^ --stable-names: fully-uniquified (less readable, edit-stable) generated names.
-      , _locators     :: Bool -- ^ --locators: source-locator comments in .rwc output (--no-locators wins).
-      , _noLocators   :: Bool -- ^ --no-locators: no source-locator or provenance comments in output.
+      , _noWarn       :: Bool -- ^ @-w@: suppress warnings.
+      , _wError       :: Bool -- ^ @-Werror@: warnings are fatal.
+      , _stableNames  :: Bool -- ^ @--stable-names@: fully-uniquified (less readable, edit-stable) generated names.
+      , _locators     :: Bool -- ^ @--locators@: source-locator comments in .rwc output (--no-locators wins).
+      , _noLocators   :: Bool -- ^ @--no-locators@: no source-locator or provenance comments in output.
       }
 
 makeLenses ''Config
@@ -142,13 +142,13 @@ setOutFlag f conf ins | ins       = over outFlags (Set.insert f) conf
 
 type ErrorMsg = Text
 
--- | The Eidos IR dump beside the output (the @--eidos@ dump): @<out>.eir@.
+-- | The Eidos IR dump beside the output (the @--eidos@ dump): @\<out\>.eir@.
 eidosFile :: Config -> FilePath -> FilePath
 eidosFile c filename = fromMaybe filename (c^.outFile) -<.> "eir"
 
 -- | The Synolon IR dump beside the output — the @--synolon@ dump, and the
 --   @--certify@ source artifact (both the writer and the validator
---   invocation compute the path here): @<out>.syn@.
+--   invocation compute the path here): @\<out\>.syn@.
 synolonFile :: Config -> FilePath -> FilePath
 synolonFile c filename = fromMaybe filename (c^.outFile) -<.> "syn"
 

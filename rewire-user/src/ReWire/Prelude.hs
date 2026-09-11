@@ -30,7 +30,7 @@ flip f x y              =  f y x
 ($)                     :: (a -> b) -> a -> b
 f $ x                   =  f x
 
--- | Boolean type
+-- Boolean type
 
 (&&) :: Bool -> Bool -> Bool
 True  && b = b
@@ -48,14 +48,14 @@ not False = True
 otherwise :: Bool
 otherwise = True
 
--- | Maybe type
+-- Maybe type
 
 {-# INLINE maybe #-}
 maybe :: b -> (a -> b) -> Maybe a -> b
 maybe n _ Nothing  = n
 maybe _ f (Just x) = f x
 
--- | Either type
+-- Either type
 
 {-# INLINE either #-}
 either :: (a -> c) -> (b -> c) -> Either a b -> c

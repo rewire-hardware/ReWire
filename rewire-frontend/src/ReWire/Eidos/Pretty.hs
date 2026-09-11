@@ -2,7 +2,7 @@
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | The Eidos concrete syntax (.eir) pretty-printer, implementing
---   doc/eidos.md §9. 'ReWire.Eidos.Parse' is the other half of the
+--   doc/eidos.md §9. "ReWire.Eidos.Parse" is the other half of the
 --   round-trip contract: @parse . pretty@ is the identity on programs
 --   modulo annotations (annotations are semantically inert and never
 --   printed), and @pretty . parse . pretty == pretty@ is a tested fixpoint.
@@ -25,7 +25,7 @@
 --   the equation line is what terminates the signature's type.
 --
 --   The machine level's process declarations print through
---   'ReWire.Synolon.Pretty', which reuses these printers for the
+--   "ReWire.Synolon.Pretty", which reuses these printers for the
 --   expressions, definitions, and datatypes a Synolon program embeds.
 module ReWire.Eidos.Pretty
       ( prettyProgram

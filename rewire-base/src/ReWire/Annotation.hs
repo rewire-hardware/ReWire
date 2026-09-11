@@ -98,11 +98,11 @@ instance Data Annote
 instance TextShow Annote where
       showb = fromString . show
 
--- Annotations are metadata about a node, not part of its meaning. Equality,
--- ordering, and hashing are therefore intentionally blind to them: two terms
--- that differ only in source location must still compare equal, or type
--- comparison and term deduplication (which run over annotated IR) would wrongly
--- distinguish them.
+-- | Annotations are metadata about a node, not part of its meaning. Equality,
+--   ordering, and hashing are therefore intentionally blind to them: two terms
+--   that differ only in source location must still compare equal, or type
+--   comparison and term deduplication (which run over annotated IR) would wrongly
+--   distinguish them.
 instance Ord Annote where
       _ <= _ = True
 instance Eq Annote where

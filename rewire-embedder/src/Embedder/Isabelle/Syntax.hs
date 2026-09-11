@@ -59,7 +59,7 @@ printCon s ls = parens $ text s <+> P.hsep ls
 -- | Names
 type TName = Text
 
--- Types
+-- | Types
 data Typ = Type { typeId :: TName,
                   typeArgs :: [Typ] }
          | TBuiltin { typeB :: TyBuiltin,
@@ -180,7 +180,7 @@ printTypSig :: TypSig -> Doc ann
 printTypSig (TypSig args cod) =  P.fillSep $ punctuate " \\<Rightarrow>" $ map printType args ++ [printType cod]
 
 
--- Types for Terms
+-- | Types for Terms
 data DTyp = Hide { typ :: Typ }
           | Disp { typ :: Typ }
       deriving (Eq, Ord, Show, Typeable, Data)
@@ -209,10 +209,12 @@ data Term =
       | LitVec [Term]
       | Free { termName :: VName }
       | Prim { primId :: RWUserOp }
+      -- | lambda abstraction
       | Abs { absVars :: [VName],
-                termId :: Term }  -- lambda abstraction
+                termId :: Term }
+      -- | application
       | App { funId :: Term,
-               argIds :: [Term] }    -- application
+               argIds :: [Term] }
       | If { ifId :: Term,
              thenId :: Term,
              elseId :: Term }

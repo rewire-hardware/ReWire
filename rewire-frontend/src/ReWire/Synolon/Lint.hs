@@ -6,12 +6,12 @@
 --   rules of doc/synolon.md §4 — signal-guardedness (the goto-only
 --   subgraph of the block graph is acyclic), representability (every
 --   binder, block parameter, cell, port, and halt answer has a fixed bit
---   width, by 'ReWire.Synolon.Repr'), block normal form (command
+--   width, by "ReWire.Synolon.Repr"), block normal form (command
 --   right-hand sides are simple computations; terminator operands and put
 --   payloads are atoms or primitive expressions), cell-initial constness
 --   and typing, full-arity pauses and gotos, the resumed-input parameter
 --   rule, and "the process pauses" — over the expression-level checker
---   of 'ReWire.Eidos.Lint' at mono+ANF strength with the reactive types
+--   of "ReWire.Eidos.Lint" at mono+ANF strength with the reactive types
 --   out of the type grammar,
 --   plus the program rules: name distinctness, global uniqueness over the
 --   datatype-and-definition fragment, the definition rules on the

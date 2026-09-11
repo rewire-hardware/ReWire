@@ -6,7 +6,7 @@
 --   caching modules and (recursively) their imports. The per-module
 --   pipeline (desugaring and translation out of the HSE AST) is supplied
 --   by the caller; the embedder instantiates it for Atmo (see
---   'Embedder.ModCache').
+--   "Embedder.ModCache").
 module ReWire.HSE.Cache
       ( Cache
       , LoadPath

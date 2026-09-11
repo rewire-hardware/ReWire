@@ -53,8 +53,8 @@ sanitizeComment = T.map $ \ case
       '\r' -> ' '
       c    -> c
 
-data Port = Input  Signal -- can't be reg
-          | InOut  Signal -- can't be reg
+data Port = Input  Signal -- ^ can't be reg
+          | InOut  Signal -- ^ can't be reg
           | Output Signal
       deriving (Eq, Show)
 

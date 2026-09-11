@@ -39,7 +39,7 @@ sq = \ case
 
 -- | The simulator argument naming a test's hand-written extern implementations
 --   of the given extension (e.g. ".sv" in a "verilog" subdirectory next to the
---   test). Returns the "<dir>/*.<ext>" glob only when the directory exists and
+--   test). Returns the "\<dir\>/*.\<ext\>" glob only when the directory exists and
 --   holds at least one matching file, otherwise "" -- a test with no externs
 --   has no such directory, and handing a non-matching glob to iverilog,
 --   verilator, or ghdl makes them fail with "no such file".
